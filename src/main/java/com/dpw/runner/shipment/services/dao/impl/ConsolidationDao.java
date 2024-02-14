@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -194,7 +195,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private Set<String> applyConsolidationValidations(ConsolidationDetails request, ConsolidationDetails oldEntity) {
         Set<String> errors = new LinkedHashSet<>();
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
 
         // Container Number can not be repeated
         if (request.getContainersList() != null && request.getContainersList().size() > 0) {

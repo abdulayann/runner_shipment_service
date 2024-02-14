@@ -345,17 +345,13 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst) {
-        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
-        if(shipmentSettingsDetailsList.size() > 0)
-            shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
-        ShipmentSettingsDetails finalShipmentSettingsDetails = shipmentSettingsDetails;
         lst.forEach(consolidationDetails -> {
             var res = (modelMapper.map(consolidationDetails, ConsolidationListResponse.class));
             updateHouseBillsShippingIds(consolidationDetails, res);
-            containerCountUpdate(consolidationDetails, res, finalShipmentSettingsDetails.getIsShipmentLevelContainer() != null && finalShipmentSettingsDetails.getIsShipmentLevelContainer());
+            containerCountUpdate(consolidationDetails, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
             consolidationListResponses.add(res);
         });
         if(consolidationListResponses != null && consolidationListResponses.size() > 0) {
@@ -523,7 +519,7 @@ public class ConsolidationService implements IConsolidationService {
         System.out.println(jsonHelper.convertToJson(request));
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
-            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
+            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             consolidationDetails.setShipmentsList(null);
 
             beforeSave(consolidationDetails, null, true);
@@ -550,7 +546,7 @@ public class ConsolidationService implements IConsolidationService {
         System.out.println(jsonHelper.convertToJson(request));
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
-            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
+            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             consolidationDetails.setShipmentsList(null);
 
             beforeSave(consolidationDetails, null, true);
@@ -1035,7 +1031,7 @@ public class ConsolidationService implements IConsolidationService {
         consolidationDetailsRequest.setShipmentsList(null);
 
         try {
-            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
+            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
@@ -1276,7 +1272,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void calculateDescOfGoodsAndHandlingInfo(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, boolean isAutoUpdate) {
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         Map<Long, String> descOfGoodsMap = new HashMap<>();
         Map<Long, String> handlingInfoMap = new HashMap<>();
         Map<Long, String> hblNumberMap = new HashMap<>();
@@ -1394,7 +1390,7 @@ public class ConsolidationService implements IConsolidationService {
             if (consolidationDetails.getOverride() != null && consolidationDetails.getOverride()) {
                 return ResponseHelper.buildSuccessResponse(convertToClass(consolidationDetails, ConsolidationDetailsResponse.class));
             }
-            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             String weightChargeableUnit = Constants.WEIGHT_UNIT_KG;
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
                 weightChargeableUnit = shipmentSettingsDetails.getWeightChargeableUnit();
@@ -1738,7 +1734,7 @@ public class ConsolidationService implements IConsolidationService {
                     weight = container.getAllocatedWeight();
                     volume = container.getAllocatedVolume();
                 }
-                ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+                ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
                 if(shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator()
                 && ((weight != null && weight.compareTo(container.getAllocatedWeight()) > 0) || (volume != null && volume.compareTo(container.getAllocatedVolume()) > 0))) {
                     if(request.getIsConfirmedByUser() != null && request.getIsConfirmedByUser().booleanValue()) {
@@ -2070,11 +2066,7 @@ public class ConsolidationService implements IConsolidationService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Consolidation details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-            ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
-            if(shipmentSettingsDetailsList.size() > 0) {
-                shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
-            }
+            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             if(shipmentSettingsDetails.getMergeContainers() && consolidationDetails.get().getContainersList() != null && consolidationDetails.get().getContainersList().size() > 0) {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
             }
@@ -2121,11 +2113,7 @@ public class ConsolidationService implements IConsolidationService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Consolidation details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-            ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
-            if(shipmentSettingsDetailsList.size() > 0) {
-                shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
-            }
+            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             if(shipmentSettingsDetails.getMergeContainers() && consolidationDetails.get().getContainersList() != null && consolidationDetails.get().getContainersList().size() > 0) {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
             }
@@ -3402,10 +3390,7 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<?> getDefaultConsolidation() {
         String responseMsg;
         try {
-            List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-            if(shipmentSettingsDetails == null || shipmentSettingsDetails.size() == 0)
-                throw new RunnerException("Shipment settings empty for current tenant");
-            var tenantSettings = shipmentSettingsDetails.get(0);
+            var tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             // Populate shipment details on basis of tenant settings
             ConsolidationDetailsResponse response = new ConsolidationDetailsResponse();
             response.setCarrierDetails(new CarrierDetailResponse());
@@ -3478,10 +3463,7 @@ public class ConsolidationService implements IConsolidationService {
 
     public String generateCustomBolNumber() {
         String res = null;
-        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-        ShipmentSettingsDetails tenantSetting = null;
-        if (shipmentSettingsDetailsList.get(0) != null)
-            tenantSetting = shipmentSettingsDetailsList.get(0);
+        ShipmentSettingsDetails tenantSetting = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
 
         if(tenantSetting.getConsolidationLite() != null && tenantSetting.getConsolidationLite() && tenantSetting.getBolNumberGeneration() == null) {
             return  res;
