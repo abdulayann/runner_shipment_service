@@ -764,4 +764,41 @@ public class AuditLogConstants {
                 put("addressData", "Address Data");
                 put("isAddressFreeText", "Is Address Free Text");
         }};
+        public static final Map<String, String> ServiceDetailsFieldNameToDisplayNameMap = new HashMap<>() {{
+                put("shipmentId", "Shipment Id");
+                put("consolidationId", "Consolidation Id");
+                put("serviceType", "Service Type");
+                put("contractor", "Contractor");
+                put("contractor.entityId", "Contractor: Entity Id");
+                put("contractor.entityType", "Contractor: Entity Type");
+                put("contractor.type", "Contractor: Type");
+                put("contractor.orgCode", "Contractor: Org Code");
+                put("contractor.addressCode", "Contractor: Address Code");
+                put("contractor.orgData", "Contractor: Org Data");
+                put("contractor.addressData", "Contractor: Address Data");
+                put("contractor.isAddressFreeText", "Contractor: Is Address Free Text");
+                put("srvLocation", "Service Location");
+                put("bookingDate", "Booking Date");
+                put("serviceCount", "Service Count");
+                put("serviceDuration", "Service Duration");
+                put("completionDate", "Completion Date");
+                put("refNumber", "Reference Number");
+                put("serviceNotes", "Service Notes");
+        }};
+        public static final Map<String, String> TruckDriverDetailsFieldNameToDisplayName = new HashMap<>() {{
+                put("shipmentId", "Shipment Id");
+                put("transporterType", "Transporter Type");
+                put("transporterName", "Transporter Name");
+                put("driverName", "Driver Name");
+                put("driverMobileNumber", "Driver Mobile Number");
+                put("truckNumberPlate", "Truck Number Plate");
+                put("trailerNumberPlate", "Trailer Number Plate");
+                put("truckOrTrailerType", "Truck or Trailer Type");
+                put("containerTypeCode", "Container Type Code");
+                put("containerId", "Container Id");
+                put("consolidationId", "Consolidation Id");
+                put("selfTransporterName", "Self Transporter Name");
+                put("remarks", "Remarks");
+                put("truckStatus", "Truck Status");
+        }};
 }
