@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -30,4 +31,9 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
 
     @Query(value = "SELECT MAX(c.id) FROM consolidation_details c", nativeQuery = true)
     Long findMaxId();
+
+    @Modifying
+    @Query(value = "Update consolidation_details set booking_id = ?2, booking_status = ?3, booking_number = ?4 Where guid = ?1", nativeQuery = true)
+    int updateConsoleBookingFields(UUID guid, String bookingId, String bookingStatus, String bookingNumber);
+
 }

@@ -3547,4 +3547,15 @@ public class ConsolidationService implements IConsolidationService {
         V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
         return response;
     }
+
+    @Override
+    @Transactional
+    public ResponseEntity<?> updateConsoleBookingFields(CommonRequestModel commonRequestModel){
+        ConsoleBookingRequest request = (ConsoleBookingRequest) commonRequestModel.getData();
+        int rowsAffected = consolidationDetailsDao.updateConsoleBookingFields(request);
+        if(rowsAffected == 0){
+            throw new ValidationException("No Consolidation Exist with given guid: " + request.getGuid());
+        }
+        return ResponseHelper.buildSuccessResponse();
+    }
 }
