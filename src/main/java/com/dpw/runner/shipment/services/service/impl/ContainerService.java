@@ -980,7 +980,7 @@ public class ContainerService implements IContainerService {
                                 && !IsStringNullOrEmpty(containerType.getMaxCargoGrossWeightUnit()) && containerType.getMaxCargoGrossWeight() != null) {
                             Double weight = (Double) convertUnit(Constants.MASS, request.getAllocatedWeight(), request.getAllocatedWeightUnit(), containerType.getMaxCargoGrossWeightUnit());
                             if(weight > containerType.MaxCargoGrossWeight)
-                                response.setVolumeAllowed(false);
+                                response.setWeightAllowed(false);
                         }
                     }
                 }
