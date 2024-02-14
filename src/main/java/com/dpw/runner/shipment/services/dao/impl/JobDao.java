@@ -2,14 +2,20 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IJobDao;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Jobs;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,6 +44,9 @@ public class JobDao implements IJobDao {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private IAuditLogService auditLogService;
 
     @Override
     public Jobs save(Jobs jobs) {
@@ -96,7 +106,7 @@ public class JobDao implements IJobDao {
                 }
                 responseJobs = saveEntityFromShipment(jobRequestList, shipmentId, copyHashMap);
             }
-            deleteJobs(hashMap);
+            deleteJobs(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseJobs;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -110,6 +120,8 @@ public class JobDao implements IJobDao {
     public List<Jobs> saveEntityFromShipment(List<Jobs> jobRequests, Long shipmentId) {
         List<Jobs> res = new ArrayList<>();
         for(Jobs req : jobRequests){
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<Jobs> oldEntity = findById(id);
@@ -119,9 +131,23 @@ public class JobDao implements IJobDao {
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
                 req.setCreatedBy(oldEntity.get().getCreatedBy());
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                operation = DBOperationType.UPDATE.name();
             }
             req.setShipmentId(shipmentId);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Jobs.class) : null)
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -129,6 +155,7 @@ public class JobDao implements IJobDao {
     @Override
     public List<Jobs> saveEntityFromShipment(List<Jobs> jobRequests, Long shipmentId, Map<Long, Jobs> oldEntityMap) {
         List<Jobs> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
         for(Jobs req : jobRequests){
             if(req.getId() != null){
                 long id = req.getId();
@@ -138,11 +165,33 @@ public class JobDao implements IJobDao {
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
                 req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
             }
             req.setShipmentId(shipmentId);
             res.add(req);
         }
         res = saveAll(res);
+        for (Jobs req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if(oldEntityJsonStringMap.containsKey(req.getId())){
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Jobs.class) : null)
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
+        }
         return res;
     }
 
@@ -172,7 +221,7 @@ public class JobDao implements IJobDao {
                 }
                 responseJobs = saveEntityFromConsole(jobRequestList, consolidationId, copyHashMap);
             }
-            deleteJobs(hashMap);
+            deleteJobs(hashMap, ConsolidationDetails.class.getSimpleName(), consolidationId);
             return responseJobs;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -210,7 +259,7 @@ public class JobDao implements IJobDao {
             }
             Map<Long, Jobs> hashMap = new HashMap<>();
             jobsMap.forEach((s, jobs) ->  hashMap.put(jobs.getId(), jobs));
-            deleteJobs(hashMap);
+            deleteJobs(hashMap, ConsolidationDetails.class.getSimpleName(), consolidationId);
             return responseJobs;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -260,10 +309,28 @@ public class JobDao implements IJobDao {
         return res;
     }
 
-    private void deleteJobs(Map<Long, Jobs> hashMap) {
+    private void deleteJobs(Map<Long, Jobs> hashMap, String entity, Long entityId) {
         String responseMsg;
         try {
-            hashMap.values().forEach(this::delete);
+            hashMap.values().forEach(job -> {
+                String json = jsonHelper.convertToJson(job);
+                delete(job);
+                if(entity != null)
+                {
+                    try {
+                        auditLogService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .newData(null)
+                                        .prevData(jsonHelper.readFromJson(json, Jobs.class))
+                                        .parent(entity)
+                                        .parentId(entityId)
+                                        .operation(DBOperationType.DELETE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            });
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -299,7 +366,7 @@ public class JobDao implements IJobDao {
             }
             Map<Long, Jobs> hashMap = new HashMap<>();
             jobsMap.forEach((s, jobs) ->  hashMap.put(jobs.getId(), jobs));
-            deleteJobs(hashMap);
+            deleteJobs(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseJobs;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
