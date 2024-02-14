@@ -39,6 +39,7 @@ public class ApiConstants {
     public static final String TOGGLE_LOCK = "/toggleLock";
     public static final String API_LIST_CONTAINERS_TO_ASSIGN = "/list/containers/assign";
     public static final String API_CHANGE_UNIT_ALLOCATED_ACHIEVED = "/calculate/achieved/unit";
+    public static final String API_CHECK_ALLOCATED_DATA_CHANGE = "/check/allocated";
 //    public static final String API_CALCULATE_ACHIEVED_PACK_ASSIGN = "/assign/packs";
     public static final String API_CALCULATE_ACHIEVED_PACK_DETACH = "/detach/packs";
     public static final String API_VALIDATE_CONTAINER_NUMBER = "/number/validate";
