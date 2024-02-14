@@ -143,6 +143,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setConsigneeCountryFilter(sd.getConsigneeCountry());
         cs.setConsignorCountryFilter(sd.getConsignorCountry());
         cs.setNotifyPartyCountryFilter(sd.getNotifyPartyCountry());
+        cs.setCreatedDate(sd.getShipmentCreatedOn());
 
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
