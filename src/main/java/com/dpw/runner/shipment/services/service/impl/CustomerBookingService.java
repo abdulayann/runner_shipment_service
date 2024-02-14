@@ -1096,7 +1096,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                             shipmentBillingListRequest.setGuidsList(guidsList);
                             ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
                             if (shipmentBillingListResponse.getData() != null && !shipmentBillingListResponse.getData().isEmpty()) {
-                                ShipmentBillingListResponse.BillingData billingData = shipmentBillingListResponse.getData().get(UUID.fromString(customerBookingResponse.getShipmentGuid()));
+                                ShipmentBillingListResponse.BillingData billingData = shipmentBillingListResponse.getData().get(customerBookingResponse.getShipmentGuid());
                                 customerBookingResponse.setShipmentEntityId(billingData.getId() != null ? billingData.getId().toString() : null);
                             }
                         }
