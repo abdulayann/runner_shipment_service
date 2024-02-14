@@ -418,6 +418,8 @@ public abstract class IReport {
         dictionary.put(ReportConstants.GROSS_VOLUME_WITH_COMMA, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.VOLUME_WEIGHT_WITH_COMMA, addCommas(shipment.getVolumetricWeight()));
         dictionary.put(ReportConstants.WEIGHT_UNIT_DESCRIPTION,  shipment.getNetWeightUnit());
+        dictionary.put(ReportConstants.CHARGEABLE_WEIGHT, ConvertToVolumeNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.CHARGEABLE_WEIGHT_UNIT, shipment.getChargeableUnit());
         dictionary.put(ReportConstants.WEIGHTS, ConvertToWeightNumberFormat(shipment.getNetWeight(), v1TenantSettingsResponse));
         dictionary.put(WEIGHT, ConvertToWeightNumberFormat(shipment.getWeight(), v1TenantSettingsResponse));
         dictionary.put(VOLUME, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
@@ -450,6 +452,8 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DESTINATION_NAME_, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
+
+        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
         if(destination != null) {
             dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, destination.getName().toUpperCase());
             String destinationCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(destination.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(destination.getCountry()).getItemDescription() : "";
@@ -507,7 +511,7 @@ public abstract class IReport {
                     consignorFreeText = ReportHelper.getAddressList(StringUtility.convertToString(consignerAddress.get("rawData")));
                     dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
                     dictionary.put(ReportConstants.CONSIGNER_FREETEXTInCaps, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
-                    dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText.isEmpty() ? null : StringUtility.toUpperCase(consignorFreeText.get(0)));
+                    dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
                 }
             }
             List<String> consignee = null;
@@ -548,7 +552,6 @@ public abstract class IReport {
                         dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consigneeRawAddress.get(0).toUpperCase());
                         dictionary.put(CONSIGNEE_FREETEXT, consigneeRawAddress);
                         dictionary.put(CONSIGNEE_FREETEXTInCaps, consigneeRawAddress == null ? null : consigneeRawAddress.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
-                        dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText.isEmpty() ? null : StringUtility.toUpperCase(consignorFreeText.get(0)));
                     }
                 }
                 else
@@ -691,7 +694,8 @@ public abstract class IReport {
                 dictionary.put(CARRIER_NAME, carrierData.getItemDescription());
                 String iataCode = carrierData.getIataCode();
                 dictionary.put(ReportConstants.FLIGHT_IATA_CODE, iataCode);
-                dictionary.put(ReportConstants.SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + " " + shipment.getCarrierDetails().getFlightNumber());
+                dictionary.put(ReportConstants.IATA_CODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + (StringUtility.isEmpty(shipment.getCarrierDetails().getFlightNumber()) ? "" :(" " + shipment.getCarrierDetails().getFlightNumber())));
+                dictionary.put(ReportConstants.SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + (StringUtility.isEmpty(shipment.getCarrierDetails().getFlightNumber()) ? "" :(" " + shipment.getCarrierDetails().getFlightNumber())));
             }
         }
         if(!Objects.isNull(pickup) && !Objects.isNull(pickup.getTransporterDetail())){
@@ -985,7 +989,7 @@ public abstract class IReport {
                 if (carriersData != null) {
                     String iataCode = carriersData.getIataCode();
                     dictionary.put(ReportConstants.CONSOL_FLIGHT_NUMBER_WITH_IATACODE,StringUtility.isEmpty(iataCode) ? consolidation.getCarrierDetails().getFlightNumber() : iataCode + " " + consolidation.getCarrierDetails().getFlightNumber());
-                    dictionary.put(ReportConstants.IATA_CODE, StringUtility.isEmpty(iataCode) ? consolidation.getCarrierDetails().getFlightNumber() : iataCode + " " + consolidation.getCarrierDetails().getFlightNumber());
+                    dictionary.put(ReportConstants.IATA_CODE, StringUtility.isEmpty(iataCode) ? consolidation.getCarrierDetails().getFlightNumber() : iataCode + (StringUtility.isEmpty(consolidation.getCarrierDetails().getFlightNumber()) ? "" :(" " + consolidation.getCarrierDetails().getFlightNumber())));
                     dictionary.put(ReportConstants.CARRIER_IATACODE, iataCode);
                     dictionary.put(CARRIER_NAME, StringUtility.toUpperCase(carriersData.getItemDescription()));
                     dictionary.put(CARRIER_CONTACT_PERSON, StringUtility.toUpperCase(carriersData.getCarrierContactPerson()));
@@ -1071,7 +1075,6 @@ public abstract class IReport {
         }
         if(consignee != null && consignee.size() > 0) {
             dictionary.put(ReportConstants.CONSIGNEE, consignee);
-            dictionary.put(ReportConstants.CONSIGNEE_PIC, consignee);
             dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consignee.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
             dictionary.put(CONSIGNEE_NAME_FREETEST_INCAPS, StringUtility.toUpperCase(hblDataDto.getConsigneeName()));
         }
@@ -1083,7 +1086,9 @@ public abstract class IReport {
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
 
-        dictionary.put(ReportConstants.DO_MESSAGE, hblDataDto.getCargoDescription());
+        if(StringUtility.isNotEmpty(hblDataDto.getCargoDescription())) {
+            dictionary.put(ReportConstants.DO_MESSAGE, hblDataDto.getCargoDescription());
+        }
         dictionary.put(ReportConstants.CONSIGNER_CAPS, consignor.stream().map(String::toUpperCase).collect(Collectors.toList()));
         dictionary.put(ReportConstants.CONSIGNEE_CAPS, consignee.stream().map(String::toUpperCase).collect(Collectors.toList()));
         if (!StringUtility.isEmpty(hblDataDto.getHouseBill()))
