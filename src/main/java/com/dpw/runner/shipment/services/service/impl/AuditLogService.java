@@ -288,6 +288,16 @@ public class AuditLogService implements IAuditLogService {
                     return AuditLogConstants.PartiesFieldNameToDisplayNameMap.get(key);
                 }
             }
+            else if(Objects.equals(auditLog.getEntity(), ServiceDetails.class.getSimpleName())) {
+                if (AuditLogConstants.ServiceDetailsFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.ServiceDetailsFieldNameToDisplayNameMap.get(key);
+                }
+            }
+            else if(Objects.equals(auditLog.getEntity(), TruckDriverDetails.class.getSimpleName())) {
+                if (AuditLogConstants.TruckDriverDetailsFieldNameToDisplayName.containsKey(key)) {
+                    return AuditLogConstants.TruckDriverDetailsFieldNameToDisplayName.get(key);
+                }
+            }
         }
         return key;
     }
