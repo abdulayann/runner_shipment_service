@@ -13,6 +13,7 @@ import java.util.List;
 
 public interface IContainerService extends ICommonService {
     ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> calculateAllocatedData(CommonRequestModel commonRequestModel);
 
 //    ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel);
 

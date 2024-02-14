@@ -10,10 +10,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
@@ -1535,5 +1533,64 @@ public class MasterDataUtils{
     public Map<String, WareHouseResponse> fetchWareHouseData(List<Long> request) {
         return fetchInWareHousesList(request.stream().filter(Objects::nonNull)
                 .map(StringUtility::convertToString).collect(Collectors.toList()));
+    }
+
+    /**
+     * * Used to Fetch Bill Info from V1 for Shipments
+     * @param shipmentDetails
+     * @param responseList
+     */
+    public void fetchBillDataForShipments(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
+        Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
+        for (IRunnerResponse response : responseList)
+            dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
+
+        if(shipmentDetails != null && shipmentDetails.size() > 0) {
+            List<UUID> guidsList = createBillRequest(shipmentDetails);
+            if (!guidsList.isEmpty()) {
+                ShipmentBillingListRequest shipmentBillingListRequest = new ShipmentBillingListRequest();
+                shipmentBillingListRequest.setGuidsList(guidsList);
+                ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+                pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING);
+            }
+
+            for (ShipmentDetails details: shipmentDetails) {
+                var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).
+                        get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, details.getGuid().toString()));
+
+                if (!Objects.isNull(cache)) {
+                    var billingData = (ShipmentBillingListResponse.BillingData) cache.get();
+                    if (!Objects.isNull(billingData)) {
+                        ShipmentListResponse shipmentListResponse = dataMap.get(details.getId());
+
+                        shipmentListResponse.setBillStatus(billingData.getBillStatus());
+                        shipmentListResponse.setTotalEstimatedCost(billingData.getTotalEstimatedCost());
+                        shipmentListResponse.setTotalEstimatedRevenue(billingData.getTotalEstimatedRevenue());
+                        shipmentListResponse.setTotalEstimatedProfit(billingData.getTotalEstimatedProfit());
+                        shipmentListResponse.setTotalEstimatedProfitPercent(billingData.getTotalEstimatedProfitPercent());
+                        shipmentListResponse.setTotalCost(billingData.getTotalCost());
+                        shipmentListResponse.setTotalRevenue(billingData.getTotalRevenue());
+                        shipmentListResponse.setTotalProfit(billingData.getTotalProfit());
+                        shipmentListResponse.setTotalProfitPercent(billingData.getTotalProfitPercent());
+                        shipmentListResponse.setTotalPostedCost(billingData.getTotalPostedCost());
+                        shipmentListResponse.setTotalPostedRevenue(billingData.getTotalPostedRevenue());
+                        shipmentListResponse.setTotalPostedProfit(billingData.getTotalPostedProfit());
+                        shipmentListResponse.setTotalPostedProfitPercent(billingData.getTotalPostedProfitPercent());
+                        shipmentListResponse.setWayBillNumber(billingData.getWayBillNumber());
+                    }
+
+                }
+            }
+        }
+    }
+
+    private List<UUID> createBillRequest(List<ShipmentDetails> shipmentDetails) {
+        List<UUID> guidsList = new ArrayList<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        shipmentDetails.forEach(shipment -> {
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, shipment.getGuid().toString()));
+            if (Objects.isNull(value)) guidsList.add(shipment.getGuid());
+        });
+        return guidsList;
     }
 }

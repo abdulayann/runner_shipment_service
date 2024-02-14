@@ -245,7 +245,7 @@ public class ShipmentDao implements IShipmentDao {
     public Set<String> applyShipmentValidations(ShipmentDetails request, ShipmentDetails oldEntity) {
         Set<String> errors = new LinkedHashSet<>();
 
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         // Routings leg no can not be repeated
         if (request.getRoutingsList() != null && request.getRoutingsList().size() > 0) {
             HashSet<Long> hashSet = new HashSet<>();

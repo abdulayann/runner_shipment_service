@@ -1,10 +1,17 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ITruckDriverDetailsRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,6 +34,10 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     @Autowired
     private ITruckDriverDetailsRepository truckDriverDetailsRepository;
+    @Autowired
+    private JsonHelper jsonHelper;
+    @Autowired
+    private IAuditLogService auditLogService;
 
     @Override
     public TruckDriverDetails save(TruckDriverDetails truckDriverDetails) {
@@ -51,10 +63,28 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         truckDriverDetailsRepository.delete(truckDriverDetails);
     }
 
-    private void deleteTruckDriverDetails(Map<Long, TruckDriverDetails> hashMap) {
+    private void deleteTruckDriverDetails(Map<Long, TruckDriverDetails> hashMap, String entity, Long entityId) {
         String responseMsg;
         try {
-            hashMap.values().forEach(this::delete);
+            hashMap.values().forEach(truckDriverDetails -> {
+                String json = jsonHelper.convertToJson(truckDriverDetails);
+                delete(truckDriverDetails);
+                if(entity != null)
+                {
+                    try {
+                        auditLogService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .newData(null)
+                                        .prevData(jsonHelper.readFromJson(json, TruckDriverDetails.class))
+                                        .parent(entity)
+                                        .parentId(entityId)
+                                        .operation(DBOperationType.DELETE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            });
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -88,7 +118,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 }
                 responseTruckDriverDetails = saveEntityFromShipment(truckDriverDetailsRequestList, shipmentId, copyHashMap);
             }
-            deleteTruckDriverDetails(hashMap);
+            deleteTruckDriverDetails(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseTruckDriverDetails;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -102,6 +132,8 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     public List<TruckDriverDetails> saveEntityFromShipment(List<TruckDriverDetails> truckDriverDetails, Long shipmentId) {
         List<TruckDriverDetails> res = new ArrayList<>();
         for(TruckDriverDetails req : truckDriverDetails){
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<TruckDriverDetails> oldEntity = findById(id);
@@ -111,9 +143,23 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
                 req.setCreatedBy(oldEntity.get().getCreatedBy());
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                operation = DBOperationType.UPDATE.name();
             }
             req.setShipmentId(shipmentId);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, TruckDriverDetails.class) : null)
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -121,6 +167,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     @Override
     public List<TruckDriverDetails> saveEntityFromShipment(List<TruckDriverDetails> truckDriverDetails, Long shipmentId, Map<Long, TruckDriverDetails> oldEntityMap) {
         List<TruckDriverDetails> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
         for(TruckDriverDetails req : truckDriverDetails){
             if(req.getId() != null){
                 long id = req.getId();
@@ -130,11 +177,33 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
                 req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
             }
             req.setShipmentId(shipmentId);
             res.add(req);
         }
         res = saveAll(res);
+        for (TruckDriverDetails req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if(oldEntityJsonStringMap.containsKey(req.getId())){
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, TruckDriverDetails.class) : null)
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
+        }
         return res;
     }
 
@@ -167,7 +236,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             Map<Long, TruckDriverDetails> hashMap = new HashMap<>();
             truckDriverDetailsMap.forEach((s, truckDriverDetail) ->  hashMap.put(truckDriverDetail.getId(), truckDriverDetail));
 
-            deleteTruckDriverDetails(hashMap);
+            deleteTruckDriverDetails(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseTruckDriverDetails;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -203,7 +272,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 }
                 responseTruckDriverDetails = saveEntityFromConsole(truckDriverDetailsRequests, consolidationId, copyHashMap);
             }
-            deleteTruckDriverDetails(hashMap);
+            deleteTruckDriverDetails(hashMap, ConsolidationDetails.class.getSimpleName(), consolidationId);
             return responseTruckDriverDetails;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -241,7 +310,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             }
             Map<Long, TruckDriverDetails> hashMap = new HashMap<>();
             truckDriverDetailsMap.forEach((s, truckDriverDetails) ->  hashMap.put(truckDriverDetails.getId(), truckDriverDetails));
-            deleteTruckDriverDetails(hashMap);
+            deleteTruckDriverDetails(hashMap, ConsolidationDetails.class.getSimpleName(), consolidationId);
             return responseTruckDriverDetails;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
