@@ -13,15 +13,14 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -29,9 +28,11 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -151,6 +152,9 @@ public class ContainerService implements IContainerService {
 
     @Autowired
     IContainersSync containersSync;
+
+    @Autowired
+    private IV1Service v1Service;
 
     @Autowired
     IPackingsSync packingsADSync;
@@ -937,6 +941,51 @@ public class ContainerService implements IContainerService {
             Containers container = convertRequestToEntity(containerRequest);
             container = changeAchievedUnit(container);
             return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> calculateAllocatedData(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CheckAllocatedDataChangesRequest request = (CheckAllocatedDataChangesRequest) commonRequestModel.getData();
+            CheckAllocatedDataChangeResponse response = new CheckAllocatedDataChangeResponse();
+            response.setVolumeAllowed(true);
+            response.setWeightAllowed(true);
+            if(request != null && !IsStringNullOrEmpty(request.getContainerCode())) {
+                CommonV1ListRequest listRequest = new CommonV1ListRequest();
+                List<Object> criteria = Arrays.asList(
+                        Arrays.asList(EntityTransferConstants.CODE),
+                        "=",
+                        request.getContainerCode()
+                );
+                listRequest.setCriteriaRequests(criteria);
+                V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(listRequest);
+                if(v1DataResponse != null && v1DataResponse.entities != null) {
+                    List<EntityTransferContainerType> containerTypesList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferContainerType.class);
+                    if(containerTypesList.size() > 0) {
+                        EntityTransferContainerType containerType = containerTypesList.get(0);
+                        if(request.getAllocatedVolume() != null && !IsStringNullOrEmpty(request.getAllocatedVolumeUnit())
+                                && !IsStringNullOrEmpty(containerType.getCubicCapacityUnit()) && containerType.getCubicCapacity() != null) {
+                            Double volume = (Double) convertUnit(Constants.VOLUME, request.getAllocatedVolume(), request.getAllocatedVolumeUnit(), containerType.getCubicCapacityUnit());
+                            if(volume > containerType.CubicCapacity)
+                                response.setVolumeAllowed(false);
+                        }
+                        if(request.getAllocatedWeight() != null && !IsStringNullOrEmpty(request.getAllocatedWeightUnit())
+                                && !IsStringNullOrEmpty(containerType.getMaxCargoGrossWeightUnit()) && containerType.getMaxCargoGrossWeight() != null) {
+                            Double weight = (Double) convertUnit(Constants.MASS, request.getAllocatedWeight(), request.getAllocatedWeightUnit(), containerType.getMaxCargoGrossWeightUnit());
+                            if(weight > containerType.MaxCargoGrossWeight)
+                                response.setWeightAllowed(false);
+                        }
+                    }
+                }
+            }
+            return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
