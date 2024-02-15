@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
+import com.dpw.runner.shipment.services.dto.response.AwbChargeTypeMasterDataResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -22,6 +23,7 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.runner.Runner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -258,16 +260,16 @@ public class AwbController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.CHARGE_TYPE_DATA_RETRIEVE_SUCCESSFUL)})
     @GetMapping(ApiConstants.POPULATE_CHARGE_TYPE_DETAILS)
-    public ResponseEntity<?> getChargeTypeMasterData(@ApiParam(value = AwbConstants.CHARGE_TYPE_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<RunnerResponse<AwbChargeTypeMasterDataResponse>> getChargeTypeMasterData(@ApiParam(value = AwbConstants.CHARGE_TYPE_ID, required = true) @RequestParam Long id) {
         String responseMsg = "";
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-            return awbService.getChargeTypeMasterData(request);
+            return (ResponseEntity<RunnerResponse<AwbChargeTypeMasterDataResponse>>) awbService.getChargeTypeMasterData(request);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error generating dims information";
+                    : "Error getting data for charge type";
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(e.getMessage());
+            return (ResponseEntity<RunnerResponse<AwbChargeTypeMasterDataResponse>>) ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
 
