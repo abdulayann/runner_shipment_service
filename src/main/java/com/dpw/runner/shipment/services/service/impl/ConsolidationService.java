@@ -1009,7 +1009,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
-            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            ConsolidationDetails oldEntityJson = jsonHelper.convertValue(oldEntity.get(), ConsolidationDetails.class);
 
             beforeSave(entity, oldEntity.get(), false);
 
@@ -1019,7 +1019,7 @@ public class ConsolidationService implements IConsolidationService {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .newData(entity)
-                                .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
+                                .prevData(oldEntityJson)
                                 .parent(ConsolidationDetails.class.getSimpleName())
                                 .parentId(entity.getId())
                                 .operation(DBOperationType.UPDATE.name()).build()
@@ -2006,13 +2006,13 @@ public class ConsolidationService implements IConsolidationService {
                 log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            String oldEntityJsonString = jsonHelper.convertToJson(consolidationDetails.get());
+            ConsolidationDetails oldEntityJson = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetails.class);
             consolidationDetailsDao.delete(consolidationDetails.get());
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
                             .newData(null)
-                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
+                            .prevData(oldEntityJson)
                             .parent(ConsolidationDetails.class.getSimpleName())
                             .parentId(consolidationDetails.get().getId())
                             .operation(DBOperationType.DELETE.name()).build()
