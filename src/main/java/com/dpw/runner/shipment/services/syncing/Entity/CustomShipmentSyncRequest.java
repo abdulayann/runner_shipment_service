@@ -393,8 +393,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
 
     @JsonProperty("PaymentTerms")
     private String PaymentTerms;
-    @JsonProperty("PrevShipmentStatus")
-    private Integer PrevShipmentStatus;
     @JsonProperty("ReceivingBranch")
     private Integer ReceivingBranch;
 
@@ -524,4 +522,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String NotifyPartyCountryFilter;
     @JsonProperty("EntryRefNo")
     private String EntryRefNo;
+    @JsonProperty("CreatedDate")
+    private LocalDateTime CreatedDate;
+    @JsonProperty("CustomerCategoryString")
+    private String CustomerCategoryString;
 }

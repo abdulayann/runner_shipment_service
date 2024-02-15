@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
@@ -85,6 +86,11 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setConsigneeCountry(cs.getConsigneeCountryFilter());
             sd.setConsignorCountry(cs.getConsignorCountryFilter());
             sd.setNotifyPartyCountry(cs.getNotifyPartyCountryFilter());
+            sd.setShipmentCreatedOn(cs.getCreatedDate());
+            if(!IsStringNullOrEmpty(cs.getPrevShipmentStatusString()))
+                sd.setPrevShipmentStatus(ShipmentStatus.valueOf(cs.getPrevShipmentStatusString()).getValue());
+            if(!IsStringNullOrEmpty(cs.getStatusString()))
+                sd.setStatus(ShipmentStatus.valueOf(cs.getStatusString()).getValue());
 
             sd.setConsigner(mapPartyObject(cs.getConsignerParty()));
             sd.setConsignee(mapPartyObject(cs.getConsigneeParty()));
