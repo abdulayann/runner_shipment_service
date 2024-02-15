@@ -98,11 +98,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String OnBoard;
     @JsonProperty("Phase")
     private String Phase;
-
-    @JsonProperty("PlaceofIssue")
-    private Long PlaceofIssue;
-    @JsonProperty("PlaceofSupply")
-    private Long PlaceofSupply;
     @JsonProperty("ReleaseType")
     private String ReleaseType;
     @JsonProperty("ScreeningStatus")
@@ -153,6 +148,10 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     //Carrier details here
     @JsonProperty("PaidPlaceName")
     private String PaidPlaceName;
+    @JsonProperty("PlaceOfIssueName")
+    private String PlaceOfIssueName;
+    @JsonProperty("PlaceOfSupplyName")
+    private String PlaceOfSupplyName;
     @JsonProperty("AircraftRegistration")
     private String AircraftRegistration;
     @JsonProperty("AircraftType")
@@ -393,8 +392,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
 
     @JsonProperty("PaymentTerms")
     private String PaymentTerms;
-    @JsonProperty("PrevShipmentStatus")
-    private Integer PrevShipmentStatus;
     @JsonProperty("ReceivingBranch")
     private Integer ReceivingBranch;
 
@@ -524,4 +521,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String NotifyPartyCountryFilter;
     @JsonProperty("EntryRefNo")
     private String EntryRefNo;
+    @JsonProperty("CreatedDate")
+    private LocalDateTime CreatedDate;
+    @JsonProperty("CustomerCategoryString")
+    private String CustomerCategoryString;
 }

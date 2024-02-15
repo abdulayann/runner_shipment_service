@@ -143,6 +143,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setConsigneeCountryFilter(sd.getConsigneeCountry());
         cs.setConsignorCountryFilter(sd.getConsignorCountry());
         cs.setNotifyPartyCountryFilter(sd.getNotifyPartyCountry());
+        cs.setCreatedDate(sd.getShipmentCreatedOn());
 
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
@@ -267,6 +268,9 @@ public class ShipmentSync implements IShipmentSync {
         cs.setHblDeliveryMode(sd.getAdditionalDetails().getDeliveryMode());
         cs.setChargesApply(sd.getAdditionalDetails().getBLChargesDisplay());
         cs.setExporterStmt(sd.getAdditionalDetails().getBLExporterShipment());
+        cs.setPlaceOfIssueName(sd.getAdditionalDetails().getPlaceOfIssue());
+        cs.setPlaceOfSupplyName(sd.getAdditionalDetails().getPlaceOfSupply());
+        cs.setPaidPlaceName(sd.getAdditionalDetails().getPaidPlace());
     }
 
     private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
