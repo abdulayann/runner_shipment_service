@@ -354,30 +354,6 @@ public class ConsolidationService implements IConsolidationService {
             containerCountUpdate(consolidationDetails, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
             consolidationListResponses.add(res);
         });
-        if(consolidationListResponses != null && consolidationListResponses.size() > 0) {
-            List<UUID> guidsList = new ArrayList<>();
-            for (ConsolidationListResponse consolidationDetails: consolidationListResponses) {
-                guidsList.add(consolidationDetails.getGuid());
-            }
-            if(guidsList.size() > 0) {
-                ConsoleBookingListRequest consoleBookingListRequest = new ConsoleBookingListRequest();
-                consoleBookingListRequest.setGuidsList(guidsList);
-                try {
-                    ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
-                    if (consoleBookingListResponse.getData() != null && !consoleBookingListResponse.getData().isEmpty()) {
-                        for (ConsolidationListResponse consolidationDetails : consolidationListResponses) {
-                            if (consoleBookingListResponse.getData().get(consolidationDetails.getGuid()) != null) {
-                                consolidationDetails.setBookingStatus(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getStatus());
-                                consolidationDetails.setBookingId(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getIntraBookingId());
-                                consolidationDetails.setBookingNumber(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getBookingNumber());
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    log.debug(e.getMessage());
-                }
-            }
-        }
         consolidationListResponses.forEach(consolidationDetails -> {
             responseList.add(consolidationDetails);
         });
@@ -2078,20 +2054,6 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
             }
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
-            if(response != null && response.getGuid() != null) {
-                List<UUID> guidsList = new ArrayList<>();
-                guidsList.add(response.getGuid());
-                ConsoleBookingListRequest consoleBookingListRequest = new ConsoleBookingListRequest();
-                consoleBookingListRequest.setGuidsList(guidsList);
-                ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
-                if(consoleBookingListResponse.getData() != null && !consoleBookingListResponse.getData().isEmpty()) {
-                    if(consoleBookingListResponse.getData().get(response.getGuid()) != null) {
-                        response.setBookingStatus(consoleBookingListResponse.getData().get(response.getGuid()).getStatus());
-                        response.setBookingId(consoleBookingListResponse.getData().get(response.getGuid()).getIntraBookingId());
-                        response.setBookingNumber(consoleBookingListResponse.getData().get(response.getGuid()).getBookingNumber());
-                    }
-                }
-            }
             createConsolidationPayload(consolidationDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -2125,20 +2087,6 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
             }
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
-            if(response != null && response.getGuid() != null) {
-                List<UUID> guidsList = new ArrayList<>();
-                guidsList.add(response.getGuid());
-                ConsoleBookingListRequest consoleBookingListRequest = new ConsoleBookingListRequest();
-                consoleBookingListRequest.setGuidsList(guidsList);
-                ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
-                if(consoleBookingListResponse.getData() != null && !consoleBookingListResponse.getData().isEmpty()) {
-                    if(consoleBookingListResponse.getData().get(response.getGuid()) != null) {
-                        response.setBookingStatus(consoleBookingListResponse.getData().get(response.getGuid()).getStatus());
-                        response.setBookingId(consoleBookingListResponse.getData().get(response.getGuid()).getIntraBookingId());
-                        response.setBookingNumber(consoleBookingListResponse.getData().get(response.getGuid()).getBookingNumber());
-                    }
-                }
-            }
             createConsolidationPayload(consolidationDetails.get(), response);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
