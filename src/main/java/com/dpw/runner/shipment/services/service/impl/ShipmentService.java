@@ -2304,11 +2304,15 @@ public class ShipmentService implements IShipmentService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             // TODO- Remove this call and sync job staus from billing using producer and consumer
-            ShipmentBillingListRequest shipmentBillingListRequest = new ShipmentBillingListRequest();
-            shipmentBillingListRequest.setGuidsList(List.of(shipmentDetails.get().getGuid()));
-            ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
-            if(shipmentBillingListResponse != null && shipmentBillingListResponse.getData() != null && shipmentBillingListResponse.getData().containsKey(shipmentDetails.get().getGuid().toString())) {
-                shipmentDetails.get().setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.get().getGuid().toString()).getBillStatus());
+            try {
+                ShipmentBillingListRequest shipmentBillingListRequest = new ShipmentBillingListRequest();
+                shipmentBillingListRequest.setGuidsList(List.of(shipmentDetails.get().getGuid()));
+                ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+                if(shipmentBillingListResponse != null && shipmentBillingListResponse.getData() != null && shipmentBillingListResponse.getData().containsKey(shipmentDetails.get().getGuid().toString())) {
+                    shipmentDetails.get().setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.get().getGuid().toString()).getBillStatus());
+                }
+            } catch (Exception ex) {
+                log.error("Error occurred while fetching billing data for shipmentId: {} with exception: {}", request.getId(), ex.getLocalizedMessage());
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
