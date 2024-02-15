@@ -75,9 +75,11 @@ public class HblReport extends IReport{
         }
         Map<String, HblContainerDto> hblContainerDtoMap = new HashMap<>();
         hblModel.blObject = getHbl(id);
+        hblModel.isHbl = true;
         if(hblModel.blObject == null) {
             hblModel.blObject = new Hbl();
             hblModel.blObject.setHblData(new HblDataDto());
+            hblModel.isHbl = false;
         }
         hblModel.commonContainers = new ArrayList<>();
         if(hblModel.blObject.getHblContainer() != null)
@@ -518,9 +520,7 @@ public class HblReport extends IReport{
         if (!Objects.isNull(hblModel.blObject.getHblData().getMarksAndNumbers()))
             dictionary.put(MARKS_N_NUMS_CAPS, hblModel.blObject.getHblData().getMarksAndNumbers().toUpperCase());
 //        dictionary.put(SHIPPED_ON_BOARD, hblModel.shipeedOnBoard != null ? ConvertToDPWDateFormat(hblModel.shipeedOnBoard) : null);
-        dictionary.put(PACKS, hblModel.blObject.getHblData().getPackageCount());
-        dictionary.put(PACKS_UNIT, hblModel.blObject.getHblData().getPackageType());
-        dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType()));
+
         if(hblModel.commonContainers != null && !hblModel.commonContainers.isEmpty()) {
             List<Map<String, Object>> valuesContainer = new ArrayList<>();
             for (ShipmentContainers shipmentContainers : hblModel.commonContainers) {
@@ -623,6 +623,7 @@ public class HblReport extends IReport{
             BigDecimal chargeable = hblModel.shipment.getChargable().round(precision);
             dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse));
             dictionary.put(CHARGEABLE_AND_UNIT, String.format("%s %s", chargeable, hblModel.shipment.getChargeableUnit()));
+            dictionary.put(CHARGEABLE_AND_UNIT_, dictionary.get(CHARGEABLE_AND_UNIT));
         }
 //        dictionary.put(DELIVERY_TO_EMAIL_ADDRESS, DeliveryEmailAddress);
         dictionary.put(PLACE_OF_DELIVERY, hblModel.podCountry);
@@ -908,6 +909,19 @@ public class HblReport extends IReport{
                     null
             ));
         }
+
+        if(hblModel.isHbl) {
+            dictionary.put(PACKS, hblModel.blObject.getHblData().getPackageCount());
+            dictionary.put(PACKS_UNIT, hblModel.blObject.getHblData().getPackageType());
+            dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType()));
+            dictionary.put(ReportConstants.DESCRIPTION, hblModel.blObject.getHblData().getCargoDescription());
+        } else {
+            dictionary.put(PACKS, hblModel.shipment.getNoOfPacks());
+            dictionary.put(PACKS_UNIT, hblModel.shipment.getPacksUnit());
+            dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.shipment.getPacksUnit()));
+            dictionary.put(DESCRIPTION, hblModel.shipment.getGoodsDescription());
+        }
+
         dictionary.put(MARKS_N_NUMS, hblModel.shipment.getMarksNum());
         return dictionary;
     }
