@@ -4034,7 +4034,8 @@ public class ShipmentService implements IShipmentService {
             List<ShipmentsContainersMapping> shipmentsContainersMappingList = shipmentsContainersMappingDao.findByShipmentId(shipmentId);
             List<Containers> containers = containerDao.findByConsolidationId(consolidationId);
             boolean showDialog = false;
-            if(shipmentsContainersMappingList != null && containers != null && containers.size() != shipmentsContainersMappingList.size())
+            if(shipmentsContainersMappingList != null && containers != null && containers.size() > 0 &&
+                    containers.size() != shipmentsContainersMappingList.size())
                 showDialog = true;
             int numberOfShipments = 0;
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
