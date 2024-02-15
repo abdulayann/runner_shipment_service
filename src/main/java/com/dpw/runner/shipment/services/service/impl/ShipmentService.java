@@ -4040,7 +4040,19 @@ public class ShipmentService implements IShipmentService {
             boolean showDialog = false;
             if(shipmentsContainersMappingList != null && containers != null && containers.size() > 0 &&
                     containers.size() != shipmentsContainersMappingList.size())
-                showDialog = true;
+            {
+                ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+                if(shipmentSettingsDetails.getMultipleShipmentEnabled() == null || !shipmentSettingsDetails.getMultipleShipmentEnabled()) {
+                    for (Containers containers1 : containers) {
+                        if(containers1.getShipmentsList() == null || containers1.getShipmentsList().size() == 0) {
+                            showDialog = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                    showDialog = true;
+            }
             int numberOfShipments = 0;
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
             if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0)
