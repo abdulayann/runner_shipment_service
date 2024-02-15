@@ -8,10 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
-import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
-import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -425,5 +422,15 @@ public class ConsolidationController {
         return (ResponseEntity<RunnerResponse<GenerateCustomHblResponse>>) consolidationService.generateCustomHouseBLNumber();
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL)})
+    @PostMapping(value = ConsolidationConstants.CONSOLE_BOOKING_FIELD_UPDATE)
+    public ResponseEntity<?> updateConsoleBookingFields(@Valid @RequestBody @NonNull ConsoleBookingRequest request) {
+        try {
+            return consolidationService.updateConsoleBookingFields(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            log.error(e.getLocalizedMessage());
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
 
 }
