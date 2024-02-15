@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentCANModel
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -56,7 +57,7 @@ public class ShipmentCANReport extends IReport {
             shipmentCANModel.tenantDetails = getTenant();
             shipmentCANModel.consolidationModel = getFirstConsolidationFromShipmentId(id);
             shipmentCANModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
-            shipmentCANModel.tenantSettingsResponse = getTenantSettings();
+            shipmentCANModel.tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
             shipmentCANModel.isHBL = getIsHbl(shipmentCANModel.shipmentDetails);
             return shipmentCANModel;
     }
@@ -203,7 +204,7 @@ public class ShipmentCANReport extends IReport {
         }
         TenantModel tenantModel = getTenant();
         dictionary.put(TENANT_NAME, tenantModel.tenantName);
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         dictionary.put(PLACE_OF_RECEIPT, shipmentCANModel.shipmentDetails.getCarrierDetails().getOrigin());
         dictionary.put(PLACE_OF_DELIVERY, shipmentCANModel.shipmentDetails.getCarrierDetails().getDestination());
         dictionary.put(TRANSPORT_MODE, shipmentCANModel.shipmentDetails.getTransportMode());

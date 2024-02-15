@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -47,7 +48,7 @@ public class ContainerManifestPrint extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ConsolidationManifestPrintModel manifestPrintModel = (ConsolidationManifestPrintModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         for (var shipmentDetails : manifestPrintModel.getShipments()) {
             populateShipmentFields(shipmentDetails, false, dictionary);
         }
