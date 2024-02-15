@@ -115,7 +115,7 @@ public class BookingIntegrationsUtility {
         }
     }
 
-//    @Async
+    @Async
     public void createShipment(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, ShipmentDetailsResponse shipmentResponse) {
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
