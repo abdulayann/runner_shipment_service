@@ -83,9 +83,12 @@ public class ReportConstants {
     public static final String ATD_DMY = "AtdDMY";
     public static final String ATD_DMMY = "AtdDMMY";
     public static final String INCO_TERM = "IncoTerm";
+    public static final String INCOTERM = "Incoterm";
     public static final String CHARGEABLE = "Chargeable";
     public static final String CHARGEABLE_UNIT = "ChargableUnit";
     public static final String CHARGEABLE_AND_UNIT = "ChargableAndUnit";
+    public static final String CHARGEABLE_AND_UNIT_ = "ChargeableAndUnit";
+
     public static final String TRANSPORT_MODE = "TransportMode";
     public static final String TRANSPORT_MODE_DESCRIPTION = "TransportModeDescription";
     public static final String SHIPMENT_TYPE_DESCRIPTION = "ShipmentTypeDescription";

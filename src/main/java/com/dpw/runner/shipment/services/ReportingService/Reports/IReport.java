@@ -375,6 +375,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
 
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
+        dictionary.put(ReportConstants.INCOTERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CHARGEABLE_UNIT, shipment.getChargeableUnit());
         dictionary.put(ReportConstants.TRANSPORT_MODE, shipment.getTransportMode());

@@ -21,6 +21,7 @@ public class HblModel implements IDocumentModel{
     public ConsolidationModel consolidation;
     public TenantModel tenant;
     public Hbl blObject;
+    public Boolean isHbl;
     public UsersDto user;
     public String podCountry;
     public List<ShipmentContainers> commonContainers;
