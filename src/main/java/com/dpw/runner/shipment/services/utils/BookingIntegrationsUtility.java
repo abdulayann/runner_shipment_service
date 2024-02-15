@@ -36,6 +36,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -123,7 +124,7 @@ public class BookingIntegrationsUtility {
             }
             try {
                 try {
-                    wait(2000);
+                    TimeUnit.SECONDS.sleep(2);
                 } catch (Exception ex) {
                     log.error("Wait failed due to {}", ex.getMessage());
                 }
