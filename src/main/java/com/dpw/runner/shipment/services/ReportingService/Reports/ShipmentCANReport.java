@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
@@ -49,8 +50,8 @@ public class ShipmentCANReport extends IReport {
     public IDocumentModel getDocumentModel(Long id) {
         ShipmentCANModel shipmentCANModel = new ShipmentCANModel();
             List<Hbl> hblList = hblDao.findByShipmentId(id);
-//            if(hblList == null || hblList.size() == 0)
-//                throw new ValidationException("Bl Object not found!");
+            if(hblList == null || hblList.size() == 0)
+                throw new RunnerException("Bl Object not found!");
             shipmentCANModel.shipmentDetails = getShipment(id);
             shipmentCANModel.tenantDetails = getTenant();
             shipmentCANModel.consolidationModel = getFirstConsolidationFromShipmentId(id);
