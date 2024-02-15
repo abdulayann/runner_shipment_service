@@ -198,8 +198,7 @@ public class HawbReport extends IReport{
                     if(!forwarderReferenceNumberList.isEmpty())
                         dictionary.put(FORWARDER_REFERENCE_NUMBER, String.join(",", forwarderReferenceNumberList));
                 }
-
-                if(Strings.isNullOrEmpty(shipmentRow.getCarrierDetails().getShippingLine())){
+                if(!Strings.isNullOrEmpty(shipmentRow.getCarrierDetails().getShippingLine())){
                     CarrierMasterData carrierData = getCarrier(shipmentRow.getCarrierDetails().getShippingLine());
                     if(!Objects.isNull(carrierData))
                         dictionary.put(CARRIER_NAME, carrierData.getItemDescription());
