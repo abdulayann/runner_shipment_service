@@ -22,4 +22,5 @@ public class EntityTransferCommodityType implements IEntityTranferBaseEntity, Se
     public String DGClass;
     public String FlashPoint;
     public Boolean IsGlobal;
+    public String CommodityDescriptionWithHSCode;
 }
