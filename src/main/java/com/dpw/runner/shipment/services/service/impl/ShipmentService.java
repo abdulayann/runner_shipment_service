@@ -2174,7 +2174,7 @@ public class ShipmentService implements IShipmentService {
             else {
                 for (Containers container : containers.getContent()) {
                     List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
-                    if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
+                    if(shipmentsContainersMappings.isEmpty()) {
                         containerIds.add(container.getId());
                     }
                 }
@@ -2800,6 +2800,7 @@ public class ShipmentService implements IShipmentService {
             entity.setId(id);
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
+                containerRequestList.forEach(e -> e.setShipmentsList(null));
                 updatedContainers = containerDao.updateEntityFromShipmentV1(convertToEntityList(containerRequestList, Containers.class), oldContainers);
             } else if(oldEntity != null && !oldEntity.isEmpty()){
                 updatedContainers = oldEntity.get().getContainersList();
