@@ -96,7 +96,7 @@ public class MasterDataKeyUtils {
                                 break;
                             case CacheConstants.COMMODITY:
                                 EntityTransferCommodityType object11 = (EntityTransferCommodityType) cache.get();
-                                response.put(value, object11.getDescription());
+                                response.put(value, object11.getCommodityDescriptionWithHSCode());
                                 break;
                             case CacheConstants.DG_SUBSTANCES:
                                 EntityTransferDGSubstance object12 = (EntityTransferDGSubstance) cache.get();
