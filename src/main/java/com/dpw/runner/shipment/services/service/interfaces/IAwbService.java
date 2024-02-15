@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import org.springframework.http.ResponseEntity;
 
@@ -21,5 +22,6 @@ public interface IAwbService {
     ResponseEntity<?> generateAwbPaymentInfo(CommonRequestModel commonRequestModel);
     ResponseEntity<?> retrieveByAwbByMawb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> getChargeTypeMasterData(CommonGetRequest commonGetRequest);
 
 }

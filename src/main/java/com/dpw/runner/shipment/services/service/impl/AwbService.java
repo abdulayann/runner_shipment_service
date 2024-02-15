@@ -17,18 +17,15 @@ import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
-import com.dpw.runner.shipment.services.dto.response.AwbCalculationResponse;
-import com.dpw.runner.shipment.services.dto.response.AwbResponse;
-import com.dpw.runner.shipment.services.dto.response.AwbRoutingInfoResponse;
-import com.dpw.runner.shipment.services.dto.response.AwbShipmentInfoResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
+import com.dpw.runner.shipment.services.entity.enums.ChargeTypeCode;
 import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -2777,6 +2774,28 @@ public class AwbService implements IAwbService {
         }
 
         return ResponseHelper.buildSuccessResponse(packsDescriptionValue);
+    }
+
+    @Override
+    public ResponseEntity<?> getChargeTypeMasterData(CommonGetRequest commonGetRequest) {
+        Long chargeTypeId = commonGetRequest.getId();
+        if(chargeTypeId == null)
+            throw new RunnerException("Please provide a valid Id");
+
+        V1RetrieveRequest retrieveRequest = V1RetrieveRequest.builder().EntityId(String.valueOf(chargeTypeId)).build();
+        V1RetrieveResponse v1DataResponse = v1Service.retrieveChargeCodeData(retrieveRequest);
+
+        var chargeType = jsonHelper.convertValue(v1DataResponse.getEntity(), EntityTransferChargeType.class);
+        var res = new AwbChargeTypeMasterDataResponse();
+        for(var i : chargeType.getChargeTypeIntegrations()) {
+            if(i.getIntegrationType().equals(ChargeTypeCode.IATA_Charge_Code)) {
+                res.setIataDescription(i.getIntegrationCode());
+            }
+            if(i.getIntegrationType().equals(ChargeTypeCode.Due_To_Party)) {
+                res.setChargeDue(i.getChargeDue());
+            }
+        }
+        return ResponseHelper.buildSuccessResponse(res);
     }
 
     private String getFormattedAddress(EntityTransferOrganizations organization) {
