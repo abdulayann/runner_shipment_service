@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.utils.ObjectUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -65,7 +66,7 @@ public class DbAccessHelper {
     }
 
     private static void globalSearchCriteria(ListCommonRequest request, Map<String, RunnerEntityMapping> tableName) {
-        if (Objects.isNull(request.getContainsText()))
+        if (StringUtility.isEmpty(request.getContainsText()))
             return;
         List<FilterCriteria> criterias = createCriteriaForGlobalSearch(tableName, request.getContainsText());
         FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(request.getFilterCriteria()).build();
