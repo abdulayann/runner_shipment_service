@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -74,7 +75,7 @@ public class SeawayBillReport extends IReport {
 
 
         if (model.shipment.getShipmentContainersList() != null) {
-            V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
 //            String json = jsonHelper.convertToJson(model.shipment.getShipmentContainersList());
             var values = model.shipment.getShipmentContainersList().stream()
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))

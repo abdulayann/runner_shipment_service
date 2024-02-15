@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -357,7 +358,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.CONTAINER_COUNT, numberToWords(containerCount).toUpperCase());
         dictionary.put(PICKUP_INSTRUCTION, shipment.getPickupDetails() != null ? shipment.getPickupDetails().getPickupDeliveryInstruction() : null);
         dictionary.put(DELIVERY_INSTRUCTIONS, shipment.getDeliveryDetails() != null ? shipment.getDeliveryDetails().getPickupDeliveryInstruction() : null);
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null, tsDateTimeFormat));
         dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null, tsDateTimeFormat));
@@ -1082,7 +1083,7 @@ public abstract class IReport {
             dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notify.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
         }
 
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
 
@@ -1337,7 +1338,7 @@ public abstract class IReport {
 
     public DateTimeFormatter GetDPWDateFormatOrDefault()
     {
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
@@ -1387,7 +1388,7 @@ public abstract class IReport {
     }
 
     public String ConvertToWeightNumberFormat(BigDecimal weight) {
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         return ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
     }
 
@@ -1408,7 +1409,7 @@ public abstract class IReport {
     }
 
     public String ConvertToVolumeNumberFormat(BigDecimal volume) {
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         return ConvertToVolumeNumberFormat(volume, v1TenantSettingsResponse);
     }
     public static String ConvertToVolumeNumberFormat(Object volume, V1TenantSettingsResponse v1TenantSettingsResponse) {
@@ -1474,7 +1475,7 @@ public abstract class IReport {
 
     private String FormatWithoutDecimal(BigDecimal amount, String localCurrency, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(v1TenantSettingsResponse == null)
-            v1TenantSettingsResponse = getTenantSettings();
+            v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
 
         UsersDto user = UserContext.getUser();
         if (!Boolean.TRUE.equals(v1TenantSettingsResponse.getIsGroupingOverseas()) && !Objects.equals(localCurrency, user.getCompanyCurrency())) {
@@ -1593,10 +1594,6 @@ public abstract class IReport {
         return null;
     }
 
-    public V1TenantSettingsResponse getTenantSettings() {
-        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenantSettings();
-        return modelMapper.map(dependentServiceResponse.getData(), V1TenantSettingsResponse.class);
-    }
 
     public List<PackingModel> GetAllShipmentsPacks(List<ShipmentModel> shipmentDetails){
         List<PackingModel> packingList = new ArrayList<>();
@@ -1948,7 +1945,7 @@ public abstract class IReport {
 
         List<Map<String, Object>> packsDictionary = new ArrayList<>();
 
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         for(var pack : shipment.getPackingList()) {
             Map<String, Object> dict = new HashMap<>();
             if(pack.getCommodity() != null)

@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Bo
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingRequestOutModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -233,7 +234,7 @@ public class ShippingRequestOutReport extends IReport {
 
         List<Map<String, Object>> valuesContainer = jsonHelper.readFromJson(jsonContainer, List.class);
 
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         valuesContainer.forEach(v -> {
             if (v.containsKey(ReportConstants.WEIGHT))
                 v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));

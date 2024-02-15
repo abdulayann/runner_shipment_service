@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Co
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -95,8 +96,7 @@ public class HawbReport extends IReport{
             json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.getConsolidationDetails(), GetDPWDateFormatOrDefault());
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        CompletableFuture<V1TenantSettingsResponse> v1TenantSettingsFuture = CompletableFuture.supplyAsync(this::getTenantSettings);
-
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         //TODO- Tenant data
 //        var tenantDetails = ReportHelper.getOrgAddress(siData.tenant.TenantName, siData.tenant.Address1, siData.tenant.Address2, siData.tenant.City, siData.tenant.Email, siData.tenant.Phone, siData.tenant.ZipPostCode, siData.tenant.State);
 //        dictionary[ReportConstants.AGENT] = tenantDetails;
@@ -401,14 +401,7 @@ public class HawbReport extends IReport{
             }
             List<AwbRoutingInfo> routingInfoRows = hawbModel.awb.getAwbRoutingInfo();
             Set<String> carrierSet;
-            //Moving this to beginning and make it an async call
-//            V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
-            String tsDateTimeFormat = null;
-            try {
-                tsDateTimeFormat = v1TenantSettingsFuture.get().getDPWDateFormat();
-            } catch (InterruptedException | ExecutionException e) {
-                log.error(e.getMessage());
-            }
+            String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
             if(routingInfoRows != null && routingInfoRows.size() > 0){
                 locCodes = new HashSet<>();
                 carrierSet = new HashSet<>();
@@ -616,6 +609,10 @@ public class HawbReport extends IReport{
             dictionary.put(ReportConstants.OTHER_CHARGES_IATA_OAT, getOtherChargesDetailsIATAOAT(otherChargesInfoRows, OtherAmountText));
             List<AwbSpecialHandlingCodesMappingInfo> specialHandlingCodesRows = hawbModel.awb.getAwbSpecialHandlingCodesMappings();
             dictionary.put(ReportConstants.SPECIAL_HANDLING_CODE, getSpecialHandlingCodes(specialHandlingCodesRows));
+            if (!Objects.isNull(hawbModel.getShipmentDetails())) {
+                dictionary.put(PICKUP_INSTRUCTION, hawbModel.getShipmentDetails().getPickupDetails() != null ? hawbModel.getShipmentDetails().getPickupDetails().getPickupDeliveryInstruction() : null);
+                dictionary.put(DELIVERY_INSTRUCTIONS, hawbModel.getShipmentDetails().getDeliveryDetails() != null ? hawbModel.getShipmentDetails().getDeliveryDetails().getPickupDeliveryInstruction() : null);
+            }
         }
         return dictionary;
     }

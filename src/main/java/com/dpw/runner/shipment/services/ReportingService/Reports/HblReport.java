@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
@@ -66,7 +67,7 @@ public class HblReport extends IReport{
         HblModel hblModel = new HblModel();
         hblModel.shipment = getShipment(id);
         hblModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
-        hblModel.tenantSettingsResponse = getTenantSettings();
+        hblModel.tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         hblModel.user = UserContext.getUser();
         if(hblModel.shipment != null && hblModel.shipment.getConsolidationList() != null && !hblModel.shipment.getConsolidationList().isEmpty())
         {
@@ -218,7 +219,7 @@ public class HblReport extends IReport{
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         JsonDateFormat(dictionary);
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         if (hblModel.blObject != null) {
             String blObjectJson = jsonHelper.convertToJson(hblModel.blObject);
             Map<String, Object> blObjectDictionary = jsonHelper.convertJsonToMap(blObjectJson);

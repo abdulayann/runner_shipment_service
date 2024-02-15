@@ -66,7 +66,7 @@ public class ArrivalNoticeReport extends IReport {
         populateShipmentOrganizationsLL(arrivalNoticeModel.shipmentDetails, dictionary);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(arrivalNoticeModel.containers));
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, arrivalNoticeModel.containers);
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), v1TenantSettingsResponse.getDPWDateFormat()));
         List<Map<String, Object>> valuesContainer = new ArrayList<>();
         for (ShipmentContainers shipmentContainers : arrivalNoticeModel.containers) {
