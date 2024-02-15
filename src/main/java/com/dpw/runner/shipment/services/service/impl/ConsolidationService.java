@@ -3416,12 +3416,7 @@ public class ConsolidationService implements IConsolidationService {
             } catch (Exception e){
                 log.error("Failed in fetching tenant data from V1 with error : {}", e);
             }
-//
-//            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
-//                response.setHouseBill(generateCustomHouseBL());
-
-            this.addAllMasterDataInSingleCall(null, response, null);
-            this.addAllTenantDataInSingleCall(null, response, null);
+            this.createConsolidationPayload(null, response);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {

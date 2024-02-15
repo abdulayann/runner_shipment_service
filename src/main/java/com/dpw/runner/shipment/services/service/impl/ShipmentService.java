@@ -2919,6 +2919,12 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    /**
+     * * fetchAllMasterDataByKey to be used for direct API
+     * @param shipmentDetails
+     * @param shipmentDetailsResponse
+     * @return
+     */
     public Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
@@ -2939,6 +2945,11 @@ public class ShipmentService implements IShipmentService {
         return masterDataResponse;
     }
 
+    /**
+     * * createShipmentPayload to be used while retrieving shipment
+     * @param shipmentDetails
+     * @param shipmentDetailsResponse
+     */
     public void createShipmentPayload(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         try {
             var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
@@ -3672,8 +3683,7 @@ public class ShipmentService implements IShipmentService {
                 response.setHouseBill(generateCustomHouseBL(null));
             //response.setShipmentId(generateShipmentId());
 
-            this.addAllMasterDataInSingleCall(null, response, null);
-            this.addAllTenantDataInSingleCall(null, response, null);
+            this.createShipmentPayload(null, response);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {
