@@ -122,6 +122,11 @@ public class BookingIntegrationsUtility {
                 log.error("V1 error for bill creation -> {}", ctx.getLastThrowable().getMessage());
             }
             try {
+                try {
+                    wait(2000);
+                } catch (Exception ex) {
+                    log.error("Wait failed due to {}", ex.getMessage());
+                }
                 this.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
             } catch (Exception e) {
                 log.error("Bill creation for shipment with booking reference {} failed due to following error: {}", shipmentResponse.getBookingReference(), e.getMessage());
