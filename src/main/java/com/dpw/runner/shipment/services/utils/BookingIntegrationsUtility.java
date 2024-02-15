@@ -129,7 +129,7 @@ public class BookingIntegrationsUtility {
                 }
                 this.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
             } catch (Exception e) {
-                log.error("Bill creation for shipment with booking reference {} failed due to following error: {}", shipmentResponse.getBookingReference(), e.getMessage());
+                log.error("Event: {} Bill creation  for shipment with booking reference {} failed due to following error: {}", IntegrationType.V1_SHIPMENT_CREATION, shipmentResponse.getBookingReference(), e.getMessage());
                 throw e;
             }
             return ResponseHelper.buildSuccessResponse();
