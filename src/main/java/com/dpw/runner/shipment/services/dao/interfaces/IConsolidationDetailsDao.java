@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
+import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import org.springframework.data.domain.Page;
@@ -23,4 +24,5 @@ public interface IConsolidationDetailsDao {
     List<ConsolidationDetails> findByReferenceNumber(String ref);
     Long findMaxId();
     Boolean isMAWBNumberValid(String masterBill);
+    int updateConsoleBookingFields(ConsoleBookingRequest request);
 }

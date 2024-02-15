@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -432,6 +433,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
         }
         return true;
+    }
+
+    @Override
+    public int updateConsoleBookingFields(ConsoleBookingRequest request){
+        return consolidationRepository.updateConsoleBookingFields(request.getGuid(), request.getBookingId(), request.getBookingStatus(), request.getBookingNumber());
     }
 
 }
