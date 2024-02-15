@@ -509,11 +509,14 @@ public abstract class IReport {
                 }
                 if(shipmentConsigner.getOrgData() != null)
                     dictionary.put(ReportConstants.CONSIGNER_LOCAL_NAME,shipmentConsigner.getOrgData().get("LocalName"));
-                if (consignerAddress.containsKey("rawData")) {
-                    consignorFreeText = ReportHelper.getAddressList(StringUtility.convertToString(consignerAddress.get("rawData")));
+                if (shipmentConsigner.getIsAddressFreeText() != null && shipmentConsigner.getIsAddressFreeText()) {
+                    var rawData = consignerAddress != null && consignerAddress.containsKey("rawData") ? StringUtility.convertToString(consignerAddress.get("rawData")) : null;
+                    consignorFreeText = ReportHelper.getAddressList(rawData);
                     dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
                     dictionary.put(ReportConstants.CONSIGNER_FREETEXTInCaps, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
                     dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+                } else {
+                    dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
                 }
             }
             List<String> consignee = null;
@@ -546,7 +549,7 @@ public abstract class IReport {
 
                 if (shipmentConsignee.getIsAddressFreeText() != null && shipmentConsignee.getIsAddressFreeText())
                 {
-                    String rawData = shipmentConsignee.getAddressData() != null ? String.valueOf(shipmentConsignee.getAddressData().get("rawData")): null;
+                    String rawData = shipmentConsignee.getAddressData() != null && shipmentConsignee.getAddressData().containsKey("rawData")? String.valueOf(shipmentConsignee.getAddressData().get("rawData")): null;
                     List<String> consigneeRawAddress = ReportHelper.getAddressList(rawData);
                     if(consigneeRawAddress != null && consigneeRawAddress.size() > 0)
                     {
@@ -559,6 +562,7 @@ public abstract class IReport {
                 else
                 {
                     dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consigneeFullName == null ? "": consigneeFullName.toUpperCase());
+                    dictionary.put(CONSIGNEE_FREETEXT, consignee);
                 }
             }
             List<String> notify = null;
@@ -578,11 +582,14 @@ public abstract class IReport {
                 }
                 if(shipmentNotify.getOrgData() != null)
                     dictionary.put(ReportConstants.NOTIFY_PARTY_LOCAL_NAME,getValueFromMap(shipmentNotify.getOrgData(),"LocalName"));
-                if (notifyAddress.containsKey(PartiesConstants.RAW_DATA)) {
-                    notifyPartyFreeText = ReportHelper.getAddressList(StringUtility.convertToString(notifyAddress.get(PartiesConstants.RAW_DATA)));
+                if (shipmentNotify.getIsAddressFreeText() != null && shipmentNotify.getIsAddressFreeText()) {
+                    var rawData = notifyAddress != null && notifyAddress.containsKey("rawData") ? StringUtility.convertToString(notifyAddress.get("rawData")) : null;
+                    notifyPartyFreeText = ReportHelper.getAddressList(rawData);
                     dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notifyPartyFreeText);
                     dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT_IN_CAPS, notifyPartyFreeText == null ? null : notifyPartyFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
                     dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notifyPartyFreeText.isEmpty() ? null : StringUtility.toUpperCase(notifyPartyFreeText.get(0)));
+                } else {
+                    dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notify);
                 }
 
             }
@@ -609,8 +616,6 @@ public abstract class IReport {
             dictionary.put(ReportConstants.CONSIGNER,consigner);
             dictionary.put(ReportConstants.CONSIGNEE,consignee);
             dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
-            dictionary.put(ReportConstants.CONSIGNER_FREETEXT,dictionary.get(ReportConstants.CONSIGNER));
-            dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, dictionary.get(ReportConstants.NOTIFY_PARTY));
             dictionary.put(ReportConstants.CLIENT, client);
 
             if(shipment.getPickupDetails() != null && shipment.getPickupDetails().getSourceDetail() != null)
