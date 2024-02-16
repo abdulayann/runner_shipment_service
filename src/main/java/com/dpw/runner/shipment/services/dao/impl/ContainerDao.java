@@ -172,7 +172,7 @@ public class ContainerDao implements IContainerDao {
         Map<Long, Containers> hashMap = containersPage.stream()
                 .collect(Collectors.toMap(Containers::getId, Function.identity()));
         for (Containers req : containers) {
-            Containers oldEntityJson = null;
+            String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
             if (req.getId() != null) {
                 long id = req.getId();
@@ -180,7 +180,7 @@ public class ContainerDao implements IContainerDao {
                     log.debug("Containers is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                oldEntityJson = jsonHelper.convertValue(hashMap.get(id), Containers.class);
+                oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
                 operation = DBOperationType.UPDATE.name();
             }
             req.setBookingId(bookingId);
@@ -189,7 +189,7 @@ public class ContainerDao implements IContainerDao {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .newData(req)
-                                .prevData(oldEntityJson != null ? oldEntityJson : null)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
                                 .parentId(bookingId)
                                 .operation(operation).build()
@@ -206,7 +206,7 @@ public class ContainerDao implements IContainerDao {
         String responseMsg;
         try {
             hashMap.values().forEach(container -> {
-                Containers oldJson = jsonHelper.convertValue(container, Containers.class);
+                String json = jsonHelper.convertToJson(container);
                 delete(container);
                 if(entity != null)
                 {
@@ -214,7 +214,7 @@ public class ContainerDao implements IContainerDao {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
                                         .newData(null)
-                                        .prevData(oldJson)
+                                        .prevData(jsonHelper.readFromJson(json, Containers.class))
                                         .parent(entity)
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
