@@ -592,6 +592,7 @@ public class HblReport extends IReport{
             dictionary.put(SHIPPER_REF_NO, hblModel.shipment.getPickupDetails().getShipperRef());
             dictionary.put(PICKUP_SHIPPERS_REF, hblModel.shipment.getPickupDetails().getShipperRef());
             dictionary.put(PICKUP_INSTRUCTION, hblModel.shipment.getPickupDetails().getPickupDeliveryInstruction());
+            dictionary.put(SHIPMENT_PICKUP_PICKUPINSTRUCTION, hblModel.shipment.getPickupDetails().getPickupDeliveryInstruction());
             dictionary.put(ESTIMATED_READY_FOR_PICKUP, ConvertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
             dictionary.put(PICKUP_TIME, dictionary.get(ESTIMATED_READY_FOR_PICKUP));
             if (hblModel.shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
