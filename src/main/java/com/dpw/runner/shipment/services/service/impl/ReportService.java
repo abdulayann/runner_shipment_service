@@ -350,8 +350,8 @@ public class ReportService implements IReportService {
             DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), hbltype, objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, reportRequest.getTransportMode(), reportRequest.getMultiTemplateCode());
             byte[] pdfByte_Content = null;
             byte[] mainDoc_hawb = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-            byte[] firstpage_hawb = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-            byte[] backprint_hawb = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
+            byte[] firstpage_hawb = GetFromDocumentService(dataRetrived, Pages.getFirstPageId());
+            byte[] backprint_hawb = GetFromDocumentService(dataRetrived, Pages.getBackPrintId());
             List<byte[]> pdfBytes_hawb = getOriginalandCopies(Pages, reportRequest.getReportInfo(), mainDoc_hawb, firstpage_hawb, backprint_hawb, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies());
             pdfByte_Content = CommonUtils.concatAndAddContent(pdfBytes_hawb);
             if (pdfByte_Content == null) throw new ValidationException("Please Upload Valid Template");
