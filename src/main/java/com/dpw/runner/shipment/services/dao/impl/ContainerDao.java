@@ -90,6 +90,11 @@ public class ContainerDao implements IContainerDao {
                 events.setEntityType(Constants.CONTAINER);
             }
         }
+        if(containers.getShipmentsList() != null && !containers.getShipmentsList().isEmpty()){
+            containers.setIsAttached(true);
+        }else{
+            containers.setIsAttached(false);
+        }
         return containerRepository.save(containers);
     }
 
