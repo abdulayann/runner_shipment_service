@@ -28,8 +28,6 @@ import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchReque
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -1254,39 +1252,36 @@ public class ConsolidationService implements IConsolidationService {
         Map<Long, String> hblNumberMap = new HashMap<>();
         boolean lcl = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
         boolean autoUpdate = isAutoUpdate || (consolidationDetails.getAutoUpdateGoodsDesc() != null && consolidationDetails.getAutoUpdateGoodsDesc());
-        if(lcl) {
-            Set<Long> containerSelfDataAdded = new HashSet<>();
-            if(consolidationDetails.getShipmentsList() != null && consolidationDetails.getShipmentsList().size() > 0) {
-                for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-                    boolean setContData = autoUpdate;
-                    if(autoUpdate) {
-                        if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate()) {
-                            if(shipmentDetails.getPackingList() != null && shipmentDetails.getPackingList().size() > 0) {
-                                for (Packing packing : shipmentDetails.getPackingList()) {
-                                    if(packing.getContainerId() != null) {
-                                        setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, packing.getContainerId(), packing.getGoodsDescription(), packing.getHandlingInfo(), null);
-                                    }
+        Set<Long> containerSelfDataAdded = new HashSet<>();
+        if(consolidationDetails.getShipmentsList() != null && consolidationDetails.getShipmentsList().size() > 0) {
+            for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                boolean setContData = autoUpdate;
+                if(autoUpdate && lcl) {
+                    if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate()) {
+                        if(shipmentDetails.getPackingList() != null && shipmentDetails.getPackingList().size() > 0) {
+                            for (Packing packing : shipmentDetails.getPackingList()) {
+                                if(packing.getContainerId() != null) {
+                                    setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, packing.getContainerId(), packing.getGoodsDescription(), packing.getHandlingInfo(), null);
                                 }
                             }
-                            setContData = false;
                         }
+                        setContData = false;
                     }
-                    if(setContData || !IsStringNullOrEmpty(shipmentDetails.getHouseBill())) {
-                        if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
-                            for(Containers containers : shipmentDetails.getContainersList()) {
-                                if(setContData && !containerSelfDataAdded.contains(containers.getId())) {
-                                    containerSelfDataAdded.add(containers.getId());
-                                    setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, containers.getId(), containers.getDescriptionOfGoods(), containers.getHandlingInfo(), shipmentDetails.getHouseBill());
-                                }
-                                else
-                                    setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, containers.getId(), null, null, shipmentDetails.getHouseBill());
-                            }
-                        }
-                    }
-
                 }
-            }
+                if(setContData || !IsStringNullOrEmpty(shipmentDetails.getHouseBill())) {
+                    if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
+                        for(Containers containers : shipmentDetails.getContainersList()) {
+                            if(setContData && !containerSelfDataAdded.contains(containers.getId()) && lcl) {
+                                containerSelfDataAdded.add(containers.getId());
+                                setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, containers.getId(), containers.getDescriptionOfGoods(), containers.getHandlingInfo(), shipmentDetails.getHouseBill());
+                            }
+                            else
+                                setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, containers.getId(), null, null, shipmentDetails.getHouseBill());
+                        }
+                    }
+                }
 
+            }
         }
 
         if(consolidationDetailsResponse.getContainersList() != null && consolidationDetailsResponse.getContainersList().size() > 0) {
