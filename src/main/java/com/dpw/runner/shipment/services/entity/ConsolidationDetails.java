@@ -336,7 +336,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private List<Routings> routingsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy =  "consolidationId")
-    @JsonIgnoreProperties("shipmentsList")
+    @JsonIgnoreProperties(value = "shipmentsList", allowSetters = true)
     @BatchSize(size = 50)
     private List<Containers> containersList;
 
@@ -362,7 +362,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @JoinTable(name = "console_shipment_mapping",
             joinColumns = @JoinColumn(name = "consolidation_id"),
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
-    @JsonIgnoreProperties("consolidationList")
+    @JsonIgnoreProperties(value = "consolidationList", allowSetters = true)
     @BatchSize(size = 50)
     private List<ShipmentDetails> shipmentsList;
 
