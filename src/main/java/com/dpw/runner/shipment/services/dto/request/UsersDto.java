@@ -16,7 +16,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UsersDto implements Serializable {
-
+    private static final long serialVersionUID = 1L;
     private Integer Id;
     public String Username;
     public String DisplayName;
