@@ -76,6 +76,8 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setISFFileMainPage(req.getIsfFileMainPage());
         syncRequest.setAirExportConsolManifest(req.getAirExportConsoleManifest());
         syncRequest.setAirImportConsolManifest(req.getAirImportConsoleManifest());
+        syncRequest.setSeaImportConsolManifest(req.getSeaImportConsoleManifest());
+        syncRequest.setSeaExportConsolManifest(req.getSeaExportConsoleManifest());
 
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(syncRequest).module(SyncingConstants.TENANT_SETTINGS).build());
         syncService.pushToKafka(payload,String.valueOf(req.getId()), String.valueOf(req.getGuid()), SyncingConstants.TENANT_SETTINGS, UUID.randomUUID().toString());
