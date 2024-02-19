@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
+import com.dpw.runner.shipment.services.dto.response.npm.NpmAwbImportRateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
@@ -35,6 +36,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,6 +82,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     @Autowired
     JsonHelper jsonHelper;
+
+    @Autowired
+    ModelMapper modelMapper;
 
     @Value("${NPM.xApikeyV2}")
     private String xApikeyV2;
@@ -230,9 +235,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             NPMImportRatesRequest importRatesRequest = (NPMImportRatesRequest) commonRequestModel.getData();
             var req = jsonHelper.convertToJson(importRatesRequest);
             ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
-            Awb updatedAwb = jsonHelper.convertValue(response.getBody().getData(), Awb.class);
-            log.info("Updated AWB from npm service : {}", updatedAwb);
-            awbDao.save(updatedAwb);
+            NpmAwbImportRateResponse npmAwbImportRateResponse = jsonHelper.convertValue(response.getBody().getData(), NpmAwbImportRateResponse.class);
+            log.info("Updated AWB from npm service : {}", npmAwbImportRateResponse.updatedAwb);
+            awbDao.save(npmAwbImportRateResponse.updatedAwb);
             return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(),0,0);
         } catch (HttpStatusCodeException ex) {
             RunnerResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
