@@ -3506,11 +3506,11 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     public ResponseEntity<?> showCreateBooking(String operation){
-        if(operation.equals("CREATE") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE).isEmpty())){
+        if(operation.equals("CREATE") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE) == null || PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE).size() == 0)){
             throw new UnAuthorizedException("UnAuthorizedException");
         }
 
-        if(operation.equals("VIEW") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_VIEW).isEmpty())){
+        if(operation.equals("VIEW") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_VIEW) == null || PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_VIEW).size() == 0)){
             throw new UnAuthorizedException("UnAuthorizedException");
         }
 
