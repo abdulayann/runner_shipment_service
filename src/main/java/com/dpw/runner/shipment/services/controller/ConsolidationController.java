@@ -433,4 +433,10 @@ public class ConsolidationController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.SHOW_CREATE_BOOKING_SUCCESSFUL)})
+    @GetMapping(ConsolidationConstants.API_RETRIEVE_SHOW_CREATE_BOOKING)
+    public ResponseEntity<RunnerResponse<Void>> showCreateBooking(@ApiParam(value = ConsolidationConstants.SHOW_CREATE_BOOKING_OPERATION) @RequestParam Optional<String> operation) {
+        return (ResponseEntity<RunnerResponse<Void>>) consolidationService.showCreateBooking(operation.toString());
+    }
+
 }
