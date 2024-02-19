@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
+import com.dpw.runner.shipment.services.dao.impl.MawbHawbLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
@@ -702,6 +703,21 @@ public class AwbService implements IAwbService {
 
         // validate the request
         AwbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails);
+
+        List<Awb> awbList = new ArrayList<>();
+        List<AwbPackingInfo> mawbPackingInfo = new ArrayList<>();
+        for (var consoleShipment : consolidationDetails.getShipmentsList()) {
+            if (consoleShipment.getId() != null) {
+                Optional<Awb> linkAwb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst();
+                if (linkAwb.isEmpty()) {
+                    throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
+                }
+                awbList.add(linkAwb.get());
+                if(linkAwb.get().getAwbPackingInfo() != null) {
+                    mawbPackingInfo.addAll(linkAwb.get().getAwbPackingInfo());
+                }
+            }
+        }
 
         //var awbPackingInfo = generateMawbPackingInfo(consolidationDetails);
         // generate Awb Entity
@@ -1452,13 +1468,13 @@ public class AwbService implements IAwbService {
                     List<AwbPackingInfo> mawbPackingInfo = new ArrayList<>();
                     for (var consoleShipment : consolidationDetails.get().getShipmentsList()) {
                         if (consoleShipment.getId() != null) {
-                            Awb linkAwb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst().get();
-                            if (linkAwb == null) {
+                            Optional<Awb> linkAwb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst();
+                            if (linkAwb.isEmpty()) {
                                 throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
                             }
-                            awbList.add(linkAwb);
-                            if(linkAwb.getAwbPackingInfo() != null) {
-                                mawbPackingInfo.addAll(linkAwb.getAwbPackingInfo());
+                            awbList.add(linkAwb.get());
+                            if(linkAwb.get().getAwbPackingInfo() != null) {
+                                mawbPackingInfo.addAll(linkAwb.get().getAwbPackingInfo());
                             }
                         }
                     }
