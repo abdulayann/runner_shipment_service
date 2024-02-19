@@ -3293,6 +3293,8 @@ public class ShipmentService implements IShipmentService {
             shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId() )));
         if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
             vesselList.addAll((masterDataUtils.createInBulkVesselsRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
+        if (!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
+            shipmentDetailsResponse.getRoutingsList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
 
         Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);

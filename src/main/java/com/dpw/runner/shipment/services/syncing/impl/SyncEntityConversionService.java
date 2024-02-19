@@ -43,6 +43,7 @@ public class SyncEntityConversionService {
                         p = modelMapper.map(item, PackingRequestV2.class);
                         p.setOriginName(item.getOrigin());
                         p.setOrigin(null);
+                        p.setCommodityCode(item.getCommodity());
                         if(item.getContainerId() != null && finalMap.containsKey(item.getContainerId()))
                             p.setContainerNumber(finalMap.get(item.getContainerId()));
 
@@ -77,6 +78,7 @@ public class SyncEntityConversionService {
     public Packing packingV1ToV2(PackingRequestV2 packingRequestV2) {
         var packing = modelMapper.map(packingRequestV2, Packing.class);
         packing.setOrigin(packingRequestV2.getOriginName());
+        packing.setCommodity(packingRequestV2.getCommodityCode());
         if(packingRequestV2.getConsolidationGuid() != null) {
             try {
                 packing.setConsolidationId(consolidationDetailsDao.findByGuid(packingRequestV2.getConsolidationGuid()).get().getId());
