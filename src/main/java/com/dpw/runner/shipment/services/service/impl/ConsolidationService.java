@@ -2341,6 +2341,8 @@ public class ConsolidationService implements IConsolidationService {
         List<String> vesselList = new ArrayList<>();
         if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
             vesselList.addAll((masterDataUtils.createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
+        if (!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
+            consolidationDetailsResponse.getRoutingsList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
 
         Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);

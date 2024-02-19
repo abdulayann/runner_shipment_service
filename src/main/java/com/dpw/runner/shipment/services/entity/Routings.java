@@ -49,6 +49,7 @@ public class Routings extends MultiTenancy {
 
     @Column(name = "vessel_name")
     @Size(max=2048, message = "max size is 2048 for vessel_name")
+    @DedicatedMasterData(type = Constants.VESSEL_MASTER_DATA)
     private String vesselName;
 
     @Column(name = "pol")
