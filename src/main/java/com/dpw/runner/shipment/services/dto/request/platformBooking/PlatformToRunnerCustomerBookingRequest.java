@@ -74,4 +74,10 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private String serviceMode;
     @JsonProperty("parentContractId")
     private String parentContractId;
+    @JsonProperty("primarySalesAgentEmail")
+    private String primarySalesAgentEmail;
+    @JsonProperty("secondarySalesAgentEmail")
+    private String secondarySalesAgentEmail;
+    @JsonProperty("salesBranch")
+    private String salesBranch;
 }

@@ -224,8 +224,11 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "parent_contract_id")
     private String parentContractId;
 
-    @Column(name = "sales_agent_email")
-    private String salesAgentEmail;
+    @Column(name = "primary_sales_agent_email")
+    private String primarySalesAgentEmail;
+
+    @Column(name = "secondary_sales_agent_email")
+    private String secondarySalesAgentEmail;
 
     @Column(name = "sales_branch")
     private String salesBranch;
