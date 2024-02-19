@@ -3507,11 +3507,11 @@ public class ConsolidationService implements IConsolidationService {
 
     public ResponseEntity<?> showCreateBooking(String operation){
         if(operation.equals("CREATE") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE) == null || PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE).size() == 0)){
-            throw new UnAuthorizedException("You don't have necessary permission to create Carrier Booking.");
+            throw new RunnerException("You don't have necessary permission to create Carrier Booking.");
         }
 
         if(operation.equals("VIEW") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_VIEW) == null || PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_VIEW).size() == 0)){
-            throw new UnAuthorizedException("You don't have necessary permission to view Carrier Booking.");
+            throw new RunnerException("You don't have necessary permission to view Carrier Booking.");
         }
 
         return new ResponseEntity<>(null, HttpStatus.OK);
