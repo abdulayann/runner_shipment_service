@@ -286,6 +286,9 @@ public class Constants {
 
     public static final String CREDIT_LIMIT = "CREDIT_LIMIT";
 
+    public static final String CARRIER_BOOKING_CREATE = "CarrierBooking:Create";
+    public static final String CARRIER_BOOKING_VIEW = "CarrierBooking:View";
+
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber","descriptionOfGoods","noOfPackages","netWeight","netWeightUnit",
             "grossWeight","grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
