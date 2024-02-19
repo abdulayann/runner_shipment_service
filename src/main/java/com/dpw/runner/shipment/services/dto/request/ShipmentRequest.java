@@ -131,4 +131,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Long clientDpsAddressId;
     private Long consignorDpsAddressId;
     private Long notifyPartyDpsAddressId;
+    private Boolean autoCreateConsole;
 }
