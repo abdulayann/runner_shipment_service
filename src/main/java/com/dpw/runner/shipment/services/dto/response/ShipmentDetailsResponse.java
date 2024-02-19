@@ -162,6 +162,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime updatedAt;
 
     private CustomerCategoryRates customerCategory;
+    private String contractId;
+    private String contractType;
     private String clientCountry;
     private String consignorCountry;
     private String consigneeCountry;
