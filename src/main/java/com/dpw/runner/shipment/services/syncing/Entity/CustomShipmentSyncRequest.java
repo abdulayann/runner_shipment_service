@@ -522,6 +522,10 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String ConsigneeCountryFilter;
     @JsonProperty("NotifyPartyCountryFilter")
     private String NotifyPartyCountryFilter;
+    @JsonProperty("ContractId")
+    private String ContractId;
+    @JsonProperty("ContractType")
+    private String ContractType;
     @JsonProperty("EntryRefNo")
     private String EntryRefNo;
 }
