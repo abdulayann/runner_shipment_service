@@ -261,7 +261,7 @@ public class MawbStocksService implements IMawbStocksService {
             for(int itr = 0; itr<leadingZerosForSeqNumber;itr++){
                 mawbStocksLink.setSeqNumber("0" + mawbStocksLink.getSeqNumber());
             }
-            mawbStocksLink.setMawbNumber((mawbStocksRequest.getAirLinePrefix() + "-" + nums.get(i)));
+            mawbStocksLink.setMawbNumber((mawbStocksRequest.getPrefix() + "-" + nums.get(i)));
             mawbStocksLink.setStatus("Unused");
             requestlist.add(mawbStocksLink);
         }
