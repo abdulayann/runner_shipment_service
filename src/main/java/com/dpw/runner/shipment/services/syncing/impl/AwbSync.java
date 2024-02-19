@@ -1,22 +1,17 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.impl.AwbDao;
-import com.dpw.runner.shipment.services.dao.impl.MawbHawbLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbHawbLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.MawbHawbLink;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.AwbService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
@@ -41,7 +36,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -101,7 +95,7 @@ public class AwbSync implements IAwbSync {
         } else {
             linkedHawb = new ArrayList<>();
         }
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = String.valueOf(awb.getGuid());
         String finalAwb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(awbRequest).module(SyncingConstants.AWB).build());
         syncService.pushToKafka(finalAwb, String.valueOf(awb.getId()), String.valueOf(awb.getGuid()), SyncingConstants.AWB, transactionId);
         linkedHawb.forEach(i -> {
