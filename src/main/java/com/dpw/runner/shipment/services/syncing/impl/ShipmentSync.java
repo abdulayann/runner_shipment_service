@@ -143,6 +143,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setConsigneeCountryFilter(sd.getConsigneeCountry());
         cs.setConsignorCountryFilter(sd.getConsignorCountry());
         cs.setNotifyPartyCountryFilter(sd.getNotifyPartyCountry());
+        cs.setCreatedDate(sd.getShipmentCreatedOn());
 
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
@@ -180,7 +181,7 @@ public class ShipmentSync implements IShipmentSync {
             syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", httpHeaders);
         }
         else
-            syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId);
+            syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", sd.getGuid().toString());
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
     @Override
@@ -267,6 +268,9 @@ public class ShipmentSync implements IShipmentSync {
         cs.setHblDeliveryMode(sd.getAdditionalDetails().getDeliveryMode());
         cs.setChargesApply(sd.getAdditionalDetails().getBLChargesDisplay());
         cs.setExporterStmt(sd.getAdditionalDetails().getBLExporterShipment());
+        cs.setPlaceOfIssueName(sd.getAdditionalDetails().getPlaceOfIssue());
+        cs.setPlaceOfSupplyName(sd.getAdditionalDetails().getPlaceOfSupply());
+        cs.setPaidPlaceName(sd.getAdditionalDetails().getPaidPlace());
     }
 
     private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {

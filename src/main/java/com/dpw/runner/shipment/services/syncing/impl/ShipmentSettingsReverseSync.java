@@ -81,6 +81,8 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
             dest.setIsfFileMainPage(req.getISFFileMainPage());
             dest.setAirExportConsoleManifest(req.getAirExportConsolManifest());
             dest.setAirImportConsoleManifest(req.getAirImportConsolManifest());
+            dest.setSeaImportConsoleManifest(req.getSeaImportConsolManifest());
+            dest.setSeaExportConsoleManifest(req.getSeaExportConsolManifest());
 
             return shipmentSettingsService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(dest));
         } catch (Exception e) {

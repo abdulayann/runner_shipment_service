@@ -16,4 +16,5 @@ public class ShipmentGridChangeResponse implements IRunnerResponse {
     private String summaryShipmentContainer;
     private String summaryConsoleTEU;
     private String summaryShipmentTEU;
+    private String summaryChargeableWeight;
 }

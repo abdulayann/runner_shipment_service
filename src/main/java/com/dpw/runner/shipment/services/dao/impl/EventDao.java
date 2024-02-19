@@ -351,7 +351,7 @@ public class EventDao implements IEventDao {
             } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
                 log.error(e.getMessage());
             }
-            eventRepository.save(eventsRow);
+            eventsRow = eventRepository.save(eventsRow);
             try {
                 eventsSync.sync(List.of(eventsRow));
             } catch (Exception e) {

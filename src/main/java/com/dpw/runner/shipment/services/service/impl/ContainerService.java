@@ -1216,7 +1216,7 @@ public class ContainerService implements IContainerService {
             else {
                 for (Containers container : containers.getContent()) {
                     List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
-                    if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
+                    if(shipmentsContainersMappings.isEmpty()) {
                         containersList.add(container);
                     }
                 }
@@ -1508,6 +1508,10 @@ public class ContainerService implements IContainerService {
                 afterSave(container, isCreate);
             }
         }
+    }
+
+    public ResponseEntity<?> containerSync(List<Long> request) {
+        return containersSync.sync(request, shipmentsContainersMappingDao.findAllByContainerIds(request));
     }
 
     /**

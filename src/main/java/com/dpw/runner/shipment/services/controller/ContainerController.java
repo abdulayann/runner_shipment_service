@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.util.List;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -240,5 +241,18 @@ public class ContainerController {
     @GetMapping(ContainerConstants.CHECK_CONTAINERS_DELETE)
     public ResponseEntity<RunnerListResponse<EventsResponse>> checkForDelete(@RequestParam Long containerId) {
         return (ResponseEntity<RunnerListResponse<EventsResponse>>) containerService.checkForDelete(CommonRequestModel.buildRequest(containerId));
+    }
+
+    @PostMapping(ApiConstants.API_SYNC_CONTAINERS)
+    public ResponseEntity<?> getContainers(@RequestBody @Valid List<Long> request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<?>) containerService.containerSync(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<?>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

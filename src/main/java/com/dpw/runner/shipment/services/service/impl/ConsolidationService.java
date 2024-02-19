@@ -1279,39 +1279,36 @@ public class ConsolidationService implements IConsolidationService {
         Map<Long, String> hblNumberMap = new HashMap<>();
         boolean lcl = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
         boolean autoUpdate = isAutoUpdate || (consolidationDetails.getAutoUpdateGoodsDesc() != null && consolidationDetails.getAutoUpdateGoodsDesc());
-        if(lcl) {
-            Set<Long> containerSelfDataAdded = new HashSet<>();
-            if(consolidationDetails.getShipmentsList() != null && consolidationDetails.getShipmentsList().size() > 0) {
-                for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-                    boolean setContData = autoUpdate;
-                    if(autoUpdate) {
-                        if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate()) {
-                            if(shipmentDetails.getPackingList() != null && shipmentDetails.getPackingList().size() > 0) {
-                                for (Packing packing : shipmentDetails.getPackingList()) {
-                                    if(packing.getContainerId() != null) {
-                                        setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, packing.getContainerId(), packing.getGoodsDescription(), packing.getHandlingInfo(), null);
-                                    }
+        Set<Long> containerSelfDataAdded = new HashSet<>();
+        if(consolidationDetails.getShipmentsList() != null && consolidationDetails.getShipmentsList().size() > 0) {
+            for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                boolean setContData = autoUpdate;
+                if(autoUpdate && lcl) {
+                    if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate()) {
+                        if(shipmentDetails.getPackingList() != null && shipmentDetails.getPackingList().size() > 0) {
+                            for (Packing packing : shipmentDetails.getPackingList()) {
+                                if(packing.getContainerId() != null) {
+                                    setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, packing.getContainerId(), packing.getGoodsDescription(), packing.getHandlingInfo(), null);
                                 }
                             }
-                            setContData = false;
                         }
+                        setContData = false;
                     }
-                    if(setContData || !IsStringNullOrEmpty(shipmentDetails.getHouseBill())) {
-                        if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
-                            for(Containers containers : shipmentDetails.getContainersList()) {
-                                if(setContData && !containerSelfDataAdded.contains(containers.getId())) {
-                                    containerSelfDataAdded.add(containers.getId());
-                                    setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, containers.getId(), containers.getDescriptionOfGoods(), containers.getHandlingInfo(), shipmentDetails.getHouseBill());
-                                }
-                                else
-                                    setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, containers.getId(), null, null, shipmentDetails.getHouseBill());
-                            }
-                        }
-                    }
-
                 }
-            }
+                if(setContData || !IsStringNullOrEmpty(shipmentDetails.getHouseBill())) {
+                    if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
+                        for(Containers containers : shipmentDetails.getContainersList()) {
+                            if(setContData && !containerSelfDataAdded.contains(containers.getId()) && lcl) {
+                                containerSelfDataAdded.add(containers.getId());
+                                setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, containers.getId(), containers.getDescriptionOfGoods(), containers.getHandlingInfo(), shipmentDetails.getHouseBill());
+                            }
+                            else
+                                setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, containers.getId(), null, null, shipmentDetails.getHouseBill());
+                        }
+                    }
+                }
 
+            }
         }
 
         if(consolidationDetailsResponse.getContainersList() != null && consolidationDetailsResponse.getContainersList().size() > 0) {
@@ -1476,6 +1473,13 @@ public class ConsolidationService implements IConsolidationService {
             response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
             response.setSummaryWeight(sumWeight.toString() + " " + weightChargeableUnit);
             response.setSummaryVolume(sumVolume.toString() + " " + volumeChargeableUnit);
+            if(!IsStringNullOrEmpty(consolidationDetails.getContainerCategory()) && consolidationDetails.getContainerCategory().equals(Constants.SHIPMENT_TYPE_LCL)
+            && !IsStringNullOrEmpty(consolidationDetails.getTransportMode()) && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+                double volInM3 = convertUnit(Constants.VOLUME, sumVolume, volumeChargeableUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+                double wtInKg = convertUnit(Constants.MASS, sumWeight, weightChargeableUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+                double chargeableWeight = Math.max(wtInKg / 1000, volInM3);
+                response.setSummaryChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
+            }
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

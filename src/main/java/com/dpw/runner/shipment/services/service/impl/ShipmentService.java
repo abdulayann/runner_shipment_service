@@ -2174,7 +2174,7 @@ public class ShipmentService implements IShipmentService {
             else {
                 for (Containers container : containers.getContent()) {
                     List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
-                    if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
+                    if(shipmentsContainersMappings.isEmpty()) {
                         containerIds.add(container.getId());
                     }
                 }
@@ -2764,6 +2764,7 @@ public class ShipmentService implements IShipmentService {
         List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentRequest.getReferenceNumbersList();
         List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
         List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
+        List<PartiesRequest> shipmentAddressesRequestList = shipmentRequest.getShipmentAddresses();
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
 
         // TODO- implement Validation logic
@@ -2800,6 +2801,7 @@ public class ShipmentService implements IShipmentService {
             entity.setId(id);
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
+                containerRequestList.forEach(e -> e.setShipmentsList(null));
                 updatedContainers = containerDao.updateEntityFromShipmentV1(convertToEntityList(containerRequestList, Containers.class), oldContainers);
             } else if(oldEntity != null && !oldEntity.isEmpty()){
                 updatedContainers = oldEntity.get().getContainersList();
@@ -2877,6 +2879,13 @@ public class ShipmentService implements IShipmentService {
                 Page<ServiceDetails> oldServiceDetails = serviceDetailsDao.findAll(pair.getLeft(), pair.getRight());
                 List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id, oldServiceDetails.stream().toList());
                 entity.setServicesList(updatedServiceDetails);
+            }
+            if (shipmentAddressesRequestList != null) {
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT_ADDRESSES);
+                Pair<Specification<Parties>, Pageable> pair = fetchData(listCommonRequest, Parties.class);
+                Page<Parties> oldParties = partiesDao.findAll(pair.getLeft(), pair.getRight());
+                List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(convertToEntityList(shipmentAddressesRequestList, Parties.class), id, Constants.SHIPMENT_ADDRESSES, oldParties.stream().toList());
+                entity.setShipmentAddresses(updatedParties);
             }
             if (fileRepoRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT);
@@ -4080,8 +4089,21 @@ public class ShipmentService implements IShipmentService {
             List<ShipmentsContainersMapping> shipmentsContainersMappingList = shipmentsContainersMappingDao.findByShipmentId(shipmentId);
             List<Containers> containers = containerDao.findByConsolidationId(consolidationId);
             boolean showDialog = false;
-            if(shipmentsContainersMappingList != null && containers != null && containers.size() != shipmentsContainersMappingList.size())
-                showDialog = true;
+            if(shipmentsContainersMappingList != null && containers != null && containers.size() > 0 &&
+                    containers.size() != shipmentsContainersMappingList.size())
+            {
+                ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+                if(shipmentSettingsDetails.getMultipleShipmentEnabled() == null || !shipmentSettingsDetails.getMultipleShipmentEnabled()) {
+                    for (Containers containers1 : containers) {
+                        if(containers1.getShipmentsList() == null || containers1.getShipmentsList().size() == 0) {
+                            showDialog = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                    showDialog = true;
+            }
             int numberOfShipments = 0;
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
             if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0)
