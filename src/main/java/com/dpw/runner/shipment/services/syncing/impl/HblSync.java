@@ -76,7 +76,7 @@ public class HblSync implements IHblSync {
             }
         }
         String finalHbl = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(hblRequest).module(SyncingConstants.HBL).build());
-        syncService.pushToKafka(finalHbl, StringUtility.convertToString(hbl.getId()), StringUtility.convertToString(hbl.getGuid()), "HBL", StringUtility.convertToString(hbl.getGuid()));
+        syncService.pushToKafka(finalHbl, StringUtility.convertToString(hbl.getId()), StringUtility.convertToString(hbl.getGuid()), "HBL", transactionId);
         return ResponseHelper.buildSuccessResponse(modelMapper.map(finalHbl, HblDataRequestV2.class));
     }
 
