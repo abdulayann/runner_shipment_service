@@ -2963,6 +2963,8 @@ public class AwbService implements IAwbService {
 
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(id);
         List<Long> shipmentIdList = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).collect(Collectors.toList());
+        List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(awb.getId());
+        Set<Long> shipmentAwbIdSet = mawbHawbLinks.stream().map(MawbHawbLink::getHawbId).collect(Collectors.toSet());
         // Check whether HAWB is generated for all the linked shipments
         for(var shipmentId : shipmentIdList) {
             List<Awb> response = awbDao.findByShipmentId(shipmentId);
@@ -2970,10 +2972,14 @@ public class AwbService implements IAwbService {
               allHawbsGenerated = false;
               break;
             }
+            else if(!shipmentAwbIdSet.contains(response.get(0).getId())) {
+                errors.add("Additional Shipments have been attached, please reset data as required.");
+                break;
+            }
         }
 
         if(!allHawbsGenerated)
-            errors.add("Additional Shipments have been attached, please reset data as required.");
+            throw new RunnerException("To Generate Mawb, Please create Hawb for all the shipments attached");
 
         return errors.size() > 0 ? errors.toString() : null;
     }
