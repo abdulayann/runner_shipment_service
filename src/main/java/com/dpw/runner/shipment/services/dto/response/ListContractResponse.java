@@ -114,6 +114,21 @@ public class ListContractResponse implements IRunnerResponse {
         private String mode_of_transport;
         @JsonProperty("shipment_movement")
         private String shipment_movement;
+        @JsonProperty("branch_info")
+        private BranchInfo branch_info;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class BranchInfo {
+        @JsonProperty("id")
+        private String id;
+        @JsonProperty("country")
+        private String country;
+        @JsonProperty("opportunity_owner_email_ids")
+        private List<String> opportunity_owner_email_ids;
     }
 
     @Data
