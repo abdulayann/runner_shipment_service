@@ -53,7 +53,6 @@ public class PackingResponse implements IRunnerResponse {
     private String referenceNumber;
     private String DGClass;
     private Boolean hazardous;
-    private Long commodityId;
     @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal netWeight;
     private String netWeightUnit;

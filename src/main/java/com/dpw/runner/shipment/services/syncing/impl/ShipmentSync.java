@@ -218,7 +218,8 @@ public class ShipmentSync implements IShipmentSync {
                     t = modelMapper.map(item, TruckDriverDetailsRequestV2.class);
                     t.setTransporterNameOrg(item.getTransporterName());
                     //ENUM
-                    t.setTransporterTypeString(item.getTransporterType().toString());
+                    if(item.getTransporterType() != null)
+                        t.setTransporterTypeString(item.getTransporterType().toString());
                     return t;
                 })
                 .collect(Collectors.toList());
