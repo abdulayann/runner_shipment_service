@@ -1516,6 +1516,10 @@ public class ContainerService implements IContainerService {
         }
     }
 
+    public ResponseEntity<?> containerSync(List<Long> request) {
+        return containersSync.sync(request, shipmentsContainersMappingDao.findAllByContainerIds(request));
+    }
+
     /**
      * V1 -> V2 sync
      */

@@ -453,7 +453,7 @@ public class ProductIdentifierUtility {
             String counter =
                     getNextNumberHelper.padLeft(productSequence.getSerialCounter().toString(), numberOfDigits, '0');
             result = (result == null ? new StringBuilder("null") : result).append(counter);
-            productSequenceConfigDao.save(productSequence);
+            productSequence = productSequenceConfigDao.save(productSequence);
             try {
               shipmentSettingsSync.syncProductSequence(productSequence);
             } catch (Exception e) {
