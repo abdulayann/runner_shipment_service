@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum ChargeTypeCode {
     Client_Charge_Code(1),
     Fusion_Memo_Line(2),
@@ -24,5 +27,20 @@ public enum ChargeTypeCode {
     int id;
     ChargeTypeCode(int id) {
         this.id = id;
+    }
+
+    @JsonValue
+    public int getId() {
+        return id;
+    }
+
+    @JsonCreator
+    public static ChargeTypeCode fromId(int id) {
+        for (ChargeTypeCode chargeTypeCode : ChargeTypeCode.values()) {
+            if (chargeTypeCode.id == id) {
+                return chargeTypeCode;
+            }
+        }
+        throw new IllegalArgumentException("Invalid ChargeTypeCode id: " + id);
     }
 }
