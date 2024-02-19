@@ -1,16 +1,18 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
+import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -30,6 +32,9 @@ import java.util.Optional;
 public class EventsController {
     @Autowired
     private IEventService eventService;
+
+    @Autowired
+    private IEventsSync eventsSync;
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = EventConstants.EVENT_CREATE_SUCCESS),
@@ -114,5 +119,18 @@ public class EventsController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping(ApiConstants.API_SYNC_EVENTS)
+    public ResponseEntity<?> getEvents(@RequestBody @Valid List<Events> request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<?>) eventsSync.sync(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<?>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

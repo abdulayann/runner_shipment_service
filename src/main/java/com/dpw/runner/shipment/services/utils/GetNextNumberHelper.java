@@ -125,7 +125,7 @@ public class GetNextNumberHelper {
       throw new ValidationException("CONFIGURED_SEQUENCE_LENGTH_VALIDATION");
     }
     if (updateCounter) {
-      productSequenceConfigDao.save(sequenceSettings);
+      sequenceSettings = productSequenceConfigDao.save(sequenceSettings);
       try {
         shipmentSettingsSync.syncProductSequence(sequenceSettings);
       } catch (Exception e) {

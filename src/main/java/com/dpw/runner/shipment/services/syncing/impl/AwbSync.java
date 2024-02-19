@@ -1,22 +1,17 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.impl.AwbDao;
-import com.dpw.runner.shipment.services.dao.impl.MawbHawbLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbHawbLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.MawbHawbLink;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.AwbService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
@@ -103,11 +98,11 @@ public class AwbSync implements IAwbSync {
         }
         String transactionId = UUID.randomUUID().toString();
         String finalAwb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(awbRequest).module(SyncingConstants.AWB).build());
-        syncService.pushToKafka(finalAwb, String.valueOf(awb.getId()), String.valueOf(awb.getGuid()), SyncingConstants.AWB, transactionId);
+        syncService.pushToKafka(finalAwb, String.valueOf(awb.getId()), String.valueOf(awb.getGuid()), SyncingConstants.AWB, String.valueOf(awb.getGuid()));
         linkedHawb.forEach(i -> {
             AwbRequestV2 hawbSyncRequest = generateAwbSyncRequest(i);
             String finalHawb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(hawbSyncRequest).module(SyncingConstants.AWB).build());
-            syncService.pushToKafka(finalHawb, String.valueOf(i.getId()), String.valueOf(i.getGuid()), SyncingConstants.AWB, transactionId);
+            syncService.pushToKafka(finalHawb, String.valueOf(i.getId()), String.valueOf(i.getGuid()), SyncingConstants.AWB, String.valueOf(i.getGuid()));
         });
         return ResponseHelper.buildSuccessResponse(modelMapper.map(finalAwb, HblDataRequestV2.class));
     }
