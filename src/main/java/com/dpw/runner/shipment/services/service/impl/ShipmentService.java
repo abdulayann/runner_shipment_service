@@ -2764,6 +2764,7 @@ public class ShipmentService implements IShipmentService {
         List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentRequest.getReferenceNumbersList();
         List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
         List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
+        List<PartiesRequest> shipmentAddressesRequestList = shipmentRequest.getShipmentAddresses();
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
 
         // TODO- implement Validation logic
@@ -2878,6 +2879,13 @@ public class ShipmentService implements IShipmentService {
                 Page<ServiceDetails> oldServiceDetails = serviceDetailsDao.findAll(pair.getLeft(), pair.getRight());
                 List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id, oldServiceDetails.stream().toList());
                 entity.setServicesList(updatedServiceDetails);
+            }
+            if (shipmentAddressesRequestList != null) {
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT_ADDRESSES);
+                Pair<Specification<Parties>, Pageable> pair = fetchData(listCommonRequest, Parties.class);
+                Page<Parties> oldParties = partiesDao.findAll(pair.getLeft(), pair.getRight());
+                List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(convertToEntityList(shipmentAddressesRequestList, Parties.class), id, Constants.SHIPMENT_ADDRESSES, oldParties.stream().toList());
+                entity.setShipmentAddresses(updatedParties);
             }
             if (fileRepoRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT);
