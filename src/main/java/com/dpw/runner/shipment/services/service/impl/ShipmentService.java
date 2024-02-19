@@ -1493,7 +1493,7 @@ public class ShipmentService implements IShipmentService {
         shipmentDetails.setContainersList(updatedContainers);
         ConsolidationDetails consolidationDetails = null;
 
-        if(updatedContainers.size() > 0 || shipmentRequest.getAutoCreateConsole()) {
+        if(updatedContainers.size() > 0 || (shipmentRequest.getAutoCreateConsole() != null  && shipmentRequest.getAutoCreateConsole())) {
             if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                 consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
                 if(!Objects.isNull(consolidationDetails))
