@@ -1919,7 +1919,7 @@ public abstract class IReport {
     }
 
     public void populateHasContainerFields(ShipmentModel shipmentModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
-        if (shipmentModel.getContainersList() != null && shipmentModel.getContainersList().size() > 0) {
+        if ((!dictionary.containsKey(SHIPMENT_CONTAINERS) || dictionary.get(SHIPMENT_CONTAINERS) == null) && shipmentModel.getContainersList() != null && shipmentModel.getContainersList().size() > 0) {
             dictionary.put(ReportConstants.SHIPMENT_PACKING_HAS_CONTAINERS, true);
             List<Map<String, Object>> valuesContainer = new ArrayList<>();
             for (ContainerModel containerModel : shipmentModel.getContainersList()) {
