@@ -619,7 +619,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         String prefix = sequenceSettings.getPrefix() == null ? "" : sequenceSettings.getPrefix();
         var user = UserContext.getUser();
-        return getNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.getTenantId(), false, null, false);
+        return getNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.getTenantId(), true, null, false);
     }
 
 
