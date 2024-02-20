@@ -63,7 +63,6 @@ public class HblSync implements IHblSync {
     private String HBL_V1_SYNC_URL;
 
     @Override
-    @Async
     public ResponseEntity<?> sync(Hbl hbl, String transactionId) {
         HblRequestV2 hblRequest = new HblRequestV2();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
