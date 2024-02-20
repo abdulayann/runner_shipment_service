@@ -10,10 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.DetachPacksListDto;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
@@ -641,18 +638,27 @@ public class PackingService implements IPackingService {
     @Override
     public ResponseEntity<?> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception {
         PackContainerNumberChangeRequest request = (PackContainerNumberChangeRequest) commonRequestModel.getData();
-        List<IRunnerResponse> finalContainers = new ArrayList<>();
+        PackContainerNumberChangeResponse response = new PackContainerNumberChangeResponse();
         ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
         if(request.getNewContainer() == null && request.getOldContainer() == null) {
-            return ResponseHelper.buildListSuccessResponse(finalContainers);
+            return ResponseHelper.buildSuccessResponse(response);
         }
-        ShipmentDetails shipmentDetails;
+        ShipmentDetails shipmentDetails = null;
         try {
-            shipmentDetails = shipmentDao.findById(request.getNewPack().getShipmentId()).get();
+            if(request.getNewPack() != null)
+                shipmentDetails = shipmentDao.findById(request.getNewPack().getShipmentId()).get();
+            else if(request.getOldPack() != null)
+                shipmentDetails = shipmentDao.findById(request.getOldPack().getShipmentId()).get();
         }
         catch (Exception e) {
             throw new Exception("Please send correct shipment Id in packing request");
         }
+        Containers oldContainer = null;
+        if(request.getOldContainer() != null)
+            oldContainer = jsonHelper.convertValue(request.getOldContainer(), Containers.class);
+        Containers newContainer = null;
+        if(request.getNewContainer() != null)
+            newContainer = jsonHelper.convertValue(request.getNewContainer(), Containers.class);
         if(shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled()
         && !shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)
                 && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA))) {
@@ -662,15 +668,11 @@ public class PackingService implements IPackingService {
             if(request.getOldPack() != null)
                 oldPacking = jsonHelper.convertValue(request.getOldPack(), Packing.class);
 
-            Containers oldContainer = null;
-            if(request.getOldContainer() != null)
-                oldContainer = jsonHelper.convertValue(request.getOldContainer(), Containers.class);
-            Containers newContainer = null;
-            if(request.getNewContainer() != null)
-                newContainer = jsonHelper.convertValue(request.getNewContainer(), Containers.class);
-
-            if(request.getOldContainer() != null && request.getNewContainer() != null) {
-                if(Objects.equals(request.getOldContainer().getId(), request.getNewContainer().getId())) {
+            if(request.getNewPack() == null) { // delete pack scenario
+                oldContainer = subtractWeightVolume(oldPacking, oldContainer);
+            }
+            else {
+                if(request.getOldContainer() != null && request.getNewContainer() != null && Objects.equals(request.getOldContainer().getId(), request.getNewContainer().getId())) {
                     newContainer = subtractWeightVolume(oldPacking, newContainer);
                     oldContainer = null;
                 }
@@ -679,20 +681,16 @@ public class PackingService implements IPackingService {
                 }
                 newContainer = addWeightVolume(newPacking, newContainer);
             }
-            else {
-                oldContainer = subtractWeightVolume(oldPacking, oldContainer);
-                newContainer = addWeightVolume(newPacking, newContainer);
-            }
-            if(oldContainer != null) {
-                containerService.calculateUtilization(oldContainer);
-                finalContainers.add(jsonHelper.convertValue(oldContainer, ContainerResponse.class));
-            }
-            if(newContainer != null) {
-                containerService.calculateUtilization(newContainer);
-                finalContainers.add(jsonHelper.convertValue(newContainer, ContainerResponse.class));
-            }
         }
-        return ResponseHelper.buildListSuccessResponse(finalContainers);
+        if(oldContainer != null) {
+            containerService.calculateUtilization(oldContainer);
+            response.setOldContainer(jsonHelper.convertValue(oldContainer, ContainerResponse.class));
+        }
+        if(newContainer != null) {
+            containerService.calculateUtilization(newContainer);
+            response.setNewContainer(jsonHelper.convertValue(newContainer, ContainerResponse.class));
+        }
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
     public PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory, ShipmentMeasurementDetailsDto dto) throws Exception {
