@@ -158,4 +158,6 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private String cancelledBLSuffix;
     private Integer volumeDecimalPlace;
     private Integer weightDecimalPlace;
+    private Boolean restrictBLEdit;
+    private Boolean restrictAWBEdit;
 }
