@@ -36,7 +36,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -96,13 +95,13 @@ public class AwbSync implements IAwbSync {
         } else {
             linkedHawb = new ArrayList<>();
         }
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = String.valueOf(awb.getGuid());
         String finalAwb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(awbRequest).module(SyncingConstants.AWB).build());
-        syncService.pushToKafka(finalAwb, String.valueOf(awb.getId()), String.valueOf(awb.getGuid()), SyncingConstants.AWB, String.valueOf(awb.getGuid()));
+        syncService.pushToKafka(finalAwb, String.valueOf(awb.getId()), String.valueOf(awb.getGuid()), SyncingConstants.AWB, transactionId);
         linkedHawb.forEach(i -> {
             AwbRequestV2 hawbSyncRequest = generateAwbSyncRequest(i);
             String finalHawb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(hawbSyncRequest).module(SyncingConstants.AWB).build());
-            syncService.pushToKafka(finalHawb, String.valueOf(i.getId()), String.valueOf(i.getGuid()), SyncingConstants.AWB, String.valueOf(i.getGuid()));
+            syncService.pushToKafka(finalHawb, String.valueOf(i.getId()), String.valueOf(i.getGuid()), SyncingConstants.AWB, transactionId);
         });
         return ResponseHelper.buildSuccessResponse(modelMapper.map(finalAwb, HblDataRequestV2.class));
     }

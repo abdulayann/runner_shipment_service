@@ -625,7 +625,7 @@ public class ShipmentService implements IShipmentService {
                     notesDao.save(jsonHelper.convertValue(req, Notes.class));
                 }
             }
-            String transactionId = UUID.randomUUID().toString();
+            String transactionId = shipmentDetails.getGuid().toString();
             pushShipmentDataToDependentService(shipmentDetails, true);
             try {
                 shipmentDetails.setNotesList(null);
@@ -1442,7 +1442,7 @@ public class ShipmentService implements IShipmentService {
 
 
     private void syncShipment(ShipmentDetails shipmentDetails, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = shipmentDetails.getGuid().toString();
         try {
             shipmentSync.sync(shipmentDetails, deletedContGuids, null, transactionId, false);
         } catch (Exception e){

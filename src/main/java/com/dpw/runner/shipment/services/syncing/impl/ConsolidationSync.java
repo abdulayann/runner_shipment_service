@@ -129,7 +129,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setGuid(request.getGuid());
         String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
 //        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(consolidationRequest, request.getId(), request.getGuid())), commonUtils.syncExecutorService);
-        syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", StringUtility.convertToString(request.getGuid()));
+        syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId);
         return ResponseHelper.buildSuccessResponse(response);
     }
 
