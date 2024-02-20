@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
@@ -80,6 +81,7 @@ import org.springframework.util.StringUtils;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -1904,6 +1906,7 @@ public class ShipmentService implements IShipmentService {
         for (int i = 0; i < shipmentListResponseData.size(); i++) {
             Row itemRow = sheet.createRow(i + 2);
             ShipmentListResponse shipment = (ShipmentListResponse) shipmentListResponseData.get(i);
+            LocalTimeZoneHelper.transformTimeZone(shipment);
             var shipmentBasicValues = parser.getAllAttributeValuesAsList(shipment);
             int offset = 0;
             for (int j = 0; j < shipmentBasicValues.size(); j++)
