@@ -25,6 +25,8 @@ public class PermissionsContext {
         List<String> consolidationRetrievePermission = new ArrayList<>();
         List<String> consolidationCreatePermission = new ArrayList<>();
         List<String> consolidationUpdatePermission = new ArrayList<>();
+        List<String> carrierBookingCreate = new ArrayList<>();
+        List<String> carrierBookingView = new ArrayList<>();
 
         for (String permission : UserPermissions) {
             if(permission.endsWith(SHIPMENT_LIST_PERMISSION))
@@ -43,6 +45,10 @@ public class PermissionsContext {
                 consolidationCreatePermission.add(permission);
             if(permission.endsWith(CONSOLIDATION_UPDATE_PERMISSION))
                 consolidationUpdatePermission.add(permission);
+            if(permission.equals(CARRIER_BOOKING_CREATE))
+                carrierBookingCreate.add(CARRIER_BOOKING_CREATE);
+            if(permission.equals(CARRIER_BOOKING_VIEW))
+                carrierBookingView.add(CARRIER_BOOKING_VIEW);
         }
 
         Permissions.set(Map.ofEntries(
@@ -53,7 +59,9 @@ public class PermissionsContext {
                 Map.entry(CONSOLIDATION_LIST_PERMISSION, consolidationListPermission),
                 Map.entry(CONSOLIDATION_RETRIEVE_PERMISSION, consolidationRetrievePermission),
                 Map.entry(CONSOLIDATION_CREATE_PERMISSION, consolidationCreatePermission),
-                Map.entry(CONSOLIDATION_UPDATE_PERMISSION, consolidationUpdatePermission)
+                Map.entry(CONSOLIDATION_UPDATE_PERMISSION, consolidationUpdatePermission),
+                Map.entry(CARRIER_BOOKING_CREATE, carrierBookingCreate),
+                Map.entry(CARRIER_BOOKING_VIEW, carrierBookingView)
         ));
     }
     public static void removePermissions(){

@@ -32,4 +32,10 @@ public class ConsolidationConstants {
     public static final String DEFAULT_CONSOLIDATION_GENERATED_SUCCESSFULLY = "Default consolidation generated successfully";
     public static final String GENERATE_CUSTOM_HOUSE_BL = "/generate/customBol";
     public static final String CONSOLE_BOOKING_FIELD_UPDATE = "/update/console-booking-fields";
+
+    public static final String SHOW_CREATE_BOOKING_SUCCESSFUL = "show or create bookingSuccessful";
+
+    public static final String  API_RETRIEVE_SHOW_CREATE_BOOKING = "/retrieve/show_create_booking";
+
+    public static final String SHOW_CREATE_BOOKING_OPERATION = "Operation Name (CREATE/VIEW)";
 }
