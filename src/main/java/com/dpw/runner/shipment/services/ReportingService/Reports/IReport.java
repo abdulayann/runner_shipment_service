@@ -1717,11 +1717,9 @@ public abstract class IReport {
                 }
             }
 
-            shipmentContainer.shipmentContainers = shipment.getContainersList()
-                    .stream()
-                    .map(i -> getShipmentContainer(
-                            jsonHelper.convertValue(i, ContainerModel.class)
-                    )).toList();
+            shipmentContainer.shipmentContainers = shipment.getContainersList().stream()
+                    .map(i -> jsonHelper.convertValue(i, ShipmentContainers.class))
+                    .toList();
 
             shipmentContainer.consigneeAddressFreeText = getPartyAddress(shipment.getConsignee());
             shipmentContainer.consignerAddressFreeText = getPartyAddress(shipment.getConsigner());
