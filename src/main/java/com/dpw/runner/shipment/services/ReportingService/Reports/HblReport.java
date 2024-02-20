@@ -870,7 +870,12 @@ public class HblReport extends IReport{
         if(hblModel.shipment.getBookingCarriagesList() != null){
             for(var bookingCarriage : hblModel.shipment.getBookingCarriagesList()) {
                 if(bookingCarriage.getCarriageType().equals(PRE_CARRIAGE)){
-                    bookingCarriageVesselVoyage.add(getVesselsData(bookingCarriage.getVessel()).getName());
+                    var carriage = getMasterListData(MasterDataType.CARRIAGE_MODE ,bookingCarriage.getCarriageMode());
+                    if(!Objects.isNull(carriage))
+                        bookingPreCarriageMode.add(carriage.getItemDescription());
+                    var vessel = getVesselsData(bookingCarriage.getVessel());
+                    if(!Objects.isNull(vessel))
+                        bookingCarriageVesselVoyage.add(vessel.getName());
                     bookingCarriageVesselVoyage.add(bookingCarriage.getVoyage());
                 }
             }
