@@ -68,9 +68,9 @@ public class CreateBookingModuleInV1 {
         private String ConsignorCountryFilter;
         private String ConsigneeCountryFilter;
         private String NotifyPartyCountryFilter;
-        private String SalesBranch;
-        private String PrimarySalesAgentEmail;
-        private String SecondarySalesAgentEmail;
+//        private String SalesBranch;
+//        private String PrimarySalesAgentEmail;
+//        private String SecondarySalesAgentEmail;
 
         private List<QuoteContainer> QuoteContainers;
         private List<Routing> RoutingList;
