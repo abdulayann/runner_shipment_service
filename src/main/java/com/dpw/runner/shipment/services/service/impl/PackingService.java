@@ -643,12 +643,12 @@ public class PackingService implements IPackingService {
         PackContainerNumberChangeRequest request = (PackContainerNumberChangeRequest) commonRequestModel.getData();
         List<IRunnerResponse> finalContainers = new ArrayList<>();
         ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
-        if(request.getNewContainerId() == null && request.getOldContainerId() == null) {
+        if(request.getNewContainer() == null && request.getOldContainer() == null) {
             return ResponseHelper.buildListSuccessResponse(finalContainers);
         }
         ShipmentDetails shipmentDetails;
         try {
-            shipmentDetails = shipmentDao.findById(request.getPack().getShipmentId()).get();
+            shipmentDetails = shipmentDao.findById(request.getNewPack().getShipmentId()).get();
         }
         catch (Exception e) {
             throw new Exception("Please send correct shipment Id in packing request");
@@ -657,30 +657,35 @@ public class PackingService implements IPackingService {
         && !shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)
                 && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA))) {
 
-            Packing newPacking = jsonHelper.convertValue(request.getPack(), Packing.class);
+            Packing newPacking = jsonHelper.convertValue(request.getNewPack(), Packing.class);
             Packing oldPacking = newPacking;
-            if(request.getPack().getId() != null) {
-                oldPacking = packingDao.findById(request.getPack().getId()).get();
-            }
+            if(request.getOldPack() != null)
+                oldPacking = jsonHelper.convertValue(request.getOldPack(), Packing.class);
 
             Containers oldContainer = null;
-            if(request.getOldContainerId() != null)
-                oldContainer = containersDao.findById(request.getOldContainerId()).get();
+            if(request.getOldContainer() != null)
+                oldContainer = jsonHelper.convertValue(request.getOldContainer(), Containers.class);
             Containers newContainer = null;
-            if(request.getNewContainerId() != null)
-                newContainer = containersDao.findById(request.getNewContainerId()).get();
+            if(request.getNewContainer() != null)
+                newContainer = jsonHelper.convertValue(request.getNewContainer(), Containers.class);
 
-            if(request.getOldContainerId() != null && request.getNewContainerId() != null && request.getOldContainerId().equals(request.getNewContainerId())) {
-                subtractWeightVolume(oldPacking, newContainer);
-                addWeightVolume(newPacking, newContainer);
+            if(request.getOldContainer() != null && request.getNewContainer() != null) {
+                if(Objects.equals(request.getOldContainer().getId(), request.getNewContainer().getId())) {
+                    newContainer = subtractWeightVolume(oldPacking, newContainer);
+                    oldContainer = null;
+                }
+                else {
+                    oldContainer = subtractWeightVolume(oldPacking, oldContainer);
+                }
+                newContainer = addWeightVolume(newPacking, newContainer);
             }
             else {
                 oldContainer = subtractWeightVolume(oldPacking, oldContainer);
                 newContainer = addWeightVolume(newPacking, newContainer);
-                if(oldContainer != null) {
-                    containerService.calculateUtilization(oldContainer);
-                    finalContainers.add(jsonHelper.convertValue(oldContainer, ContainerResponse.class));
-                }
+            }
+            if(oldContainer != null) {
+                containerService.calculateUtilization(oldContainer);
+                finalContainers.add(jsonHelper.convertValue(oldContainer, ContainerResponse.class));
             }
             if(newContainer != null) {
                 containerService.calculateUtilization(newContainer);
