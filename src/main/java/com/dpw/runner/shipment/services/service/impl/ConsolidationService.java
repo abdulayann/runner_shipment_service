@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
+import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -2844,6 +2845,7 @@ public class ConsolidationService implements IConsolidationService {
         for (int i = 0; i < consoleResponse.size(); i++) {
             Row itemRow = sheet.createRow(i + 2);
             ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
+            LocalTimeZoneHelper.transformTimeZone(consol);
             var consolBasicValues = parser.getAllAttributeValuesAsListConsol(consol);
             int offset = 0;
             for (int j = 0; j < consolBasicValues.size(); j++)
