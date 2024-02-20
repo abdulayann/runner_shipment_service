@@ -179,10 +179,10 @@ public class BookingIntegrationsUtility {
                 .business_code(customerBooking.getBusinessCode())
                 .bill_to_party(Arrays.asList(createOrgRequest(customerBooking.getCustomer())))
                 .parent_contract_id(customerBooking.getParentContractId())
-                .branch_info(ListContractResponse.BranchInfo.builder().
-                        id(customerBooking.getSalesBranch()).
-                        opportunity_owner_email_ids(createEmailIds(customerBooking.getPrimarySalesAgentEmail(), customerBooking.getSecondarySalesAgentEmail())).
-                        build())
+//                .branch_info(ListContractResponse.BranchInfo.builder().
+//                        id(customerBooking.getSalesBranch()).
+//                        opportunity_owner_email_ids(createEmailIds(customerBooking.getPrimarySalesAgentEmail(), customerBooking.getSecondarySalesAgentEmail())).
+//                        build())
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
