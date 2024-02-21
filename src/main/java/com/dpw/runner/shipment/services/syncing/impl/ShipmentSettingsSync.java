@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -13,6 +13,8 @@ import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,9 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     private IV1Service v1Service;
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private V1AuthHelper v1AuthHelper;
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
@@ -87,23 +92,8 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     public ResponseEntity<?> syncProductSequence(ProductSequenceConfig productSequenceConfig, HttpHeaders headers) {
         ProductSequenceConfigDto productSequenceConfigDto = mapProductSequenceConfig(productSequenceConfig);
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(productSequenceConfigDto).module(SyncingConstants.PRODUCT_SEQUENCE).build());
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(payload, headers);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(productSequenceConfig.getId()), String.valueOf(productSequenceConfig.getGuid()),
-                            "Shipment Settings product sequence Details", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Shipment Settings product sequence Details: " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
-
+        HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
+        syncService.callSyncAsync(payload, StringUtility.convertToString(productSequenceConfig.getId()), StringUtility.convertToString(productSequenceConfig.getGuid()), SyncingConstants.PRODUCT_SEQUENCE, httpHeaders);
         return ResponseHelper.buildSuccessResponse(productSequenceConfigDto);
     }
 
