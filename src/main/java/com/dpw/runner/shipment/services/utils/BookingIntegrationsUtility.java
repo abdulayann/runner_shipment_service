@@ -30,6 +30,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -104,9 +105,9 @@ public class BookingIntegrationsUtility {
         }
     }
 
-    public ResponseEntity<?> createShipmentInV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
+    public ResponseEntity<?> createShipmentInV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers) {
         try {
-            var response = v1Service.createBooking(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid);
+            var response = v1Service.createBooking(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid, headers);
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.SUCCESS, "SAVED SUCESSFULLY");
             return response;
         } catch (Exception ex) {
@@ -117,7 +118,7 @@ public class BookingIntegrationsUtility {
     }
 
     @Async
-    public void createShipment(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, ShipmentDetailsResponse shipmentResponse) {
+    public void createShipment(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, ShipmentDetailsResponse shipmentResponse, HttpHeaders headers) {
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if (ctx.getLastThrowable() != null) {
@@ -129,7 +130,7 @@ public class BookingIntegrationsUtility {
                 } catch (Exception ex) {
                     log.error("Wait failed due to {}", ex.getMessage());
                 }
-                this.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
+                this.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid(), headers);
             } catch (Exception e) {
                 log.error("Event: {} Bill creation  for shipment with booking reference {} failed due to following error: {}", IntegrationType.V1_SHIPMENT_CREATION, shipmentResponse.getBookingReference(), e.getMessage());
                 throw e;

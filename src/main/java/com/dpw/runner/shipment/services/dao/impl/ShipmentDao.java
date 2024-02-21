@@ -69,8 +69,6 @@ public class ShipmentDao implements IShipmentDao {
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
-    @Autowired
-    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
     private IMawbStocksDao mawbStocksDao;

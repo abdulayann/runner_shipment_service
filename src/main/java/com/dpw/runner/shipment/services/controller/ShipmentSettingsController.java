@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.ProductSequenceConfigDto;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsReverseSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -163,7 +164,7 @@ public class ShipmentSettingsController {
         String responseMsg;
         try {
             return (ResponseEntity<RunnerResponse<ProductSequenceConfigDto>>) shipmentSettingsSync.syncProductSequence(
-                    jsonHelper.convertValue(request, ProductSequenceConfig.class));
+                    jsonHelper.convertValue(request, ProductSequenceConfig.class), null);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;

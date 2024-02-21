@@ -38,6 +38,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -329,7 +330,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             {
                 ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
                 if(shipmentResponse != null) {
-                    bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse);
+                    bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
                     customerBooking.setShipmentId(shipmentResponse.getShipmentId());
                     customerBooking.setShipmentEntityIdV2(shipmentResponse.getId().toString());
                     customerBooking.setShipmentGuid(shipmentResponse.getGuid().toString());
@@ -339,7 +340,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             else
             {
-                V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking, true, true, null).getBody(), V1ShipmentCreationResponse.class);
+                V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking, true, true, null, V1AuthHelper.getHeaders()).getBody(), V1ShipmentCreationResponse.class);
                 if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
                     customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
                     customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());

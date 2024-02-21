@@ -38,6 +38,7 @@ public class ProductIdentifierUtility {
   @Autowired ProductSequenceConfigDao productSequenceConfigDao;
   @Autowired IShipmentSettingsSync shipmentSettingsSync;
   @Autowired GetNextNumberHelper getNextNumberHelper;
+  @Autowired V1AuthHelper v1AuthHelper;
 
   /**
    * Alternative for v1 constructor call with TenantSettings as a parameter
@@ -455,7 +456,7 @@ public class ProductIdentifierUtility {
             result = (result == null ? new StringBuilder("null") : result).append(counter);
             productSequence = productSequenceConfigDao.save(productSequence);
             try {
-              shipmentSettingsSync.syncProductSequence(productSequence);
+              shipmentSettingsSync.syncProductSequence(productSequence, v1AuthHelper.getHeadersForDataSync());
             } catch (Exception e) {
               log.error("Error performing sync on shipment settings product sequence entity, {}", e);
             }
