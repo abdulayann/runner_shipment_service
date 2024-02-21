@@ -18,8 +18,6 @@ import java.util.List;
 public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long tenantId;
-    private Boolean restrictBLEdit;
-    private Boolean restrictAWBEdit;
     private Boolean autoUpdateShipmentAWB;
     private Boolean autoUpdateShipmentBL;
     private Boolean houseBillNumberLock;
