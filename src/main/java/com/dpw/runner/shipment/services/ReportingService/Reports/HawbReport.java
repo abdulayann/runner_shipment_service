@@ -4,10 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
@@ -63,6 +60,8 @@ public class HawbReport extends IReport{
 
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -264,8 +263,8 @@ public class HawbReport extends IReport{
                 NtrQtyGoods = cargoInfoRows.getNtrQtyGoods();
                 dictionary.put(ReportConstants.NATURE_OF_GOODS, NtrQtyGoods);
                 dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
-
-                masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
+                if(StringUtility.isNotEmpty(cargoInfoRows.getChargeCode()))
+                    masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
             }
             List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo = hawbModel.awb.getAwbGoodsDescriptionInfo();
@@ -279,12 +278,12 @@ public class HawbReport extends IReport{
             masterDataQuery.add(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.FREIGHT_AMOUNT);
             masterDataQuery.add(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.OTHER_AMOUNT);
 
-            if (originAirport != null)
+            if (originAirport != null && originAirport.getCountry() != null)
             {
                 masterDataQuery.add(MasterDataType.COUNTRIES.getDescription() + "#" + originAirport.getCountry());
                 dictionary.put(ReportConstants.AIRPORT_OF_DEPARTURE , upperCase(originAirport.getName()));
             }
-            if (destinationAirport != null)
+            if (destinationAirport != null && destinationAirport.getCountry() != null)
             {
                 masterDataQuery.add(MasterDataType.COUNTRIES.getDescription() + "#" + destinationAirport.getCountry());
                 dictionary.put(ReportConstants.AIRPORT_OF_DESTINATION, upperCase(destinationAirport.getName()));
@@ -342,9 +341,9 @@ public class HawbReport extends IReport{
 
             if (awbGoodsDescriptionInfo != null && awbGoodsDescriptionInfo.size() > 0){
                 String finalNtrQtyGoods = NtrQtyGoods;
-
-                List<Map<String,Object>> values = jsonHelper.convertValue(awbGoodsDescriptionInfo, new TypeReference<>(){});
-                List<Map<String,Object>> valuesFAT = jsonHelper.convertValue(awbGoodsDescriptionInfo, new TypeReference<>(){});
+                List<AwbGoodsDescriptionInfoModel> awbGoodsDescriptionInfoModel = awbGoodsDescriptionInfo.stream().map(x ->modelMapper.map(x, AwbGoodsDescriptionInfoModel.class)).toList();
+                List<Map<String,Object>> values = jsonHelper.convertValue(awbGoodsDescriptionInfoModel, new TypeReference<>(){});
+                List<Map<String,Object>> valuesFAT = jsonHelper.convertValue(awbGoodsDescriptionInfoModel, new TypeReference<>(){});
                 values.forEach(value -> {
                     value.put(ReportConstants.NATURE_QLTY_OF_GOODS, finalNtrQtyGoods);
                     if(value.get(ReportConstants.RATE_CLASS) != null){
