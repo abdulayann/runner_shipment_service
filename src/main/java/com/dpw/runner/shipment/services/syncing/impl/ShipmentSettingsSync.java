@@ -93,7 +93,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         ProductSequenceConfigDto productSequenceConfigDto = mapProductSequenceConfig(productSequenceConfig);
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(productSequenceConfigDto).module(SyncingConstants.PRODUCT_SEQUENCE).build());
         HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
-        syncService.callSyncAsync(payload, StringUtility.convertToString(productSequenceConfig.getId()), StringUtility.convertToString(productSequenceConfig.getGuid()), SyncingConstants.PRODUCT_SEQUENCE, httpHeaders);
+        syncService.callSyncAsync(payload, StringUtility.convertToString(productSequenceConfig.getId()), StringUtility.convertToString(productSequenceConfig.getGuid()), "Shipment Settings product sequence Details", httpHeaders);
         return ResponseHelper.buildSuccessResponse(productSequenceConfigDto);
     }
 
