@@ -212,13 +212,17 @@ public class ListContractResponse implements IRunnerResponse {
     @Builder
     public static class LoadAttributes {
         @JsonProperty("weight")
-        private Long weight;
+        private BigDecimal weight;
         @JsonProperty("quantity")
         private Long quantity;
+        @JsonProperty("volume")
+        private BigDecimal volume;
         @JsonProperty("weight_uom")
         private String weight_uom;
         @JsonProperty("quantity_uom")
         private String quantity_uom;
+        @JsonProperty("volume_uom")
+        private String volume_uom;
         @JsonProperty("dimensions")
         private Dimensions dimensions;
     }
