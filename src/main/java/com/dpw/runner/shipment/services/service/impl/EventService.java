@@ -378,7 +378,7 @@ public class EventService implements IEventService {
                     LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        referenceNumber = optionalConsolidationDetails.get().getReferenceNumber();
+        referenceNumber = optionalConsolidationDetails.get().getConsolidationNumber();
     } else {
         throw new RunnerException("Both shipmentId and consolidationId are empty !");
     }
