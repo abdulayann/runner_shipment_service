@@ -24,10 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
@@ -136,7 +133,25 @@ public class DeliveryOrderReport extends IReport{
             dictionary.put(DELIVERY_TIME,  ConvertToDPWDateFormatWithTime(deliveryTime, v1TenantSettingsResponse.getDPWDateFormat(), true));
         }
 
-        getPackingDetails(deliveryOrderModel.shipmentDetails, dictionary);
+        if(!Objects.isNull(deliveryOrderModel.shipmentDetails.getPackingList()) && !deliveryOrderModel.shipmentDetails.getPackingList().isEmpty()) {
+            getPackingDetails(deliveryOrderModel.shipmentDetails, dictionary);
+            dictionary.put(HAS_PACK_DETAILS, true);
+            var hazardousCheck = deliveryOrderModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
+            var temperatureCheck = deliveryOrderModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
+            if (hazardousCheck)
+                dictionary.put(HAS_DANGEROUS_GOODS, true);
+            else
+                dictionary.put(HAS_DANGEROUS_GOODS, false);
+            if (temperatureCheck)
+                dictionary.put(HAS_TEMPERATURE_DETAILS, true);
+            else
+                dictionary.put(HAS_TEMPERATURE_DETAILS, false);
+
+        } else {
+            dictionary.put(HAS_PACK_DETAILS, false);
+        }
+
+//        getPackingDetails(deliveryOrderModel.shipmentDetails, dictionary);
 
         if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
             List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
