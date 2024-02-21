@@ -1,4 +1,4 @@
 ALTER TABLE IF EXISTS containers
     ADD COLUMN IF NOT EXISTS invoice_number VARCHAR;
-    ADD COLUMN IF NOT EXISTS invoice_value DECIMAL(19,2);
+    ADD COLUMN IF NOT EXISTS invoice_value DECIMAL;
     ADD COLUMN IF NOT EXISTS invoice_currency VARCHAR;
