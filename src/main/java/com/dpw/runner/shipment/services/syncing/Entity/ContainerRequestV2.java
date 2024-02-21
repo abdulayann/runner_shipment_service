@@ -172,4 +172,12 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private Boolean IsAttached;
     @JsonProperty("TruckingDetails")
     private List<TruckDriverDetailsRequestV2> TruckingDetails;
+    @JsonProperty("CommodityGroup")
+    private String CommodityGroup;
+    @JsonProperty("InvoiceNumber")
+    private String InvoiceNumber;
+    @JsonProperty("InvoiceCurrency")
+    private String InvoiceCurrency;
+    @JsonProperty("InvoiceValue")
+    private BigDecimal InvoiceValue;
 }
