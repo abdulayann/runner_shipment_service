@@ -185,7 +185,6 @@ public class ShipmentSync implements IShipmentSync {
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
     @Override
-    @Async
     public void syncLockStatus(ShipmentDetails shipmentDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(shipmentDetails.getGuid()).lockStatus(shipmentDetails.getIsLocked()).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.SHIPMENT_LOCK).build());
@@ -218,7 +217,8 @@ public class ShipmentSync implements IShipmentSync {
                     t = modelMapper.map(item, TruckDriverDetailsRequestV2.class);
                     t.setTransporterNameOrg(item.getTransporterName());
                     //ENUM
-                    t.setTransporterTypeString(item.getTransporterType().toString());
+                    if(item.getTransporterType() != null)
+                        t.setTransporterTypeString(item.getTransporterType().toString());
                     return t;
                 })
                 .collect(Collectors.toList());

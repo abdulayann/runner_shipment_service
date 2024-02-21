@@ -39,6 +39,8 @@ public class GetNextNumberHelper {
 
   @Autowired
   private IShipmentSettingsSync shipmentSettingsSync;
+  @Autowired
+  private V1AuthHelper v1AuthHelper;
 
   public String generateCustomSequence(
       ProductSequenceConfig sequenceSettings,
@@ -125,9 +127,9 @@ public class GetNextNumberHelper {
       throw new ValidationException("CONFIGURED_SEQUENCE_LENGTH_VALIDATION");
     }
     if (updateCounter) {
-      productSequenceConfigDao.save(sequenceSettings);
+      sequenceSettings = productSequenceConfigDao.save(sequenceSettings);
       try {
-        shipmentSettingsSync.syncProductSequence(sequenceSettings);
+        shipmentSettingsSync.syncProductSequence(sequenceSettings, v1AuthHelper.getHeadersForDataSync());
       } catch (Exception e) {
         log.error("Error performing sync on shipment settings product sequence entity, {}", e);
       }

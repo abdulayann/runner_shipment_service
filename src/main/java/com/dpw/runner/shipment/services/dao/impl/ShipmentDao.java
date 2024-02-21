@@ -69,8 +69,6 @@ public class ShipmentDao implements IShipmentDao {
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
-    @Autowired
-    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
     private IMawbStocksDao mawbStocksDao;
@@ -154,7 +152,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
-        if (!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()) &&
+        if (!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()) && (oldShipment != null && !Objects.equals(oldShipment.getStatus(), shipmentDetails.getStatus())) &&
                 Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
             ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             if (tenantSettings != null) {

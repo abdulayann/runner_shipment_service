@@ -581,7 +581,7 @@ public class ShipmentService implements IShipmentService {
                     notesDao.save(jsonHelper.convertValue(req, Notes.class));
                 }
             }
-            String transactionId = UUID.randomUUID().toString();
+            String transactionId = shipmentDetails.getGuid().toString();
             pushShipmentDataToDependentService(shipmentDetails, true);
             try {
                 shipmentDetails.setNotesList(null);
@@ -1397,7 +1397,7 @@ public class ShipmentService implements IShipmentService {
 
 
     private void syncShipment(ShipmentDetails shipmentDetails, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = shipmentDetails.getGuid().toString();
         try {
             shipmentSync.sync(shipmentDetails, deletedContGuids, null, transactionId, false);
         } catch (Exception e){
@@ -1496,7 +1496,7 @@ public class ShipmentService implements IShipmentService {
         shipmentDetails.setContainersList(updatedContainers);
         ConsolidationDetails consolidationDetails = null;
 
-        if(updatedContainers.size() > 0) {
+        if(updatedContainers.size() > 0 || (shipmentRequest.getAutoCreateConsole() != null  && shipmentRequest.getAutoCreateConsole())) {
             if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                 consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
                 if(!Objects.isNull(consolidationDetails))
@@ -2729,7 +2729,7 @@ public class ShipmentService implements IShipmentService {
         if(consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
             for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
                 Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(consolidation.getGuid());
-                if(consolidationDetails.get() != null && consolidationDetails.get().getId() != null) {
+                if(consolidationDetails != null && consolidationDetails.isPresent()) {
                     tempConsolidations.add(consolidationDetails.get());
                 }
             }
@@ -3253,6 +3253,8 @@ public class ShipmentService implements IShipmentService {
             shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId() )));
         if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
             vesselList.addAll((masterDataUtils.createInBulkVesselsRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
+        if (!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
+            shipmentDetailsResponse.getRoutingsList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
 
         Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);

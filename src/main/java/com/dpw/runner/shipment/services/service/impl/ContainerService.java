@@ -912,6 +912,8 @@ public class ContainerService implements IContainerService {
 
     @Override
     public Containers calculateUtilization(Containers container) {
+        if(container == null)
+            return null;
         if(container.getAchievedVolume() == null)
             container.setAchievedVolume(BigDecimal.ZERO);
         if(container.getAchievedWeight() == null)
@@ -1514,6 +1516,10 @@ public class ContainerService implements IContainerService {
                 afterSave(container, isCreate);
             }
         }
+    }
+
+    public ResponseEntity<?> containerSync(List<Long> request) {
+        return containersSync.sync(request, shipmentsContainersMappingDao.findAllByContainerIds(request));
     }
 
     /**

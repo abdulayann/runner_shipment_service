@@ -64,6 +64,7 @@ public class JsonHelper {
         createMapper.addMixIn(ConsolidationDetails.class, ShipmentMixIn.class);
         createMapper.addMixIn(BookingCarriage.class, ShipmentMixIn.class);
         createMapper.addMixIn(Notes.class, ShipmentMixIn.class);
+        createMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);

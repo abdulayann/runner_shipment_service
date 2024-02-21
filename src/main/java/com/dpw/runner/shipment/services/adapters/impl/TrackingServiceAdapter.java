@@ -272,11 +272,11 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     private List<UniversalTrackingPayload.EntityDetail> GetAWBDetailsFromShipment(ShipmentDetails inputShipment) {
         List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
         List<Awb> awbList = awbDao.findByShipmentId(inputShipment.getId());
-        if(awbList != null && awbList.size() > 0)
-            result.add(UniversalTrackingPayload.EntityDetail.builder()
-                        .trackingNumber(inputShipment.getHouseBill())
-                        .allocationDate(awbList.get(0).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+        result.add(UniversalTrackingPayload.EntityDetail.builder()
+                .trackingNumber(inputShipment.getHouseBill())
+                .allocationDate(awbList == null || awbList.size() == 0 ? null: awbList.get(0).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
                 .build());
+
         return result;
     }
 

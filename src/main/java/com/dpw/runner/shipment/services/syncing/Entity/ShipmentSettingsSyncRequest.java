@@ -9,6 +9,14 @@ import java.util.List;
 @Data
 public class ShipmentSettingsSyncRequest implements IRunnerRequest {
 
+    @JsonProperty("RestrictAWBEdit")
+    private Boolean RestrictAWBEdit;
+    @JsonProperty("RestrictBLEdit")
+    private Boolean RestrictBLEdit;
+    @JsonProperty("AutoUpdateShipmentAWB")
+    private Boolean AutoUpdateShipmentAWB;
+    @JsonProperty("AutoUpdateShipmentBL")
+    private Boolean AutoUpdateShipmentBL;
     @JsonProperty("TenantId")
     private Integer TenantId;
     @JsonProperty("HousebillNumberLock")

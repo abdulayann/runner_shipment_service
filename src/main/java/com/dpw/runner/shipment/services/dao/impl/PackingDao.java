@@ -538,7 +538,7 @@ public class PackingDao implements IPackingDao {
             Packing oldEntity;
             Map<String, Long> contMap = new HashMap<>();
             if(containers != null) {
-                contMap = containers.stream().collect(Collectors.toMap(Containers::getContainerNumber, Containers::getId));
+                contMap = containers.stream().filter(container -> !IsStringNullOrEmpty(container.getContainerNumber())).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getId));
             }
             List<Packing> packingRequestList = new ArrayList<>();
             if (packingList != null && packingList.size() != 0) {
