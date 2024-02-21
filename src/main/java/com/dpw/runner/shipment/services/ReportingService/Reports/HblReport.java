@@ -380,7 +380,7 @@ public class HblReport extends IReport{
             referenceNumber = hblModel.shipment.getReferenceNumbersList().stream().findFirst()
                     .filter(i -> i.getType().equals(ERN));
         }
-        if (referenceNumber.isEmpty() && hblModel.consolidation != null) {
+        if (referenceNumber.isEmpty() && hblModel.consolidation != null && hblModel.consolidation.getReferenceNumbersList() != null) {
             referenceNumber = hblModel.consolidation.getReferenceNumbersList().stream().findFirst()
                     .filter(i -> i.getType().equals(ERN));
         }
