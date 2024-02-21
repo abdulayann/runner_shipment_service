@@ -238,6 +238,8 @@ public class ListContractResponse implements IRunnerResponse {
         private Long height;
         @JsonProperty("length")
         private Long length;
+        @JsonProperty("uom")
+        private String uom;
     }
 
 }
