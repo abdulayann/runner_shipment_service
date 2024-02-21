@@ -848,7 +848,7 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        updateLinkedShipmentData(consol.get(), null);
+        updateLinkedShipmentData(consol.get(), null, true);
         try {
             consolidationSync.sync(consol.get(), UUID.randomUUID().toString());
         }
@@ -1051,7 +1051,7 @@ public class ConsolidationService implements IConsolidationService {
      * @param console
      * @param oldEntity
      */
-    private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity) {
+    private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) {
         if(console != null && (oldEntity == null ||  !Objects.equals(console.getBol(),oldEntity.getBol()) ||
                 !Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
@@ -1077,7 +1077,13 @@ public class ConsolidationService implements IConsolidationService {
                             i.getCarrierDetails().setVessel(console.getCarrierDetails().getVessel());
                             i.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
                             i.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
+                            if(fromAttachShipment != null && fromAttachShipment){
+                                i.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
+                                i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
+                                i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
+                            }
                         }
+
                         return i;
                     }).toList();
 
@@ -2931,7 +2937,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setMawb(consolidationDetails.getBol());
         }
         if(!isCreate){
-            updateLinkedShipmentData(consolidationDetails, oldEntity);
+            updateLinkedShipmentData(consolidationDetails, oldEntity, false);
         }
         if(consolidationDetails.getCarrierDetails() != null) {
             if (consolidationDetails.getTransportMode() != null && consolidationDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
