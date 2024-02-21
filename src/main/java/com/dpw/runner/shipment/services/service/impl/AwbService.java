@@ -1978,6 +1978,9 @@ public class AwbService implements IAwbService {
                     if(awbPacking.getGuid() != null && awbPacking.getAwbGoodsDescriptionInfoGuid() == null) {
                         awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
                         totalPacksCount += Integer.parseInt(awbPacking.getPacks());
+                        if(awbGoodsDescriptionInfo.getAwbPackingInfo() == null){
+                            awbGoodsDescriptionInfo.setAwbPackingInfo(new ArrayList<>());
+                        }
                         awbGoodsDescriptionInfo.getAwbPackingInfo().add(awbPacking);
                     }
                 }
@@ -2004,11 +2007,14 @@ public class AwbService implements IAwbService {
             }
             if(awb.getAwbPackingInfo() != null) {
                 for (var awbPacking: awb.getAwbPackingInfo() ) {
-                    if(awbPacking.getAwbGoodsDescriptionInfoGuid().equals(awbGoodsDescriptionInfo.getGuid()))
+                    if(Objects.equals(awbPacking.getAwbGoodsDescriptionInfoGuid(), awbGoodsDescriptionInfo.getGuid()))
                         totalPacksCount += Integer.parseInt(awbPacking.getPacks());
                     if(awbPacking.getGuid() != null && awbPacking.getAwbGoodsDescriptionInfoGuid() == null) {
                         awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
                         totalPacksCount += Integer.parseInt(awbPacking.getPacks());
+                        if(awbGoodsDescriptionInfo.getAwbPackingInfo() == null){
+                            awbGoodsDescriptionInfo.setAwbPackingInfo(new ArrayList<>());
+                        }
                         awbGoodsDescriptionInfo.getAwbPackingInfo().add(awbPacking);
                     }
                 }
