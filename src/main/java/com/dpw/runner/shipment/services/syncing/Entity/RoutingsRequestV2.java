@@ -49,8 +49,6 @@ public class RoutingsRequestV2 implements IRunnerRequest {
     public Long ShipmentId;
     @JsonProperty("TransitDays")
     public Long TransitDays;
-    @JsonProperty("VesselId")
-    public Long VesselId;
     @JsonProperty("VesselName")
     public String VesselName;
     @JsonProperty("Voyage")

@@ -96,9 +96,6 @@ public class Routings extends MultiTenancy {
     @Column(name = "route_leg_id")
     private Long routeLegId;
 
-    @Column(name = "vessel_id")
-    private Long vesselId;
-
     @Column(name = "transit_days")
     private Long transitDays;
 
