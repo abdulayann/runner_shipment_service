@@ -407,7 +407,7 @@ public class EventService implements IEventService {
           }
       }
 
-      if(optionalShipmentDetails.isPresent()) {
+      if((trackingEventsResponse.getShipmentAta() != null || trackingEventsResponse.getShipmentAtd() != null) && optionalShipmentDetails.isPresent()) {
           ShipmentDetails shipment = optionalShipmentDetails.get();
           CarrierDetails carrierDetails =
                   shipment.getCarrierDetails() != null
