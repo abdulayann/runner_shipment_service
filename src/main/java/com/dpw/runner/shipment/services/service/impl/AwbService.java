@@ -1690,6 +1690,9 @@ public class AwbService implements IAwbService {
                 awbPacking.setVolumeWeightUnit(packing.getVolumeWeightUnit());
                 awbPacking.setAwbNumber(shipmentDetails.getHouseBill());
                 totalPacksCount += Integer.parseInt(packing.getPacks());
+                if(awb.getAwbPackingInfo() == null){
+                    awb.setAwbPackingInfo(new ArrayList<>());
+                }
                 awb.getAwbPackingInfo().add(awbPacking);
             }
         }
@@ -1891,6 +1894,9 @@ public class AwbService implements IAwbService {
             awbParty.setEntityId(shipmentDetails.getId());
             awbParty.setEntityType(request.getAwbType());
             awbParty.setNotifyOrgId(party.getId());
+            if(awb.getAwbNotifyPartyInfo() == null){
+                awb.setAwbNotifyPartyInfo(new ArrayList<>());
+            }
             awb.getAwbNotifyPartyInfo().add(awbParty);
         }
     }
@@ -1945,14 +1951,17 @@ public class AwbService implements IAwbService {
             routingInfo.setFlightDate(flightDate);
             routingInfo.setEntityId(shipmentDetails.getId());
             routingInfo.setEntityType(request.getAwbType());
+            if(awb.getAwbRoutingInfo() == null){
+                awb.setAwbRoutingInfo(new ArrayList<>());
+            }
             awb.getAwbRoutingInfo().add(routingInfo);
         }
     }
     private void updateAwbGoodsDescriptionInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
         List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList = new ArrayList<>();
-        if(!awb.getAwbGoodsDescriptionInfo().isEmpty())
+        if(awb.getAwbGoodsDescriptionInfo() != null && !awb.getAwbGoodsDescriptionInfo().isEmpty())
             awbGoodsDescriptionInfoList = awb.getAwbGoodsDescriptionInfo().stream().filter(good -> good.getIsShipmentCreated() != null && good.getIsShipmentCreated()).toList();
-        if(awb.getAwbGoodsDescriptionInfo().isEmpty() || awbGoodsDescriptionInfoList.isEmpty()){
+        if(awb.getAwbGoodsDescriptionInfo() == null || awb.getAwbGoodsDescriptionInfo().isEmpty() || awbGoodsDescriptionInfoList.isEmpty()){
             AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
             Integer totalPacksCount = 0;
             awbGoodsDescriptionInfo.setIsShipmentCreated(true);
@@ -1974,6 +1983,9 @@ public class AwbService implements IAwbService {
                 }
             }
             awbGoodsDescriptionInfo.setPiecesNo(totalPacksCount);
+            if(awb.getAwbGoodsDescriptionInfo() == null){
+                awb.setAwbGoodsDescriptionInfo(new ArrayList<>());
+            }
             awb.getAwbGoodsDescriptionInfo().add(awbGoodsDescriptionInfo);
         } else {
             AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = awbGoodsDescriptionInfoList.get(0);
@@ -2116,6 +2128,9 @@ public class AwbService implements IAwbService {
         MawbLockSettings mawbLockSettings = shipmentSettingsDetails.getMawbLockSettings();
         attachedShipmentDescriptions = new ArrayList<>();
         totalVolumetricWeightOfAwbPacks = BigDecimal.ZERO;
+        if(awb.getAwbPackingInfo() == null){
+            awb.setAwbPackingInfo(new ArrayList<>());
+        }
         awb.setAwbPackingInfo(updateMawbPackingInfoFromShipment(consolidationDetails));
         updateMawbShipmentInfoFromShipment(consolidationDetails, request, awb, mawbLockSettings);
         generateMawbNotifyPartyinfo(consolidationDetails, request, awb, mawbLockSettings);
@@ -2222,6 +2237,9 @@ public class AwbService implements IAwbService {
                 notifyPartyInfo.setGuid(party.getGuid());
                 // notifyPartyInfo.setAddressId(shipmentNotifyParty.getAddressData()); // field missing: AddressId
                 notifyPartyInfo.setNotifyOrgId(consolidationDetails.getId());
+                if(awb.getAwbNotifyPartyInfo() == null){
+                    awb.setAwbNotifyPartyInfo(new ArrayList<>());
+                }
                 awb.getAwbNotifyPartyInfo().add(notifyPartyInfo);
             }
         }
@@ -2268,6 +2286,9 @@ public class AwbService implements IAwbService {
             routingInfo.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
             routingInfo.setEntityId(consolidationDetails.getId());
             routingInfo.setEntityType(request.getAwbType());
+            if(awb.getAwbRoutingInfo() == null){
+                awb.setAwbRoutingInfo(new ArrayList<>());
+            }
             awb.getAwbRoutingInfo().add(routingInfo);
         }
     }

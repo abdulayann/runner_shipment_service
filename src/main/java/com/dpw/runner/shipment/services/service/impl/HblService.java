@@ -841,6 +841,9 @@ public class HblService implements IHblService {
             cargo.setMarksAndNumbers(pack.getMarksnNums());
             cargo.setPackageCount(Integer.parseInt(pack.getPacks() == null ? "0" : pack.getPacks()));
             cargo.setPackageType(pack.getPacksType());
+            if(hbl.getHblCargo() == null){
+                hbl.setHblCargo(new ArrayList<>());
+            }
             hbl.getHblCargo().add(cargo);
         });
     }
@@ -904,6 +907,9 @@ public class HblService implements IHblService {
                 hblContainer.setCustomsSealNumber(container.getCustomsSealNumber());
                 hblContainer.setContainerDesc(container.getDescriptionOfGoods());
                 hblContainer.setQuantity(container.getContainerCount());
+                if(hbl.getHblContainer() == null){
+                    hbl.setHblContainer(new ArrayList<>());
+                }
                 hbl.getHblContainer().add(hblContainer);
             });
         }
@@ -960,6 +966,9 @@ public class HblService implements IHblService {
             hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
             hblParty.setAddress(constructAddress(party.getAddressData()));
             hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+            if(hbl.getHblNotifyParty() == null){
+                hbl.setHblNotifyParty(new ArrayList<>());
+            }
             hbl.getHblNotifyParty().add(hblParty);
         }
 
