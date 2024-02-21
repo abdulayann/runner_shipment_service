@@ -81,7 +81,6 @@ import org.springframework.util.StringUtils;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -675,7 +674,7 @@ public class ShipmentService implements IShipmentService {
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
 
-            beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails);
+            boolean syncConsole = beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails);
 
             shipmentDetails = getShipment(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
@@ -699,7 +698,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
 
-            afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails);
+            afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails, syncConsole);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -1410,7 +1409,7 @@ public class ShipmentService implements IShipmentService {
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
-            beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails);
+            boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails);
 
             entity = shipmentDao.update(entity, false);
 
@@ -1430,7 +1429,7 @@ public class ShipmentService implements IShipmentService {
                 log.error("Error creating audit service log", e);
             }
 
-            afterSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails);
+            afterSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, syncConsole);
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
@@ -1443,7 +1442,7 @@ public class ShipmentService implements IShipmentService {
     }
 
 
-    private void syncShipment(ShipmentDetails shipmentDetails, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails) {
+    private void syncShipment(ShipmentDetails shipmentDetails, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails, boolean syncConsole) {
         String transactionId = shipmentDetails.getGuid().toString();
         try {
             shipmentSync.sync(shipmentDetails, deletedContGuids, null, transactionId, false);
@@ -1458,7 +1457,7 @@ public class ShipmentService implements IShipmentService {
                 log.error("Error performing sync on hbl entity, {}", e);
             }
         }
-        if(consolidationDetails != null) {
+        if(syncConsole && consolidationDetails != null) {
             try {
                 consolidationSync.sync(consolidationDetails, transactionId);
             } catch (Exception e) {
@@ -1473,10 +1472,11 @@ public class ShipmentService implements IShipmentService {
             }
         }
     }
-    private void beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
+    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
         List<Long> tempConsolIds = new ArrayList<>();
         List<Long> removedConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
+        boolean syncConsole = false;
 
         if(shipmentDetails.getCarrierDetails() != null) {
             if (shipmentDetails.getTransportMode() != null && shipmentDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
@@ -1546,8 +1546,10 @@ public class ShipmentService implements IShipmentService {
         if(updatedContainers.size() > 0) {
             if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                 consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
-                if(!Objects.isNull(consolidationDetails))
+                if(!Objects.isNull(consolidationDetails)) {
                     shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                    syncConsole = true;
+                }
             }
         }
         validateBeforeSave(shipmentDetails);
@@ -1555,6 +1557,7 @@ public class ShipmentService implements IShipmentService {
         if(!isCreate){
             updateLinkedShipmentData(shipmentDetails, oldEntity);
         }
+        return syncConsole;
     }
 
     private void validateBeforeSave(ShipmentDetails shipmentDetails) {
@@ -1574,7 +1577,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
         }
     }
-    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception {
+    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole) throws Exception {
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
@@ -1709,7 +1712,7 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails = shipmentDetails.getConsolidationList().get(0);
         }
         // Syncing shipment to V1
-        syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails);
+        syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
     }
 
     public void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate) {
