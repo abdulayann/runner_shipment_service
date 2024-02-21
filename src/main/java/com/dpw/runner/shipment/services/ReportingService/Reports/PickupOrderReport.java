@@ -7,12 +7,14 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PickUpOrderReportModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
@@ -65,6 +67,15 @@ public class PickupOrderReport extends IReport {
             }
             if(!Objects.isNull(pickUpOrderReportModel.hblModel.shipment)) {
                 populateShipmentOrganizationsLL(pickUpOrderReportModel.hblModel.shipment, dictionary);
+                var shipmentConsigner = pickUpOrderReportModel.hblModel.shipment.getConsigner();
+                if(shipmentConsigner != null && shipmentConsigner.getAddressData() != null){
+                    Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
+                    var rawData = consignerAddress != null && consignerAddress.containsKey("rawData") ? StringUtility.convertToString(consignerAddress.get("rawData")) : null;
+                    var consignorFreeText = ReportHelper.getAddressList(rawData);
+                    dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
+                    dictionary.put(ReportConstants.CONSIGNER_FREETEXTInCaps, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+                    dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+                }
             }
             if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
                 List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
