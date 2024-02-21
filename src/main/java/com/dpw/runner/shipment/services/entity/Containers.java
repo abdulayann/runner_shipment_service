@@ -331,4 +331,13 @@ public class Containers extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "container_id")
     private List<TruckDriverDetails> truckingDetails;
+
+    @Column(name = "invoice_number")
+    private String invoiceNumber;
+
+    @Column(name = "invoice_currency")
+    private String invoiceCurrency;
+
+    @Column(name = "invoice_value")
+    private BigDecimal invoiceValue;
 }

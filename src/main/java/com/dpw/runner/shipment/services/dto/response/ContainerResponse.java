@@ -117,4 +117,7 @@ public class ContainerResponse implements IRunnerResponse {
     private List<TruckDriverDetailsResponse> truckingDetails;
     private List<EventsResponse> eventsList;
     private String hblNumber;
+    private String invoiceNumber;
+    private String invoiceCurrency;
+    private BigDecimal invoiceValue;
 }
