@@ -1737,7 +1737,6 @@ public class ShipmentService implements IShipmentService {
             routings.setTransitDays(route.getTransitDays());
             routings.setAta(route.getAta());
             routings.setAtd(route.getAtd());
-            routings.setVesselId(route.getVesselId());
             routings.setVesselName(route.getVesselName());
             routings.setVoyage(route.getVoyage());
             routings.setCarrier(route.getCarrier());

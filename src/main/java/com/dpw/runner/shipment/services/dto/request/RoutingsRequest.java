@@ -37,7 +37,6 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private String entityType;
     private Long entityId;
     private Long routeLegId;
-    private Long vesselId;
     private Long transitDays;
     private String carrier;
     private String truckReferenceNumber;
