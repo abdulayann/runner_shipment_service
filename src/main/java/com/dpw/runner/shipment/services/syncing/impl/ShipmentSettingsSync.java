@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -92,8 +91,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     public ResponseEntity<?> syncProductSequence(ProductSequenceConfig productSequenceConfig, HttpHeaders headers) {
         ProductSequenceConfigDto productSequenceConfigDto = mapProductSequenceConfig(productSequenceConfig);
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(productSequenceConfigDto).module(SyncingConstants.PRODUCT_SEQUENCE).build());
-        HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
-        syncService.callSyncAsync(payload, StringUtility.convertToString(productSequenceConfig.getId()), StringUtility.convertToString(productSequenceConfig.getGuid()), "Shipment Settings product sequence Details", httpHeaders);
+        syncService.callSyncAsync(payload, StringUtility.convertToString(productSequenceConfig.getId()), StringUtility.convertToString(productSequenceConfig.getGuid()), "Shipment Settings product sequence Details", headers);
         return ResponseHelper.buildSuccessResponse(productSequenceConfigDto);
     }
 
