@@ -1151,23 +1151,8 @@ public abstract class IReport {
         dictionary.put(ReportConstants.TENANT_CURRENCY, user.CompanyCurrency);
     }
 
-    public MasterData getMasterListData(MasterDataType type, String ItemValue)
-    {
-        if (ItemValue == null || StringUtility.isEmpty(ItemValue)) return null;
-        MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(type.getDescription()).ItemValue(ItemValue).build();
-        MasterListRequestV2 masterListRequests = new MasterListRequestV2();
-        masterListRequests.getMasterListRequests().add(masterListRequest);
-        Object masterDataList = masterDataFactory.getMasterDataService().fetchMultipleMasterData(masterListRequests).getData();
-        List<MasterData> masterData = new ArrayList<>();
-        if (masterDataList != null) {
-            for (Object data : (ArrayList<?>) masterDataList) {
-                MasterData masterDataObject = modelMapper.map(data, MasterData.class);
-                masterData.add(masterDataObject);
-            }
-        }
-        if (masterData == null || masterData.isEmpty())
-            return null;
-        return masterData.get(0);
+    public MasterData getMasterListData(MasterDataType type, String ItemValue) {
+        return masterDataUtils.getMasterListData(type, ItemValue);
     }
     public CarrierMasterData getCarrier(String carrier) {
         if(StringUtility.isEmpty(carrier)) return null;

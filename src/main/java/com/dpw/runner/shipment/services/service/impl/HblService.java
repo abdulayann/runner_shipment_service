@@ -484,7 +484,7 @@ public class HblService implements IHblService {
             syncShipment = true;
         }
         hblData.setHouseBill(shipmentDetail.getHouseBill());
-        hblData.setVesselName(getVessel(carrierDetails.getVessel()));
+        hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
         hblData.setNoOfCopies(StringUtility.convertToString(additionalDetails.getCopy()));
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
@@ -759,7 +759,7 @@ public class HblService implements IHblService {
         if(!hblLock.getHouseBillLock())
             hblData.setHouseBill(shipmentDetail.getHouseBill());
         if(!hblLock.getVesselNameLock())
-            hblData.setVesselName(getVessel(carrierDetails.getVessel()));
+            hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
 
         // TODO: This needs to re-visit after incorporating this setting in service
         if (/*Unico HBL*/true) {
@@ -1031,10 +1031,4 @@ public class HblService implements IHblService {
         return v1Data.get(key).getLocCode() + " " + v1Data.get(key).getNameWoDiacritics();
     }
 
-    private String getVessel(String code) {
-        if (StringUtility.isEmpty(code))
-            return StringUtility.getEmptyString();
-        var resp = masterDataUtil.fetchInBulkVessels(Arrays.asList(code));
-        return resp.containsKey(code) ? resp.get(code).getName() : StringUtility.getEmptyString();
-    }
 }
