@@ -1338,7 +1338,7 @@ public class ShipmentService implements IShipmentService {
         entity = shipmentDao.update(entity, false);
         pushShipmentDataToDependentService(entity, false);
         try {
-            shipmentSync.sync(entity, null, null, UUID.randomUUID().toString(), false);
+            shipmentSync.sync(entity, null, null, entity.getGuid().toString(), false);
         } catch (Exception e){
             log.error("Error performing sync on shipment entity, {}", e);
         }
@@ -2539,7 +2539,7 @@ public class ShipmentService implements IShipmentService {
 
             if(fromV1 == null || !fromV1) {
                 try {
-                    shipmentSync.sync(entity, null, null, UUID.randomUUID().toString(), false);
+                    shipmentSync.sync(entity, null, null, entity.getGuid().toString(), false);
                 } catch (Exception e) {
                     log.error("Error performing sync on shipment entity, {}", e);
                 }
@@ -3942,7 +3942,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDao.saveAll(shipments);
             for (ShipmentDetails shipmentDetails : shipments) {
                 try {
-                    shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
+                    shipmentSync.sync(shipmentDetails, null, null, shipmentDetails.getGuid().toString(), false);
                 } catch (Exception e) {
                     log.error("Error performing sync on shipment entity, {}", e);
                 }
@@ -4163,7 +4163,7 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentDao.save(shipment, false);
             try {
-                shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
+                shipmentSync.sync(shipment, null, null, shipment.getGuid().toString(), false);
             } catch (Exception e) {
                 log.error("Error performing sync on shipment entity, {}", e);
             }
