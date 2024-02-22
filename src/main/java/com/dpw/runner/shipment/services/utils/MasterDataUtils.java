@@ -475,6 +475,7 @@ public class MasterDataUtils{
         criteria.addAll(List.of(field, operator, List.of(chargeCode)));
         V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(CommonV1ListRequest.builder().criteriaRequests(criteria).build());
         List<EntityTransferChargeType> list = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferChargeType.class);
+        log.info("ChargeCodes list from V1: " + jsonHelper.convertToJson(list));
         return list.stream().collect(Collectors.toMap(EntityTransferChargeType::getChargeCode, Function.identity(), (oldValue, newValue) -> newValue));
 
     }
