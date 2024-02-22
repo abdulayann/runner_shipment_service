@@ -301,7 +301,7 @@ public class ConsolidationController {
         String responseMsg;
         try {
             return (ResponseEntity<RunnerResponse<CustomConsolidationRequest>>) consolidationSync.sync(
-                    jsonHelper.convertValue(request, ConsolidationDetails.class), UUID.randomUUID().toString());
+                    jsonHelper.convertValue(request, ConsolidationDetails.class), UUID.randomUUID().toString(), false);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
