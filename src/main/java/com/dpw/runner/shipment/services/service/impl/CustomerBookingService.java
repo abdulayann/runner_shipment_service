@@ -1091,10 +1091,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 } else {
                     if (customerBookingResponse.getShipmentEntityId() == null) {
                         if (customerBookingResponse.getShipmentGuid() != null) {
-                            List<UUID> guidsList = new ArrayList<>();
-                            guidsList.add(UUID.fromString(customerBookingResponse.getShipmentGuid()));
-                            ShipmentBillingListRequest shipmentBillingListRequest = new ShipmentBillingListRequest();
-                            shipmentBillingListRequest.setGuidsList(guidsList);
+                            ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder().guidsList(Arrays.asList(UUID.fromString(customerBookingResponse.getShipmentGuid()))).build();
                             ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
                             if (shipmentBillingListResponse.getData() != null && !shipmentBillingListResponse.getData().isEmpty()) {
                                 ShipmentBillingListResponse.BillingData billingData = shipmentBillingListResponse.getData().get(customerBookingResponse.getShipmentGuid());
