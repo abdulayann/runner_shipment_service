@@ -540,16 +540,18 @@ public class HblService implements IHblService {
         String newLine = "\r\n";
         if (addressData.containsKey(PartiesConstants.COMPANY_NAME))
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.COMPANY_NAME)));
+        if (addressData.containsKey(PartiesConstants.ADDRESS1))
+            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1)));
         if (addressData.containsKey(PartiesConstants.CITY))
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CITY)));
         if (addressData.containsKey(PartiesConstants.COUNTRY))
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)));
-        if (addressData.containsKey(PartiesConstants.PIN_CODE))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.PIN_CODE)));
-        if (addressData.containsKey(PartiesConstants.CONTACT_NUMBER))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CONTACT_NUMBER)));
+        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE))
+            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE)));
+        if (addressData.containsKey(PartiesConstants.CONTACT_PHONE))
+            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CONTACT_PHONE)));
 
-        return sb.toString();
+        return  !sb.isEmpty() && sb.toString().length() >= 2 ? sb.substring(2) : sb.toString();
     }
 
     private List<HblContainerDto> mapShipmentContainersToHBL(ShipmentDetails shipment) {
