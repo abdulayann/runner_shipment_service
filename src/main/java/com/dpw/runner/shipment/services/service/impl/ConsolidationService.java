@@ -819,7 +819,7 @@ public class ConsolidationService implements IConsolidationService {
         beforeSave(entity, oldEntity.get(), false);
         entity = consolidationDetailsDao.update(entity, false);
         try {
-            consolidationSync.sync(entity, UUID.randomUUID().toString());
+            consolidationSync.sync(entity, UUID.randomUUID().toString(), false);
         } catch (Exception e) {
             log.error("Error performing sync on consol entity, {}", e);
         }
@@ -848,7 +848,7 @@ public class ConsolidationService implements IConsolidationService {
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         updateLinkedShipmentData(consol.get(), null, true);
         try {
-            consolidationSync.sync(consol.get(), UUID.randomUUID().toString());
+            consolidationSync.sync(consol.get(), UUID.randomUUID().toString(), false);
         }
         catch (Exception e) {
             log.error("Error Syncing Consol");
@@ -874,7 +874,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         try {
-            consolidationSync.sync(consol.get(), UUID.randomUUID().toString());
+            consolidationSync.sync(consol.get(), UUID.randomUUID().toString(), false);
         }
         catch (Exception e) {
             log.error("Error Syncing Consol");
@@ -975,7 +975,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             if(fromV1 == null || !fromV1) {
                 try {
-                    consolidationSync.sync(entity, UUID.randomUUID().toString());
+                    consolidationSync.sync(entity, UUID.randomUUID().toString(), false);
                 } catch (Exception e){
                     log.error("Error performing sync on consolidation entity, {}", e);
                 }
@@ -3006,7 +3006,7 @@ public class ConsolidationService implements IConsolidationService {
 
         pushShipmentDataToDependentService(consolidationDetails, isCreate);
         try {
-            consolidationSync.sync(consolidationDetails, UUID.randomUUID().toString());
+            consolidationSync.sync(consolidationDetails, UUID.randomUUID().toString(), isFromBooking);
         } catch (Exception e){
             log.error("Error performing sync on consolidation entity, {}", e);
         }

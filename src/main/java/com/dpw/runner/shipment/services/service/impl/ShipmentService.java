@@ -1413,7 +1413,7 @@ public class ShipmentService implements IShipmentService {
         }
         if(syncConsole && consolidationDetails != null) {
             try {
-                consolidationSync.sync(consolidationDetails, transactionId);
+                consolidationSync.sync(consolidationDetails, transactionId, false);
             } catch (Exception e) {
                 log.error("Error performing sync on consol entity, {}", e);
             }
