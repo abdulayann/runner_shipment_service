@@ -1252,10 +1252,13 @@ public class AwbService implements IAwbService {
         awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
                 AwbUtility.roundOffAirShipment((double) shipmentDetails.getChargable().doubleValue()) : null);
         awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
+        int noOfPacks = 0;
         if(awbPackingList != null) {
             for (var awbPacking: awbPackingList ) {
                 awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+                noOfPacks += Integer.parseInt(Objects.isNull(awbPacking.getPacks()) ? "0" : awbPacking.getPacks());
             }
+            awbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
         }
         awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
         return Arrays.asList(awbGoodsDescriptionInfo);
