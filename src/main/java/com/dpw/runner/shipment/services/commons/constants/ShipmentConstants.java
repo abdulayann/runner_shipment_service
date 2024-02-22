@@ -50,4 +50,10 @@ public class ShipmentConstants {
     public static final String FETCH_EMAILS = "/email";
 
     public static final String SHIPMENT_CREATION = "SHPCR";
+
+    // Shipment Statuses
+    public static final String PENDING = "PENDING";
+    public static final String BOOKED = "BOOKED";
+    public static final String CANCELLED = "CANCELLED";
+    public static final String CONFIRMED = "CONFIRMED";
 }

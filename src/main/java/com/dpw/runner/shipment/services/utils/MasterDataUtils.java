@@ -1593,4 +1593,37 @@ public class MasterDataUtils{
         });
         return guidsList;
     }
+
+    public com.dpw.runner.shipment.services.masterdata.dto.MasterData getMasterListData(MasterDataType type, String ItemValue)
+    {
+        if (ItemValue == null || StringUtility.isEmpty(ItemValue)) return null;
+        MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(type.getDescription()).ItemValue(ItemValue).build();
+        MasterListRequestV2 masterListRequests = new MasterListRequestV2();
+        masterListRequests.getMasterListRequests().add(masterListRequest);
+        Object masterDataList = v1Service.fetchMultipleMasterData(masterListRequests).getEntities();
+        List<com.dpw.runner.shipment.services.masterdata.dto.MasterData> masterData = new ArrayList<>();
+        if (masterDataList != null) {
+            for (Object data : (ArrayList<?>) masterDataList) {
+                com.dpw.runner.shipment.services.masterdata.dto.MasterData masterDataObject = modelMapper.map(data, com.dpw.runner.shipment.services.masterdata.dto.MasterData.class);
+                masterData.add(masterDataObject);
+            }
+        }
+        if (masterData.isEmpty())
+            return null;
+        return masterData.get(0);
+    }
+
+    public String getVesselName(String code) {
+        if (StringUtility.isEmpty(code))
+            return null;
+        var resp = fetchInBulkVessels(Arrays.asList(code));
+        return resp.containsKey(code) ? resp.get(code).getName() : null;
+    }
+
+    public String getCarrierName(String code) {
+        if (StringUtility.isEmpty(code))
+            return null;
+        var resp = fetchInBulkCarriers(Arrays.asList(code));
+        return resp.containsKey(code) ? resp.get(code).getItemDescription() : null;
+    }
 }
