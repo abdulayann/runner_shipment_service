@@ -359,6 +359,7 @@ public class BookingIntegrationsUtility {
         List<ChargesRequest> charges = new ArrayList<>();
         List<String> chargeTypes = bookingCharges.stream().map(BookingCharges::getChargeType).collect(Collectors.toList());
         Map<String, EntityTransferChargeType> chargeTypeMap = masterDataUtils.getChargeTypes(chargeTypes);
+        log.info("ChargeTypeMap from V1 Charge Codes: "+ jsonHelper.convertToJson(chargeTypeMap));
 
         bookingCharges.forEach(
                 bookingCharge -> {
