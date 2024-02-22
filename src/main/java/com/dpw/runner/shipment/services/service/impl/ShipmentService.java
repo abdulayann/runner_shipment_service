@@ -416,9 +416,10 @@ public class ShipmentService implements IShipmentService {
             responseList.add(response);
         });
         try {
-            masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
-            masterDataUtils.setContainerTeuData(lst, responseList);
-            masterDataUtils.fetchBillDataForShipments(lst, responseList);
+            var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
+            var containerDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setContainerTeuData(lst, responseList)), executorService);
+            var billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchBillDataForShipments(lst, responseList)), executorService);
+            CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture).join();
         }
         catch (Exception ex) {
             log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
@@ -2309,28 +2310,11 @@ public class ShipmentService implements IShipmentService {
                 log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            // TODO- Remove this call and sync job staus from billing using producer and consumer
-            try {
-                ShipmentBillingListRequest shipmentBillingListRequest = new ShipmentBillingListRequest();
-                shipmentBillingListRequest.setGuidsList(List.of(shipmentDetails.get().getGuid()));
-                ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
-                if(shipmentBillingListResponse != null && shipmentBillingListResponse.getData() != null && shipmentBillingListResponse.getData().containsKey(shipmentDetails.get().getGuid().toString())) {
-                    shipmentDetails.get().setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.get().getGuid().toString()).getBillStatus());
-                }
-            } catch (Exception ex) {
-                log.error("Error occurred while fetching billing data for shipmentId: {} with exception: {}", request.getId(), ex.getLocalizedMessage());
-            }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
             ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
             response.setCustomerBookingNotesList(convertToDtoList(notes,NotesResponse.class));
             createShipmentPayload(shipmentDetails.get(), response);
-            Optional<ShipmentDetails> finalShipmentDetails = shipmentDetails;
-            ExecutorService executorService = Executors.newFixedThreadPool(1);
-            executorService.submit(() -> {
-                saveJobStatus(finalShipmentDetails.get().getId(), finalShipmentDetails.get().getJobStatus());
-            });
-            executorService.shutdown();
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -2966,6 +2950,7 @@ public class ShipmentService implements IShipmentService {
      */
     public void createShipmentPayload(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         try {
+            double _start = System.currentTimeMillis();
             var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
             var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
             var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
@@ -2976,8 +2961,10 @@ public class ShipmentService implements IShipmentService {
             var activityDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllActivityDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
             var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllSalesAgentInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
             var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllContainerTypesInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            // TODO- Remove this call and sync job staus from billing using producer and consumer
+            var billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addBillData(shipmentDetails, shipmentDetailsResponse, null)), executorService);
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
-                    containerTypeFuture).join();
+                    containerTypeFuture, billDataFuture).join();
             setContainersPacksAutoUpdateData(shipmentDetailsResponse);
             shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
             shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
@@ -2995,6 +2982,7 @@ public class ShipmentService implements IShipmentService {
             } else {
                 shipmentDetailsResponse.setShipmentCount(0L);
             }
+            log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
         }
         catch (Exception ex) {
             log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_RETRIEVE, ex.getLocalizedMessage());
@@ -3286,6 +3274,18 @@ public class ShipmentService implements IShipmentService {
         }
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+    }
+
+    private CompletableFuture<ShipmentBillingListResponse> addBillData(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+        ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
+                .guidsList(List.of(shipmentDetails.getGuid())).build();
+        ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+        if (shipmentBillingListResponse != null && shipmentBillingListResponse.getData() != null && shipmentBillingListResponse.getData().containsKey(shipmentDetails.getGuid().toString())) {
+            shipmentDetails.setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.getGuid().toString()).getBillStatus());
+            shipmentDetailsResponse.setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.getGuid().toString()).getBillStatus());
+            saveJobStatus(shipmentDetails.getId(), shipmentDetails.getJobStatus());
+        }
+        return CompletableFuture.completedFuture(shipmentBillingListResponse);
     }
 
     private void setContainersPacksAutoUpdateData (ShipmentDetailsResponse shipmentDetailsResponse) {

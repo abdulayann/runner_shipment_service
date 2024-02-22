@@ -33,10 +33,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterReq
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
@@ -362,8 +359,9 @@ public class ConsolidationService implements IConsolidationService {
             responseList.add(consolidationDetails);
         });
         try {
-            masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
-            masterDataUtils.setConsolidationContainerTeuData(lst, responseList);
+            var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
+            var containerTeuData = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setConsolidationContainerTeuData(lst, responseList)), executorService);
+            CompletableFuture.allOf(locationDataFuture, containerTeuData).join();
         }
         catch (Exception ex) {
             log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
@@ -2146,6 +2144,7 @@ public class ConsolidationService implements IConsolidationService {
 
     public void createConsolidationPayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
         try {
+            double _start = System.currentTimeMillis();
             var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
             var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
             var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
@@ -2153,10 +2152,11 @@ public class ConsolidationService implements IConsolidationService {
             var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
             var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
             var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
-            CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture).join();
-            this.calculationsOnRetrieve(consolidationDetails, consolidationDetailsResponse);
+            var calculationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.calculationsOnRetrieve(consolidationDetails, consolidationDetailsResponse)), executorService);
+            CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, calculationsFuture).join();
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).collect(Collectors.toList()).contains(consolidationDetails.getBookingStatus()))
                 consolidationDetailsResponse.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
+            log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONSOLE_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
         }  catch (Exception ex) {
             log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONSOLIDATION_RETRIEVE, ex.getLocalizedMessage());
         }

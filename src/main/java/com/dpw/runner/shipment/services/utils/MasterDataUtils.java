@@ -1548,8 +1548,8 @@ public class MasterDataUtils{
         if(shipmentDetails != null && shipmentDetails.size() > 0) {
             List<UUID> guidsList = createBillRequest(shipmentDetails);
             if (!guidsList.isEmpty()) {
-                ShipmentBillingListRequest shipmentBillingListRequest = new ShipmentBillingListRequest();
-                shipmentBillingListRequest.setGuidsList(guidsList);
+                ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
+                        .guidsList(guidsList).build();
                 ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
                 pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING);
             }
