@@ -79,6 +79,7 @@ public class AuthFilter extends OncePerRequestFilter {
         try {
         LoggerHelper.putRequestId(UUID.randomUUID().toString());
         HttpServletRequest req = (HttpServletRequest) servletRequest;
+        log.info("Request For Shipment Service API: {} with RequestId: {}",servletRequest.getRequestURI(), LoggerHelper.getRequestIdFromMDC());
         if(shouldNotFilter(req))
         {
             filterChain.doFilter(servletRequest, servletResponse);
