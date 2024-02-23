@@ -608,11 +608,12 @@ public class AwbService implements IAwbService {
                 chargeableWeightOfMawbGood = chargeableWeightOfMawbGood.max(volumetricWeightOfMawbGood);
                 totalVolumetricWeight = volumetricWeightOfMawbGood;
             }
-            mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
-            mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
-            mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
-            mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
         }
+
+        mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
+        mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
+        mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
+        mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
 
         if (mawbGoodsDescriptionInfo.getRateCharge() != null && mawbGoodsDescriptionInfo.getRateClass() != null) {
             if (mawbGoodsDescriptionInfo.getRateClass() == 1)
@@ -2818,16 +2819,19 @@ public class AwbService implements IAwbService {
 
             if (uniqueDimension.size() == 1) {
                 String dimentionUnit = new ArrayList<>(uniqueDimension).get(0);
-                if (dimentionUnit == Constants.CM) {
-                    dimentionUnit = Constants.CMS;
-                } else if (dimentionUnit == Constants.IN) {
-                    dimentionUnit = Constants.INCH;
-                } else if (dimentionUnit == Constants.M) {
-                    dimentionUnit = Constants.MTR;
-                } else if (dimentionUnit == Constants.FT) {
-                    dimentionUnit = Constants.FEET;
-                } else {
-                    dimentionUnit = "";
+                dimentionUnit = "";
+                if(dimentionUnit != null) {
+                    if (dimentionUnit.equalsIgnoreCase(Constants.CM)) {
+                        dimentionUnit = Constants.CMS;
+                    } else if (dimentionUnit.equalsIgnoreCase(Constants.IN)) {
+                        dimentionUnit = Constants.INCH;
+                    } else if (dimentionUnit.equalsIgnoreCase(Constants.M)) {
+                        dimentionUnit = Constants.MTR;
+                    } else if (dimentionUnit.equalsIgnoreCase(Constants.FT)) {
+                        dimentionUnit = Constants.FEET;
+                    } else {
+                        dimentionUnit = "";
+                    }
                 }
                 dimensionText += dimentionUnit + newLine;
             } else {
