@@ -147,7 +147,7 @@ public class ConsolidationSync implements IConsolidationSync {
     public void syncLockStatus(ConsolidationDetails consolidationDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(consolidationDetails.getGuid()).lockStatus(consolidationDetails.getIsLocked()).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.CONSOLIDATION_LOCK).build());
-        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", UUID.randomUUID().toString());
+        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", StringUtility.convertToString(consolidationDetails.getGuid()));
     }
 
     private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetails request) {
