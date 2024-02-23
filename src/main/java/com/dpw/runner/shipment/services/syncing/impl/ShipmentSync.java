@@ -188,7 +188,7 @@ public class ShipmentSync implements IShipmentSync {
     public void syncLockStatus(ShipmentDetails shipmentDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(shipmentDetails.getGuid()).lockStatus(shipmentDetails.getIsLocked()).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.SHIPMENT_LOCK).build());
-        syncService.pushToKafka(finalCs, StringUtility.convertToString(shipmentDetails.getId()), StringUtility.convertToString(shipmentDetails.getGuid()), "Shipment Lock Sync", UUID.randomUUID().toString());
+        syncService.pushToKafka(finalCs, StringUtility.convertToString(shipmentDetails.getId()), StringUtility.convertToString(shipmentDetails.getGuid()), "Shipment Lock Sync", StringUtility.convertToString(shipmentDetails.getGuid()));
     }
 
     private void mapConsolidationGuids(CustomShipmentSyncRequest response, ShipmentDetails request) {
