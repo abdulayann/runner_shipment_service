@@ -3970,6 +3970,32 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> getGuidFromId(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if (request.getId() == null) {
+                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getId());
+            if (!shipmentDetails.isPresent()) {
+                log.debug("Shipment Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(shipmentDetails.get().getGuid()).build());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     private void autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
         Events response = null;
         if(shipmentDetails.getStatus() != null) {

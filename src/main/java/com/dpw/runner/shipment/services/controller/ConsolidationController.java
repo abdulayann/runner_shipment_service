@@ -439,4 +439,15 @@ public class ConsolidationController {
         return (ResponseEntity<RunnerResponse<Void>>) consolidationService.showCreateBooking(operation.toString());
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.GET_GUID_BY_ID)
+    public ResponseEntity<?> getGuidFromId(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+            return consolidationService.getGuidFromId(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }

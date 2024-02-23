@@ -475,4 +475,15 @@ public class ShipmentController {
     public ResponseEntity<?> fetchEmails(@RequestParam(required = false) Long shipmentId, @RequestParam(required = false) Long consolidationId) {
         return (ResponseEntity<?>) shipmentService.fetchEmails(shipmentId, consolidationId);
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.GET_GUID_BY_ID)
+    public ResponseEntity<?> getGuidFromId(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+            return (ResponseEntity<RunnerResponse<?>>) shipmentService.getGuidFromId(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
 }

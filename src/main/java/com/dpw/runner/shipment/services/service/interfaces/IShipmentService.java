@@ -75,5 +75,6 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> fetchCreditLimit(String orgCode, String addressCode);
     void updateDateAndStatus(long id, LocalDateTime date, Integer status);
     ResponseEntity<?> fetchEmails(Long shipmentId, Long consolidationId);
+    ResponseEntity<?> getGuidFromId(CommonRequestModel commonRequestModel);
 
 }

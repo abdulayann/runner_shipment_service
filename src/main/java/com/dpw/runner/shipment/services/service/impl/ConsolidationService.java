@@ -3415,6 +3415,33 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
+    public ResponseEntity<?> getGuidFromId(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error("Request is empty for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if (request.getId() == null) {
+                log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
+            if (!consolidationDetails.isPresent()) {
+                log.debug("Consolidation Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            log.info("Consolidation details fetched successfully for Id {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().guid(consolidationDetails.get().getGuid()).build());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
+
+    @Override
     public ResponseEntity<?> generateCustomHouseBLNumber() {
         try {
             return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(generateCustomBolNumber()).build());

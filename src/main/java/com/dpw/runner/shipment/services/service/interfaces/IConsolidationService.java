@@ -64,4 +64,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<?> updateConsoleBookingFields(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> showCreateBooking(String operation);
+    ResponseEntity<?> getGuidFromId(CommonRequestModel commonRequestModel);
 }
