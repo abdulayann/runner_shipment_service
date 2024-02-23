@@ -688,21 +688,22 @@ public class EntityTransferService implements IEntityTransferService {
                 consolidationDetails.get().getShipmentsList().forEach(shipment -> {
                     shipmentIds.add(shipment.getShipmentId());
                     houseBills.add(shipment.getHouseBill());
-                    shipment.setGuid(UUID.randomUUID());
-                    shipment.getContainersList().forEach(cont -> {
-                        if(idVsGuidMap.containsKey(cont.getId())){
-                            cont.setGuid(idVsGuidMap.get(cont.getId()));
-                            if(!containerVsShipmentGuid.containsKey(cont.getGuid())) {
-                                containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
-                            } else {
-                                containerVsShipmentGuid.get(cont.getGuid()).add(shipment.getGuid());
-                            }
-                        } else {
-                            cont.setGuid(UUID.randomUUID());
-                            idVsGuidMap.put(cont.getId(), cont.getGuid());
-                            containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
-                        }
-                    });
+                    // TODO For V2 payload creation
+//                    shipment.setGuid(UUID.randomUUID());
+//                    shipment.getContainersList().forEach(cont -> {
+//                        if(idVsGuidMap.containsKey(cont.getId())){
+//                            cont.setGuid(idVsGuidMap.get(cont.getId()));
+//                            if(!containerVsShipmentGuid.containsKey(cont.getGuid())) {
+//                                containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
+//                            } else {
+//                                containerVsShipmentGuid.get(cont.getGuid()).add(shipment.getGuid());
+//                            }
+//                        } else {
+//                            cont.setGuid(UUID.randomUUID());
+//                            idVsGuidMap.put(cont.getId(), cont.getGuid());
+//                            containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
+//                        }
+//                    });
                     if(shipAdditionalDocs != null && shipAdditionalDocs.containsKey(shipment.getGuid().toString())){
                         if(shipAdditionalDocs.get(shipment.getGuid().toString()) != null) {
 //                            var shipFileRepoList = shipment.getFileRepoList().stream().filter(fileRepo -> {
