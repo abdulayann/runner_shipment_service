@@ -44,7 +44,7 @@ public class MasterDataKeyUtils {
         fieldNameKeyMap.forEach((key1, value1) -> {
             if(value1 != null && !value1.isEmpty()) {
                 value1.forEach((key, value) -> {
-                    var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType, value));
+                    var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType.equalsIgnoreCase(CacheConstants.UNLOCATIONS_AWB) ? CacheConstants.UNLOCATIONS : masterDataType, value));
                     if(!Objects.isNull(cache)) {
                         switch (masterDataType) {
                             case CacheConstants.UNLOCATIONS:

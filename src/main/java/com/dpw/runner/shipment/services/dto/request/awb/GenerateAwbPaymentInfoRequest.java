@@ -15,4 +15,5 @@ public class GenerateAwbPaymentInfoRequest implements IRunnerRequest {
     private AwbCargoInfo awbCargoInfo;
     private AwbPaymentInfo awbPaymentInfo;
     private MasterData chargeDetails;
+    private boolean isPackUpdate;
 }
