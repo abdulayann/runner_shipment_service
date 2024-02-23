@@ -2487,7 +2487,7 @@ public class AwbService implements IAwbService {
             awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + (count.incrementAndGet()))));
 
         Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
-        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS_AWB);
+        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
 
         if(masterDataResponse == null) {
             if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
