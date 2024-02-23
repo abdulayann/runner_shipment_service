@@ -3920,7 +3920,7 @@ public class ShipmentService implements IShipmentService {
             linkedConsol.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
             linkedConsol.setShipmentType(shipment.getDirection());
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(linkedConsol.getId());
-            List<Long> shipmentIdList = consoleShipmentMappings.stream().filter(c -> c.getShipmentId() != shipment.getId())
+            List<Long> shipmentIdList = consoleShipmentMappings.stream().filter(c -> !Objects.equals(c.getShipmentId(), shipment.getId()))
                         .map(i -> i.getShipmentId()).collect(Collectors.toList());
             consolidationDetailsDao.save(linkedConsol, false);
             if (!shipmentIdList.isEmpty()) {
