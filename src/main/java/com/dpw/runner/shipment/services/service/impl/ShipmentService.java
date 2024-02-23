@@ -1515,6 +1515,14 @@ public class ShipmentService implements IShipmentService {
         if(!isCreate){
             updateLinkedShipmentData(shipmentDetails, oldEntity);
         }
+
+        if(shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0)
+            shipmentDetails.setReceivingBranch(null);
+        if(shipmentDetails.getTriangulationPartner() != null && shipmentDetails.getTriangulationPartner() == 0)
+            shipmentDetails.setTriangulationPartner(null);
+        if(shipmentDetails.getDocumentationPartner() != null && shipmentDetails.getDocumentationPartner() == 0)
+            shipmentDetails.setDocumentationPartner(null);
+        
         return syncConsole;
     }
 

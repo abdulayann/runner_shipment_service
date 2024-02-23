@@ -10,7 +10,10 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -37,7 +40,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContain
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -844,6 +846,13 @@ public class ConsolidationService implements IConsolidationService {
                     containersList = containerDao.saveAll(containersList);
                     containerService.afterSaveList(containersList, false);
                 }
+                if(shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getPackingList() != null) {
+                    List<Packing> packingList = shipmentDetails.getPackingList();
+                    for(Packing packing : packingList) {
+                        packing.setConsolidationId(consolidationId);
+                    }
+                    packingList = packingDao.saveAll(packingList);
+                }
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
@@ -859,6 +868,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<?> detachShipments(Long consolidationId, List<Long> shipmentIds) {
+        List<Packing> packingList = null;
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
             for(Long shipId : removedShipmentIds) {
@@ -871,11 +881,26 @@ public class ConsolidationService implements IConsolidationService {
                     containersList = containerDao.saveAll(containersList);
                     containerService.afterSaveList(containersList, false);
                 }
+                if(shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getPackingList() != null) {
+                    packingList = shipmentDetails.getPackingList();
+                    for(Packing packing : packingList) {
+                        packing.setConsolidationId(null);
+                    }
+                    packingList = packingDao.saveAll(packingList);
+                }
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        String transactionId = consol.get().getGuid().toString();
+        if(packingList != null) {
+            try {
+                packingsADSync.sync(packingList, transactionId);
+            } catch (Exception e) {
+                log.error("Error syncing packings");
+            }
+        }
         try {
-            consolidationSync.sync(consol.get(), UUID.randomUUID().toString(), false);
+            consolidationSync.sync(consol.get(), transactionId, false);
         }
         catch (Exception e) {
             log.error("Error Syncing Consol");
@@ -2947,6 +2972,12 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.getCarrierDetails().setFlightNumber(null);
             }
         }
+        if(consolidationDetails.getReceivingBranch() != null && consolidationDetails.getReceivingBranch() == 0)
+            consolidationDetails.setReceivingBranch(null);
+        if(consolidationDetails.getDocumentationPartner() != null && consolidationDetails.getDocumentationPartner() == 0)
+            consolidationDetails.setDocumentationPartner(null);
+        if(consolidationDetails.getTriangulationPartner() != null && consolidationDetails.getTriangulationPartner() == 0)
+            consolidationDetails.setTriangulationPartner(null);
     }
 
     private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws Exception{
