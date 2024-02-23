@@ -331,7 +331,7 @@ public class AwbService implements IAwbService {
                         }
                         awb.setAwbPackingInfo(linkedPacks);
                         if(awb.getAwbGoodsDescriptionInfo() != null && awb.getAwbGoodsDescriptionInfo().size() > 0) {
-                            calculateGoodsDescription(awb.getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>());
+                            calculateGoodsDescription(awb.getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>(), linkedPacks.size() > 0);
                         }
                     } else {
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
@@ -411,7 +411,7 @@ public class AwbService implements IAwbService {
                 }
                 awb.get().setAwbPackingInfo(linkedPacks);
                 if(awb.get().getAwbGoodsDescriptionInfo() != null && awb.get().getAwbGoodsDescriptionInfo().size() > 0) {
-                    calculateGoodsDescription(awb.get().getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>());
+                    calculateGoodsDescription(awb.get().getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>(), true);
                 }
             }
             AwbResponse response = convertEntityToDto(awb.get());
@@ -549,7 +549,7 @@ public class AwbService implements IAwbService {
             mawbGoodsDescriptionInfo = mawb.getAwbGoodsDescriptionInfo().get(0);
             Map<String, List<AwbPackingInfo>> hawbPacksMap = new HashMap<>(); // map to store awbNumber -> packsList
 
-            var pair = calculateGoodsDescription(mawbGoodsDescriptionInfo, allHawbPacks, tenantSettings, hawbPacksMap);
+            var pair = calculateGoodsDescription(mawbGoodsDescriptionInfo, allHawbPacks, tenantSettings, hawbPacksMap, true);
 
             // Can there be a scenario of multiple Goods information ?
             mawb.setAwbGoodsDescriptionInfo(List.of(pair.getRight()));
@@ -558,7 +558,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private Pair<BigDecimal, AwbGoodsDescriptionInfo> calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
+    private Pair<BigDecimal, AwbGoodsDescriptionInfo> calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap, boolean isPackUpdate) {
         Long mawbGoodsDescId = null; //mawbGoodsDescriptionInfo.getId();  // TODO goodsDescId where to get this
         UUID mawbGoodsDescGuid = mawbGoodsDescriptionInfo.getGuid();
         Integer noOfPacks = 0;
@@ -612,10 +612,12 @@ public class AwbService implements IAwbService {
             }
         }
 
-        mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
-        mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
-        mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
-        mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
+        if(isPackUpdate) {
+            mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
+            mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
+            mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
+            mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
+        }
 
         if (mawbGoodsDescriptionInfo.getRateCharge() != null && mawbGoodsDescriptionInfo.getRateClass() != null) {
             if (mawbGoodsDescriptionInfo.getRateClass() == 1)
@@ -2692,7 +2694,7 @@ public class AwbService implements IAwbService {
 
             for (int i = 0; i < goodsDescriptionInfos.size(); i++) {
                 var allPacks = guidBasedAwbPackingList.get(goodsDescriptionInfos.get(i).getGuid());
-                Pair<BigDecimal, AwbGoodsDescriptionInfo> pair = calculateGoodsDescription(goodsDescriptionInfos.get(i), allPacks, tenantSettings, new HashMap<>());
+                Pair<BigDecimal, AwbGoodsDescriptionInfo> pair = calculateGoodsDescription(goodsDescriptionInfos.get(i), allPacks, tenantSettings, new HashMap<>(), request.isPackUpdate());
                 totalVolumeticWeight = totalVolumeticWeight.add(pair.getLeft());
             }
         }
