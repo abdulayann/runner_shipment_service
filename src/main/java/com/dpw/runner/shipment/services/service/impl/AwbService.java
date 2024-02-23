@@ -2974,7 +2974,13 @@ public class AwbService implements IAwbService {
                 List.of(name)
         );
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+
+        V1DataResponse v1DataResponse;
+        try {
+            v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+        } catch (Exception e) {
+            return "";
+        }
 
         List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
         var locMap = locationDataList.stream().collect(Collectors.toMap(EntityTransferUnLocations::getNameWoDiacritics, EntityTransferUnLocations::getLocationsReferenceGUID,
