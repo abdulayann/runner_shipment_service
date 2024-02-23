@@ -1680,6 +1680,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentDetails.getTenantId() == null)
                 shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
             KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentDetails, isCreate);
+            log.info("Producing shipment data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         }
         catch (Exception e) {
@@ -1693,6 +1694,7 @@ public class ShipmentService implements IShipmentService {
                     if(_utPayload != null) {
                         trackingPayloads.add(_utPayload);
                         var jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                        log.info("Producing tracking service payload from shipment with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
                         trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, false);
                     }
                 }
@@ -1704,6 +1706,7 @@ public class ShipmentService implements IShipmentService {
                 if(universalEventsPayload != null) {
                     trackingPayloads.add(universalEventsPayload);
                     var jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                    log.info("Producing tracking service payload from shipment with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
                     trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,true);
                 }
             }

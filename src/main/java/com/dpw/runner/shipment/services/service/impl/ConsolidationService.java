@@ -3026,6 +3026,7 @@ public class ConsolidationService implements IConsolidationService {
             if(consolidationDetails.getTenantId() == null)
                 consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
             KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
+            log.info("Producing consolidation data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         }
         catch (Exception e) {
@@ -3038,6 +3039,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(_utPayload != null) {
                     trackingPayloads.add(_utPayload);
                     var jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                    log.info("Producing tracking service payload from consolidation with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
                     trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, false);
                 }
             }
@@ -3048,6 +3050,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(universalEventsPayload != null) {
                     trackingPayloads.add(universalEventsPayload);
                     var jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                    log.info("Producing tracking service payload from consolidation with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
                     trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, true);
                 }
             }
