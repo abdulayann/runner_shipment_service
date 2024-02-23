@@ -1528,7 +1528,8 @@ public class AwbService implements IAwbService {
             case AWB_NOTIFY_PARTY_INFO: {
                 if(resetAwbRequest.getAwbType().equals(Constants.MAWB))
                     awb.setAwbNotifyPartyInfo(generateMawbNotifyPartyinfo(consolidationDetails.get(), createAwbRequest));
-                awb.setAwbNotifyPartyInfo(generateAwbNotifyPartyinfo(shipmentDetails.get(), createAwbRequest));
+                else
+                    awb.setAwbNotifyPartyInfo(generateAwbNotifyPartyinfo(shipmentDetails.get(), createAwbRequest));
                 break;
             }
             case AWB_PACKS_AND_GOODS: {
