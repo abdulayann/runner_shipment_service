@@ -227,11 +227,7 @@ public class AwbService implements IAwbService {
 
         Awb awb = convertRequestToEntity(request);
         awb.setAwbNumber(awb.getAwbShipmentInfo().getAwbNumber());
-        if(awb.getAwbPackingInfo() != null && awb.getAwbPackingInfo().size() > 0) {
-            for(var i : awb.getAwbPackingInfo()) {
-                i.setAwbNumber(awb.getAwbNumber());
-            }
-        }
+
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
@@ -239,6 +235,12 @@ public class AwbService implements IAwbService {
                 List<AwbPackingInfo> awbPackingInfoList = awb.getAwbPackingInfo();
                 awb.setAwbPackingInfo(null);
                 updateAwbPacking(awb.getId(), awbPackingInfoList);
+            } else {
+                if(awb.getAwbPackingInfo() != null && awb.getAwbPackingInfo().size() > 0) {
+                    for(var i : awb.getAwbPackingInfo()) {
+                        i.setAwbNumber(awb.getAwbNumber());
+                    }
+                }
             }
             awb = awbDao.save(awb);
 
