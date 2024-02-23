@@ -1506,6 +1506,8 @@ public class ShipmentService implements IShipmentService {
                 consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
                 if(!Objects.isNull(consolidationDetails)) {
                     shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                    if(IsStringNullOrEmpty(shipmentDetails.getMasterBill()))
+                        shipmentDetails.setMasterBill(consolidationDetails.getBol());
                     syncConsole = true;
                 }
             }
@@ -1522,7 +1524,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setTriangulationPartner(null);
         if(shipmentDetails.getDocumentationPartner() != null && shipmentDetails.getDocumentationPartner() == 0)
             shipmentDetails.setDocumentationPartner(null);
-        
+
         return syncConsole;
     }
 
