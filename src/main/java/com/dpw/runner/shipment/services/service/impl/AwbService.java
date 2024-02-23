@@ -2404,6 +2404,8 @@ public class AwbService implements IAwbService {
             }
             Awb awb = optional.get(0);
             AwbResponse awbResponse = jsonHelper.convertValue(awb, AwbResponse.class);
+
+            generateDefaultAwbInformation(awb,awbResponse);
             Map<String, Object> response = fetchAllMasterDataByKey(awb, awbResponse);
             return ResponseHelper.buildSuccessResponse(response);
         }
@@ -2434,6 +2436,10 @@ public class AwbService implements IAwbService {
             listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() ));
         if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
             awbResponse.getAwbRoutingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet())));
+        if (!Objects.isNull(awbResponse.getDefaultAwbShipmentInfo()))
+            listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(awbResponse.getDefaultAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() ));
+        if(!Objects.isNull(awbResponse.getDefaultAwbRoutingInfo()))
+            awbResponse.getDefaultAwbRoutingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet())));
         if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
             awbResponse.getAwbPackingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() + count.incrementAndGet() )));
         if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
@@ -2470,6 +2476,10 @@ public class AwbService implements IAwbService {
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbOtherInfo(), AwbOtherInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
             awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + (count.incrementAndGet()))));
+        if (!Objects.isNull(awbResponse.getDefaultAwbShipmentInfo()))
+            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getDefaultAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
+        if(!Objects.isNull(awbResponse.getDefaultAwbRoutingInfo()))
+            awbResponse.getDefaultAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + (count.incrementAndGet()))));
         if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
             awbResponse.getAwbPackingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() + (count.incrementAndGet()))));
         if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
