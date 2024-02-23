@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -37,6 +38,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -224,15 +226,19 @@ public abstract class IReport {
     }
 
     public void populateBLContainer(ShipmentContainers shipmentContainer, HblContainerDto blObjectContainer) {
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        Integer decimalPlaces = shipmentSettingsDetails.getDecimalPlaces();
+        if(decimalPlaces == null)
+            decimalPlaces = 2;
         shipmentContainer.BL_ContainerType = blObjectContainer.getContainerType();
         shipmentContainer.BL_SealNumber = blObjectContainer.getSealNumber();
         if (blObjectContainer.getContainerGrossWeight() != null)
-            shipmentContainer.BL_GrossWeight = blObjectContainer.getContainerGrossWeight().setScale(2, RoundingMode.HALF_UP);
+            shipmentContainer.BL_GrossWeight = blObjectContainer.getContainerGrossWeight().setScale(decimalPlaces, RoundingMode.HALF_UP);
         else
             shipmentContainer.BL_GrossWeight = BigDecimal.ZERO;
         shipmentContainer.BL_GrossWeightUnit = blObjectContainer.getContainerGrossWeightUnit();
         if (blObjectContainer.getContainerGrossVolume() != null)
-            shipmentContainer.BL_GrossVolume = blObjectContainer.getContainerGrossVolume().setScale(2, RoundingMode.HALF_UP);
+            shipmentContainer.BL_GrossVolume = blObjectContainer.getContainerGrossVolume().setScale(decimalPlaces, RoundingMode.HALF_UP);
         else
             shipmentContainer.BL_GrossVolume = BigDecimal.ZERO;
         shipmentContainer.BL_GrossVolumeUnit = blObjectContainer.getContainerGrossVolumeUnit();
