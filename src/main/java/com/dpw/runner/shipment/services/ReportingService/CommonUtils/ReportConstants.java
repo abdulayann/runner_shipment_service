@@ -231,6 +231,7 @@ public class ReportConstants {
     public static final String DESCRIPTION = "Description";
     public static final String DESC_OF_GOODS = "DescofGoods";
     public static final String WAREHOUSE_NAME = "WarehouseName";
+    public static final String DRAFT_WATERMARK = "DRAFT     DRAFT";
     public static final String WAREHOUSE_CODE = "WarehouseCode";
     public static final String BOUNDED_WAREHOUSE_NAME = "BondedWarehouseName";
     public static final String BOUNDED_WAREHOUSE_CODE = "BondedWarehouseCode";
