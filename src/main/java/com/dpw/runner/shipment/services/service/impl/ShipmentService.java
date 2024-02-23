@@ -3920,33 +3920,37 @@ public class ShipmentService implements IShipmentService {
             linkedConsol.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
             linkedConsol.setShipmentType(shipment.getDirection());
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(linkedConsol.getId());
-            List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
-            ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
-            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class, tableNames);
-            Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-
-            List<ShipmentDetails> shipments = page.getContent();
-            shipments.stream()
-              .map(i -> {
-                  i.setMasterBill(shipment.getMasterBill());
-                  i.setDirection(shipment.getDirection());
-                  if (shipment.getCarrierDetails() != null) {
-                      i.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
-                      i.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
-                      i.getCarrierDetails().setShippingLine(shipment.getCarrierDetails().getShippingLine());
-                      i.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
-                  }
-                  return i;
-              }).toList();
+            List<Long> shipmentIdList = consoleShipmentMappings.stream().filter(c -> !Objects.equals(c.getShipmentId(), shipment.getId()))
+                        .map(i -> i.getShipmentId()).collect(Collectors.toList());
             consolidationDetailsDao.save(linkedConsol, false);
-            shipmentDao.saveAll(shipments);
-            for (ShipmentDetails shipmentDetails : shipments) {
-                try {
-                    shipmentSync.sync(shipmentDetails, null, null, shipmentDetails.getGuid().toString(), false);
-                } catch (Exception e) {
-                    log.error("Error performing sync on shipment entity, {}", e);
+            if (!shipmentIdList.isEmpty()) {
+                ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
+                Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class, tableNames);
+                Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+
+                List<ShipmentDetails> shipments = page.getContent();
+                shipments.stream()
+                    .map(i -> {
+                        i.setMasterBill(shipment.getMasterBill());
+                        i.setDirection(shipment.getDirection());
+                        if (shipment.getCarrierDetails() != null) {
+                            i.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
+                            i.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
+                            i.getCarrierDetails().setShippingLine(shipment.getCarrierDetails().getShippingLine());
+                            i.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
+                        }
+                        return i;
+                    }).toList();
+                shipmentDao.saveAll(shipments);
+                for (ShipmentDetails shipmentDetails : shipments) {
+                    try {
+                        shipmentSync.sync(shipmentDetails, null, null, shipmentDetails.getGuid().toString(), false);
+                    } catch (Exception e) {
+                        log.error("Error performing sync on shipment entity, {}", e);
+                    }
                 }
             }
+
         }
     }
 
