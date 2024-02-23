@@ -1851,64 +1851,65 @@ public class ShipmentService implements IShipmentService {
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         log.info("Shipment list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
 
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("ShipmentList");
-        makeHeadersInSheet(sheet);
+        try(Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("ShipmentList");
+            makeHeadersInSheet(sheet);
 
-        //Filling the data
-        List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoList(shipmentDetailsPage.getContent());
+            //Filling the data
+            List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoList(shipmentDetailsPage.getContent());
 
-        for (int i = 0; i < shipmentListResponseData.size(); i++) {
-            Row itemRow = sheet.createRow(i + 2);
-            ShipmentListResponse shipment = (ShipmentListResponse) shipmentListResponseData.get(i);
-            LocalTimeZoneHelper.transformTimeZone(shipment);
-            var shipmentBasicValues = parser.getAllAttributeValuesAsList(shipment);
-            int offset = 0;
-            for (int j = 0; j < shipmentBasicValues.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(shipmentBasicValues.get(j));
-            offset += shipmentBasicValues.size();
+            for (int i = 0; i < shipmentListResponseData.size(); i++) {
+                Row itemRow = sheet.createRow(i + 2);
+                ShipmentListResponse shipment = (ShipmentListResponse) shipmentListResponseData.get(i);
+                LocalTimeZoneHelper.transformTimeZone(shipment);
+                var shipmentBasicValues = parser.getAllAttributeValuesAsList(shipment);
+                int offset = 0;
+                for (int j = 0; j < shipmentBasicValues.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(shipmentBasicValues.get(j));
+                offset += shipmentBasicValues.size();
 
-            var shipmentClientValues = parser.getAllAttributeValuesAsListForParty(shipment.getClient());
-            for (int j = 0; j < shipmentClientValues.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(shipmentClientValues.get(j));
-            offset += shipmentClientValues.size();
+                var shipmentClientValues = parser.getAllAttributeValuesAsListForParty(shipment.getClient());
+                for (int j = 0; j < shipmentClientValues.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(shipmentClientValues.get(j));
+                offset += shipmentClientValues.size();
 
-            var shipmentConsigneeValues = parser.getAllAttributeValuesAsListForParty(shipment.getConsignee());
-            for (int j = 0; j < shipmentConsigneeValues.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(shipmentConsigneeValues.get(j));
-            offset += shipmentConsigneeValues.size();
+                var shipmentConsigneeValues = parser.getAllAttributeValuesAsListForParty(shipment.getConsignee());
+                for (int j = 0; j < shipmentConsigneeValues.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(shipmentConsigneeValues.get(j));
+                offset += shipmentConsigneeValues.size();
 
-            var shipmentConsignerValues = parser.getAllAttributeValuesAsListForParty(shipment.getConsignee());
-            for (int j = 0; j < shipmentConsignerValues.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(shipmentConsignerValues.get(j));
-            offset += shipmentConsignerValues.size();
+                var shipmentConsignerValues = parser.getAllAttributeValuesAsListForParty(shipment.getConsignee());
+                for (int j = 0; j < shipmentConsignerValues.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(shipmentConsignerValues.get(j));
+                offset += shipmentConsignerValues.size();
 
-            var carrierDetails = parser.getAllAttributeValuesAsListForCarrier(shipment.getCarrierDetails());
-            for (int j = 0; j < carrierDetails.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(carrierDetails.get(j));
-            offset += carrierDetails.size();
+                var carrierDetails = parser.getAllAttributeValuesAsListForCarrier(shipment.getCarrierDetails());
+                for (int j = 0; j < carrierDetails.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(carrierDetails.get(j));
+                offset += carrierDetails.size();
 
-            var pickupDetails = parser.getAllAttributeValuesAsListForPDDetail(shipment.getPickupDetails());
-            for (int j = 0; j < pickupDetails.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(pickupDetails.get(j));
-            offset += pickupDetails.size();
+                var pickupDetails = parser.getAllAttributeValuesAsListForPDDetail(shipment.getPickupDetails());
+                for (int j = 0; j < pickupDetails.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(pickupDetails.get(j));
+                offset += pickupDetails.size();
 
-            var deliveryDetails = parser.getAllAttributeValuesAsListForPDDetail(shipment.getDeliveryDetails());
-            for (int j = 0; j < deliveryDetails.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(deliveryDetails.get(j));
-            offset += deliveryDetails.size();
-        }
+                var deliveryDetails = parser.getAllAttributeValuesAsListForPDDetail(shipment.getDeliveryDetails());
+                for (int j = 0; j < deliveryDetails.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(deliveryDetails.get(j));
+                offset += deliveryDetails.size();
+            }
 
-        LocalDateTime currentTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "Shipments_" + ".xlsx";
+            LocalDateTime currentTime = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            String timestamp = currentTime.format(formatter);
+            String filenameWithTimestamp = "Shipments_" + ".xlsx";
 
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
-        try (OutputStream outputStream = response.getOutputStream()) {
-            workbook.write(outputStream);
+            try (OutputStream outputStream = response.getOutputStream()) {
+                workbook.write(outputStream);
+            }
         }
 
     }

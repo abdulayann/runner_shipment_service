@@ -483,17 +483,18 @@ public class ContainerService implements IContainerService {
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Containers_" + timestamp + ".xlsx";
 
-            XSSFWorkbook workbook = new XSSFWorkbook();
-            XSSFSheet sheet = workbook.createSheet("Containers");
+            try(XSSFWorkbook workbook = new XSSFWorkbook()) {
+                XSSFSheet sheet = workbook.createSheet("Containers");
 
-            List<ContainersExcelModel> model = commonUtils.convertToList(result, ContainersExcelModel.class);
-            convertModelToExcel(model, sheet, request);
+                List<ContainersExcelModel> model = commonUtils.convertToList(result, ContainersExcelModel.class);
+                convertModelToExcel(model, sheet, request);
 
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+                response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
-            try (OutputStream outputStream = response.getOutputStream()) {
-                workbook.write(outputStream);
+                try (OutputStream outputStream = response.getOutputStream()) {
+                    workbook.write(outputStream);
+                }
             }
 
         } catch (Exception ex) {
@@ -619,15 +620,16 @@ public class ContainerService implements IContainerService {
         String timestamp = currentTime.format(formatter);
         String filenameWithTimestamp = "Containers_Events_" + timestamp + ".xlsx";
 
-        XSSFWorkbook workbook = new XSSFWorkbook();
-        XSSFSheet sheet = workbook.createSheet("Containers_Events");
-        convertModelToExcelForContainersEvent(eventsModelList, sheet, request);
+        try(XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("Containers_Events");
+            convertModelToExcelForContainersEvent(eventsModelList, sheet, request);
 
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
-        try (OutputStream outputStream = response.getOutputStream()) {
-            workbook.write(outputStream);
+            try (OutputStream outputStream = response.getOutputStream()) {
+                workbook.write(outputStream);
+            }
         }
     }
     private void convertModelToExcelForContainersEvent(List<ContainerEventExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
@@ -1624,44 +1626,45 @@ public class ContainerService implements IContainerService {
             throw new RuntimeException("Consolidation does not exist, pls save the consol first");
         }
 
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("ContainersList");
-        makeHeadersInSheet(sheet, consol);
+        try(Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("ContainersList");
+            makeHeadersInSheet(sheet, consol);
 
-        for (int i = 0; i < containersList.size(); i++) {
-            Row itemRow = sheet.createRow(i + 1);
-            ContainerResponse container = (ContainerResponse) containersList.get(i);
-            var consolBasicValues = parser.getAllAttributeValuesAsListContainer(container);
-            int offset = 0;
-            for (int j = 0; j < consolBasicValues.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(consolBasicValues.get(j));
-            offset += consolBasicValues.size();
+            for (int i = 0; i < containersList.size(); i++) {
+                Row itemRow = sheet.createRow(i + 1);
+                ContainerResponse container = (ContainerResponse) containersList.get(i);
+                var consolBasicValues = parser.getAllAttributeValuesAsListContainer(container);
+                int offset = 0;
+                for (int j = 0; j < consolBasicValues.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(consolBasicValues.get(j));
+                offset += consolBasicValues.size();
 
-            itemRow.createCell(offset + 0).setCellValue(consol.get().getBol());
-            itemRow.createCell(offset + 1).setCellValue(0);
-            itemRow.createCell(offset + 2).setCellValue(0);
-            itemRow.createCell(offset + 3).setCellValue(request.getFreeTimeNoOfDaysDetention());
-            itemRow.createCell(offset + 4).setCellValue(request.getFreeTimeNoOfDaysStorage());
-            itemRow.createCell(offset + 5).setCellValue(consol.get().getCarrierDetails().getVoyage());
+                itemRow.createCell(offset + 0).setCellValue(consol.get().getBol());
+                itemRow.createCell(offset + 1).setCellValue(0);
+                itemRow.createCell(offset + 2).setCellValue(0);
+                itemRow.createCell(offset + 3).setCellValue(request.getFreeTimeNoOfDaysDetention());
+                itemRow.createCell(offset + 4).setCellValue(request.getFreeTimeNoOfDaysStorage());
+                itemRow.createCell(offset + 5).setCellValue(consol.get().getCarrierDetails().getVoyage());
 
-            var booking = customerBookingDao.findById(container.getBookingId());
-            var bookingNum = booking.isPresent() ? booking.get().getBookingNumber() : "";
-            var bookingDate = booking.isPresent() ? booking.get().getBookingDate() : null;
+                var booking = customerBookingDao.findById(container.getBookingId());
+                var bookingNum = booking.isPresent() ? booking.get().getBookingNumber() : "";
+                var bookingDate = booking.isPresent() ? booking.get().getBookingDate() : null;
 
-            itemRow.createCell(offset + 6).setCellValue(bookingDate);
-            itemRow.createCell(offset + 7).setCellValue(bookingNum);
-        }
+                itemRow.createCell(offset + 6).setCellValue(bookingDate);
+                itemRow.createCell(offset + 7).setCellValue(bookingNum);
+            }
 
-        LocalDateTime currentTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "ContainerList_" + timestamp + ".xlsx";
+            LocalDateTime currentTime = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            String timestamp = currentTime.format(formatter);
+            String filenameWithTimestamp = "ContainerList_" + timestamp + ".xlsx";
 
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
-        try (OutputStream outputStream = response.getOutputStream()) {
-            workbook.write(outputStream);
+            try (OutputStream outputStream = response.getOutputStream()) {
+                workbook.write(outputStream);
+            }
         }
 
     }

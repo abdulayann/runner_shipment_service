@@ -46,25 +46,27 @@ public class ValidatorUtility {
         Set<String> errors = new LinkedHashSet<>();
         Map jsonMap = new HashMap();
 
-        JsonObject jsonObject = Json.createReader(new StringReader(json)).readObject();
-        generateMap(jsonObject, StringUtility.getEmptyString(), jsonMap);
+        try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
+            JsonObject jsonObject = jsonReader.readObject();
+            generateMap(jsonObject, StringUtility.getEmptyString(), jsonMap);
 
-        Optional<List<Validations>> validations = validationsDao.findByLifecycleHookAndEntity(lifecycleHook, entity);
-        for (Validations validation : validations.get()) {
-
-            try {
-                log.info("Initiating Validation Layer with JSON Converted Entity Data: {}", jsonObject);
-                log.info("Initiating Validation Layer with raw data: {}", json);
-                log.info("Initiating Validation Layer with SchemaObject: {}", objectMapper.writeValueAsString(validation.getJsonSchema()));
-                JsonObject schemaObject = Json.createReader(new StringReader(objectMapper.writeValueAsString(validation.getJsonSchema()))).readObject();
-                errors.addAll(validateJson(jsonObject, schemaObject, jsonMap, failOnFirst));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
+            Optional<List<Validations>> validations = validationsDao.findByLifecycleHookAndEntity(lifecycleHook, entity);
+            for (Validations validation : validations.get()) {
+                try {
+                    log.info("Initiating Validation Layer with JSON Converted Entity Data: {}", jsonObject);
+                    log.info("Initiating Validation Layer with raw data: {}", json);
+                    log.info("Initiating Validation Layer with SchemaObject: {}", objectMapper.writeValueAsString(validation.getJsonSchema()));
+                    try (JsonReader schemaReader = Json.createReader(new StringReader(objectMapper.writeValueAsString(validation.getJsonSchema())))) {
+                        JsonObject schemaObject = schemaReader.readObject();
+                        errors.addAll(validateJson(jsonObject, schemaObject, jsonMap, failOnFirst));
+                    }
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
         return errors;
-
     }
 
     private Set<String> validateJson(JsonObject jsonObject, JsonObject schemaObject, Map<String, Object> jsonMap, boolean failOnFirst) {

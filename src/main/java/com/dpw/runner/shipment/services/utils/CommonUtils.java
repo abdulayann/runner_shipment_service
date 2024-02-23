@@ -277,7 +277,7 @@ public class CommonUtils {
         dc.restoreState();
     }
 
-    public static byte[] AddWatermark(byte[] bytes, BaseFont bf, String watermark) throws IOException, DocumentException {
+    public static byte[] addWatermarkToPdfBytes(byte[] bytes, BaseFont bf, String watermark) throws IOException, DocumentException {
         OutputStream ms = new ByteArrayOutputStream(10 * 1024);
         PdfReader reader = new PdfReader(bytes);
         PdfStamper stamper = new PdfStamper(reader, ms);

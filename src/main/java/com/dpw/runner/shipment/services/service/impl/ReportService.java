@@ -278,7 +278,7 @@ public class ReportService implements IReportService {
                 if(pdfByte_Content == null) throw new ValidationException("Please Upload Valid Template");
             }
             if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)){
-                pdfByte_Content = CommonUtils.AddWatermark(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), "DRAFT     DRAFT");
+                pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), "DRAFT     DRAFT");
             }
             //Update shipment issue date
             if ((isOriginalPrint || isSurrenderPrint) && reportRequest.getReportKey() != null && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID))
@@ -357,7 +357,7 @@ public class ReportService implements IReportService {
             if (pdfByte_Content == null) throw new ValidationException("Please Upload Valid Template");
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
             {
-                pdfByte_Content = CommonUtils.AddWatermark(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), "DRAFT     DRAFT");
+                pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), "DRAFT     DRAFT");
             }
             //Update shipment issue date
             return pdfByte_Content;
@@ -450,7 +450,7 @@ public class ReportService implements IReportService {
             {
                 if (waterMarkRequired)
                 {
-                    pdfByteContent = CommonUtils.AddWatermark(pdfByteContent, font, "DRAFT     DRAFT");
+                    pdfByteContent = CommonUtils.addWatermarkToPdfBytes(pdfByteContent, font, "DRAFT     DRAFT");
                 }
                 shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
             }
@@ -458,7 +458,7 @@ public class ReportService implements IReportService {
             {
                 if (waterMarkRequired)
                 {
-                    pdfByteContent = CommonUtils.AddWatermark(pdfByteContent, font, "NOT ORIGINAL");
+                    pdfByteContent = CommonUtils.addWatermarkToPdfBytes(pdfByteContent, font, "NOT ORIGINAL");
                 }
                 shipmentDetails.getAdditionalDetails().setWBLPrinted(true);
             }
@@ -466,7 +466,7 @@ public class ReportService implements IReportService {
             {
                 if (waterMarkRequired)
                 {
-                    pdfByteContent = CommonUtils.AddWatermark(pdfByteContent, font, "SURRENDER");
+                    pdfByteContent = CommonUtils.addWatermarkToPdfBytes(pdfByteContent, font, "SURRENDER");
                 }
                 shipmentDetails.getAdditionalDetails().setSurrenderPrinted(true);
             }

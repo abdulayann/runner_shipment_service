@@ -1051,6 +1051,7 @@ public class CSVParsingUtil<T> {
                             !masterListsMap.get(MasterDataType.VOLUME_UNIT.getDescription()).contains(cellValue)) {
                         throw new ValidationException("Gross Volume unit is null or invalid at row: " + rowNum);
                     }
+                    break;
                 }
                 case "allocatedvolumeunit": {
                     if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT.getDescription()) &&

@@ -388,17 +388,18 @@ public class PackingService implements IPackingService {
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "CargoDetails_" + timestamp + ".xlsx";
 
-            XSSFWorkbook workbook = new XSSFWorkbook();
-            XSSFSheet sheet = workbook.createSheet("CargoDetails");
+            try(XSSFWorkbook workbook = new XSSFWorkbook()) {
+                XSSFSheet sheet = workbook.createSheet("CargoDetails");
 
-            List<PackingExcelModel> modelList = commonUtils.convertToList(result, PackingExcelModel.class);
-            convertModelToExcel(modelList, sheet, request);
+                List<PackingExcelModel> modelList = commonUtils.convertToList(result, PackingExcelModel.class);
+                convertModelToExcel(modelList, sheet, request);
 
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+                response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
-            try (var outputStream = response.getOutputStream()) {
-                workbook.write(outputStream);
+                try (var outputStream = response.getOutputStream()) {
+                    workbook.write(outputStream);
+                }
             }
 
         } catch (Exception e) {

@@ -233,7 +233,7 @@ public class NotesService implements INotesService {
             }
             log.info("Notes details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             NotesResponse response = convertEntityToDto(notes.get());
-            if(request.getIncludeColumns()==null|request.getIncludeColumns().size()==0)
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(response);
             else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response,request.getIncludeColumns()));
         } catch (Exception e) {
