@@ -1567,9 +1567,11 @@ public class AwbService implements IAwbService {
             }
             case AWB_OTHER_CHARGES_INFO: {
                 awb.setAwbOtherChargesInfo(null);
+                break;
             }
             case AWB_OCI_INFO: {
                 awb.setAwbOciInfo(null);
+                break;
             }
         }
         awb.setId(resetAwbRequest.getId());
@@ -2777,7 +2779,7 @@ public class AwbService implements IAwbService {
                 String len = " ";
                 String width = " ";
                 String height = " ";
-                String equals = Constants.EQUALS;
+                String equals = Constants.EQ;
                 String cross = Constants.CROSS;
 
                 if (packings.getPacks() != null) {

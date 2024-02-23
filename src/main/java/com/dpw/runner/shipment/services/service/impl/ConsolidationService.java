@@ -2875,81 +2875,82 @@ public class ConsolidationService implements IConsolidationService {
         List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
         log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
 
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("ConsolidationList");
-        makeHeadersInSheet(sheet);
+        try(Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("ConsolidationList");
+            makeHeadersInSheet(sheet);
 
-        for (int i = 0; i < consoleResponse.size(); i++) {
-            Row itemRow = sheet.createRow(i + 2);
-            ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
-            LocalTimeZoneHelper.transformTimeZone(consol);
-            var consolBasicValues = parser.getAllAttributeValuesAsListConsol(consol);
-            int offset = 0;
-            for (int j = 0; j < consolBasicValues.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(consolBasicValues.get(j));
-            offset += consolBasicValues.size();
+            for (int i = 0; i < consoleResponse.size(); i++) {
+                Row itemRow = sheet.createRow(i + 2);
+                ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
+                LocalTimeZoneHelper.transformTimeZone(consol);
+                var consolBasicValues = parser.getAllAttributeValuesAsListConsol(consol);
+                int offset = 0;
+                for (int j = 0; j < consolBasicValues.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(consolBasicValues.get(j));
+                offset += consolBasicValues.size();
 
-            var sendingAgentValues = parser.getAllAttributeValuesAsListForParty(consol.getSendingAgent());
-            for (int j = 0; j < sendingAgentValues.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(sendingAgentValues.get(j));
-            offset += sendingAgentValues.size();
+                var sendingAgentValues = parser.getAllAttributeValuesAsListForParty(consol.getSendingAgent());
+                for (int j = 0; j < sendingAgentValues.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(sendingAgentValues.get(j));
+                offset += sendingAgentValues.size();
 
-            var receivingAgentValues = parser.getAllAttributeValuesAsListForParty(consol.getReceivingAgent());
-            for (int j = 0; j < receivingAgentValues.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(receivingAgentValues.get(j));
-            offset += receivingAgentValues.size();
+                var receivingAgentValues = parser.getAllAttributeValuesAsListForParty(consol.getReceivingAgent());
+                for (int j = 0; j < receivingAgentValues.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(receivingAgentValues.get(j));
+                offset += receivingAgentValues.size();
 
-            var borrowedFrom = parser.getAllAttributeValuesAsListForParty(consol.getBorrowedFrom());
-            for (int j = 0; j < borrowedFrom.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(borrowedFrom.get(j));
-            offset += borrowedFrom.size();
+                var borrowedFrom = parser.getAllAttributeValuesAsListForParty(consol.getBorrowedFrom());
+                for (int j = 0; j < borrowedFrom.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(borrowedFrom.get(j));
+                offset += borrowedFrom.size();
 
-            var creditor = parser.getAllAttributeValuesAsListForParty(consol.getCreditor());
-            for (int j = 0; j < creditor.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(creditor.get(j));
-            offset += creditor.size();
+                var creditor = parser.getAllAttributeValuesAsListForParty(consol.getCreditor());
+                for (int j = 0; j < creditor.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(creditor.get(j));
+                offset += creditor.size();
 
-            var coLoadWith = parser.getAllAttributeValuesAsListForParty(consol.getCoLoadWith());
-            for (int j = 0; j < coLoadWith.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(coLoadWith.get(j));
-            offset += coLoadWith.size();
+                var coLoadWith = parser.getAllAttributeValuesAsListForParty(consol.getCoLoadWith());
+                for (int j = 0; j < coLoadWith.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(coLoadWith.get(j));
+                offset += coLoadWith.size();
 
-            var arrivalDetails = parser.getAllAttributeValuesAsListForArrivalDepartureDetails(consol.getArrivalDetails());
-            for (int j = 0; j < arrivalDetails.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(arrivalDetails.get(j));
-            offset += arrivalDetails.size();
+                var arrivalDetails = parser.getAllAttributeValuesAsListForArrivalDepartureDetails(consol.getArrivalDetails());
+                for (int j = 0; j < arrivalDetails.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(arrivalDetails.get(j));
+                offset += arrivalDetails.size();
 
-            var departureDetails = parser.getAllAttributeValuesAsListForArrivalDepartureDetails(consol.getDepartureDetails());
-            for (int j = 0; j < departureDetails.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(departureDetails.get(j));
-            offset += departureDetails.size();
+                var departureDetails = parser.getAllAttributeValuesAsListForArrivalDepartureDetails(consol.getDepartureDetails());
+                for (int j = 0; j < departureDetails.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(departureDetails.get(j));
+                offset += departureDetails.size();
 
-            var allocations = parser.getAllAttributeValuesAsListForAllocations(consol.getAllocations());
-            for (int j = 0; j < allocations.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(allocations.get(j));
-            offset += allocations.size();
+                var allocations = parser.getAllAttributeValuesAsListForAllocations(consol.getAllocations());
+                for (int j = 0; j < allocations.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(allocations.get(j));
+                offset += allocations.size();
 
-            var carrierDetails = parser.getAllAttributeValuesAsListForCarrier(consol.getCarrierDetails());
-            for (int j = 0; j < carrierDetails.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(carrierDetails.get(j));
-            offset += carrierDetails.size();
+                var carrierDetails = parser.getAllAttributeValuesAsListForCarrier(consol.getCarrierDetails());
+                for (int j = 0; j < carrierDetails.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(carrierDetails.get(j));
+                offset += carrierDetails.size();
 
-            var achievedQuantities = parser.getAllAttributeValuesAsListForAchievedQuantities(consol.getAchievedQuantities());
-            for (int j = 0; j < achievedQuantities.size(); j++)
-                itemRow.createCell(offset + j).setCellValue(achievedQuantities.get(j));
-            offset += achievedQuantities.size();
-        }
+                var achievedQuantities = parser.getAllAttributeValuesAsListForAchievedQuantities(consol.getAchievedQuantities());
+                for (int j = 0; j < achievedQuantities.size(); j++)
+                    itemRow.createCell(offset + j).setCellValue(achievedQuantities.get(j));
+                offset += achievedQuantities.size();
+            }
 
-        LocalDateTime currentTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "Consolidations_" + timestamp + ".xlsx";
+            LocalDateTime currentTime = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            String timestamp = currentTime.format(formatter);
+            String filenameWithTimestamp = "Consolidations_" + timestamp + ".xlsx";
 
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
-        try (OutputStream outputStream = response.getOutputStream()) {
-            workbook.write(outputStream);
+            try (OutputStream outputStream = response.getOutputStream()) {
+                workbook.write(outputStream);
+            }
         }
 
     }

@@ -414,7 +414,7 @@ public class HblReport extends IReport{
         }
         List<String> consigner = null;
         List<String> consignee = null;
-        if (hblModel.blObject != null & !hblModel.shipment.getTransportMode().equals(AIR)) {
+        if (hblModel.blObject != null && !hblModel.shipment.getTransportMode().equals(AIR)) {
             List<String> notify = getNotifyOrgAddress(hblModel.blObject);
             if (!Objects.isNull(notify)) {
                 dictionary.put(BL_NOTIFY_PARTY, notify);
@@ -803,10 +803,10 @@ public class HblReport extends IReport{
         dictionary.put(PORT_OF_DISCHARGE, hblModel.podPort != null ? hblModel.podPort.getPortName() : null);
         dictionary.put(PORT_OF_DISCHARGE_COUNTRY, hblModel.podPort != null ? hblModel.podPort.getCountry() : null);
         if(hblModel.shipment.getCarrierDetails()!= null && hblModel.shipment.getCarrierDetails().getOrigin() != null) {
-            dictionary.put(PLACE_oF_RECEIPT, hblModel.shipment.getCarrierDetails().getOrigin());
+            dictionary.put(PLACE_OF_RECEIPT_ALIAS, hblModel.shipment.getCarrierDetails().getOrigin());
             dictionary.put(PLACE_OF_RECIEPT_IN_CAPS, hblModel.shipment.getCarrierDetails().getOrigin().toUpperCase());
         }
-        dictionary.put(PLACE_oF_DELIVERY, hblModel.shipment.getCarrierDetails().getDestination());
+        dictionary.put(PLACE_OF_DELIVERY_ALIAS, hblModel.shipment.getCarrierDetails().getDestination());
         dictionary.put(PORT_OF_FINAL_DESTINATION, hblModel.podPort != null ? hblModel.podPort.getPortName() : null);
         dictionary.put(PORT_OF_FINAL_DESTINATION_COUNTRY, hblModel.podPort != null ? hblModel.podPort.getCountry() : null);
         dictionary.put(TRANSPORT_MODE, hblModel.shipment.getTransportMode());

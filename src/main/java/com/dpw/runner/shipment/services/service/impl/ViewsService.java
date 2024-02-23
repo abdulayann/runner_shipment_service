@@ -216,7 +216,7 @@ public class ViewsService implements IViewsService {
             }
             log.info("Views Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ViewsResponse response = convertEntityToDto(view.get());
-            if(request.getIncludeColumns()==null|request.getIncludeColumns().size()==0)
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(response);
             else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {

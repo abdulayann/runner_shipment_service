@@ -129,7 +129,7 @@ public class PreAlertReport extends IReport {
                 preAlertModel.tenantDetails.email, preAlertModel.tenantDetails.websiteUrl, preAlertModel.tenantDetails.phone);
         if (tenantsDataList != null)
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
-        dictionary.put(ReportConstants.no_OF_PACKAGES, preAlertModel.shipmentDetails.getNoOfPacks());
+        dictionary.put(ReportConstants.NO_OF_PACKAGES_ALIAS, preAlertModel.shipmentDetails.getNoOfPacks());
         dictionary.put(ReportConstants.NO_OF_PACKAGES_WORD, preAlertModel.noofpackages_word);
         dictionary.put(ReportConstants.USER_DISPLAY_NAME, preAlertModel.userdisplayname);
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
@@ -210,9 +210,9 @@ public class PreAlertReport extends IReport {
             dictionary.put(ReportConstants.POD_COUNTRY, pod.getCountry());
         }
         if (origin != null)
-            dictionary.put(ReportConstants.PLACE_oF_RECEIPT, origin.getName());
+            dictionary.put(ReportConstants.PLACE_OF_RECEIPT_ALIAS, origin.getName());
         if (destination != null)
-            dictionary.put(ReportConstants.PLACE_oF_DELIVERY, destination.getName());
+            dictionary.put(ReportConstants.PLACE_OF_DELIVERY_ALIAS, destination.getName());
         if (preAlertModel.consolidationDetails != null && preAlertModel.consolidationDetails.getPayment() != null)
             dictionary.put(ReportConstants.PPCC, preAlertModel.consolidationDetails.getPayment());
         else

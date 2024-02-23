@@ -47,7 +47,7 @@ public class ReportConstants {
     public static final String PORT_OF_FINAL_DESTINATION = "PortofFinalDestination";
     public static final String PORT_OF_FINAL_DESTINATION_COUNTRY = "PortofFinalDestinationCountry";
     public static final String PLACE_OF_DELIVERY = "PlaceOfDelivery";
-    public static final String PLACE_oF_DELIVERY = "PlaceofDelivery";
+    public static final String PLACE_OF_DELIVERY_ALIAS = "PlaceofDelivery";
     public static final String BL_PLACE_OF_DELIVERY = "BL_PlaceOfDelivery";
     public static final String BL_PLACE_OF_RECEIPT = "BL_PlaceOfReceipt";
     public static final String BL_PORT_OF_LOADING = "BL_PortOfLoading";
@@ -133,7 +133,7 @@ public class ReportConstants {
     public static final String ORIGINAL_WORDS = "OriginalsInWords";
     public static final String COPY_BILLS = "CopyBills";
     public static final String NO_OF_PACKAGES = "NoofPackages";
-    public static final String no_OF_PACKAGES = "noofpackages";
+    public static final String NO_OF_PACKAGES_ALIAS = "noofpackages";
     public static final String NoOfPackages = "NoOfPackages";
     public static final String NO_OF_PACKAGES_WORD = "noofpackages_word";
     public static final String IGM_FILE_DATE = "IGMFileDate";
@@ -227,10 +227,11 @@ public class ReportConstants {
     public static final String ONBOARD_TYPE = "OnBoardType";
     public static final String ONBOARD_TYPE_DATE = "OnBoardTypeDate";
     public static final String PLACE_OF_RECEIPT = "PlaceOfReceipt";
-    public static final String PLACE_oF_RECEIPT = "PlaceofReceipt";
+    public static final String PLACE_OF_RECEIPT_ALIAS = "PlaceofReceipt";
     public static final String DESCRIPTION = "Description";
     public static final String DESC_OF_GOODS = "DescofGoods";
     public static final String WAREHOUSE_NAME = "WarehouseName";
+    public static final String DRAFT_WATERMARK = "DRAFT     DRAFT";
     public static final String WAREHOUSE_CODE = "WarehouseCode";
     public static final String BOUNDED_WAREHOUSE_NAME = "BondedWarehouseName";
     public static final String BOUNDED_WAREHOUSE_CODE = "BondedWarehouseCode";
