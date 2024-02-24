@@ -24,7 +24,7 @@ public class KafkaProducer {
     public <T> void produceToKafka(T payload, String senderQueue, String transactionId) {
         log.info("Processing result to kafka queue - " + senderQueue);
         try {
-            log.info("request payload to kafka: " + objectMapper.writeValueAsString(payload));
+            log.info("request payload to kafka: with transactionId {} and payload {}" , transactionId,  objectMapper.writeValueAsString(payload));
         } catch (JsonProcessingException e) {
             log.error("Error while converting data, unable to convert object to json due to: "+ e.getMessage());
         }
