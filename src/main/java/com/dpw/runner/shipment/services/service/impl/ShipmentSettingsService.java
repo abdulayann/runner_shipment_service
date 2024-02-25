@@ -653,7 +653,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         TemplateUploadRequest templateUploadRequest = (TemplateUploadRequest) commonRequestModel.getData();
         if(templateUploadRequest.getPreviousFileId() == null || templateUploadRequest.getPreviousFileId().length() == 0) {
             try {
-                ResponseEntity<TemplateUploadResponse> response = documentService.CreateDocumentTemplate(templateUploadRequest);
+                ResponseEntity<TemplateUploadResponse> response = documentService.createDocumentTemplate(templateUploadRequest);
                 if(response.getStatusCode() != HttpStatus.CREATED) {
                     LoggerHelper.error("Error While Uploading Template To Document Service");
                     String responseMsg = ShipmentSettingsConstants.UPLOAD_TEMPLATE_FAILED + " : " + response.getBody();
@@ -670,7 +670,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
         else{
             try {
-                ResponseEntity<?> response = documentService.UpdateDocumentTemplate(templateUploadRequest);
+                ResponseEntity<?> response = documentService.updateDocumentTemplate(templateUploadRequest);
                 if(response.getStatusCode() != HttpStatus.OK){
                     LoggerHelper.error("Error While Updating Template To Document Service");
                     String responseMsg = ShipmentSettingsConstants.UPDATE_TEMPLATE_FAILED + " : " + response.getBody();
@@ -691,7 +691,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     @Override
     public ResponseEntity<?> downloadTemplate(String templateId) {
         try {
-            byte[] response = documentService.DownloadTemplate(templateId);
+            byte[] response = documentService.downloadTemplate(templateId);
             return ResponseHelper.buildFileResponse(response, null, "DownloadDocument.docx");
         } catch (Exception e) {
             LoggerHelper.error("Error While Downloading Template From Document Service");

@@ -309,7 +309,7 @@ public class FileRepoService implements IFileRepoService {
                 String path = tenantId.toString() + "/" + entityType + "/" + entityId.toString() + "/" + UUID.randomUUID().toString();
                 ResponseEntity<UploadDocumentResponse> responseBody;
                 try {
-                    responseBody = documentService.PostDocument(file, path);
+                    responseBody = documentService.postDocument(file, path);
                     if (responseBody.getStatusCode() != HttpStatus.OK && responseBody.getStatusCode() != HttpStatus.CREATED) {
                         String responseMsg = FileRepoConstants.UPLOAD_DOCUMENT_FAILED + " : " + responseBody.getBody();
                         return ResponseHelper.buildFailedResponse(responseMsg);
@@ -333,7 +333,7 @@ public class FileRepoService implements IFileRepoService {
             String path = tenantId.toString() + "/" + entityType + "/" + entityId.toString() + "/" + UUID.randomUUID().toString();
             ResponseEntity<UploadDocumentResponse> responseBody;
             try {
-                responseBody = documentService.PostDocument(file, path);
+                responseBody = documentService.postDocument(file, path);
                 if (responseBody.getStatusCode() != HttpStatus.OK && responseBody.getStatusCode() != HttpStatus.CREATED) {
                     String responseMsg = FileRepoConstants.UPLOAD_DOCUMENT_FAILED + " : " + responseBody.getBody();
                     return ResponseHelper.buildFailedResponse(responseMsg);
@@ -358,7 +358,7 @@ public class FileRepoService implements IFileRepoService {
         String path = response.getPath();
         ResponseEntity<?> responseBody;
         try {
-            responseBody = documentService.DownloadDocument(path);
+            responseBody = documentService.downloadDocument(path);
             if(responseBody.getStatusCode() != HttpStatus.OK) {
                 String responseMsg = FileRepoConstants.DOWNLOAD_DOCUMENT_FAILED + " : " + responseBody.getBody();
                 return ResponseHelper.buildFailedResponse(responseMsg);
