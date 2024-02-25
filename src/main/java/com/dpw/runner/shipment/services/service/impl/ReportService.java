@@ -604,7 +604,7 @@ public class ReportService implements IReportService {
             if (Objects.isNull(templateId)) return null;
             DocumentRequest documentRequest = new DocumentRequest();
             documentRequest.setData(json);
-            return (byte[]) documentService.downloadDocumentTemplate(jsonHelper.convertToJson(documentRequest), templateId).getBody();
+            return documentService.downloadDocumentTemplate(jsonHelper.convertToJson(documentRequest), templateId).getBody();
         } catch (Exception e) {
             log.error(e.getMessage());
             return null;

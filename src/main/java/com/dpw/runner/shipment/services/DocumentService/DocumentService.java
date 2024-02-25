@@ -107,10 +107,9 @@ public class DocumentService {
         body.set(TEMPLATE_NAME , templateRequest.getFile().getOriginalFilename());
         body.set(META_DATA, "{\"exporterName\": \"Honda-UK\",\"bookingNumber\": \"DPW897890\"}");
 
-        HttpEntity<Object> request = new HttpEntity(body, headers);
+        HttpEntity<Object> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<TemplateUploadResponse> response = restTemplate.exchange(url, HttpMethod.POST, request, TemplateUploadResponse.class);
-        return response;
+        return restTemplate.exchange(url, HttpMethod.POST, request, TemplateUploadResponse.class);
     }
     public ResponseEntity<String> updateDocumentTemplate(TemplateUploadRequest templateRequest){
         String url = templateBaseUrl+templateRequest.getPreviousFileId();
