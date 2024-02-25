@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConsta
 import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,7 +74,7 @@ public class DocumentService {
         return restTemplate.postForEntity(url, request, UploadDocumentResponse.class);
     }
 
-    public ResponseEntity<?> downloadDocument(String path){
+    public ResponseEntity<byte[]> downloadDocument(String path){
 
         String url = baseUrl+downloadFileUrl;
 
@@ -106,12 +107,12 @@ public class DocumentService {
         body.set(TEMPLATE_NAME , templateRequest.getFile().getOriginalFilename());
         body.set(META_DATA, "{\"exporterName\": \"Honda-UK\",\"bookingNumber\": \"DPW897890\"}");
 
-        HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
+        HttpEntity<Object> request = new HttpEntity(body, headers);
 
         ResponseEntity<TemplateUploadResponse> response = restTemplate.exchange(url, HttpMethod.POST, request, TemplateUploadResponse.class);
         return response;
     }
-    public ResponseEntity<?> updateDocumentTemplate(TemplateUploadRequest templateRequest){
+    public ResponseEntity<String> updateDocumentTemplate(TemplateUploadRequest templateRequest){
         String url = templateBaseUrl+templateRequest.getPreviousFileId();
 
         HttpHeaders headers = new HttpHeaders();
@@ -129,7 +130,7 @@ public class DocumentService {
 
         return restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
     }
-    public ResponseEntity<?> downloadDocumentTemplate(Object json, String templateId){
+    public ResponseEntity<byte[]> downloadDocumentTemplate(Object json, String templateId){
         // TODO Provide json object with proper format
         String url = templateBaseUrl+templateId+"/document";
 
@@ -137,12 +138,12 @@ public class DocumentService {
         headers.add(X_API_KEY, templatexApiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<Object> request = new HttpEntity<Object>(json,headers);
+        HttpEntity<Object> request = new HttpEntity<>(json,headers);
 
         return restTemplate.exchange(url, HttpMethod.POST, request, byte[].class);
     }
 
-    public byte[] downloadTemplate(String templateId) throws Exception {
+    public byte[] downloadTemplate(String templateId) {
         String url = templateBaseUrl+templateId+"/download";
 
         HttpHeaders headers = new HttpHeaders();
@@ -155,7 +156,7 @@ public class DocumentService {
         if(response.getStatusCode() != HttpStatus.OK){
             LoggerHelper.error("Error While Downloading Template From Document Service");
             String responseMsg = ShipmentSettingsConstants.DOWNLOAD_TEMPLATE_FAILED + " : " + Arrays.toString(response.getBody());
-            throw new Exception(responseMsg);
+            throw new RunnerException(responseMsg);
         }
         return response.getBody();
     }
