@@ -198,7 +198,7 @@ public class ReportService implements IReportService {
                 if(dataRetrived.get(ReportConstants.MAWB_NUMBER) != null) dataRetrived.put(ReportConstants.COUNT, copyCount);
                 else dataRetrived.put(ReportConstants.COUNT, null);
                 byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-                if(mainDocPage == null) throw new ValidationException("Please Upload Valid Template");
+                if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
                 byte[] docBytes = AddBarCodeInAWBLableReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER)+copyCount, dataRetrived.get(ReportConstants.HAWB_NUMBER)+"");
                 pdf_Bytes.add(docBytes);
             }
@@ -261,7 +261,7 @@ public class ReportService implements IReportService {
                 for(String party : printingForParties){
                     dataRetrived.put(ReportConstants.PRINTING_FOR , MawbPrintFor.getById(Integer.parseInt(party)));
                     byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-                    if(mainDocPage == null) throw new ValidationException("Please Upload Valid Template");
+                    if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
                     else{
                         if(lastPage == null) lastPage = CommonUtils.getLastPage(mainDocPage);
                         mainDocPage = CommonUtils.removeLastPage(mainDocPage);
@@ -275,7 +275,7 @@ public class ReportService implements IReportService {
                 pdfByte_Content = CommonUtils.concatAndAddContent(pdf_Bytes);
             }else{
                 pdfByte_Content = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-                if(pdfByte_Content == null) throw new ValidationException("Please Upload Valid Template");
+                if(pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             }
             if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)){
                 pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_WATERMARK);
@@ -354,7 +354,7 @@ public class ReportService implements IReportService {
             byte[] backprint_hawb = GetFromDocumentService(dataRetrived, Pages.getBackPrintId());
             List<byte[]> pdfBytes_hawb = getOriginalandCopies(Pages, reportRequest.getReportInfo(), mainDoc_hawb, firstpage_hawb, backprint_hawb, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies());
             pdfByte_Content = CommonUtils.concatAndAddContent(pdfBytes_hawb);
-            if (pdfByte_Content == null) throw new ValidationException("Please Upload Valid Template");
+            if (pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
             {
                 pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_WATERMARK);
@@ -402,7 +402,7 @@ public class ReportService implements IReportService {
         byte[] pdfByteContent;
         if (mainDoc == null)
         {
-            throw new ValidationException("Please Upload Valid Template");
+            throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
         }
 
         List<byte[]> pdfBytes = getOriginalandCopies(pages, reportRequest.getReportInfo(), mainDoc, firstpage, backprint, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies());

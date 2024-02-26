@@ -9,4 +9,5 @@ public class PackingConstants {
     public static final String NO_DATA = "Not Found!";
     public static final String PACKING_ID = "Packing Id";
     public static final String RESPONSE_CONTAINER_LIST = "List";
+    public static final String FLASH_POINT_INVALID_ERROR =  "FlashPoint is invalid at row: ";
 }

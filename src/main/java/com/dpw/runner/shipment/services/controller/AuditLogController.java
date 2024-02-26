@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.AuditLogConstants;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
@@ -42,7 +43,7 @@ public class AuditLogController {
                 .ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=Audit log_" + System.currentTimeMillis() + ".xlsx"
+                        "attachment; filename=Audit log_" + System.currentTimeMillis() + Constants.XLSX
                 ).body(resource);
     }
 }

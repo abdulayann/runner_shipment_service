@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.ServiceDetailsConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -96,7 +97,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
         long id = request.getId();
         Optional<ServiceDetails> oldEntity = serviceDetailsDao.findById(id);
         if(!oldEntity.isPresent()) {
-            log.debug("Service Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(ServiceDetailsConstants.SERVICE_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -189,7 +190,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
             long id = request.getId();
             Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
             if(!shipmentServices.isPresent()) {
-                log.debug("Service Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ServiceDetailsConstants.SERVICE_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
@@ -228,13 +229,13 @@ public class ServiceDetailsService implements IServiceDetailsService {
             long id = request.getId();
             Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
             if(!shipmentServices.isPresent()) {
-                log.debug("Service Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ServiceDetailsConstants.SERVICE_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Service details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ServiceDetailsResponse response = convertEntityToDto(shipmentServices.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -250,9 +251,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(shipmentServices -> {
-            responseList.add(convertEntityToDto(shipmentServices));
-        });
+        lst.forEach(shipmentServices -> responseList.add(convertEntityToDto(shipmentServices)));
         return responseList;
     }
 

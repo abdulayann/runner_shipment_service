@@ -159,6 +159,7 @@ public class SyncQueueService implements ISyncQueueService {
                     case SyncingConstants.PICKUP_DELIVERY:
                         pickupDeliveryDetailsService.V1PickupDeliveryCreateAndUpdate(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), PickupDeliveryDetailsRequestV2.class)).build(), false);
                         break;
+                    default:
 
                 }
 

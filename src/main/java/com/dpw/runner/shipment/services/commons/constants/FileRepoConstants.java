@@ -26,4 +26,5 @@ public class FileRepoConstants {
     public static final String UPLOAD_DOCUMENT_FAILED = "Error While Uploading Documents To Document Service";
     public static final String DOWNLOAD_DOCUMENT_SUCCESSFUL = "Successful Download Document From Document Service";
     public static final String DOWNLOAD_DOCUMENT_FAILED = "Error While Downloading Document From Document Service";
+    public static final String FILE_REPO_RETRIEVE_BY_ID_ERROR = "File Repo is null for Id {} with Request Id {}";
 }

@@ -40,4 +40,10 @@ public class MasterDataConstants {
     public static final String LIST_ROLES = "/role/list";
     public static final String LIST_CHARGE_TYPES = "/chargeCode/list";
     public static final String DEFAULT_ORG = "/getDefaultOrg";
+
+    public static final String ITEM_TYPE = "ItemType";
+    public static final String ITEM_VALUE = "ItemValue";
+    public static final String ITEM_DESCRIPTION = "ItemDescription";
+    public static final String VALUE_N_DESC = "ValuenDesc";
+    public static final String CASCADE = "Cascade";
 }

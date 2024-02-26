@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -96,7 +97,7 @@ public class EventService implements IEventService {
     private SyncConfig syncConfig;
 
     @Value("${v1service.url.base}${v1.service.url.trackEventDetails}")
-    private String TRACK_EVENT_DETAILS_URL;
+    private String trackEventDetailsUrl;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -144,7 +145,7 @@ public class EventService implements IEventService {
         long id = request.getId();
         Optional<Events> oldEntity = eventDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Event is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -241,7 +242,7 @@ public class EventService implements IEventService {
 
             Optional<Events> events = eventDao.findById(id);
             if (!events.isPresent()) {
-                log.debug("Event is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
@@ -281,14 +282,14 @@ public class EventService implements IEventService {
             long id = request.getId();
             Optional<Events> events = eventDao.findById(id);
             if (events.isEmpty()) {
-                log.debug("Event is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Event details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            EventsResponse response = (EventsResponse) convertEntityToDto(events.get());
+            EventsResponse response = convertEntityToDto(events.get());
 
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else{
                 return  ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
             }
@@ -312,9 +313,7 @@ public class EventService implements IEventService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Events> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(event -> {
-            responseList.add(convertEntityToDto(event));
-        });
+        lst.forEach(event -> responseList.add(convertEntityToDto(event)));
         return responseList;
     }
 
@@ -388,7 +387,7 @@ public class EventService implements IEventService {
 
     HttpEntity<V1DataResponse> entity = new HttpEntity(trackingRequest, V1AuthHelper.getHeaders());
     try {
-      var v1Response = this.restTemplate.postForEntity(TRACK_EVENT_DETAILS_URL, entity, TrackingEventsResponse.class);
+      var v1Response = this.restTemplate.postForEntity(trackEventDetailsUrl, entity, TrackingEventsResponse.class);
       trackingEventsResponse = v1Response.getBody();
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
       throw new V1ServiceException(

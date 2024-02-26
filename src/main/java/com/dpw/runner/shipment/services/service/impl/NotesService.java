@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.NotesConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -93,7 +94,7 @@ public class NotesService implements INotesService {
         long id = request.getId();
         Optional<Notes> oldEntity = notesDao.findById(id);
         if (oldEntity.isEmpty()) {
-            log.debug("Notes is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(NotesConstants.NOTES_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -187,7 +188,7 @@ public class NotesService implements INotesService {
 
             Optional<Notes> note = notesDao.findById(id);
             if (note.isEmpty()) {
-                log.debug("Notes is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(NotesConstants.NOTES_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             String parent = note.get().getEntityType();
@@ -228,13 +229,13 @@ public class NotesService implements INotesService {
             long id = request.getId();
             Optional<Notes> notes = notesDao.findById(id);
             if (notes.isEmpty()) {
-                log.debug("Notes is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(NotesConstants.NOTES_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Notes details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             NotesResponse response = convertEntityToDto(notes.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response,request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

@@ -196,7 +196,7 @@ public class PackingService implements IPackingService {
             applyVolumetricWeightValidation(row + 1, packingRow);
             applyHazardousValidation(hazardousClassMasterData, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint, row + 1, packingRow);
             if (!StringUtils.isEmpty(packingRow.getFlashPoint()) && packingRow.getDGSubstanceId() == null) {
-                throw new ValidationException("FlashPoint is invalid at row: " + row + 1);
+                throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row + 1);
             }
         }
     }
@@ -255,10 +255,10 @@ public class PackingService implements IPackingService {
                     if (packingRow.getDGSubstanceId() != null) {
                         if (!dicDGSubstanceFlashPoint.containsKey(packingRow.getDGSubstanceId()) ||
                                 dicDGSubstanceFlashPoint.get(packingRow.getDGSubstanceId()) != packingRow.getFlashPoint()) {
-                            throw new ValidationException("FlashPoint is invalid at row: " + row);
+                            throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
                         }
                     } else if (packingRow.getDGSubstanceId() == null && !StringUtils.isEmpty(packingRow.getFlashPoint())) {
-                        throw new ValidationException("FlashPoint is invalid at row: " + row);
+                        throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
                     }
                 }
 
@@ -384,9 +384,9 @@ public class PackingService implements IPackingService {
                 }
             }
             LocalDateTime currentTime = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "CargoDetails_" + timestamp + ".xlsx";
+            String filenameWithTimestamp = "CargoDetails_" + timestamp + Constants.XLSX;
 
             try(XSSFWorkbook workbook = new XSSFWorkbook()) {
                 XSSFSheet sheet = workbook.createSheet("CargoDetails");
@@ -394,7 +394,7 @@ public class PackingService implements IPackingService {
                 List<PackingExcelModel> modelList = commonUtils.convertToList(result, PackingExcelModel.class);
                 convertModelToExcel(modelList, sheet, request);
 
-                response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                response.setContentType(CONTENT_TYPE_FOR_EXCEL);
                 response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
                 try (var outputStream = response.getOutputStream()) {
@@ -761,9 +761,9 @@ public class PackingService implements IPackingService {
                     packsCount.append(", ");
             }
             response.setTotalPacks(packsCount.toString());
-            response.setTotalPacksWeight(String.format("%.2f %s", totalWeight, toWeightUnit));
-            response.setTotalPacksVolume(String.format("%.2f %s", volumeWeight, toVolumeUnit));
-            response.setPacksVolumetricWeight(String.format("%.2f %s", volumetricWeight, toWeightUnit));
+            response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, totalWeight, toWeightUnit));
+            response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, volumeWeight, toVolumeUnit));
+            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, volumetricWeight, toWeightUnit));
 
             dto.setWeight(new BigDecimal(totalWeight));
             dto.setWeightUnit(toWeightUnit);
@@ -786,7 +786,7 @@ public class PackingService implements IPackingService {
                 chargeableWeight = Math.max(wtInKg / 1000, volInM3);
                 packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
             }
-            response.setPacksChargeableWeight(String.format("%.2f %s", chargeableWeight, packChargeableWeightUnit));
+            response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, chargeableWeight, packChargeableWeightUnit));
             return response;
         } catch (Exception e) {
             throw new Exception(e);

@@ -16,5 +16,6 @@ public class ViewsConstants {
     public static final String VIEW_ID = "View Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
+    public static final String VIEWS_RETRIEVE_BY_ID_ERROR = "View is null for Id {} with Request Id {}";
 
 }

@@ -425,7 +425,7 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture).join();
         }
         catch (Exception ex) {
-            log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
+            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
         }
         return responseList;
     }
@@ -533,12 +533,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String generateString(int length) {
-        String SALTCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
         StringBuilder salt = new StringBuilder();
         Random rnd = new Random();
         while (salt.length() < length) {
-            int index = (int) (rnd.nextFloat() * SALTCHARS.length());
-            salt.append(SALTCHARS.charAt(index));
+            salt.append(Constants.SALT_CHARS.charAt(rnd.nextInt() * Constants.SALT_CHARS.length()));
         }
         return salt.toString();
     }
@@ -1912,11 +1910,11 @@ public class ShipmentService implements IShipmentService {
             }
 
             LocalDateTime currentTime = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Shipments_" + ".xlsx";
+            String filenameWithTimestamp = "Shipments_" + Constants.XLSX;
 
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
             response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
             try (OutputStream outputStream = response.getOutputStream()) {
@@ -2341,11 +2339,6 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-    }
-
-    @Transactional
-    private void saveJobStatus(Long id, String jobStatus) {
-        shipmentDao.saveJobStatus(id, jobStatus);
     }
 
     @Async
@@ -3028,7 +3021,7 @@ public class ShipmentService implements IShipmentService {
             log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
         }
         catch (Exception ex) {
-            log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_RETRIEVE, ex.getLocalizedMessage());
+            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_RETRIEVE, ex.getLocalizedMessage());
         }
 
     }
@@ -3326,7 +3319,7 @@ public class ShipmentService implements IShipmentService {
         if (shipmentBillingListResponse != null && shipmentBillingListResponse.getData() != null && shipmentBillingListResponse.getData().containsKey(shipmentDetails.getGuid().toString())) {
             shipmentDetails.setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.getGuid().toString()).getBillStatus());
             shipmentDetailsResponse.setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.getGuid().toString()).getBillStatus());
-            saveJobStatus(shipmentDetails.getId(), shipmentDetails.getJobStatus());
+            shipmentDao.saveJobStatus(shipmentDetails.getId(), shipmentDetails.getJobStatus());
         }
         return CompletableFuture.completedFuture(shipmentBillingListResponse);
     }

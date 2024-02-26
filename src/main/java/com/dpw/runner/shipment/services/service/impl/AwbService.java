@@ -185,7 +185,7 @@ public class AwbService implements IAwbService {
             try {
                 callV1Sync(awb, SaveStatus.CREATE);
             } catch (Exception e) {
-                log.error("Error performing sync on AWB entity, {}", e);
+                log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
             }
 
             // audit logs
@@ -221,7 +221,7 @@ public class AwbService implements IAwbService {
         long id = request.getId();
         Optional<Awb> oldEntity = awbDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("AWB is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(AwbConstants.AWB_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -248,7 +248,7 @@ public class AwbService implements IAwbService {
             try {
                 callV1Sync(awb, SaveStatus.UPDATE);
             } catch (Exception e) {
-                log.error("Error performing sync on AWB entity, {}", e);
+                log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
             }
 
             // audit logs
@@ -382,7 +382,7 @@ public class AwbService implements IAwbService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(AwbConstants.AWB_RETRIEVE_REQUEST_NULL_ERROR, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getId() == null) {
                 log.error("Request Id is null for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -390,7 +390,7 @@ public class AwbService implements IAwbService {
             long id = request.getId();
             Optional<Awb> awb = awbDao.findById(id);
             if (!awb.isPresent()) {
-                log.debug("AWB is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(AwbConstants.AWB_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("AWB fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -452,7 +452,7 @@ public class AwbService implements IAwbService {
                 if (consoleShipment.getId() != null) {
                     List<Awb> optionalAwb = awbDao.findByShipmentId(consoleShipment.getId());
                     if (optionalAwb == null || optionalAwb.isEmpty()) {
-                        throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
+                        throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
                     }
                     Awb linkAwb = optionalAwb.stream().findFirst().get();
                     awbList.add(linkAwb);
@@ -467,7 +467,7 @@ public class AwbService implements IAwbService {
             try {
                 callV1Sync(awb, SaveStatus.CREATE);
             } catch (Exception e) {
-                log.error("Error performing sync on AWB entity, {}", e);
+                log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
             }
 
             // map mawb and hawb affter suuccessful save
@@ -677,12 +677,12 @@ public class AwbService implements IAwbService {
                 CommonV1ListRequest request = new CommonV1ListRequest();
                 List<Object> criteria = new ArrayList<>();
                 List<Object> subCriteria1 = Arrays.asList(
-                        Arrays.asList("ItemType"),
+                        Arrays.asList(MasterDataConstants.ITEM_TYPE),
                         "=",
                         "105"
                 );
                 List<Object> subCriteria2 = Arrays.asList(
-                        Arrays.asList("ItemValue"),
+                        Arrays.asList(MasterDataConstants.ITEM_VALUE),
                         "=",
                         chargeCode
                 );
@@ -736,7 +736,7 @@ public class AwbService implements IAwbService {
             if (consoleShipment.getId() != null) {
                 Optional<Awb> linkAwb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst();
                 if (linkAwb.isEmpty()) {
-                    throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
+                    throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
                 }
                 awbList.add(linkAwb.get());
                 if(linkAwb.get().getAwbPackingInfo() != null) {
@@ -956,7 +956,7 @@ public class AwbService implements IAwbService {
         awbOtherInfo.setEntityType(request.getAwbType());
         var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null && consolidationDetails.getReceivingAgent().getOrgData() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
-        awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
+        awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class));
         awbOtherInfo.setExecutedAt(executedAt);
         getAwbOtherInfoMasterData(awbOtherInfo, request.getAwbType());
         return awbOtherInfo;
@@ -992,7 +992,7 @@ public class AwbService implements IAwbService {
 
                 var awbList = awbDao.findByShipmentId(consoleShipment.getId());
                 if (awbList == null || awbList.size() == 0) {
-                    throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
+                    throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
                 }
 
                 var awb = awbList.stream().findFirst().get();
@@ -1234,12 +1234,12 @@ public class AwbService implements IAwbService {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
         List<Object> subCriteria1 = Arrays.asList(
-                Arrays.asList("ItemType"),
+                Arrays.asList(MasterDataConstants.ITEM_TYPE),
                 "=",
                 MasterDataType.COUNTRIES.getId()
         );
         List<Object> subCriteria2 = Arrays.asList(
-                Arrays.asList("ItemValue"),
+                Arrays.asList(MasterDataConstants.ITEM_VALUE),
                 "=",
                 country
         );
@@ -1261,7 +1261,7 @@ public class AwbService implements IAwbService {
         awbOtherInfo.setEntityType(request.getAwbType());
         var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
-        awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
+        awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class));
         awbOtherInfo.setExecutedAt(executedAt);
         getAwbOtherInfoMasterData(awbOtherInfo, request.getAwbType());
         return awbOtherInfo;
@@ -1469,7 +1469,7 @@ public class AwbService implements IAwbService {
             String issuingAgentName = request.getIssuingAgent();
             List<Awb> awbs = new ArrayList<>();
             if (awbNumber == null && issuingAgentName == null)
-                log.error("Request is empty for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(AwbConstants.AWB_RETRIEVE_REQUEST_NULL_ERROR, LoggerHelper.getRequestIdFromMDC());
             else if (issuingAgentName == null)
                 awbs = awbDao.findByAwbNumber(awbNumber);
             else if (awbNumber == null)
@@ -1519,7 +1519,7 @@ public class AwbService implements IAwbService {
                         if (consoleShipment.getId() != null) {
                             Optional<Awb> linkAwb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst();
                             if (linkAwb.isEmpty()) {
-                                throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
+                                throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
                             }
                             awbList.add(linkAwb.get());
                             if(linkAwb.get().getAwbPackingInfo() != null) {
@@ -1585,7 +1585,7 @@ public class AwbService implements IAwbService {
         try {
             callV1Sync(awb, SaveStatus.RESET);
         } catch (Exception e) {
-            log.error("Error performing sync on AWB entity, {}", e);
+            log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
         }
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
@@ -1731,9 +1731,6 @@ public class AwbService implements IAwbService {
         }
     }
     private void updateShipmentPackingFieldToHbl(Packing packing, AwbPackingInfo awbPackingInfo, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
-        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingAwbGoodsDescIdLock()) ||
-                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingAwbGoodsDescIdLock()))
-
         if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingPacksLock()) ||
                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingPacksLock()))
             awbPackingInfo.setPacks(packing.getPacks());
@@ -2094,7 +2091,7 @@ public class AwbService implements IAwbService {
         }
         if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getExecutedOnLock()) ||
                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getExecutedOnLock()))
-            awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
+            awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class));
     }
 
     @Override
@@ -2365,7 +2362,7 @@ public class AwbService implements IAwbService {
         var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
         if(!mawbLockSettings.getExecutedOnLock())
-            awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
+            awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class));
 
     }
 
@@ -2380,7 +2377,7 @@ public class AwbService implements IAwbService {
         List<Integer> itemTypeList = new ArrayList<>();
         itemTypeList.add(masterDataType.getId());
         List<Object> masterDataCriteria = Arrays.asList(
-                Arrays.asList("ItemType"),
+                Arrays.asList(MasterDataConstants.ITEM_TYPE),
                 "in",
                 Arrays.asList(itemTypeList)
         );
@@ -2453,7 +2450,7 @@ public class AwbService implements IAwbService {
 
         MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
         masterListRequestV2.setMasterListRequests(listRequests);
-        masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+        masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
 
         Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
@@ -2646,7 +2643,7 @@ public class AwbService implements IAwbService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(AwbConstants.AWB_RETRIEVE_REQUEST_NULL_ERROR, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getId() == null) {
                 log.error("Request Id is null for MAWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -2654,7 +2651,7 @@ public class AwbService implements IAwbService {
             long id = request.getId();
             List<Awb> awb = getLinkedAwbFromMawb(id);
             if (awb == null) {
-                log.debug("AWB is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(AwbConstants.AWB_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("AWB fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -2974,7 +2971,7 @@ public class AwbService implements IAwbService {
             masterDataType = MasterDataType.MAWB_CARRIER_AGENT;
         }
         List<Object> criteria = Arrays.asList(
-                List.of("ItemType"),
+                List.of(MasterDataConstants.ITEM_TYPE),
                 "=",
                 masterDataType.getId()
         );
@@ -3075,7 +3072,7 @@ public class AwbService implements IAwbService {
         }
 
         if(!allHawbsGenerated)
-            throw new RunnerException("To Generate Mawb, Please create Hawb for all the shipments attached");
+            throw new RunnerException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
 
         return errors.size() > 0 ? errors.toString() : null;
     }

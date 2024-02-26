@@ -257,8 +257,8 @@ public class JobService implements IJobService {
             }
             log.info("Job details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             JobResponse response = (JobResponse) convertEntityToDto(job.get());
-             if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+             if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                 return ResponseHelper.buildSuccessResponse(response);
              else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response,request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -278,9 +278,7 @@ public class JobService implements IJobService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Jobs> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(job -> {
-            responseList.add(convertEntityToDto(job));
-        });
+        lst.forEach(job -> responseList.add(convertEntityToDto(job)));
         return responseList;
     }
 

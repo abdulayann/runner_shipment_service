@@ -16,4 +16,5 @@ public class ServiceDetailsConstants {
     public static final String SERVICE_DETAILS_ID = "Service Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
+    public static final String SERVICE_DETAILS_RETRIEVE_BY_ID_ERROR = "Service Details is null for Id {} with Request Id {}";
 }

@@ -19,4 +19,5 @@ public class MawbStocksConstants {
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String MAWB_STOCKS_SYNC_SUCCESSFUL = "Successful Mawb Stocks Syncing";
+    public static final String MAWB_STOCKS_RETRIEVE_BY_ID_ERROR = "MAWB Stocks is null for Id {} with Request Id {}";
 }

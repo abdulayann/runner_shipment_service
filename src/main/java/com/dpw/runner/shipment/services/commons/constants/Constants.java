@@ -299,6 +299,20 @@ public class Constants {
     public static final String CREATED_BY = "createdBy";
     public static final String UPDATED_AT = "updatedAt";
     public static final String TRANSPORT_MODE = "transportMode";
+    public static final String YYYY_MM_DD_T_HH_MM_SS = "yyyy-MM-dd'T'HH:mm:ss";
+    public static final String CONTAINER_ID = "containerId";
+    public static final String CARRIER_DETAILS = "carrierDetails";
+    public static final String CONSOLIDATION_DETAILS = "ConsolidationDetails";
+    public static final String ERROR_OCCURRED_FOR_EVENT = "Request: {} || Error occured for event: {} with exception: {}";
+    public static final String XLSX = ".xlsx";
+    public static final String YYYY_MM_DD_HH_MM_SS_FORMAT = "yyyyMMddHHmmss";
+    public static final String CONTENT_TYPE_FOR_EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    public static final String CONTENT_DISPOSITION = "Content-Disposition";
+    public static final String ATTACHMENT_FILENAME = "attachment; filename=";
+    public static final String STRING_FORMAT = "%.2f %s";
+    public static final String ORG_CODE = "orgCode";
+    public static final String DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR = "View is null for Id {} with Request Id {}";
+    public static final String SALT_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber","descriptionOfGoods","noOfPackages","netWeight","netWeightUnit",
             "grossWeight","grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",

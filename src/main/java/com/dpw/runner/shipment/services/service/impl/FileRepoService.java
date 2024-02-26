@@ -106,7 +106,7 @@ public class FileRepoService implements IFileRepoService {
         long id = request.getId();
         Optional<FileRepo> oldEntity = fileRepoDao.findById(id);
         if(!oldEntity.isPresent()) {
-            log.debug("File Repo is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(FileRepoConstants.FILE_REPO_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -247,10 +247,10 @@ public class FileRepoService implements IFileRepoService {
             }
             log.info("File details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             FileRepoResponse response = convertToResponse(fileRepo.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else
-            return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
+                return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

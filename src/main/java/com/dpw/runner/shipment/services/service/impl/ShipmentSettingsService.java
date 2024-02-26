@@ -108,7 +108,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(shipmentSettingsDetails.getProductSequenceConfig() != null) {
                 if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
                     for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
-                        ListCommonRequest listCommonRequest = constructListCommonRequest("productType", productSequenceConfig.getTenantProducts().getProductType(), "=");
+                        ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, productSequenceConfig.getTenantProducts().getProductType(), "=");
                         Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
                         Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
                         productSequenceConfig.setTenantProducts(tenantProducts.getContent().get(0));
@@ -139,7 +139,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
-            log.error("Request is empty for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            log.error(ShipmentSettingsConstants.UPDATE_REQUEST_EMPTY, LoggerHelper.getRequestIdFromMDC());
         }
 
         if(request.getId() == null) {
@@ -148,7 +148,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         long id = request.getId();
         Optional<ShipmentSettingsDetails> oldEntity = shipmentSettingsDao.findById(id);
         if(!oldEntity.isPresent()) {
-            log.debug("Shipment Setting is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -173,7 +173,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
-            log.error("Request is empty for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            log.error(ShipmentSettingsConstants.UPDATE_REQUEST_EMPTY, LoggerHelper.getRequestIdFromMDC());
         }
 
         if(request.getId() == null && request.getTenantId() == null) {
@@ -196,7 +196,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             oldEntity = shipmentSettingsDao.findById(id);
         }
         if(oldEntity == null || !oldEntity.isPresent()) {
-            log.debug("Shipment Setting is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -260,7 +260,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 if(productSequenceConfigList.size() > 0) {
                     for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                         if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
-                            ListCommonRequest listCommonRequest = constructListCommonRequest("productType", stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
+                            ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
                             Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
                             Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
                             productSequenceConfig.setTenantProducts(convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
@@ -295,7 +295,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
-            log.error("Request is empty for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            log.error(ShipmentSettingsConstants.UPDATE_REQUEST_EMPTY, LoggerHelper.getRequestIdFromMDC());
         }
 
         if(request.getTenantId() == null) {
@@ -367,7 +367,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
                     for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
                         if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
-                            ListCommonRequest listCommonRequest = constructListCommonRequest("productType", String.valueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
+                            ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, String.valueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
                             Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
                             Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
                             if(tenantProducts != null && !tenantProducts.isEmpty()) {
@@ -469,7 +469,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 if(productSequenceConfigList.size() > 0) {
                     for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                         if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
-                            listCommonRequest = constructListCommonRequest("productType", stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
+                            listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
                             Pair<Specification<TenantProducts>, Pageable> pair2 = fetchData(listCommonRequest, TenantProducts.class);
                             Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair2.getLeft(), pair2.getRight());
                             if(tenantProducts != null && !tenantProducts.isEmpty()) {
@@ -517,7 +517,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 long id = request.getId();
                 shipmentSettingsDetails = shipmentSettingsDao.findById(id);
                 if(!shipmentSettingsDetails.isPresent()) {
-                    log.debug("Shipment Setting is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, id, LoggerHelper.getRequestIdFromMDC());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 log.info("Shipment Settings details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -655,14 +655,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             try {
                 ResponseEntity<TemplateUploadResponse> response = documentService.createDocumentTemplate(templateUploadRequest);
                 if(response.getStatusCode() != HttpStatus.CREATED) {
-                    LoggerHelper.error("Error While Uploading Template To Document Service");
+                    LoggerHelper.error(ShipmentSettingsConstants.ERROR_UPLOADING_TEMPLATE);
                     String responseMsg = ShipmentSettingsConstants.UPLOAD_TEMPLATE_FAILED + " : " + response.getBody();
                     return ResponseHelper.buildFailedResponse(responseMsg);
                 }
                 return ResponseHelper.buildSuccessResponse(response.getBody());
             }
             catch (Exception e){
-                LoggerHelper.error("Error While Uploading Template To Document Service");
+                LoggerHelper.error(ShipmentSettingsConstants.ERROR_UPLOADING_TEMPLATE);
                 String responseMsg = e.getMessage() != null ? e.getMessage()
                         : ShipmentSettingsConstants.UPLOAD_TEMPLATE_FAILED;
                 return ResponseHelper.buildFailedResponse(responseMsg);
@@ -680,7 +680,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                         .templateId(templateUploadRequest.getPreviousFileId()).build();
                 return ResponseHelper.buildSuccessResponse(templateUploadResponse);
             } catch (Exception e) {
-                LoggerHelper.error("Error While Uploading Template To Document Service");
+                LoggerHelper.error(ShipmentSettingsConstants.ERROR_UPLOADING_TEMPLATE);
                 String responseMsg = e.getMessage() != null ? e.getMessage()
                         : ShipmentSettingsConstants.UPDATE_TEMPLATE_FAILED;
                 log.error(responseMsg, e);

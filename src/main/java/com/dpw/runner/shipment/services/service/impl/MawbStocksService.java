@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MawbStocksConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -105,7 +106,7 @@ public class MawbStocksService implements IMawbStocksService {
         long id = request.getId();
         Optional<MawbStocks> oldEntity = mawbStocksDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("MAWB Stocks is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(MawbStocksConstants.MAWB_STOCKS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -185,7 +186,7 @@ public class MawbStocksService implements IMawbStocksService {
 
             Optional<MawbStocks> mawbStocks = mawbStocksDao.findById(id);
             if (!mawbStocks.isPresent()) {
-                log.debug("MAWB Stocks is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(MawbStocksConstants.MAWB_STOCKS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             mawbStocksDao.delete(mawbStocks.get());
@@ -212,13 +213,13 @@ public class MawbStocksService implements IMawbStocksService {
             long id = request.getId();
             Optional<MawbStocks> mawbStocks = mawbStocksDao.findById(id);
             if (!mawbStocks.isPresent()) {
-                log.debug("MAWB Stocks is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(MawbStocksConstants.MAWB_STOCKS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("MAWB Stocks details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             MawbStocksResponse response = convertEntityToDto(mawbStocks.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -287,9 +288,7 @@ public class MawbStocksService implements IMawbStocksService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<MawbStocks> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(mawbStocks -> {
-            responseList.add(convertEntityToDto(mawbStocks));
-        });
+        lst.forEach(mawbStocks -> responseList.add(convertEntityToDto(mawbStocks)));
         return responseList;
     }
 
