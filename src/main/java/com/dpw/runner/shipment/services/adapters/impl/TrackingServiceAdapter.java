@@ -192,13 +192,12 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     public List<Events> getAllEvents(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
         // Modified Logic (currently returning only shipment/ consol events)
         // This will be replaced once the below to-do item is completed
-        if(shipmentDetails != null)
-            return shipmentDetails.getEventsList();
-        else
-            return consolidationDetails.getEventsList();
+        List<Events> allEvents = new ArrayList<>();
+        allEvents.addAll(shipmentDetails.getEventsList());
+        allEvents.addAll(consolidationDetails.getEventsList());
 
-        //TODO (this method fetches all types of events based on a referenceNumber from ship/consol)
-        // eventsRepository.GetDataForEventsFromRefrenceNumber(uow.Connection,refrenceNoRequest,false);
+        allEvents = allEvents.stream().filter(i -> !i.getIsPublicTrackingEvent()).toList();
+        return allEvents;
     }
 
     private ConsolidationDetails getConsolidationFromShipment(Long shipmentId, Integer currentTenant) {
