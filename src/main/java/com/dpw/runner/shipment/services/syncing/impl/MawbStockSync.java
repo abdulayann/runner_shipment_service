@@ -27,7 +27,7 @@ public class MawbStockSync implements IMawbStockSync {
         MawbStocksV2 mawbStocksV2 = syncEntityConversionService.mawbStocksV2ToV1(mawbStocks);
 
         String transactionId = String.valueOf(mawbStocks.getGuid());
-        String finalAwb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(mawbStocksV2).module(SyncingConstants.MAWB_STOCKS).build());
-        syncService.pushToKafka(finalAwb, String.valueOf(mawbStocks.getId()), String.valueOf(mawbStocks.getGuid()), SyncingConstants.MAWB_STOCKS, transactionId);
+        String finalJson = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(mawbStocksV2).module(SyncingConstants.MAWB_STOCKS).build());
+        syncService.pushToKafka(finalJson, String.valueOf(mawbStocks.getId()), String.valueOf(mawbStocks.getGuid()), SyncingConstants.MAWB_STOCKS, transactionId);
     }
 }
