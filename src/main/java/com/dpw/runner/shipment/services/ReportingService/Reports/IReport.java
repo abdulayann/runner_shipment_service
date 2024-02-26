@@ -1748,12 +1748,12 @@ public abstract class IReport {
 //            response.Weight = addCommas(StringUtility.convertToString(shipment.getWeight()));
             response.weight = shipment.getWeight();
             response.weightUnit = shipment.getWeightUnit();
-            response.consigner = getPartyAddress(shipment.getConsigner());
-            response.consignee =getPartyAddress(shipment.getConsignee());
+            response.setConsigner(getPartyAddress(shipment.getConsigner()));
+            response.setConsignee(getPartyAddress(shipment.getConsignee()));
 
-            response.consigneeAddressFreeText = getPartyAddress(shipment.getConsigner());
-            response.consignerAddressFreeText = getPartyAddress(shipment.getConsignee());
-            response.notifyPartyAddressFreeText = getPartyAddress(shipment.getAdditionalDetails().getNotifyParty());
+            response.setConsigneeAddressFreeText(getPartyAddress(shipment.getConsigner()));
+            response.setConsignerAddressFreeText(getPartyAddress(shipment.getConsignee()));
+            response.setNotifyPartyAddressFreeText(getPartyAddress(shipment.getAdditionalDetails().getNotifyParty()));
             response.description = StringUtility.toUpperCase(shipment.getGoodsDescription());
 
             response.hsnNumber = shipment.getAdditionalDetails().getHsnNumber() != null ? shipment.getAdditionalDetails().getHsnNumber().toString() : null;

@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.Commons;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.Data;
 
