@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -86,18 +87,18 @@ public class BookingIntegrationsUtility {
             Map.entry(BookingStatus.PENDING_FOR_CREDIT_LIMIT, "BOOKED")
     );
 
-    @Async
     public void createBookingInPlatform(CustomerBooking customerBooking) {
         try {
             platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
-            customerBooking.setIsPlatformBookingCreated(true);
-            customerBookingDao.save(customerBooking);
+            int count = customerBookingDao.updateIsPlatformBookingCreated(customerBooking.getId(), true);
+            if(count == 0){
+                throw new ValidationException("No booking found to update IsPlatformBookingCreated flag");
+            }
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.SUCCESS, "SAVED SUCESSFULLY");
         } catch (Exception ex) {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, ex.getLocalizedMessage());
             log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
         }
-        throw new RuntimeException();
     }
 
     public void updateBookingInPlatform(CustomerBooking customerBooking) {
@@ -109,7 +110,6 @@ public class BookingIntegrationsUtility {
         }
     }
 
-    @Async
     public void updateBookingInPlatform(ShipmentDetails shipmentDetails) {
         try {
             if (Objects.equals(shipmentDetails.getBookingType(), CustomerBookingConstants.ONLINE))

@@ -158,7 +158,7 @@ public class CustomerBookingService implements ICustomerBookingService {
              */
             if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                     && !Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()) {
-                bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(customerBooking)), executorService);
             }
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -264,8 +264,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                 && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform) {
-            CustomerBooking finalCustomerBooking1 = customerBooking;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(finalCustomerBooking1)), executorService);
+            CustomerBooking finalCustomerBooking = customerBooking;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(finalCustomerBooking)), executorService);
 
         } else if (isCreatedInPlatform) {
             CustomerBooking finalCustomerBooking = customerBooking;

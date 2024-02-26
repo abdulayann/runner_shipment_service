@@ -20,4 +20,6 @@ public interface ICustomerBookingDao {
     CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws Exception;
     Optional<CustomerBooking> findByBookingNumber(String bookingNumber);
 
+    int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated);
+
 }
