@@ -8,6 +8,6 @@ import java.util.List;
 @Data
 public class AWbLabelModel implements IDocumentModel{
     public TenantModel tenant;
-    public transient ShipmentModel shipment;
-    public transient List<String> TenantAddress;
+    public ShipmentModel shipment;
+    public List<String> TenantAddress;
 }

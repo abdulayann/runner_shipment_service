@@ -38,7 +38,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -1736,30 +1735,30 @@ public abstract class IReport {
             PartiesModel consigner = shipment.getConsigner();
             PartiesModel consignee = shipment.getConsignee();
 
-            response.HouseBill = shipment.getHouseBill();
-            response.MasterBill = shipment.getMasterBill();
+            response.houseBill = shipment.getHouseBill();
+            response.masterBill = shipment.getMasterBill();
             if(consigner != null && consigner.getAddressData() != null) {
-                response.ConsignerCompanyName = consigner.getAddressData().get(COMPANY_NAME) != null ? consigner.getAddressData().get(COMPANY_NAME).toString() : null;
-                response.ConsignerLocalName = consigner.getAddressData().get(LOCAL_NAME) != null ? consigner.getAddressData().get(LOCAL_NAME).toString() : null;
+                response.consignerCompanyName = consigner.getAddressData().get(COMPANY_NAME) != null ? consigner.getAddressData().get(COMPANY_NAME).toString() : null;
+                response.consignerLocalName = consigner.getAddressData().get(LOCAL_NAME) != null ? consigner.getAddressData().get(LOCAL_NAME).toString() : null;
             }
             if(consignee != null && consignee.getAddressData() != null) {
-                response.ConsigneeCompanyName =  consignee.getAddressData().get(COMPANY_NAME) != null ? consignee.getAddressData().get(COMPANY_NAME).toString() : null;
-                response.ConsigneeLocalName = consignee.getAddressData().get(LOCAL_NAME) != null ? consignee.getAddressData().get(LOCAL_NAME).toString() : null;
+                response.consigneeCompanyName =  consignee.getAddressData().get(COMPANY_NAME) != null ? consignee.getAddressData().get(COMPANY_NAME).toString() : null;
+                response.consigneeLocalName = consignee.getAddressData().get(LOCAL_NAME) != null ? consignee.getAddressData().get(LOCAL_NAME).toString() : null;
             }
 //            response.Weight = addCommas(StringUtility.convertToString(shipment.getWeight()));
-            response.Weight = shipment.getWeight();
-            response.WeightUnit = shipment.getWeightUnit();
-            response.Consigner = getPartyAddress(shipment.getConsigner());
-            response.Consignee =getPartyAddress(shipment.getConsignee());
+            response.weight = shipment.getWeight();
+            response.weightUnit = shipment.getWeightUnit();
+            response.consigner = getPartyAddress(shipment.getConsigner());
+            response.consignee =getPartyAddress(shipment.getConsignee());
 
-            response.ConsigneeAddressFreeText = getPartyAddress(shipment.getConsigner());
-            response.ConsignerAddressFreeText = getPartyAddress(shipment.getConsignee());
-            response.NotifyPartyAddressFreeText = getPartyAddress(shipment.getAdditionalDetails().getNotifyParty());
-            response.Description = StringUtility.toUpperCase(shipment.getGoodsDescription());
+            response.consigneeAddressFreeText = getPartyAddress(shipment.getConsigner());
+            response.consignerAddressFreeText = getPartyAddress(shipment.getConsignee());
+            response.notifyPartyAddressFreeText = getPartyAddress(shipment.getAdditionalDetails().getNotifyParty());
+            response.description = StringUtility.toUpperCase(shipment.getGoodsDescription());
 
-            response.HsnNumber = shipment.getAdditionalDetails().getHsnNumber() != null ? shipment.getAdditionalDetails().getHsnNumber().toString() : null;
-            response.TotalPacks = getTotalPacks(shipment);
-            response.FreightOverseasCurrency = shipment.getFreightOverseasCurrency();
+            response.hsnNumber = shipment.getAdditionalDetails().getHsnNumber() != null ? shipment.getAdditionalDetails().getHsnNumber().toString() : null;
+            response.totalPacks = getTotalPacks(shipment);
+            response.freightOverseasCurrency = shipment.getFreightOverseasCurrency();
 
             shipmentResponses.add(response);
         }

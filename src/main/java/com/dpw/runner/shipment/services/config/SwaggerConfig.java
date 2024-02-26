@@ -43,7 +43,7 @@ public class SwaggerConfig implements WebMvcConfigurer {
                     }
                 })
                 .useDefaultResponseMessages(false)
-                .globalResponseMessage(RequestMethod.POST, ImmutableList.of(
+                .globalResponseMessage(RequestMethod.POST, List.of(
                         new ResponseMessageBuilder()
                                 .code(400)
                                 .message(BAD_REQUEST_MSG)
@@ -61,7 +61,7 @@ public class SwaggerConfig implements WebMvcConfigurer {
                                 .message(NOT_FOUND_MSG)
                                 .responseModel(new ModelRef(RUNNER_RESPONSE)).build()
                 ))
-                .globalResponseMessage(RequestMethod.GET, ImmutableList.of(
+                .globalResponseMessage(RequestMethod.GET, List.of(
                         new ResponseMessageBuilder()
                                 .code(400)
                                 .message(BAD_REQUEST_MSG)
@@ -79,7 +79,7 @@ public class SwaggerConfig implements WebMvcConfigurer {
                                 .message(NOT_FOUND_MSG)
                                 .responseModel(new ModelRef(RUNNER_RESPONSE)).build()
                 ))
-                .globalResponseMessage(RequestMethod.PUT, ImmutableList.of(
+                .globalResponseMessage(RequestMethod.PUT, List.of(
                         new ResponseMessageBuilder()
                                 .code(400)
                                 .message(BAD_REQUEST_MSG)

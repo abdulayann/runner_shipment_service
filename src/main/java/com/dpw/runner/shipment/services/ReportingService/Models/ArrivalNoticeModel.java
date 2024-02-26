@@ -17,7 +17,7 @@ public class ArrivalNoticeModel implements IDocumentModel{
     public List<ShipmentContainers> containers;
     public ConsolidationModel consolidationDetails;
     public Hbl hbl;
-    public transient List<ArrivalNoticeBillCharges> arrivalNoticeBillCharges;
+    public List<ArrivalNoticeBillCharges> arrivalNoticeBillCharges;
     @Builder
     @Data
     @NoArgsConstructor

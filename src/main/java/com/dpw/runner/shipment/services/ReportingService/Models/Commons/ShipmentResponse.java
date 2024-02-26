@@ -7,21 +7,21 @@ import java.util.List;
 
 public class ShipmentResponse implements IRunnerResponse
 {
-    public String MasterBill;
-    public String HouseBill;
-    public Long TotalPacks;
-    public BigDecimal Weight;
-    public String WeightUnit;
-    public transient List<String> Consigner;
-    public transient List<String> Consignee;
-    public transient List<String> ConsignerAddressFreeText ;
-    public transient List<String> ConsigneeAddressFreeText ;
-    public transient List<String> NotifyPartyAddressFreeText ;
-    public String ConsignerCompanyName;
-    public String ConsigneeCompanyName;
-    public String ConsignerLocalName;
-    public String ConsigneeLocalName;
-    public String Description;
-    public String HsnNumber;
-    public String FreightOverseasCurrency;
+    public String masterBill;
+    public String houseBill;
+    public Long totalPacks;
+    public BigDecimal weight;
+    public String weightUnit;
+    public List<String> consigner;
+    public List<String> consignee;
+    public List<String> consignerAddressFreeText;
+    public List<String> consigneeAddressFreeText;
+    public List<String> notifyPartyAddressFreeText;
+    public String consignerCompanyName;
+    public String consigneeCompanyName;
+    public String consignerLocalName;
+    public String consigneeLocalName;
+    public String description;
+    public String hsnNumber;
+    public String freightOverseasCurrency;
 }

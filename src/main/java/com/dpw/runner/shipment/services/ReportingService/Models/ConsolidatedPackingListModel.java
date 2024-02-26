@@ -14,5 +14,5 @@ import lombok.NoArgsConstructor;
 public class ConsolidatedPackingListModel extends DocumentDataModel implements IDocumentModel {
     //TODO TenantRow alternative in service.
     private TenantModel tenant;
-    private transient ConsolidationModel consolidationDetails;
+    private ConsolidationModel consolidationDetails;
 }

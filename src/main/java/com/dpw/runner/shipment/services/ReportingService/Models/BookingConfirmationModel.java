@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Re
 import java.util.List;
 
 public class BookingConfirmationModel extends HblModel implements IDocumentModel{
-    public transient List<ReferenceNumbersModel> referenceNumbersList;
+    public List<ReferenceNumbersModel> referenceNumbersList;
     public String polName;
     public String polCountry;
     public String podName;
