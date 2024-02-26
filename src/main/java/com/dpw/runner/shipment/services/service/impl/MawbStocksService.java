@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
+import com.dpw.runner.shipment.services.syncing.interfaces.IMawbStockSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -53,6 +54,9 @@ public class MawbStocksService implements IMawbStocksService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    IMawbStockSync mawbStockSync;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -72,7 +76,8 @@ public class MawbStocksService implements IMawbStocksService {
            mawbStocks = mawbStocksDao.save(mawbStocks);
            request.setId(mawbStocks.getId());
            this.mawbStocksLinkBulkUpdate(request);
-            log.info("MAWB stocks created successfully for Id {} with Request Id {}", mawbStocks.getId(), LoggerHelper.getRequestIdFromMDC());
+           callV1Sync(mawbStocks);
+           log.info("MAWB stocks created successfully for Id {} with Request Id {}", mawbStocks.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -103,6 +108,7 @@ public class MawbStocksService implements IMawbStocksService {
         MawbStocks mawbStocks = convertRequestToEntity(request);
         try {
             mawbStocks = mawbStocksDao.save(mawbStocks);
+            callV1Sync(mawbStocks);
             log.info("Updated the MAWB stocks for Id {} with Requestr Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -285,6 +291,10 @@ public class MawbStocksService implements IMawbStocksService {
 
     private MawbStocks convertRequestToEntity(MawbStocksRequest request) {
         return jsonHelper.convertValue(request, MawbStocks.class);
+    }
+
+    private void callV1Sync(MawbStocks mawbStocks) {
+        mawbStockSync.sync(mawbStocks);
     }
 
 //    private void setManyToOneRelationships(MawbStocks mawbStocks){
