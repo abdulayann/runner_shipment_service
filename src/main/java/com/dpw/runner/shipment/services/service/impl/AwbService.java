@@ -1571,6 +1571,7 @@ public class AwbService implements IAwbService {
             }
             case AWB_OTHER_CHARGES_INFO: {
                 awb.setAwbOtherChargesInfo(null);
+                awb.setAwbPaymentInfo(null);
                 break;
             }
             case AWB_OCI_INFO: {
