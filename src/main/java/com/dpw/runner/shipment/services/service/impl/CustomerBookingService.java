@@ -264,9 +264,12 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                 && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform) {
-            bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
+            CustomerBooking finalCustomerBooking1 = customerBooking;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(finalCustomerBooking1)), executorService);
+
         } else if (isCreatedInPlatform) {
-            bookingIntegrationsUtility.updateBookingInPlatform(customerBooking);
+            CustomerBooking finalCustomerBooking = customerBooking;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(finalCustomerBooking)), executorService);
         }
 
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
