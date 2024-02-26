@@ -100,7 +100,6 @@ public class BookingIntegrationsUtility {
         throw new RuntimeException();
     }
 
-    @Async
     public void updateBookingInPlatform(CustomerBooking customerBooking) {
         try {
             platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
