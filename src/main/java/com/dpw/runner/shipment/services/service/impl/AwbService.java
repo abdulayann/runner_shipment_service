@@ -50,6 +50,7 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -2478,11 +2479,11 @@ public class AwbService implements IAwbService {
         if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
         if (!Objects.isNull(awbResponse.getAwbOtherInfo()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbOtherInfo(), AwbOtherInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
+            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbOtherInfo(), AwbOtherInfo.class, fieldNameKeyMap, AwbOtherInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
             awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + (count.incrementAndGet()))));
         if (!Objects.isNull(awbResponse.getDefaultAwbShipmentInfo()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getDefaultAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
+            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getDefaultAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() + Constants.class )));
         if(!Objects.isNull(awbResponse.getDefaultAwbRoutingInfo()))
             awbResponse.getDefaultAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + (count.incrementAndGet()))));
         if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
@@ -2992,8 +2993,8 @@ public class AwbService implements IAwbService {
 
         List<Object> criteria = Arrays.asList(
                 Arrays.asList(EntityTransferConstants.NAME_WO_DIACRITICS),
-                "in",
-                List.of(name)
+                Operators.IN.getValue(),
+                List.of(diarcties)
         );
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
 
@@ -3001,7 +3002,7 @@ public class AwbService implements IAwbService {
         try {
             v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
         } catch (Exception e) {
-            return "";
+            return StringUtility.getEmptyString();
         }
 
         List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
