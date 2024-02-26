@@ -14,10 +14,13 @@ import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
+import com.dpw.runner.shipment.services.syncing.Entity.MawbStocksV2;
+import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IMawbStockSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -56,6 +59,9 @@ public class MawbStocksService implements IMawbStocksService {
 
     @Autowired
     IMawbStockSync mawbStockSync;
+
+    @Autowired
+    SyncEntityConversionService syncEntityConversionService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -295,6 +301,21 @@ public class MawbStocksService implements IMawbStocksService {
 
     private void callV1Sync(MawbStocks mawbStocks) {
         mawbStockSync.sync(mawbStocks);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> createV1MawbStocks(CommonRequestModel commonRequestModel, Boolean checkForSync) {
+        MawbStocks mawbStocks = null;
+        try {
+            MawbStocksV2 mawbStocksV2 = (MawbStocksV2) commonRequestModel.getData();
+            mawbStocks = syncEntityConversionService.mawbStocksV1ToV2(mawbStocksV2);
+            mawbStocks = mawbStocksDao.save(mawbStocks);
+        }
+        catch(Exception e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
+        return (ResponseEntity<IRunnerResponse>) ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
 
 //    private void setManyToOneRelationships(MawbStocks mawbStocks){

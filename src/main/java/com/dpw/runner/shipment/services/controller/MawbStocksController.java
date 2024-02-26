@@ -4,14 +4,18 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
+import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
 import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
+import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.MawbStocksV2;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiResponse;
@@ -94,5 +98,22 @@ public class MawbStocksController {
     @GetMapping(ApiConstants.API_GET_NEXT_MAWB)
     public ResponseEntity getNextMawbNumberByCarrier(@RequestParam @NonNull String airlinePrefix, @RequestParam(required = false) String borrowedFrom) {
         return (ResponseEntity<RunnerResponse<NextMawbCarrierResponse>>) mawbStocksService.getNextMawbNumberByCarrier(airlinePrefix, borrowedFrom);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = MawbStocksConstants.MAWB_STOCKS_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping("/createV1MawbStocks")
+    public ResponseEntity<IRunnerResponse> createV1MawbStocks(@RequestBody @Valid MawbStocksV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
+        String responseMsg;
+        try {
+            return mawbStocksService.createV1MawbStocks(CommonRequestModel.buildRequest(request), checkForSync);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<IRunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

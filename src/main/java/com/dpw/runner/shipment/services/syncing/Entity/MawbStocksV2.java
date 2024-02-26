@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Data;
 
 import java.util.List;
 import java.util.UUID;
 
 @Data
-public class MawbStocksV2 {
+public class MawbStocksV2 implements IRunnerRequest {
     private Long consolidationId;
     private String mawbNumber;
     private String nextMawbNumber;
