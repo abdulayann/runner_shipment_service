@@ -22,6 +22,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -106,5 +107,11 @@ public class CustomerBookingDao implements ICustomerBookingDao {
 
     public Optional<CustomerBooking> findByBookingNumber(String bookingNumber) {
         return customerBookingRepository.findByBookingNumber(bookingNumber);
+    }
+
+    @Override
+    @Transactional
+    public int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated){
+        return customerBookingRepository.updateIsPlatformBookingCreated(id, isPlatformBookingCreated);
     }
 }

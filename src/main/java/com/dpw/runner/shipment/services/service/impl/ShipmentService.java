@@ -1672,7 +1672,7 @@ public class ShipmentService implements IShipmentService {
         // Syncing shipment to V1
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
         if (TenantSettingsDetailsContext.getCurrentTenantSettings().getP100Branch() != null && TenantSettingsDetailsContext.getCurrentTenantSettings().getP100Branch())
-            bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
     }
 
     public void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate) {
