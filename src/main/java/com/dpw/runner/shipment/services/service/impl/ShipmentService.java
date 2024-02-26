@@ -2764,13 +2764,19 @@ public class ShipmentService implements IShipmentService {
                 updatedContainers = oldEntity.get().getContainersList();
             }
             entity.setContainersList(updatedContainers);
-
+            String operation = DBOperationType.CREATE.name();
+            String oldEntityJsonString = null;
             if(id == null) {
                 entity = shipmentDao.save(entity, true);
                 id = entity.getId();
             } else {
+                operation = DBOperationType.UPDATE.name();
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
                 entity = shipmentDao.update(entity, true);
             }
+
+            createAuditLog(entity, oldEntityJsonString, operation);
+
 //            Not needed, added consolidations while saving shipment
 //            attachConsolidations(entity.getId(), tempConsolIds);
 
@@ -2875,6 +2881,24 @@ public class ShipmentService implements IShipmentService {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void createAuditLog(ShipmentDetails entity, String oldEntityJsonString, String operation)
+    {
+        try {
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(entity)
+                            .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class) : null)
+                            .parent(ShipmentDetails.class.getSimpleName())
+                            .parentId(entity.getId())
+                            .operation(operation).build()
+            );
+        }
+        catch (Exception e) {
+            log.error("Error creating audit service log", e);
         }
     }
 
