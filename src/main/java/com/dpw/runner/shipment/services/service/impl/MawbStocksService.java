@@ -8,10 +8,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
 import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
-import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -308,8 +306,19 @@ public class MawbStocksService implements IMawbStocksService {
         MawbStocks mawbStocks = null;
         try {
             MawbStocksV2 mawbStocksV2 = (MawbStocksV2) commonRequestModel.getData();
+            Optional<MawbStocks> optional = mawbStocksDao.findByGuid(mawbStocksV2.getGuid());
             mawbStocks = syncEntityConversionService.mawbStocksV1ToV2(mawbStocksV2);
-            mawbStocks = mawbStocksDao.save(mawbStocks);
+            if(optional.isPresent()) {
+                var mawbStockId = optional.get().getId();
+                mawbStocks.setId(mawbStockId);
+                mawbStocksLinkDao.deleteByParentId(mawbStockId);
+            }
+            List<MawbStocksLink> mawbStocksLinks = mawbStocks.getMawbStocksLinkRows() != null ? mawbStocks.getMawbStocksLinkRows() : new ArrayList();
+            mawbStocksDao.save(mawbStocks);
+            for(var stockLink : mawbStocksLinks) {
+                stockLink.setParentId(mawbStocks.getId());
+                mawbStocksLinkDao.save(stockLink);
+            }
         }
         catch(Exception e) {
             log.error(e.getMessage());
