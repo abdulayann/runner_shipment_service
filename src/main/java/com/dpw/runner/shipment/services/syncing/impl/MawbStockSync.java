@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
+import com.dpw.runner.shipment.services.syncing.Entity.MawbStocksV2;
 import com.dpw.runner.shipment.services.syncing.Entity.V1DataSyncRequest;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IMawbStockSync;
@@ -18,10 +19,15 @@ public class MawbStockSync implements IMawbStockSync {
     @Autowired
     ISyncService syncService;
 
+    @Autowired
+    SyncEntityConversionService syncEntityConversionService;
+
     @Override
     public void sync(MawbStocks mawbStocks) {
+        MawbStocksV2 mawbStocksV2 = syncEntityConversionService.mawbStocksV2ToV1(mawbStocks);
+
         String transactionId = String.valueOf(mawbStocks.getGuid());
-        String finalAwb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(mawbStocks).module(SyncingConstants.MAWB_STOCKS).build());
+        String finalAwb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(mawbStocksV2).module(SyncingConstants.MAWB_STOCKS).build());
         syncService.pushToKafka(finalAwb, String.valueOf(mawbStocks.getId()), String.valueOf(mawbStocks.getGuid()), SyncingConstants.MAWB_STOCKS, transactionId);
     }
 }

@@ -260,4 +260,25 @@ public class SyncEntityConversionService {
         return eventsRequestV2;
     }
 
+    public MawbStocksV2 mawbStocksV2ToV1(MawbStocks mawbStocks) {
+        MawbStocksV2 response = modelMapper.map(mawbStocks, MawbStocksV2.class);
+        if(mawbStocks.getConsolidationId() != null) {
+            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(mawbStocks.getConsolidationId()).get();
+            response.setConsolidationGuid(consolidationDetails.getGuid());
+        }
+
+        for(var mawbStocksLink : response.getMawbStocksLinkRows()) {
+            if(mawbStocksLink.getEntityType().equalsIgnoreCase("SHIPMENT")) {
+                ShipmentDetails shipmentDetails = shipmentDao.findById(mawbStocksLink.getEntityId()).get();
+                mawbStocksLink.setShipmentGuid(shipmentDetails.getGuid());
+            }
+            else if(mawbStocksLink.getEntityType().equalsIgnoreCase("CONSOLIDATION")) {
+                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(mawbStocksLink.getEntityId()).get();
+                mawbStocksLink.setConsolidationGuid(consolidationDetails.getGuid());
+            }
+        }
+
+        return response;
+    }
+
 }
