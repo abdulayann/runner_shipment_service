@@ -623,7 +623,7 @@ public class AwbService implements IAwbService {
             if (mawbGoodsDescriptionInfo.getRateClass() == 1)
                 mawbGoodsDescriptionInfo.setTotalAmount(mawbGoodsDescriptionInfo.getRateCharge());
             else
-                mawbGoodsDescriptionInfo.setTotalAmount(mawbGoodsDescriptionInfo.getRateCharge().multiply(roundOffAirShipment(chargeableWeightOfMawbGood)));
+                mawbGoodsDescriptionInfo.setTotalAmount(mawbGoodsDescriptionInfo.getRateCharge().multiply(mawbGoodsDescriptionInfo.getChargeableWt()));
         }
         totalAmountOfMawbGood = mawbGoodsDescriptionInfo.getTotalAmount();
         mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
@@ -3012,7 +3012,7 @@ public class AwbService implements IAwbService {
     }
 
     private void populateIssuingAgent(AwbShipmentInfo awbShipmentInfo, TenantModel tenantModel, AwbCargoInfo awbCargoInfo) {
-        if(tenantModel.DefaultOrgId != null){
+        if(tenantModel.DefaultOrgId != null) {
             // Fetch Organization Data for defaultOrgId
             try {
                 CommonV1ListRequest orgRequest = new CommonV1ListRequest();
@@ -3033,6 +3033,11 @@ public class AwbService implements IAwbService {
                                 orgList.get(0).getCountry() : null;
                         if (country != null)
                             awbCargoInfo.setCustomOriginCode(getCountryCode(country));
+                        String city = orgList.get(0) != null ? stringValueOf(orgList.get(0).getCity()) : null;
+                        if(StringUtility.isNotEmpty(city))
+                            executedAt = setUnLocationDataWithDiarcties(city);
+                        else
+                            executedAt = null;
                     }
                 }
 
