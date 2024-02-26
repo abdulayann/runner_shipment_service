@@ -871,13 +871,11 @@ public class PackingService implements IPackingService {
             pack.setVolume(BigDecimal.valueOf(vol));
             request.setVolumeUnit("M3");
             request.setVolume(BigDecimal.valueOf(vol));
-            if (vol > 0.0) {
-                if (request.getTransportMode() != null && request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
-                    var obj = this.calculateVolumetricWeightForAir(BigDecimal.valueOf(vol), pack.getWeight(), request.getTransportMode(), request.getWeightUnit(), request.getVolumeUnit());
-                    calculateChargeableForAir(pack, request);
-                    pack.setVolumeWeight(obj.getVolumeWeight());
-                    pack.setVolumeWeightUnit(obj.getVolumeWeightUnit());
-                }
+            if (vol > 0.0 && request.getTransportMode() != null && request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
+                var obj = this.calculateVolumetricWeightForAir(BigDecimal.valueOf(vol), pack.getWeight(), request.getTransportMode(), request.getWeightUnit(), request.getVolumeUnit());
+                calculateChargeableForAir(pack, request);
+                pack.setVolumeWeight(obj.getVolumeWeight());
+                pack.setVolumeWeightUnit(obj.getVolumeWeightUnit());
             }
         } else if (!(len == null && width == null && height == null)) {
             pack.setVolume(null);
