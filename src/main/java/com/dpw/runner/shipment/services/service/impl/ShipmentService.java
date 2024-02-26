@@ -3957,7 +3957,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDao.saveAll(shipments);
                 for (ShipmentDetails shipmentDetails : shipments) {
                     try {
-                        shipmentSync.sync(shipmentDetails, null, null, shipmentDetails.getGuid().toString(), false);
+                        shipmentSync.sync(shipmentDetails, null, null, shipment.getGuid().toString(), false);
                     } catch (Exception e) {
                         log.error("Error performing sync on shipment entity, {}", e);
                     }
