@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbPackingInfo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
@@ -11,7 +12,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class AwbGoodsDescriptionInfoModel {
+public class AwbGoodsDescriptionInfoModel implements IDocumentModel {
     @JsonProperty("EntityId")
     private Long entityId;
     @JsonProperty("EntityType")

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.adapters.config;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,7 +41,7 @@ public class NPMConfig {
         restTemplate.getInterceptors().add((request, body, execution) -> {
             HttpHeaders headers = request.getHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("x-api-key", xApiKey);
+            headers.set(ApiConstants.X_API_KEY, xApiKey);
             return execution.execute(request, body);
         });
         return restTemplate;
@@ -52,7 +53,7 @@ public class NPMConfig {
         restTemplate.getInterceptors().add((request, body, execution) -> {
             HttpHeaders headers = request.getHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("x-api-key", xApiKey);
+            headers.set(ApiConstants.X_API_KEY, xApiKey);
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             headers.add("Authorization", RequestAuthContext.getAuthToken());
             return execution.execute(request, body);
@@ -65,7 +66,7 @@ public class NPMConfig {
         restTemplate.getInterceptors().add((request, body, execution) -> {
             HttpHeaders headers = request.getHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("x-api-key", multiLangXApiKey);
+            headers.set(ApiConstants.X_API_KEY, multiLangXApiKey);
             return execution.execute(request, body);
         });
         return restTemplate;

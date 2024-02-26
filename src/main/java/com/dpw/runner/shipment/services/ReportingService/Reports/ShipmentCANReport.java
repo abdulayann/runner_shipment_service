@@ -32,6 +32,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 public class ShipmentCANReport extends IReport {
 
+    public static final String REGEX_S_S_PATTERN = "%s %s";
     @Autowired
     private JsonHelper jsonHelper;
 
@@ -213,11 +214,11 @@ public class ShipmentCANReport extends IReport {
         dictionary.put(AIRLINE, shipmentCANModel.shipmentDetails.getCarrierDetails().getShippingLine());
         dictionary.put(CMS_REMARKS, shipmentCANModel.shipmentDetails.getGoodsDescription());
         if(shipmentCANModel.shipmentDetails.getVolumetricWeight() != null)
-            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(shipmentCANModel.shipmentDetails.getVolumetricWeight()), shipmentCANModel.shipmentDetails.getVolumetricWeightUnit()));
+            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format(REGEX_S_S_PATTERN, twoDecimalPlacesFormatDecimal(shipmentCANModel.shipmentDetails.getVolumetricWeight()), shipmentCANModel.shipmentDetails.getVolumetricWeightUnit()));
         if(shipmentCANModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format("%s %s", ConvertToWeightNumberFormat(shipmentCANModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), shipmentCANModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format(REGEX_S_S_PATTERN, ConvertToWeightNumberFormat(shipmentCANModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), shipmentCANModel.shipmentDetails.getWeightUnit()));
         if(shipmentCANModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format("%s %s", ConvertToVolumeNumberFormat(shipmentCANModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), shipmentCANModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format(REGEX_S_S_PATTERN, ConvertToVolumeNumberFormat(shipmentCANModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), shipmentCANModel.shipmentDetails.getVolumeUnit()));
         dictionary.put(ReportConstants.MARKS_AND_NUMBER, shipmentCANModel.shipmentDetails.getMarksNum());
         dictionary.put(ReportConstants.NO_OF_PACKAGES, ReportHelper.addCommaWithoutDecimal(shipmentCANModel.shipmentDetails.getNoOfPacks() == null ? BigDecimal.ZERO : BigDecimal.valueOf(shipmentCANModel.shipmentDetails.getNoOfPacks())));
         if(shipmentCANModel.consolidationModel != null && shipmentCANModel.consolidationModel.getPayment() != null) {

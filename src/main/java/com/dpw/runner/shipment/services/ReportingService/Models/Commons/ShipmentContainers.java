@@ -1,11 +1,12 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.Commons;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
-public class ShipmentContainers {
+public class ShipmentContainers implements IRunnerResponse {
     public String ContainerNumber;
     public String SealNumber;
     public Long NoofPackages;

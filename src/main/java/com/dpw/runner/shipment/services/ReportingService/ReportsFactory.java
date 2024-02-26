@@ -98,9 +98,7 @@ public class ReportsFactory {
                 return freightCertificationReport;
             case ReportConstants.EXPORT_CONSOL_MANIFEST:
                 return manifestConsolReport;
-            case ReportConstants.IMPORT_SHIPMENT_MANIFEST:
-            case ReportConstants.EXPORT_SHIPMENT_MANIFEST:
-            case ReportConstants.GENERATE_ISF_FILE:
+            case ReportConstants.IMPORT_SHIPMENT_MANIFEST, ReportConstants.EXPORT_SHIPMENT_MANIFEST, ReportConstants.GENERATE_ISF_FILE:
                 return manifestShipmentReport;
             case ReportConstants.AWB_LABEL:
                 return awbLabelReport;
@@ -138,7 +136,8 @@ public class ReportsFactory {
                 return shipTruckDriverProof;
             case ReportConstants.CONS_TRUCK_DRIVER_PROOF:
                 return consTruckDriverProof;
+            default:
+                return null;
         }
-        return null;
     }
 }

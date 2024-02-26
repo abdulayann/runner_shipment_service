@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ReportConstants {
+    public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
+    public static final String IMPORT_SHIPMENT_MANIFEST = "ImportShipmentManifest";
     public static final String LOADING_PORT_COUNTRY_NAME = "LoadingPortCountryName";
     public static final String LOADING_PORT_CODE = "LoadingPortCode";
     public static final String DISCHARGE_PORT_CODE = "DischargePortCode";
@@ -617,8 +619,6 @@ public class ReportConstants {
     public static final String MOTHER_REFERENCE_NO = "MotherReferenceNo";
     public static final String FEEDER_REFERENCE_NO = "FeederReferenceNo";
 
-    public static final Set OBJECT_TYPE_REPORTS = new HashSet(Arrays.asList("ImportConsolManifest", "ExportConsolManifest", "ImportShipmentManifest", "ExportShipmentManifest"));
-
     public static final String OBJECT_TYPE = "OBJECT_TYPE";
     public static final String AWB_LABEL = "AwbLabel";
     public static final String COMMERCIAL_INVOICE = "CommercialInvoice";
@@ -655,8 +655,7 @@ public class ReportConstants {
     public static final String SHIPPING_REQUEST = "ShippingRequest";
     public static final String SHIPPING_REQUEST_OUT = "ShippingRequestOut";
     public static final String SHIPPING_REQUEST_AIR = "ShippingRequestAir";
-    public static final String IMPORT_SHIPMENT_MANIFEST = "ImportShipmentManifest";
-    public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
+
     public static final String IMPORT_CONSOL_MANIFEST = "ImportConsolManifest";
     public static final String EXPORT_CONSOL_MANIFEST = "ExportConsolManifest";
     public static final String GENERATE_ISF_FILE = "GenerateISFFile";
@@ -665,7 +664,7 @@ public class ReportConstants {
     public static final String CONSOLIDATED_PACKING_LIST = "ConsolidatedPackingList";
     public static final String COSTAL_DOC = "COSTALdoc";
     public static final String SHIPPING_INSTRUCTION = "ShippingInstruction";
-    public static final Set NEW_TEMPLATE_FLOW = new HashSet(Arrays.asList("ShipTruckwayBill", "ConsTruckwayBill", "ShipTruckDriverProof", "ConsTruckDriverProof", "ShippingRequest", "ShippingRequestAir", "ExportShipmentManifest", "ImportShipmentManifest", "ExportConsolManifest", "ImportConsolManifest"));
+    public static final Set<String> NEW_TEMPLATE_FLOW = Set.of(SHIP_TRUCKWAY_BILL, CONS_TRUCKWAY_BIll, SHIP_TRUCK_DRIVER_PROOF, CONS_TRUCK_DRIVER_PROOF, SHIPPING_REQUEST, SHIPPING_REQUEST_AIR, EXPORT_SHIPMENT_MANIFEST, IMPORT_SHIPMENT_MANIFEST, EXPORT_CONSOL_MANIFEST, IMPORT_CONSOL_MANIFEST);
 
 
     public static final String TRANS_AIR = "AIR";
@@ -967,12 +966,16 @@ public class ReportConstants {
     public static final String SHIPMENT_TRUCKDRIVERDETAILS = "TruckDriverDetails";
     public static final String SHIPMENT_DETAILS_TOTALWEIGHT = "TotalWeight";
 
-    public static String SHIPMENT_PACKING_PACKS_LISTOFPACKINGS = "ListOfPackings";
-    public static String SHIPMENT_PACKING_PACKS_COMMODITIES = "Commodities";
-    public static String SHIPMENT_PACKING_PACKS_PRINTDATE = "PrintDate";
-    public static String SHIPMENT_PACKING_PACKS_UOTNW = "UOTNW";
-    public static String SHIPMENT_PACKING_PACKS_PCKGSUMMARY = "pckgsummary";
-    public static String SHIPMENT_PACKING_PACKS_COMMERCIALINVOICENUMBER = "CommercialInvoiceNumber";
+    public static final String SHIPMENT_PACKING_PACKS_LISTOFPACKINGS = LIST_OF_PACKINGS;
+    public static final String SHIPMENT_PACKING_PACKS_COMMODITIES = COMMODITIES;
+    public static final String SHIPMENT_PACKING_PACKS_PRINTDATE = PRINT_DATE;
+    public static final String REGEX_S_S = "%s %s";
+    public static final String FULL_NAME1 = "FullName";
+    public static final String CONTACT_PERSON_ALIAS = "ContactPerson";
+
+    public static final String SHIPMENT_PACKING_PACKS_UOTNW = "UOTNW";
+    public static final String SHIPMENT_PACKING_PACKS_PCKGSUMMARY = "pckgsummary";
+    public static final String SHIPMENT_PACKING_PACKS_COMMERCIALINVOICENUMBER = "CommercialInvoiceNumber";
 
     public static final String SHIPMENT_DETAILS_CARGOCONTROLNO = "CargoControlNo";
 
@@ -993,4 +996,5 @@ public class ReportConstants {
     public static final String TOTAL_MAWB = "TotalMAWB";
     public static final String CHARGEABLE_WEIGHT = "ChargeableWeight";
     public static final String CHARGEABLE_WEIGHT_UNIT = "ChargeableWeightUnit";
+    public static final Set<String> OBJECT_TYPE_REPORTS = Set.of(IMPORT_CONSOL_MANIFEST, EXPORT_CONSOL_MANIFEST, IMPORT_SHIPMENT_MANIFEST, EXPORT_SHIPMENT_MANIFEST);
 }

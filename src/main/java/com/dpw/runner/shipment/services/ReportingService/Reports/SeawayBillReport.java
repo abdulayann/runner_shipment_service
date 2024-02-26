@@ -20,6 +20,9 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 public class SeawayBillReport extends IReport {
 
+    public static final String GROSS_VOLUME_ALIAS = "GrossVolume";
+    public static final String BL_GROSS_VOLUME_ALIAS = "BL_GrossVolume";
+    public static final String BL_GROSS_WEIGHT_ALIAS = "BL_GrossWeight";
     @Autowired
     HblReport hblReport;
     @Autowired
@@ -88,12 +91,12 @@ public class SeawayBillReport extends IReport {
                     v.put("NetWeight", ConvertToWeightNumberFormat(v.get("NetWeight"), v1TenantSettingsResponse));
                 if (v.get("NoofPackages") != null && v.get("NoofPackages").toString() != null)
                     v.put("NoofPackages", addCommaWithoutDecimal((BigDecimal) v.get("NoofPackages")));
-                if (v.get("GrossVolume") != null && v.get("GrossVolume").toString() != null)
-                    v.put("GrossVolume", addCommas(v.get("GrossVolume").toString()));
-                if (v.get("BL_GrossVolume") != null && v.get("BL_GrossVolume").toString() != null)
-                    v.put("BL_GrossVolume", addCommas(v.get("BL_GrossVolume").toString()));
-                if (v.get("BL_GrossWeight") != null && v.get("BL_GrossWeight").toString() != null)
-                    v.put("BL_GrossWeight", ConvertToWeightNumberFormat(v.get("BL_GrossWeight"), v1TenantSettingsResponse));
+                if (v.get(GROSS_VOLUME_ALIAS) != null && v.get(GROSS_VOLUME_ALIAS).toString() != null)
+                    v.put(GROSS_VOLUME_ALIAS, addCommas(v.get(GROSS_VOLUME_ALIAS).toString()));
+                if (v.get(BL_GROSS_VOLUME_ALIAS) != null && v.get(BL_GROSS_VOLUME_ALIAS).toString() != null)
+                    v.put(BL_GROSS_VOLUME_ALIAS, addCommas(v.get(BL_GROSS_VOLUME_ALIAS).toString()));
+                if (v.get(BL_GROSS_WEIGHT_ALIAS) != null && v.get(BL_GROSS_WEIGHT_ALIAS).toString() != null)
+                    v.put(BL_GROSS_WEIGHT_ALIAS, ConvertToWeightNumberFormat(v.get(BL_GROSS_WEIGHT_ALIAS), v1TenantSettingsResponse));
             });
             dict.put("ShipmentContainers", values);
         }

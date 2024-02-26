@@ -10,9 +10,22 @@ public class AuditLogConstants {
 
     public static final String AUDIT_LOG_DOWNLOAD_SUCCESSFUL = "Successful Audit Log Data Download";
 
+        public static final String TRANSPORT_MODE = "transportMode";
+        public static final String TRANSPORT_MODE_VALUE = "Transport Mode";
+        public static final String SHIPMENT_ID_VALUE = "Shipment Id";
+        public static final String SHIPMENT_ID = "shipmentId";
+        public static final String IS_DOMESTIC = "isDomestic";
+        public static final String IS_DOMESTIC_VALUE = "Is Domestic";
+        public static final String CHARGEABLE_UNIT = "chargeableUnit";
+        public static final String CHARGEABLE_UNIT_VAL = "Chargeable Unit";
+        public static final String NET_WEIGHT_VAL = "Net Weight";
+        public static final String NET_WEIGHT = "netWeight";
+        public static final String NET_WEIGHT_UNIT_VAL = "Net Weight Unit";
+        public static final String NET_WEIGHT_UNIT = "netWeightUnit";
+        public static final String VOYAGE_VAL = "Voyage";
         public static final Map<String, String> ShipmentsFieldNameToDisplayNameMap = new HashMap<String, String>() {{
                 put("houseBill", "House Bill");
-                put("transportMode", "Transport Mode");
+                put(TRANSPORT_MODE, TRANSPORT_MODE_VALUE);
                 put("direction", "Direction");
                 put("shipmentType", "Shipment Type");
                 put("containersList", "Containers List");
@@ -26,8 +39,8 @@ public class AuditLogConstants {
                 put("salesAgent", "Sales Agent");
                 put("paymentTerms", "Payment Terms");
                 put("incoterms", "Incoterms");
-                put("shipmentId", "Shipment Id");
-                put("isDomestic", "Is Domestic");
+                put(SHIPMENT_ID, SHIPMENT_ID_VALUE);
+                put(IS_DOMESTIC, IS_DOMESTIC_VALUE);
                 put("assignedTo", "Assigned To");
                 put("additionalTerms", "Additional Terms");
                 put("goodsDescription", "Goods Description");
@@ -47,9 +60,9 @@ public class AuditLogConstants {
                 put("volumetricWeight", "Volumetric Weight");
                 put("volumetricWeightUnit", "Volumetric Weight Unit");
                 put("chargable", "Chargable");
-                put("chargeableUnit", "Chargeable Unit");
-                put("netWeight", "Net Weight");
-                put("netWeightUnit", "Net Weight Unit");
+                put(CHARGEABLE_UNIT, CHARGEABLE_UNIT_VAL);
+                put(NET_WEIGHT, NET_WEIGHT_VAL);
+                put(NET_WEIGHT_UNIT, NET_WEIGHT_UNIT_VAL);
                 put("noOfPacks", "No Of Packs");
                 put("packsUnit", "Packs Unit");
                 put("innerPacks", "Inner Packs");
@@ -190,7 +203,7 @@ public class AuditLogConstants {
                 put("additionalDetails.BOEDate", "BOE Date");
                 put("additionalDetails.WBLPrinted", "WBL Printed");
                 put("additionalDetails.draftPrinted", "Draft Printed");
-                put("additionalDetails.shipmentId", "Shipment Id");
+                put("additionalDetails.shipmentId", SHIPMENT_ID_VALUE);
                 put("additionalDetails.customDeclType", "Custom Decl Type");
                 put("additionalDetails.agentReference", "Agent Reference");
                 put("additionalDetails.bLTermsandConditionsId", "BL Terms And Conditions Id");
@@ -315,7 +328,7 @@ public class AuditLogConstants {
                 put("carrierDetails", "Carrier Details");
                 put("carrierDetails.shippingLine", "Shipping Line");
                 put("carrierDetails.vessel", "Vessel");
-                put("carrierDetails.voyage", "Voyage");
+                put("carrierDetails.voyage", VOYAGE_VAL);
                 put("carrierDetails.flightNumber", "Flight Number");
                 put("carrierDetails.aircraftType", "Aircraft Type");
                 put("carrierDetails.aircraftRegistration", "Aircraft Registration");
@@ -517,16 +530,28 @@ public class AuditLogConstants {
 
         }};
 
+        public static final String CONSOLIDATION_ID = "consolidationId";
+        public static final String CONSOLIDATION_ID_VAL = "Consolidation Id";
+        public static final String BOOKING_ID_VAL = "Booking Id";
+        public static final String BOOKING_ID = "bookingId";
+        public static final String ENTITY_ID_VAL = "Entity Id";
+        public static final String ENTITY_TYPE_VAL = "Entity Type";
+        public static final String ORG_CODE_VAL = "Org Code";
+        public static final String ADDRESS_CODE_VAL = "Address Code";
+        public static final String ORG_DATA_VAL = "Org Data";
+        public static final String ADDRESS_DATA_VAL = "Address Data";
+        public static final String IS_ADDRESS_FREE_TEXT_VAL = "Is Address Free Text";
+        public static final String CONTAINER_CODE = "containerCode";
         public static final Map<String, String> ContainerFieldNameToDisplayNameMap = new HashMap<String, String>() {{
-                put("consolidationId", "Consolidation Id");
-                put("bookingId", "Booking Id");
+                put(CONSOLIDATION_ID, CONSOLIDATION_ID_VAL);
+                put(BOOKING_ID, BOOKING_ID_VAL);
                 put("loggingId", "Logging Id");
-                put("containerCode", "Container Code");
+                put(CONTAINER_CODE, "Container Code");
                 put("sealNumber", "Seal Number");
                 put("descriptionOfGoods", "Description Of Goods");
                 put("noOfPackages", "No Of Packages");
-                put("netWeight", "Net Weight");
-                put("netWeightUnit", "Net Weight Unit");
+                put(NET_WEIGHT, NET_WEIGHT_VAL);
+                put(NET_WEIGHT_UNIT, NET_WEIGHT_UNIT_VAL);
                 put("grossWeight", "Gross Weight");
                 put("grossWeightUnit", "Gross Weight Unit");
                 put("measurement", "Measurement");
@@ -571,9 +596,9 @@ public class AuditLogConstants {
                 put("innerPackageMeasurementUnit", "Inner Package Measurement Unit");
                 put("pacrNumber", "Pacr Number");
                 put("chargeable", "Chargeable");
-                put("chargeableUnit", "Chargeable Unit");
+                put(CHARGEABLE_UNIT, CHARGEABLE_UNIT_VAL);
                 put("isOwnContainer", "Is Own Container");
-                put("transportMode", "Transport Mode");
+                put(TRANSPORT_MODE, TRANSPORT_MODE_VALUE);
                 put("status", "Status");
                 put("extraParams", "Extra Params");
                 put("remarks", "Remarks");
@@ -602,30 +627,31 @@ public class AuditLogConstants {
                 // put("truckingDetails", "Trucking Details");
 
                 put("pickupAddress", "Pickup Address");
-                put("pickupAddress.entityId", "Entity Id");
-                put("pickupAddress.entityType", "Entity Type");
+                put("pickupAddress.entityId", ENTITY_ID_VAL);
+                put("pickupAddress.entityType", ENTITY_TYPE_VAL);
                 put("pickupAddress.type", "Type");
-                put("pickupAddress.orgCode", "Org Code");
-                put("pickupAddress.addressCode", "Address Code");
-                put("pickupAddress.orgData", "Org Data");
-                put("pickupAddress.addressData", "Address Data");
-                put("pickupAddress.isAddressFreeText", "Is Address Free Text");
+                put("pickupAddress.orgCode", ORG_CODE_VAL);
+                put("pickupAddress.addressCode", ADDRESS_CODE_VAL);
+                put("pickupAddress.orgData", ORG_DATA_VAL);
+                put("pickupAddress.addressData", ADDRESS_DATA_VAL);
+                put("pickupAddress.isAddressFreeText", IS_ADDRESS_FREE_TEXT_VAL);
 
                 put("deliveryAddress", "Delivery Address");
-                put("deliveryAddress.entityId", "Entity Id");
-                put("deliveryAddress.entityType", "Entity Type");
+                put("deliveryAddress.entityId", ENTITY_ID_VAL);
+                put("deliveryAddress.entityType", ENTITY_TYPE_VAL);
                 put("deliveryAddress.type", "Type");
-                put("deliveryAddress.orgCode", "Org Code");
-                put("deliveryAddress.addressCode", "Address Code");
-                put("deliveryAddress.orgData", "Org Data");
-                put("deliveryAddress.addressData", "Address Data");
-                put("deliveryAddress.isAddressFreeText", "Is Address Free Text");
+                put("deliveryAddress.orgCode", ORG_CODE_VAL);
+                put("deliveryAddress.addressCode", ADDRESS_CODE_VAL);
+                put("deliveryAddress.orgData", ORG_DATA_VAL);
+                put("deliveryAddress.addressData", ADDRESS_DATA_VAL);
+                put("deliveryAddress.isAddressFreeText", IS_ADDRESS_FREE_TEXT_VAL);
         }};
 
+        public static final String REFERENCE_NUMBER_VAL = "Reference Number";
         public static final Map<String, String> PackingFieldNameToDisplayNameMap = new HashMap<String, String>() {{
-                put("consolidationId", "Consolidation Id");
-                put("shipmentId", "Shipment Id");
-                put("bookingId", "Booking Id");
+                put(CONSOLIDATION_ID, CONSOLIDATION_ID_VAL);
+                put(SHIPMENT_ID, SHIPMENT_ID_VALUE);
+                put(BOOKING_ID, BOOKING_ID_VAL);
                 put("DGGoodsId", "DG Goods Id");
                 put("DGSubstanceId", "DG Substance Id");
                 put("packs", "Packs");
@@ -655,20 +681,20 @@ public class AuditLogConstants {
                 put("HSCode", "HS Code");
                 put("countryCode", "Country Code");
                 put("goodsDescription", "Goods Description");
-                put("referenceNumber", "Reference Number");
+                put("referenceNumber", REFERENCE_NUMBER_VAL);
                 put("DGClass", "DG Class");
                 put("hazardous", "Hazardous");
                 put("commodityId", "Commodity Id");
-                put("netWeight", "Net Weight");
-                put("netWeightUnit", "Net Weight Unit");
+                put(NET_WEIGHT, NET_WEIGHT_VAL);
+                put(NET_WEIGHT_UNIT, NET_WEIGHT_UNIT_VAL);
                 put("volumeWeight", "Volume Weight");
                 put("volumeWeightUnit", "Volume Weight Unit");
                 put("vinNumber", "Vin Number");
                 put("containerId", "Container Id");
-                put("transportMode", "Transport Mode");
+                put(TRANSPORT_MODE, TRANSPORT_MODE_VALUE);
                 put("innerPackageNumber", "Inner Package Number");
                 put("innerPackageType", "Inner Package Type");
-                put("chargeableUnit", "Chargeable Unit");
+                put(CHARGEABLE_UNIT, CHARGEABLE_UNIT_VAL);
                 put("customsReleaseCode", "Customs Release Code");
                 put("shipmentNumber", "Shipment Number");
                 put("innerPacksId", "Inner Packs Id");
@@ -681,22 +707,22 @@ public class AuditLogConstants {
         }};
 
         public static final Map<String, String> RoutingsFieldNameToDisplayNameMap = new HashMap<String, String>() {{
-                put("bookingId", "Booking Id");
-                put("shipmentId", "Shipment Id");
+                put(BOOKING_ID, BOOKING_ID_VAL);
+                put(SHIPMENT_ID, SHIPMENT_ID_VALUE);
                 put("leg", "Leg");
                 put("mode", "Mode");
                 put("routingStatus", "Routing Status");
                 put("vesselName", "Vessel Name");
                 put("pol", "Pol");
                 put("pod", "Pod");
-                put("isDomestic", "Is Domestic");
+                put(IS_DOMESTIC, IS_DOMESTIC_VALUE);
                 put("eta", "Eta");
                 put("etd", "Etd");
                 put("ata", "Ata");
                 put("atd", "Atd");
-                put("consolidationId", "Consolidation Id");
+                put(CONSOLIDATION_ID, CONSOLIDATION_ID_VAL);
                 put("isLinked", "Is Linked");
-                put("voyage", "Voyage");
+                put("voyage", VOYAGE_VAL);
                 put("aircraftRegistration", "Aircraft Registration");
                 put("flightNumber", "Flight Number");
                 put("aircraftType", "Aircraft Type");
@@ -707,16 +733,18 @@ public class AuditLogConstants {
                 put("truckReferenceNumber", "Truck Reference Number");
 
         }};
+        public static final String ENTITY_ID = "entityId";
+        public static final String ENTITY_TYPE = "entityType";
         public static final Map<String, String> NotesFieldNameToDisplayNameMap = new HashMap<String, String>() {{
                 put("text", "Text");
                 put("label", "Label");
                 put("assignedTo", "Asigned To");
-                put("entityId", "Entity Id");
-                put("entityType", "Entity Type");
+                put(ENTITY_ID, ENTITY_ID_VAL);
+                put(ENTITY_TYPE, ENTITY_TYPE_VAL);
                 put("insertUserId", "Insert User Id");
                 put("insertDate", "Insert Date");
                 put("insertUserDisplayName", "Insert User Display Name");
-                put("isDomestic", "Is Domestic");
+                put(IS_DOMESTIC, IS_DOMESTIC_VALUE);
                 put("isPublic", "Is Public");
                 put("isActive", "Is Active");
         }};
@@ -726,14 +754,14 @@ public class AuditLogConstants {
                 put("eta", "Eta");
                 put("etd", "Etd");
                 put("vessel", "Vessel");
-                put("voyage", "Voyage");
+                put("voyage", VOYAGE_VAL);
                 put("carriageType", "Carriage Type");
                 put("carriageMode", "Carriage Mode");
-                put("shipmentId", "Shipment Id");
+                put(SHIPMENT_ID, SHIPMENT_ID_VALUE);
         }};
         public static final Map<String, String> EventsFieldNameToDisplayNameMap = new HashMap<String, String>() {{
-                put("entityId", "Entity Id");
-                put("entityType", "Entity Type");
+                put(ENTITY_ID, ENTITY_ID_VAL);
+                put(ENTITY_TYPE, ENTITY_TYPE_VAL);
                 put("eventCode", "Event Code");
                 put("description", "Description");
                 put("estimated", "Estimated");
@@ -747,26 +775,26 @@ public class AuditLogConstants {
                 put("event_estimate_update_reasons", "Event Estimate Update Reasons");
         }};
         public static final Map<String, String> ReferenceNumbersFieldNameToDisplayNameMap = new HashMap<String, String>() {{
-                put("consolidationId", "Consolidation Id");
+                put(CONSOLIDATION_ID, CONSOLIDATION_ID_VAL);
                 put("countryOfIssue", "Country Of Issue");
                 put("type", "Type");
-                put("referenceNumber", "Reference Number");
-                put("shipmentId", "Shipment Id");
+                put("referenceNumber", REFERENCE_NUMBER_VAL);
+                put(SHIPMENT_ID, SHIPMENT_ID_VALUE);
                 put("isPortalEnable", "Is Portal Enable");
         }};
         public static final Map<String, String> PartiesFieldNameToDisplayNameMap = new HashMap<String, String>() {{
-                put("entityId", "Entity Id");
-                put("entityType", "Entity Type");
+                put(ENTITY_ID, ENTITY_ID_VAL);
+                put(ENTITY_TYPE, ENTITY_TYPE_VAL);
                 put("type", "Type");
-                put("orgCode", "Org Code");
-                put("addressCode", "Address Code");
-                put("orgData", "Org Data");
-                put("addressData", "Address Data");
-                put("isAddressFreeText", "Is Address Free Text");
+                put("orgCode", ORG_CODE_VAL);
+                put("addressCode", ADDRESS_CODE_VAL);
+                put("orgData", ORG_DATA_VAL);
+                put("addressData", ADDRESS_DATA_VAL);
+                put("isAddressFreeText", IS_ADDRESS_FREE_TEXT_VAL);
         }};
         public static final Map<String, String> ServiceDetailsFieldNameToDisplayNameMap = new HashMap<>() {{
-                put("shipmentId", "Shipment Id");
-                put("consolidationId", "Consolidation Id");
+                put(SHIPMENT_ID, SHIPMENT_ID_VALUE);
+                put(CONSOLIDATION_ID, CONSOLIDATION_ID_VAL);
                 put("serviceType", "Service Type");
                 put("contractor", "Contractor");
                 put("contractor.entityId", "Contractor: Entity Id");
@@ -782,11 +810,11 @@ public class AuditLogConstants {
                 put("serviceCount", "Service Count");
                 put("serviceDuration", "Service Duration");
                 put("completionDate", "Completion Date");
-                put("refNumber", "Reference Number");
+                put("refNumber", REFERENCE_NUMBER_VAL);
                 put("serviceNotes", "Service Notes");
         }};
         public static final Map<String, String> TruckDriverDetailsFieldNameToDisplayName = new HashMap<>() {{
-                put("shipmentId", "Shipment Id");
+                put(SHIPMENT_ID, SHIPMENT_ID_VALUE);
                 put("transporterType", "Transporter Type");
                 put("transporterName", "Transporter Name");
                 put("driverName", "Driver Name");
@@ -796,7 +824,7 @@ public class AuditLogConstants {
                 put("truckOrTrailerType", "Truck or Trailer Type");
                 put("containerTypeCode", "Container Type Code");
                 put("containerId", "Container Id");
-                put("consolidationId", "Consolidation Id");
+                put(CONSOLIDATION_ID, CONSOLIDATION_ID_VAL);
                 put("selfTransporterName", "Self Transporter Name");
                 put("remarks", "Remarks");
                 put("truckStatus", "Truck Status");
