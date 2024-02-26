@@ -45,6 +45,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 public class HblReport extends IReport{
 
+
     @Autowired
     private JsonHelper jsonHelper;
 
@@ -613,17 +614,17 @@ public class HblReport extends IReport{
         if (!Objects.isNull(hblModel.shipment.getWeight())) {
             BigDecimal weight = hblModel.shipment.getWeight().round(precision);
             dictionary.put(WEIGHT, ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse));
-            dictionary.put(WEIGHT_AND_UNIT, String.format("%s %s", weight, hblModel.shipment.getWeightUnit()));
+            dictionary.put(WEIGHT_AND_UNIT, String.format(REGEX_S_S, weight, hblModel.shipment.getWeightUnit()));
         }
         if (!Objects.isNull(hblModel.shipment.getVolume())) {
             BigDecimal volume = hblModel.shipment.getVolume().round(precision);
             dictionary.put(VOLUME, volume);
-            dictionary.put(VOLUME_AND_UNIT, String.format("%s %s", volume, hblModel.shipment.getVolumeUnit()));
+            dictionary.put(VOLUME_AND_UNIT, String.format(REGEX_S_S, volume, hblModel.shipment.getVolumeUnit()));
         }
         if (!Objects.isNull(hblModel.shipment.getChargable())) {
             BigDecimal chargeable = hblModel.shipment.getChargable().round(precision);
             dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse));
-            dictionary.put(CHARGEABLE_AND_UNIT, String.format("%s %s", chargeable, hblModel.shipment.getChargeableUnit()));
+            dictionary.put(CHARGEABLE_AND_UNIT, String.format(REGEX_S_S, chargeable, hblModel.shipment.getChargeableUnit()));
             dictionary.put(CHARGEABLE_AND_UNIT_, dictionary.get(CHARGEABLE_AND_UNIT));
         }
 //        dictionary.put(DELIVERY_TO_EMAIL_ADDRESS, DeliveryEmailAddress);
@@ -786,13 +787,13 @@ public class HblReport extends IReport{
         dictionary.put(HBL_NUMBER, hblModel.shipment.getHouseBill());
 
         if(hblModel.shipment.getVolumetricWeight() != null)
-            dictionary.put(V_WEIGHT_AND_UNIT_AIR, String.format("%s %s", ReportHelper.twoDecimalPlacesFormat(
+            dictionary.put(V_WEIGHT_AND_UNIT_AIR, String.format(REGEX_S_S, ReportHelper.twoDecimalPlacesFormat(
                     hblModel.shipment.getVolumetricWeight().toString()), hblModel.shipment.getVolumetricWeightUnit()));
         if(hblModel.shipment.getWeight() != null)
-            dictionary.put(WEIGHT_AND_UNIT_AIR, String.format("%s %s", ReportHelper.twoDecimalPlacesFormat(
+            dictionary.put(WEIGHT_AND_UNIT_AIR, String.format(REGEX_S_S, ReportHelper.twoDecimalPlacesFormat(
                     hblModel.shipment.getWeight().toString()), hblModel.shipment.getWeightUnit()));
         if(hblModel.shipment.getVolume() != null)
-            dictionary.put(VOLUME_AND_UNIT_AIR, String.format("%s %s", ReportHelper.twoDecimalPlacesFormat(
+            dictionary.put(VOLUME_AND_UNIT_AIR, String.format(REGEX_S_S, ReportHelper.twoDecimalPlacesFormat(
                     hblModel.shipment.getVolume().toString()), hblModel.shipment.getVolumeUnit()));
 
         dictionary.put(DESC_OF_GOODS, hblModel.shipment.getGoodsDescription());

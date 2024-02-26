@@ -78,8 +78,8 @@ public class FreightCertificationReport extends IReport{
             consigner = getOrgAddress(freightCertificationModel.shipmentDetails.getConsigner());
             if(freightCertificationModel.shipmentDetails.getConsigner().getOrgData() != null) {
                 Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getConsigner().getOrgData();
-                if(getValueFromMap(partyOrg, "FullName") != null) {
-                    consigner.add(0, getValueFromMap(partyOrg, "FullName"));
+                if(getValueFromMap(partyOrg, FULL_NAME1) != null) {
+                    consigner.add(0, getValueFromMap(partyOrg, FULL_NAME1));
                 }
             }
         }
@@ -89,8 +89,8 @@ public class FreightCertificationReport extends IReport{
             consignee = getOrgAddress(freightCertificationModel.shipmentDetails.getConsignee());
             if(freightCertificationModel.shipmentDetails.getConsignee().getOrgData() != null) {
                 Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getConsignee().getOrgData();
-                if(getValueFromMap(partyOrg, "FullName") != null) {
-                    consignee.add(0, getValueFromMap(partyOrg, "FullName"));
+                if(getValueFromMap(partyOrg, FULL_NAME1) != null) {
+                    consignee.add(0, getValueFromMap(partyOrg, FULL_NAME1));
                 }
             }
         }
@@ -100,8 +100,8 @@ public class FreightCertificationReport extends IReport{
             notify = getOrgAddress(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
             if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null) {
                 Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData();
-                if(getValueFromMap(partyOrg, "FullName") != null) {
-                    notify.add(0, getValueFromMap(partyOrg, "FullName"));
+                if(getValueFromMap(partyOrg, FULL_NAME1) != null) {
+                    notify.add(0, getValueFromMap(partyOrg, FULL_NAME1));
                 }
             }
         }
@@ -112,7 +112,7 @@ public class FreightCertificationReport extends IReport{
         if(tenantsDataList != null)
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(freightCertificationModel.allContainersList));
-        dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(freightCertificationModel.shipmentDetails.getClient().getOrgData(), "FullName"));
+        dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(freightCertificationModel.shipmentDetails.getClient().getOrgData(), FULL_NAME1));
         dictionary.put(ReportConstants.CONSIGNER, consigner);
         dictionary.put(ReportConstants.CONSIGNEE, consignee);
         dictionary.put(ReportConstants.NOTIFY_PARTY, notify);

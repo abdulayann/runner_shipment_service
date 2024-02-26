@@ -30,7 +30,7 @@ public class SyncQueueController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = SyncQueueConstants.GENERATION_SUCCESS, response = RunnerResponse.class)})
     @PostMapping(SyncQueueConstants.TRIGGER_SYNC)
-    @PreAuthorize("hasAuthority('" + Permissions.tenantSuperAdmin + "')")
+    @PreAuthorize("hasAuthority('" + PermissionConstants.tenantSuperAdmin + "')")
     public ResponseEntity<RunnerResponse> triggerSyncRequest(@RequestBody @Valid TriggerSyncRequest request) {
         String responseMsg;
         try {

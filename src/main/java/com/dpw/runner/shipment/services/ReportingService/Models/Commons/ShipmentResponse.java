@@ -12,11 +12,11 @@ public class ShipmentResponse implements IRunnerResponse
     public Long TotalPacks;
     public BigDecimal Weight;
     public String WeightUnit;
-    public List<String> Consigner;
-    public List<String> Consignee;
-    public List<String> ConsignerAddressFreeText ;
-    public List<String> ConsigneeAddressFreeText ;
-    public List<String> NotifyPartyAddressFreeText ;
+    public transient List<String> Consigner;
+    public transient List<String> Consignee;
+    public transient List<String> ConsignerAddressFreeText ;
+    public transient List<String> ConsigneeAddressFreeText ;
+    public transient List<String> NotifyPartyAddressFreeText ;
     public String ConsignerCompanyName;
     public String ConsigneeCompanyName;
     public String ConsignerLocalName;

@@ -7,12 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class NotesModel {
+public class NotesModel implements Serializable {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("Text")

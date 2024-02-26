@@ -138,7 +138,8 @@ public class ReportsFactory {
                 return shipTruckDriverProof;
             case ReportConstants.CONS_TRUCK_DRIVER_PROOF:
                 return consTruckDriverProof;
+            default:
+                return null;
         }
-        return null;
     }
 }

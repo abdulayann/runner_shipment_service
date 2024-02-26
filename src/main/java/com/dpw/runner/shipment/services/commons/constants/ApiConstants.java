@@ -93,4 +93,7 @@ public class ApiConstants {
     public static final String POPULATE_CHARGE_TYPE_DETAILS = "/get/chargeType";
     public static final String GET_GUID_BY_ID= "/get/guid";
 
+
+    public static final String X_API_KEY = "x-api-key";
+    public static final String X_DPW_APPLICATION_ID = "X-DPW-ApplicationId";
 }

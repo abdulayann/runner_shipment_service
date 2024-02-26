@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class DocUploadRequest {
+public class DocUploadRequest implements IDocumentModel{
     private String key;
     private String type;
     private String entityType;

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -14,7 +15,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ConsolidationModel {
+public class ConsolidationModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("ConsolidationNumber")

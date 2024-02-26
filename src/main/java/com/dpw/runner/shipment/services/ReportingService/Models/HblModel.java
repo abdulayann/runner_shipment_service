@@ -17,8 +17,8 @@ public class HblModel implements IDocumentModel{
     //public List<BillChargesRow> billCharges;
     //public BigDecimal prepaidTotalAmount;
     //public BigDecimal collectTotalAmount;
-    public ShipmentModel shipment;
-    public ConsolidationModel consolidation;
+    public transient ShipmentModel shipment;
+    public transient ConsolidationModel consolidation;
     public TenantModel tenant;
     public Hbl blObject;
     public Boolean isHbl;
@@ -32,7 +32,7 @@ public class HblModel implements IDocumentModel{
     public UnlocationsResponse podPort;
     public UnlocationsResponse placeOfIssue;
     public String issuePlaceCountry;
-    public VesselsResponse preCarriageVessel;
+    public transient VesselsResponse preCarriageVessel;
     public String paidPlaceCountry;
     public long noofPackages = 0;
     public Map<String, Long> containerCountGrouped;

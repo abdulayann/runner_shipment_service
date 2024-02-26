@@ -2,7 +2,9 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -26,7 +28,7 @@ public class V1AuthHelper {
     public HttpHeaders getHeadersForDataSync() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("x-api-key", X_API_KEY);
+        headers.add(ApiConstants.X_API_KEY, X_API_KEY);
         headers.add("X-USER-NAME", UserContext.getUser().getUsername());
         headers.add("X-TENANT-ID", StringUtility.convertToString(UserContext.getUser().getTenantId()));
         return headers;
@@ -35,7 +37,7 @@ public class V1AuthHelper {
     public HttpHeaders getHeadersForDataSyncFromKafka(String userName, Integer tenantId) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("x-api-key", X_API_KEY);
+        headers.add(ApiConstants.X_API_KEY, X_API_KEY);
         headers.add("X-USER-NAME", userName);
         headers.add("X-TENANT-ID", StringUtility.convertToString(tenantId));
         return headers;

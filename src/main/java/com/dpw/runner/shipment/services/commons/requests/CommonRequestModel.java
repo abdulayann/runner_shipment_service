@@ -10,6 +10,7 @@ import java.util.List;
 @Builder
 @Slf4j
 public class CommonRequestModel {
+    public static final String RECEIVED_REQUEST_MSG = "Received Request {}";
     private Long id;
     private String guid;
     private IRunnerRequest data;
@@ -23,17 +24,17 @@ public class CommonRequestModel {
     private Object dependentData;
 
     public static CommonRequestModel buildRequest(IRunnerRequest data, int pageNo, int count) {
-        log.debug("Received Request {}", data);
+        log.debug(RECEIVED_REQUEST_MSG, data);
         return CommonRequestModel.builder().data(data).count(count).pageNo(pageNo).build();
     }
 
     public static CommonRequestModel buildRequest(IRunnerRequest data) {
-        log.debug("Received Request {}", data);
+        log.debug(RECEIVED_REQUEST_MSG, data);
         return CommonRequestModel.builder().data(data).build();
     }
 
     public static CommonRequestModel buildRequest(String guid, IRunnerRequest data) {
-        log.debug("Received Request {}", data);
+        log.debug(RECEIVED_REQUEST_MSG, data);
         return CommonRequestModel.builder().guid(guid).data(data).build();
     }
 
@@ -62,7 +63,7 @@ public class CommonRequestModel {
     }
 
     public static CommonRequestModel buildRequest(IRunnerRequest data, Boolean isActive) {
-        log.debug("Received Request {}", data);
+        log.debug(RECEIVED_REQUEST_MSG, data);
         return CommonRequestModel.builder().data(data).active(isActive == null || isActive).build();
     }
 
@@ -72,7 +73,7 @@ public class CommonRequestModel {
     }
 
     public static CommonRequestModel buildDependentDataRequest(Object data) {
-        log.debug("Received Request {}", data);
+        log.debug(RECEIVED_REQUEST_MSG, data);
         return CommonRequestModel.builder().dependentData(data).build();
     }
 

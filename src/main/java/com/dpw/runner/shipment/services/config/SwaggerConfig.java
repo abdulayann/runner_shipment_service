@@ -27,6 +27,12 @@ import java.util.List;
 @EnableSwagger2
 public class SwaggerConfig implements WebMvcConfigurer {
 
+    public static final String BAD_REQUEST_MSG = "Bad Request!";
+    public static final String RUNNER_RESPONSE = "RunnerResponse";
+    public static final String NOT_AUTHORIZED = "Not Authorized!";
+    public static final String FORBIDDEN_MSG = "Forbidden!";
+    public static final String NOT_FOUND_MSG = "Not Found!";
+
     @Bean
     public Docket swaggerShipmentsApi(ServletContext servletContext) {
         return new Docket(DocumentationType.SWAGGER_2)
@@ -40,56 +46,56 @@ public class SwaggerConfig implements WebMvcConfigurer {
                 .globalResponseMessage(RequestMethod.POST, ImmutableList.of(
                         new ResponseMessageBuilder()
                                 .code(400)
-                                .message("Bad Request!")
-                                .responseModel(new ModelRef("RunnerResponse")).build(),
+                                .message(BAD_REQUEST_MSG)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
                         new ResponseMessageBuilder()
                                 .code(401)
-                                .message("Not Authorized!")
-                                .responseModel(new ModelRef("RunnerResponse")).build(),
+                                .message(NOT_AUTHORIZED)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
                         new ResponseMessageBuilder()
                                 .code(403)
-                                .message("Forbidden!")
-                                .responseModel(new ModelRef("RunnerResponse")).build(),
+                                .message(FORBIDDEN_MSG)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
                         new ResponseMessageBuilder()
                                 .code(404)
-                                .message("Not Found!")
-                                .responseModel(new ModelRef("RunnerResponse")).build()
+                                .message(NOT_FOUND_MSG)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build()
                 ))
                 .globalResponseMessage(RequestMethod.GET, ImmutableList.of(
                         new ResponseMessageBuilder()
                                 .code(400)
-                                .message("Bad Request!")
-                                .responseModel(new ModelRef("RunnerResponse")).build(),
+                                .message(BAD_REQUEST_MSG)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
                         new ResponseMessageBuilder()
                                 .code(401)
-                                .message("Not Authorized!")
-                                .responseModel(new ModelRef("RunnerResponse")).build(),
+                                .message(NOT_AUTHORIZED)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
                         new ResponseMessageBuilder()
                                 .code(403)
-                                .message("Forbidden!")
-                                .responseModel(new ModelRef("RunnerResponse")).build(),
+                                .message(FORBIDDEN_MSG)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
                         new ResponseMessageBuilder()
                                 .code(404)
-                                .message("Not Found!")
-                                .responseModel(new ModelRef("RunnerResponse")).build()
+                                .message(NOT_FOUND_MSG)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build()
                 ))
                 .globalResponseMessage(RequestMethod.PUT, ImmutableList.of(
                         new ResponseMessageBuilder()
                                 .code(400)
-                                .message("Bad Request!")
-                                .responseModel(new ModelRef("RunnerResponse")).build(),
+                                .message(BAD_REQUEST_MSG)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
                         new ResponseMessageBuilder()
                                 .code(401)
-                                .message("Not Authorized!")
-                                .responseModel(new ModelRef("RunnerResponse")).build(),
+                                .message(NOT_AUTHORIZED)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
                         new ResponseMessageBuilder()
                                 .code(403)
-                                .message("Forbidden!")
-                                .responseModel(new ModelRef("RunnerResponse")).build(),
+                                .message(FORBIDDEN_MSG)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
                         new ResponseMessageBuilder()
                                 .code(404)
-                                .message("Not Found!")
-                                .responseModel(new ModelRef("RunnerResponse")).build()
+                                .message(NOT_FOUND_MSG)
+                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build()
                 ))
                 .select()
                 .apis(RequestHandlerSelectors.basePackage("com.dpw.runner.shipment"))

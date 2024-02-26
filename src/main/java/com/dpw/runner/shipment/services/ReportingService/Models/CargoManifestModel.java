@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Sh
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 
 public class CargoManifestModel implements IDocumentModel{
-    public ShipmentModel shipmentDetails;
+    public transient ShipmentModel shipmentDetails;
     public TenantModel tenantDetails;
     public UsersDto usersDto;
 }
