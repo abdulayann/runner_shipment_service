@@ -797,8 +797,8 @@ public class PackingService implements IPackingService {
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
         BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
         BigDecimal vlInM3 = new BigDecimal(convertUnit(VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
-        BigDecimal factor = new BigDecimal(166.667);
-        if (transportMode == Constants.TRANSPORT_MODE_ROA) {
+        BigDecimal factor = new BigDecimal("166.667");
+        if (Objects.equals(transportMode, TRANSPORT_MODE_ROA)) {
             factor = BigDecimal.valueOf(333.0);
         }
         BigDecimal wvInKG = vlInM3.multiply(factor);
@@ -872,10 +872,11 @@ public class PackingService implements IPackingService {
             pack.setVolume(BigDecimal.valueOf(vol));
             request.setVolumeUnit("M3");
             request.setVolume(BigDecimal.valueOf(vol));
-            if (vol != null && vol.doubleValue() > 0.0) {
-                if (request.getTransportMode() != null && request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
-                    this.calculateVolumetricWeightForAir(BigDecimal.valueOf(vol), pack.getWeight(), request.getTransportMode(), request.getWeightUnit(), request.getVolumeUnit());
-                }
+            if (vol > 0.0 && request.getTransportMode() != null && request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
+                var obj = this.calculateVolumetricWeightForAir(BigDecimal.valueOf(vol), pack.getWeight(), request.getTransportMode(), request.getWeightUnit(), request.getVolumeUnit());
+                calculateChargeableForAir(pack, request);
+                pack.setVolumeWeight(obj.getVolumeWeight());
+                pack.setVolumeWeightUnit(obj.getVolumeWeightUnit());
             }
         } else if (!(len == null && width == null && height == null)) {
             pack.setVolume(null);
@@ -913,7 +914,7 @@ public class PackingService implements IPackingService {
             if (weightUnit != null && volumeUnit != null) {
                 VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
                 response.setChargeable(vwOb.getChargeable());
-                if (transportMode == Constants.TRANSPORT_MODE_AIR) {
+                if (Objects.equals(transportMode, TRANSPORT_MODE_AIR)) {
                     BigDecimal charge = response.getChargeable();
                     BigDecimal half = new BigDecimal("0.50");
                     BigDecimal floor = charge.setScale(0, BigDecimal.ROUND_FLOOR);
