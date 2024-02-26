@@ -2765,12 +2765,30 @@ public class ShipmentService implements IShipmentService {
                 updatedContainers = oldEntity.get().getContainersList();
             }
             entity.setContainersList(updatedContainers);
-
+            String operation = DBOperationType.CREATE.name();
+            String oldEntityJsonString = null;
             if(id == null) {
                 entity = shipmentDao.save(entity, true);
                 id = entity.getId();
             } else {
+                operation = DBOperationType.UPDATE.name();
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
                 entity = shipmentDao.update(entity, true);
+            }
+
+            try {
+                // audit logs
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(entity)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class) : null)
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(entity.getId())
+                                .operation(operation).build()
+                );
+            }
+            catch (Exception e) {
+                log.error("Error creating audit service log", e);
             }
 //            Not needed, added consolidations while saving shipment
 //            attachConsolidations(entity.getId(), tempConsolIds);
