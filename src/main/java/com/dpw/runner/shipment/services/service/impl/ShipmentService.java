@@ -50,6 +50,7 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
@@ -255,6 +256,7 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private ProductIdentifierUtility productEngine;
+    private Random rnd = new Random();
 
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
@@ -275,94 +277,94 @@ public class ShipmentService implements IShipmentService {
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
     );
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("clientOrgCode", RunnerEntityMapping.builder().tableName("client").dataType(String.class).fieldName("orgCode").isContainsText(true).build()),
-            Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName("consigner").dataType(String.class).fieldName("orgCode").isContainsText(true).build()),
-            Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName("consignee").dataType(String.class).fieldName("orgCode").isContainsText(true).build()),
-            Map.entry("clientAddressCode", RunnerEntityMapping.builder().tableName("client").dataType(Integer.class).fieldName("addressCode").isContainsText(true).build()),
-            Map.entry("consignerAddressCode", RunnerEntityMapping.builder().tableName("consigner").dataType(String.class).fieldName("addressCode").isContainsText(true).build()),
-            Map.entry("consigneeAddressCode", RunnerEntityMapping.builder().tableName("consignee").dataType(String.class).fieldName("addressCode").isContainsText(true).build()),
-            Map.entry("houseBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("houseBill").isContainsText(true).build()),
-            Map.entry("houseBillType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("houseBillType").isContainsText(true).build()),
-            Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("transportMode").isContainsText(true).build()),
-            Map.entry("releaseType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("releaseType").isContainsText(true).build()),
-            Map.entry("deliveryMode", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("deliveryMode").isContainsText(true).build()),
-            Map.entry("direction", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("direction").isContainsText(true).build()),
-            Map.entry("shipmentType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("shipmentType").isContainsText(true).build()),
-            Map.entry("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).fieldName("status").build()),
-            Map.entry("guid", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(UUID.class).fieldName("guid").build()),
-            Map.entry("source", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("source").isContainsText(true).build()),
-            Map.entry("jobType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("jobType").isContainsText(true).build()),
-            Map.entry("createdBy", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("createdBy").isContainsText(true).build()),
-            Map.entry("serviceType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("serviceType").isContainsText(true).build()),
-            Map.entry("masterBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("masterBill").isContainsText(true).build()),
-            Map.entry("bookingReference", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("bookingReference").isContainsText(true).build()),
-            Map.entry("consolRef", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("consolRef").isContainsText(true).build()),
-            Map.entry("salesAgent", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Long.class).fieldName("salesAgent").build()),
-            Map.entry("paymentTerms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("paymentTerms").isContainsText(true).build()),
-            Map.entry("incoterms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("incoterms").isContainsText(true).build()),
-            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("shipmentId").isContainsText(true).build()),
-            Map.entry("isDomestic", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Boolean.class).fieldName("isDomestic").build()),
-            Map.entry("assignedTo", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).fieldName("assignedTo").build()),
-            Map.entry("additionalTerms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("additionalTerms").isContainsText(true).build()),
-            Map.entry("goodsDescription", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("goodsDescription").isContainsText(true).build()),
-            Map.entry("createdAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(LocalDateTime.class).fieldName("createdAt").build()),
-            Map.entry("updatedAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(LocalDateTime.class).fieldName("updatedAt").build()),
-            Map.entry("deliveryEstimated", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
-            Map.entry("deliveryActual", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
-            Map.entry("deliveryRequiredBy", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).fieldName("requiredBy").build()),
-            Map.entry("pickupEstimated", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
-            Map.entry("pickupActual", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
-            Map.entry("pickupRequiredBy", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).fieldName("requiredBy").build()),
-            Map.entry("screeningStatus", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("screeningStatus").isContainsText(true).build()),
-            Map.entry("paidPlace", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).fieldName("paidPlace").build()),
-            Map.entry("placeOfIssue", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).fieldName("placeOfIssue").build()),
-            Map.entry("dateOfIssue", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).fieldName("dateOfIssue").build()),
-            Map.entry("dateOfReceipt", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).fieldName("dateOfReceipt").build()),
-            Map.entry("goodsCo", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("goodsCo").build()),
-            Map.entry("BOEDate", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).fieldName("BOEDate").build()),
-            Map.entry("boeNumber", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("BOENumber").isContainsText(true).build()),
-            Map.entry("shippingLine", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("shippingLine").isContainsText(true).build()),
-            Map.entry("vessel", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("vessel").build()),
-            Map.entry("voyage", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("voyage").build()),
-            Map.entry("origin", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("origin").build()),
-            Map.entry("destination", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("destination").build()),
-            Map.entry("originPort", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("originPort").build()),
-            Map.entry("destinationPort", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("destinationPort").build()),
-            Map.entry("eta", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("eta").build()),
-            Map.entry("etd", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("etd").build()),
-            Map.entry("ata", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("ata").build()),
-            Map.entry("atd", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("atd").build()),
-            Map.entry("weight", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).fieldName("weight").build()),
-            Map.entry("weightUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("weightUnit").build()),
-            Map.entry("volume", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).fieldName("volume").build()),
-            Map.entry("volumeUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("volumeUnit").build()),
-            Map.entry("volumetricWeight", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).fieldName("volumetricWeight").build()),
-            Map.entry("volumetricWeightUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("volumetricWeightUnit").build()),
-            Map.entry("chargable", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).fieldName("chargable").build()),
-            Map.entry("chargeableUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("chargeableUnit").build()),
-            Map.entry("netWeight", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).fieldName("netWeight").build()),
-            Map.entry("netWeightUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("netWeightUnit").build()),
-            Map.entry("noOfPacks", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).fieldName("noOfPacks").build()),
-            Map.entry("packsUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("packsUnit").build()),
-            Map.entry("innerPacks", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).fieldName("innerPacks").build()),
-            Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("innerPackUnit").build()),
-            Map.entry("jobStatus", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("jobStatus").build()),
-            Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerNumber").build()),
-            Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerCode").build()),
-            Map.entry("id", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Long.class).fieldName("id").build()),
-            Map.entry("consolidationNumber", RunnerEntityMapping.builder().tableName("consolidationList").dataType(String.class).fieldName("consolidationNumber").build()),
-            Map.entry("orderNumber", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("orderManagementId").build()),
+            Map.entry("clientOrgCode", RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry("clientAddressCode", RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(Integer.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
+            Map.entry("consignerAddressCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
+            Map.entry("consigneeAddressCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
+            Map.entry("houseBill", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("houseBill").isContainsText(true).build()),
+            Map.entry("houseBillType", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("houseBillType").isContainsText(true).build()),
+            Map.entry(Constants.TRANSPORT_MODE, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.TRANSPORT_MODE).isContainsText(true).build()),
+            Map.entry("releaseType", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("releaseType").isContainsText(true).build()),
+            Map.entry("deliveryMode", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("deliveryMode").isContainsText(true).build()),
+            Map.entry(Constants.DIRECTION, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.DIRECTION).isContainsText(true).build()),
+            Map.entry("shipmentType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("shipmentType").isContainsText(true).build()),
+            Map.entry(Constants.STATUS, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Integer.class).fieldName(Constants.STATUS).build()),
+            Map.entry("guid", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(UUID.class).fieldName("guid").build()),
+            Map.entry("source", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("source").isContainsText(true).build()),
+            Map.entry(Constants.JOB_TYPE, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.JOB_TYPE).isContainsText(true).build()),
+            Map.entry("createdBy", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("createdBy").isContainsText(true).build()),
+            Map.entry("serviceType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("serviceType").isContainsText(true).build()),
+            Map.entry("masterBill", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("masterBill").isContainsText(true).build()),
+            Map.entry("bookingReference", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("bookingReference").isContainsText(true).build()),
+            Map.entry("consolRef", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("consolRef").isContainsText(true).build()),
+            Map.entry("salesAgent", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Long.class).fieldName("salesAgent").build()),
+            Map.entry("paymentTerms", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("paymentTerms").isContainsText(true).build()),
+            Map.entry("incoterms", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("incoterms").isContainsText(true).build()),
+            Map.entry(Constants.SHIPMENT_ID, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.SHIPMENT_ID).isContainsText(true).build()),
+            Map.entry("isDomestic", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isDomestic").build()),
+            Map.entry("assignedTo", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Integer.class).fieldName("assignedTo").build()),
+            Map.entry("additionalTerms", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("additionalTerms").isContainsText(true).build()),
+            Map.entry("goodsDescription", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("goodsDescription").isContainsText(true).build()),
+            Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(LocalDateTime.class).fieldName("createdAt").build()),
+            Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(LocalDateTime.class).fieldName("updatedAt").build()),
+            Map.entry("deliveryEstimated", RunnerEntityMapping.builder().tableName(Constants.DELIVERY_DETAILS).dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
+            Map.entry("deliveryActual", RunnerEntityMapping.builder().tableName(Constants.DELIVERY_DETAILS).dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
+            Map.entry("deliveryRequiredBy", RunnerEntityMapping.builder().tableName(Constants.DELIVERY_DETAILS).dataType(LocalDateTime.class).fieldName("requiredBy").build()),
+            Map.entry("pickupEstimated", RunnerEntityMapping.builder().tableName(Constants.PICKUP_DETAILS).dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
+            Map.entry("pickupActual", RunnerEntityMapping.builder().tableName(Constants.PICKUP_DETAILS).dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
+            Map.entry("pickupRequiredBy", RunnerEntityMapping.builder().tableName(Constants.PICKUP_DETAILS).dataType(LocalDateTime.class).fieldName("requiredBy").build()),
+            Map.entry("screeningStatus", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("screeningStatus").isContainsText(true).build()),
+            Map.entry("paidPlace", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(Long.class).fieldName("paidPlace").build()),
+            Map.entry("placeOfIssue", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(Long.class).fieldName("placeOfIssue").build()),
+            Map.entry("dateOfIssue", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(LocalDateTime.class).fieldName("dateOfIssue").build()),
+            Map.entry("dateOfReceipt", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(LocalDateTime.class).fieldName("dateOfReceipt").build()),
+            Map.entry("goodsCo", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("goodsCo").build()),
+            Map.entry("BOEDate", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(LocalDateTime.class).fieldName("BOEDate").build()),
+            Map.entry("boeNumber", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("BOENumber").isContainsText(true).build()),
+            Map.entry(Constants.SHIPPING_LINE, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.SHIPPING_LINE).isContainsText(true).build()),
+            Map.entry(Constants.VESSEL, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.VESSEL).build()),
+            Map.entry(Constants.VOYAGE, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.VOYAGE).build()),
+            Map.entry("origin", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("origin").build()),
+            Map.entry("destination", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destination").build()),
+            Map.entry(Constants.ORIGIN_PORT, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.ORIGIN_PORT).build()),
+            Map.entry(Constants.DESTINATION_PORT, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.DESTINATION_PORT).build()),
+            Map.entry("eta", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).fieldName("eta").build()),
+            Map.entry("etd", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).fieldName("etd").build()),
+            Map.entry("ata", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).fieldName("ata").build()),
+            Map.entry("atd", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).fieldName("atd").build()),
+            Map.entry("weight", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(BigDecimal.class).fieldName("weight").build()),
+            Map.entry("weightUnit", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("weightUnit").build()),
+            Map.entry("volume", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(BigDecimal.class).fieldName("volume").build()),
+            Map.entry("volumeUnit", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("volumeUnit").build()),
+            Map.entry("volumetricWeight", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(BigDecimal.class).fieldName("volumetricWeight").build()),
+            Map.entry("volumetricWeightUnit", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("volumetricWeightUnit").build()),
+            Map.entry("chargable", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(BigDecimal.class).fieldName("chargable").build()),
+            Map.entry("chargeableUnit", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("chargeableUnit").build()),
+            Map.entry("netWeight", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(BigDecimal.class).fieldName("netWeight").build()),
+            Map.entry("netWeightUnit", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("netWeightUnit").build()),
+            Map.entry("noOfPacks", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Integer.class).fieldName("noOfPacks").build()),
+            Map.entry("packsUnit", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("packsUnit").build()),
+            Map.entry("innerPacks", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Integer.class).fieldName("innerPacks").build()),
+            Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("innerPackUnit").build()),
+            Map.entry("jobStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("jobStatus").build()),
+            Map.entry("containerNumber", RunnerEntityMapping.builder().tableName(Constants.CONTAINERS_LIST).dataType(String.class).fieldName("containerNumber").build()),
+            Map.entry("containerCode", RunnerEntityMapping.builder().tableName(Constants.CONTAINERS_LIST).dataType(String.class).fieldName("containerCode").build()),
+            Map.entry("id", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Long.class).fieldName("id").build()),
+            Map.entry("consolidationNumber", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_LIST).dataType(String.class).fieldName("consolidationNumber").build()),
+            Map.entry("orderNumber", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.ORDER_MANAGEMENT_ID).build()),
             Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("referenceNumbersList").dataType(String.class).fieldName("referenceNumber").build()),
-            Map.entry("activityType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("activityType").build()),
-            Map.entry("goodsCO", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("goodsCO").build()),
-            Map.entry("route", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("route").build()),
-            Map.entry("cargoFinanceBooking", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Boolean.class).fieldName("cargoFinanceBooking").build()),
-            Map.entry("isCmsHBLSent", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Boolean.class).fieldName("isCmsHBLSent").build()),
-            Map.entry("orderManagementId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("orderManagementId").isContainsText(true).build()),
-            Map.entry("flightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("flightNumber").build()),
-            Map.entry("consolidationId", RunnerEntityMapping.builder().tableName("consolidationList").dataType(Long.class).fieldName("id").build()),
-            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("voyageOrFlightNumber").build()),
-            Map.entry("shipperRef", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(String.class).fieldName("shipperRef").build())
+            Map.entry("activityType", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("activityType").build()),
+            Map.entry("goodsCO", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("goodsCO").build()),
+            Map.entry("route", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("route").build()),
+            Map.entry("cargoFinanceBooking", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("cargoFinanceBooking").build()),
+            Map.entry("isCmsHBLSent", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(Boolean.class).fieldName("isCmsHBLSent").build()),
+            Map.entry(Constants.ORDER_MANAGEMENT_ID, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.ORDER_MANAGEMENT_ID).isContainsText(true).build()),
+            Map.entry(Constants.FLIGHT_NUMBER, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.FLIGHT_NUMBER).build()),
+            Map.entry("consolidationId", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_LIST).dataType(Long.class).fieldName("id").build()),
+            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("voyageOrFlightNumber").build()),
+            Map.entry("shipperRef", RunnerEntityMapping.builder().tableName(Constants.PICKUP_DETAILS).dataType(String.class).fieldName("shipperRef").build())
     );
 
     @Override
@@ -399,7 +401,7 @@ public class ShipmentService implements IShipmentService {
     @Override
     public ResponseEntity<?> fetchShipments(CommonRequestModel commonRequestModel) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails", "pickupDetails", "deliveryDetails"));
+        request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
@@ -495,7 +497,6 @@ public class ShipmentService implements IShipmentService {
 
     private List<Parties> createParties(ShipmentDetails shipmentDetails) {
         List<Parties> parties = new ArrayList<>();
-        int random = new Random().nextInt(100);
         for (String partyType : PARTY_TYPE) {
             Parties party = Parties.builder()
                     .type(partyType).orgCode(generateString(7)).addressCode(generateString(7))
@@ -510,7 +511,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private CarrierDetails createCarrier() {
-        int random = new Random().nextInt(100);
+        int random = rnd.nextInt(100);
         CarrierDetails carrier = CarrierDetails.builder()
                 .shippingLine(SHIPPING_LINE.get(random % SHIPPING_LINE.size()))
                 .vessel(generateString(5)).voyage(generateString(5)).origin(LOCATIONS.get(random % LOCATIONS.size())).destination(LOCATIONS.get(random % LOCATIONS.size()))
@@ -522,7 +523,7 @@ public class ShipmentService implements IShipmentService {
 
 
     private ShipmentDetails createShipmentData() {
-        int random = new Random().nextInt(100);
+        int random = rnd.nextInt(100);
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(1)
                 .source(SOURCE.get(random % SOURCE.size())).transportMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).shipmentType(SHIPMENT_TYPE.get(random % SHIPMENT_TYPE.size()))
                 .houseBill(generateString(10)).masterBill(generateString(10)).bookingReference(generateString(10)).consolRef(generateString(10)).paymentTerms(generateString(3))
@@ -534,9 +535,8 @@ public class ShipmentService implements IShipmentService {
 
     private String generateString(int length) {
         StringBuilder salt = new StringBuilder();
-        Random rnd = new Random();
         while (salt.length() < length) {
-            salt.append(Constants.SALT_CHARS.charAt(rnd.nextInt() * Constants.SALT_CHARS.length()));
+            salt.append(Constants.SALT_CHARS.charAt(this.rnd.nextInt() * Constants.SALT_CHARS.length()));
         }
         return salt.toString();
     }
@@ -588,7 +588,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setNotesList(null);
                 shipmentSync.sync(shipmentDetails, null, notesRequest, transactionId, true);
             } catch (Exception e){
-                log.error("Error performing sync on shipment entity, {}", e);
+                log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
             }
             if(hbl != null) {
                 try {
@@ -848,7 +848,7 @@ public class ShipmentService implements IShipmentService {
             long id = request.getId();
             oldEntity=shipmentDao.findById(id);
             if (!oldEntity.isPresent()) {
-                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
@@ -1337,7 +1337,7 @@ public class ShipmentService implements IShipmentService {
         try {
             shipmentSync.sync(entity, null, null, entity.getGuid().toString(), false);
         } catch (Exception e){
-            log.error("Error performing sync on shipment entity, {}", e);
+            log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
         }
         return ResponseHelper.buildSuccessResponse(objectMapper.convertValue(entity, ShipmentDetailsResponse.class));
     }
@@ -1353,7 +1353,7 @@ public class ShipmentService implements IShipmentService {
         long id=oldEntity.get().getId();
         Integer previousStatus = oldEntity.get().getStatus();
         if (!oldEntity.isPresent()) {
-            log.debug("Shipment Details is null for Id {}", shipmentRequest.getId());
+            log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, shipmentRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -1402,7 +1402,7 @@ public class ShipmentService implements IShipmentService {
         try {
             shipmentSync.sync(shipmentDetails, deletedContGuids, null, transactionId, false);
         } catch (Exception e){
-            log.error("Error performing sync on shipment entity, {}", e);
+            log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
         }
         if(hbl != null) {
             try {
@@ -1854,12 +1854,12 @@ public class ShipmentService implements IShipmentService {
 
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
-            log.error("Request is empty for Shipment list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
         }
-        request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
+        request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
-        log.info("Shipment list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
         try(Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("ShipmentList");
@@ -1998,13 +1998,13 @@ public class ShipmentService implements IShipmentService {
             // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for Shipment list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             }
-            request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
+            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
 //            checkWayBillNumberCriteria(request);
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
-            log.info("Shipment list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(convertEntityListToFullShipmentList(shipmentDetailsPage.getContent()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -2180,26 +2180,26 @@ public class ShipmentService implements IShipmentService {
             // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for Shipment list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             }
-            request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
+            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
             checkWayBillNumberCriteria(request);
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
-            log.info("Shipment list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(shipmentDetailsPage.getContent()),
-                    shipmentDetailsPage.getTotalPages(),
-                    shipmentDetailsPage.getTotalElements());
+            log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildListSuccessResponse(
+                        convertEntityListToDtoList(shipmentDetailsPage.getContent()),
+                        shipmentDetailsPage.getTotalPages(),
+                        shipmentDetailsPage.getTotalElements());
             else {
-               List<IRunnerResponse>filtered_list=new ArrayList<>();
-            for( var curr: convertEntityListToDtoList(shipmentDetailsPage.getContent())){
-                RunnerPartialListResponse res=new RunnerPartialListResponse();
-                res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
-                filtered_list.add( res);
+                List<IRunnerResponse>filtered_list=new ArrayList<>();
+                for( var curr: convertEntityListToDtoList(shipmentDetailsPage.getContent())){
+                    RunnerPartialListResponse res=new RunnerPartialListResponse();
+                    res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    filtered_list.add( res);
 
-            }
+                }
                 return ResponseHelper.buildListSuccessResponse(
                         filtered_list,
                         shipmentDetailsPage.getTotalPages(),
@@ -2250,7 +2250,7 @@ public class ShipmentService implements IShipmentService {
             if (request == null) {
                 log.error("Request is empty for Shipment async list for Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
+            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Shipment async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
@@ -2281,7 +2281,7 @@ public class ShipmentService implements IShipmentService {
             long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             String oldEntityJsonString = jsonHelper.convertToJson(shipmentDetails.get());
@@ -2355,7 +2355,7 @@ public class ShipmentService implements IShipmentService {
             long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             shipmentDetails.get().setFileRepoList(fileRepoDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
@@ -2384,7 +2384,7 @@ public class ShipmentService implements IShipmentService {
             }
             long id = request.getId();
 
-            CommonRequestModel commonListRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("shipmentId", id, "="));
+            CommonRequestModel commonListRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest(Constants.SHIPMENT_ID, id, "="));
             CommonRequestModel commonListRequestModelbyEntityId = CommonRequestModel.buildRequest(constructListCommonRequest("entityId", id, "="));
 
             CompletableFuture<ResponseEntity<?>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
@@ -2434,7 +2434,7 @@ public class ShipmentService implements IShipmentService {
             id = oldEntity.get().getId();
         }
         else {
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentRequest.getShipmentId().get(), "=");
+            ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentRequest.getShipmentId().get(), "=");
             Pair<Specification<ShipmentDetails>, Pageable> shipmentPair = fetchData(listCommonRequest, ShipmentDetails.class);
             Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(shipmentPair.getLeft(), shipmentPair.getRight());
             if(shipmentDetails != null && shipmentDetails.get().count() == 1) {
@@ -2451,7 +2451,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
         if (!oldEntity.isPresent()) {
-            log.debug("Shipment Details is null for Id {}", shipmentRequest.getId());
+            log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, shipmentRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -2547,7 +2547,7 @@ public class ShipmentService implements IShipmentService {
                 try {
                     shipmentSync.sync(entity, null, null, entity.getGuid().toString(), false);
                 } catch (Exception e) {
-                    log.error("Error performing sync on shipment entity, {}", e);
+                    log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
                 }
             }
 
@@ -2604,7 +2604,7 @@ public class ShipmentService implements IShipmentService {
         boolean flag = true;
 
         while(flag) {
-            ListCommonRequest listRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+            ListCommonRequest listRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentId, "=");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class);
             Page<ShipmentDetails> shipments = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
@@ -2774,28 +2774,28 @@ public class ShipmentService implements IShipmentService {
 //            attachConsolidations(entity.getId(), tempConsolIds);
 
             if (bookingCarriageRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<BookingCarriage>, Pageable> bookingCarriagePair = fetchData(listCommonRequest, BookingCarriage.class);
                 Page<BookingCarriage> oldBookingCarriages = bookingCarriageDao.findAll(bookingCarriagePair.getLeft(), bookingCarriagePair.getRight());
                 List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(convertToEntityList(bookingCarriageRequestList, BookingCarriage.class), id, oldBookingCarriages.stream().toList());
                 entity.setBookingCarriagesList(updatedBookingCarriages);
             }
             if (truckDriverDetailsRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<TruckDriverDetails>, Pageable> truckDriverDetailsPair = fetchData(listCommonRequest, TruckDriverDetails.class);
                 Page<TruckDriverDetails> oldTruckDriverDetails = truckDriverDetailsDao.findAll(truckDriverDetailsPair.getLeft(), truckDriverDetailsPair.getRight());
                 List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromShipment(convertToEntityList(bookingCarriageRequestList, TruckDriverDetails.class), id, oldTruckDriverDetails.stream().toList());
                 entity.setTruckDriverDetails(updatedTruckDriverDetails);
             }
             if (packingRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<Packing>, Pageable> packingPair = fetchData(listCommonRequest, Packing.class);
                 Page<Packing> oldPackings = packingDao.findAll(packingPair.getLeft(), packingPair.getRight());
                 List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, oldPackings.stream().toList(), updatedContainers, map);
                 entity.setPackingList(updatedPackings);
             }
             if (elDetailsRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<ELDetails>, Pageable> elDetailsPair = fetchData(listCommonRequest, ELDetails.class);
                 Page<ELDetails> oldELDetails = elDetailsDao.findAll(elDetailsPair.getLeft(), elDetailsPair.getRight());
                 List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id, oldELDetails.stream().toList());
@@ -2809,28 +2809,28 @@ public class ShipmentService implements IShipmentService {
                 entity.setEventsList(updatedEvents);
             }
             if (jobRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
                 Page<Jobs> oldJobs = jobDao.findAll(pair.getLeft(), pair.getRight());
                 List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id, oldJobs.stream().toList());
                 entity.setJobsList(updatedJobs);
             }
             if (referenceNumbersRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
                 Page<ReferenceNumbers> oldReferenceNumbers = referenceNumbersDao.findAll(pair.getLeft(), pair.getRight());
                 List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id, oldReferenceNumbers.stream().toList());
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
             }
             if (routingsRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
                 Page<Routings> oldRoutings = routingsDao.findAll(pair.getLeft(), pair.getRight());
                 List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(convertToEntityList(routingsRequestList, Routings.class), id, oldRoutings.stream().toList());
                 entity.setRoutingsList(updatedRoutings);
             }
             if (serviceDetailsRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<ServiceDetails>, Pageable> pair = fetchData(listCommonRequest, ServiceDetails.class);
                 Page<ServiceDetails> oldServiceDetails = serviceDetailsDao.findAll(pair.getLeft(), pair.getRight());
                 List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id, oldServiceDetails.stream().toList());
@@ -2934,7 +2934,7 @@ public class ShipmentService implements IShipmentService {
             Long id = commonRequestModel.getId();
             Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
             if(shipmentDetailsOptional == null || !shipmentDetailsOptional.isPresent()) {
-                log.debug("Shipment Details is null for Id {}", id);
+                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
@@ -3342,12 +3342,12 @@ public class ShipmentService implements IShipmentService {
                     if(flag) {
                         if(!contMap.containsKey(pack.getContainerId())) {
                             Map<String, String> tempMap = new HashMap<>();
-                            tempMap.put("handlingInfo", "");
-                            tempMap.put("descriptionOfGoods", "");
+                            tempMap.put(Constants.HANDLING_INFO, "");
+                            tempMap.put(Constants.DESCRIPTION_OF_GOODS, "");
                             contMap.put(pack.getContainerId(), tempMap);
                         }
-                        String handlingInfo = contMap.get(pack.getContainerId()).get("handlingInfo");
-                        String descriptionOfGoods = contMap.get(pack.getContainerId()).get("descriptionOfGoods");
+                        String handlingInfo = contMap.get(pack.getContainerId()).get(Constants.HANDLING_INFO);
+                        String descriptionOfGoods = contMap.get(pack.getContainerId()).get(Constants.DESCRIPTION_OF_GOODS);
                         if(!IsStringNullOrEmpty(pack.getHandlingInfo())) {
                             if (handlingInfo.length() == 0)
                                 handlingInfo = pack.getHandlingInfo();
@@ -3360,8 +3360,8 @@ public class ShipmentService implements IShipmentService {
                             else
                                 descriptionOfGoods = descriptionOfGoods + ", " + pack.getGoodsDescription();
                         }
-                        contMap.get(pack.getContainerId()).put("handlingInfo", handlingInfo);
-                        contMap.get(pack.getContainerId()).put("descriptionOfGoods", descriptionOfGoods);
+                        contMap.get(pack.getContainerId()).put(Constants.HANDLING_INFO, handlingInfo);
+                        contMap.get(pack.getContainerId()).put(Constants.DESCRIPTION_OF_GOODS, descriptionOfGoods);
                     }
                 }
             }
@@ -3374,15 +3374,15 @@ public class ShipmentService implements IShipmentService {
                     }
                     else {
                         Map<String, String> tempMap = new HashMap<>();
-                        tempMap.put("handlingInfo", "");
-                        tempMap.put("descriptionOfGoods", "");
+                        tempMap.put(Constants.HANDLING_INFO, "");
+                        tempMap.put(Constants.DESCRIPTION_OF_GOODS, "");
                         container.setTextFieldData(tempMap);
                     }
                 }
                 else {
                     Map<String, String> tempMap = new HashMap<>();
-                    tempMap.put("handlingInfo", container.getHandlingInfo());
-                    tempMap.put("descriptionOfGoods", container.getDescriptionOfGoods());
+                    tempMap.put(Constants.HANDLING_INFO, container.getHandlingInfo());
+                    tempMap.put(Constants.DESCRIPTION_OF_GOODS, container.getDescriptionOfGoods());
                     container.setTextFieldData(tempMap);
                 }
             }
@@ -3394,7 +3394,7 @@ public class ShipmentService implements IShipmentService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ShipmentConstants.SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getId() == null) {
                 log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -3402,7 +3402,7 @@ public class ShipmentService implements IShipmentService {
             long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             ShipmentRequest cloneShipmentDetails = jsonHelper.convertValue(shipmentDetails.get(), ShipmentRequest.class);
@@ -3777,7 +3777,7 @@ public class ShipmentService implements IShipmentService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-        request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails", "pickupDetails", "deliveryDetails"));
+        request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         ListCommonRequest listRequest = setCrieteriaForAttachShipment(request, consolidationDetails.get());
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listRequest, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> spec = tuple.getLeft();
@@ -3794,12 +3794,12 @@ public class ShipmentService implements IShipmentService {
     }
     public static Specification<ShipmentDetails> notInConsoleMappingTable() {
         return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.isEmpty(root.get("consolidationList"));
+            return criteriaBuilder.isEmpty(root.get(Constants.CONSOLIDATION_LIST));
         };
     }
     public static Specification<ShipmentDetails> notInContainerMappingTable() {
         return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.isEmpty(root.get("containersList"));
+            return criteriaBuilder.isEmpty(root.get(Constants.CONTAINERS_LIST));
         };
     }
 
@@ -3808,31 +3808,31 @@ public class ShipmentService implements IShipmentService {
             request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
         }
         ListCommonRequest defaultRequest;
-        defaultRequest = CommonUtils.andCriteria("transportMode", consolidationDetails.getTransportMode(), "=", request);
+        defaultRequest = CommonUtils.andCriteria(Constants.TRANSPORT_MODE, consolidationDetails.getTransportMode(), "=", request);
         if(!Objects.isNull(consolidationDetails.getCarrierDetails().getOriginPort()))
-            CommonUtils.andCriteria("originPort", consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
+            CommonUtils.andCriteria(Constants.ORIGIN_PORT, consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
         else
-            CommonUtils.andCriteria("originPort", "", "ISNULL", defaultRequest);
+            CommonUtils.andCriteria(Constants.ORIGIN_PORT, "", Constants.IS_NULL, defaultRequest);
         if(!Objects.isNull(consolidationDetails.getCarrierDetails().getDestinationPort()))
-            CommonUtils.andCriteria("destinationPort", consolidationDetails.getCarrierDetails().getDestinationPort(), "=", defaultRequest);
+            CommonUtils.andCriteria(Constants.DESTINATION_PORT, consolidationDetails.getCarrierDetails().getDestinationPort(), "=", defaultRequest);
         else
-            CommonUtils.andCriteria("destinationPort", "", "ISNULL", defaultRequest);
+            CommonUtils.andCriteria(Constants.DESTINATION_PORT, "", Constants.IS_NULL, defaultRequest);
         if(!Objects.isNull(consolidationDetails.getShipmentType()))
-            CommonUtils.andCriteria("direction", consolidationDetails.getShipmentType(), "=", defaultRequest);
+            CommonUtils.andCriteria(Constants.DIRECTION, consolidationDetails.getShipmentType(), "=", defaultRequest);
         else
-            CommonUtils.andCriteria("direction", "", "ISNULL", defaultRequest);
-        CommonUtils.andCriteria("status", 2, "!=", defaultRequest);
-        CommonUtils.andCriteria("status", 3, "!=", defaultRequest);
+            CommonUtils.andCriteria(Constants.DIRECTION, "", Constants.IS_NULL, defaultRequest);
+        CommonUtils.andCriteria(Constants.STATUS, 2, "!=", defaultRequest);
+        CommonUtils.andCriteria(Constants.STATUS, 3, "!=", defaultRequest);
         List<FilterCriteria> criterias = defaultRequest.getFilterCriteria();
         List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
-        Criteria criteria = Criteria.builder().fieldName("transportMode").operator("!=").value(Constants.TRANSPORT_MODE_AIR).build();
+        Criteria criteria = Criteria.builder().fieldName(Constants.TRANSPORT_MODE).operator("!=").value(Constants.TRANSPORT_MODE_AIR).build();
         FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
         List<FilterCriteria> innerFilers1 = new ArrayList<>();
         innerFilers1.add(filterCriteria);
-        criteria = Criteria.builder().fieldName("jobType").operator("!=").value(Constants.SHIPMENT_TYPE_DRT).build();
+        criteria = Criteria.builder().fieldName(Constants.JOB_TYPE).operator("!=").value(Constants.SHIPMENT_TYPE_DRT).build();
         filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
         innerFilers1.add(filterCriteria);
-        criteria = Criteria.builder().fieldName("jobType").operator("ISNULL").build();
+        criteria = Criteria.builder().fieldName(Constants.JOB_TYPE).operator(Constants.IS_NULL).build();
         filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
         innerFilers1.add(filterCriteria);
         filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
@@ -3843,10 +3843,10 @@ public class ShipmentService implements IShipmentService {
             if(!Objects.isNull(consolidationDetails.getCarrierDetails().getEta()))
                 criteria = Criteria.builder().fieldName("eta").operator("=").value(consolidationDetails.getCarrierDetails().getEta()).build();
             else
-                criteria = Criteria.builder().fieldName("eta").operator("ISNULL").build();
+                criteria = Criteria.builder().fieldName("eta").operator(Constants.IS_NULL).build();
             filterCriteria = FilterCriteria.builder().criteria(criteria).build();
             innerFilers1.add(filterCriteria);
-            criteria = Criteria.builder().fieldName("eta").operator("ISNULL").build();
+            criteria = Criteria.builder().fieldName("eta").operator(Constants.IS_NULL).build();
             filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
             innerFilers1.add(filterCriteria);
             filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
@@ -3857,10 +3857,10 @@ public class ShipmentService implements IShipmentService {
             if(!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd()))
                 criteria = Criteria.builder().fieldName("etd").operator("=").value(consolidationDetails.getCarrierDetails().getEtd()).build();
             else
-                criteria = Criteria.builder().fieldName("etd").operator("ISNULL").build();
+                criteria = Criteria.builder().fieldName("etd").operator(Constants.IS_NULL).build();
             filterCriteria = FilterCriteria.builder().criteria(criteria).build();
             innerFilers1.add(filterCriteria);
-            criteria = Criteria.builder().fieldName("etd").operator("ISNULL").build();
+            criteria = Criteria.builder().fieldName("etd").operator(Constants.IS_NULL).build();
             filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
             innerFilers1.add(filterCriteria);
             filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
@@ -3870,12 +3870,12 @@ public class ShipmentService implements IShipmentService {
             if(consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)){
                 innerFilers1 = new ArrayList<>();
                 if(!Objects.isNull(consolidationDetails.getCarrierDetails().getFlightNumber()))
-                    criteria = Criteria.builder().fieldName("flightNumber").operator("=").value(consolidationDetails.getCarrierDetails().getFlightNumber()).build();
+                    criteria = Criteria.builder().fieldName(Constants.FLIGHT_NUMBER).operator("=").value(consolidationDetails.getCarrierDetails().getFlightNumber()).build();
                 else
-                    criteria = Criteria.builder().fieldName("flightNumber").operator("ISNULL").build();
+                    criteria = Criteria.builder().fieldName(Constants.FLIGHT_NUMBER).operator(Constants.IS_NULL).build();
                 filterCriteria = FilterCriteria.builder().criteria(criteria).build();
                 innerFilers1.add(filterCriteria);
-                criteria = Criteria.builder().fieldName("flightNumber").operator("ISNULL").build();
+                criteria = Criteria.builder().fieldName(Constants.FLIGHT_NUMBER).operator(Constants.IS_NULL).build();
                 filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
                 innerFilers1.add(filterCriteria);
                 filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
@@ -3883,12 +3883,12 @@ public class ShipmentService implements IShipmentService {
 
                 innerFilers1 = new ArrayList<>();
                 if(!Objects.isNull(consolidationDetails.getCarrierDetails().getShippingLine()))
-                    criteria = Criteria.builder().fieldName("shippingLine").operator("=").value(consolidationDetails.getCarrierDetails().getShippingLine()).build();
+                    criteria = Criteria.builder().fieldName(Constants.SHIPPING_LINE).operator("=").value(consolidationDetails.getCarrierDetails().getShippingLine()).build();
                 else
-                    criteria = Criteria.builder().fieldName("shippingLine").operator("ISNULL").build();
+                    criteria = Criteria.builder().fieldName(Constants.SHIPPING_LINE).operator(Constants.IS_NULL).build();
                 filterCriteria = FilterCriteria.builder().criteria(criteria).build();
                 innerFilers1.add(filterCriteria);
-                criteria = Criteria.builder().fieldName("shippingLine").operator("ISNULL").build();
+                criteria = Criteria.builder().fieldName(Constants.SHIPPING_LINE).operator(Constants.IS_NULL).build();
                 filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
                 innerFilers1.add(filterCriteria);
                 filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
@@ -3897,12 +3897,12 @@ public class ShipmentService implements IShipmentService {
             else if(consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)){
                 innerFilers1 = new ArrayList<>();
                 if(!Objects.isNull(consolidationDetails.getCarrierDetails().getVessel()))
-                    criteria = Criteria.builder().fieldName("vessel").operator("=").value(consolidationDetails.getCarrierDetails().getVessel()).build();
+                    criteria = Criteria.builder().fieldName(Constants.VESSEL).operator("=").value(consolidationDetails.getCarrierDetails().getVessel()).build();
                 else
-                    criteria = Criteria.builder().fieldName("vessel").operator("ISNULL").build();
+                    criteria = Criteria.builder().fieldName(Constants.VESSEL).operator(Constants.IS_NULL).build();
                 filterCriteria = FilterCriteria.builder().criteria(criteria).build();
                 innerFilers1.add(filterCriteria);
-                criteria = Criteria.builder().fieldName("vessel").operator("ISNULL").build();
+                criteria = Criteria.builder().fieldName(Constants.VESSEL).operator(Constants.IS_NULL).build();
                 filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
                 innerFilers1.add(filterCriteria);
                 filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
@@ -3910,12 +3910,12 @@ public class ShipmentService implements IShipmentService {
 
                 innerFilers1 = new ArrayList<>();
                 if(!Objects.isNull(consolidationDetails.getCarrierDetails().getVoyage()))
-                    criteria = Criteria.builder().fieldName("voyage").operator("=").value(consolidationDetails.getCarrierDetails().getVoyage()).build();
+                    criteria = Criteria.builder().fieldName(Constants.VOYAGE).operator("=").value(consolidationDetails.getCarrierDetails().getVoyage()).build();
                 else
-                    criteria = Criteria.builder().fieldName("voyage").operator("ISNULL").build();
+                    criteria = Criteria.builder().fieldName(Constants.VOYAGE).operator(Constants.IS_NULL).build();
                 filterCriteria = FilterCriteria.builder().criteria(criteria).build();
                 innerFilers1.add(filterCriteria);
-                criteria = Criteria.builder().fieldName("voyage").operator("ISNULL").build();
+                criteria = Criteria.builder().fieldName(Constants.VOYAGE).operator(Constants.IS_NULL).build();
                 filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
                 innerFilers1.add(filterCriteria);
                 filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
@@ -3976,7 +3976,7 @@ public class ShipmentService implements IShipmentService {
                     try {
                         shipmentSync.sync(shipmentDetails, null, null, shipment.getGuid().toString(), false);
                     } catch (Exception e) {
-                        log.error("Error performing sync on shipment entity, {}", e);
+                        log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
                     }
                 }
             }
@@ -3990,7 +3990,7 @@ public class ShipmentService implements IShipmentService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ShipmentConstants.SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getGuid() == null) {
                 log.error("Request Guid Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -4016,7 +4016,7 @@ public class ShipmentService implements IShipmentService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ShipmentConstants.SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getId() == null) {
                 log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -4169,12 +4169,12 @@ public class ShipmentService implements IShipmentService {
         try {
             V1DataResponse v1DataResponse = v1Service.fetchCreditLimit(orgAddressCode);
             if(v1DataResponse.entities == null) {
-                log.debug("No Data found for org code {}", orgCode);
+                log.debug(ShipmentConstants.NO_DATA_FOUND_FOR_ORG_CODE, orgCode);
                 return ResponseHelper.buildSuccessResponse();
             }
             List<CreditLimitResponse> creditLimitResponses = jsonHelper.convertValueToList(v1DataResponse.getEntities(), CreditLimitResponse.class);
             if(creditLimitResponses == null || creditLimitResponses.size() == 0) {
-                log.debug("No Data found for org code {}", orgCode);
+                log.debug(ShipmentConstants.NO_DATA_FOUND_FOR_ORG_CODE, orgCode);
                 return ResponseHelper.buildSuccessResponse();
             }
             return ResponseHelper.buildDependentServiceResponse(creditLimitResponses.get(0), 0, 0);
@@ -4193,12 +4193,12 @@ public class ShipmentService implements IShipmentService {
         try {
             V1DataResponse v1DataResponse = v1Service.fetchCreditLimit(orgAddressCode);
             if(v1DataResponse.entities == null) {
-                log.debug("No Data found for org code {}", orgCode);
+                log.debug(ShipmentConstants.NO_DATA_FOUND_FOR_ORG_CODE, orgCode);
                 return ;
             }
             List<CreditLimitResponse> creditLimitResponses = jsonHelper.convertValueToList(v1DataResponse.getEntities(), CreditLimitResponse.class);
             if(creditLimitResponses == null || creditLimitResponses.size() == 0) {
-                log.debug("No Data found for org code {}", orgCode);
+                log.debug(ShipmentConstants.NO_DATA_FOUND_FOR_ORG_CODE, orgCode);
                 return;
             }
             if(response == null) {
@@ -4225,7 +4225,7 @@ public class ShipmentService implements IShipmentService {
             try {
                 shipmentSync.sync(shipment, null, null, shipment.getGuid().toString(), false);
             } catch (Exception e) {
-                log.error("Error performing sync on shipment entity, {}", e);
+                log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
             }
         }
     }
