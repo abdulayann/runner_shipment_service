@@ -79,5 +79,6 @@ public class PackingResponse implements IRunnerResponse {
     private Boolean isContractEnforced;
     private String handlingInfo;
     private Long contractEnforcedQuantityLimit;
+    private String containerDesc;
 }
 
