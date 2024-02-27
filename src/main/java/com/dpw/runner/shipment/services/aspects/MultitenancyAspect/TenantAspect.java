@@ -33,7 +33,7 @@ public class TenantAspect {
 
         Map<String, Boolean> permissions = UserContext.getUser().Permissions;
 
-        if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.companySuperAdmin)) {
+        if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantListPermission) && !permissions.containsKey(PermissionConstants.crossTenantRetrievePermission) && !permissions.containsKey(PermissionConstants.companySuperAdmin)) {
             entityManager.unwrap(Session.class)
                     .enableFilter(MultiTenancy.TENANT_FILTER_NAME)
                     .setParameter(MultiTenancy.TENANT_PARAMETER_NAME, tenantId);

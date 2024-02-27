@@ -22,7 +22,7 @@ public class TenantEntityListener {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().Permissions;
 
-            if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.isNull(tenantId))
+            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantCreatePermission)) && !Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
             else
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
@@ -40,7 +40,7 @@ public class TenantEntityListener {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().Permissions;
 
-            if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.isNull(tenantId))
+            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && !Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
             else
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
@@ -48,7 +48,7 @@ public class TenantEntityListener {
             if(tenantId == null)
                 tenantId = TenantContext.getCurrentTenant();
 
-            if(! permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
+            if(! permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantUpdatePermission) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
                 throw new RuntimeException("Authorization has been denied for this request, tenantId mismatch");
 
 
