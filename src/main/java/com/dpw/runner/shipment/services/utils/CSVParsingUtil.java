@@ -512,8 +512,8 @@ public class CSVParsingUtil<T> {
             String[] header = new String[headerRow.getLastCellNum()];
             Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                if (StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
-                    continue;
+                if (headerRow.getCell(i) == null || StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
+                    throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
                 }
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
                 if (mandatoryColumns.contains(header[i])) {
@@ -691,8 +691,8 @@ public class CSVParsingUtil<T> {
                     .collect(Collectors.toMap(x->x.getAnnotation(ExcelCell.class).displayName(), Field::getName));
             Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                if (StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
-                    continue;
+                if (headerRow.getCell(i) == null || StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
+                    throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
                 }
 
                 if(renameFieldMap.containsKey(headerRow.getCell(i).getStringCellValue()))
@@ -819,8 +819,8 @@ public class CSVParsingUtil<T> {
             String[] header = new String[headerRow.getLastCellNum()];
             Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                if (StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
-                    continue;
+                if (headerRow.getCell(i) == null || StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
+                    throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
                 }
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
                 headerSet.add(header[i]);
