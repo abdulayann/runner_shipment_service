@@ -3487,6 +3487,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> retrieveByOrderId(String orderId) {
         try {
             ShipmentDetailsResponse response = jsonHelper.convertValue(orderManagementAdapter.getOrder(orderId), ShipmentDetailsResponse.class);
+            this.createShipmentPayload(null, response);
             this.addAllMasterDataInSingleCall(null, response, null);
             this.addAllUnlocationDataInSingleCall(null, response, null);
             return ResponseHelper.buildSuccessResponse(response);

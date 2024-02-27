@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -8,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -22,6 +25,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Slf4j
@@ -128,6 +132,12 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         shipmentDetails.setOrderManagementNumber(order.getOrderNumber());
 
         shipmentDetails.setServiceType(order.getServiceMode());
+
+        shipmentDetails.setStatus(ShipmentStatus.Created.getValue());
+        shipmentDetails.setSource(Constants.SYSTEM);
+        shipmentDetails.setCreatedBy(UserContext.getUser().getUsername());
+        shipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
+        shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
         return shipmentDetails;
     }
