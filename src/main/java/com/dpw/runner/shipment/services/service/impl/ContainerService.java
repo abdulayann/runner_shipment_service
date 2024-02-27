@@ -224,11 +224,11 @@ public class ContainerService implements IContainerService {
             throw new ValidationException("Please add the consolidation and then try again.");
         }
         Map<UUID, Containers> containerMap = new HashMap<>();
-        Set<String> containerNumbersSet = new HashSet<>();
+        Map<String, UUID> containerNumbersSet = new HashMap<>();
         if(request.getConsolidationId() != null) {
             List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
-            containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
-            containerNumbersSet = consolContainers.stream().map(c -> c.getContainerNumber()).collect(Collectors.toSet());
+            containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+            containerNumbersSet = consolContainers.stream().filter(Objects::nonNull).filter(c -> c.getContainerNumber() != null).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getGuid));
         }
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
@@ -249,7 +249,7 @@ public class ContainerService implements IContainerService {
         afterSaveList(containersList, true);
     }
 
-    private void applyContainerValidations(Set<String> containerNumberSet, List<Containers> containersList, BulkUploadRequest request,
+    private void applyContainerValidations(Map<String, UUID> containerNumberSet, List<Containers> containersList, BulkUploadRequest request,
                                            Map<String, Set<String>> masterDataMap) throws Exception {
         String transportMode = request.getTransportMode();
         Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
@@ -263,8 +263,11 @@ public class ContainerService implements IContainerService {
                 String errorMessagePart2 = " - Kindly change and try re-uploading.";
                 throw new ValidationException(errorMessagePart1 + (row + 1) + errorMessagePart2);
             }
-            if(containerNumberSet.contains(containersRow.getContainerNumber())){
-                throw new ValidationException("Container Number already present at row : " + row + 1);
+            if(containerNumberSet != null && !StringUtils.isEmpty(containersRow.getContainerNumber())
+                    && containerNumberSet.containsKey(containersRow.getContainerNumber())){
+                // if it does not have the same guid
+                if(!Objects.equals(containersRow.getGuid(), containerNumberSet.get(containersRow.getContainerNumber())))
+                    throw new ValidationException("Container Number already exists, please check container number at row : " + row + 1);
             }
             checkCalculatedVolumeAndActualVolume(request, row + 1, containersRow);
             applyContainerNumberValidation(transportMode, row + 1, containersRow);
@@ -382,7 +385,7 @@ public class ContainerService implements IContainerService {
             BigDecimal actualVolume = containersRow.getGrossVolume();
             actualVolume = actualVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
             BigDecimal calculatedVolume = getCalculatedVolume(containersRow.getPackageBreadth(), containersRow.getPackageLength(), containersRow.getPackageHeight());
-            calculatedVolume = calculatedVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
+            if(calculatedVolume != null) calculatedVolume = calculatedVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
             if (calculatedVolume != null && actualVolume != calculatedVolume) {
                 throw new ValidationException("Gross Volume is invalid at row: " + (row + 1));
             }

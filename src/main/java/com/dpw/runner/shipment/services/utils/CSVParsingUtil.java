@@ -743,7 +743,7 @@ public class CSVParsingUtil<T> {
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 boolean isUpdate = false;
-                if (guidPos != -1) {
+                if (guidPos != -1) { // means that guid column is present.
                     String guidVal = getCellValueAsString(row.getCell(guidPos));
                     try {
                         if (!StringUtils.isEmpty(guidVal)) {
