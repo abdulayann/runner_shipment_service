@@ -269,12 +269,12 @@ public class SyncEntityConversionService {
 
         for(var mawbStocksLink : response.getMawbStocksLinkRows()) {
             if(mawbStocksLink.getEntityType().equalsIgnoreCase("SHIPMENT")) {
-                ShipmentDetails shipmentDetails = shipmentDao.findById(mawbStocksLink.getEntityId()).get();
-                mawbStocksLink.setShipmentGuid(shipmentDetails.getGuid());
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(mawbStocksLink.getEntityId());
+                shipmentDetails.ifPresent(details -> mawbStocksLink.setShipmentGuid(details.getGuid()));
             }
             else if(mawbStocksLink.getEntityType().equalsIgnoreCase("CONSOLIDATION")) {
-                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(mawbStocksLink.getEntityId()).get();
-                mawbStocksLink.setConsolidationGuid(consolidationDetails.getGuid());
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(mawbStocksLink.getEntityId());
+                consolidationDetails.ifPresent(details -> mawbStocksLink.setConsolidationGuid(details.getGuid()));
             }
         }
 

@@ -313,7 +313,7 @@ public class MawbStocksService implements IMawbStocksService {
                 mawbStocks.setId(mawbStockId);
                 mawbStocksLinkDao.deleteByParentId(mawbStockId);
             }
-            List<MawbStocksLink> mawbStocksLinks = mawbStocks.getMawbStocksLinkRows() != null ? mawbStocks.getMawbStocksLinkRows() : new ArrayList();
+            List<MawbStocksLink> mawbStocksLinks = mawbStocks.getMawbStocksLinkRows() != null ? mawbStocks.getMawbStocksLinkRows() : new ArrayList<>();
             mawbStocksDao.save(mawbStocks);
             for(var stockLink : mawbStocksLinks) {
                 stockLink.setParentId(mawbStocks.getId());
