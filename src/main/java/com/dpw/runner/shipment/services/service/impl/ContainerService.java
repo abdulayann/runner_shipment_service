@@ -289,7 +289,7 @@ public class ContainerService implements IContainerService {
         if (containersRow.getContainerStuffingLocation() != null) {
             var containerStuffingLocation = containersRow.getContainerStuffingLocation().trim();
             if (!containerStuffingLocation.isEmpty()) {
-                if (dicLocType != null && dicLocType.contains(containerStuffingLocation) == false) {
+                if (dicLocType == null || !dicLocType.contains(containerStuffingLocation)) {
                     throw new ValidationException("Container Stuffing Location " + containerStuffingLocation + " is not valid at row " + row);
                 }
             }
@@ -299,7 +299,7 @@ public class ContainerService implements IContainerService {
     private static void applyHazardousValidation(Set<String> hazardousClassMasterData, int row, Containers containersRow) {
         Boolean isHazardous = containersRow.getHazardous();
         if (isHazardous != null) {
-            if (isHazardous == true) {
+            if (isHazardous) {
                 // DG CLASS(HAZARDOUS CLASS)
                 String dgClass = containersRow.getDgClass();
                 if (!StringUtils.isEmpty(dgClass)) {
@@ -327,7 +327,7 @@ public class ContainerService implements IContainerService {
         String commodityCode = containersRow.getCommodityCode();
         commodityCode = commodityCode == null ? StringUtils.EMPTY : commodityCode.trim();
         if (!commodityCode.isEmpty()) {
-            if (dicCommodityType != null && dicCommodityType.contains(commodityCode) == false) {
+            if (dicCommodityType == null || !dicCommodityType.contains(commodityCode)) {
                 throw new ValidationException("Commodity Type " + commodityCode + " is not valid at row " + row);
             }
         }
