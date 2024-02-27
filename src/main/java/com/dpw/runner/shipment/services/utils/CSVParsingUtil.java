@@ -560,7 +560,7 @@ public class CSVParsingUtil<T> {
                 if (guidPos != -1) {
                     String guidCell = getCellValueAsString(row.getCell(guidPos));
                     if (!StringUtils.isEmpty(guidCell) && guidSet.contains(guidCell)) {
-                        throw new ValidationException("GUID is duplicate at row: " + row);
+                        throw new ValidationException("GUID is duplicate at row: " + i);
                     }
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
@@ -730,7 +730,7 @@ public class CSVParsingUtil<T> {
                 if (guidPos != -1) {
                     String guidCell = getCellValueAsString(row.getCell(guidPos));
                     if (!StringUtils.isEmpty(guidCell) && guidSet.contains(guidCell)) {
-                        throw new ValidationException("GUID is duplicate at row: " + row);
+                        throw new ValidationException("GUID is duplicate at row: " + i);
                     }
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
@@ -743,7 +743,7 @@ public class CSVParsingUtil<T> {
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 boolean isUpdate = false;
-                if (guidPos != -1) {
+                if (guidPos != -1) { // means that guid column is present.
                     String guidVal = getCellValueAsString(row.getCell(guidPos));
                     try {
                         if (!StringUtils.isEmpty(guidVal)) {
@@ -854,7 +854,7 @@ public class CSVParsingUtil<T> {
                 if (guidPos != -1) {
                     String guidCell = getCellValueAsString(row.getCell(guidPos));
                     if (!StringUtils.isEmpty(guidCell) && guidSet.contains(guidCell)) {
-                        throw new ValidationException("GUID is duplicate at row: " + row);
+                        throw new ValidationException("GUID is duplicate at row: " + i);
                     }
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
