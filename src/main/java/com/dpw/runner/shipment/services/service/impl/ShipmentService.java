@@ -2664,9 +2664,6 @@ public class ShipmentService implements IShipmentService {
     private String getShipmentsSerialNumber() {
         // Moving this responsibility to v1 sequnce table to avoid syncing overhead
         return v1Service.getShipmentSerialNumber();
-//        SequenceIncrementor sequenceIncrementor = SequenceIncrementor.builder().entityId(1L).build();
-//        sequenceIncrementorDao.save(sequenceIncrementor);
-//        return sequenceIncrementor.getShipmentIncrementId().toString();
     }
 
     private String createShipmentSequence(ShipmentSettingsDetails shipmentSetting) {
@@ -3673,8 +3670,7 @@ public class ShipmentService implements IShipmentService {
                     res += StringUtility.getRandomString(10);
                     break;
                 case "Serial" :
-                    String serialNumber = v1Service.getMaxShipmentId();
-//                    Long serialNumber = shipmentDao.findMaxId() + 1;
+                    String serialNumber = getShipmentsSerialNumber();
                     res += serialNumber;
                     break;
                 default : res = "";
