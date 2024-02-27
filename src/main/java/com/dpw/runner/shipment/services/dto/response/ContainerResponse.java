@@ -104,10 +104,10 @@ public class ContainerResponse implements IRunnerResponse {
     private Boolean isContractEnforced;
     private PartiesResponse pickupAddress;
     private PartiesResponse deliveryAddress;
-    public Map<String, String> unlocationData;
-    public Map<String, String> masterData;
-    public Map<String, String> commodityTypeData;
-    public Map<String, String> containerCodeData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> commodityTypeData;
+    private Map<String, String> containerCodeData;
     private Long contractEnforcedQuantityLimit;
     private String ownType;
     private String handlingInfo;

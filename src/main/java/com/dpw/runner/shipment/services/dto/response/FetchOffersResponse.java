@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -29,7 +30,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class AssociatedRate{
+    public static class AssociatedRate implements Serializable{
         @JsonProperty("slabs")
         private List<Object> slabs;
         @JsonProperty("calculated_sell")
@@ -94,7 +95,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class EntityRateCard{
+    public static class EntityRateCard implements Serializable{
         @JsonProperty("loads_rates_info")
         private List<LoadsRatesInfo> loads_rates_info;
         @JsonProperty("aggregated_shipment_load_rates_info")
@@ -107,7 +108,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class LoadsRatesInfo{
+    public static class LoadsRatesInfo implements Serializable{
         @JsonProperty("associated_rates")
         private List<AssociatedRate> associated_rates;
     }
@@ -116,7 +117,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Meta{
+    public static class Meta implements Serializable{
         @JsonProperty("route")
         private List<Route> route;
     }
@@ -125,7 +126,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Node{
+    public static class Node implements Serializable{
         @JsonProperty("code")
         private String code;
     }
@@ -134,7 +135,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Offer{
+    public static class Offer implements Serializable {
         @JsonProperty("offer_type")
         private String offer_type;
         @JsonProperty("chargeable")
@@ -157,7 +158,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Route{
+    public static class Route implements Serializable{
         @JsonProperty("type")
         private String type;
         @JsonProperty("node")

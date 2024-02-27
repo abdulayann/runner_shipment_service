@@ -6,11 +6,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MasterData {
+public class MasterData implements Serializable {
     @JsonProperty("Id")
     private int id;
     @JsonProperty("ItemType")

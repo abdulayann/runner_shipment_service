@@ -25,4 +25,5 @@ public class SyncingConstants {
     public static final String ERROR_SYNCING_PACKS = "Error syncing packings";
     public static final String ERROR_PERFORMING_HBL_SYNC = "Error performing sync on hbl entity, {}";
     public static final String MAWB_STOCKS = "MAWB_STOCKS";
+    public static final String ERROR_SYNCING_SHIPMENTS = "Error performing sync on shipment entity, {}";
 }

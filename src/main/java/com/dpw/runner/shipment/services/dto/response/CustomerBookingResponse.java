@@ -66,7 +66,7 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private List<RoutingsResponse> routingList;
     private List<BookingChargesResponse> bookingCharges;
     private List<FileRepoResponse> fileRepoList;
-    public Map<String, String> masterData;
+    private Map<String, String> masterData;
     private Boolean isAutoWeightVolumeUpdate;
     private String fmcTlcId;
     private BigDecimal totalRevenue;

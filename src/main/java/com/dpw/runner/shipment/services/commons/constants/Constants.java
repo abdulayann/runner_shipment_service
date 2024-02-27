@@ -311,8 +311,31 @@ public class Constants {
     public static final String ATTACHMENT_FILENAME = "attachment; filename=";
     public static final String STRING_FORMAT = "%.2f %s";
     public static final String ORG_CODE = "orgCode";
+    public static final String ADDRESS_CODE = "addressCode";
     public static final String DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR = "View is null for Id {} with Request Id {}";
     public static final String SALT_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+    public static final String CLIENT = "client";
+    public static final String CONSIGNER = "consigner";
+    public static final String CONSIGNEE = "consignee";
+    public static final String SHIPMENT_DETAILS = "ShipmentDetails";
+    public static final String ADDITIONAL_DETAILS = "additionalDetails";
+    public static final String STATUS = "status";
+    public static final String JOB_TYPE = "jobType";
+    public static final String DELIVERY_DETAILS = "deliveryDetails";
+    public static final String PICKUP_DETAILS = "pickupDetails";
+    public static final String FLIGHT_NUMBER = "flightNumber";
+    public static final String SHIPPING_LINE = "shippingLine";
+    public static final String VESSEL = "vessel";
+    public static final String VOYAGE = "voyage";
+    public static final String ORIGIN_PORT = "originPort";
+    public static final String DESTINATION_PORT = "destinationPort";
+    public static final String IS_NULL = "ISNULL";
+    public static final String CONTAINERS_LIST = "containersList";
+    public static final String CONSOLIDATION_LIST = "consolidationList";
+    public static final String ORDER_MANAGEMENT_ID = "orderManagementId";
+    public static final String HANDLING_INFO = "handlingInfo";
+    public static final String DESCRIPTION_OF_GOODS = "descriptionOfGoods";
+
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber","descriptionOfGoods","noOfPackages","netWeight","netWeightUnit",
             "grossWeight","grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",

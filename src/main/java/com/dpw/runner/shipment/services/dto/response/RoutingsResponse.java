@@ -48,7 +48,7 @@ public class RoutingsResponse implements IRunnerResponse {
     private Long transitDays;
     private String carrier;
     private String truckReferenceNumber;
-    public Map<String, String> unlocationData;
-    public Map<String, String> masterData;
-    public Map<String, String> carrierMasterData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> carrierMasterData;
 }

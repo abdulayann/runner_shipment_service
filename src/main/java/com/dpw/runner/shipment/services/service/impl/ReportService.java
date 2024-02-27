@@ -840,6 +840,7 @@ public class ReportService implements IReportService {
             case ReportConstants.MANIFEST_PRINT:
                 return setDocPages(null,
                         row.getManifestPrint() == null ? adminRow.getManifestPrint(): row.getManifestPrint(), null, row.getManifestPrint() != null, null, null, null);
+            default:
         }
 
         return null;

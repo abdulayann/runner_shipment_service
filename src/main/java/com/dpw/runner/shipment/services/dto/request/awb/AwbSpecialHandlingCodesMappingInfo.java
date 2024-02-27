@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @ApiModel("AWB Special Handling Codes Mapping Info Model")
@@ -11,7 +13,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AwbSpecialHandlingCodesMappingInfo {
+public class AwbSpecialHandlingCodesMappingInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private String shcId;
