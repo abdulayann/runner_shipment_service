@@ -110,7 +110,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private void onSave(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean fromV1Sync) {
         errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole));
         if (!errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         if (consolidationDetails.getTransportMode() != null && consolidationDetails.getCarrierDetails() != null) {
             LocalDateTime eta = consolidationDetails.getCarrierDetails().getEta();
             LocalDateTime etd = consolidationDetails.getCarrierDetails().getEtd();

@@ -48,7 +48,7 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     public CustomerBooking save(CustomerBooking customerBooking) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(customerBooking) , Constants.BOOKING, LifecycleHooks.ON_CREATE, false);
         if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         CustomerBooking old = null;
         if (customerBooking.getId() != null) {
             Optional<CustomerBooking> oldEntity = findById(customerBooking.getId());

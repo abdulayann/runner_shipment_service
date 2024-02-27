@@ -51,7 +51,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
     public BookingCarriage save(BookingCarriage bookingCarriage) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCarriage) , Constants.CARRIAGE, LifecycleHooks.ON_CREATE, false);
         if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         return bookingCarriageRepository.save(bookingCarriage);
     }
     @Override
@@ -59,7 +59,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         for(var bookingCarriage: bookingCarriageList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCarriage), Constants.CARRIAGE, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
-                throw new ValidationException(errors.toString());
+                throw new ValidationException(String.join(",", errors));
         }
         return bookingCarriageRepository.saveAll(bookingCarriageList);
     }

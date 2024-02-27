@@ -58,7 +58,7 @@ public class EventDao implements IEventDao {
     public Events save(Events events) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
         if (!errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         return eventRepository.save(events);
     }
 
@@ -67,7 +67,7 @@ public class EventDao implements IEventDao {
         for (var events: eventsList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
-                throw new ValidationException(errors.toString());
+                throw new ValidationException(String.join(",", errors));
         }
         return eventRepository.saveAll(eventsList);
     }

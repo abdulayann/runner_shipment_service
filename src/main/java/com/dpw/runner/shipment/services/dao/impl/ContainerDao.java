@@ -65,7 +65,7 @@ public class ContainerDao implements IContainerDao {
     public Containers save(Containers containers) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(containers) , Constants.CONTAINER, LifecycleHooks.ON_CREATE, false);
         if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         if(containers.getId() != null) {
             long id = containers.getId();
             Optional<Containers> oldEntity = findById(id);

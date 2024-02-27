@@ -52,7 +52,7 @@ public class RoutingsDao implements IRoutingsDao {
     public Routings save(Routings routings) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings), Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
         if (!errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         return routingsRepository.save(routings);
     }
     @Override
@@ -60,7 +60,7 @@ public class RoutingsDao implements IRoutingsDao {
         for(var routings: routingsList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings), Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
-                throw new ValidationException(errors.toString());
+                throw new ValidationException(String.join(",", errors));
         }
         return routingsRepository.saveAll(routingsList);
     }
