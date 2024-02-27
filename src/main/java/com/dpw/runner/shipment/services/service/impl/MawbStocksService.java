@@ -80,14 +80,19 @@ public class MawbStocksService implements IMawbStocksService {
         try {
            mawbStocks = mawbStocksDao.save(mawbStocks);
            request.setId(mawbStocks.getId());
-           this.mawbStocksLinkBulkUpdate(request);
-           callV1Sync(mawbStocks);
+           var stockLinks = this.mawbStocksLinkBulkUpdate(request);
+           mawbStocks.setMawbStocksLinkRows(stockLinks);
            log.info("MAWB stocks created successfully for Id {} with Request Id {}", mawbStocks.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+        try {
+            callV1Sync(mawbStocks);
+        } catch (Exception error) {
+            log.error("error while performing syncing MAWB_STOCKS : ",  error.getMessage());
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
@@ -113,13 +118,17 @@ public class MawbStocksService implements IMawbStocksService {
         MawbStocks mawbStocks = convertRequestToEntity(request);
         try {
             mawbStocks = mawbStocksDao.save(mawbStocks);
-            callV1Sync(mawbStocks);
             log.info("Updated the MAWB stocks for Id {} with Requestr Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+        try {
+            callV1Sync(mawbStocks);
+        } catch (Exception error) {
+            log.error("error while performing syncing MAWB_STOCKS : ",  error.getMessage());
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
@@ -248,7 +257,7 @@ public class MawbStocksService implements IMawbStocksService {
         return ResponseHelper.buildSuccessResponse(NextMawbCarrierResponse.builder().nextMawbNumber(null).build());
     }
 
-    private void mawbStocksLinkBulkUpdate(MawbStocksRequest mawbStocksRequest){
+    private List<MawbStocksLink> mawbStocksLinkBulkUpdate(MawbStocksRequest mawbStocksRequest){
         int count =  Integer.parseInt(mawbStocksRequest.getAvailableCount());
         List<MawbStocksLink> requestlist = new ArrayList<>();
 
@@ -280,6 +289,8 @@ public class MawbStocksService implements IMawbStocksService {
         for (MawbStocksLink request:requestlist) {
             mawbStocksLinkDao.save(request);
         }
+
+        return requestlist;
     }
 
     private MawbStocksResponse convertEntityToDto(MawbStocks mawbStocks) {

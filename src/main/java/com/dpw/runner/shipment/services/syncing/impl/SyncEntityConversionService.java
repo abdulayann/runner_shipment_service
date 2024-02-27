@@ -267,14 +267,16 @@ public class SyncEntityConversionService {
             consolidationDetails.ifPresent(details -> response.setConsolidationGuid(details.getGuid()));
         }
 
-        for(var mawbStocksLink : response.getMawbStocksLinkRows()) {
-            if(mawbStocksLink.getEntityType().equalsIgnoreCase("SHIPMENT")) {
-                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(mawbStocksLink.getEntityId());
-                shipmentDetails.ifPresent(details -> mawbStocksLink.setShipmentGuid(details.getGuid()));
-            }
-            else if(mawbStocksLink.getEntityType().equalsIgnoreCase("CONSOLIDATION")) {
-                Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(mawbStocksLink.getEntityId());
-                consolidationDetails.ifPresent(details -> mawbStocksLink.setConsolidationGuid(details.getGuid()));
+        if (response.getMawbStocksLinkRows() != null && !response.getMawbStocksLinkRows().isEmpty()) {
+            for(var mawbStocksLink : response.getMawbStocksLinkRows()) {
+                if(mawbStocksLink.getEntityType() != null && mawbStocksLink.getEntityType().equalsIgnoreCase("SHIPMENT")) {
+                    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(mawbStocksLink.getEntityId());
+                    shipmentDetails.ifPresent(details -> mawbStocksLink.setShipmentGuid(details.getGuid()));
+                }
+                else if(mawbStocksLink.getEntityType() != null && mawbStocksLink.getEntityType().equalsIgnoreCase("CONSOLIDATION")) {
+                    Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(mawbStocksLink.getEntityId());
+                    consolidationDetails.ifPresent(details -> mawbStocksLink.setConsolidationGuid(details.getGuid()));
+                }
             }
         }
 
@@ -291,11 +293,11 @@ public class SyncEntityConversionService {
         if(mawbStocks.getMawbStocksLinkRows() != null && mawbStocks.getMawbStocksLinkRows().size() > 0) {
             List<MawbStocksLink> mawbStocksLinks = new ArrayList<>();
             for(var mawbStocksLinkV2 : mawbStocks.getMawbStocksLinkRows()) {
-                if(mawbStocksLinkV2.getEntityType().equalsIgnoreCase("SHIPMENT")) {
+                if(mawbStocksLinkV2.getEntityType() != null && mawbStocksLinkV2.getEntityType().equalsIgnoreCase("SHIPMENT")) {
                     Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(mawbStocksLinkV2.getShipmentGuid());
                     shipmentDetails.ifPresent(details -> mawbStocksLinkV2.setEntityId(details.getId()));
                 }
-                else if(mawbStocksLinkV2.getEntityType().equalsIgnoreCase("CONSOLIDATION")) {
+                else if(mawbStocksLinkV2.getEntityType() != null && mawbStocksLinkV2.getEntityType().equalsIgnoreCase("CONSOLIDATION")) {
                     Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(mawbStocksLinkV2.getConsolidationGuid());
                     consolidationDetails.ifPresent(details -> mawbStocksLinkV2.setEntityId(details.getId()));
                 }
