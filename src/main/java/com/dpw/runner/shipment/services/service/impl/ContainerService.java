@@ -221,7 +221,7 @@ public class ContainerService implements IContainerService {
     @Override
     public void uploadContainers(BulkUploadRequest request) throws Exception {
         if (request == null || request.getConsolidationId() == null) {
-            throw new ValidationException("Please save the consolidation and then try again.");
+            throw new ValidationException("Please add the consolidation and then try again.");
         }
         Map<UUID, Containers> containerMap = new HashMap<>();
         if(request.getConsolidationId() != null) {

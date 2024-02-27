@@ -752,12 +752,14 @@ public class CSVParsingUtil<T> {
                                 throw new ValidationException("GUID at row: " + i + " doesn't exist for this consolidation.");
                             }
                         }
+                    } catch (ValidationException ex) {
+                        throw ex;
                     } catch (Exception ex) {
                         throw new ValidationException("GUID not valid at row: " + i);
                     }
                 }
-                T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
-                if (mapOfEntity != null && guidPos != -1 && mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
+                T entity = guidPos != -1 &&  mapOfEntity != null && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
+                if (mapOfEntity != null && guidPos != -1 && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null&& mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
                     isUpdate = true;
                 }
                 for (int j = 0; j < header.length; j++) {
@@ -1214,7 +1216,10 @@ public class CSVParsingUtil<T> {
 
             field.set(entity, parsedValue);
         } catch (Exception ex) {
-            throw new ValidationException(attributeName + "is invalid at row: " + rowNum + ". Please provide correct datatype " + fieldType.getName());
+            if(fieldType == Long.class || fieldType == long.class) {
+                throw new ValidationException(attributeName.toUpperCase() + " is invalid at row: " + rowNum + ". Please provide integer value and within the range of integer");
+            }
+            throw new ValidationException(attributeName + " is invalid at row: " + rowNum + ". Please provide correct value");
         }
     }
 
