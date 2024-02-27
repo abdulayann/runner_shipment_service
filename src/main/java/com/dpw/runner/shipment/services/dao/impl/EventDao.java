@@ -93,7 +93,7 @@ public class EventDao implements IEventDao {
     }
 
     @Override
-    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws Exception {
+    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws RunnerException {
         String responseMsg;
         List<Events> responseEvents = new ArrayList<>();
         try {
@@ -124,7 +124,7 @@ public class EventDao implements IEventDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -238,7 +238,7 @@ public class EventDao implements IEventDao {
     }
 
     @Override
-    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws Exception {
+    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Events> eventsMap = new HashMap<>();
         if (oldEntityList != null && oldEntityList.size() > 0) {
@@ -272,7 +272,7 @@ public class EventDao implements IEventDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

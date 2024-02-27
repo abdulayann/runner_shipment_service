@@ -78,7 +78,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
     }
 
     @Override
-    public List<HblTermsConditionTemplate> updateEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint) throws Exception {
+    public List<HblTermsConditionTemplate> updateEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint) throws RunnerException {
         String responseMsg;
         List<HblTermsConditionTemplate> responseHblTermsConditionTemplate = new ArrayList<>();
         try {
@@ -103,7 +103,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

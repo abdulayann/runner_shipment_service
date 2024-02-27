@@ -277,7 +277,7 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> V1ELDetailsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1ELDetailsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         ElDetailsRequestV2 elDetailsRequestV2 = (ElDetailsRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && Boolean.TRUE.equals(!syncConfig.IS_REVERSE_SYNC_ACTIVE)) {

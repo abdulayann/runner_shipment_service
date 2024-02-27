@@ -294,7 +294,7 @@ public class RoutingsService implements IRoutingsService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> V1RoutingsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1RoutingsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         RoutingsRequestV2 routingsRequestV2 = (RoutingsRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {

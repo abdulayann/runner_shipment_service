@@ -41,7 +41,7 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
         additionalDetailRepository.delete(additionalDetails);
     }
 
-    public AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws Exception {
+    public AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
@@ -59,7 +59,7 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

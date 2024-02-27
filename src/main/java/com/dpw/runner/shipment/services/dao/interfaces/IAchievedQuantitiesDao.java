@@ -12,5 +12,5 @@ public interface IAchievedQuantitiesDao {
     Page<AchievedQuantities> findAll(Specification<AchievedQuantities> spec, Pageable pageable);
     Optional<AchievedQuantities> findById(Long id);
     void delete(AchievedQuantities achievedQuantities);
-    AchievedQuantities updateEntityFromShipmentConsole(AchievedQuantities achievedQuantities) throws Exception;
+    AchievedQuantities updateEntityFromShipmentConsole(AchievedQuantities achievedQuantities) throws RunnerException;
 }

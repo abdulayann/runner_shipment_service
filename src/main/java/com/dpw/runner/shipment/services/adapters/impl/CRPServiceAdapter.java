@@ -38,7 +38,7 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
         this.crpServiceListUrl = crpServiceListUrl;
     }
 
-    public ResponseEntity<IRunnerResponse> retrieveCRPService(CommonRequestModel requestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> retrieveCRPService(CommonRequestModel requestModel) throws RunnerException {
         CRPRetrieveRequest request = (CRPRetrieveRequest) requestModel.getData();
         String url = crpServiceRetrieveUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replace(" ", ""));
         log.info("Retrieve CRP: with request: {}", request.toString());
@@ -52,7 +52,7 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }
 
-    public ResponseEntity<IRunnerResponse> listCRPService(CommonRequestModel requestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> listCRPService(CommonRequestModel requestModel) throws RunnerException {
         CRPListRequest request = (CRPListRequest) requestModel.getData();
         log.info("List CRP: with request: {}", request.toString());
         String url = crpServiceListUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replace(" ", "%20")) + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : StringUtility.getEmptyString());

@@ -7,5 +7,5 @@ import com.dpw.runner.shipment.services.exception.response.RunnerResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface IFusionServiceAdapter {
-    ResponseEntity<IRunnerResponse> checkCreditLimitP100(CommonRequestModel requestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> checkCreditLimitP100(CommonRequestModel requestModel) throws RunnerException;
 }

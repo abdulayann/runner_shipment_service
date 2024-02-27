@@ -24,12 +24,12 @@ public interface IEventDao {
 
     void delete(Events events);
 
-    List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws Exception;
+    List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws RunnerException;
     List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType, Map<Long, Events> oldEntityMap);
 
     List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType);
 
-    List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws Exception;
+    List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws RunnerException;
 
     void autoGenerateEvents(CustomAutoEventRequest request);
 }

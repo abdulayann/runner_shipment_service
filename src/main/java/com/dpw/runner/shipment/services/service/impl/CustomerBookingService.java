@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -39,6 +40,7 @@ import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -53,6 +55,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -139,7 +142,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Override
     @Transactional
-    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) throws RunnerException {
 
         CustomerBookingRequest request = (CustomerBookingRequest) commonRequestModel.getData();
         if (request == null) {
@@ -162,12 +165,12 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw e;
+            throw new RunnerException(e.getMessage());
         }
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
-    private void createEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws Exception {
+    private void createEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         if (customerBooking.getIsPlatformBookingCreated() == null) {
             customerBooking.setIsPlatformBookingCreated(false);
         }
@@ -235,7 +238,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Override
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         CustomerBookingRequest request = (CustomerBookingRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -275,7 +278,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
-    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request, String oldEntity) throws Exception {
+    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request, String oldEntity) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         populateTotalRevenueDetails(customerBooking, request);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
@@ -476,7 +479,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws RunnerException {
         CreditLimitRequest creditLimitRequest = (CreditLimitRequest) commonRequestModel.getData();
         V1RetrieveResponse v1RetrieveResponse = v1Service.retrieveTenantSettings();
 
@@ -615,7 +618,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Override
     @Transactional
-    public ResponseEntity<IRunnerResponse> platformCreateBooking(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> platformCreateBooking(CommonRequestModel commonRequestModel) throws RunnerException {
         PlatformToRunnerCustomerBookingRequest request = (PlatformToRunnerCustomerBookingRequest) commonRequestModel.getData();
         if (request.getIsSingleUsageContract() != null)
             request.setContractStatus(request.getIsSingleUsageContract() ? "SINGLE_USAGE" : "MULTI_USAGE");
@@ -872,7 +875,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
 
 
-    private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request, CustomerBooking oldEntity) throws Exception {
+    private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request, CustomerBooking oldEntity) throws RunnerException {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         customerBooking.setSource(BookingSource.Platform);
@@ -880,12 +883,12 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity));
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw e;
+            throw new RunnerException(e.getMessage());
         }
         return jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class);
     }
 
-    private CustomerBookingResponse createPlatformBooking(CustomerBookingRequest request) throws Exception {
+    private CustomerBookingResponse createPlatformBooking(CustomerBookingRequest request) throws RunnerException {
         if (request == null) {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
@@ -900,7 +903,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             createEntities(customerBooking, request);
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw e;
+            throw new RunnerException(e.getMessage());
         }
         return jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class);
     }
@@ -930,7 +933,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return responseList;
     }
 
-    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws Exception {
+    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws RunnerException {
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
             // Alteration on same contract
             _npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
@@ -952,7 +955,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
     }
 
-    private void _npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws Exception {
+    private void _npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws RunnerException {
         if (Objects.equals(current.getTransportType(),Constants.TRANSPORT_MODE_SEA) && !Objects.isNull(current.getContractId()) ) {
             List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(current, old, operation);
 

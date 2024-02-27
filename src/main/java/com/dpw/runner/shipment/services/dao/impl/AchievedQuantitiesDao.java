@@ -41,7 +41,7 @@ public class AchievedQuantitiesDao implements IAchievedQuantitiesDao {
         achievedQuantitiesRepository.delete(achievedQuantities);
     }
 
-    public AchievedQuantities updateEntityFromConsolidation(AchievedQuantities achievedQuantities, Long consolidationId) throws Exception {
+    public AchievedQuantities updateEntityFromConsolidation(AchievedQuantities achievedQuantities, Long consolidationId) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
@@ -59,12 +59,12 @@ public class AchievedQuantitiesDao implements IAchievedQuantitiesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public AchievedQuantities updateEntityFromShipmentConsole(AchievedQuantities achievedQuantities) throws Exception {
+    public AchievedQuantities updateEntityFromShipmentConsole(AchievedQuantities achievedQuantities) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
@@ -82,7 +82,7 @@ public class AchievedQuantitiesDao implements IAchievedQuantitiesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

@@ -10,18 +10,18 @@ import org.springframework.http.ResponseEntity;
 import org.testcontainers.shaded.org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi;
 
 public interface INPMServiceAdapter {
-    ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws Exception;
-    ResponseEntity<IRunnerResponse> fetchContractsTemp(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> fetchContractsTemp(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> fetchOffers(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> fetchOffers(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> fetchOffersV8(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> fetchOffersV8(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> awbAutoSell(CommonRequestModel commonRequestModel) throws Exception;
-    ResponseEntity<IRunnerResponse> awbImportRates(CommonRequestModel commonRequestModel) throws Exception;
-    NPMFetchLangChargeCodeResponse fetchMultiLangChargeCode(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> awbAutoSell(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> awbImportRates(CommonRequestModel commonRequestModel) throws RunnerException;
+    NPMFetchLangChargeCodeResponse fetchMultiLangChargeCode(CommonRequestModel commonRequestModel) throws RunnerException;
 }

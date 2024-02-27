@@ -68,7 +68,7 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
     }
 
     @Override
-    public List<ProductSequenceConfig> updateEntityFromSettings(List<ProductSequenceConfig> productSequenceConfigList, Long shipmentSettingsId) throws Exception {
+    public List<ProductSequenceConfig> updateEntityFromSettings(List<ProductSequenceConfig> productSequenceConfigList, Long shipmentSettingsId) throws RunnerException {
         String responseMsg;
         List<ProductSequenceConfig> responseProductSequenceConfig = new ArrayList<>();
         try {
@@ -95,12 +95,12 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<ProductSequenceConfig> updateEntityFromV1Settings(List<ProductSequenceConfig> productSequenceConfigList, Long shipmentSettingsId, List<ProductSequenceConfig> oldProductSequenceConfig) throws Exception {
+    public List<ProductSequenceConfig> updateEntityFromV1Settings(List<ProductSequenceConfig> productSequenceConfigList, Long shipmentSettingsId, List<ProductSequenceConfig> oldProductSequenceConfig) throws RunnerException {
         String responseMsg;
         List<ProductSequenceConfig> responseProductSequenceConfig = new ArrayList<>();
         try {
@@ -125,7 +125,7 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

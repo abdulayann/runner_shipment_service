@@ -42,7 +42,7 @@ public class ArrivalDepartureDetailsDao implements IArrivalDepartureDetailsDao {
     }
 
     @Override
-    public ArrivalDepartureDetails updateEntityFromShipmentConsole(ArrivalDepartureDetails arrivalDepartureDetails) throws Exception {
+    public ArrivalDepartureDetails updateEntityFromShipmentConsole(ArrivalDepartureDetails arrivalDepartureDetails) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
@@ -60,7 +60,7 @@ public class ArrivalDepartureDetailsDao implements IArrivalDepartureDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

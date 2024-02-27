@@ -162,7 +162,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public void uploadPacking(BulkUploadRequest request) throws Exception {
+    public void uploadPacking(BulkUploadRequest request) throws RunnerException {
         if (request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
         }
@@ -186,7 +186,7 @@ public class PackingService implements IPackingService {
 
     private void applyPackingValidations(List<Packing> packingList, BulkUploadRequest request, Map<String, Set<String>> masterDataMap,
                                          Map<Long, Long> dicDGSubstanceUNDGContact, Map<Long, String> dicDGSubstanceFlashPoint
-    ) throws Exception {
+    ) throws RunnerException {
         String transportMode = request.getTransportMode();
         Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
         Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
@@ -203,7 +203,7 @@ public class PackingService implements IPackingService {
         }
     }
 
-    private void applyVolumetricWeightValidation(int i, Packing packingRow) throws Exception {
+    private void applyVolumetricWeightValidation(int i, Packing packingRow) throws RunnerException {
         if (!StringUtils.isEmpty(packingRow.getVolumeWeightUnit())) {
             if (packingRow.getVolumeWeight() != null) {
                 String wtunit = packingRow.getWeightUnit() != null ? packingRow.getWeightUnit() : WEIGHT_UNIT_KG;
@@ -289,7 +289,7 @@ public class PackingService implements IPackingService {
         }
     }
 
-    private void checkCalculatedVolumeAndActualVolume(int row, Packing packingRow) throws Exception {
+    private void checkCalculatedVolumeAndActualVolume(int row, Packing packingRow) throws RunnerException {
         if (!StringUtils.isEmpty(packingRow.getVolumeUnit())) {
             if (packingRow.getVolume() != null) {
                 if (packingRow.getVolumeUnit() != VOLUME_UNIT_M3) {
@@ -308,7 +308,7 @@ public class PackingService implements IPackingService {
         }
     }
 
-    private BigDecimal getCalculatedVolume(Packing packingRow) throws Exception {
+    private BigDecimal getCalculatedVolume(Packing packingRow) throws RunnerException {
         if (!StringUtils.isEmpty(packingRow.getPacks()) && packingRow.getLength() != null
                 && packingRow.getHeight() != null && packingRow.getWidth() != null
                 && !StringUtils.isEmpty(packingRow.getWidthUnit()) && !StringUtils.isEmpty(packingRow.getHeightUnit())
@@ -325,7 +325,7 @@ public class PackingService implements IPackingService {
         return null;
     }
 
-    private void applyChargeableValidation(String transportMode, int row, Packing packingRow, Map<String, Set<String>> masterDataMap) throws Exception {
+    private void applyChargeableValidation(String transportMode, int row, Packing packingRow, Map<String, Set<String>> masterDataMap) throws RunnerException {
         if (!StringUtils.isEmpty(packingRow.getChargeableUnit())) {
             if (masterDataMap.containsKey(MasterDataType.WEIGHT_UNIT.getDescription()) &&
                     !masterDataMap.get(MasterDataType.WEIGHT_UNIT.getDescription()).contains(packingRow.getChargeableUnit()))
@@ -363,7 +363,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public void downloadPacking(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
+    public void downloadPacking(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException {
         try {
             List<Packing> result = new ArrayList<>();
             if (request.getShipmentId() != null) {
@@ -639,7 +639,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws RunnerException {
         PackContainerNumberChangeRequest request = (PackContainerNumberChangeRequest) commonRequestModel.getData();
         PackContainerNumberChangeResponse response = new PackContainerNumberChangeResponse();
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
@@ -696,7 +696,7 @@ public class PackingService implements IPackingService {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    public PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory, ShipmentMeasurementDetailsDto dto) throws Exception {
+    public PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory, ShipmentMeasurementDetailsDto dto) throws RunnerException {
         try {
             PackSummaryResponse response = new PackSummaryResponse();
             double totalWeight = 0;
@@ -792,11 +792,11 @@ public class PackingService implements IPackingService {
             response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, chargeableWeight, packChargeableWeightUnit));
             return response;
         } catch (Exception e) {
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
-    public VolumeWeightChargeable calculateVolumetricWeightForAir(BigDecimal volume, BigDecimal weight, String transportMode, String weightUnit, String volumeUnit) throws Exception {
+    public VolumeWeightChargeable calculateVolumetricWeightForAir(BigDecimal volume, BigDecimal weight, String transportMode, String weightUnit, String volumeUnit) throws RunnerException {
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
         BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
         BigDecimal vlInM3 = new BigDecimal(convertUnit(VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
@@ -816,7 +816,7 @@ public class PackingService implements IPackingService {
         return vwOb;
     }
 
-    public ResponseEntity<IRunnerResponse> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel model) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel model) throws RunnerException {
         AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) model.getData();
         AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
         if (!StringUtils.isEmpty(request.getTransportMode()) && !request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
@@ -837,7 +837,7 @@ public class PackingService implements IPackingService {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    public void calculateVolume(String widthUnit, String heightUnit, String lengthUnit, AutoCalculatePackingResponse pack, AutoCalculatePackingRequest request) throws Exception {
+    public void calculateVolume(String widthUnit, String heightUnit, String lengthUnit, AutoCalculatePackingResponse pack, AutoCalculatePackingRequest request) throws RunnerException {
 
         if (request.getWidthUnit() == null || request.getLengthUnit() == null || request.getHeightUnit() == null) {
             return;
@@ -893,7 +893,7 @@ public class PackingService implements IPackingService {
                                    String lengthUnit,
                                    String heightUnit,
                                    AutoCalculatePackingRequest request,
-                                   AutoCalculatePackingResponse response) throws Exception {
+                                   AutoCalculatePackingResponse response) throws RunnerException {
         if (!StringUtils.isEmpty(volumeUnit) && volumeUnit.equals("M3")) {
             calculateVolume(widthUnit, heightUnit, lengthUnit, response, request);
         }
@@ -949,14 +949,14 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> autoCalculateChargable(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> autoCalculateChargable(CommonRequestModel commonRequestModel) throws RunnerException {
         AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
         AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
         calculateChargeable(request, response);
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    private void calculateChargeable(AutoCalculatePackingRequest request, AutoCalculatePackingResponse response) throws Exception {
+    private void calculateChargeable(AutoCalculatePackingRequest request, AutoCalculatePackingResponse response) throws RunnerException {
         if (StringUtility.isNotEmpty(request.getTransportMode())) {
             if (!request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)){
                 String wunit = request.getWeightUnit();
@@ -983,7 +983,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> autoCalculateVolume(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> autoCalculateVolume(CommonRequestModel commonRequestModel) throws RunnerException {
         AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
         AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
         if(!request.isVolumeChange()) {
@@ -1018,7 +1018,7 @@ public class PackingService implements IPackingService {
         return chargeableWeight;
     }
 
-    public void calculateChargeableForSEA_LCL(AutoCalculatePackingResponse response, AutoCalculatePackingRequest request) throws Exception {
+    public void calculateChargeableForSEA_LCL(AutoCalculatePackingResponse response, AutoCalculatePackingRequest request) throws RunnerException {
         var wunit = request.getWeightUnit();
         var vunit = request.getVolumeUnit();
         var vol = request.getVolume();
@@ -1039,7 +1039,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> listPacksToDetach(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> listPacksToDetach(CommonRequestModel commonRequestModel) throws RunnerException {
         DetachPacksListDto request = (DetachPacksListDto) commonRequestModel.getData();
         if(request == null || request.getContainerId() == null || request.getShipmentId() == null) {
             throw new ValidationException("Either shipmentId or containerId is incorrect!");
@@ -1054,7 +1054,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         PackingRequestV2 packingRequestV2 = (PackingRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
@@ -1109,7 +1109,7 @@ public class PackingService implements IPackingService {
         }
     }
 
-    private static Containers addWeightVolume(Packing request, Containers newContainer) throws Exception {
+    private static Containers addWeightVolume(Packing request, Containers newContainer) throws RunnerException {
         if(newContainer != null && request != null) {
             if(IsStringNullOrEmpty(newContainer.getAchievedWeightUnit()))
                 newContainer.setAchievedWeightUnit(newContainer.getAllocatedWeightUnit());
@@ -1127,7 +1127,7 @@ public class PackingService implements IPackingService {
         return newContainer;
     }
 
-    private static Containers subtractWeightVolume(Packing request, Containers oldContainer) throws Exception {
+    private static Containers subtractWeightVolume(Packing request, Containers oldContainer) throws RunnerException {
         if(oldContainer != null && request != null) {
             if(IsStringNullOrEmpty(oldContainer.getAchievedWeightUnit()))
                 oldContainer.setAchievedWeightUnit(oldContainer.getAllocatedWeightUnit());

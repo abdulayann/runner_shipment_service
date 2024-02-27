@@ -538,7 +538,7 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
     }
 
-    void getConsolidation(ConsolidationDetails consolidationDetails) throws Exception{
+    void getConsolidation(ConsolidationDetails consolidationDetails) throws RunnerException{
         generateConsolidationNumber(consolidationDetails);
         consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
 
@@ -879,7 +879,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception {
+    public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException {
         ConsolidationPatchRequest consolidationDetailsRequest = (ConsolidationPatchRequest) commonRequestModel.getData();
         // Get old entity to be updated
         ConsolidationDetailsRequest req = new ConsolidationDetailsRequest();
@@ -970,7 +970,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
 
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
         // TODO- implement Validation logic
@@ -1072,7 +1072,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws Exception {
+    private ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws RunnerException {
         String responseMsg;
         try {
             if(consolidationDetails.getAllocations() == null)
@@ -1100,7 +1100,7 @@ public class ConsolidationService implements IConsolidationService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -1297,7 +1297,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws Exception {
+    public VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException {
         String responseMsg;
         try {
             VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
@@ -1343,7 +1343,7 @@ public class ConsolidationService implements IConsolidationService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -1463,7 +1463,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CalculateContainerSummaryRequest request = (CalculateContainerSummaryRequest) commonRequestModel.getData();
         try {
@@ -1479,7 +1479,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
         try {
@@ -2397,7 +2397,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private List<Containers> mergeContainers(List<Containers> containersList, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
+    private List<Containers> mergeContainers(List<Containers> containersList, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException{
         try {
             List<Containers> response = new ArrayList<>();
             HashMap<String, List<Containers>> map = new HashMap<>();
@@ -2438,11 +2438,11 @@ public class ConsolidationService implements IConsolidationService {
             return response;
         } catch (Exception e) {
             log.error("Error while merging consol containers");
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
-    private Containers convertIntoMergedConts(Containers finalContainer, Containers container, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
+    private Containers convertIntoMergedConts(Containers finalContainer, Containers container, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException{
         try {
             finalContainer.setDescriptionOfGoods(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods()));
 //        finalContainer.setHa(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods())); TODO- missing handling info in containers
@@ -2533,7 +2533,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             return finalContainer;
         } catch (Exception e) {
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -2588,7 +2588,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
 
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
@@ -2957,7 +2957,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setTriangulationPartner(null);
     }
 
-    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws Exception{
+    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws RunnerException{
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
         List<ContainerRequest> containerRequestList = consolidationDetailsRequest.getContainersList();
         List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();

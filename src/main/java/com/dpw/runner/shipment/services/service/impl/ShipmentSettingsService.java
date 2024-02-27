@@ -170,7 +170,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     @Transactional
     @Override
-    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
@@ -292,7 +292,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     @Transactional
     @Override
-    public ResponseEntity<IRunnerResponse> completeSettingsUpdateCreateV1(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeSettingsUpdateCreateV1(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
@@ -343,7 +343,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
 
-    public ResponseEntity<?> completeCreateFromV1(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> completeCreateFromV1(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = null;
         request = (ShipmentSettingRequest) commonRequestModel.getData();
@@ -391,7 +391,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
-    public ResponseEntity<IRunnerResponse> completeUpdateFromV1(Optional<ShipmentSettingsDetails> oldEntity, CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeUpdateFromV1(Optional<ShipmentSettingsDetails> oldEntity, CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
 

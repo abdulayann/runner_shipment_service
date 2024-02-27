@@ -72,7 +72,7 @@ public class ELDetailsDao implements IELDetailsDao {
         return elDetailsRepository.findByElNumber(elNumber);
     }
 
-    public List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId) throws Exception {
+    public List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId) throws RunnerException {
         String responseMsg;
         List<ELDetails> responseELDetails = new ArrayList<>();
         try {
@@ -103,7 +103,7 @@ public class ELDetailsDao implements IELDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -214,7 +214,7 @@ public class ELDetailsDao implements IELDetailsDao {
         }
     }
 
-    public List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId, List<ELDetails> oldEntityList) throws Exception {
+    public List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId, List<ELDetails> oldEntityList) throws RunnerException {
         String responseMsg;
         List<ELDetails> responseELDetails = new ArrayList<>();
         Map<UUID, ELDetails> elDetailsMap = new HashMap<>();
@@ -246,7 +246,7 @@ public class ELDetailsDao implements IELDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

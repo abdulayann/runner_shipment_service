@@ -129,7 +129,7 @@ public class PackingController {
     }
 
     @PostMapping("/calculate-weight-volumne")
-    public ResponseEntity<?> calculateWeightVolume(@RequestBody PackContainerNumberChangeRequest request) throws Exception {
+    public ResponseEntity<?> calculateWeightVolume(@RequestBody PackContainerNumberChangeRequest request) throws RunnerException {
         String responseMsg;
         try {
             return (ResponseEntity<?>) packingService.calculateWeightVolumne(CommonRequestModel.buildRequest(request));
@@ -248,7 +248,7 @@ public class PackingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.CALCULATE_VOLUMETRIC_WEIGHT)
-    public ResponseEntity<?> calculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) throws Exception {
+    public ResponseEntity<?> calculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) throws RunnerException {
         String responseMsg;
         try {
             return (ResponseEntity<?>) packingService.calculateVolumetricWeightForAirAndChargeable(CommonRequestModel.buildRequest(request));

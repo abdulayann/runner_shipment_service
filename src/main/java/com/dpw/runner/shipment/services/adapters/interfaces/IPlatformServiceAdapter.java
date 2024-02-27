@@ -5,8 +5,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface IPlatformServiceAdapter {
-    ResponseEntity<IRunnerResponse> createAtPlatform(CommonRequestModel requestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> createAtPlatform(CommonRequestModel requestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> updateAtPlaform(CommonRequestModel requestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> updateAtPlaform(CommonRequestModel requestModel) throws RunnerException;
 
 }

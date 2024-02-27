@@ -12,5 +12,5 @@ public interface IAllocationsDao {
     Page<Allocations> findAll(Specification<Allocations> spec, Pageable pageable);
     Optional<Allocations> findById(Long id);
     void delete(Allocations allocations);
-    Allocations updateEntityFromShipmentConsole(Allocations allocations) throws Exception;
+    Allocations updateEntityFromShipmentConsole(Allocations allocations) throws RunnerException;
 }

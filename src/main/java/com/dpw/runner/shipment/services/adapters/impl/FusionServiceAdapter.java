@@ -35,7 +35,7 @@ public class FusionServiceAdapter implements IFusionServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> checkCreditLimitP100(CommonRequestModel requestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> checkCreditLimitP100(CommonRequestModel requestModel) throws RunnerException {
         CheckCreditBalanceFusionRequest request = (CheckCreditBalanceFusionRequest) requestModel.getData();
         String url = baseUrl + creditCheckUrlP100;
         try {

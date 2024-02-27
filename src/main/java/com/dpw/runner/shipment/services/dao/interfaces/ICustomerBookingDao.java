@@ -17,7 +17,7 @@ public interface ICustomerBookingDao {
 
     void delete(CustomerBooking customerBooking);
 
-    CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws Exception;
+    CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws RunnerException;
     Optional<CustomerBooking> findByBookingNumber(String bookingNumber);
 
     int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated);

@@ -15,12 +15,12 @@ public interface IJobDao {
     Page<Jobs> findAll(Specification<Jobs> spec, Pageable pageable);
     Optional<Jobs> findById(Long id);
     void delete(Jobs jobs);
-    List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId) throws Exception;
+    List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId) throws RunnerException;
     List<Jobs> saveEntityFromShipment(List<Jobs> jobRequests, Long shipmentId);
     List<Jobs> saveEntityFromShipment(List<Jobs> jobRequests, Long shipmentId, Map<Long, Jobs> oldEntityMap);
-    List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long shipmentId) throws Exception;
-    List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws Exception;
+    List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long shipmentId) throws RunnerException;
+    List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws RunnerException;
     List<Jobs> saveEntityFromConsole(List<Jobs> jobRequests, Long shipmentId);
     List<Jobs> saveEntityFromConsole(List<Jobs> jobRequests, Long consolidationId, Map<Long, Jobs> oldEntityMap);
-    List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws Exception;
+    List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws RunnerException;
 }

@@ -70,7 +70,7 @@ public class BookingChargesDao implements IBookingChargesDao {
         bookingChargesRepository.delete(bookingCharges);
     }
 
-    public BookingCharges updateEntityFromShipmentConsole(BookingCharges bookingCharges) throws Exception {
+    public BookingCharges updateEntityFromShipmentConsole(BookingCharges bookingCharges) throws RunnerException {
         String responseMsg;
         try {
             if (bookingCharges.getId() != null) {
@@ -87,7 +87,7 @@ public class BookingChargesDao implements IBookingChargesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -158,7 +158,7 @@ public class BookingChargesDao implements IBookingChargesDao {
         return res;
     }
 
-    public List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws Exception {
+    public List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws RunnerException {
         String responseMsg;
         List<BookingCharges> responseBookingCharges = new ArrayList<>();
         try {
@@ -185,7 +185,7 @@ public class BookingChargesDao implements IBookingChargesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

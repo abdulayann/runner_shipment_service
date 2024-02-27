@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchReque
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -212,13 +213,13 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.ATTACH_SHIPMENT_SUCCESSFUL)})
     @PostMapping(ApiConstants.ATTACH_SHIPMENTS)
-    public ResponseEntity<IRunnerResponse> attachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws Exception {
+    public ResponseEntity<IRunnerResponse> attachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws RunnerException {
         return consolidationService.attachShipments(request.getId(), request.getShipmentIds());
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.DETACH_SUCCESSFUL)})
     @PostMapping(ApiConstants.DETACH_SHIPMENTS)
-    public ResponseEntity<IRunnerResponse> detachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws Exception{
+    public ResponseEntity<IRunnerResponse> detachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws RunnerException {
         return consolidationService.detachShipments(request.getId(), request.getShipmentIds());
     }
 

@@ -56,7 +56,7 @@ public class FileRepoDao implements IFileRepoDao {
         return fileRepoRepository.findByEntityIdAndEntityType(entityId, entityType);
     }
 
-    public List<FileRepo> updateEntityFromOtherEntity(List<FileRepo> fileRepoList, Long entityId, String entityType) throws Exception {
+    public List<FileRepo> updateEntityFromOtherEntity(List<FileRepo> fileRepoList, Long entityId, String entityType) throws RunnerException {
         String responseMsg;
         List<FileRepo> responseFileRepo = new ArrayList<>();
         try {
@@ -87,7 +87,7 @@ public class FileRepoDao implements IFileRepoDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -143,7 +143,7 @@ public class FileRepoDao implements IFileRepoDao {
         }
     }
 
-    public List<FileRepo> updateEntityFromOtherEntity(List<FileRepo> fileRepoList, Long entityId, String entityType, List<FileRepo> oldEntityList) throws Exception {
+    public List<FileRepo> updateEntityFromOtherEntity(List<FileRepo> fileRepoList, Long entityId, String entityType, List<FileRepo> oldEntityList) throws RunnerException {
         String responseMsg;
         List<FileRepo> responseFileRepo = new ArrayList<>();
         Map<UUID, FileRepo> fileRepoMap = new HashMap<>();
@@ -177,7 +177,7 @@ public class FileRepoDao implements IFileRepoDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

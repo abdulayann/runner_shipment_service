@@ -220,7 +220,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void uploadContainers(BulkUploadRequest request) throws Exception {
+    public void uploadContainers(BulkUploadRequest request) throws RunnerException {
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please add the consolidation and then try again.");
         }
@@ -251,7 +251,7 @@ public class ContainerService implements IContainerService {
     }
 
     private void applyContainerValidations(Map<String, UUID> containerNumberSet, List<Containers> containersList, BulkUploadRequest request,
-                                           Map<String, Set<String>> masterDataMap) throws Exception {
+                                           Map<String, Set<String>> masterDataMap) throws RunnerException {
         String transportMode = request.getTransportMode();
         Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
         Set<String> dicLocType = masterDataMap.get("Unlocations");
@@ -351,7 +351,7 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private void applyChargeableValidation(String transportMode, int row, Containers containersRow) throws Exception {
+    private void applyChargeableValidation(String transportMode, int row, Containers containersRow) throws RunnerException {
         if (containersRow.getChargeableUnit() != null && !containersRow.getChargeableUnit().isEmpty() &&
                 transportMode != null && transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR) &&
                 containersRow.getChargeable() != null) {
@@ -432,7 +432,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
+    public void uploadContainerEvents(BulkUploadRequest request) throws RunnerException {
 //        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
@@ -454,7 +454,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws Exception {
+    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
         try {
             List<ShipmentsContainersMapping> mappings;
             List<Containers> result = new ArrayList<>();
@@ -606,7 +606,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
+    public void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException {
         List<ContainerEventExcelModel> eventsModelList = new ArrayList<>();
         if (request.getConsolidationId() != null) {
 
@@ -902,7 +902,7 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private Containers changeAchievedUnit(Containers container) throws Exception{
+    private Containers changeAchievedUnit(Containers container) throws RunnerException{
         try {
             if(!IsStringNullOrEmpty(container.getAchievedVolumeUnit()) && !IsStringNullOrEmpty(container.getAllocatedVolumeUnit()) && !container.getAchievedVolumeUnit().equals(container.getAllocatedVolumeUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
@@ -917,7 +917,7 @@ public class ContainerService implements IContainerService {
             container = calculateUtilization(container);
             return container;
         } catch (Exception e) {
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -1369,7 +1369,7 @@ public class ContainerService implements IContainerService {
         return eqvNumValue;
     }
 
-    public ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception {
+    public ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws RunnerException {
         try {
             double totalWeight = 0;
             double packageCount = 0;
@@ -1430,7 +1430,7 @@ public class ContainerService implements IContainerService {
             return response;
         }
         catch (Exception e) {
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -1539,7 +1539,7 @@ public class ContainerService implements IContainerService {
      */
     
     @Override
-    public ResponseEntity<IRunnerResponse> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
@@ -1613,7 +1613,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws Exception {
+    public void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws RunnerException {
         List<ShipmentsContainersMapping> mappings;
         Optional<ConsolidationDetails> consol = null;
         List<IRunnerResponse> containersList = null;

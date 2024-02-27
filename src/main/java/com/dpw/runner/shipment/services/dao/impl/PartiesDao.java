@@ -62,7 +62,7 @@ public class PartiesDao implements IPartiesDao {
         partiesRepository.delete(parties);
     }
 
-    public Parties updateEntityFromShipment(Parties parties, Long shipmentId) throws Exception {
+    public Parties updateEntityFromShipment(Parties parties, Long shipmentId) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
@@ -80,11 +80,11 @@ public class PartiesDao implements IPartiesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
-    public List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType) throws Exception {
+    public List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType) throws RunnerException {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         try {
@@ -115,7 +115,7 @@ public class PartiesDao implements IPartiesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -228,7 +228,7 @@ public class PartiesDao implements IPartiesDao {
         }
     }
 
-    public List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType, List<Parties> oldEntityList) throws Exception {
+    public List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType, List<Parties> oldEntityList) throws RunnerException {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         Map<UUID, Parties> partiesMap = new HashMap<>();
@@ -262,7 +262,7 @@ public class PartiesDao implements IPartiesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

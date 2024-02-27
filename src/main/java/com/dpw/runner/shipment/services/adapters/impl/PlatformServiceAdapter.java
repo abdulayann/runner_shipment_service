@@ -36,7 +36,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> createAtPlatform(CommonRequestModel requestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> createAtPlatform(CommonRequestModel requestModel) throws RunnerException {
         PlatformCreateRequest request = (PlatformCreateRequest) requestModel.getData();
         String url = baseUrl + "/booking/external";
         log.info("Platform Create Request for booking reference {}: {}", request.getBooking_ref_code(), request);
@@ -46,7 +46,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> updateAtPlaform(CommonRequestModel requestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> updateAtPlaform(CommonRequestModel requestModel) throws RunnerException {
         PlatformUpdateRequest request = (PlatformUpdateRequest) requestModel.getData();
         String url = baseUrl + "/notifications/booking/" + request.getBooking_reference_code();
         log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- RequestPayload: {}", jsonHelper.convertToJson(request));

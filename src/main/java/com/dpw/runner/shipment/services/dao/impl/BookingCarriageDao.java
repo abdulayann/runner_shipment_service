@@ -79,7 +79,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         bookingCarriageRepository.delete(bookingCarriage);
     }
 
-    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId) throws Exception {
+    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId) throws RunnerException {
         String responseMsg;
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         try {
@@ -110,7 +110,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -221,7 +221,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         }
     }
 
-    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId, List<BookingCarriage> oldEntityList) throws Exception {
+    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId, List<BookingCarriage> oldEntityList) throws RunnerException {
         String responseMsg;
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         Map<UUID, BookingCarriage> bookingMap = new HashMap<>();
@@ -255,7 +255,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

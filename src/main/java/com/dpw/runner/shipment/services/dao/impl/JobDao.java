@@ -81,7 +81,7 @@ public class JobDao implements IJobDao {
     }
 
     @Override
-    public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId) throws Exception {
+    public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId) throws RunnerException {
         String responseMsg;
         List<Jobs> responseJobs = new ArrayList<>();
         try {
@@ -112,7 +112,7 @@ public class JobDao implements IJobDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -196,7 +196,7 @@ public class JobDao implements IJobDao {
     }
 
     @Override
-    public List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long consolidationId) throws Exception {
+    public List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long consolidationId) throws RunnerException {
         String responseMsg;
         List<Jobs> responseJobs = new ArrayList<>();
         try {
@@ -227,12 +227,12 @@ public class JobDao implements IJobDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long consolidationId, List<Jobs> oldEntityList) throws Exception {
+    public List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long consolidationId, List<Jobs> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Jobs> jobsMap = new HashMap<>();
         if(oldEntityList != null && oldEntityList.size() > 0) {
@@ -265,7 +265,7 @@ public class JobDao implements IJobDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -339,7 +339,7 @@ public class JobDao implements IJobDao {
     }
 
     @Override
-    public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws Exception {
+    public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Jobs> jobsMap = new HashMap<>();
         if(oldEntityList != null && oldEntityList.size() > 0) {
@@ -372,7 +372,7 @@ public class JobDao implements IJobDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

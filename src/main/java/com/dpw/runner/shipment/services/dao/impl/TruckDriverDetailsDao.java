@@ -93,7 +93,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     }
 
     @Override
-    public List<TruckDriverDetails> updateEntityFromShipment(List<TruckDriverDetails> truckDriverDetailsList, Long shipmentId) throws Exception {
+    public List<TruckDriverDetails> updateEntityFromShipment(List<TruckDriverDetails> truckDriverDetailsList, Long shipmentId) throws RunnerException {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
@@ -124,7 +124,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -208,7 +208,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     }
 
     @Override
-    public List<TruckDriverDetails> updateEntityFromShipment(List<TruckDriverDetails> truckDriverDetailsList, Long shipmentId, List<TruckDriverDetails> oldEntityList) throws Exception {
+    public List<TruckDriverDetails> updateEntityFromShipment(List<TruckDriverDetails> truckDriverDetailsList, Long shipmentId, List<TruckDriverDetails> oldEntityList) throws RunnerException {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         Map<UUID, TruckDriverDetails> truckDriverDetailsMap = new HashMap<>();
@@ -242,12 +242,12 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId) throws Exception {
+    public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId) throws RunnerException {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
@@ -278,12 +278,12 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId, List<TruckDriverDetails> oldEntityList) throws Exception {
+    public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId, List<TruckDriverDetails> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, TruckDriverDetails> truckDriverDetailsMap = new HashMap<>();
         if(oldEntityList != null && oldEntityList.size() > 0) {
@@ -316,7 +316,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

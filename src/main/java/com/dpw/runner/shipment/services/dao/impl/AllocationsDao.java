@@ -41,7 +41,7 @@ public class AllocationsDao implements IAllocationsDao {
         allocationsRepository.delete(allocations);
     }
 
-    public Allocations updateEntityFromConsolidation(Allocations allocations, Long consolidationId) throws Exception {
+    public Allocations updateEntityFromConsolidation(Allocations allocations, Long consolidationId) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
@@ -59,12 +59,12 @@ public class AllocationsDao implements IAllocationsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public Allocations updateEntityFromShipmentConsole(Allocations allocations) throws Exception {
+    public Allocations updateEntityFromShipmentConsole(Allocations allocations) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
@@ -82,7 +82,7 @@ public class AllocationsDao implements IAllocationsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

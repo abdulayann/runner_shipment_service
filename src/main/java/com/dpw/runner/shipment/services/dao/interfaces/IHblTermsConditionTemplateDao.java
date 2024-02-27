@@ -9,7 +9,7 @@ public interface IHblTermsConditionTemplateDao {
     HblTermsConditionTemplate save(HblTermsConditionTemplate hblTermsConditionTemplate);
     List<HblTermsConditionTemplate> saveAll(List<HblTermsConditionTemplate> hblTermsConditionTemplateList);
     List<HblTermsConditionTemplate> saveEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint);
-    List<HblTermsConditionTemplate> updateEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint) throws Exception;
+    List<HblTermsConditionTemplate> updateEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint) throws RunnerException;
     HblTermsConditionTemplate getTemplateCode(String templateCode, boolean pageType, String printType);
 
 }

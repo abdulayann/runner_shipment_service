@@ -68,7 +68,7 @@ public class NotesDao implements INotesDao {
         return notesRepository.findByEntityIdAndEntityType(entityId, entityType);
     }
 
-    public List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType) throws Exception {
+    public List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType) throws RunnerException {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         try {
@@ -212,7 +212,7 @@ public class NotesDao implements INotesDao {
         }
     }
 
-    public List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType, List<Notes> oldEntityList) throws Exception {
+    public List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType, List<Notes> oldEntityList) throws RunnerException {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         Map<UUID, Notes> notesMap = new HashMap<>();
@@ -246,7 +246,7 @@ public class NotesDao implements INotesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

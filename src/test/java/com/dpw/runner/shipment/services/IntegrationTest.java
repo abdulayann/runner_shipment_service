@@ -79,7 +79,7 @@ public class IntegrationTest {
 
 
     //@Test
-    public void testFetchByQuery_request1() throws Exception {
+    public void testFetchByQuery_request1() throws RunnerException {
         ListCommonRequest ListCommonRequest = createSamplePageable1();
 
         //creating data in H2
@@ -100,7 +100,7 @@ public class IntegrationTest {
     }
 
     //@Test
-    public void testFetchByQuery_request3() throws Exception {
+    public void testFetchByQuery_request3() throws RunnerException {
         ListCommonRequest ListCommonRequest = createSamplePageable2();
         Page<ShipmentDetails> shipments = new PageImpl<ShipmentDetails>(Collections.emptyList());
 
@@ -116,7 +116,7 @@ public class IntegrationTest {
 
     @Test
     @Order(1)
-    public void createTest() throws Exception {
+    public void createTest() throws RunnerException {
         var data = testDataGenerator.createTestShipment(40);
         for (var i : data) {
             MvcResult mvcResult = mockMvc.perform(post("/api/v2/shipment/create")
@@ -129,7 +129,7 @@ public class IntegrationTest {
     }
 
     @Test
-    public void testCriteria1() throws Exception {
+    public void testCriteria1() throws RunnerException {
         createTest();
         //Create a request payload for the 1st Criteria
         ListCommonRequest ListCommonRequest = createSamplePageable_AllNull_StatusIs0();
@@ -151,7 +151,7 @@ public class IntegrationTest {
     }
 
     @Test
-    public void completeRetrieveTestCriteria() throws Exception {
+    public void completeRetrieveTestCriteria() throws RunnerException {
 //        var data = testDataGenerator.createTestShipment(40);
 //        for (var i : data) {
 //            shipmentService.create(CommonRequestModel.buildRequest(i));
@@ -171,7 +171,7 @@ public class IntegrationTest {
     }
 
     @Test
-    public void testCriteria2() throws Exception {
+    public void testCriteria2() throws RunnerException {
         //var dataInH2 = testDataGenerator.populateH2WithTestData();
 //        var data = testDataGenerator.createTestShipment(40);
 //        for (var i : data) {
@@ -194,7 +194,7 @@ public class IntegrationTest {
     }
 
     @Test
-    public void testCriteria3() throws Exception {
+    public void testCriteria3() throws RunnerException {
         //var dataInH2 = testDataGenerator.populateH2WithTestData();
 //        var data = testDataGenerator.createTestShipment(40);
 //        for (var i : data) {
@@ -221,7 +221,7 @@ public class IntegrationTest {
     }
 
     @Test
-    public void testCriteria4() throws Exception {
+    public void testCriteria4() throws RunnerException {
         //var dataInH2 = testDataGenerator.populateH2WithTestData();
 //        var data = testDataGenerator.createTestShipment(400);
 //        for (var i : data) {
@@ -249,7 +249,7 @@ public class IntegrationTest {
     }
 
     @Test
-    public void testCriteria5() throws Exception {
+    public void testCriteria5() throws RunnerException {
 //        var dataInH2 = testDataGenerator.populateH2WithTestData();
 
 //        var data = testDataGenerator.createTestShipment(4);
@@ -277,7 +277,7 @@ public class IntegrationTest {
     }
 
     @Test
-    public void testCriteria6() throws Exception {
+    public void testCriteria6() throws RunnerException {
 //        var dataInH2 = testDataGenerator.populateH2WithTestData();
 
 //        var data = testDataGenerator.createTestShipment(4);
@@ -302,7 +302,7 @@ public class IntegrationTest {
     }
 
     @Test
-    public void testCriteria7() throws Exception {
+    public void testCriteria7() throws RunnerException {
         //Fires up the H2 for each test case
         //populate data in H2 by hitting the createTestShipment
 //        var dataInH2 = testDataGenerator.populateH2WithTestData();
@@ -786,7 +786,7 @@ public class IntegrationTest {
     }
 
     //@Test
-    public void testCreateTestRecord() throws Exception {
+    public void testCreateTestRecord() throws RunnerException {
         int count = 5;
         List<ShipmentDetails> shipments = new ArrayList<>();
 

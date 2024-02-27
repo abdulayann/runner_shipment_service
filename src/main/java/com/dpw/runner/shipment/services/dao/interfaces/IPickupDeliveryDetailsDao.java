@@ -13,6 +13,6 @@ public interface IPickupDeliveryDetailsDao {
     Page<PickupDeliveryDetails> findAll(Specification<PickupDeliveryDetails> spec, Pageable pageable);
     Optional<PickupDeliveryDetails> findById(Long id);
     void delete(PickupDeliveryDetails pickupDeliveryDetails);
-    List<PickupDeliveryDetails> updateEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsList, Long shipmentId) throws Exception;
+    List<PickupDeliveryDetails> updateEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsList, Long shipmentId) throws RunnerException;
     List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId);
 }

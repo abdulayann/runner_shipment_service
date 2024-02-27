@@ -118,7 +118,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private ICustomerBookingDao customerBookingDao;
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
@@ -134,7 +134,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
@@ -150,7 +150,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchContractsTemp(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> fetchContractsTemp(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
@@ -166,7 +166,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmUpdateUrl;
@@ -181,7 +181,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchOffers(CommonRequestModel req) throws Exception {
+    public ResponseEntity<IRunnerResponse> fetchOffers(CommonRequestModel req) throws RunnerException {
         String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
         var request = createNPMOffersRequest(fetchOffersRequest);
@@ -198,7 +198,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchOffersV8(CommonRequestModel req) throws Exception {
+    public ResponseEntity<IRunnerResponse> fetchOffersV8(CommonRequestModel req) throws RunnerException {
         try {
             String url = npmBaseUrl + npmOffersV8Url;
             NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
@@ -215,7 +215,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> awbAutoSell(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> awbAutoSell(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             String url = npmServiceBaseUrl + npmAwbAutoSell;
             NPMAutoSellRequest autoSellRequest = (NPMAutoSellRequest) commonRequestModel.getData();
@@ -230,7 +230,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> awbImportRates(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> awbImportRates(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             String url = npmServiceBaseUrl + npmAwbImportRates;
             NPMImportRatesRequest importRatesRequest = (NPMImportRatesRequest) commonRequestModel.getData();
@@ -617,7 +617,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .build();
     }
     @Override
-    public NPMFetchLangChargeCodeResponse fetchMultiLangChargeCode(CommonRequestModel commonRequestModel) throws Exception {
+    public NPMFetchLangChargeCodeResponse fetchMultiLangChargeCode(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             NPMFetchMultiLangChargeCodeRequest request = (NPMFetchMultiLangChargeCodeRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmMultiLangChargeCode;

@@ -873,7 +873,7 @@ public class ShipmentService implements IShipmentService {
     }
     @Override
     @Transactional
-    public ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
+    public ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException
     {
         List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
         List<ContainerRequest> containerList = new ArrayList<>();
@@ -1031,7 +1031,7 @@ public class ShipmentService implements IShipmentService {
         return packingRequests;
     }
 
-    private List<ContainerRequest> calculateAutoContainerWeightAndVolume(List<ContainerRequest> containersList, List<PackingRequest> packingList) throws Exception {
+    private List<ContainerRequest> calculateAutoContainerWeightAndVolume(List<ContainerRequest> containersList, List<PackingRequest> packingList) throws RunnerException {
         if(containersList != null && containersList.size() > 0) {
             for (ContainerRequest containers : containersList) {
                 if(packingList != null) {
@@ -1058,7 +1058,7 @@ public class ShipmentService implements IShipmentService {
         return containersList;
     }
 
-    public ResponseEntity<IRunnerResponse> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
             AutoUpdateWtVolRequest request = (AutoUpdateWtVolRequest) commonRequestModel.getData();
@@ -1073,7 +1073,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> calculateWtVolInShipmentOnChanges(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateWtVolInShipmentOnChanges(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
             AutoUpdateWtVolRequest request = (AutoUpdateWtVolRequest) commonRequestModel.getData();
@@ -1088,7 +1088,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private AutoUpdateWtVolResponse calculateShipmentWV(AutoUpdateWtVolRequest request) throws Exception {
+    private AutoUpdateWtVolResponse calculateShipmentWV(AutoUpdateWtVolRequest request) throws RunnerException {
         AutoUpdateWtVolResponse response = jsonHelper.convertValue(request, AutoUpdateWtVolResponse.class);
         List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
         List<Containers> containersList = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
@@ -1140,7 +1140,7 @@ public class ShipmentService implements IShipmentService {
         return response;
     }
 
-    private AutoUpdateWtVolResponse updateShipmentDetails(AutoUpdateWtVolResponse response, List<Containers> containersList) throws Exception { // to account for updateShipmentDetails flag in v1 container summary
+    private AutoUpdateWtVolResponse updateShipmentDetails(AutoUpdateWtVolResponse response, List<Containers> containersList) throws RunnerException { // to account for updateShipmentDetails flag in v1 container summary
         double totalWeight = 0;
         double packageCount = 0;
         double tareWeight = 0;
@@ -1227,7 +1227,7 @@ public class ShipmentService implements IShipmentService {
         return packsUnit;
     }
 
-    private AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws Exception {
+    private AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws RunnerException {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
         if(IsStringNullOrEmpty(request.getWeightUnit()))
@@ -1250,7 +1250,7 @@ public class ShipmentService implements IShipmentService {
         return response;
     }
 
-    private AutoUpdateWtVolResponse calculateVW(AutoUpdateWtVolRequest request, AutoUpdateWtVolResponse response, boolean recalculateVwObInKgAndM3) throws Exception{
+    private AutoUpdateWtVolResponse calculateVW(AutoUpdateWtVolRequest request, AutoUpdateWtVolResponse response, boolean recalculateVwObInKgAndM3) throws RunnerException{
         if(IsStringNullOrEmpty(request.getTransportMode()))
             return response;
         if(!IsStringNullOrEmpty(response.getWeightUnit()) && !IsStringNullOrEmpty(response.getVolumeUnit())) {
@@ -1344,7 +1344,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
 
@@ -1428,7 +1428,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
     }
-    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
+    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException{
         List<Long> tempConsolIds = new ArrayList<>();
         List<Long> removedConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
@@ -1543,7 +1543,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
         }
     }
-    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole) throws Exception {
+    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole) throws RunnerException {
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
@@ -1724,7 +1724,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void createShipmentRouteInConsole (ShipmentRequest shipmentRequest) throws Exception{
+    private void createShipmentRouteInConsole (ShipmentRequest shipmentRequest) throws RunnerException{
         List<ConsolidationDetailsRequest> consoleRequest = shipmentRequest.getConsolidationList();
         List<Routings> createRoutes = new ArrayList<>();
         if(shipmentRequest.getCreateMainLegRoute() != null && shipmentRequest.getCreateMainLegRoute()){
@@ -2404,7 +2404,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception {
+    public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException {
 
         ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
         if ((shipmentRequest.getId() == null && shipmentRequest.getGuid() == null) && (shipmentRequest.getShipmentId() == null || shipmentRequest.getShipmentId().get() == "")) {
@@ -2696,7 +2696,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws RunnerException {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
 
@@ -2907,7 +2907,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CalculateContainerSummaryRequest request = (CalculateContainerSummaryRequest) commonRequestModel.getData();
         try {
@@ -2923,7 +2923,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
         try {

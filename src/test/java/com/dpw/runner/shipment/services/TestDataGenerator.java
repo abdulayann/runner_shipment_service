@@ -496,7 +496,7 @@ public class TestDataGenerator {
 
 
 //    @Transactional
-//    public ResponseEntity<?> createSynchronous(CommonRequestModel commonRequestModel) throws Exception {
+//    public ResponseEntity<?> createSynchronous(CommonRequestModel commonRequestModel) throws RunnerException {
 //        CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
 //        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
 //        shipmentDetails = shipmentDao.save(shipmentDetails);

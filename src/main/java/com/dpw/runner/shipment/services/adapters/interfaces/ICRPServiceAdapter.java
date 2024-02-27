@@ -7,8 +7,8 @@ import com.dpw.runner.shipment.services.exception.response.RunnerResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface ICRPServiceAdapter {
-    ResponseEntity<IRunnerResponse> retrieveCRPService(CommonRequestModel requestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> retrieveCRPService(CommonRequestModel requestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> listCRPService(CommonRequestModel requestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> listCRPService(CommonRequestModel requestModel) throws RunnerException;
 
 }

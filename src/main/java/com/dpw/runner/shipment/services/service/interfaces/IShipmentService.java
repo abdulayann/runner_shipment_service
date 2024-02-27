@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
@@ -27,13 +28,13 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;
 
-    ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception;
+    ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws Exception;
+    ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> cloneShipment(CommonRequestModel commonRequestModel);
 
@@ -45,7 +46,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> fullShipmentsList(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception;
+    ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> assignShipmentContainers(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> assignAllContainers(CommonRequestModel commonRequestModel);
@@ -62,11 +63,11 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> getMasterDataMappings();
 
-    ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws RunnerException;
     
-    ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception;
-    ResponseEntity<IRunnerResponse> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws Exception;
-    ResponseEntity<IRunnerResponse> calculateWtVolInShipmentOnChanges(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> calculateWtVolInShipmentOnChanges(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel);
     String generateCustomHouseBL(ShipmentDetails shipmentDetails);
     ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);

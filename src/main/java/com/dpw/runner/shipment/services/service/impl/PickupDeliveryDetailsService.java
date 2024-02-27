@@ -274,7 +274,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> V1PickupDeliveryCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1PickupDeliveryCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         PickupDeliveryDetailsRequestV2 pickupDeliveryDetailsRequestV2 = (PickupDeliveryDetailsRequestV2) commonRequestModel.getData();
         if(pickupDeliveryDetailsRequestV2 == null || pickupDeliveryDetailsRequestV2.getShipmentGuid() == null) {
             throw new Exception("Request guid is null");

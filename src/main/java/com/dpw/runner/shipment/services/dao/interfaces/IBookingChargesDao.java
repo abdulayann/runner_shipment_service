@@ -18,8 +18,8 @@ public interface IBookingChargesDao {
 
     void delete(BookingCharges bookingCharges);
 
-    BookingCharges updateEntityFromShipmentConsole(BookingCharges bookingCharges) throws Exception;
+    BookingCharges updateEntityFromShipmentConsole(BookingCharges bookingCharges) throws RunnerException;
 
-    List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws Exception;
+    List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws RunnerException;
 
 }

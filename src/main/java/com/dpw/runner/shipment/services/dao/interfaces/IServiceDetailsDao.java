@@ -15,8 +15,8 @@ public interface IServiceDetailsDao {
     Page<ServiceDetails> findAll(Specification<ServiceDetails> spec, Pageable pageable);
     Optional<ServiceDetails> findById(Long id);
     void delete(ServiceDetails serviceDetails);
-    List<ServiceDetails> updateEntityFromShipment(List<ServiceDetails> serviceDetailsList, Long shipmentId) throws Exception;
+    List<ServiceDetails> updateEntityFromShipment(List<ServiceDetails> serviceDetailsList, Long shipmentId) throws RunnerException;
     List<ServiceDetails> saveEntityFromShipment(List<ServiceDetails> serviceDetailsRequests, Long shipmentId);
     List<ServiceDetails> saveEntityFromShipment(List<ServiceDetails> serviceDetailsRequests, Long shipmentId, Map<Long, ServiceDetails> oldEntityMap);
-    List<ServiceDetails> updateEntityFromShipment(List<ServiceDetails> serviceDetailsList, Long shipmentId, List<ServiceDetails> oldEntityList) throws Exception;
+    List<ServiceDetails> updateEntityFromShipment(List<ServiceDetails> serviceDetailsList, Long shipmentId, List<ServiceDetails> oldEntityList) throws RunnerException;
 }

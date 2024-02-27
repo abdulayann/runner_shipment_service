@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -896,7 +897,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
     @Transactional
     @Override
-    public ResponseEntity<?> importShipment (CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> importShipment (CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ImportShipmentRequest importShipmentRequest = (ImportShipmentRequest) commonRequestModel.getData();
         EntityTransferShipmentDetails entityTransferShipmentDetails = importShipmentRequest.getEntityTransferShipmentDetails();
@@ -911,7 +912,7 @@ public class EntityTransferService implements IEntityTransferService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
     @Transactional

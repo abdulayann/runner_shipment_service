@@ -46,7 +46,7 @@ public class AuditLogController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_DOWNLOAD_SUCCESSFUL, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(value = "/download-excel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> downloadExcel(@RequestBody @Valid ListCommonRequest listCommonRequest) throws Exception {
+    public ResponseEntity<Resource> downloadExcel(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
         Resource resource = auditLogService.downloadExcel(CommonRequestModel.buildRequest(listCommonRequest));
         return ResponseEntity
                 .ok()
