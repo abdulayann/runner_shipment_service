@@ -209,9 +209,9 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("ChajobNumber")
     private String ChajobNumber;
     @JsonProperty("CIFValue")
-    private BigDecimal CIFValue;
+    private BigDecimal cIFValue;
     @JsonProperty("Copy")
-    private Integer Copy;
+    private Integer copy;
     @JsonProperty("CustomCity")
     private String CustomCity;
     @JsonProperty("CustomHouse")
@@ -231,7 +231,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("ExternalNotes")
     private String ExternalNotes;
     @JsonProperty("FreeDays")
-    private BigDecimal FreeDays;
+    private BigDecimal freeDays;
     @JsonProperty("GoodsCO")
     private String GoodsCO;
     @JsonProperty("HsnNumber")
@@ -271,7 +271,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("NotifyParty")
     private PartyRequestV2 NotifyParty;
     @JsonProperty("Original")
-    private Integer Original;
+    private Integer original;
     @JsonProperty("OwnershipString")
     private String OwnershipString;
     @JsonProperty("OwnershipName")
