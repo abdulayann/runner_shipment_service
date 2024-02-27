@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import org.springframework.http.ResponseEntity;
@@ -14,27 +15,27 @@ import java.util.concurrent.ExecutionException;
 
 public interface IConsolidationService extends ICommonService{
     List<ConsolidationDetails> createTestConsolidations(Integer count);
-    ResponseEntity<?> fetchConsolidations(CommonRequestModel commonRequestModel);
-    CompletableFuture<ResponseEntity<?>> retrieveByIdAsync(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;
-    ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception;
-    ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception;
+    ResponseEntity<IRunnerResponse> fetchConsolidations(CommonRequestModel commonRequestModel);
+    CompletableFuture<ResponseEntity<IRunnerResponse>> retrieveByIdAsync(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;
+    ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception;
 
-    ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> calculateUtilization(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateUtilization(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> calculateAchievedValues(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateAchievedValues(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> calculateChargeable(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateChargeable(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> attachShipments(Long consolidationId, List<Long> shipmentIds) throws Exception;
+    ResponseEntity<IRunnerResponse> attachShipments(Long consolidationId, List<Long> shipmentIds) throws Exception;
 
-    ResponseEntity<?> detachShipments(Long consolidationId, List<Long> shipmentIds) throws Exception;
+    ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws Exception;
 
-    ResponseEntity<?> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
 
     void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException;
 
@@ -43,26 +44,26 @@ public interface IConsolidationService extends ICommonService{
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails);
     void autoGenerateEvents(ConsolidationDetails consolidationDetails);
 
-    ResponseEntity<?> getConsolFromShipment(Long shipmentId);
+    ResponseEntity<IRunnerResponse> getConsolFromShipment(Long shipmentId);
 
-    ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception;
 
-    ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception;
     VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws Exception;
-    ResponseEntity<?> listPacksForAssignDetach(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> assignPacksAndShipments(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> detachPacksAndShipments(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> getIdFromGuid(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> getContainerPackSummary(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> getDefaultConsolidation();
-    ResponseEntity<?> generateCustomHouseBLNumber();
-    ResponseEntity<?> validateMawbNumber(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> createFromBooking(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> updateConsoleBookingFields(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listPacksForAssignDetach(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> assignPacksAndShipments(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> detachPacksAndShipments(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> getContainerPackSummary(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> getDefaultConsolidation();
+    ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber();
+    ResponseEntity<IRunnerResponse> validateMawbNumber(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateConsoleBookingFields(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> showCreateBooking(String operation);
-    ResponseEntity<?> getGuidFromId(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> showCreateBooking(String operation);
+    ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel);
 }

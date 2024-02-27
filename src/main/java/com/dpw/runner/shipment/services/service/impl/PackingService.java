@@ -130,7 +130,7 @@ public class PackingService implements IPackingService {
     );
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         PackingRequest request = null;
         request = (PackingRequest) commonRequestModel.getData();
@@ -474,7 +474,7 @@ public class PackingService implements IPackingService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
         if (request == null) {
@@ -520,7 +520,7 @@ public class PackingService implements IPackingService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -546,7 +546,7 @@ public class PackingService implements IPackingService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -572,7 +572,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         if (commonRequestModel == null) {
             log.debug("Request is empty for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -611,7 +611,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -639,7 +639,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<?> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception {
         PackContainerNumberChangeRequest request = (PackContainerNumberChangeRequest) commonRequestModel.getData();
         PackContainerNumberChangeResponse response = new PackContainerNumberChangeResponse();
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
@@ -816,7 +816,7 @@ public class PackingService implements IPackingService {
         return vwOb;
     }
 
-    public ResponseEntity<?> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel model) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel model) throws Exception {
         AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) model.getData();
         AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
         if (!StringUtils.isEmpty(request.getTransportMode()) && !request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
@@ -900,7 +900,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<?> autoCalculateVolumetricWeight(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> autoCalculateVolumetricWeight(CommonRequestModel commonRequestModel) {
 
         AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
         AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
@@ -949,7 +949,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<?> autoCalculateChargable(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> autoCalculateChargable(CommonRequestModel commonRequestModel) throws Exception {
         AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
         AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
         calculateChargeable(request, response);
@@ -983,7 +983,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<?> autoCalculateVolume(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> autoCalculateVolume(CommonRequestModel commonRequestModel) throws Exception {
         AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
         AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
         if(!request.isVolumeChange()) {
@@ -1039,7 +1039,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<?> listPacksToDetach(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> listPacksToDetach(CommonRequestModel commonRequestModel) throws Exception {
         DetachPacksListDto request = (DetachPacksListDto) commonRequestModel.getData();
         if(request == null || request.getContainerId() == null || request.getShipmentId() == null) {
             throw new ValidationException("Either shipmentId or containerId is incorrect!");
@@ -1054,7 +1054,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
         PackingRequestV2 packingRequestV2 = (PackingRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
@@ -1091,7 +1091,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<?> V1BulkPackingCreateAndUpdate(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> V1BulkPackingCreateAndUpdate(CommonRequestModel commonRequestModel) {
         BulkPackingRequestV2 bulkContainerRequest = (BulkPackingRequestV2) commonRequestModel.getData();
         try {
             List<ResponseEntity<?>> responses = new ArrayList<>();

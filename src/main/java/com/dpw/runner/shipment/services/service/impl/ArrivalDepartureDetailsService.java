@@ -50,7 +50,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     private IAuditLogService auditLogService;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ArrivalDepartureDetailsRequest request = (ArrivalDepartureDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -82,7 +82,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ArrivalDepartureDetailsRequest request = (ArrivalDepartureDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -129,7 +129,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -153,7 +153,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -177,7 +177,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -217,7 +217,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();

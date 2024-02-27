@@ -107,7 +107,7 @@ public class HblService implements IHblService {
     private IHblSync hblSync;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         HblRequest request = null;
         request = (HblRequest) commonRequestModel.getData();
@@ -134,7 +134,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         HblRequest request = (HblRequest) commonRequestModel.getData();
         long id = request.getId();
@@ -168,17 +168,17 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -198,7 +198,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         Long id = ((CommonGetRequest)commonRequestModel.getData()).getId();
         Optional<Hbl> hbl = hblDao.findById(id);
         if (hbl.isEmpty()) {
@@ -292,7 +292,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> generateHBL(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> generateHBL(CommonRequestModel commonRequestModel) {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
@@ -306,7 +306,7 @@ public class HblService implements IHblService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
     @Override
-    public ResponseEntity<?> partialUpdateHBL(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
         if (shipmentDetails.isEmpty())
@@ -345,7 +345,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveByShipmentId(CommonRequestModel request) {
+    public ResponseEntity<IRunnerResponse> retrieveByShipmentId(CommonRequestModel request) {
         Long shipmentId = ((CommonGetRequest) request.getData()).getId();
 
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
@@ -362,7 +362,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> resetHbl(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel commonRequestModel) {
         HblResetRequest request = (HblResetRequest) commonRequestModel.getData();
         Optional<Hbl> hblOptional = hblDao.findById(request.getId());
         if (hblOptional.isEmpty()) {
@@ -661,7 +661,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> saveV1Hbl(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> saveV1Hbl(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
         String responseMsg;
         HblRequestV2 request = (HblRequestV2) commonRequestModel.getData();
         if(request == null) {

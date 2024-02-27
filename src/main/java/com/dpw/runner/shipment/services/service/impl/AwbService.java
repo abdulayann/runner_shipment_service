@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -13,7 +12,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.impl.MawbHawbLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
@@ -167,7 +165,7 @@ public class AwbService implements IAwbService {
     private String iataCode;
     private String executedAt;
 
-    public ResponseEntity<?> createAwb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
@@ -208,7 +206,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
-    public ResponseEntity<?> updateAwb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         AwbRequest request = (AwbRequest) commonRequestModel.getData();
         if (request == null) {
@@ -292,7 +290,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             FetchAwbListRequest request = (FetchAwbListRequest) commonRequestModel.getData();
@@ -377,7 +375,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -429,7 +427,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    public ResponseEntity<?> createMawb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createMawb(CommonRequestModel commonRequestModel) {
         String responseMsg;
 
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
@@ -482,7 +480,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
-    public ResponseEntity<?> updateGoodsAndPacksForMawb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateGoodsAndPacksForMawb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
@@ -1347,7 +1345,7 @@ public class AwbService implements IAwbService {
         return null;
     }
 
-    public ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync){
+    public ResponseEntity<IRunnerResponse> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync){
         try{
             AwbRequestV2 request = (AwbRequestV2) commonRequestModel.getData();
 
@@ -1461,7 +1459,7 @@ public class AwbService implements IAwbService {
         awbSync.sync(entity, saveStatus);
     }
 
-    public ResponseEntity<?> customAwbRetrieve(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> customAwbRetrieve(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CustomAwbRetrieveRequest request = (CustomAwbRetrieveRequest) commonRequestModel.getData();
@@ -1486,7 +1484,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> reset(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> reset(CommonRequestModel commonRequestModel) {
         ResetAwbRequest resetAwbRequest = (ResetAwbRequest) commonRequestModel.getData();
         Optional<Awb> awbOptional = awbDao.findById(resetAwbRequest.getId());
 
@@ -1592,7 +1590,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> partialAutoUpdateAwb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> partialAutoUpdateAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
@@ -2095,7 +2093,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> partialAutoUpdateMawb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> partialAutoUpdateMawb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
@@ -2392,7 +2390,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel, boolean isShipment) {
+    public ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel, boolean isShipment) {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
@@ -2429,7 +2427,7 @@ public class AwbService implements IAwbService {
         return masterDataResponse;
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
 
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         AtomicInteger count = new AtomicInteger();
@@ -2468,7 +2466,7 @@ public class AwbService implements IAwbService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllUnlocationDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         AtomicInteger count = new AtomicInteger();
         List<String> locationCodes = new ArrayList<>();
@@ -2501,7 +2499,7 @@ public class AwbService implements IAwbService {
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
-    private CompletableFuture<ResponseEntity<?>> addAllCommodityTypesInSingleCallPacksList(Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCallPacksList(Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> commodityTypes = new HashSet<>();
         AtomicInteger count = new AtomicInteger();
@@ -2523,7 +2521,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> generateAwbPaymentInfo(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> generateAwbPaymentInfo(CommonRequestModel commonRequestModel) {
 
         GenerateAwbPaymentInfoRequest req = (GenerateAwbPaymentInfoRequest) commonRequestModel.getData();
 
@@ -2638,7 +2636,7 @@ public class AwbService implements IAwbService {
         return sum;
     }
 
-    public ResponseEntity<?> retrieveByAwbByMawb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveByAwbByMawb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -2774,7 +2772,7 @@ public class AwbService implements IAwbService {
 
 
     @Override
-    public ResponseEntity<?> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel) {
         GenerateAwbPaymentInfoRequest request = (GenerateAwbPaymentInfoRequest) commonRequestModel.getData();
         String natureAndQuantGoodsValue = request.getAwbCargoInfo() == null || request.getAwbCargoInfo().getNtrQtyGoods() == null ? null : request.getAwbCargoInfo().getNtrQtyGoods();
         String packsDescriptionValue = "";
@@ -2872,7 +2870,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> getChargeTypeMasterData(CommonGetRequest commonGetRequest) {
+    public ResponseEntity<IRunnerResponse> getChargeTypeMasterData(CommonGetRequest commonGetRequest) {
         Long chargeTypeId = commonGetRequest.getId();
         if(chargeTypeId == null)
             throw new RunnerException("Please provide a valid Id");

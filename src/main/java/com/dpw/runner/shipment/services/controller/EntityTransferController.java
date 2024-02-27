@@ -26,10 +26,14 @@ import javax.validation.Valid;
 @Slf4j
 public class EntityTransferController {
 
+    private final IEntityTransferService entityTransferService;
+    private final JsonHelper jsonHelper;
+
     @Autowired
-    private IEntityTransferService entityTransferService;
-    @Autowired
-    JsonHelper jsonHelper;
+    public EntityTransferController(IEntityTransferService entityTransferService, JsonHelper jsonHelper) {
+        this.entityTransferService = entityTransferService;
+        this.jsonHelper = jsonHelper;
+    }
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT)
     @ApiResponses(value = {

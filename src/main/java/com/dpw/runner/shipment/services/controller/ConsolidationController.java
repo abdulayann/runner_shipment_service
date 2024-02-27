@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
@@ -41,64 +42,72 @@ import java.util.concurrent.ExecutionException;
 @Slf4j
 public class ConsolidationController {
 
-    @Autowired
-    private IConsolidationService consolidationService;
+    public static final String ERROR_RETRIEVING_MASTER_DATA_MSG = "Error retrieving master data";
+    private final IConsolidationService consolidationService;
+    private final IConsolidationSync consolidationSync;
+    private final IConsolidationReverseSync consolidationReverseSync;
+    private final IShipmentService shipmentService;
+    private final JsonHelper jsonHelper;
+
+    private class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
+    private class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
 
     @Autowired
-    private IConsolidationSync consolidationSync;
+    public ConsolidationController(IConsolidationService consolidationService,
+                                   IConsolidationSync consolidationSync,
+                                   IConsolidationReverseSync consolidationReverseSync,
+                                   IShipmentService shipmentService,
+                                   JsonHelper jsonHelper) {
+        this.consolidationService = consolidationService;
+        this.consolidationSync = consolidationSync;
+        this.consolidationReverseSync = consolidationReverseSync;
+        this.shipmentService = shipmentService;
+        this.jsonHelper = jsonHelper;
+    }
 
-    @Autowired
-    private IConsolidationReverseSync consolidationReverseSync;
-
-    @Autowired
-    private IShipmentService shipmentService;
-
-    @Autowired
-    JsonHelper jsonHelper;
-
-    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Consolidation Details Data List Retrieval", responseContainer = "List")})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Consolidation Details Data List Retrieval", response = MyListResponseClass.class, responseContainer = "List")})
     @PostMapping(value = "/list-consolidation")
-    public ResponseEntity<RunnerListResponse<ConsolidationDetailsResponse>> fetchByQuery(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
+    public ResponseEntity<IRunnerResponse> fetchByQuery(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
-        return (ResponseEntity<RunnerListResponse<ConsolidationDetailsResponse>>) consolidationService.fetchConsolidations(CommonRequestModel.buildRequest(listCommonRequest));
+        return consolidationService.fetchConsolidations(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
     @PostMapping(value = "/create-test-consolidation/{count}")
-    public ResponseEntity<?> createTestRecord(@PathVariable Integer count) {
+    public ResponseEntity<List<ConsolidationDetails>> createTestRecord(@PathVariable Integer count) {
         ResponseEntity<List<ConsolidationDetails>> response = ResponseEntity.status(HttpStatus.OK)
                 .body(consolidationService.createTestConsolidations(count));
         return response;
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> create(@RequestBody @Valid ConsolidationDetailsRequest request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid ConsolidationDetailsRequest request) {
         log.info("Received Consolidation create request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         String responseMsg;
         try {
             ConsolidationDetailsRequest req = jsonHelper.convertValue(request, ConsolidationDetailsRequest.class);
-            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.create(CommonRequestModel.buildRequest(req));
+            return consolidationService.create(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.DELETE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.DELETE_SUCCESSFUL, response = RunnerResponse.class)})
     @DeleteMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
+    public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return (ResponseEntity<RunnerResponse>) consolidationService.delete(CommonRequestModel.buildRequest(request));
+        return consolidationService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL, responseContainer = ConsolidationConstants.RESPONSE_CONTAINER_LIST)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyListResponseClass.class, message = ConsolidationConstants.LIST_SUCCESSFUL, responseContainer = ConsolidationConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<?> list(@RequestBody ListCommonRequest listCommonRequest) {
+    public ResponseEntity<IRunnerResponse> list(@RequestBody ListCommonRequest listCommonRequest) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
             return consolidationService.list(CommonRequestModel.buildRequest(listCommonRequest));
@@ -107,215 +116,219 @@ public class ConsolidationController {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> retrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) {
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) {
         CommonGetRequest request = CommonGetRequest.builder().build();
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         log.info("Received Consolidation retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.retrieveById(CommonRequestModel.buildRequest(request));
+        return consolidationService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_COMPLETE_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> completeRetrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) throws ExecutionException, InterruptedException {
+    public ResponseEntity<IRunnerResponse> completeRetrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) throws ExecutionException, InterruptedException {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         log.info("Received Consolidation retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeRetrieveById(CommonRequestModel.buildRequest(request));
+        return consolidationService.completeRetrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PutMapping(ApiConstants.API_UPDATE_CONSOLIDATION)
-    public ResponseEntity<RunnerResponse> update(@RequestBody @Valid ConsolidationDetailsRequest request) {
+    public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid ConsolidationDetailsRequest request) {
         log.info("Received Consolidation update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) consolidationService.update(CommonRequestModel.buildRequest(request));
+            return consolidationService.update(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PutMapping(ApiConstants.API_UPDATE)
-    public ResponseEntity<RunnerResponse> completeUpdate(@RequestBody @Valid ConsolidationDetailsRequest request) {
+    public ResponseEntity<IRunnerResponse> completeUpdate(@RequestBody @Valid ConsolidationDetailsRequest request) {
         log.info("Received Consolidation update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) consolidationService.completeUpdate(CommonRequestModel.buildRequest(request));
+            return consolidationService.completeUpdate(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
-    public ResponseEntity<RunnerResponse> partialUpdate(@RequestBody @Valid Object request, @RequestParam(required = false, defaultValue = "false") Boolean fromV1) {
+    public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request, @RequestParam(required = false, defaultValue = "false") Boolean fromV1) {
         String responseMsg;
         try {
             ConsolidationPatchRequest req = jsonHelper.convertValue(request, ConsolidationPatchRequest.class);
-            return (ResponseEntity<RunnerResponse>) consolidationService.partialUpdate(CommonRequestModel.buildRequest(req), fromV1);
+            return consolidationService.partialUpdate(CommonRequestModel.buildRequest(req), fromV1);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.LOCK_TOGGLE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.LOCK_TOGGLE_SUCCESSFUL)})
     @GetMapping(ApiConstants.TOGGLE_LOCK)
-    public ResponseEntity<RunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return (ResponseEntity<RunnerResponse>) consolidationService.toggleLock(CommonRequestModel.buildRequest(request));
+        return consolidationService.toggleLock(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CALCULATE_UTILIZATION)
-    public ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>> calculateUtilization(@RequestBody ConsoleCalculationsRequest request) {
-        return (ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>>) consolidationService.calculateUtilization(CommonRequestModel.buildRequest(request));
+    public ResponseEntity<IRunnerResponse> calculateUtilization(@RequestBody ConsoleCalculationsRequest request) {
+        return consolidationService.calculateUtilization(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
-    public ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>> calculateAchieved_AllocatedForSameUnit(@RequestBody ConsoleCalculationsRequest request) {
-        return (ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>>) consolidationService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(request));
+    public ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(@RequestBody ConsoleCalculationsRequest request) {
+        return consolidationService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CALCULATE_CHARGEABLE)
-    public ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>> calculateChargeable(@RequestBody ConsoleCalculationsRequest request) {
-        return (ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>>) consolidationService.calculateChargeable(CommonRequestModel.buildRequest(request));
+    public ResponseEntity<IRunnerResponse> calculateChargeable(@RequestBody ConsoleCalculationsRequest request) {
+        return consolidationService.calculateChargeable(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_VALUES)
-    public ResponseEntity<RunnerResponse<ShipmentGridChangeResponse>> calculateAchievedValues(@RequestParam Long consolidationId) {
-        return (ResponseEntity<RunnerResponse<ShipmentGridChangeResponse>>) consolidationService.calculateAchievedValues(CommonRequestModel.buildRequest(consolidationId));
+    public ResponseEntity<IRunnerResponse> calculateAchievedValues(@RequestParam Long consolidationId) {
+        return consolidationService.calculateAchievedValues(CommonRequestModel.buildRequest(consolidationId));
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.ATTACH_SHIPMENT_SUCCESSFUL)})
     @PostMapping(ApiConstants.ATTACH_SHIPMENTS)
-    public ResponseEntity<RunnerResponse> attachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws Exception {
-
-        return (ResponseEntity<RunnerResponse>) consolidationService.attachShipments(request.getId(), request.getShipmentIds());
+    public ResponseEntity<IRunnerResponse> attachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws Exception {
+        return consolidationService.attachShipments(request.getId(), request.getShipmentIds());
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.DETACH_SUCCESSFUL)})
     @PostMapping(ApiConstants.DETACH_SHIPMENTS)
-    public ResponseEntity<RunnerResponse> detachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws Exception{
-        return (ResponseEntity<RunnerResponse>) consolidationService.detachShipments(request.getId(), request.getShipmentIds());
+    public ResponseEntity<IRunnerResponse> detachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws Exception{
+        return consolidationService.detachShipments(request.getId(), request.getShipmentIds());
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
     @PostMapping(ApiConstants.CALCULATE_CONTAINER_SUMMARY)
-    public ResponseEntity<RunnerResponse<ContainerSummaryResponse>> calculateContainerSummary(@RequestBody CalculateContainerSummaryRequest calculateContainerSummaryRequest) {
+    public ResponseEntity<IRunnerResponse> calculateContainerSummary(@RequestBody CalculateContainerSummaryRequest calculateContainerSummaryRequest) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ContainerSummaryResponse>>) consolidationService.calculateContainerSummary(CommonRequestModel.buildRequest(calculateContainerSummaryRequest));
+            return consolidationService.calculateContainerSummary(CommonRequestModel.buildRequest(calculateContainerSummaryRequest));
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<ContainerSummaryResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
     @PostMapping(ApiConstants.CALCULATE_PACK_SUMMARY)
-    public ResponseEntity<RunnerResponse<PackSummaryResponse>> calculatePackSummary(@RequestBody CalculatePackSummaryRequest calculatePackSummaryRequest) {
+    public ResponseEntity<IRunnerResponse> calculatePackSummary(@RequestBody CalculatePackSummaryRequest calculatePackSummaryRequest) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<PackSummaryResponse>>) consolidationService.calculatePackSummary(CommonRequestModel.buildRequest(calculatePackSummaryRequest));
+            return consolidationService.calculatePackSummary(CommonRequestModel.buildRequest(calculatePackSummaryRequest));
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<PackSummaryResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL, response = RunnerResponse.class) })
     @PostMapping(ApiConstants.LIST_PACKS_FOR_ASSIGN_DETACH)
-    public ResponseEntity<RunnerResponse<ConsolePacksListResponse>> listPacksForAssignDetach(@RequestBody ConsolePacksListRequest request) {
+    public ResponseEntity<IRunnerResponse> listPacksForAssignDetach(@RequestBody ConsolePacksListRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ConsolePacksListResponse>>) consolidationService.listPacksForAssignDetach(CommonRequestModel.buildRequest(request));
+            return consolidationService.listPacksForAssignDetach(CommonRequestModel.buildRequest(request));
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<ConsolePacksListResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.ASSIGN_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.ASSIGN_SUCCESSFUL, response = RunnerResponse.class) })
     @PostMapping(ApiConstants.ASSIGN_PACKS_SHIPMENTS)
-    public ResponseEntity<RunnerResponse<ContainerShipmentADInConsoleResponse>> assignPacksAndShipments(@RequestBody ContainerShipmentADInConsoleRequest request) {
+    public ResponseEntity<IRunnerResponse> assignPacksAndShipments(@RequestBody ContainerShipmentADInConsoleRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ContainerShipmentADInConsoleResponse>>) consolidationService.assignPacksAndShipments(CommonRequestModel.buildRequest(request));
+            return consolidationService.assignPacksAndShipments(CommonRequestModel.buildRequest(request));
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<ContainerShipmentADInConsoleResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.DETACH_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.DETACH_SUCCESSFUL) })
     @PostMapping(ApiConstants.DETACH_PACKS_SHIPMENTS)
-    public ResponseEntity<RunnerResponse<ContainerResponse>> detachPacksAndShipments(@RequestBody ContainerShipmentADInConsoleRequest request) {
+    public ResponseEntity<IRunnerResponse> detachPacksAndShipments(@RequestBody ContainerShipmentADInConsoleRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ContainerResponse>>) consolidationService.detachPacksAndShipments(CommonRequestModel.buildRequest(request));
+            return consolidationService.detachPacksAndShipments(CommonRequestModel.buildRequest(request));
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<ContainerResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ConsolidationConstants.CONSOLIDATION_V1_CREATE)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> createV1Consolidation(@RequestBody @Valid CustomConsolidationRequest request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
+    public ResponseEntity<IRunnerResponse> createV1Consolidation(@RequestBody @Valid CustomConsolidationRequest request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationReverseSync.reverseSync(CommonRequestModel.buildRequest(request), checkForSync);
+            return consolidationReverseSync.reverseSync(CommonRequestModel.buildRequest(request), checkForSync);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ConsolidationConstants.API_GET_SUCCESSFUL, response = CustomConsolidationRequest.class),
+    })
     @PostMapping(ApiConstants.API_GET_CUSTOM_REQ) // API is only for testing purpose
-    public ResponseEntity<RunnerResponse<CustomConsolidationRequest>> getCustomConsol(@RequestBody @Valid ConsolidationDetailsRequest request) {
+    public ResponseEntity<IRunnerResponse> getCustomConsol(@RequestBody @Valid ConsolidationDetailsRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<CustomConsolidationRequest>>) consolidationSync.sync(
+            return consolidationSync.sync(
                     jsonHelper.convertValue(request, ConsolidationDetails.class), UUID.randomUUID().toString(), false);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<CustomConsolidationRequest>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
@@ -334,35 +347,35 @@ public class ConsolidationController {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.IMPORT_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.IMPORT_SUCCESSFUL)})
     @GetMapping(ConsolidationConstants.IMPORT_SHIPMENT)
-    public ResponseEntity<?> getShipmentFromConsol(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id, @RequestParam(required = false) String bookingNumber) {
+    public ResponseEntity<IRunnerResponse> getShipmentFromConsol(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id, @RequestParam(required = false) String bookingNumber) {
         try {
-            return (ResponseEntity<RunnerResponse>) shipmentService.getShipmentFromConsol(id, bookingNumber);
+            return shipmentService.getShipmentFromConsol(id, bookingNumber);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<?> getAllMasterData(@RequestParam Long consolidationId) {
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long consolidationId) {
         String responseMsg = "failure executing :(";
         try {
-            return (ResponseEntity<?>) consolidationService.getAllMasterData(CommonRequestModel.buildRequest(consolidationId));
+            return consolidationService.getAllMasterData(CommonRequestModel.buildRequest(consolidationId));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error retrieving master data";
+                    : ERROR_RETRIEVING_MASTER_DATA_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval")})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = "Successful Shipment Details Data List Retrieval")})
     @PostMapping(value = ApiConstants.AUTO_ATTACH_CONSOLIDATION)
-    public ResponseEntity<?> getAutoAttachConsolidationDetails(@Valid @RequestBody @NonNull AutoAttachConsolidationRequest request) {
+    public ResponseEntity<IRunnerResponse> getAutoAttachConsolidationDetails(@Valid @RequestBody @NonNull AutoAttachConsolidationRequest request) {
         try {
-            return (ResponseEntity<RunnerListResponse<AutoAttachConsolidationResponse>>) consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+            return consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             log.error(e.getLocalizedMessage());
             return ResponseHelper.buildFailedResponse(e.getMessage());
@@ -371,41 +384,41 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL)})
     @GetMapping(ApiConstants.GET_AUTO_UPDATE_DESC_GOODS)
-    public ResponseEntity<?> getAutoUpdateGoodsAndHandlingInfo(@RequestParam Long consolidationId) {
+    public ResponseEntity<IRunnerResponse> getAutoUpdateGoodsAndHandlingInfo(@RequestParam Long consolidationId) {
         String responseMsg;
         try {
-            return (ResponseEntity<?>) consolidationService.getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel.buildRequest(consolidationId));
+            return consolidationService.getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel.buildRequest(consolidationId));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error retrieving master data";
+                    : ERROR_RETRIEVING_MASTER_DATA_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.LIST_SUCCESSFUL)})
     @GetMapping(ApiConstants.GET_CONT_PACK_SUMMARY)
-    public ResponseEntity<RunnerResponse<ContainerPackSummaryDto>> getContainerPackSummary(@RequestParam Long consolidationId) {
+    public ResponseEntity<IRunnerResponse> getContainerPackSummary(@RequestParam Long consolidationId) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ContainerPackSummaryDto>>) consolidationService.getContainerPackSummary(CommonRequestModel.buildRequest(consolidationId));
+            return consolidationService.getContainerPackSummary(CommonRequestModel.buildRequest(consolidationId));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error retrieving master data";
+                    : ERROR_RETRIEVING_MASTER_DATA_MSG;
             log.error(responseMsg, e);
-            return (ResponseEntity<RunnerResponse<ContainerPackSummaryDto>>) ResponseHelper.buildFailedResponse(e.getMessage());
+            return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)})
     @GetMapping(ApiConstants.API_DEFAULT_CONSOLIDATION)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> getDefaultConsolidation() {
-        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.getDefaultConsolidation();
+    public ResponseEntity<IRunnerResponse> getDefaultConsolidation() {
+        return consolidationService.getDefaultConsolidation();
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL)})
     @GetMapping(ApiConstants.GET_ID_BY_GUID)
-    public ResponseEntity<?> getIdFromGuid(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam String guid) {
+    public ResponseEntity<IRunnerResponse> getIdFromGuid(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam String guid) {
         try {
             CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
             return consolidationService.getIdFromGuid(CommonRequestModel.buildRequest(request));
@@ -413,26 +426,26 @@ public class ConsolidationController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
-    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval")})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = ValidateMawbNumberResponse.class, message = "Successful Shipment Details Data List Retrieval")})
     @PostMapping(value = ApiConstants.VALIDATE_MAWB)
-    public ResponseEntity<?> validateMawbNumber(@Valid @RequestBody @NonNull ValidateMawbNumberRequest request) {
+    public ResponseEntity<IRunnerResponse> validateMawbNumber(@Valid @RequestBody @NonNull ValidateMawbNumberRequest request) {
         try {
-            return (ResponseEntity<ValidateMawbNumberResponse>) consolidationService.validateMawbNumber(CommonRequestModel.buildRequest(request));
+            return consolidationService.validateMawbNumber(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             log.error(e.getLocalizedMessage());
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CREATE_SUCCESSFUL)})
     @GetMapping(ConsolidationConstants.GENERATE_CUSTOM_HOUSE_BL)
-    public ResponseEntity<RunnerResponse<GenerateCustomHblResponse>> generateCustomBolNumber() {
-        return (ResponseEntity<RunnerResponse<GenerateCustomHblResponse>>) consolidationService.generateCustomHouseBLNumber();
+    public ResponseEntity<IRunnerResponse> generateCustomBolNumber() {
+        return consolidationService.generateCustomHouseBLNumber();
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PostMapping(value = ConsolidationConstants.CONSOLE_BOOKING_FIELD_UPDATE)
-    public ResponseEntity<?> updateConsoleBookingFields(@Valid @RequestBody @NonNull ConsoleBookingRequest request) {
+    public ResponseEntity<IRunnerResponse> updateConsoleBookingFields(@Valid @RequestBody @NonNull ConsoleBookingRequest request) {
         try {
             return consolidationService.updateConsoleBookingFields(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
@@ -441,15 +454,15 @@ public class ConsolidationController {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.SHOW_CREATE_BOOKING_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.SHOW_CREATE_BOOKING_SUCCESSFUL)})
     @GetMapping(ConsolidationConstants.API_RETRIEVE_SHOW_CREATE_BOOKING)
-    public ResponseEntity<RunnerResponse<Void>> showCreateBooking(@ApiParam(value = ConsolidationConstants.SHOW_CREATE_BOOKING_OPERATION) @RequestParam String operation) {
-        return (ResponseEntity<RunnerResponse<Void>>) consolidationService.showCreateBooking(operation.toString());
+    public ResponseEntity<IRunnerResponse> showCreateBooking(@ApiParam(value = ConsolidationConstants.SHOW_CREATE_BOOKING_OPERATION) @RequestParam String operation) {
+        return consolidationService.showCreateBooking(operation.toString());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.GET_GUID_BY_ID)
-    public ResponseEntity<?> getGuidFromId(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> getGuidFromId(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(id).build();
             return consolidationService.getGuidFromId(CommonRequestModel.buildRequest(request));

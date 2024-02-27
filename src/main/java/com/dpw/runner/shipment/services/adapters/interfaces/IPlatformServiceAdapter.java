@@ -1,11 +1,12 @@
 package com.dpw.runner.shipment.services.adapters.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface IPlatformServiceAdapter {
-    ResponseEntity<?> createAtPlatform(CommonRequestModel requestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> createAtPlatform(CommonRequestModel requestModel) throws Exception;
 
-    ResponseEntity<?> updateAtPlaform(CommonRequestModel requestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> updateAtPlaform(CommonRequestModel requestModel) throws Exception;
 
 }

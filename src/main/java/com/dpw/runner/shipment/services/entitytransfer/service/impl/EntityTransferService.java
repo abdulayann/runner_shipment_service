@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -914,7 +915,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
     @Transactional
-    private ShipmentDetailsResponse createShipment (EntityTransferShipmentDetails entityTransferShipmentDetails){
+    public ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails){
         ShipmentRequest request = jsonHelper.convertValue(entityTransferShipmentDetails, ShipmentRequest.class);
 
         String Hbl = request.getHouseBill();
@@ -925,25 +926,25 @@ public class EntityTransferService implements IEntityTransferService {
         if(shipmentDetails != null && shipmentDetails.size() > 0){
             request.setId(shipmentDetails.get(0).getId());
             try {
-                ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> response = (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeUpdate(CommonRequestModel.buildRequest(request));
+                ResponseEntity<IRunnerResponse> response = shipmentService.completeUpdate(CommonRequestModel.buildRequest(request));
                 log.info("Update payload: "+request);
-                return response.getBody().getData();
+                return (ShipmentDetailsResponse) ((RunnerResponse)response.getBody()).getData();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }else {
-            ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> response = (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.create(CommonRequestModel.buildRequest(request));
-            return response.getBody().getData();
+            ResponseEntity<IRunnerResponse> response = shipmentService.create(CommonRequestModel.buildRequest(request));
+            return (ShipmentDetailsResponse) ((RunnerResponse)response.getBody()).getData();
         }
     }
     @Transactional
-    private void createShipmentMasterData (EntityTransferShipmentDetails entityTransferShipmentDetails) {
+    public void createShipmentMasterData(EntityTransferShipmentDetails entityTransferShipmentDetails) {
         this.createAllMasterData(entityTransferShipmentDetails);
         this.createAllUnlocationData(entityTransferShipmentDetails);
         this.createAllDedicatedMasterData(entityTransferShipmentDetails);
     }
     @Transactional
-    private void createAllMasterData (EntityTransferShipmentDetails entityTransferShipmentDetails) {
+    public void createAllMasterData(EntityTransferShipmentDetails entityTransferShipmentDetails) {
         List<EntityTransferMasterLists> masterDataList = new ArrayList<>();
         if(entityTransferShipmentDetails.getMasterData() != null)
             masterDataList.addAll(entityTransferShipmentDetails.getMasterData().values());
@@ -991,7 +992,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.createMasterData(masterDataList);
     }
     @Transactional
-    private void createMasterData (List<EntityTransferMasterLists> masterData) {
+    public void createMasterData(List<EntityTransferMasterLists> masterData) {
         MasterListRequestV2 masterListRequest = new MasterListRequestV2();
         Set<String> masterDataKey = new HashSet<>();
         masterData.forEach(value -> {
@@ -1017,7 +1018,7 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     @Transactional
-    private void createAllUnlocationData (EntityTransferShipmentDetails entityTransferShipmentDetails) {
+    public void createAllUnlocationData(EntityTransferShipmentDetails entityTransferShipmentDetails) {
         List<EntityTransferUnLocations> unLocationsList = new ArrayList<>();
         if(entityTransferShipmentDetails.getAdditionalDetails() != null && entityTransferShipmentDetails.getAdditionalDetails().getUnlocationData() != null)
             unLocationsList.addAll(entityTransferShipmentDetails.getAdditionalDetails().getUnlocationData().values());
@@ -1027,7 +1028,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.createUnlocationData(unLocationsList);
     }
     @Transactional
-    private void createUnlocationData (List<EntityTransferUnLocations> unlocationData) {
+    public void createUnlocationData(List<EntityTransferUnLocations> unlocationData) {
         Set<String> locCodesList = new HashSet<>();
         locCodesList.addAll(unlocationData.stream().map(x->x.getLocCode()).collect(Collectors.toSet()));
         if (locCodesList.size() > 0) {
@@ -1051,7 +1052,7 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     @Transactional
-    private void createAllDedicatedMasterData (EntityTransferShipmentDetails entityTransferShipmentDetails) {
+    public void createAllDedicatedMasterData(EntityTransferShipmentDetails entityTransferShipmentDetails) {
         List<EntityTransferCarrier> carrierList = new ArrayList<>();
         List<EntityTransferContainerType> containerTypeList = new ArrayList<>();
         List<EntityTransferCurrency> currencyList = new ArrayList<>();
@@ -1091,7 +1092,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     }
     @Transactional
-    private void createCarrierMasterData (List<EntityTransferCarrier> carrierData) {
+    public void createCarrierMasterData(List<EntityTransferCarrier> carrierData) {
         Set<String> itemValueList = new HashSet<>();
         itemValueList.addAll(carrierData.stream().map(x->x.getItemValue()).collect(Collectors.toSet()));
         if (itemValueList.size() > 0) {
@@ -1116,7 +1117,7 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     @Transactional
-    private void createContainerTypeMasterData (List<EntityTransferContainerType> containerData) {
+    public void createContainerTypeMasterData(List<EntityTransferContainerType> containerData) {
         Set<String> containerCodeList = new HashSet<>();
         containerCodeList.addAll(containerData.stream().map(x->x.getCode()).collect(Collectors.toSet()));
         if (containerCodeList.size() > 0) {
@@ -1139,7 +1140,7 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     @Transactional
-    private void createCurrencyMasterData (List<EntityTransferCurrency> currencyData) {
+    public void createCurrencyMasterData(List<EntityTransferCurrency> currencyData) {
         Set<String> currCodeList = new HashSet<>();
         currCodeList.addAll(currencyData.stream().map(x->x.getCurrenyCode()).collect(Collectors.toSet()));
         if (currCodeList.size() > 0) {
@@ -1162,7 +1163,7 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     @Transactional
-    private void createCommodityTypeMasterData (List<EntityTransferCommodityType> commodityData) {
+    public void createCommodityTypeMasterData(List<EntityTransferCommodityType> commodityData) {
         Set<String> commodityCodeList = new HashSet<>();
         commodityCodeList.addAll(commodityData.stream().map(x->x.getCode()).collect(Collectors.toSet()));
         if (commodityCodeList.size() > 0) {
@@ -1251,24 +1252,26 @@ public class EntityTransferService implements IEntityTransferService {
         if(mbl != null && !mbl.equalsIgnoreCase("")) {
             consolidationDetails = consolidationDetailsDao.findByBol(mbl);
         }
-        ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> response;
+        ResponseEntity<IRunnerResponse> response;
+        ConsolidationDetailsResponse consolidationDetailsResponse = null;
         if(consolidationDetails != null && consolidationDetails.size() > 0) {
             request.setId(consolidationDetails.get(0).getId());
             try {
-                response = (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeUpdate(CommonRequestModel.buildRequest(request));
+                response = consolidationService.completeUpdate(CommonRequestModel.buildRequest(request));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         } else {
             try {
                 request.setPackingList(null);
-                response = (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.create(CommonRequestModel.buildRequest(request));
+                response = consolidationService.create(CommonRequestModel.buildRequest(request));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
         if(response != null) {
-            response.getBody().getData().getContainersList().forEach(cont -> {
+            consolidationDetailsResponse = ((ConsolidationDetailsResponse)((RunnerResponse)response.getBody()).getData());
+            consolidationDetailsResponse.getContainersList().forEach(cont -> {
                 List<Long> newShipmentIds = new ArrayList<>();
                 if(containerVsShipmentGuid.containsKey(cont.getGuid())) {
                     List<UUID> shipmentGuids = containerVsShipmentGuid.get(cont.getGuid());
@@ -1277,12 +1280,12 @@ public class EntityTransferService implements IEntityTransferService {
                 }
             });
             try {
-                consolidationService.attachShipments(response.getBody().getData().getId(), shipmentIds);
+                consolidationService.attachShipments(consolidationDetailsResponse.getId(), shipmentIds);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-        return response.getBody().getData();
+        return consolidationDetailsResponse;
     }
     private void createAllConsolidationMasterData (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
         createConsolidationMasterDatas(entityTransferConsolidationDetails);

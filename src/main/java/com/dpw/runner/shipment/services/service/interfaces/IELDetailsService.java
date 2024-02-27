@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface IELDetailsService extends ICommonService {
-    ResponseEntity<?> validateElNumber(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> validateElNumber(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> V1ELDetailsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception;
+    ResponseEntity<IRunnerResponse> V1ELDetailsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception;
 
 }
 

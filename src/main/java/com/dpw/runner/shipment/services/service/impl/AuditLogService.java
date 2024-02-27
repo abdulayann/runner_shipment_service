@@ -177,7 +177,7 @@ public class AuditLogService implements IAuditLogService {
         }
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             var triplet = fetchList(commonRequestModel);

@@ -178,7 +178,7 @@ public class ContainerService implements IContainerService {
     );
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
         if (request == null) {
@@ -705,7 +705,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
         if (request == null) {
@@ -783,7 +783,7 @@ public class ContainerService implements IContainerService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -809,7 +809,7 @@ public class ContainerService implements IContainerService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -835,7 +835,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         if (commonRequestModel == null) {
             log.debug("Request is empty for Containers delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -875,7 +875,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -953,7 +953,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ContainerRequest containerRequest = (ContainerRequest) commonRequestModel.getData();
@@ -969,7 +969,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> calculateAllocatedData(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateAllocatedData(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CheckAllocatedDataChangesRequest request = (CheckAllocatedDataChangesRequest) commonRequestModel.getData();
@@ -1073,7 +1073,7 @@ public class ContainerService implements IContainerService {
 //    }
 
     @Override
-    public ResponseEntity<?> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ContainerPackADInShipmentRequest request = (ContainerPackADInShipmentRequest) commonRequestModel.getData();
@@ -1139,7 +1139,7 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    public ResponseEntity<?> detachContainer(List<Packing> packingList, Containers container, Long shipmentId, boolean removeAllPacks) {
+    public ResponseEntity<IRunnerResponse> detachContainer(List<Packing> packingList, Containers container, Long shipmentId, boolean removeAllPacks) {
         String responseMsg;
         try {
             Containers containers = containerDao.save(container);
@@ -1177,7 +1177,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> getContainersForSelection(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getContainersForSelection(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
         boolean lclAndSeaOrRoadFlag = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
@@ -1257,7 +1257,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> validateContainerNumber(String containerNumber) {
+    public ResponseEntity<IRunnerResponse> validateContainerNumber(String containerNumber) {
         String responseMsg;
         try {
             ContainerNumberCheckResponse response = new ContainerNumberCheckResponse();
@@ -1313,7 +1313,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> getContainers(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getContainers(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -1338,7 +1338,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> checkForDelete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> checkForDelete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
@@ -1530,7 +1530,7 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    public ResponseEntity<?> containerSync(List<Long> request) {
+    public ResponseEntity<IRunnerResponse> containerSync(List<Long> request) {
         return containersSync.sync(request, shipmentsContainersMappingDao.findAllByContainerIds(request));
     }
 
@@ -1539,7 +1539,7 @@ public class ContainerService implements IContainerService {
      */
     
     @Override
-    public ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
@@ -1594,7 +1594,7 @@ public class ContainerService implements IContainerService {
      * Create bulk containers from V1 in V2
      */
     @Override
-    public ResponseEntity<?> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel) {
         BulkContainerRequestV2 bulkContainerRequest = (BulkContainerRequestV2) commonRequestModel.getData();
         try {
             List<ResponseEntity<?>> responses = new ArrayList<>();

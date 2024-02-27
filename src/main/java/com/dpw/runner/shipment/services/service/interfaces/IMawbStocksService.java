@@ -5,6 +5,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface IMawbStocksService extends ICommonService {
-    ResponseEntity<?> getNextMawbNumberByCarrier(String airlinePrefix, String borrowedFrom);
     ResponseEntity<IRunnerResponse> createV1MawbStocks(CommonRequestModel commonRequestModel, Boolean checkForSync);
+    ResponseEntity<IRunnerResponse> getNextMawbNumberByCarrier(String airlinePrefix, String borrowedFrom);
 }

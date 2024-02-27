@@ -57,7 +57,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     private IAuditLogService auditLogService;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         BookingCarriageRequest request = null;
         request = (BookingCarriageRequest) commonRequestModel.getData();
@@ -89,7 +89,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         BookingCarriageRequest request = (BookingCarriageRequest) commonRequestModel.getData();
         if (request == null) {
@@ -136,7 +136,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -162,7 +162,7 @@ public class BookingCarriageService implements IBookingCarriageService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -188,7 +188,7 @@ public class BookingCarriageService implements IBookingCarriageService {
 
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -228,7 +228,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -260,7 +260,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     }
 
     @Transactional
-    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel) {
         String responseMsg;
         BookingCarriagePatchRequest request = (BookingCarriagePatchRequest) commonRequestModel.getData();
         if (request == null) {

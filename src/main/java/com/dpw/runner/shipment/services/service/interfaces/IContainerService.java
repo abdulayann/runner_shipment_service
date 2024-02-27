@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.commons.requests.ExportContainerListRequest;
@@ -12,14 +13,14 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 public interface IContainerService extends ICommonService {
-    ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> calculateAllocatedData(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateAllocatedData(CommonRequestModel commonRequestModel);
 
 //    ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> getContainersForSelection(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> getContainersForSelection(CommonRequestModel commonRequestModel);
 
     void uploadContainers(BulkUploadRequest request) throws Exception;
 
@@ -30,7 +31,7 @@ public interface IContainerService extends ICommonService {
     void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws Exception;
 
 
-    ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception;
+    ResponseEntity<IRunnerResponse> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception;
 
     void afterSave(Containers containers, boolean isCreate);
 
@@ -38,14 +39,14 @@ public interface IContainerService extends ICommonService {
 
     void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws Exception;
 
-    ResponseEntity<?> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> validateContainerNumber(String containerNumber);
+    ResponseEntity<IRunnerResponse> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> validateContainerNumber(String containerNumber);
 
-    ResponseEntity<?> getContainers(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> getContainers(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> checkForDelete(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> checkForDelete(CommonRequestModel commonRequestModel);
 
     ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception;
     Containers calculateUtilization(Containers container);
-    ResponseEntity<?> containerSync(List<Long> request);
+    ResponseEntity<IRunnerResponse> containerSync(List<Long> request);
 }

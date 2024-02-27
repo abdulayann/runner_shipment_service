@@ -63,7 +63,7 @@ public class MawbStocksService implements IMawbStocksService {
     SyncEntityConversionService syncEntityConversionService;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         MawbStocksRequest request = null;
         request = (MawbStocksRequest) commonRequestModel.getData();
@@ -98,7 +98,7 @@ public class MawbStocksService implements IMawbStocksService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         MawbStocksRequest request = (MawbStocksRequest) commonRequestModel.getData();
         if (request == null) {
@@ -133,7 +133,7 @@ public class MawbStocksService implements IMawbStocksService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -158,7 +158,7 @@ public class MawbStocksService implements IMawbStocksService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -181,7 +181,7 @@ public class MawbStocksService implements IMawbStocksService {
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -209,7 +209,7 @@ public class MawbStocksService implements IMawbStocksService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -238,7 +238,7 @@ public class MawbStocksService implements IMawbStocksService {
         }
     }
 
-    public ResponseEntity<?> getNextMawbNumberByCarrier(String airLinePrefix, String borrowedFrom){
+    public ResponseEntity<IRunnerResponse> getNextMawbNumberByCarrier(String airLinePrefix, String borrowedFrom){
         ListCommonRequest listCommonRequest;
         if (StringUtility.isEmpty(borrowedFrom))
             listCommonRequest = CommonUtils.andCriteria("borrowedFrom", null, "ISNULL", null);

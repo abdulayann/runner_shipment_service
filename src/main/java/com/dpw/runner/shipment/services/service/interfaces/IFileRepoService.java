@@ -1,15 +1,13 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.entity.FileRepo;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
 public interface IFileRepoService extends ICommonService {
-    ResponseEntity<?> retrieveByEntityIdAndEntityType(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> uploadDocument(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> downloadDocument(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> retrieveByEntityIdAndEntityType(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> uploadDocument(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> downloadDocument(CommonRequestModel commonRequestModel);
 }

@@ -5,8 +5,9 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.dto.response.AuditLogResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -26,12 +27,20 @@ import javax.validation.Valid;
 @RequestMapping(value = AuditLogConstants.AUDIT_LOG_API_HANDLE)
 public class AuditLogController {
 
+    private final IAuditLogService auditLogService;
+
     @Autowired
-    private IAuditLogService auditLogService;
-    @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
+    public AuditLogController(IAuditLogService auditLogService){
+        this.auditLogService = auditLogService;
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<AllocationsResponse>{}
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL,
+            response = MyListResponseClass.class, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping("/list")
-    public ResponseEntity<RunnerListResponse<AuditLogResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        return (ResponseEntity<RunnerListResponse<AuditLogResponse>>) auditLogService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        return auditLogService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
 
