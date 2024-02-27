@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tec.units.ri.unit.MetricPrefix;

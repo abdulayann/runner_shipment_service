@@ -55,6 +55,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -173,10 +174,16 @@ public class PackingService implements IPackingService {
         Map<Long, Long> dicDGSubstanceUNDGContact = new HashMap<>();
         Map<Long, String> dicDGSubstanceFlashPoint = new HashMap<>();
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Packing> packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint);
-        packingList.stream().forEach(packing -> {
-            packing.setConsolidationId(request.getConsolidationId());
-        });
+        List<Packing> packingList = new ArrayList<>();
+        try {
+            packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint);
+            packingList.stream().forEach(packing -> {
+                packing.setConsolidationId(request.getConsolidationId());
+            });
+        }
+        catch(IOException e) {
+            throw new RunnerException(e.getMessage());
+        }
 
         applyPackingValidations(packingList, request, masterDataMap, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint);
 
@@ -654,7 +661,7 @@ public class PackingService implements IPackingService {
                 shipmentDetails = shipmentDao.findById(request.getOldPack().getShipmentId()).get();
         }
         catch (Exception e) {
-            throw new Exception("Please send correct shipment Id in packing request");
+            throw new RunnerException("Please send correct shipment Id in packing request");
         }
         Containers oldContainer = null;
         if(request.getOldContainer() != null)

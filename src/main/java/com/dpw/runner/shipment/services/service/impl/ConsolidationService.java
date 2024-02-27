@@ -61,6 +61,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
@@ -90,6 +91,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
@@ -543,14 +545,20 @@ public class ConsolidationService implements IConsolidationService {
         consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
 
         // audit logs
-        auditLogService.addAuditLog(
-                AuditLogMetaData.builder()
-                        .newData(consolidationDetails)
-                        .prevData(null)
-                        .parent(ConsolidationDetails.class.getSimpleName())
-                        .parentId(consolidationDetails.getId())
-                        .operation(DBOperationType.CREATE.name()).build()
-        );
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(consolidationDetails)
+                            .prevData(null)
+                            .parent(ConsolidationDetails.class.getSimpleName())
+                            .parentId(consolidationDetails.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+        }
+        catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
 
     }
 
@@ -1011,12 +1019,12 @@ public class ConsolidationService implements IConsolidationService {
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -2724,12 +2732,12 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
