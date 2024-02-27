@@ -166,7 +166,7 @@ public class ShipmentDao implements IShipmentDao {
         }
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (!errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         if (shipmentDetails.getTransportMode() != null && shipmentDetails.getCarrierDetails() != null) {
             LocalDateTime eta = shipmentDetails.getCarrierDetails().getEta();
             LocalDateTime etd = shipmentDetails.getCarrierDetails().getEtd();

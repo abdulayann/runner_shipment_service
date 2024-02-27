@@ -51,7 +51,7 @@ public class BookingChargesDao implements IBookingChargesDao {
     public BookingCharges save(BookingCharges bookingCharges) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCharges) , Constants.BOOKING_CHARGES, LifecycleHooks.ON_CREATE, false);
         if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         return bookingChargesRepository.save(bookingCharges);
     }
 

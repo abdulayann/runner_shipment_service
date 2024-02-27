@@ -52,7 +52,7 @@ public class JobDao implements IJobDao {
     public Jobs save(Jobs jobs) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(jobs) , Constants.JOBS, LifecycleHooks.ON_CREATE, false);
         if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         return jobRepository.save(jobs);
     }
     @Override
@@ -60,7 +60,7 @@ public class JobDao implements IJobDao {
         for (var jobs: jobsList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(jobs), Constants.JOBS, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
-                throw new ValidationException(errors.toString());
+                throw new ValidationException(String.join(",", errors));
         }
         return jobRepository.saveAll(jobsList);
     }

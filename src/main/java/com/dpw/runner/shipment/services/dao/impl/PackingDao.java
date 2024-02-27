@@ -54,7 +54,7 @@ public class PackingDao implements IPackingDao {
     public Packing save(Packing packing) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(packing), Constants.PACKING, LifecycleHooks.ON_CREATE, false);
         if (!errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         return packingRepository.save(packing);
     }
 
@@ -228,7 +228,7 @@ public class PackingDao implements IPackingDao {
         for(var packing : packingList){
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(packing), Constants.PACKING, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
-                throw new ValidationException(errors.toString());
+                throw new ValidationException(String.join(",", errors));
         }
         return packingRepository.saveAll(packingList);
     }
