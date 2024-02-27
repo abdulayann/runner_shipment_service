@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
@@ -225,9 +224,11 @@ public class ContainerService implements IContainerService {
             throw new ValidationException("Please add the consolidation and then try again.");
         }
         Map<UUID, Containers> containerMap = new HashMap<>();
+        Set<String> containerNumbersSet = new HashSet<>();
         if(request.getConsolidationId() != null) {
             List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
             containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+            containerNumbersSet = consolContainers.stream().map(c -> c.getContainerNumber()).collect(Collectors.toSet());
         }
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
@@ -237,7 +238,7 @@ public class ContainerService implements IContainerService {
                 c.setConsolidationId(request.getConsolidationId())
         ).collect(Collectors.toList());
 
-        applyContainerValidations(containersList, request, masterDataMap);
+        applyContainerValidations(containerNumbersSet, containersList, request, masterDataMap);
         containersList = containerDao.saveAll(containersList);
         if (request.getShipmentId() != null) {
             containersList.stream().forEach(container -> {
@@ -248,7 +249,7 @@ public class ContainerService implements IContainerService {
         afterSaveList(containersList, true);
     }
 
-    private void applyContainerValidations(List<Containers> containersList, BulkUploadRequest request,
+    private void applyContainerValidations(Set<String> containerNumberSet, List<Containers> containersList, BulkUploadRequest request,
                                            Map<String, Set<String>> masterDataMap) throws Exception {
         String transportMode = request.getTransportMode();
         Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
@@ -261,6 +262,9 @@ public class ContainerService implements IContainerService {
                 String errorMessagePart1 = "Multiple container ownership is selected at row ";
                 String errorMessagePart2 = " - Kindly change and try re-uploading.";
                 throw new ValidationException(errorMessagePart1 + (row + 1) + errorMessagePart2);
+            }
+            if(containerNumberSet.contains(containersRow.getContainerNumber())){
+                throw new ValidationException("Container Number already present at row : " + row + 1);
             }
             checkCalculatedVolumeAndActualVolume(request, row + 1, containersRow);
             applyContainerNumberValidation(transportMode, row + 1, containersRow);
