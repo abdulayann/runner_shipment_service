@@ -23,6 +23,8 @@ public class AuditLogConstants {
         public static final String NET_WEIGHT_UNIT_VAL = "Net Weight Unit";
         public static final String NET_WEIGHT_UNIT = "netWeightUnit";
         public static final String VOYAGE_VAL = "Voyage";
+        public static final String OLD_VALUE = "oldValue";
+        public static final String NEW_VALUE = "newValue";
         public static final Map<String, String> ShipmentsFieldNameToDisplayNameMap = new HashMap<String, String>() {{
                 put("houseBill", "House Bill");
                 put(TRANSPORT_MODE, TRANSPORT_MODE_VALUE);

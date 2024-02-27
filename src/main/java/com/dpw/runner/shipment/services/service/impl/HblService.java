@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
@@ -102,7 +101,7 @@ public class HblService implements IHblService {
             .build();
 
     @Value("${v1service.url.base}${v1service.url.hblSync}")
-    private String HBL_V1_SYNC_URL;
+    private String hblV1SyncUrl;
 
     @Autowired
     private IHblSync hblSync;
@@ -122,7 +121,7 @@ public class HblService implements IHblService {
                 hblSync.sync(hbl, UUID.randomUUID().toString());
             }
             catch (Exception e) {
-                log.error("Error performing sync on hbl entity, {}", e);
+                log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
             }
             log.info("Hbl Details created successfully for Id {} with Request Id {}", hbl.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
@@ -156,7 +155,7 @@ public class HblService implements IHblService {
                 hblSync.sync(hbl, UUID.randomUUID().toString());
             }
             catch (Exception e) {
-                log.error("Error performing sync on hbl entity, {}", e);
+                log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
             }
             log.info("Updated the Hbl details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
@@ -206,8 +205,8 @@ public class HblService implements IHblService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
        CommonGetRequest request=((CommonGetRequest)commonRequestModel.getData());
-        if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl.get()));
+        if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl.get()));
         else
             return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
@@ -301,7 +300,7 @@ public class HblService implements IHblService {
             hblSync.sync(hbl, UUID.randomUUID().toString());
         }
         catch (Exception e) {
-            log.error("Error performing sync on hbl entity, {}", e);
+            log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
         }
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
@@ -331,7 +330,7 @@ public class HblService implements IHblService {
             hblSync.sync(hbl, UUID.randomUUID().toString());
         }
         catch (Exception e) {
-            log.error("Error performing sync on hbl entity, {}", e);
+            log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
         }
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
@@ -1020,6 +1019,7 @@ public class HblService implements IHblService {
                     hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
                 }
                 break;
+            default:
         }
 
     }

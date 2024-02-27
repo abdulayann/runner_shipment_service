@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
@@ -468,7 +469,7 @@ public class ContainerService implements IContainerService {
                 ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId())).get();
                 request.setTransportMode(consolidationDetails.getTransportMode());
                 request.setExport(consolidationDetails.getShipmentType() != null && consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
-                ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
+                ListCommonRequest req2 = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
                 Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
                 Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
                 List<Containers> containersList = containers.getContent();
@@ -479,9 +480,9 @@ public class ContainerService implements IContainerService {
                 }
             }
             LocalDateTime currentTime = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Containers_" + timestamp + ".xlsx";
+            String filenameWithTimestamp = "Containers_" + timestamp + Constants.XLSX;
 
             try(XSSFWorkbook workbook = new XSSFWorkbook()) {
                 XSSFSheet sheet = workbook.createSheet("Containers");
@@ -489,8 +490,8 @@ public class ContainerService implements IContainerService {
                 List<ContainersExcelModel> model = commonUtils.convertToList(result, ContainersExcelModel.class);
                 convertModelToExcel(model, sheet, request);
 
-                response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-                response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+                response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filenameWithTimestamp);
 
                 try (OutputStream outputStream = response.getOutputStream()) {
                     workbook.write(outputStream);
@@ -601,7 +602,7 @@ public class ContainerService implements IContainerService {
         List<ContainerEventExcelModel> eventsModelList = new ArrayList<>();
         if (request.getConsolidationId() != null) {
 
-            ListCommonRequest req = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
+            ListCommonRequest req = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
             Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             List<Containers> containersList = containers.getContent();
@@ -616,16 +617,16 @@ public class ContainerService implements IContainerService {
             }
         }
         LocalDateTime currentTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
         String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "Containers_Events_" + timestamp + ".xlsx";
+        String filenameWithTimestamp = "Containers_Events_" + timestamp + Constants.XLSX;
 
         try(XSSFWorkbook workbook = new XSSFWorkbook()) {
             XSSFSheet sheet = workbook.createSheet("Containers_Events");
             convertModelToExcelForContainersEvent(eventsModelList, sheet, request);
 
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+            response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filenameWithTimestamp);
 
             try (OutputStream outputStream = response.getOutputStream()) {
                 workbook.write(outputStream);
@@ -1183,7 +1184,7 @@ public class ContainerService implements IContainerService {
                     lclAndSeaOrRoadFlag = false;
                 }
             }
-            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, consolidationId, "=");
             Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             List<Containers> conts = new ArrayList<>();
@@ -1399,8 +1400,8 @@ public class ContainerService implements IContainerService {
             ContainerSummaryResponse response = new ContainerSummaryResponse();
             response.setTotalPackages(String.valueOf(packageCount));
             response.setTotalContainers(String.valueOf(totalContainerCount));
-            response.setTotalWeight(String.format("%.2f %s", totalWeight, toWeightUnit));
-            response.setTotalTareWeight(String.format("%.2f %s", tareWeight, toWeightUnit));
+            response.setTotalWeight(String.format(Constants.STRING_FORMAT, totalWeight, toWeightUnit));
+            response.setTotalTareWeight(String.format(Constants.STRING_FORMAT, tareWeight, toWeightUnit));
             if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
                     !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
                 double volInM3 = convertUnit(Constants.VOLUME, new BigDecimal(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
@@ -1408,7 +1409,7 @@ public class ContainerService implements IContainerService {
                 double chargeableWeight = Math.max(wtInKg/1000, volInM3);
                 response.setChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
             }
-            response.setTotalContainerVolume(String.format("%.2f %s", totalVolume, toVolumeUnit));
+            response.setTotalContainerVolume(String.format(Constants.STRING_FORMAT, totalVolume, toVolumeUnit));
             if(response.getSummary() == null)
                 response.setSummary("");
             try {
@@ -1655,12 +1656,12 @@ public class ContainerService implements IContainerService {
             }
 
             LocalDateTime currentTime = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "ContainerList_" + timestamp + ".xlsx";
+            String filenameWithTimestamp = "ContainerList_" + timestamp + Constants.XLSX;
 
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+            response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filenameWithTimestamp);
 
             try (OutputStream outputStream = response.getOutputStream()) {
                 workbook.write(outputStream);

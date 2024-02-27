@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -75,7 +76,7 @@ public class DefaultViewsService implements IDefaultViewsService {
         long id = request.getId();
         Optional<DefaultViews> oldEntity = defaultViewsDao.findById(id);
         if(!oldEntity.isPresent()) {
-            log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(Constants.DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -145,7 +146,7 @@ public class DefaultViewsService implements IDefaultViewsService {
 
             Optional<DefaultViews> view = defaultViewsDao.findById(id);
             if(!view.isPresent()) {
-                log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(Constants.DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             defaultViewsDao.delete(view.get());
@@ -172,7 +173,7 @@ public class DefaultViewsService implements IDefaultViewsService {
             long id = request.getId();
             Optional<DefaultViews> view = defaultViewsDao.findById(id);
             if(!view.isPresent()) {
-                log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(Constants.DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Default view fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());

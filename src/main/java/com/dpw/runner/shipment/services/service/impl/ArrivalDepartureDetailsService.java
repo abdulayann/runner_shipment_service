@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.ArrivalDepartureConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -94,7 +95,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
         long id = request.getId();
         Optional<ArrivalDepartureDetails> oldEntity = arrivalDepartureDetailsDao.findById(id);
         if (oldEntity.isEmpty()) {
-            log.debug("Arrival Departure Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(ArrivalDepartureConstants.ARRIVAL_DEPARTURE_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -189,7 +190,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
             long id = request.getId();
             Optional<ArrivalDepartureDetails> arrivalDepartureDetails = arrivalDepartureDetailsDao.findById(id);
             if (arrivalDepartureDetails.isEmpty()) {
-                log.debug("Arrival Departure Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ArrivalDepartureConstants.ARRIVAL_DEPARTURE_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Deleted Arrival Departure Details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -229,7 +230,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
             long id = request.getId();
             Optional<ArrivalDepartureDetails> arrivalDepartureDetails = arrivalDepartureDetailsDao.findById(id);
             if (arrivalDepartureDetails.isEmpty()) {
-                log.debug("Arrival Departure Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ArrivalDepartureConstants.ARRIVAL_DEPARTURE_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Arrival Departure Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());

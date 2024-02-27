@@ -40,4 +40,6 @@ public class CustomerBookingConstants {
     public static final String IMMEDIATE= "IMMEDIATE";
     public static final String DATE_TIME_FORMAT = "yyyy/MM/dd'T'hh:mm:ss";
 
+    public static final String BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR = "Booking Details is null for Id {} with Request Id {}";
+
 }

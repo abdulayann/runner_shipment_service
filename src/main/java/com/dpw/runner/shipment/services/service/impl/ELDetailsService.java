@@ -280,7 +280,7 @@ public class ELDetailsService implements IELDetailsService {
             }
             Optional<ELDetails> existingELDetails = elDetailsDao.findByGuid(elDetailsRequestV2.getGuid());
             ELDetails elDetails = modelMapper.map(elDetailsRequestV2, ELDetails.class);
-            if (existingELDetails != null && existingELDetails.isPresent()) {
+            if (existingELDetails.isPresent()) {
                 elDetails.setId(existingELDetails.get().getId());
                 elDetails.setShipmentId(existingELDetails.get().getShipmentId());
             } else {
@@ -321,8 +321,8 @@ public class ELDetailsService implements IELDetailsService {
             }
             log.info("EL details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ELDetailsResponse response = convertEntityToDto(elDetail.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else{
               return   ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
             }

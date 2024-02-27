@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.AdditionalDetailConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -100,7 +101,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         long id = request.getId();
         Optional<AdditionalDetails> oldEntity = additionalDetailDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Shipment Additional detail is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(AdditionalDetailConstants.ADDITIONAL_DETAILS_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -197,7 +198,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
             long id = request.getId();
             Optional<AdditionalDetails> additionalDetails = additionalDetailDao.findById(id);
             if (!additionalDetails.isPresent()) {
-                log.debug("Shipment Additional detail is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(AdditionalDetailConstants.ADDITIONAL_DETAILS_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
@@ -238,7 +239,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
             long id = request.getId();
             Optional<AdditionalDetails> additionalDetails = additionalDetailDao.findById(id);
             if (!additionalDetails.isPresent()) {
-                log.debug("Shipment Additional detail is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(AdditionalDetailConstants.ADDITIONAL_DETAILS_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Additional details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -262,9 +263,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<AdditionalDetails> list) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        list.forEach(AdditionalDetails -> {
-            responseList.add(convertEntityToDto(AdditionalDetails));
-        });
+        list.forEach(additionalDetails -> responseList.add(convertEntityToDto(additionalDetails)));
         return responseList;
     }
 }

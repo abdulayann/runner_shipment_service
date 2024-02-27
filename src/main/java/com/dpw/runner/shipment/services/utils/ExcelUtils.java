@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -50,7 +51,7 @@ public class ExcelUtils {
     public String writeWorkbook(Workbook workbook) {
         String tempFileName = "";
         try {
-            tempFileName = System.currentTimeMillis() + ".xlsx";
+            tempFileName = System.currentTimeMillis() + Constants.XLSX;
             FileOutputStream fileOutputStream = new FileOutputStream(tempFileName);
             workbook.write(fileOutputStream);
             workbook.close();

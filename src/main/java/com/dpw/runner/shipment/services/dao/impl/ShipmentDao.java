@@ -36,6 +36,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.ConstraintViolationException;
 import java.time.Duration;
@@ -537,7 +538,7 @@ public class ShipmentDao implements IShipmentDao {
         V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
         return response;
     }
-
+    @Transactional
     public void saveJobStatus(Long id, String jobStatus) {
         shipmentRepository.saveJobStatus(id, jobStatus);
     }

@@ -262,8 +262,8 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             }
             log.info("Pickup Delivery details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             PickupDeliveryDetailsResponse response = convertEntityToDto(pickupDeliveryDetails.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -329,9 +329,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<PickupDeliveryDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(pickupDeliveryDetail -> {
-            responseList.add(convertEntityToDto(pickupDeliveryDetail));
-        });
+        lst.forEach(pickupDeliveryDetail -> responseList.add(convertEntityToDto(pickupDeliveryDetail)));
         return responseList;
     }
 

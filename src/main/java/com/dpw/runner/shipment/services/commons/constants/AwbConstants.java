@@ -30,5 +30,8 @@ public class AwbConstants {
     public static final String DIMS_TEXT_RETERIEVE_SUCCESS = "Dims text created successfully !";
     public static final String CHARGE_TYPE_DATA_RETRIEVE_SUCCESSFUL = "Successfully retrieved data for charge type";
     public static final String CHARGE_TYPE_ID = "ChargeTypeId";
+    public static final String AWB_RETRIEVE_ERROR = "AWB is null for Id {} with Request Id {}";
+    public static final String AWB_RETRIEVE_REQUEST_NULL_ERROR = "Request is empty for AWB retrieve with Request Id {}";
+    public static final String GENERATE_HAWB_BEFORE_MAWB_EXCEPTION = "To Generate Mawb, Please create Hawb for all the shipments attached";
 
 }
