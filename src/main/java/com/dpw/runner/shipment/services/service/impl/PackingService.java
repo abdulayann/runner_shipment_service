@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -640,7 +641,7 @@ public class PackingService implements IPackingService {
     public ResponseEntity<?> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception {
         PackContainerNumberChangeRequest request = (PackContainerNumberChangeRequest) commonRequestModel.getData();
         PackContainerNumberChangeResponse response = new PackContainerNumberChangeResponse();
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         if(request.getNewContainer() == null && request.getOldContainer() == null) {
             return ResponseHelper.buildSuccessResponse(response);
         }

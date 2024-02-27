@@ -92,6 +92,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -1031,25 +1032,23 @@ public class ShipmentService implements IShipmentService {
     private List<ContainerRequest> calculateAutoContainerWeightAndVolume(List<ContainerRequest> containersList, List<PackingRequest> packingList) throws Exception {
         if(containersList != null && containersList.size() > 0) {
             for (ContainerRequest containers : containersList) {
-                if(!IsStringNullOrEmpty(containers.getContainerNumber())) {
-                    if(packingList != null) {
-                        List<PackingRequest> packings = packingList.stream().filter(packing -> packing.getContainerNumber() != null && packing.getContainerNumber().equals(containers.getContainerNumber())).toList();
-                        BigDecimal totalWeight = BigDecimal.ZERO;
-                        BigDecimal totalVolume = BigDecimal.ZERO;
-                        if(packings != null && packings.size() > 0) {
-                            if(IsStringNullOrEmpty(containers.getGrossWeightUnit()))
-                                containers.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
-                            if(IsStringNullOrEmpty(containers.getGrossVolumeUnit()))
-                                containers.setGrossVolumeUnit(Constants.VOLUME_UNIT_M3);
-                            for (PackingRequest packing : packings) {
-                                if(!IsStringNullOrEmpty(packing.getWeightUnit()))
-                                    totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), containers.getGrossWeightUnit()).toString()));
-                                if(!IsStringNullOrEmpty(packing.getVolumeUnit()))
-                                    totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), containers.getGrossVolumeUnit()).toString()));
-                            }
-                            containers.setGrossWeight(totalWeight);
-                            containers.setGrossVolume(totalVolume);
+                if(packingList != null) {
+                    List<PackingRequest> packings = packingList.stream().filter(packing -> Objects.equals(packing.getContainerId(), containers.getId())).toList();
+                    BigDecimal totalWeight = BigDecimal.ZERO;
+                    BigDecimal totalVolume = BigDecimal.ZERO;
+                    if(packings != null && packings.size() > 0) {
+                        if(IsStringNullOrEmpty(containers.getGrossWeightUnit()))
+                            containers.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
+                        if(IsStringNullOrEmpty(containers.getGrossVolumeUnit()))
+                            containers.setGrossVolumeUnit(Constants.VOLUME_UNIT_M3);
+                        for (PackingRequest packing : packings) {
+                            if(!IsStringNullOrEmpty(packing.getWeightUnit()))
+                                totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), containers.getGrossWeightUnit()).toString()));
+                            if(!IsStringNullOrEmpty(packing.getVolumeUnit()))
+                                totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), containers.getGrossVolumeUnit()).toString()));
                         }
+                        containers.setGrossWeight(totalWeight);
+                        containers.setGrossVolume(totalVolume);
                     }
                 }
             }
@@ -3327,9 +3326,9 @@ public class ShipmentService implements IShipmentService {
     private void setContainersPacksAutoUpdateData (ShipmentDetailsResponse shipmentDetailsResponse) {
         List<PackingResponse> packings = shipmentDetailsResponse.getPackingList();
         List<ContainerResponse> containers = shipmentDetailsResponse.getContainersList();
-        Map<Long, String> map = new HashMap<>();
+        Map<Long, ContainerResponse> map = new HashMap<>();
         if(containers != null)
-            map = containers.stream().collect(Collectors.toMap(cont -> cont.getId(), cont -> cont.getContainerNumber()));
+            map = containers.stream().collect(Collectors.toMap(ContainerResponse::getId, Function.identity()));
         Map<Long, Map<String, String>> contMap = new HashMap<>();
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         boolean flag = shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate() != null && shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate().booleanValue()
@@ -3337,8 +3336,10 @@ public class ShipmentService implements IShipmentService {
         if(packings != null && packings.size() > 0) {
             for (PackingResponse pack : packings) {
                 if(pack.getContainerId() != null) {
-                    if(map.containsKey(pack.getContainerId()))
-                        pack.setContainerNumber(map.get(pack.getContainerId()));
+                    if(map.containsKey(pack.getContainerId())) {
+                        pack.setContainerNumber(map.get(pack.getContainerId()).getContainerNumber());
+                        pack.setContainerDesc(String.format("%s-%s-%s", map.get(pack.getContainerId()).getContainerCount(), map.get(pack.getContainerId()).getContainerNumber(), map.get(pack.getContainerId()).getContainerCode()));
+                    }
                     if(flag) {
                         if(!contMap.containsKey(pack.getContainerId())) {
                             Map<String, String> tempMap = new HashMap<>();
