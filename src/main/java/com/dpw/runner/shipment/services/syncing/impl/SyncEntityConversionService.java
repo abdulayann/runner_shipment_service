@@ -263,8 +263,8 @@ public class SyncEntityConversionService {
     public MawbStocksV2 mawbStocksV2ToV1(MawbStocks mawbStocks) {
         MawbStocksV2 response = modelMapper.map(mawbStocks, MawbStocksV2.class);
         if(mawbStocks.getConsolidationId() != null) {
-            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(mawbStocks.getConsolidationId()).get();
-            response.setConsolidationGuid(consolidationDetails.getGuid());
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(mawbStocks.getConsolidationId());
+            consolidationDetails.ifPresent(details -> response.setConsolidationGuid(details.getGuid()));
         }
 
         for(var mawbStocksLink : response.getMawbStocksLinkRows()) {
