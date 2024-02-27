@@ -8,16 +8,18 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
 import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
-import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
+import com.dpw.runner.shipment.services.syncing.Entity.MawbStocksV2;
+import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
+import com.dpw.runner.shipment.services.syncing.interfaces.IMawbStockSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -53,6 +55,12 @@ public class MawbStocksService implements IMawbStocksService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    IMawbStockSync mawbStockSync;
+
+    @Autowired
+    SyncEntityConversionService syncEntityConversionService;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -72,7 +80,8 @@ public class MawbStocksService implements IMawbStocksService {
            mawbStocks = mawbStocksDao.save(mawbStocks);
            request.setId(mawbStocks.getId());
            this.mawbStocksLinkBulkUpdate(request);
-            log.info("MAWB stocks created successfully for Id {} with Request Id {}", mawbStocks.getId(), LoggerHelper.getRequestIdFromMDC());
+           callV1Sync(mawbStocks);
+           log.info("MAWB stocks created successfully for Id {} with Request Id {}", mawbStocks.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -103,6 +112,7 @@ public class MawbStocksService implements IMawbStocksService {
         MawbStocks mawbStocks = convertRequestToEntity(request);
         try {
             mawbStocks = mawbStocksDao.save(mawbStocks);
+            callV1Sync(mawbStocks);
             log.info("Updated the MAWB stocks for Id {} with Requestr Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -285,6 +295,36 @@ public class MawbStocksService implements IMawbStocksService {
 
     private MawbStocks convertRequestToEntity(MawbStocksRequest request) {
         return jsonHelper.convertValue(request, MawbStocks.class);
+    }
+
+    private void callV1Sync(MawbStocks mawbStocks) {
+        mawbStockSync.sync(mawbStocks);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> createV1MawbStocks(CommonRequestModel commonRequestModel, Boolean checkForSync) {
+        MawbStocks mawbStocks = null;
+        try {
+            MawbStocksV2 mawbStocksV2 = (MawbStocksV2) commonRequestModel.getData();
+            Optional<MawbStocks> optional = mawbStocksDao.findByGuid(mawbStocksV2.getGuid());
+            mawbStocks = syncEntityConversionService.mawbStocksV1ToV2(mawbStocksV2);
+            if(optional.isPresent()) {
+                var mawbStockId = optional.get().getId();
+                mawbStocks.setId(mawbStockId);
+                mawbStocksLinkDao.deleteByParentId(mawbStockId);
+            }
+            List<MawbStocksLink> mawbStocksLinks = mawbStocks.getMawbStocksLinkRows() != null ? mawbStocks.getMawbStocksLinkRows() : new ArrayList<>();
+            mawbStocksDao.save(mawbStocks);
+            for(var stockLink : mawbStocksLinks) {
+                stockLink.setParentId(mawbStocks.getId());
+                mawbStocksLinkDao.save(stockLink);
+            }
+        }
+        catch(Exception e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
+        return (ResponseEntity<IRunnerResponse>) ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
 
 //    private void setManyToOneRelationships(MawbStocks mawbStocks){

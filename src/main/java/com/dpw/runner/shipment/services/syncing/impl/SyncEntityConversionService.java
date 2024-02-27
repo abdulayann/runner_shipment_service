@@ -260,4 +260,51 @@ public class SyncEntityConversionService {
         return eventsRequestV2;
     }
 
+    public MawbStocksV2 mawbStocksV2ToV1(MawbStocks mawbStocks) {
+        MawbStocksV2 response = modelMapper.map(mawbStocks, MawbStocksV2.class);
+        if(mawbStocks.getConsolidationId() != null) {
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(mawbStocks.getConsolidationId());
+            consolidationDetails.ifPresent(details -> response.setConsolidationGuid(details.getGuid()));
+        }
+
+        for(var mawbStocksLink : response.getMawbStocksLinkRows()) {
+            if(mawbStocksLink.getEntityType().equalsIgnoreCase("SHIPMENT")) {
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(mawbStocksLink.getEntityId());
+                shipmentDetails.ifPresent(details -> mawbStocksLink.setShipmentGuid(details.getGuid()));
+            }
+            else if(mawbStocksLink.getEntityType().equalsIgnoreCase("CONSOLIDATION")) {
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(mawbStocksLink.getEntityId());
+                consolidationDetails.ifPresent(details -> mawbStocksLink.setConsolidationGuid(details.getGuid()));
+            }
+        }
+
+        return response;
+    }
+
+    public MawbStocks mawbStocksV1ToV2(MawbStocksV2 mawbStocks) {
+        MawbStocks response = modelMapper.map(mawbStocks, MawbStocks.class);
+        if(mawbStocks.getConsolidationGuid() != null) {
+            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findByGuid(mawbStocks.getConsolidationGuid()).get();
+            response.setConsolidationId(consolidationDetails.getId());
+        }
+
+        if(mawbStocks.getMawbStocksLinkRows() != null && mawbStocks.getMawbStocksLinkRows().size() > 0) {
+            List<MawbStocksLink> mawbStocksLinks = new ArrayList<>();
+            for(var mawbStocksLinkV2 : mawbStocks.getMawbStocksLinkRows()) {
+                if(mawbStocksLinkV2.getEntityType().equalsIgnoreCase("SHIPMENT")) {
+                    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(mawbStocksLinkV2.getShipmentGuid());
+                    shipmentDetails.ifPresent(details -> mawbStocksLinkV2.setEntityId(details.getId()));
+                }
+                else if(mawbStocksLinkV2.getEntityType().equalsIgnoreCase("CONSOLIDATION")) {
+                    Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(mawbStocksLinkV2.getConsolidationGuid());
+                    consolidationDetails.ifPresent(details -> mawbStocksLinkV2.setEntityId(details.getId()));
+                }
+                mawbStocksLinks.add(modelMapper.map(mawbStocksLinkV2, MawbStocksLink.class));
+            }
+            response.setMawbStocksLinkRows(mawbStocksLinks);
+        }
+
+        return response;
+    }
+
 }

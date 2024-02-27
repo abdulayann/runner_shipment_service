@@ -7,7 +7,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @Repository
 public interface IMawbStocksRepository extends MultiTenancyRepository<MawbStocks> {
     Page<MawbStocks> findAll(Specification<MawbStocks> spec, Pageable pageable);
+    default Optional<MawbStocks> findByGuid(UUID id) {
+        Specification<MawbStocks> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
+        return findOne(spec);
+    }
 }

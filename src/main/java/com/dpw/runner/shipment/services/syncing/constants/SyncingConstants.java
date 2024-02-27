@@ -20,4 +20,5 @@ public class SyncingConstants {
     public static final String ALL = "ALL";
     public static final String PACKINGS = "PACKINGS";
     public static final String PRODUCT_SEQUENCE = "PRODUCT_SEQUENCE";
+    public static final String MAWB_STOCKS = "MAWB_STOCKS";
 }
