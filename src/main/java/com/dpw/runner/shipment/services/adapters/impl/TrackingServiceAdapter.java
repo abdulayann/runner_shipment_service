@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -23,13 +24,20 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
 @Slf4j
@@ -189,16 +197,43 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     @Override
-    public List<Events> getAllEvents(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+    public List<Events> getAllEvents(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String refNumber) {
         // Modified Logic (currently returning only shipment/ consol events)
         // This will be replaced once the below to-do item is completed
-        if(shipmentDetails != null)
-            return shipmentDetails.getEventsList();
-        else
-            return consolidationDetails.getEventsList();
+        List<Events> allEvents = new ArrayList<>();
+        if (shipmentDetails != null) {
+            allEvents.addAll(shipmentDetails.getEventsList() != null ? shipmentDetails.getEventsList() : Collections.emptyList());
+            // Fetch Consol events based on ref number
+            allEvents.addAll(getEventsFromConsolidation(refNumber));
+        }
+        if(consolidationDetails != null) {
+            allEvents.addAll(consolidationDetails.getEventsList() != null ? consolidationDetails.getEventsList() : Collections.emptyList());
+            // Fetch shipment events based on ref number
+            allEvents.addAll(getEventsFromShipment(refNumber));
+        }
 
-        //TODO (this method fetches all types of events based on a referenceNumber from ship/consol)
-        // eventsRepository.GetDataForEventsFromRefrenceNumber(uow.Connection,refrenceNoRequest,false);
+        allEvents = allEvents.stream().filter(i -> !i.getIsPublicTrackingEvent()).toList();
+        return allEvents;
+    }
+
+    private List<Events> getEventsFromShipment(String refNumber) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingReference", refNumber, "=");
+        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+        if(!shipmentDetailsPage.isEmpty()) {
+            return shipmentDetailsPage.getContent().get(0).getEventsList();
+        }
+        return Collections.emptyList();
+    }
+
+    private List<Events> getEventsFromConsolidation(String refNumber) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("referenceNumber", refNumber, "=");
+        Pair<Specification<ConsolidationDetails>, Pageable> pair = fetchData(listCommonRequest, ConsolidationDetails.class);
+        Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(pair.getLeft(), pair.getRight());
+        if(!consolidationDetailsPage.isEmpty()) {
+            return consolidationDetailsPage.getContent().get(0).getEventsList();
+        }
+        return Collections.emptyList();
     }
 
     private ConsolidationDetails getConsolidationFromShipment(Long shipmentId, Integer currentTenant) {

@@ -3076,7 +3076,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
             if(consolidationDetails != null) {
-                var events = trackingServiceAdapter.getAllEvents(null,consolidationDetails);
+                var events = trackingServiceAdapter.getAllEvents(null,consolidationDetails, consolidationDetails.getReferenceNumber());
                 var universalEventsPayload = trackingServiceAdapter.mapEventDetailsForTracking(consolidationDetails.getReferenceNumber(),Constants.CONSOLIDATION, consolidationDetails.getConsolidationNumber(), events);
                 List<UniversalTrackingPayload.UniversalEventsPayload> trackingPayloads= new ArrayList<>();
                 if(universalEventsPayload != null) {

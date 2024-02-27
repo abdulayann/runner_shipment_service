@@ -1709,7 +1709,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             if(shipmentDetails.getSource() != null && shipmentDetails.getSource().equals(Constants.API)) {
-                var events = trackingServiceAdapter.getAllEvents(shipmentDetails,null);
+                var events = trackingServiceAdapter.getAllEvents(shipmentDetails,null, shipmentDetails.getBookingReference());
                 var universalEventsPayload = trackingServiceAdapter.mapEventDetailsForTracking(shipmentDetails.getBookingReference(),Constants.SHIPMENT, shipmentDetails.getShipmentId(), events);
                 List<UniversalTrackingPayload.UniversalEventsPayload> trackingPayloads= new ArrayList<>();
                 if(universalEventsPayload != null) {
