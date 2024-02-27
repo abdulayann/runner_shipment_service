@@ -62,4 +62,5 @@ public class ShipmentConstants {
     public static final String SHIPMENT_LIST_RESPONSE_SUCCESS = "Shipment list retrieved successfully for Request Id {} ";
     public static final String SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR = "Request is empty for Shipment retrieve with Request Id {}";
     public static final String NO_DATA_FOUND_FOR_ORG_CODE = "No Data found for org code {}";
+    public static final String SHIPMENT_LIST_REQUEST_NULL_ERROR = "Shipment List Request is Null";
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 @Data
@@ -13,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AwbNotifyPartyInfo {
+public class AwbNotifyPartyInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private String type;

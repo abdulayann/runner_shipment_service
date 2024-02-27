@@ -72,9 +72,9 @@ public class PackingResponse implements IRunnerResponse {
     private Long innerPacksId;
     private Long innerPacksCount;
     private String commodityGroup;
-    public Map<String, String> unlocationData;
-    public Map<String, String> masterData;
-    public Map<String, String> commodityTypeData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> commodityTypeData;
     private Boolean isDimension;
     private Boolean isContractEnforced;
     private String handlingInfo;

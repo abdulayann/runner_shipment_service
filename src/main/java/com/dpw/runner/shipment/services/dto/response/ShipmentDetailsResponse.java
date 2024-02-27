@@ -124,19 +124,19 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long container40GPCount;
     private Long container40RECount;
     private String jobStatus;
-    public Map<String, String> masterData;
-    public Map<String, String> unlocationData;
-    public Map<String, String> currenciesMasterData;
-    public Map<String, String> tenantIdsData;
-    public BigDecimal goodsValue;
-    public String goodsValueCurrency;
-    public BigDecimal insuranceValue;
-    public String InsuranceValueCurrency;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> currenciesMasterData;
+    private Map<String, String> tenantIdsData;
+    private BigDecimal goodsValue;
+    private String goodsValueCurrency;
+    private BigDecimal insuranceValue;
+    private String InsuranceValueCurrency;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
     private List<PartiesResponse> shipmentAddresses;
-    public List<AuditLogResponse> logsList;
+    private List<AuditLogResponse> logsList;
     private String flightStatus;
     private Boolean containsHazardous;
     private String fmcTlcId;
@@ -147,7 +147,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String createdBy;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
-    public Map<String, String> textData;
+    private Map<String, String> textData;
     private List<NotesResponse> customerBookingNotesList;
 
     public void addTextData(Map<String, String> dataMap) {
