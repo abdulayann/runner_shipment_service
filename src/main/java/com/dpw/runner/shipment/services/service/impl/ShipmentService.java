@@ -979,6 +979,7 @@ public class ShipmentService implements IShipmentService {
                 source("API").
                 bookingType("ONLINE").
                 consolRef(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getReferenceNumber() : "").
+                freightLocalCurrency(UserContext.getUser().CompanyCurrency).
                 build();
 
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
