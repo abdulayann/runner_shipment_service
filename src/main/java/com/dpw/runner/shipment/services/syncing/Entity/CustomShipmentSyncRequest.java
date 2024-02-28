@@ -18,7 +18,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("SourceGuid")
     private UUID SourceGuid;
     @JsonProperty("ConsolidationGuids")
-    public List<UUID> ConsolidationGuids;
+    private List<UUID> ConsolidationGuids;
     @JsonProperty("HouseBill")
     private String HouseBill;
     @JsonProperty("TransportMode")
