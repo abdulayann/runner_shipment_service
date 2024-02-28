@@ -164,6 +164,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String Destination;
     @JsonProperty("FlightNumber")
     private String FlightNumber;
+    @JsonProperty("FlightStatus")
+    private String flightStatus;
     @JsonProperty("JourneyNumber")
     private String JourneyNumber;
     @JsonProperty("JourneyRefNumber")
@@ -208,10 +210,10 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String BranchSINumber;
     @JsonProperty("ChajobNumber")
     private String ChajobNumber;
-    @JsonProperty("Cifvalue")
-    private Long Cifvalue; //int64
+    @JsonProperty("CIFValue")
+    private BigDecimal cIFValue;
     @JsonProperty("Copy")
-    private Long Copy; //int64
+    private Integer copy;
     @JsonProperty("CustomCity")
     private String CustomCity;
     @JsonProperty("CustomHouse")
@@ -231,7 +233,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("ExternalNotes")
     private String ExternalNotes;
     @JsonProperty("FreeDays")
-    private Long FreeDays; //int64
+    private BigDecimal freeDays;
     @JsonProperty("GoodsCO")
     private String GoodsCO;
     @JsonProperty("HsnNumber")
@@ -271,7 +273,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("NotifyParty")
     private PartyRequestV2 NotifyParty;
     @JsonProperty("Original")
-    private Long Original; //int64
+    private Integer original;
     @JsonProperty("OwnershipString")
     private String OwnershipString;
     @JsonProperty("OwnershipName")

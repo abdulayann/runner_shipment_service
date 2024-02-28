@@ -30,7 +30,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -271,6 +270,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setPlaceOfIssueName(sd.getAdditionalDetails().getPlaceOfIssue());
         cs.setPlaceOfSupplyName(sd.getAdditionalDetails().getPlaceOfSupply());
         cs.setPaidPlaceName(sd.getAdditionalDetails().getPaidPlace());
+        cs.setCIFValue(sd.getAdditionalDetails().getCIFValue());
     }
 
     private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {

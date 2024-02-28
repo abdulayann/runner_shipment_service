@@ -2750,6 +2750,16 @@ public class ShipmentService implements IShipmentService {
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
                 containerRequestList.forEach(e -> e.setShipmentsList(null));
+                if(!tempConsolidations.isEmpty() && !entity.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                    ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, tempConsolidations.get(0).getId(), "=");
+                    Pair<Specification<Containers>, Pageable> containerPair = fetchData(listCommonRequest, Containers.class);
+                    Page<Containers> oldConsolContainers = containerDao.findAll(containerPair.getLeft(), containerPair.getRight());
+                    if(!oldConsolContainers.isEmpty()) {
+                        if(oldContainers == null)
+                            oldContainers = new ArrayList<>();
+                        oldContainers.addAll(oldConsolContainers.getContent());
+                    }
+                }
                 updatedContainers = containerDao.updateEntityFromShipmentV1(convertToEntityList(containerRequestList, Containers.class), oldContainers);
             } else if(oldEntity != null && !oldEntity.isEmpty()){
                 updatedContainers = oldEntity.get().getContainersList();
@@ -2787,6 +2797,9 @@ public class ShipmentService implements IShipmentService {
             }
             if (packingRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
+                if(entity.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !tempConsolidations.isEmpty()) {
+                    listCommonRequest = orCriteria(Constants.CONSOLIDATION_ID, tempConsolidations.get(0).getId(), "=", listCommonRequest);
+                }
                 Pair<Specification<Packing>, Pageable> packingPair = fetchData(listCommonRequest, Packing.class);
                 Page<Packing> oldPackings = packingDao.findAll(packingPair.getLeft(), packingPair.getRight());
                 List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, oldPackings.stream().toList(), updatedContainers, map);
@@ -2864,7 +2877,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             pushShipmentDataToDependentService(entity, isCreate);
-            ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
+            ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch (ExecutionException e) {

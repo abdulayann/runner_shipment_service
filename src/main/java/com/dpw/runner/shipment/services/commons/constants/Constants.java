@@ -294,6 +294,7 @@ public class Constants {
     public static final String SHIPMENT_ID = "shipmentId";
     public static final String TENANT_ID = "tenantId";
     public static final String CONSOLIDATION_ID = "consolidationId";
+    public static final String SHIPMENTS_LIST = "shipmentsList";
     public static final String CREATED_AT = "createdAt";
     public static final String UPDATED_BY = "updatedBy";
     public static final String CREATED_BY = "createdBy";
