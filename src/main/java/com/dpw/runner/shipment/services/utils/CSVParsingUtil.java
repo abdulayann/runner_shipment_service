@@ -485,7 +485,7 @@ public class CSVParsingUtil<T> {
     }
 
     public List<T> parseExcelFilePacking(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                         Class<T> entityType, Map<Long, Long> undg, Map<Long, String> flashpoint) throws IOException {
+                                         Class<T> entityType, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String>locCodeToLocationReferenceGuidMap) throws IOException {
 
         Set<String> mandatoryColumns = new HashSet<>();
         mandatoryColumns.add("shipmentNumber");
@@ -576,7 +576,7 @@ public class CSVParsingUtil<T> {
             }
 
             //-----fetching master data in bulk
-            Map<String, Set<String>> masterListsMap = getAllMasterDataPacking(unlocationsList, commodityCodesList, masterDataMap);
+            Map<String, Set<String>> masterListsMap = getAllMasterDataPacking(unlocationsList, commodityCodesList, masterDataMap, locCodeToLocationReferenceGuidMap);
 
             setUNDGContactMasterDataAndFlashPointMasterData(dgSubstanceIdList, undg, flashpoint);
 
@@ -662,9 +662,9 @@ public class CSVParsingUtil<T> {
     }
 
     public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                  Class<T> entityType, Class modelClass, Map<Long, Long> undg, Map<Long, String> flashpoint) throws IOException {
+                                  Class<T> entityType, Class modelClass, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String> locCodeToLocationReferenceGuidMap) throws IOException {
         if (entityType.equals(Packing.class)) {
-            return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType, undg, flashpoint);
+            return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType, undg, flashpoint, locCodeToLocationReferenceGuidMap);
         }
         if (entityType.equals(Events.class)) {
             return parseExcelFileEvents(file, request, mapOfEntity, masterDataMap, entityType);
@@ -737,7 +737,7 @@ public class CSVParsingUtil<T> {
             }
 
             //-----fetching master data in bulk
-            Map<String, Set<String>> masterListsMap = getAllMasterDataContainer(unlocationsList, commodityCodesList, masterDataMap);
+            Map<String, Set<String>> masterListsMap = getAllMasterDataContainer(unlocationsList, commodityCodesList, masterDataMap, locCodeToLocationReferenceGuidMap);
 
             Map<String, String> existingContainerNumbers = new HashMap<>();
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
@@ -1252,7 +1252,7 @@ public class CSVParsingUtil<T> {
         field.set(entity, parsedValue);
     }
 
-    private Map<String, Set<String>> getAllMasterDataPacking(List<String> unlocationsList, List<String> commodityCodesList, Map<String, Set<String>> masterDataMap) {
+    private Map<String, Set<String>> getAllMasterDataPacking(List<String> unlocationsList, List<String> commodityCodesList, Map<String, Set<String>> masterDataMap, Map<String, String> locCodeToLocationReferenceGuidMap) {
         var weightUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.WEIGHT_UNIT, masterDataMap)), executorService);
         var volumeUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.VOLUME_UNIT, masterDataMap)), executorService);
         var temperatureUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.TEMPERATURE_UNIT, masterDataMap)), executorService);
@@ -1261,7 +1261,7 @@ public class CSVParsingUtil<T> {
         var countryCodeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.COUNTRIES, masterDataMap)), executorService);
         var packUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.PACKS_UNIT, masterDataMap)), executorService);
 //        var containerTypeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchContainerType(masterDataMap)), executorService);
-        var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap)), executorService);
+        var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap, locCodeToLocationReferenceGuidMap)), executorService);
         var commodityMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchCommodityData(commodityCodesList, masterDataMap)), executorService);
 
         CompletableFuture.allOf(unlocationMasterData, weightUnitMasterData, volumeUnitMasterData, temperatureUnitMasterData, countryCodeMasterData, dimensionUnitMasterData, dgClassMasterData, packUnitMasterData, commodityMasterData).join();
@@ -1269,7 +1269,7 @@ public class CSVParsingUtil<T> {
         return masterDataMap;
     }
 
-    private Map<String, Set<String>> getAllMasterDataContainer(List<String> unlocationsList, List<String> commodityCodesList, Map<String, Set<String>> masterDataMap) {
+    private Map<String, Set<String>> getAllMasterDataContainer(List<String> unlocationsList, List<String> commodityCodesList, Map<String, Set<String>> masterDataMap, Map<String, String> locCodeToLocationReferenceGuidMap) {
         var weightUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.WEIGHT_UNIT, masterDataMap)), executorService);
         var volumeUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.VOLUME_UNIT, masterDataMap)), executorService);
         var temperatureUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.TEMPERATURE_UNIT, masterDataMap)), executorService);
@@ -1279,7 +1279,7 @@ public class CSVParsingUtil<T> {
         var countryCodeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.COUNTRIES, masterDataMap)), executorService);
         var packUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.PACKS_UNIT, masterDataMap)), executorService);
         var containerTypeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchContainerType(masterDataMap)), executorService);
-        var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap)), executorService);
+        var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap, locCodeToLocationReferenceGuidMap)), executorService);
         var commodityMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchCommodityData(commodityCodesList, masterDataMap)), executorService);
 
         CompletableFuture.allOf(weightUnitMasterData, volumeUnitMasterData, temperatureUnitMasterData, hblModeMasterData, dimensionUnitMasterData, dgClassMasterData, packUnitMasterData, containerTypeMasterData, unlocationMasterData, commodityMasterData).join();
@@ -1324,7 +1324,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    public void fetchUnlocationData(List<String> unlocationsList, Map<String, Set<String>> masterDataMap) {
+    public void fetchUnlocationData(List<String> unlocationsList, Map<String, Set<String>> masterDataMap, Map<String, String> locCodeToLocationReferenceGuidMap) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         if (unlocationsList.isEmpty()) {
             return;
@@ -1339,6 +1339,7 @@ public class CSVParsingUtil<T> {
                 List<UnlocationsResponse> unlocationList = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
                 if (unlocationList != null && !unlocationList.isEmpty()) {
                     Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
+                    locCodeToLocationReferenceGuidMap = unlocationList.stream().filter(Objects::nonNull).collect(Collectors.toMap(UnlocationsResponse::getLocCode, UnlocationsResponse::getLocationsReferenceGUID));
                     masterDataMap.put("Unlocations", unlocationSet);
                 }
             }

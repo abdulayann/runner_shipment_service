@@ -174,9 +174,10 @@ public class PackingService implements IPackingService {
         Map<Long, Long> dicDGSubstanceUNDGContact = new HashMap<>();
         Map<Long, String> dicDGSubstanceFlashPoint = new HashMap<>();
         Map<String, Set<String>> masterDataMap = new HashMap<>();
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
         List<Packing> packingList = new ArrayList<>();
         try {
-            packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint);
+            packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint, locCodeToLocationReferenceGuidMap);
             packingList.stream().forEach(packing -> {
                 packing.setConsolidationId(request.getConsolidationId());
             });

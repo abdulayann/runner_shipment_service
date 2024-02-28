@@ -227,6 +227,7 @@ public class ContainerService implements IContainerService {
         }
         Map<UUID, Containers> containerMap = new HashMap<>();
         Map<String, UUID> containerNumbersSet = new HashMap<>();
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
         if(request.getConsolidationId() != null) {
             List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
             containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
@@ -234,13 +235,13 @@ public class ContainerService implements IContainerService {
         }
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null);
+        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
 
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
         ).collect(Collectors.toList());
 
-        applyContainerValidations(containerNumbersSet, containersList, request, masterDataMap);
+        applyContainerValidations(containerNumbersSet, locCodeToLocationReferenceGuidMap, containersList, request, masterDataMap);
         containersList = containerDao.saveAll(containersList);
         if (request.getShipmentId() != null) {
             containersList.stream().forEach(container -> {
@@ -251,7 +252,7 @@ public class ContainerService implements IContainerService {
         afterSaveList(containersList, true);
     }
 
-    private void applyContainerValidations(Map<String, UUID> containerNumberSet, List<Containers> containersList, BulkUploadRequest request,
+    private void applyContainerValidations(Map<String, UUID> containerNumberSet, Map<String, String> locCodeToLocationReferenceGuidMap, List<Containers> containersList, BulkUploadRequest request,
                                            Map<String, Set<String>> masterDataMap) throws RunnerException {
         String transportMode = request.getTransportMode();
         Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
@@ -277,7 +278,7 @@ public class ContainerService implements IContainerService {
             applyChargeableValidation(transportMode, row + 1, containersRow);
             checkForHandlingInfo(transportMode, row + 1, containersRow);
             applyCommodityTypeValidation(dicCommodityType, row + 1, containersRow);
-            applyContainerStuffingValidation(dicLocType, row + 1, containersRow);
+            applyContainerStuffingValidation(dicLocType, locCodeToLocationReferenceGuidMap, row + 1, containersRow);
             applyHazardousValidation(hazardousClassMasterData, row + 1, containersRow);
             //TODO :: Add own type validation in future after cms integration
             isPartValidation(request, containersRow);
@@ -294,12 +295,14 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private static void applyContainerStuffingValidation(Set<String> dicLocType, int row, Containers containersRow) {
+    private static void applyContainerStuffingValidation(Set<String> dicLocType, Map<String, String> locCodeToLocationReferenceGuidMap, int row, Containers containersRow) {
         if (containersRow.getContainerStuffingLocation() != null) {
             var containerStuffingLocation = containersRow.getContainerStuffingLocation().trim();
             if (!containerStuffingLocation.isEmpty()) {
                 if (dicLocType == null || !dicLocType.contains(containerStuffingLocation)) {
                     throw new ValidationException("Container Stuffing Location " + containerStuffingLocation + " is not valid at row " + row);
+                }else {
+                    containersRow.setContainerStuffingLocation(locCodeToLocationReferenceGuidMap.get(containerStuffingLocation));
                 }
             }
         }
@@ -439,7 +442,8 @@ public class ContainerService implements IContainerService {
             throw new ValidationException("Please save the consolidation and then try again.");
         }
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, ContainerEventExcelModel.class, null, null);
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, ContainerEventExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");
