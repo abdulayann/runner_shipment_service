@@ -559,7 +559,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             request.getReq_Params().setCalling_System(CustomerBookingConstants.GCR_FUSION);
             request.getReq_Params().setBu_id(v1TenantSettingsResponse.getBusinessUnitName());
             ResponseEntity<IRunnerResponse> response = fusionServiceAdapter.checkCreditLimitP100(CommonRequestModel.buildRequest(request));
-            if(response.getBody() == null || ((DependentServiceResponse)response.getBody()).getData() == null){
+            if(response == null || response.getBody() == null || ((DependentServiceResponse)response.getBody()).getData() == null){
                 log.error("No Data found on Fusion with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException("No Data found on Fusion");
             }

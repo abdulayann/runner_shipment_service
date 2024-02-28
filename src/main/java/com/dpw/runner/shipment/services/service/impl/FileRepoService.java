@@ -298,7 +298,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> uploadDocument(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> uploadDocument(CommonRequestModel commonRequestModel) throws RunnerException {
         UploadDocumentRequest uploadDocumentRequest = (UploadDocumentRequest) commonRequestModel.getData();
 
         List<MultipartFile> files = uploadDocumentRequest.getFiles();
@@ -327,6 +327,8 @@ public class FileRepoService implements IFileRepoService {
                         entityId(entityId).entityType(entityType).docType(uploadDocumentRequest.getDocType()).
                         clientEnabled(uploadDocumentRequest.getClientEnabled()).eventCode(uploadDocumentRequest.getEventCode()).build();
                 ResponseEntity<IRunnerResponse> response = create(CommonRequestModel.buildRequest(fileRepoRequest));
+                if(response == null || !response.hasBody())
+                    throw new RunnerException("File Repo Service create failed, response is null or response does not have body");
                 responseBodyList.add((EventsResponse)((RunnerResponse)response.getBody()).getData());
             }
         } else if(uploadDocumentRequest.getFileResource() != null) {

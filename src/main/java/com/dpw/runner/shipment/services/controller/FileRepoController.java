@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.request.EntityIdAndTypeRequest;
 import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
 import com.dpw.runner.shipment.services.dto.request.UploadDocumentRequest;
 import com.dpw.runner.shipment.services.dto.response.FileRepoResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import io.swagger.annotations.ApiParam;
@@ -98,7 +99,7 @@ public class FileRepoController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = FileRepoConstants.UPLOAD_DOCUMENT_SUCCESSFUL, response = RunnerListResponse.class)})
     @PostMapping(FileRepoConstants.UPLOAD_DOCUMENT)
-    public ResponseEntity<IRunnerResponse> uploadDocument(@RequestParam List<MultipartFile> files, @RequestParam Long entityId, @RequestParam String entityType, @RequestParam String docType, @RequestParam Boolean clientEnabled, @RequestParam String eventCode) {
+    public ResponseEntity<IRunnerResponse> uploadDocument(@RequestParam List<MultipartFile> files, @RequestParam Long entityId, @RequestParam String entityType, @RequestParam String docType, @RequestParam Boolean clientEnabled, @RequestParam String eventCode) throws RunnerException {
         UploadDocumentRequest uploadDocumentRequest = UploadDocumentRequest.builder().files(files).entityId(entityId).entityType(entityType).docType(docType).clientEnabled(clientEnabled).eventCode(eventCode).build();
         return fileRepoService.uploadDocument(CommonRequestModel.buildRequest(uploadDocumentRequest));
     }

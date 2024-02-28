@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.v1.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
@@ -320,12 +321,12 @@ public class V1ServiceImpl implements IV1Service {
     private V1ServiceUtil v1ServiceUtil;
 
     @Override
-    public ResponseEntity<?> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers) {
+    public ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers) {
         try {
             var request = v1ServiceUtil.createBookingRequestForV1(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid);
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, Objects.isNull(headers) ? V1AuthHelper.getHeaders() : headers);
             log.info("Payload sent for event: {} with request payload: {}", IntegrationType.V1_SHIPMENT_CREATION, jsonHelper.convertToJson(request));
-            var response = this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);
+            ResponseEntity<V1ShipmentCreationResponse> response = this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);
             log.info("Response received from V1 for event: {} with response: {} for booking: {}", IntegrationType.V1_SHIPMENT_CREATION, jsonHelper.convertToJson(response),  jsonHelper.convertToJson(request));
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
@@ -337,7 +338,7 @@ public class V1ServiceImpl implements IV1Service {
         }
     }
 
-    public ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request) {
+    public ResponseEntity<UpdateOrgCreditLimitBookingResponse> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request) {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());

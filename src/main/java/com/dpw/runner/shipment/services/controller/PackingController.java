@@ -14,7 +14,6 @@ import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -130,10 +129,10 @@ public class PackingController {
     }
 
     @PostMapping("/calculate-weight-volumne")
-    public ResponseEntity<?> calculateWeightVolume(@RequestBody PackContainerNumberChangeRequest request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> calculateWeightVolume(@RequestBody PackContainerNumberChangeRequest request) throws RunnerException {
         String responseMsg;
         try {
-            return (ResponseEntity<?>) packingService.calculateWeightVolumne(CommonRequestModel.buildRequest(request));
+            return packingService.calculateWeightVolumne(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error in calculations";
@@ -147,7 +146,7 @@ public class PackingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_LIST_PACKS_TO_DETACH)
-    public ResponseEntity<?> listPacksToDetach(@RequestBody @Valid DetachPacksListDto request) {
+    public ResponseEntity<IRunnerResponse> listPacksToDetach(@RequestBody @Valid DetachPacksListDto request) {
         String responseMsg = "failure executing :(";
         try {
             return packingService.listPacksToDetach(CommonRequestModel.buildRequest(request));
@@ -164,7 +163,7 @@ public class PackingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.SYNC)
-    public ResponseEntity<?> syncPackingToService(@RequestBody @Valid PackingRequestV2 request) {
+    public ResponseEntity<IRunnerResponse> syncPackingToService(@RequestBody @Valid PackingRequestV2 request) {
         String responseMsg = "failure executing :(";
         try {
             return packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
@@ -181,7 +180,7 @@ public class PackingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.BULK_SYNC)
-    public ResponseEntity<?> syncBulkPackingToService(@RequestBody @Valid BulkPackingRequestV2 request) {
+    public ResponseEntity<IRunnerResponse> syncBulkPackingToService(@RequestBody @Valid BulkPackingRequestV2 request) {
         String responseMsg = "failure executing :(";
         try {
             return packingService.V1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(request));
@@ -198,7 +197,7 @@ public class PackingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.AUTO_CALCULATE_VOLUMETRIC_WEIGHT)
-    public ResponseEntity<?> autoCalculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) {
+    public ResponseEntity<IRunnerResponse> autoCalculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) {
         String responseMsg = "failure executing request " + request.getId();
         try {
             return packingService.autoCalculateVolumetricWeight(CommonRequestModel.buildRequest(request));
@@ -215,7 +214,7 @@ public class PackingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.AUTO_CALCULATE_CHARGABLE)
-    public ResponseEntity<?> autoCalculateChargable(@RequestBody AutoCalculatePackingRequest request) {
+    public ResponseEntity<IRunnerResponse> autoCalculateChargable(@RequestBody AutoCalculatePackingRequest request) {
         String responseMsg = "failure executing request " + request.getId();
         try {
             return packingService.autoCalculateChargable(CommonRequestModel.buildRequest(request));
@@ -232,7 +231,7 @@ public class PackingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.AUTO_CALCULATE_VOLUME)
-    public ResponseEntity<?> autoCalculateVolume(@RequestBody AutoCalculatePackingRequest request) {
+    public ResponseEntity<IRunnerResponse> autoCalculateVolume(@RequestBody AutoCalculatePackingRequest request) {
         String responseMsg = "failure executing request " + request.getId();
         try {
             return packingService.autoCalculateVolume(CommonRequestModel.buildRequest(request));
@@ -249,10 +248,10 @@ public class PackingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.CALCULATE_VOLUMETRIC_WEIGHT)
-    public ResponseEntity<?> calculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> calculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) throws RunnerException {
         String responseMsg;
         try {
-            return (ResponseEntity<?>) packingService.calculateVolumetricWeightForAirAndChargeable(CommonRequestModel.buildRequest(request));
+            return packingService.calculateVolumetricWeightForAirAndChargeable(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error in calculations";

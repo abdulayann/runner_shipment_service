@@ -916,7 +916,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
     @Transactional
-    public ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails){
+    public ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails) throws RunnerException {
         ShipmentRequest request = jsonHelper.convertValue(entityTransferShipmentDetails, ShipmentRequest.class);
 
         String Hbl = request.getHouseBill();
@@ -929,12 +929,16 @@ public class EntityTransferService implements IEntityTransferService {
             try {
                 ResponseEntity<IRunnerResponse> response = shipmentService.completeUpdate(CommonRequestModel.buildRequest(request));
                 log.info("Update payload: "+request);
+                if(response == null || response.getBody() == null)
+                    throw new RunnerException("Response body from shipment service v1 for Complete Update is null");
                 return (ShipmentDetailsResponse) ((RunnerResponse)response.getBody()).getData();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }else {
             ResponseEntity<IRunnerResponse> response = shipmentService.create(CommonRequestModel.buildRequest(request));
+            if(response == null || response.getBody() == null)
+                throw new RunnerException("Response body from shipment service v1 for Complete Update is null");
             return (ShipmentDetailsResponse) ((RunnerResponse)response.getBody()).getData();
         }
     }
@@ -1222,6 +1226,9 @@ public class EntityTransferService implements IEntityTransferService {
         String consolidationNumber = null;
         try {
             ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails);
+            if(consolidationDetailsResponse == null) {
+                throw new RunnerException("Create Consolidation failed for " + commonRequestModel.getId());
+            }
             consolidationNumber = consolidationDetailsResponse.getConsolidationNumber();
 
             this.createAllConsolidationMasterData(entityTransferConsolidationDetails);
@@ -1243,7 +1250,12 @@ public class EntityTransferService implements IEntityTransferService {
         if(entityTransferConsolidationDetails.getShipmentsList() != null){
             entityTransferConsolidationDetails.getShipmentsList().forEach(shipment -> {
                 shipment.setContainersList(null);
-                ShipmentDetailsResponse shipmentDetailsResponse = createShipment(shipment);
+                ShipmentDetailsResponse shipmentDetailsResponse = null;
+                try {
+                    shipmentDetailsResponse = createShipment(shipment);
+                } catch (RunnerException e) {
+                    throw new RuntimeException(e);
+                }
                 shipmentGuidVsIdMap.put(shipmentDetailsResponse.getGuid(), shipmentDetailsResponse.getId());
                 shipmentIds.add(shipmentDetailsResponse.getId());
             });
@@ -1270,7 +1282,7 @@ public class EntityTransferService implements IEntityTransferService {
                 throw new RuntimeException(e);
             }
         }
-        if(response != null) {
+        if(response != null && response.hasBody()) {
             consolidationDetailsResponse = ((ConsolidationDetailsResponse)((RunnerResponse)response.getBody()).getData());
             consolidationDetailsResponse.getContainersList().forEach(cont -> {
                 List<Long> newShipmentIds = new ArrayList<>();

@@ -544,7 +544,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    private ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel)
+    public ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel)
     {
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         if (request == null) {
