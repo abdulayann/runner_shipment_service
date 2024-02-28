@@ -288,6 +288,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             if(!res.getStatus().equalsIgnoreCase("Consumed")) {
                 res.setEntityId(consolidationDetails.getId());
                 res.setEntityType(Constants.CONSOLIDATION);
+                res.setShipConsNumber(consolidationDetails.getConsolidationNumber());
                 res.setStatus("Consumed");
                 mawbStocksLinkDao.save(res);
                 setAvaliableCount(res.getParentId());
