@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 
 public interface IContainerService extends ICommonService {
@@ -23,13 +24,13 @@ public interface IContainerService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> getContainersForSelection(CommonRequestModel commonRequestModel);
 
-    void uploadContainers(BulkUploadRequest request) throws RunnerException;
+    void uploadContainers(BulkUploadRequest request) throws RunnerException, IOException;
 
-    void uploadContainerEvents(BulkUploadRequest request) throws RunnerException;
+    void uploadContainerEvents(BulkUploadRequest request) throws RunnerException, IOException;
 
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;
 
-    void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;
+    void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException, IOException, IllegalAccessException;
 
 
     ResponseEntity<IRunnerResponse> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
@@ -38,7 +39,7 @@ public interface IContainerService extends ICommonService {
 
     void afterSaveList(List<Containers> containers, boolean isCreate);
 
-    void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws RunnerException;
+    void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws RunnerException, IOException, IllegalAccessException;
 
     ResponseEntity<IRunnerResponse> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> validateContainerNumber(String containerNumber);

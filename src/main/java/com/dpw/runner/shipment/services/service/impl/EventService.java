@@ -132,7 +132,7 @@ public class EventService implements IEventService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         EventsRequest request = (EventsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -355,7 +355,7 @@ public class EventService implements IEventService {
         }
     }
 
-  public ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) {
+  public ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) throws RunnerException {
     Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
     Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
     String referenceNumber = null;

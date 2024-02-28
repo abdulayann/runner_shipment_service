@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import org.mapstruct.factory.Mappers;
@@ -63,7 +64,7 @@ public class TestDataGenerator {
         this.shipmentDetailsMapper = shipmentDetailsMapper;
     }
 
-    public List<ShipmentDetails> populateH2WithTestData() {
+    public List<ShipmentDetails> populateH2WithTestData() throws RunnerException {
         List<ShipmentDetails> response = new ArrayList<>();
         ShipmentDetails shipmentDetail1 = ShipmentDetails.builder()
 //                .id(1L)

@@ -110,7 +110,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         PickupDeliveryDetailsRequest request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
         if(request == null) {
@@ -277,7 +277,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     public ResponseEntity<IRunnerResponse> V1PickupDeliveryCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         PickupDeliveryDetailsRequestV2 pickupDeliveryDetailsRequestV2 = (PickupDeliveryDetailsRequestV2) commonRequestModel.getData();
         if(pickupDeliveryDetailsRequestV2 == null || pickupDeliveryDetailsRequestV2.getShipmentGuid() == null) {
-            throw new Exception("Request guid is null");
+            throw new RunnerException("Request guid is null");
         }
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {

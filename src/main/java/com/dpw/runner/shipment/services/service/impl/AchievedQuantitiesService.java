@@ -82,7 +82,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         AchievedQuantitiesRequest request = (AchievedQuantitiesRequest) commonRequestModel.getData();
         if (request == null) {

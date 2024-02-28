@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public interface IShipmentService extends ICommonService {
-    List<ShipmentDetails> createTestShipment(Integer count);
+    List<ShipmentDetails> createTestShipment(Integer count) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> fetchShipments(CommonRequestModel commonRequestModel);
 
@@ -32,7 +32,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws RunnerException;
 
@@ -51,9 +51,9 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> assignShipmentContainers(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> assignAllContainers(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<IRunnerResponse> retrieveByOrderId(String orderId);
+    ResponseEntity<IRunnerResponse> retrieveByOrderId(String orderId) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber();
+    ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException;
 
     ResponseEntity<IRunnerResponse> getShipmentFromConsol(Long consolidationId, String bookingNumber);
 
@@ -71,11 +71,11 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel);
     String generateCustomHouseBL(ShipmentDetails shipmentDetails);
     ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);
-    ResponseEntity<IRunnerResponse> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel);
-    ResponseEntity<IRunnerResponse> fetchActiveInvoices(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> fetchActiveInvoices(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> showAssignAllContainers(CommonRequestModel commonRequestModel);
-    ResponseEntity<IRunnerResponse> fetchCreditLimit(String orgCode, String addressCode);
-    void updateDateAndStatus(long id, LocalDateTime date, Integer status);
+    ResponseEntity<IRunnerResponse> fetchCreditLimit(String orgCode, String addressCode) throws RunnerException;
+    void updateDateAndStatus(long id, LocalDateTime date, Integer status) throws RunnerException;
     ResponseEntity<IRunnerResponse> fetchEmails(Long shipmentId, Long consolidationId);
     ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel);
 

@@ -14,11 +14,11 @@ import java.util.List;
 
 public interface IHblService extends ICommonService {
 
-    ResponseEntity<IRunnerResponse> generateHBL(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> generateHBL(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> retrieveByShipmentId(CommonRequestModel buildRequest);
-    ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel buildRequest);
+    ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel buildRequest) throws RunnerException;
     ResponseEntity<IRunnerResponse> saveV1Hbl(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
     Hbl checkAllContainerAssigned(ShipmentDetails shipment, List<Containers> containersList, List<Packing> packings);
-    ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) throws RunnerException;
 
 }

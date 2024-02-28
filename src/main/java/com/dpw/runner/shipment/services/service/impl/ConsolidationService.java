@@ -567,7 +567,7 @@ public class ConsolidationService implements IConsolidationService {
      * @param consolidationDetails
      */
     @Override
-    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) {
+    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
         List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
 
         if(consolidationDetails.getConsolidationNumber() == null) {
@@ -609,7 +609,7 @@ public class ConsolidationService implements IConsolidationService {
         return maxId;
     }
 
-    private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessTypes) {
+    private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessTypes) throws RunnerException {
         List<TenantProducts> enabledTenantProducts = productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
         if (productProcessTypes == ProductProcessTypes.ReferenceNumber) {
             // to check the commmon sequence
@@ -705,7 +705,7 @@ public class ConsolidationService implements IConsolidationService {
         achievedQuantitiesDao.save(achievedQuantities);
     }
 
-    public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request){
+    public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request) throws RunnerException {
         String responseMsg;
 
         if (request == null) {
@@ -742,7 +742,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Override
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
             ConsolidationDetailsRequest request = (ConsolidationDetailsRequest) commonRequestModel.getData();
@@ -790,7 +790,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> attachShipments(Long consolidationId, List<Long> shipmentIds) {
+    public ResponseEntity<IRunnerResponse> attachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
 
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds);
@@ -1033,7 +1033,7 @@ public class ConsolidationService implements IConsolidationService {
      * @param console
      * @param oldEntity
      */
-    private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) {
+    private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
         if(console != null && (oldEntity == null ||  !Objects.equals(console.getBol(),oldEntity.getBol()) ||
                 !Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
@@ -2938,7 +2938,7 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
-    private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception{
+    private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws RunnerException {
         if (Objects.isNull(consolidationDetails.getSourceTenantId()))
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
         log.info("Executing consolidation before save");
@@ -3469,7 +3469,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() {
+    public ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException {
         try {
             return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(generateCustomBolNumber()).build());
         } catch (Exception e) {
@@ -3575,7 +3575,7 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    public ResponseEntity<IRunnerResponse> showCreateBooking(String operation){
+    public ResponseEntity<IRunnerResponse> showCreateBooking(String operation) throws RunnerException {
         if(operation.equals("CREATE") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE) == null || PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE).size() == 0)){
             throw new RunnerException("You don't have necessary permission to create Carrier Booking.");
         }

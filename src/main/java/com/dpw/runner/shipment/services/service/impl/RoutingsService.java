@@ -116,7 +116,7 @@ public class RoutingsService implements IRoutingsService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         if (request == null) {

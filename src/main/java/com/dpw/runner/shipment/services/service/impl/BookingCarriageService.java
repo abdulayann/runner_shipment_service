@@ -89,7 +89,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         BookingCarriageRequest request = (BookingCarriageRequest) commonRequestModel.getData();
         if (request == null) {

@@ -81,7 +81,7 @@ public class AllocationsService implements IAllocationsService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         AllocationsRequest request = (AllocationsRequest) commonRequestModel.getData();
         if (request == null) {

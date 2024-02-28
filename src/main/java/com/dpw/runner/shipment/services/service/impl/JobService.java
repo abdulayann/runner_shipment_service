@@ -98,7 +98,7 @@ public class JobService implements IJobService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         JobRequest request = (JobRequest) commonRequestModel.getData();
         if(request == null) {

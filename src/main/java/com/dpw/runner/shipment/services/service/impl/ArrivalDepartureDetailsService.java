@@ -82,7 +82,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ArrivalDepartureDetailsRequest request = (ArrivalDepartureDetailsRequest) commonRequestModel.getData();
         if (request == null) {

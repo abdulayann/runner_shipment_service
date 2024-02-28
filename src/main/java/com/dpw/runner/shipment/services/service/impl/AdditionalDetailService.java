@@ -86,7 +86,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
 
     @Transactional
     @Override
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
         // TODO- implement Validation logic

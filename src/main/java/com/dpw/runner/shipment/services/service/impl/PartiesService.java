@@ -81,7 +81,7 @@ public class PartiesService implements IPartiesDetailsService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
         if(request == null) {

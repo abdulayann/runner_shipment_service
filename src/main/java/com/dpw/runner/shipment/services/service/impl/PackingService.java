@@ -481,7 +481,7 @@ public class PackingService implements IPackingService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
         if (request == null) {

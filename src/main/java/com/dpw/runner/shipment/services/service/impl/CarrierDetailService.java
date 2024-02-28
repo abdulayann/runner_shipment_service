@@ -81,7 +81,7 @@ public class CarrierDetailService implements ICarrierDetailService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CarrierDetailRequest request = (CarrierDetailRequest) commonRequestModel.getData();
         if(request == null) {

@@ -142,7 +142,7 @@ public class DocumentService {
         return restTemplate.exchange(url, HttpMethod.POST, request, byte[].class);
     }
 
-    public byte[] downloadTemplate(String templateId) {
+    public byte[] downloadTemplate(String templateId) throws RunnerException {
         String url = templateBaseUrl+templateId+"/download";
 
         HttpHeaders headers = new HttpHeaders();

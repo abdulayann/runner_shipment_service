@@ -113,7 +113,7 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
         if (request == null) {

@@ -96,7 +96,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         FileRepoRequest request = (FileRepoRequest) commonRequestModel.getData();
         if(request == null) {

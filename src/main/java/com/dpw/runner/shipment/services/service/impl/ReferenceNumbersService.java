@@ -83,7 +83,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ReferenceNumbersRequest request = (ReferenceNumbersRequest) commonRequestModel.getData();
         if(request == null) {

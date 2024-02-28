@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -79,7 +80,7 @@ public class ShipmentController {
     }
 
     @PostMapping(value = "/create-test-shipment/{count}")
-    public ResponseEntity<?> createTestRecord(@PathVariable Integer count) {
+    public ResponseEntity<?> createTestRecord(@PathVariable Integer count) throws RunnerException {
         ResponseEntity<List<ShipmentDetails>> response = ResponseEntity.status(HttpStatus.OK)
                 .body(shipmentService.createTestShipment(count));
         return response;
@@ -196,7 +197,7 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LOCK_TOGGLE_SUCCESSFUL, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.TOGGLE_LOCK)
-    public ResponseEntity<IRunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws RunnerException {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return shipmentService.toggleLock(CommonRequestModel.buildRequest(request));
     }
@@ -385,7 +386,7 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ORDER_ID)
-    public ResponseEntity<IRunnerResponse> retrieveByOrderId(@ApiParam(value = ShipmentConstants.ORDER_ID, required = true) @RequestParam String orderId) {
+    public ResponseEntity<IRunnerResponse> retrieveByOrderId(@ApiParam(value = ShipmentConstants.ORDER_ID, required = true) @RequestParam String orderId) throws RunnerException {
             return shipmentService.retrieveByOrderId(orderId);
     }
 
@@ -397,7 +398,7 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class)})
     @GetMapping(ShipmentConstants.GENERATE_CUSTOM_HOUSE_BL)
-    public ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() {
+    public ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException {
             return shipmentService.generateCustomHouseBLNumber();
     }
 
@@ -454,14 +455,14 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
     @GetMapping(value = ShipmentConstants.LIST_SHIPMENT_FROM_CONSOLE_ID)
-    public ResponseEntity<IRunnerResponse> fetchShipmentsForConsoleId(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> fetchShipmentsForConsoleId(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) throws RunnerException {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return shipmentService.fetchShipmentsForConsoleId(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Active Invoices Retrieval", response = RunnerListResponse.class)})
     @GetMapping(value = ShipmentConstants.GET_ACTIVE_INVOICES)
-    public ResponseEntity<IRunnerResponse> fetchActiveInvoices(@RequestParam String shipmentGuid) {
+    public ResponseEntity<IRunnerResponse> fetchActiveInvoices(@RequestParam String shipmentGuid) throws RunnerException {
         CommonGetRequest request = CommonGetRequest.builder().guid(shipmentGuid).build();
         return shipmentService.fetchActiveInvoices(CommonRequestModel.buildRequest(request));
     }
@@ -474,7 +475,7 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Creditn Limit Retrieval")})
     @GetMapping(value = ShipmentConstants.FETCH_CREDIT_LIMIT)
-    public ResponseEntity<?> fetchCreditLimit(@RequestParam String orgCode, @RequestParam(required = false) String addressCode) {
+    public ResponseEntity<?> fetchCreditLimit(@RequestParam String orgCode, @RequestParam(required = false) String addressCode) throws RunnerException {
         return (ResponseEntity<?>) shipmentService.fetchCreditLimit(orgCode, addressCode);
     }
 

@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
@@ -81,7 +82,7 @@ public class ShipmentSync implements IShipmentSync {
     private ISyncService syncService;
 
     @Override
-    public ResponseEntity<IRunnerResponse> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId, boolean isDirectSync) {
+    public ResponseEntity<IRunnerResponse> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId, boolean isDirectSync) throws RunnerException {
         CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
         CustomShipmentSyncRequest cs = modelMapper.map(sd, CustomShipmentSyncRequest.class);

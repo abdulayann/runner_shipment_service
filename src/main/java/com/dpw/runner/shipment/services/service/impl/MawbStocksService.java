@@ -312,7 +312,7 @@ public class MawbStocksService implements IMawbStocksService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> createV1MawbStocks(CommonRequestModel commonRequestModel, Boolean checkForSync) {
+    public ResponseEntity<IRunnerResponse> createV1MawbStocks(CommonRequestModel commonRequestModel, Boolean checkForSync) throws RunnerException {
         MawbStocks mawbStocks = null;
         try {
             MawbStocksV2 mawbStocksV2 = (MawbStocksV2) commonRequestModel.getData();

@@ -440,7 +440,7 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CREATE_SUCCESSFUL)})
     @GetMapping(ConsolidationConstants.GENERATE_CUSTOM_HOUSE_BL)
-    public ResponseEntity<IRunnerResponse> generateCustomBolNumber() {
+    public ResponseEntity<IRunnerResponse> generateCustomBolNumber() throws RunnerException {
         return consolidationService.generateCustomHouseBLNumber();
     }
 
@@ -457,7 +457,7 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.SHOW_CREATE_BOOKING_SUCCESSFUL)})
     @GetMapping(ConsolidationConstants.API_RETRIEVE_SHOW_CREATE_BOOKING)
-    public ResponseEntity<IRunnerResponse> showCreateBooking(@ApiParam(value = ConsolidationConstants.SHOW_CREATE_BOOKING_OPERATION) @RequestParam String operation) {
+    public ResponseEntity<IRunnerResponse> showCreateBooking(@ApiParam(value = ConsolidationConstants.SHOW_CREATE_BOOKING_OPERATION) @RequestParam String operation) throws RunnerException {
         return consolidationService.showCreateBooking(operation.toString());
     }
 

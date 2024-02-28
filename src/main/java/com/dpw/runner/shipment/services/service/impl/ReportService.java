@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.dto.request.UploadDocumentRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
@@ -110,7 +111,7 @@ public class ReportService implements IReportService {
     private ModelMapper modelMapper;
 
     @Override
-    public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException {
+    public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException, RunnerException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
 
         // Generate combined shipment report via consolidation

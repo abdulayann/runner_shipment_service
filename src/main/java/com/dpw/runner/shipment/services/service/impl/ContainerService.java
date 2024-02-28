@@ -69,6 +69,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -220,7 +221,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void uploadContainers(BulkUploadRequest request) throws RunnerException {
+    public void uploadContainers(BulkUploadRequest request) throws RunnerException, IOException {
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please add the consolidation and then try again.");
         }
@@ -432,7 +433,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void uploadContainerEvents(BulkUploadRequest request) throws RunnerException {
+    public void uploadContainerEvents(BulkUploadRequest request) throws RunnerException, IOException {
 //        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
@@ -606,7 +607,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException {
+    public void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException, IOException, IllegalAccessException {
         List<ContainerEventExcelModel> eventsModelList = new ArrayList<>();
         if (request.getConsolidationId() != null) {
 
@@ -705,7 +706,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
         if (request == null) {
@@ -1613,7 +1614,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws RunnerException {
+    public void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws RunnerException, IOException, IllegalAccessException {
         List<ShipmentsContainersMapping> mappings;
         Optional<ConsolidationDetails> consol = null;
         List<IRunnerResponse> containersList = null;

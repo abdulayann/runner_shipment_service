@@ -35,13 +35,13 @@ public class ShippingRequestOutReport extends IReport {
     private IV1Service v1Service;
 
     @Override
-    public Map<String, Object> getData(Long id) {
+    public Map<String, Object> getData(Long id) throws RunnerException {
         ShippingRequestOutModel shippingRequestOutModel = (ShippingRequestOutModel) getDocumentModel(id);
         return populateDictionary(shippingRequestOutModel);
     }
 
     @Override
-    IDocumentModel getDocumentModel(Long id) {
+    IDocumentModel getDocumentModel(Long id) throws RunnerException {
         ShippingRequestOutModel model = new ShippingRequestOutModel();
         model.setTenant(getTenant());
         model.setConsolidation(getConsolidation(id));

@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
@@ -89,7 +90,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         return ResponseHelper.buildSuccessResponse(modelMapper.map(syncRequest, ShipmentSettingsSyncRequest.class));
     }
 
-    public ResponseEntity<IRunnerResponse> syncProductSequence(ProductSequenceConfig productSequenceConfig, HttpHeaders headers) {
+    public ResponseEntity<IRunnerResponse> syncProductSequence(ProductSequenceConfig productSequenceConfig, HttpHeaders headers) throws RunnerException {
         ProductSequenceConfigDto productSequenceConfigDto = mapProductSequenceConfig(productSequenceConfig);
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(productSequenceConfigDto).module(SyncingConstants.PRODUCT_SEQUENCE).build());
         syncService.callSyncAsync(payload, StringUtility.convertToString(productSequenceConfig.getId()), StringUtility.convertToString(productSequenceConfig.getGuid()), "Shipment Settings product sequence Details", headers);

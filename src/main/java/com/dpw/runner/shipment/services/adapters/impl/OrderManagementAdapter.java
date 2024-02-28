@@ -49,7 +49,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
 
 
     @Override
-    public ShipmentDetails getOrder(String orderId) {
+    public ShipmentDetails getOrder(String orderId) throws RunnerException {
         try {
             String url = baseUrl + getOrderUrl + orderId;
             var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);

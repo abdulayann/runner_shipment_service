@@ -257,7 +257,7 @@ public class HblService implements IHblService {
         return hbl;
     }
 
-    private Hbl getHblFromShipmentId(Long shipmentId) {
+    private Hbl getHblFromShipmentId(Long shipmentId) throws RunnerException {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
         if (shipmentDetails.isEmpty())
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -293,7 +293,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> generateHBL(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> generateHBL(CommonRequestModel commonRequestModel) throws RunnerException {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
@@ -307,7 +307,7 @@ public class HblService implements IHblService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
     @Override
-    public ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) throws RunnerException {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
         if (shipmentDetails.isEmpty())
@@ -363,7 +363,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel commonRequestModel) throws RunnerException {
         HblResetRequest request = (HblResetRequest) commonRequestModel.getData();
         Optional<Hbl> hblOptional = hblDao.findById(request.getId());
         if (hblOptional.isEmpty()) {
@@ -406,7 +406,7 @@ public class HblService implements IHblService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
 
-    private Hbl getDefaultHblFromShipment(ShipmentDetails shipmentDetails) {
+    private Hbl getDefaultHblFromShipment(ShipmentDetails shipmentDetails) throws RunnerException {
         HblDataDto hblData = mapShipmentToHBL(shipmentDetails);
         List<HblCargoDto> hblCargos = mapShipmentCargoToHBL(shipmentDetails.getPackingList(), shipmentDetails.getContainersList());
         List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails);
@@ -441,7 +441,7 @@ public class HblService implements IHblService {
     }
 
 
-    private HblDataDto mapShipmentToHBL(ShipmentDetails shipmentDetail) {
+    private HblDataDto mapShipmentToHBL(ShipmentDetails shipmentDetail) throws RunnerException {
         HblDataDto hblData = HblDataDto.builder().build();
         hblData.setShipmentId(shipmentDetail.getId());
         if(shipmentDetail.getConsigner() != null) {

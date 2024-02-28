@@ -82,7 +82,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
         if(request == null) {

@@ -42,7 +42,7 @@ public interface IConsolidationService extends ICommonService{
 
     void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate);
 
-    void generateConsolidationNumber(ConsolidationDetails consolidationDetails);
+    void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException;
     void autoGenerateEvents(ConsolidationDetails consolidationDetails);
 
     ResponseEntity<IRunnerResponse> getConsolFromShipment(Long shipmentId);
@@ -60,11 +60,11 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getContainerPackSummary(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getDefaultConsolidation();
-    ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber();
+    ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException;
     ResponseEntity<IRunnerResponse> validateMawbNumber(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> updateConsoleBookingFields(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<IRunnerResponse> showCreateBooking(String operation);
+    ResponseEntity<IRunnerResponse> showCreateBooking(String operation) throws RunnerException;
     ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel);
 }

@@ -48,7 +48,7 @@ public class GetNextNumberHelper {
       int tenantId,
       boolean updateCounter,
       UsersDto user,
-      boolean updateBranchCode) {
+      boolean updateBranchCode) throws RunnerException {
     if (regexPattern.isEmpty()) {
       throw new RunnerException("RegexExpression can't be empty or null");
     }
@@ -138,7 +138,7 @@ public class GetNextNumberHelper {
   }
 
   public String GetNextRegexSequenceNumber(
-      ProductSequenceConfig sequenceSettings, int TenantId, String resetFreq) {
+      ProductSequenceConfig sequenceSettings, int TenantId, String resetFreq) throws RunnerException {
     LocalDateTime seqStartTime = sequenceSettings.getSequenceStartTime();
     boolean resetCounter = seqStartTime == null;
     if (resetFreq.equalsIgnoreCase("daily")) {

@@ -82,7 +82,7 @@ public class AuditLogService implements IAuditLogService {
     @Autowired
     private CommonUtils commonUtils;
 
-    public Resource downloadExcel(CommonRequestModel commonRequestModel) {
+    public Resource downloadExcel(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
             var triplet = fetchList(commonRequestModel);
@@ -93,7 +93,7 @@ public class AuditLogService implements IAuditLogService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw e;
+            throw new RunnerException(responseMsg);
         }
     }
 
@@ -122,7 +122,7 @@ public class AuditLogService implements IAuditLogService {
         return result;
     }
 
-    public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException {
+    public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException, RunnerException {
         validateRequest(auditLogMetaData);
         AuditLog auditLog = new AuditLog();
         auditLog.setOperation(auditLogMetaData.getOperation());
@@ -297,7 +297,7 @@ public class AuditLogService implements IAuditLogService {
         return key;
     }
 
-    private void validateRequest(AuditLogMetaData auditLogMetaData) {
+    private void validateRequest(AuditLogMetaData auditLogMetaData) throws RunnerException {
         if (ObjectUtils.isEmpty(auditLogMetaData.getParent()) || ObjectUtils.isEmpty(auditLogMetaData.getParentId())) {
             throw new RunnerException("Parent or parent id is missing");
         } else if (ObjectUtils.isEmpty(auditLogMetaData.getNewData()) && ObjectUtils.isEmpty(auditLogMetaData.getPrevData())) {

@@ -371,7 +371,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
-    public List<ShipmentDetails> createTestShipment(Integer count) {
+    public List<ShipmentDetails> createTestShipment(Integer count) throws RunnerException {
         List<ShipmentDetails> response = new ArrayList<>();
         /**
          * BL details
@@ -679,7 +679,7 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
     }
 
-    ShipmentDetails getShipment(ShipmentDetails shipmentDetails) {
+    ShipmentDetails getShipment(ShipmentDetails shipmentDetails) throws RunnerException {
         if(shipmentDetails.getShipmentId() == null){
             shipmentDetails.setShipmentId(generateShipmentId(shipmentDetails));
         }
@@ -837,7 +837,7 @@ public class ShipmentService implements IShipmentService {
     }
 
 
-    public Optional<ShipmentDetails> retrieveByIdOrGuid(ShipmentRequest request){
+    public Optional<ShipmentDetails> retrieveByIdOrGuid(ShipmentRequest request) throws RunnerException {
         String responseMsg;
 
         if (request == null) {
@@ -1311,7 +1311,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         if (request == null) {
@@ -1767,7 +1767,7 @@ public class ShipmentService implements IShipmentService {
         return responseList;
     }
 
-    public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) {
+    public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) throws RunnerException {
         ShipmentSettingsDetails shipmentSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         if(shipmentSettings.getShipConsolidationContainerEnabled()) {
             ConsolidationDetails consolidationDetails = new ConsolidationDetails();
@@ -2409,7 +2409,7 @@ public class ShipmentService implements IShipmentService {
         ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
         if ((shipmentRequest.getId() == null && shipmentRequest.getGuid() == null) && (shipmentRequest.getShipmentId() == null || shipmentRequest.getShipmentId().get() == "")) {
             log.error("Request Id is null for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new Exception("Request Id is null");
+            throw new RunnerException("Request Id is null");
         }
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
@@ -2564,7 +2564,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long id = commonGetRequest.getId();
         ShipmentDetails shipmentDetails = shipmentDao.findById(id).get();
@@ -2632,7 +2632,7 @@ public class ShipmentService implements IShipmentService {
 //        return createShipmentSequence(shipmentSettingsList.get(0));
     }
 
-    private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType, ShipmentDetails currentShipment) {
+    private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType, ShipmentDetails currentShipment) throws RunnerException {
         List<TenantProducts> tenantProducts = productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
         // to check the commmon sequence
         var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
@@ -2881,7 +2881,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
@@ -3500,7 +3500,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> retrieveByOrderId(String orderId) {
+    public ResponseEntity<IRunnerResponse> retrieveByOrderId(String orderId) throws RunnerException {
         try {
             ShipmentDetailsResponse response = jsonHelper.convertValue(orderManagementAdapter.getOrder(orderId), ShipmentDetailsResponse.class);
             this.createShipmentPayload(null, response);
@@ -3513,7 +3513,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() {
+    public ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException {
         try {
             return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(generateCustomHouseBL(null)).build());
         } catch (Exception e) {
@@ -3944,7 +3944,7 @@ public class ShipmentService implements IShipmentService {
      * @param current_shipment
      * @param old_shipment
      */
-    private void updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) {
+    private void updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) throws RunnerException {
         List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
         var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
         if(linkedConsol != null && (oldEntity == null || !Objects.equals(shipment.getMasterBill(),oldEntity.getMasterBill()) ||
@@ -4096,7 +4096,7 @@ public class ShipmentService implements IShipmentService {
         return events;
     }
 
-    public ResponseEntity<IRunnerResponse> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
         if(request.getId() == null) {
             log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -4112,7 +4112,7 @@ public class ShipmentService implements IShipmentService {
         return fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    public ResponseEntity<IRunnerResponse> fetchActiveInvoices(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchActiveInvoices(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
         if(request.getGuid() == null) {
             log.error("Request guid is null for fetch active invoices with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -4175,7 +4175,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> fetchCreditLimit(String orgCode, String addressCode) {
+    public ResponseEntity<IRunnerResponse> fetchCreditLimit(String orgCode, String addressCode) throws RunnerException {
         if(StringUtility.isEmpty(orgCode)) {
             throw new RunnerException("OrgCode to fetch creditLimit can't be null");
         }
@@ -4225,7 +4225,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public void updateDateAndStatus(long id, LocalDateTime date, Integer status){
+    public void updateDateAndStatus(long id, LocalDateTime date, Integer status) throws RunnerException {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
         if(shipmentDetails.isPresent()) {
             ShipmentDetails shipment = shipmentDetails.get();

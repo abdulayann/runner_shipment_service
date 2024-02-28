@@ -84,7 +84,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ServiceDetailsRequest request = (ServiceDetailsRequest) commonRequestModel.getData();
         if(request == null) {

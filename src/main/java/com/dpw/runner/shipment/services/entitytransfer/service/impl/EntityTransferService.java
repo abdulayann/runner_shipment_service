@@ -93,7 +93,7 @@ public class EntityTransferService implements IEntityTransferService {
     MasterDataFactory masterDataFactory;
     @Transactional
     @Override
-    public ResponseEntity<?> sendShipment(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel) {
         SendShipmentRequest sendShipmentRequest = (SendShipmentRequest) commonRequestModel.getData();
         Long shipId = sendShipmentRequest.getShipId();
         List<Integer> sendToBranch = sendShipmentRequest.getSendToBranch();
@@ -652,7 +652,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> sendConsolidation(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> sendConsolidation(CommonRequestModel commonRequestModel) {
         SendConsolidationRequest sendConsolidationRequest = (SendConsolidationRequest) commonRequestModel.getData();
         Long consolId = sendConsolidationRequest.getConsolId();
         List<Integer> sendToBranch = sendConsolidationRequest.getSendToBranch();
@@ -897,7 +897,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
     @Transactional
     @Override
-    public ResponseEntity<?> importShipment (CommonRequestModel commonRequestModel) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> importShipment (CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ImportShipmentRequest importShipmentRequest = (ImportShipmentRequest) commonRequestModel.getData();
         EntityTransferShipmentDetails entityTransferShipmentDetails = importShipmentRequest.getEntityTransferShipmentDetails();
@@ -1212,7 +1212,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> importConsolidation (CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) {
         String responseMsg;
         ImportConsolidationRequest importConsolidationRequest = (ImportConsolidationRequest) commonRequestModel.getData();
         if(importConsolidationRequest == null || importConsolidationRequest.getEntityTransferConsolidationDetails() == null) {
@@ -1406,7 +1406,7 @@ public class EntityTransferService implements IEntityTransferService {
 
 
     @Override
-    public ResponseEntity<?> sendConsolidationValidation(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> sendConsolidationValidation(CommonRequestModel commonRequestModel) {
         ValidateSendConsolidationRequest request = (ValidateSendConsolidationRequest) commonRequestModel.getData();
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
         if (!consolidationDetails.isPresent()) {
@@ -1529,7 +1529,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     @Override
-    public ResponseEntity<?> sendShipmentValidation(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> sendShipmentValidation(CommonRequestModel commonRequestModel) {
         ValidateSendShipmentRequest request = (ValidateSendShipmentRequest) commonRequestModel.getData();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipId());
         if (!shipmentDetails.isPresent()) {
@@ -1607,7 +1607,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     @Override
-    public ResponseEntity<?> checkTaskExist(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel) {
         CheckTaskExistRequest request = (CheckTaskExistRequest) commonRequestModel.getData();
         CheckTaskExistV1Request requestV1 = CheckTaskExistV1Request.builder().entityType(request.getEntityType())
                 .sendToBranch(request.getSendToBranch())
