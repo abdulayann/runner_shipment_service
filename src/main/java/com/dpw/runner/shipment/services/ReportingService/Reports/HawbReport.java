@@ -450,7 +450,8 @@ public class HawbReport extends IReport{
                     locCodes = new HashSet<>();
 //                    locCodes.add(routingInfoRows.get(1).getDestination());
 //                    locCodeMap = getLocationData(locCodes);
-                    dictionary.put(ReportConstants.TO_SECOND, locCodeMap.get(routingInfoRows.get(1).getDestination()).getIataCode());
+                    if(locCodeMap.containsKey(routingInfoRows.get(1).getDestination()))
+                        dictionary.put(ReportConstants.TO_SECOND, locCodeMap.get(routingInfoRows.get(1).getDestination()).getIataCode());
 //                    carrierSet.add(routingInfoRows.get(1).getByCarrier());
 //                    carrierRow = fetchCarrier(carrierSet);
                     if (carrierRow.containsKey(routingInfoRows.get(1).getByCarrier()))
@@ -466,7 +467,8 @@ public class HawbReport extends IReport{
                     locCodes = new HashSet<>();
                     locCodes.add(routingInfoRows.get(2).getDestination());
 //                    locCodeMap = getLocationData(locCodes);
-                    dictionary.put(ReportConstants.TO_THIRD, locCodeMap.get(routingInfoRows.get(2).getDestination()).getIataCode());
+                    if(locCodeMap.containsKey(routingInfoRows.get(2).getDestination()))
+                        dictionary.put(ReportConstants.TO_THIRD, locCodeMap.get(routingInfoRows.get(2).getDestination()).getIataCode());
 //                    carrierSet.add(routingInfoRows.get(2).getByCarrier());
 //                    carrierRow = fetchCarrier(carrierSet);
                     if (carrierRow.containsKey(routingInfoRows.get(1).getByCarrier()))
