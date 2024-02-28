@@ -151,7 +151,7 @@ public class AwbDao implements IAwbDao {
             }
         }
 
-        if(errors.size() > 0)
+        if(!errors.isEmpty())
             throw new RunnerException(errors.toString());
     }
 
