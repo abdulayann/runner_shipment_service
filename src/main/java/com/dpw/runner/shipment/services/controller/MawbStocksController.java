@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MawbStocksConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,14 +11,11 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
-import com.dpw.runner.shipment.services.dto.response.AwbResponse;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
 import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
 import com.dpw.runner.shipment.services.syncing.Entity.MawbStocksV2;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -33,15 +33,13 @@ import java.util.List;
 @Slf4j
 public class MawbStocksController {
     private final IMawbStocksService mawbStocksService;
-    private final ObjectMapper objectMapper;
     private class MyResponseClass extends RunnerResponse<MawbStocksResponse> {}
     private class MyListResponseClass extends RunnerListResponse<MawbStocksResponse> {}
     private class MyNextMawbCarrierResponseClass extends RunnerListResponse<NextMawbCarrierResponse> {}
 
     @Autowired
-    public MawbStocksController(IMawbStocksService mawbStocksService, ObjectMapper objectMapper) {
+    public MawbStocksController(IMawbStocksService mawbStocksService) {
         this.mawbStocksService = mawbStocksService;
-        this.objectMapper = objectMapper;
     }
 
     @PostMapping(ApiConstants.API_CREATE)

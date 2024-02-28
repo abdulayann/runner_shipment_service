@@ -44,7 +44,7 @@ public class AwbDao implements IAwbDao {
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
     @Override
-    public Awb save(Awb awbShipmentInfo) {
+    public Awb save(Awb awbShipmentInfo) throws RunnerException {
         boolean isCreate = false; // TODO- handle create/update here
         if (awbShipmentInfo.getId() == null) {
             isCreate = true;
@@ -56,7 +56,7 @@ public class AwbDao implements IAwbDao {
     }
 
     @Async
-    private void pushToKafka(Awb awb, boolean isCreate) {
+    public void pushToKafka(Awb awb, boolean isCreate) {
         try {
             if(awb.getTenantId() == null)
                 awb.setTenantId(TenantContext.getCurrentTenant());
@@ -126,7 +126,7 @@ public class AwbDao implements IAwbDao {
         return entities;
     }
 
-    private void applyValidations(Awb awb) {
+    private void applyValidations(Awb awb) throws RunnerException {
         Set<String> errors = new HashSet<>();
         // do not allow duplicate pair of Information Identifier and Trade Identification Code
         if(awb.getAwbOciInfo() != null) {

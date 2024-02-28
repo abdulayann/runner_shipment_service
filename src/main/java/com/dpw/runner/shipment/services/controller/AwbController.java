@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -12,13 +15,10 @@ import com.dpw.runner.shipment.services.dto.request.FetchAwbListRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -37,18 +37,14 @@ import java.util.List;
 @Slf4j
 public class AwbController {
     private final IAwbService awbService;
-    private final ObjectMapper objectMapper;
-    private final JsonHelper jsonHelper;
 
     private class MyResponseClass extends RunnerResponse<AwbResponse>{}
     private class MyListResponseClass extends RunnerListResponse<AwbResponse>{}
 
 
     @Autowired
-    public AwbController(IAwbService awbService, ObjectMapper objectMapper, JsonHelper jsonHelper) {
+    public AwbController(IAwbService awbService) {
         this.awbService = awbService;
-        this.objectMapper = objectMapper;
-        this.jsonHelper = jsonHelper;
     }
 
     @ApiResponses(value = {

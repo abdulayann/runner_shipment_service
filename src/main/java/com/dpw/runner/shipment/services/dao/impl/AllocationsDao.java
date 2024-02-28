@@ -42,7 +42,7 @@ public class AllocationsDao implements IAllocationsDao {
         allocationsRepository.delete(allocations);
     }
 
-    public Allocations updateEntityFromConsolidation(Allocations allocations, Long consolidationId) throws RunnerException {
+    public Allocations updateEntityFromConsolidation(Allocations allocations) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here

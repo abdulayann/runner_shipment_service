@@ -42,7 +42,7 @@ public class AchievedQuantitiesDao implements IAchievedQuantitiesDao {
         achievedQuantitiesRepository.delete(achievedQuantities);
     }
 
-    public AchievedQuantities updateEntityFromConsolidation(AchievedQuantities achievedQuantities, Long consolidationId) throws RunnerException {
+    public AchievedQuantities updateEntityFromConsolidation(AchievedQuantities achievedQuantities) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here

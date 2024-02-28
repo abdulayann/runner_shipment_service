@@ -1339,7 +1339,7 @@ public class CSVParsingUtil<T> {
                 List<UnlocationsResponse> unlocationList = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
                 if (unlocationList != null && !unlocationList.isEmpty()) {
                     Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
-                    locCodeToLocationReferenceGuidMap = unlocationList.stream().filter(Objects::nonNull).collect(Collectors.toMap(UnlocationsResponse::getLocCode, UnlocationsResponse::getLocationsReferenceGUID));
+                    locCodeToLocationReferenceGuidMap.putAll(unlocationList.stream().filter(Objects::nonNull).collect(Collectors.toMap(UnlocationsResponse::getLocCode, UnlocationsResponse::getLocationsReferenceGUID)));
                     masterDataMap.put("Unlocations", unlocationSet);
                 }
             }

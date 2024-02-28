@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.IntegrationResponseRequest;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IIntegrationResponseService;
 import io.swagger.annotations.ApiResponse;
@@ -26,12 +25,10 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping(value = IntegrationResponseConstants.INTEGRATION_RESPONSE_API_HANDLE)
 public class IntegrationResponseController {
-    private final JsonHelper jsonHelper;
     private final IIntegrationResponseService integrationResponseService;
 
     @Autowired
-    public IntegrationResponseController(JsonHelper jsonHelper, IIntegrationResponseService integrationResponseService) {
-        this.jsonHelper = jsonHelper;
+    public IntegrationResponseController(IIntegrationResponseService integrationResponseService) {
         this.integrationResponseService = integrationResponseService;
     }
 

@@ -63,7 +63,7 @@ public class PartiesDao implements IPartiesDao {
         partiesRepository.delete(parties);
     }
 
-    public Parties updateEntityFromShipment(Parties parties, Long shipmentId) throws RunnerException {
+    public Parties updateEntityFromShipment(Parties parties) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here

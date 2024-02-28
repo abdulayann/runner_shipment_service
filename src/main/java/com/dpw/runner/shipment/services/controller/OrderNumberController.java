@@ -8,8 +8,6 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.OrderNumberRequest;
 import com.dpw.runner.shipment.services.dto.response.OrderNumberResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IOrderNumberService;
 import io.swagger.annotations.ApiParam;
@@ -29,15 +27,13 @@ import java.util.List;
 @RequestMapping(value = OrderNumberConstants.ORDER_NUMBER_API_HANDLE)
 public class OrderNumberController {
     private final IOrderNumberService orderNumberService;
-    private final JsonHelper jsonHelper;
     private static class MyResponseClass extends RunnerResponse<OrderNumberResponse>{}
     private static class MyListResponseClass extends RunnerListResponse<OrderNumberResponse>{}
 
 
     @Autowired
-    public OrderNumberController(IOrderNumberService orderNumberService, JsonHelper jsonHelper) {
+    public OrderNumberController(IOrderNumberService orderNumberService) {
         this.orderNumberService = orderNumberService;
-        this.jsonHelper = jsonHelper;
     }
 
     @ApiResponses(value = {

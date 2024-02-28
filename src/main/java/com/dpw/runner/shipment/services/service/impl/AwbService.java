@@ -269,7 +269,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
-    private void updateAwbPacking(long mawbId, List<AwbPackingInfo> awbPackingInfoList) {
+    private void updateAwbPacking(long mawbId, List<AwbPackingInfo> awbPackingInfoList) throws RunnerException {
         if(awbPackingInfoList == null) {
             return;
         }
@@ -528,7 +528,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void updateGoodsDescForMawb(Awb mawb) {
+    private void updateGoodsDescForMawb(Awb mawb) throws RunnerException {
         AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = null;
         if (mawb.getAwbGoodsDescriptionInfo() != null && mawb.getAwbGoodsDescriptionInfo().size() > 0) {
             awbGoodsDescriptionInfo = mawb.getAwbGoodsDescriptionInfo().get(0);
@@ -965,7 +965,7 @@ public class AwbService implements IAwbService {
         return awbOtherInfo;
     }
 
-    private void LinkHawbMawb(ConsolidationDetails consolidationDetails, Awb mawb, List<Awb> awbList) {
+    private void LinkHawbMawb(ConsolidationDetails consolidationDetails, Awb mawb, List<Awb> awbList) throws RunnerException {
         for (var awb : awbList) {
             if(awb.getAwbPackingInfo() != null) {
                 for(AwbPackingInfo awbPackingInfo : awb.getAwbPackingInfo()) {
