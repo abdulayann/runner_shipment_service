@@ -514,7 +514,7 @@ public class ShipmentDao implements IShipmentDao {
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
         return response;
     }
 
@@ -535,7 +535,7 @@ public class ShipmentDao implements IShipmentDao {
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
         return response;
     }
     @Transactional
