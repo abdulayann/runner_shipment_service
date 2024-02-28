@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
-public class ArrivalDepartureDetails {
+public class ArrivalDepartureDetails implements IRunnerRequest {
     @JsonProperty("AcontainerYardId")
     private PartyRequestV2 AcontainerYardId;
     @JsonProperty("AfirstArrivalPortId")

@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.UUID;
 
 @Data
-public class FileRepoRequestV2 {
+public class FileRepoRequestV2 implements IRunnerRequest {
 //    public String EntityType;
 //    public Long EntityId;
     @JsonProperty("Guid")
