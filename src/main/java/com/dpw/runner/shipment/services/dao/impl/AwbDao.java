@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -12,9 +13,11 @@ import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -23,9 +26,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Repository
 @Slf4j
@@ -48,6 +49,7 @@ public class AwbDao implements IAwbDao {
         if (awbShipmentInfo.getId() == null) {
             isCreate = true;
         }
+        applyValidations(awbShipmentInfo);
         Awb awb = awbRepository.save(awbShipmentInfo);
         pushToKafka(awb, isCreate);
         return awb;
@@ -122,6 +124,35 @@ public class AwbDao implements IAwbDao {
             pushToKafka(awb, false);
         }
         return entities;
+    }
+
+    private void applyValidations(Awb awb) {
+        Set<String> errors = new HashSet<>();
+        // do not allow duplicate pair of Information Identifier and Trade Identification Code
+        if(awb.getAwbOciInfo() != null) {
+            Set<Pair<Integer, Integer>> uniqueOciPair = new HashSet<>();
+            for(var ociInfo : awb.getAwbOciInfo()) {
+                Pair<Integer, Integer> pair = Pair.of(ociInfo.getInformationIdentifier(), ociInfo.getTradeIdentificationCode());
+                if(!uniqueOciPair.contains(pair)) {
+                    uniqueOciPair.add(pair);
+                }
+                else {
+                    errors.add(AwbConstants.DUPLICATE_PAIR_AWB_OCI_INFO_VALIDATION);
+                }
+            }
+        }
+
+        // max size for IATA description is 3 in otherChargesInfo
+        if(awb.getAwbOtherChargesInfo() != null) {
+            for(var otherCharges : awb.getAwbOtherChargesInfo()) {
+                if(otherCharges.getIataDescription() != null && otherCharges.getIataDescription().length() > 3) {
+                    errors.add(AwbConstants.IATA_DESCRIPTION_FIELD_VALIDATION);
+                }
+            }
+        }
+
+        if(!errors.isEmpty())
+            throw new RunnerException(errors.toString());
     }
 
 }

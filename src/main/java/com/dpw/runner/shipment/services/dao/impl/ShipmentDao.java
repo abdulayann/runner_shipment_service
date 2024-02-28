@@ -370,6 +370,7 @@ public class ShipmentDao implements IShipmentDao {
             if(!Objects.isNull(res.getStatus()) && !res.getStatus().equals("Consumed")) {
                 res.setEntityId(shipmentDetails.getId());
                 res.setEntityType(Constants.SHIPMENT);
+                res.setShipConsNumber(shipmentDetails.getShipmentId());
                 res.setStatus("Consumed");
                 mawbStocksLinkDao.save(res);
                 setAvaliableCount(res.getParentId());
