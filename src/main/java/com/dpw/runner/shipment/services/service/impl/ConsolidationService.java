@@ -763,17 +763,21 @@ public class ConsolidationService implements IConsolidationService {
                 entity.setContainersList(oldEntity.get().getContainersList());
             beforeSave(entity, oldEntity.get(), false);
             entity = consolidationDetailsDao.update(entity, false);
-            try {
-                consolidationSync.sync(entity, StringUtility.convertToString(entity.getGuid()), false);
-            } catch (Exception e) {
-                log.error("Error performing sync on consol entity, {}", e);
-            }
+            syncConsole(entity, false);
             pushShipmentDataToDependentService(entity, false);
             return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
         }
         catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
+        }
+    }
+
+    private void syncConsole(ConsolidationDetails entity, boolean isDirectSync) {
+        try {
+            consolidationSync.sync(entity, StringUtility.convertToString(entity.getGuid()), isDirectSync);
+        } catch (Exception e) {
+            log.error("Error performing sync on consol entity, {}", e);
         }
     }
 
@@ -1454,7 +1458,7 @@ public class ConsolidationService implements IConsolidationService {
             double volInM3 = convertUnit(Constants.VOLUME, sumVolume, volumeChargeableUnit, Constants.VOLUME_UNIT_M3).doubleValue();
             double wtInKg = convertUnit(Constants.MASS, sumWeight, weightChargeableUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
             double chargeableWeight = Math.max(wtInKg / 1000, volInM3);
-            chargeableWeight = new BigDecimal(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
             response.setSummaryChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
         }
     }

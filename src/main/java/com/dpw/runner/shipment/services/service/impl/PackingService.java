@@ -788,7 +788,7 @@ public class PackingService implements IPackingService {
                 chargeableWeight = Math.max(wtInKg / 1000, volInM3);
                 packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
             }
-            chargeableWeight = new BigDecimal(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
             response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, chargeableWeight, packChargeableWeightUnit));
             return response;
         } catch (Exception e) {

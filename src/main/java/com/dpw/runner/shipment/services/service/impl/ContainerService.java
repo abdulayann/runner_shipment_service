@@ -1415,7 +1415,7 @@ public class ContainerService implements IContainerService {
                 double volInM3 = convertUnit(Constants.VOLUME, new BigDecimal(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
                 double wtInKg = convertUnit(Constants.MASS, new BigDecimal(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
                 double chargeableWeight = Math.max(wtInKg/1000, volInM3);
-                chargeableWeight = new BigDecimal(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
+                chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
                 response.setChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
             }
             response.setTotalContainerVolume(String.format(Constants.STRING_FORMAT, totalVolume, toVolumeUnit));
