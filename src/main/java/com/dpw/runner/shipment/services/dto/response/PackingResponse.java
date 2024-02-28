@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.Data;
@@ -65,6 +66,7 @@ public class PackingResponse implements IRunnerResponse {
     private String transportMode;
     private String innerPackageNumber;
     private String innerPackageType;
+    @JsonSerialize(using = DecimalPlaceValueSerializer.class)
     private BigDecimal chargeable;
     private String chargeableUnit;
     private String customsReleaseCode;
