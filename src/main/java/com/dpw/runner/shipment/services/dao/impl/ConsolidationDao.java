@@ -322,14 +322,15 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return null;
     }
 
-    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode) {
+    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode, String agentType) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
         criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+        carrierListObject.setType(agentType);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
         return response;
     }
 
@@ -342,7 +343,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             throw new ValidationException("Please enter a valid MAWB number.");
 
         String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);
-        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
+        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode, consolidationRequest.getConsolidationType());
         List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
 
         if (carrierDetails == null || carrierDetails.size()==0)

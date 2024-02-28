@@ -177,11 +177,11 @@ public class ValidatorUtility {
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
             String pattern = jsonSchema.getString(ValidatorConstants.PATTERN);
-
-            if (fieldValue != null && fieldValue.getValueType() == JsonValue.ValueType.STRING) {
+            String error = getErrorMessage(jsonSchema.getJsonObject(ValidatorConstants.ERRORS), ValidatorConstants.PATTERN);
+            if (fieldValue.getValueType() == JsonValue.ValueType.STRING) {
                 String fieldValueString = jsonObject.getString(at);
                 if (StringUtility.isNotEmpty(fieldValueString) && !Pattern.matches(pattern, fieldValueString)) {
-                    errors.add(String.format(ErrorConstants.INVALID_PATTERN_VALIDATION, at));
+                    errors.add(StringUtility.isEmpty(error) ? String.format(ErrorConstants.INVALID_PATTERN_VALIDATION, at) : error);
                 }
             }
         }
@@ -684,6 +684,15 @@ public class ValidatorUtility {
 
         }
         return errors;
+    }
+
+    private String getErrorMessage(JsonObject errorJson, String key) {
+        String error = null;
+        if (Objects.isNull(errorJson) || Objects.isNull(key))
+            return null;
+        if (errorJson.containsKey(key) && errorJson.get(key).getValueType() == JsonValue.ValueType.STRING)
+            error = errorJson.getString(key);
+        return error;
     }
 
 }
