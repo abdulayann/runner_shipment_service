@@ -6,7 +6,7 @@ name: $(Build.SourceBranchName)_$(Rev:r)
 variables:
   - group: cargoesrunner-prod-secrets
   - name: ServerName
-    value: 'db-postgres-cargoes-runner-prod.postgres.database.azure.com'
+    value: 'db-postgres-cargoes-runner-production.writer.postgres.database.azure.com'
   - name: DatabaseName
     value: 'shipment_service_prod'
 
