@@ -164,6 +164,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String Destination;
     @JsonProperty("FlightNumber")
     private String FlightNumber;
+    @JsonProperty("FlightStatus")
+    private String flightStatus;
     @JsonProperty("JourneyNumber")
     private String JourneyNumber;
     @JsonProperty("JourneyRefNumber")
