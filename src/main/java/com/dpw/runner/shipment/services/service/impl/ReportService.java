@@ -763,7 +763,7 @@ public class ReportService implements IReportService {
                 return setDocPages(null,
                         row.getCostalDocument() == null ? adminRow.getCostalDocument() : row.getCostalDocument(), null, row.getCostalDocument() != null, null, null, null);
             case ReportConstants.SHIPPING_INSTRUCTION:
-                return getShippingInstructionDocument(row, adminRow);
+                return getShippingInstructionDocument(row, adminRow, objectType);
             case ReportConstants.AWB_LABEL:
                 return setDocPages(null,
                         row.getAwbLable() == null ? adminRow.getAwbLable() : row.getAwbLable(), null, row.getAwbLable() != null, null, null, null);
@@ -867,7 +867,7 @@ public class ReportService implements IReportService {
         return docPages;
     }
 
-    public DocPages getShippingInstructionDocument(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow)
+    public DocPages getShippingInstructionDocument(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType)
     {
 //        if (row.getRep != null && row.ReportingNewFlow.Value)
 //        {
@@ -875,9 +875,14 @@ public class ReportService implements IReportService {
 //                    row.SeaShippingInstructionMainPage == null ? adminRow.SeaShippingInstructionMainPage :
 //                            row.SeaShippingInstructionMainPage, null, row.SeaShippingInstructionMainPage == null ? false : true);
 //        }
-
-        return setDocPages(null,
-                row.getShippingInstruction() == null ? adminRow.getShippingInstruction() : row.getShippingInstruction(), null, row.getShippingInstruction() == null ? false : true, null, null, null);
+        if (objectType != null && objectType.equalsIgnoreCase(ReportConstants.AIR)){
+            return setDocPages(null,
+                    row.getShippingInstruction() == null ? adminRow.getShippingInstruction() : row.getShippingInstruction(), null, row.getShippingInstruction() != null, null, null, null);
+        }
+        else {
+            return setDocPages(null,
+                    row.getSeaShippingInstructionMainPage() == null ? adminRow.getSeaShippingInstructionMainPage() : row.getSeaShippingInstructionMainPage(), null, row.getSeaShippingInstructionMainPage() != null, null, null, null);
+        }
     }
 
     private String getSerialCount(int copyNumber, int totalCopies){
