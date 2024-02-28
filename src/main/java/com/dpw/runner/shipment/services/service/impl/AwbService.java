@@ -2835,7 +2835,6 @@ public class AwbService implements IAwbService {
 
             if (uniqueDimension.size() == 1) {
                 String dimentionUnit = new ArrayList<>(uniqueDimension).get(0);
-                dimentionUnit = "";
                 if(dimentionUnit != null) {
                     if (dimentionUnit.equalsIgnoreCase(Constants.CM)) {
                         dimentionUnit = Constants.CMS;
@@ -2865,7 +2864,11 @@ public class AwbService implements IAwbService {
 
         }
 
-        return ResponseHelper.buildSuccessResponse(packsDescriptionValue);
+        StringBuilder responseBuilder = new StringBuilder(natureAndQuantGoodsValue);
+        responseBuilder.append(dimensionText).append(packsDescriptionValue);
+        String response = responseBuilder.toString();
+
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
     @Override
