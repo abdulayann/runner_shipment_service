@@ -2972,7 +2972,8 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
-        if(containerRequestList != null && !shipmentSettingsDetails.getMergeContainers()) {
+        if(containerRequestList != null && (shipmentSettingsDetails.getMergeContainers() == null || !shipmentSettingsDetails.getMergeContainers())
+            && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
             List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class, isFromBooking ? false : isCreate), id, (Long) null, true);
             consolidationDetails.setContainersList(updatedContainers);
         }
