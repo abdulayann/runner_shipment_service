@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
@@ -79,6 +80,7 @@ public class ContainerResponse implements IRunnerResponse {
     private String marksNums;
     private String innerPackageMeasurementUnit;
     private String pacrNumber;
+    @JsonSerialize(using = DecimalPlaceValueSerializer.class)
     private BigDecimal chargeable;
     private String chargeableUnit;
     private Boolean isOwnContainer;
