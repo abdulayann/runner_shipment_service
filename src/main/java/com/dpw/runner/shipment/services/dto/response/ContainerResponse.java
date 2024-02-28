@@ -120,4 +120,5 @@ public class ContainerResponse implements IRunnerResponse {
     private String invoiceNumber;
     private String invoiceCurrency;
     private BigDecimal invoiceValue;
+    private Long tenantId;
 }
