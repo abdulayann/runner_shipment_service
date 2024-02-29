@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -179,6 +180,20 @@ public class CustomerBookingController {
         String responseMsg;
         try {
             return customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : CustomerBookingConstants.CREDIT_LIMIT_RETRIEVE_ERROR;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREDIT_LIMIT_RETRIEVE_SUCCESSFUL, response = V1ShipmentCreationResponse.class)})
+    @GetMapping(CustomerBookingConstants.RETRY_FOR_BILLING)
+    public ResponseEntity<IRunnerResponse> retryForBilling(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) {
+        String responseMsg;
+        try {
+            return customerBookingService.retryForBilling(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : CustomerBookingConstants.CREDIT_LIMIT_RETRIEVE_ERROR;
