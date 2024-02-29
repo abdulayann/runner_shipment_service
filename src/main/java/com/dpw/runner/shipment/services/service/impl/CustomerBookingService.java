@@ -602,7 +602,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             CustomerBooking customerBooking = customerBookingOptional.get();
             if (!Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT))
                 throw new RunnerException(String.format("Booking should be in: %s stage for this operation", BookingStatus.READY_FOR_SHIPMENT));
-            if (!Objects.isNull(customerBooking.getIsBillCreated()) && customerBooking.getIsBillCreated())
+            if (!Objects.isNull(customerBooking.getIsBillCreated()) && Boolean.TRUE.equals(customerBooking.getIsBillCreated()))
                 throw new RunnerException(String.format("Bill is already created for booking with id: %s", request.getId()));
 
             V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking, false, true, UUID.fromString(customerBooking.getShipmentGuid()), V1AuthHelper.getHeaders()).getBody(), V1ShipmentCreationResponse.class);
