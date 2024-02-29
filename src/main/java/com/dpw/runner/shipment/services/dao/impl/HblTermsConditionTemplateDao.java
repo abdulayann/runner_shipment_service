@@ -149,6 +149,6 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
             return hblTermsConditionTemplates.getContent().get(0);
         }
 
-        return null;
+        return new HblTermsConditionTemplate();
     }
 }
