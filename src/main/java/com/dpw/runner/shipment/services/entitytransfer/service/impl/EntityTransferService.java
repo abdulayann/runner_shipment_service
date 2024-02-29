@@ -63,6 +63,8 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class EntityTransferService implements IEntityTransferService {
+    public static final String SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Shipment Details is null for Id {} with Request Id {}";
+    public static final String CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Consolidation Details is null for Id {} with Request Id {}";
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
     @Autowired
@@ -104,7 +106,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
         if (!shipmentDetails.isPresent()) {
-            log.debug("Shipment Details is null for Id {} with Request Id {}", shipId, LoggerHelper.getRequestIdFromMDC());
+            log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, shipId, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(shipmentDetails.isPresent()) {
@@ -665,7 +667,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolId);
         if (!consolidationDetails.isPresent()) {
-            log.debug("Consolidation Details is null for Id {} with Request Id {}", consolId, LoggerHelper.getRequestIdFromMDC());
+            log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consolId, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(consolidationDetails.isPresent()) {
@@ -1422,7 +1424,7 @@ public class EntityTransferService implements IEntityTransferService {
         ValidateSendConsolidationRequest request = (ValidateSendConsolidationRequest) commonRequestModel.getData();
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
         if (!consolidationDetails.isPresent()) {
-            log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
@@ -1545,7 +1547,7 @@ public class EntityTransferService implements IEntityTransferService {
         ValidateSendShipmentRequest request = (ValidateSendShipmentRequest) commonRequestModel.getData();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipId());
         if (!shipmentDetails.isPresent()) {
-            log.debug("Shipment Details is null for Id {} with Request Id {}", request.getShipId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getShipId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
@@ -1634,14 +1636,14 @@ public class EntityTransferService implements IEntityTransferService {
         if(request.getEntityType().equals(Constants.Shipments)){
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getEntityId());
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             requestV1.setShipId(shipmentDetails.get().getShipmentId());
         } else if (request.getEntityType().equals(Constants.Consolidations)) {
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getEntityId());
             if (!consolidationDetails.isPresent()) {
-                log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             requestV1.setConsoleId(consolidationDetails.get().getConsolidationNumber());

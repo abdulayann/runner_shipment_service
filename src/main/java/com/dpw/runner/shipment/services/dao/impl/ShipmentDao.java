@@ -51,6 +51,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 @Repository
 @Slf4j
 public class ShipmentDao implements IShipmentDao {
+    public static final String CONSUMED = "Consumed";
+    public static final String UNUSED = "Unused";
     @Autowired
     private IShipmentRepository shipmentRepository;
 
@@ -368,11 +370,11 @@ public class ShipmentDao implements IShipmentDao {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(shipmentDetails.getMasterBill());
         if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
             MawbStocksLink res = mawbStocksLinks.get(0);
-            if(!Objects.isNull(res.getStatus()) && !res.getStatus().equals("Consumed")) {
+            if(!Objects.isNull(res.getStatus()) && !res.getStatus().equals(CONSUMED)) {
                 res.setEntityId(shipmentDetails.getId());
                 res.setEntityType(Constants.SHIPMENT);
                 res.setShipConsNumber(shipmentDetails.getShipmentId());
-                res.setStatus("Consumed");
+                res.setStatus(CONSUMED);
                 mawbStocksLinkDao.save(res);
                 setAvaliableCount(res.getParentId());
             }
@@ -392,7 +394,7 @@ public class ShipmentDao implements IShipmentDao {
     private String assignNextMawbNumber(Long parentId) {
         ListCommonRequest listCommonRequest;
         listCommonRequest = CommonUtils.andCriteria("parentId", parentId, "=", null);
-        CommonUtils.andCriteria("status", "Unused", "=", listCommonRequest);
+        CommonUtils.andCriteria("status", UNUSED, "=", listCommonRequest);
         listCommonRequest.setSortRequest(SortRequest.builder()
                 .fieldName("seqNumber")
                 .order("DESC")
@@ -445,7 +447,7 @@ public class ShipmentDao implements IShipmentDao {
         }
 
         if (isMAWBNumberExist) {
-            if (mawbStocksLink.getStatus().equals("Consumed") && mawbStocksLink.getEntityId() != shipmentRequest.getId()) // If MasterBill number is already Consumed.
+            if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId())) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
         } else {
             createNewMAWBEntry(shipmentRequest);
@@ -461,7 +463,7 @@ public class ShipmentDao implements IShipmentDao {
         mawbStocks.setFrom(shipmentRequest.getMasterBill());
         mawbStocks.setTo(shipmentRequest.getMasterBill());
         mawbStocks.setMawbNumber(shipmentRequest.getMasterBill());
-        mawbStocks.setStatus("Unused");
+        mawbStocks.setStatus(UNUSED);
         if(shipmentRequest.getAdditionalDetails().getBorrowedFrom()!=null){
              mawbStocks.setBorrowedFrom(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode());
              if(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgData() != null && shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgData().containsKey("FullName")) {
@@ -477,7 +479,7 @@ public class ShipmentDao implements IShipmentDao {
             entryForMawbStocksLinkRow.setParentId(mawbStocks.getId());
             entryForMawbStocksLinkRow.setSeqNumber(shipmentRequest.getMasterBill().substring(4, 10));
             entryForMawbStocksLinkRow.setMawbNumber(shipmentRequest.getMasterBill());
-            entryForMawbStocksLinkRow.setStatus("Unused");
+            entryForMawbStocksLinkRow.setStatus(UNUSED);
             entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
         }
     }

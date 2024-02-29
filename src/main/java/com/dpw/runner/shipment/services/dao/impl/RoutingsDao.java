@@ -37,6 +37,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Repository
 @Slf4j
 public class RoutingsDao implements IRoutingsDao {
+    public static final String ROUTING_IS_NULL_FOR_ID_MSG = "Routing is null for Id {}";
     @Autowired
     private IRoutingsRepository routingsRepository;
 
@@ -132,7 +133,7 @@ public class RoutingsDao implements IRoutingsDao {
                 long id = req.getId();
                 Optional<Routings> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Routing is null for Id {}", req.getId());
+                    log.debug(ROUTING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -167,7 +168,7 @@ public class RoutingsDao implements IRoutingsDao {
             if (req.getId() != null) {
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Routing is null for Id {}", req.getId());
+                    log.debug(ROUTING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
@@ -248,7 +249,7 @@ public class RoutingsDao implements IRoutingsDao {
             if (req.getId() != null) {
                 long id = req.getId();
                 if (hashMap.get(id) == null) {
-                    log.debug("Routing is null for Id {}", req.getId());
+                    log.debug(ROUTING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
@@ -355,7 +356,7 @@ public class RoutingsDao implements IRoutingsDao {
                 long id = req.getId();
                 Optional<Routings> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Routing is null for Id {}", req.getId());
+                    log.debug(ROUTING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -374,7 +375,7 @@ public class RoutingsDao implements IRoutingsDao {
             if (req.getId() != null) {
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Routing is null for Id {}", req.getId());
+                    log.debug(ROUTING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());

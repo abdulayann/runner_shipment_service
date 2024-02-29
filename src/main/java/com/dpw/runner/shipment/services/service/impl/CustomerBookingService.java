@@ -57,6 +57,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -71,6 +72,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntity
 @Slf4j
 public class CustomerBookingService implements ICustomerBookingService {
     ExecutorService executorService = Executors.newFixedThreadPool(10);
+    private static final Random rnd = new SecureRandom();
+
     @Autowired
     private ModelMapper modelMapper;
 
@@ -1044,7 +1047,6 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     public static String getRandomNumberString(int digit) {
-        Random rnd = new Random();
         int number = 0;
         if (digit == 7)
             number = rnd.nextInt(9999999);

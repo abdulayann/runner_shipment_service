@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ConsolidationSync implements IConsolidationSync {
 
+    public static final String RAW_DATA = "rawData";
     @Autowired
     ModelMapper modelMapper;
 
@@ -112,15 +113,15 @@ public class ConsolidationSync implements IConsolidationSync {
         mapShipmentGuids(response, request);
         if(request.getCreditor() != null && request.getCreditor().getIsAddressFreeText() != null && request.getCreditor().getIsAddressFreeText()){
             response.setIsCreditorFreeTextAddress(true);
-            var rawData = request.getCreditor().getAddressData() != null ? request.getCreditor().getAddressData().get("rawData"): null;
+            var rawData = request.getCreditor().getAddressData() != null ? request.getCreditor().getAddressData().get(RAW_DATA): null;
             if(rawData!=null)
-            response.setCreditorFreeTextAddress(rawData.toString());
+                response.setCreditorFreeTextAddress(rawData.toString());
         }
         else  response.setIsCreditorFreeTextAddress(false);
 
         if(request.getReceivingAgent() != null && request.getReceivingAgent().getIsAddressFreeText() != null && request.getReceivingAgent().getIsAddressFreeText()){
             response.setIsReceivingAgentFreeTextAddress(true);
-            var rawData = request.getReceivingAgent().getAddressData() != null ? request.getReceivingAgent().getAddressData().get("rawData"): null;
+            var rawData = request.getReceivingAgent().getAddressData() != null ? request.getReceivingAgent().getAddressData().get(RAW_DATA): null;
             if(rawData!=null)
                 response.setReceivingAgentFreeTextAddress(rawData.toString());
         }
@@ -128,7 +129,7 @@ public class ConsolidationSync implements IConsolidationSync {
 
         if(request.getSendingAgent() != null && request.getSendingAgent().getIsAddressFreeText() != null && request.getSendingAgent().getIsAddressFreeText()){
             response.setIsSendingAgentFreeTextAddress(true);
-            var rawData = request.getSendingAgent().getAddressData() != null ? request.getSendingAgent().getAddressData().get("rawData"): null;
+            var rawData = request.getSendingAgent().getAddressData() != null ? request.getSendingAgent().getAddressData().get(RAW_DATA): null;
             if(rawData!=null)
                 response.setSendingAgentFreeTextAddress(rawData.toString());
         }

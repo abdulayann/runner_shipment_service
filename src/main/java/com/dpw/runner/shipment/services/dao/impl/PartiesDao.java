@@ -33,6 +33,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRe
 @Repository
 @Slf4j
 public class PartiesDao implements IPartiesDao {
+    public static final String PARTIES_IS_NULL_FOR_ID_MSG = "Parties is null for Id {}";
     @Autowired
     private IPartiesRepository partiesRepository;
     @Autowired
@@ -71,7 +72,7 @@ public class PartiesDao implements IPartiesDao {
                 long id = parties.getId();
                 Optional<Parties> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Parties is null for Id {}", id);
+                    log.debug(PARTIES_IS_NULL_FOR_ID_MSG, id);
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
@@ -129,7 +130,7 @@ public class PartiesDao implements IPartiesDao {
                 long id = req.getId();
                 Optional<Parties> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Parties is null for Id {}", req.getId());
+                    log.debug(PARTIES_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
@@ -165,7 +166,7 @@ public class PartiesDao implements IPartiesDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Parties is null for Id {}", req.getId());
+                    log.debug(PARTIES_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
