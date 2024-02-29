@@ -245,6 +245,9 @@ public class ShipmentDao implements IShipmentDao {
     public Set<String> applyShipmentValidations(ShipmentDetails request, ShipmentDetails oldEntity) {
         Set<String> errors = new LinkedHashSet<>();
 
+        if(request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {
+            errors.add("Multiple consolidations are attached to the shipment, please verify.");
+        }
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         // Routings leg no can not be repeated
         if (request.getRoutingsList() != null && request.getRoutingsList().size() > 0) {

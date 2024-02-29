@@ -793,7 +793,18 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> attachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
 
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
-            List<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds);
+            ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
+            Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
+            Page<ConsoleShipmentMapping> oldConsoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
+            List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
+            if(oldConsoleShipmentMappings != null && !oldConsoleShipmentMappings.isEmpty()) {
+                consoleShipmentMappings = oldConsoleShipmentMappings.getContent();
+                for (ConsoleShipmentMapping consoleShipmentMapping : oldConsoleShipmentMappings.getContent()) {
+                    if(!consoleShipmentMapping.getConsolidationId().equals(consolidationId))
+                        throw new ValidationException("Multiple consolidations are attached to the shipment, please verify.");
+                }
+            }
+            List<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds, consoleShipmentMappings);
             for(Long shipId : attachedShipmentIds) {
                 ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).get();
                 if(shipmentDetails.getContainersList() != null) {

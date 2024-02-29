@@ -669,6 +669,7 @@ public class ShipmentService implements IShipmentService {
             );
 
         } catch (Exception e) {
+            log.error("Error occurred due to: " + e.getStackTrace());
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
@@ -1391,6 +1392,7 @@ public class ShipmentService implements IShipmentService {
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error("Error occurred due to: " + e.getStackTrace());
             log.error(responseMsg, e);
             throw new ValidationException(e.getMessage());
         }
@@ -3428,6 +3430,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setConsolidationList(null);
             cloneShipmentDetails.setStatus(ShipmentStatus.Created.getValue());
             cloneShipmentDetails.setConsolRef(null);
+            cloneShipmentDetails.setEventsList(null);
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 
