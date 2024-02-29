@@ -1090,8 +1090,12 @@ public class ShipmentService implements IShipmentService {
 
     private AutoUpdateWtVolResponse calculateShipmentWV(AutoUpdateWtVolRequest request) throws RunnerException {
         AutoUpdateWtVolResponse response = jsonHelper.convertValue(request, AutoUpdateWtVolResponse.class);
-        List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
-        List<Containers> containersList = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
+        List<Packing> packingList = new ArrayList<>();
+        if(request.getPackingList() != null)
+            jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
+        List<Containers> containersList = new ArrayList<>();
+        if(request.getContainersList() != null)
+            jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
 //        if(request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
 //            response = calculatePacksAndPacksUnit(packingList, response);
 //        }
