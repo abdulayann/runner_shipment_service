@@ -24,5 +24,5 @@ public class EntityTransferChargeType implements IEntityTranferBaseEntity, Seria
     public Boolean Hazardous;
 
     @JsonProperty("ChargeTypeIntegrations")
-    List<ChargeTypeIntegrations> ChargeTypeIntegrations;
+    private List<ChargeTypeIntegrations> ChargeTypeIntegrations;
 }

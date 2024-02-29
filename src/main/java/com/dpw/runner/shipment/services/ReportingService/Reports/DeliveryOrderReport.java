@@ -74,11 +74,11 @@ public class DeliveryOrderReport extends IReport{
                 }
             }
         }
-        deliveryOrderModel.containers = new ArrayList<>();
+        deliveryOrderModel.setContainers(new ArrayList<>());
         if(deliveryOrderModel.shipmentDetails.getContainersList() != null)
         {
             for(ContainerModel container : deliveryOrderModel.shipmentDetails.getContainersList())
-                deliveryOrderModel.containers.add(getShipmentContainer(container));
+                deliveryOrderModel.getContainers().add(getShipmentContainer(container));
         }
         MasterData masterData = getMasterListData(MasterDataType.PAYMENT, deliveryOrderModel.shipmentDetails.getPaymentTerms());
         deliveryOrderModel.paymentTerms = (masterData != null ? masterData.getItemDescription() : null);
@@ -105,9 +105,9 @@ public class DeliveryOrderReport extends IReport{
         dictionary.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.NetWeight, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getNetWeight(), v1TenantSettingsResponse));
-        if(deliveryOrderModel.containers != null && deliveryOrderModel.containers.size() > 0) {
+        if(deliveryOrderModel.getContainers() != null && deliveryOrderModel.getContainers().size() > 0) {
             List<Map<String, Object>> valuesContainer = new ArrayList<>();
-            for (ShipmentContainers shipmentContainers : deliveryOrderModel.containers) {
+            for (ShipmentContainers shipmentContainers : deliveryOrderModel.getContainers()) {
                 String shipContJson = jsonHelper.convertToJson(shipmentContainers);
                 valuesContainer.add(jsonHelper.convertJsonToMap(shipContJson));
             }
@@ -122,8 +122,8 @@ public class DeliveryOrderReport extends IReport{
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
         }
 
-        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(deliveryOrderModel.containers));
-        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, deliveryOrderModel.containers);
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(deliveryOrderModel.getContainers()));
+        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, deliveryOrderModel.getContainers());
 
         //Add P0 tags
         PickupDeliveryDetailsModel deliveryDetails = deliveryOrderModel.shipmentDetails.getDeliveryDetails();

@@ -43,9 +43,9 @@ public class CustomsInstructionsReport extends IReport{
                 shipmentContainersList.add(shipmentContainers);
             }
             if(shipmentContainersList.size() > 0)
-                customsInstructionsModel.shipmentContainers = shipmentContainersList;
+                customsInstructionsModel.setShipmentContainers(shipmentContainersList);
         }
-        customsInstructionsModel.shipmentDetails.setShipmentContainersList(customsInstructionsModel.shipmentContainers);
+        customsInstructionsModel.shipmentDetails.setShipmentContainersList(customsInstructionsModel.getShipmentContainers());
         return customsInstructionsModel;
     }
 

@@ -51,13 +51,13 @@ public class ShipmentAndContainerResponse implements IRunnerResponse {
         @JsonProperty("NotifyZip")
         public String notifyZip;
         @JsonProperty("ConsignerAddressFreeText")
-        public List<String> consignerAddressFreeText;
+        private List<String> consignerAddressFreeText;
         @JsonProperty("ConsigneeAddressFreeText")
-        public List<String> consigneeAddressFreeText;
+        private List<String> consigneeAddressFreeText;
         @JsonProperty("NotifyPartyAddressFreeText")
-        public List<String> notifyPartyAddressFreeText;
+        private List<String> notifyPartyAddressFreeText;
         @JsonProperty("Containers")
-        public List<ShipmentContainers> shipmentContainers;
+        private List<ShipmentContainers> shipmentContainers;
         @JsonProperty("Description")
         public String description;
         @JsonProperty("Weight")

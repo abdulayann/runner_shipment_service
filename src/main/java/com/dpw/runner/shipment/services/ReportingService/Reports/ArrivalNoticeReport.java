@@ -45,11 +45,11 @@ public class ArrivalNoticeReport extends IReport {
             arrivalNoticeModel.consolidationDetails = arrivalNoticeModel.shipmentDetails.getConsolidationList().get(0);
         }
         arrivalNoticeModel.hbl = getHbl(id);
-        arrivalNoticeModel.containers = new ArrayList<>();
+        arrivalNoticeModel.setContainers(new ArrayList<>());
         if(arrivalNoticeModel.shipmentDetails.getContainersList() != null)
         {
             for(ContainerModel container : arrivalNoticeModel.shipmentDetails.getContainersList())
-                arrivalNoticeModel.containers.add(getShipmentContainer(container));
+                arrivalNoticeModel.getContainers().add(getShipmentContainer(container));
         }
         arrivalNoticeModel.usersDto = UserContext.getUser();
         return arrivalNoticeModel;
@@ -64,12 +64,12 @@ public class ArrivalNoticeReport extends IReport {
         populateUserFields(arrivalNoticeModel.usersDto, dictionary);
         populateBlFields(arrivalNoticeModel.hbl, dictionary);
         populateShipmentOrganizationsLL(arrivalNoticeModel.shipmentDetails, dictionary);
-        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(arrivalNoticeModel.containers));
-        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, arrivalNoticeModel.containers);
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(arrivalNoticeModel.getContainers()));
+        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, arrivalNoticeModel.getContainers());
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), v1TenantSettingsResponse.getDPWDateFormat()));
         List<Map<String, Object>> valuesContainer = new ArrayList<>();
-        for (ShipmentContainers shipmentContainers : arrivalNoticeModel.containers) {
+        for (ShipmentContainers shipmentContainers : arrivalNoticeModel.getContainers()) {
             String shipContJson = jsonHelper.convertToJson(shipmentContainers);
             valuesContainer.add(jsonHelper.convertJsonToMap(shipContJson));
         }
@@ -86,15 +86,15 @@ public class ArrivalNoticeReport extends IReport {
             dictionary.put(ReportConstants.SHIPMENT_DETAILS_CARGOCONTROLNO, "80C2" + arrivalNoticeModel.shipmentDetails.getHouseBill());
         }
         getBillChargesDetails(arrivalNoticeModel);
-        if(!Objects.isNull(arrivalNoticeModel.arrivalNoticeBillCharges) && !arrivalNoticeModel.arrivalNoticeBillCharges.isEmpty()){
-            var currency = arrivalNoticeModel.arrivalNoticeBillCharges.stream().map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getOverseasCurrency).filter(overseasCurrency ->!Objects.isNull(overseasCurrency)).findFirst().orElse("");
-            BigDecimal sumOfTaxAmount = arrivalNoticeModel.arrivalNoticeBillCharges.stream()
+        if(!Objects.isNull(arrivalNoticeModel.getArrivalNoticeBillCharges()) && !arrivalNoticeModel.getArrivalNoticeBillCharges().isEmpty()){
+            var currency = arrivalNoticeModel.getArrivalNoticeBillCharges().stream().map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getOverseasCurrency).filter(overseasCurrency ->!Objects.isNull(overseasCurrency)).findFirst().orElse("");
+            BigDecimal sumOfTaxAmount = arrivalNoticeModel.getArrivalNoticeBillCharges().stream()
                     .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getTaxAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal sumOfBillAmount = arrivalNoticeModel.arrivalNoticeBillCharges.stream()
+            BigDecimal sumOfBillAmount = arrivalNoticeModel.getArrivalNoticeBillCharges().stream()
                     .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getBillAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_FREVENUEBILLCHARGES, arrivalNoticeModel.arrivalNoticeBillCharges);
+            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_FREVENUEBILLCHARGES, arrivalNoticeModel.getArrivalNoticeBillCharges());
             dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA, AmountNumberFormatter.Format(sumOfTaxAmount, currency, TenantSettingsDetailsContext.getCurrentTenantSettings()));
             dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESSUM, AmountNumberFormatter.Format(sumOfBillAmount, currency, TenantSettingsDetailsContext.getCurrentTenantSettings()));
             dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_OVERSEASCURRENCY, currency);
@@ -123,7 +123,7 @@ public class ArrivalNoticeReport extends IReport {
             }
         }
 
-        arrivalNoticeModel.arrivalNoticeBillCharges = new ArrayList<>();
+        arrivalNoticeModel.setArrivalNoticeBillCharges(new ArrayList<>());
         if(!charges.isEmpty()) {
             for (var charge : charges){
                  var arrivalNoticeCharge = new ArrivalNoticeModel.ArrivalNoticeBillCharges();
@@ -145,7 +145,7 @@ public class ArrivalNoticeReport extends IReport {
                      arrivalNoticeCharge.setOverseasCurrency(charge.getLocalCostCurrency());
                  }
 
-                arrivalNoticeModel.arrivalNoticeBillCharges.add(arrivalNoticeCharge);
+                arrivalNoticeModel.getArrivalNoticeBillCharges().add(arrivalNoticeCharge);
             }
         }
 
