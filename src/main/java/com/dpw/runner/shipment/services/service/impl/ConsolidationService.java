@@ -61,6 +61,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
@@ -90,6 +91,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
@@ -335,7 +337,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> fetchConsolidations(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchConsolidations(CommonRequestModel commonRequestModel) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
         Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
@@ -486,7 +488,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
 
         ConsolidationDetailsRequest request = (ConsolidationDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -513,7 +515,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     @Override
-    public ResponseEntity<?> createFromBooking(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel) {
 
         ConsolidationDetailsRequest request = (ConsolidationDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -538,19 +540,25 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
     }
 
-    void getConsolidation(ConsolidationDetails consolidationDetails) throws Exception{
+    void getConsolidation(ConsolidationDetails consolidationDetails) throws RunnerException{
         generateConsolidationNumber(consolidationDetails);
         consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
 
         // audit logs
-        auditLogService.addAuditLog(
-                AuditLogMetaData.builder()
-                        .newData(consolidationDetails)
-                        .prevData(null)
-                        .parent(ConsolidationDetails.class.getSimpleName())
-                        .parentId(consolidationDetails.getId())
-                        .operation(DBOperationType.CREATE.name()).build()
-        );
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(consolidationDetails)
+                            .prevData(null)
+                            .parent(ConsolidationDetails.class.getSimpleName())
+                            .parentId(consolidationDetails.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+        }
+        catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
 
     }
 
@@ -559,7 +567,7 @@ public class ConsolidationService implements IConsolidationService {
      * @param consolidationDetails
      */
     @Override
-    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) {
+    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
         List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
 
         if(consolidationDetails.getConsolidationNumber() == null) {
@@ -601,7 +609,7 @@ public class ConsolidationService implements IConsolidationService {
         return maxId;
     }
 
-    private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessTypes) {
+    private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessTypes) throws RunnerException {
         List<TenantProducts> enabledTenantProducts = productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
         if (productProcessTypes == ProductProcessTypes.ReferenceNumber) {
             // to check the commmon sequence
@@ -697,7 +705,7 @@ public class ConsolidationService implements IConsolidationService {
         achievedQuantitiesDao.save(achievedQuantities);
     }
 
-    public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request){
+    public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request) throws RunnerException {
         String responseMsg;
 
         if (request == null) {
@@ -734,7 +742,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
             ConsolidationDetailsRequest request = (ConsolidationDetailsRequest) commonRequestModel.getData();
@@ -782,7 +790,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<?> attachShipments(Long consolidationId, List<Long> shipmentIds) {
+    public ResponseEntity<IRunnerResponse> attachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
 
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds);
@@ -817,7 +825,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<?> detachShipments(Long consolidationId, List<Long> shipmentIds) {
+    public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) {
         List<Packing> packingList = null;
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
@@ -879,7 +887,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception {
+    public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException {
         ConsolidationPatchRequest consolidationDetailsRequest = (ConsolidationPatchRequest) commonRequestModel.getData();
         // Get old entity to be updated
         ConsolidationDetailsRequest req = new ConsolidationDetailsRequest();
@@ -970,7 +978,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
 
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
         // TODO- implement Validation logic
@@ -1011,12 +1019,12 @@ public class ConsolidationService implements IConsolidationService {
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -1025,7 +1033,7 @@ public class ConsolidationService implements IConsolidationService {
      * @param console
      * @param oldEntity
      */
-    private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) {
+    private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
         if(console != null && (oldEntity == null ||  !Objects.equals(console.getBol(),oldEntity.getBol()) ||
                 !Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
@@ -1072,7 +1080,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws Exception {
+    private ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws RunnerException {
         String responseMsg;
         try {
             if(consolidationDetails.getAllocations() == null)
@@ -1100,12 +1108,12 @@ public class ConsolidationService implements IConsolidationService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public ResponseEntity<?> calculateUtilization(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateUtilization(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ConsolidationDetails consolidationDetails = getConsoleForCalculations((ConsoleCalculationsRequest) commonRequestModel.getData());
@@ -1137,7 +1145,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ConsolidationDetails consolidationDetails = getConsoleForCalculations((ConsoleCalculationsRequest) commonRequestModel.getData());
@@ -1167,7 +1175,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> calculateChargeable(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateChargeable(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ConsolidationDetails consolidationDetails = getConsoleForCalculations((ConsoleCalculationsRequest) commonRequestModel.getData());
@@ -1297,7 +1305,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws Exception {
+    public VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException {
         String responseMsg;
         try {
             VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
@@ -1343,12 +1351,12 @@ public class ConsolidationService implements IConsolidationService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public ResponseEntity<?> calculateAchievedValues(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateAchievedValues(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ShipmentGridChangeResponse response = new ShipmentGridChangeResponse();
@@ -1463,7 +1471,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CalculateContainerSummaryRequest request = (CalculateContainerSummaryRequest) commonRequestModel.getData();
         try {
@@ -1479,7 +1487,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
         try {
@@ -1496,7 +1504,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> listPacksForAssignDetach(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listPacksForAssignDetach(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ConsolePacksListRequest request = (ConsolePacksListRequest) commonRequestModel.getData();
@@ -1628,7 +1636,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCallPacksList (ConsolePacksListResponse consolePacksListResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCallPacksList (ConsolePacksListResponse consolePacksListResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<MasterListRequest> listRequests = new ArrayList<>();
         if(!Objects.isNull(consolePacksListResponse.getPacksList()))
@@ -1647,7 +1655,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllCommodityTypesInSingleCallPacksList(ConsolePacksListResponse consolePacksListResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCallPacksList(ConsolePacksListResponse consolePacksListResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> commodityTypes = new HashSet<>();
         if(!Objects.isNull(consolePacksListResponse.getPacksList()))
@@ -1663,7 +1671,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> assignPacksAndShipments(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> assignPacksAndShipments(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ContainerShipmentADInConsoleRequest request = (ContainerShipmentADInConsoleRequest) commonRequestModel.getData();
@@ -1770,7 +1778,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> detachPacksAndShipments(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> detachPacksAndShipments(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ContainerShipmentADInConsoleRequest request = (ContainerShipmentADInConsoleRequest) commonRequestModel.getData();
@@ -1880,7 +1888,7 @@ public class ConsolidationService implements IConsolidationService {
         return containers;
     }
 
-    public ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
+    public ResponseEntity<IRunnerResponse> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
         try {
             // create common list request for consolidation id
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -1892,7 +1900,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             long id = request.getId();
 
-            CompletableFuture<ResponseEntity<?>> consolidationsFuture = retrieveByIdAsync(commonRequestModel);
+            CompletableFuture<ResponseEntity<IRunnerResponse>> consolidationsFuture = retrieveByIdAsync(commonRequestModel);
             RunnerResponse<ConsolidationDetailsResponse> res = (RunnerResponse<ConsolidationDetailsResponse>) consolidationsFuture.get().getBody();
             if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
                 return ResponseHelper.buildSuccessResponse(res.getData());
@@ -1907,7 +1915,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             // TODO- implement actual logic with filters
@@ -1962,7 +1970,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -1985,7 +1993,7 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             // TODO- implement Validation logic
@@ -2024,7 +2032,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -2061,7 +2069,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Async
-    public CompletableFuture<ResponseEntity<?>> retrieveByIdAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> retrieveByIdAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -2094,7 +2102,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
@@ -2165,7 +2173,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName() ));
         if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
@@ -2203,7 +2211,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllUnlocationDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> locationCodes = new ArrayList<>(masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName() ));
         if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
@@ -2235,7 +2243,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> carrierList = new ArrayList<>();
         if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
@@ -2262,7 +2270,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllCurrencyDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCurrencyDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> currencyList = new ArrayList<>(masterDataUtils.createInBulkCurrencyRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
@@ -2280,7 +2288,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllCommodityTypesInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> commodityTypes = new HashSet<>();
         if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
@@ -2305,7 +2313,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllTenantDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
@@ -2322,7 +2330,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllWarehouseDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllWarehouseDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> wareHouseTypes = new HashSet<>(masterDataUtils.createInBulkWareHouseRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
@@ -2339,7 +2347,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllVesselDataInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> vesselList = new ArrayList<>();
         if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
@@ -2360,7 +2368,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllDGSubstanceDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllDGSubstanceDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> dgSubstanceIdList = new HashSet<>();
         if (!Objects.isNull(consolidationDetailsResponse.getPackingList()))
@@ -2377,7 +2385,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllContainerTypesInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> containerTypes = new ArrayList<>();
         if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
@@ -2397,7 +2405,7 @@ public class ConsolidationService implements IConsolidationService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private List<Containers> mergeContainers(List<Containers> containersList, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
+    private List<Containers> mergeContainers(List<Containers> containersList, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException{
         try {
             List<Containers> response = new ArrayList<>();
             HashMap<String, List<Containers>> map = new HashMap<>();
@@ -2438,11 +2446,11 @@ public class ConsolidationService implements IConsolidationService {
             return response;
         } catch (Exception e) {
             log.error("Error while merging consol containers");
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
-    private Containers convertIntoMergedConts(Containers finalContainer, Containers container, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
+    private Containers convertIntoMergedConts(Containers finalContainer, Containers container, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException{
         try {
             finalContainer.setDescriptionOfGoods(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods()));
 //        finalContainer.setHa(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods())); TODO- missing handling info in containers
@@ -2533,7 +2541,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             return finalContainer;
         } catch (Exception e) {
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -2547,7 +2555,7 @@ public class ConsolidationService implements IConsolidationService {
         return null;
     }
 
-    public ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long id = commonGetRequest.getId();
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(id).get();
@@ -2568,7 +2576,7 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<?>> responseEntity) throws ExecutionException, InterruptedException {
+    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity) throws ExecutionException, InterruptedException {
         var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
         return (List<T>) runnerListResponse.getData();
     }
@@ -2588,7 +2596,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<?> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
 
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
@@ -2724,12 +2732,12 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -2930,7 +2938,7 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
-    private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception{
+    private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
         if (Objects.isNull(consolidationDetails.getSourceTenantId()))
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
         log.info("Executing consolidation before save");
@@ -2957,7 +2965,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setTriangulationPartner(null);
     }
 
-    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws Exception{
+    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws RunnerException{
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
         List<ContainerRequest> containerRequestList = consolidationDetailsRequest.getContainersList();
         List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();
@@ -3069,7 +3077,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> getConsolFromShipment(Long shipmentId) {
+    public ResponseEntity<IRunnerResponse> getConsolFromShipment(Long shipmentId) {
         ConsolidationDetailsResponse consol;
         Optional<ShipmentDetails> shipmentRes = shipmentDao.findById(shipmentId);
 
@@ -3177,7 +3185,7 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse(consol);
     }
     @Override
-    public ResponseEntity<?> getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel){
         AutoAttachConsolidationRequest request = (AutoAttachConsolidationRequest) commonRequestModel.getData();
         AutoAttachConsolidationResponse response = new AutoAttachConsolidationResponse();
 
@@ -3295,7 +3303,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
@@ -3318,7 +3326,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> getContainerPackSummary(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getContainerPackSummary(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
@@ -3373,7 +3381,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> getDefaultConsolidation() {
+    public ResponseEntity<IRunnerResponse> getDefaultConsolidation() {
         String responseMsg;
         try {
             var tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
@@ -3407,7 +3415,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> getIdFromGuid(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -3434,7 +3442,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> getGuidFromId(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -3461,7 +3469,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> generateCustomHouseBLNumber() {
+    public ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException {
         try {
             return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(generateCustomBolNumber()).build());
         } catch (Exception e) {
@@ -3521,7 +3529,7 @@ public class ConsolidationService implements IConsolidationService {
         eventDao.save(events);
         return events;
     }
-    public ResponseEntity<?> validateMawbNumber(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> validateMawbNumber(CommonRequestModel commonRequestModel) {
         ValidateMawbNumberRequest request = (ValidateMawbNumberRequest) commonRequestModel.getData();
         ValidateMawbNumberResponse response = ValidateMawbNumberResponse.builder().success(true).build();
         if(Strings.isNullOrEmpty(request.getMawb())){
@@ -3558,7 +3566,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> updateConsoleBookingFields(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> updateConsoleBookingFields(CommonRequestModel commonRequestModel){
         ConsoleBookingRequest request = (ConsoleBookingRequest) commonRequestModel.getData();
         int rowsAffected = consolidationDetailsDao.updateConsoleBookingFields(request);
         if(rowsAffected == 0){
@@ -3567,7 +3575,7 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    public ResponseEntity<?> showCreateBooking(String operation){
+    public ResponseEntity<IRunnerResponse> showCreateBooking(String operation) throws RunnerException {
         if(operation.equals("CREATE") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE) == null || PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE).size() == 0)){
             throw new RunnerException("You don't have necessary permission to create Carrier Booking.");
         }

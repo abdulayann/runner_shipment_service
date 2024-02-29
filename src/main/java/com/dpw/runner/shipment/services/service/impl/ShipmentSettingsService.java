@@ -10,7 +10,11 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -24,6 +28,7 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -85,7 +90,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ShipmentSettingRequest request = null;
         request = (ShipmentSettingRequest) commonRequestModel.getData();
@@ -135,7 +140,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
@@ -169,7 +174,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     @Transactional
     @Override
-    public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
@@ -291,7 +296,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     @Transactional
     @Override
-    public ResponseEntity<?> completeSettingsUpdateCreateV1(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeSettingsUpdateCreateV1(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
@@ -320,7 +325,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
         if(oldEntity == null || !oldEntity.isPresent()) {
             try{
-                return completeCreateFromV1(commonRequestModel);
+                return (ResponseEntity<IRunnerResponse>) completeCreateFromV1(commonRequestModel);
             } catch (Exception e) {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -342,7 +347,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
 
-    public ResponseEntity<?> completeCreateFromV1(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeCreateFromV1(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = null;
         request = (ShipmentSettingRequest) commonRequestModel.getData();
@@ -390,7 +395,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
-    public ResponseEntity<?> completeUpdateFromV1(Optional<ShipmentSettingsDetails> oldEntity, CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeUpdateFromV1(Optional<ShipmentSettingsDetails> oldEntity, CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
 
@@ -495,7 +500,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -542,7 +547,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
 
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -566,7 +571,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -589,7 +594,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -649,7 +654,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
 
     @Override
-    public ResponseEntity<?> uploadTemplate(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> uploadTemplate(CommonRequestModel commonRequestModel) {
         TemplateUploadRequest templateUploadRequest = (TemplateUploadRequest) commonRequestModel.getData();
         if(templateUploadRequest.getPreviousFileId() == null || templateUploadRequest.getPreviousFileId().length() == 0) {
             try {
@@ -670,7 +675,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
         else{
             try {
-                ResponseEntity<?> response = documentService.updateDocumentTemplate(templateUploadRequest);
+                ResponseEntity<String> response = documentService.updateDocumentTemplate(templateUploadRequest);
                 if(response.getStatusCode() != HttpStatus.OK){
                     LoggerHelper.error("Error While Updating Template To Document Service");
                     String responseMsg = ShipmentSettingsConstants.UPDATE_TEMPLATE_FAILED + " : " + response.getBody();
@@ -689,7 +694,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
     @Override
-    public ResponseEntity<?> downloadTemplate(String templateId) {
+    public ResponseEntity<ByteArrayResource> downloadTemplate(String templateId) {
         try {
             byte[] response = documentService.downloadTemplate(templateId);
             return ResponseHelper.buildFileResponse(response, null, "DownloadDocument.docx");
@@ -698,12 +703,12 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : ShipmentSettingsConstants.DOWNLOAD_TEMPLATE_FAILED;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
     @Override
-    public ResponseEntity<?> retrieveByTenantId(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> retrieveByTenantId(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();

@@ -33,38 +33,38 @@ public class HblReleaseTypeMappingService implements IHblReleaseTypeMappingServi
     private ModelMapper modelMapper;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         return null;
     }
 
 
     @Override
-    public ResponseEntity<?> retrieveByHblIdAndReleaseType(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveByHblIdAndReleaseType(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             HblReleaseTypeMappingListRequest request = (HblReleaseTypeMappingListRequest) commonRequestModel.getData();

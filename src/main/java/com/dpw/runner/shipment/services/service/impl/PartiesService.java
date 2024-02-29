@@ -10,8 +10,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.entity.Notes;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -21,11 +19,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IPartiesDetailsService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.google.common.base.Throwables;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -34,7 +29,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -56,7 +50,7 @@ public class PartiesService implements IPartiesDetailsService {
     private IAuditLogService auditLogService;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
         if(request == null) {
@@ -87,7 +81,7 @@ public class PartiesService implements IPartiesDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
         if(request == null) {
@@ -134,7 +128,7 @@ public class PartiesService implements IPartiesDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -158,7 +152,7 @@ public class PartiesService implements IPartiesDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -181,7 +175,7 @@ public class PartiesService implements IPartiesDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -221,7 +215,7 @@ public class PartiesService implements IPartiesDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();

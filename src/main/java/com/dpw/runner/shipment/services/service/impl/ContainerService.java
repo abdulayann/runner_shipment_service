@@ -69,6 +69,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -178,7 +179,7 @@ public class ContainerService implements IContainerService {
     );
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
         if (request == null) {
@@ -220,12 +221,13 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void uploadContainers(BulkUploadRequest request) throws Exception {
+    public void uploadContainers(BulkUploadRequest request) throws RunnerException, IOException {
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please add the consolidation and then try again.");
         }
         Map<UUID, Containers> containerMap = new HashMap<>();
         Map<String, UUID> containerNumbersSet = new HashMap<>();
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
         if(request.getConsolidationId() != null) {
             List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
             containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
@@ -233,13 +235,13 @@ public class ContainerService implements IContainerService {
         }
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null);
+        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
 
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
         ).collect(Collectors.toList());
 
-        applyContainerValidations(containerNumbersSet, containersList, request, masterDataMap);
+        applyContainerValidations(containerNumbersSet, locCodeToLocationReferenceGuidMap, containersList, request, masterDataMap);
         containersList = containerDao.saveAll(containersList);
         if (request.getShipmentId() != null) {
             containersList.stream().forEach(container -> {
@@ -250,8 +252,8 @@ public class ContainerService implements IContainerService {
         afterSaveList(containersList, true);
     }
 
-    private void applyContainerValidations(Map<String, UUID> containerNumberSet, List<Containers> containersList, BulkUploadRequest request,
-                                           Map<String, Set<String>> masterDataMap) throws Exception {
+    private void applyContainerValidations(Map<String, UUID> containerNumberSet, Map<String, String> locCodeToLocationReferenceGuidMap, List<Containers> containersList, BulkUploadRequest request,
+                                           Map<String, Set<String>> masterDataMap) throws RunnerException {
         String transportMode = request.getTransportMode();
         Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
         Set<String> dicLocType = masterDataMap.get("Unlocations");
@@ -276,7 +278,7 @@ public class ContainerService implements IContainerService {
             applyChargeableValidation(transportMode, row + 1, containersRow);
             checkForHandlingInfo(transportMode, row + 1, containersRow);
             applyCommodityTypeValidation(dicCommodityType, row + 1, containersRow);
-            applyContainerStuffingValidation(dicLocType, row + 1, containersRow);
+            applyContainerStuffingValidation(dicLocType, locCodeToLocationReferenceGuidMap, row + 1, containersRow);
             applyHazardousValidation(hazardousClassMasterData, row + 1, containersRow);
             //TODO :: Add own type validation in future after cms integration
             isPartValidation(request, containersRow);
@@ -293,12 +295,14 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private static void applyContainerStuffingValidation(Set<String> dicLocType, int row, Containers containersRow) {
+    private static void applyContainerStuffingValidation(Set<String> dicLocType, Map<String, String> locCodeToLocationReferenceGuidMap, int row, Containers containersRow) {
         if (containersRow.getContainerStuffingLocation() != null) {
             var containerStuffingLocation = containersRow.getContainerStuffingLocation().trim();
             if (!containerStuffingLocation.isEmpty()) {
                 if (dicLocType == null || !dicLocType.contains(containerStuffingLocation)) {
                     throw new ValidationException("Container Stuffing Location " + containerStuffingLocation + " is not valid at row " + row);
+                }else {
+                    containersRow.setContainerStuffingLocation(locCodeToLocationReferenceGuidMap.get(containerStuffingLocation));
                 }
             }
         }
@@ -351,7 +355,7 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private void applyChargeableValidation(String transportMode, int row, Containers containersRow) throws Exception {
+    private void applyChargeableValidation(String transportMode, int row, Containers containersRow) throws RunnerException {
         if (containersRow.getChargeableUnit() != null && !containersRow.getChargeableUnit().isEmpty() &&
                 transportMode != null && transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR) &&
                 containersRow.getChargeable() != null) {
@@ -432,13 +436,14 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
+    public void uploadContainerEvents(BulkUploadRequest request) throws RunnerException, IOException {
 //        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
         }
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, ContainerEventExcelModel.class, null, null);
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, ContainerEventExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");
@@ -454,7 +459,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws Exception {
+    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
         try {
             List<ShipmentsContainersMapping> mappings;
             List<Containers> result = new ArrayList<>();
@@ -606,7 +611,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
+    public void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException, IOException, IllegalAccessException {
         List<ContainerEventExcelModel> eventsModelList = new ArrayList<>();
         if (request.getConsolidationId() != null) {
 
@@ -705,7 +710,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
         if (request == null) {
@@ -783,7 +788,7 @@ public class ContainerService implements IContainerService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -809,7 +814,7 @@ public class ContainerService implements IContainerService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -835,7 +840,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         if (commonRequestModel == null) {
             log.debug("Request is empty for Containers delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -875,7 +880,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -902,7 +907,7 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private Containers changeAchievedUnit(Containers container) throws Exception{
+    private Containers changeAchievedUnit(Containers container) throws RunnerException{
         try {
             if(!IsStringNullOrEmpty(container.getAchievedVolumeUnit()) && !IsStringNullOrEmpty(container.getAllocatedVolumeUnit()) && !container.getAchievedVolumeUnit().equals(container.getAllocatedVolumeUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
@@ -917,7 +922,7 @@ public class ContainerService implements IContainerService {
             container = calculateUtilization(container);
             return container;
         } catch (Exception e) {
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -953,7 +958,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ContainerRequest containerRequest = (ContainerRequest) commonRequestModel.getData();
@@ -969,7 +974,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> calculateAllocatedData(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateAllocatedData(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CheckAllocatedDataChangesRequest request = (CheckAllocatedDataChangesRequest) commonRequestModel.getData();
@@ -1073,7 +1078,7 @@ public class ContainerService implements IContainerService {
 //    }
 
     @Override
-    public ResponseEntity<?> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ContainerPackADInShipmentRequest request = (ContainerPackADInShipmentRequest) commonRequestModel.getData();
@@ -1139,7 +1144,7 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    public ResponseEntity<?> detachContainer(List<Packing> packingList, Containers container, Long shipmentId, boolean removeAllPacks) {
+    public ResponseEntity<IRunnerResponse> detachContainer(List<Packing> packingList, Containers container, Long shipmentId, boolean removeAllPacks) {
         String responseMsg;
         try {
             Containers containers = containerDao.save(container);
@@ -1177,7 +1182,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> getContainersForSelection(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getContainersForSelection(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
         boolean lclAndSeaOrRoadFlag = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
@@ -1257,7 +1262,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> validateContainerNumber(String containerNumber) {
+    public ResponseEntity<IRunnerResponse> validateContainerNumber(String containerNumber) {
         String responseMsg;
         try {
             ContainerNumberCheckResponse response = new ContainerNumberCheckResponse();
@@ -1313,7 +1318,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> getContainers(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getContainers(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -1338,7 +1343,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<?> checkForDelete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> checkForDelete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
@@ -1369,7 +1374,7 @@ public class ContainerService implements IContainerService {
         return eqvNumValue;
     }
 
-    public ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception {
+    public ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws RunnerException {
         try {
             double totalWeight = 0;
             double packageCount = 0;
@@ -1430,7 +1435,7 @@ public class ContainerService implements IContainerService {
             return response;
         }
         catch (Exception e) {
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -1530,7 +1535,7 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    public ResponseEntity<?> containerSync(List<Long> request) {
+    public ResponseEntity<IRunnerResponse> containerSync(List<Long> request) {
         return containersSync.sync(request, shipmentsContainersMappingDao.findAllByContainerIds(request));
     }
 
@@ -1539,7 +1544,7 @@ public class ContainerService implements IContainerService {
      */
     
     @Override
-    public ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
@@ -1594,7 +1599,7 @@ public class ContainerService implements IContainerService {
      * Create bulk containers from V1 in V2
      */
     @Override
-    public ResponseEntity<?> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel) {
         BulkContainerRequestV2 bulkContainerRequest = (BulkContainerRequestV2) commonRequestModel.getData();
         try {
             List<ResponseEntity<?>> responses = new ArrayList<>();
@@ -1613,7 +1618,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws Exception {
+    public void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws RunnerException, IOException, IllegalAccessException {
         List<ShipmentsContainersMapping> mappings;
         Optional<ConsolidationDetails> consol = null;
         List<IRunnerResponse> containersList = null;

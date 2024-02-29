@@ -4,19 +4,16 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.RoutingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
-import com.dpw.runner.shipment.services.syncing.Entity.ElDetailsRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.RoutingsRequestV2;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -36,74 +33,80 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.NO_DA
 @Slf4j
 public class RoutingsController {
 
-    @Autowired
-    private IRoutingsService routingsService;
+    private final IRoutingsService routingsService;
+    private final JsonHelper jsonHelper;
+
+    private static class MyResponseClass extends RunnerResponse<RoutingsResponse>{}
+    private static class MyListResponseClass extends RunnerListResponse<RoutingsResponse>{}
 
     @Autowired
-    JsonHelper jsonHelper;
+    public RoutingsController(IRoutingsService routingsService, JsonHelper jsonHelper) {
+        this.routingsService = routingsService;
+        this.jsonHelper = jsonHelper;
+    }
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_CREATE_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = NO_DATA, response = RunnerResponse.class)
     })
-    public ResponseEntity<RunnerResponse<RoutingsResponse>> create(@RequestBody @Valid @NonNull RoutingsRequest request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull RoutingsRequest request) {
         try {
             RoutingsRequest req = jsonHelper.convertValue(request, RoutingsRequest.class);
-            return (ResponseEntity<RunnerResponse<RoutingsResponse>>) routingsService.create(CommonRequestModel.buildRequest(req));
+            return routingsService.create(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return (ResponseEntity<RunnerResponse<RoutingsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_UPDATE_SUCCESSFUL)
+            @ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_UPDATE_SUCCESSFUL, response = MyResponseClass.class)
     })
     @PutMapping(ApiConstants.API_UPDATE)
-    public ResponseEntity update(@RequestBody @Valid @NonNull RoutingsRequest request) {
+    public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid @NonNull RoutingsRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) routingsService.update(CommonRequestModel.buildRequest(request));
+            return routingsService.update(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
 
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_DELETE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
+    public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return (ResponseEntity<RunnerResponse>) routingsService.delete(CommonRequestModel.buildRequest(request));
+        return routingsService.delete(CommonRequestModel.buildRequest(request));
 
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+    public ResponseEntity<IRunnerResponse> retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
-        return (ResponseEntity<RunnerResponse<RoutingsResponse>>) routingsService.retrieveById(CommonRequestModel.buildRequest(request));
+        return routingsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_LIST_SUCCESSFUL, responseContainer = RoutingsConstants.ROUTINGS_LIST_SUCCESSFUL)
+            @ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_LIST_SUCCESSFUL, responseContainer = RoutingsConstants.ROUTINGS_LIST_SUCCESSFUL, response = MyListResponseClass.class)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
-        return (ResponseEntity<RunnerListResponse<RoutingsResponse>>) routingsService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
+        return routingsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL, response = RunnerResponse.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.SYNC)
-    public ResponseEntity<?> syncRoutingsToService(@RequestBody @Valid RoutingsRequestV2 request) {
+    public ResponseEntity<IRunnerResponse> syncRoutingsToService(@RequestBody @Valid RoutingsRequestV2 request) {
         String responseMsg = "failure executing :(";
         try {
             return routingsService.V1RoutingsCreateAndUpdate(CommonRequestModel.buildRequest(request), true);

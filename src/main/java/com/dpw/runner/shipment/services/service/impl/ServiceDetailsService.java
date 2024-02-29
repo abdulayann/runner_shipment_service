@@ -52,7 +52,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
     private IAuditLogService auditLogService;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ServiceDetailsRequest request = null;
         request = (ServiceDetailsRequest) commonRequestModel.getData();
@@ -84,7 +84,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ServiceDetailsRequest request = (ServiceDetailsRequest) commonRequestModel.getData();
         if(request == null) {
@@ -129,7 +129,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentServices));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -154,7 +154,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -177,7 +177,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -216,7 +216,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();

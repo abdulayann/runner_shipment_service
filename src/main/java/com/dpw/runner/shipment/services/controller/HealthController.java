@@ -8,10 +8,8 @@ import org.springframework.web.bind.annotation.*;
 public class HealthController {
 
     @GetMapping
-    public ResponseEntity<?> health() {
-        ResponseEntity<String> response = ResponseEntity.status(HttpStatus.OK).body("Shipment Service Up Now");
-        return response;
+    public ResponseEntity<String> health() {
+        return ResponseEntity.status(HttpStatus.OK).body("Shipment Service Up Now");
     }
-
 
 }

@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
@@ -47,7 +48,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     private SyncEntityConversionService syncEntityConversionService;
 
     @Override
-    public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync) {
+    public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync) {
         CustomConsolidationRequest request = (CustomConsolidationRequest) commonRequestModel.getData();
         ConsolidationDetailsRequest response = new ConsolidationDetailsRequest();
         String responseMsg;

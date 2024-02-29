@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
@@ -78,7 +79,7 @@ public class PackingDao implements IPackingDao {
         packingRepository.delete(packing);
     }
 
-    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Long> deleteContIds) throws Exception {
+    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Long> deleteContIds) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
@@ -111,11 +112,11 @@ public class PackingDao implements IPackingDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
-    public List<Packing> updateEntityFromBooking(List<Packing> packingList, Long bookingId) throws Exception {
+    public List<Packing> updateEntityFromBooking(List<Packing> packingList, Long bookingId) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
@@ -141,12 +142,12 @@ public class PackingDao implements IPackingDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws Exception {
+    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
@@ -177,11 +178,11 @@ public class PackingDao implements IPackingDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
-    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, List<Packing> oldEntityList) throws Exception {
+    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, List<Packing> oldEntityList) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         Map<UUID, Packing> packingMap = new HashMap<>();
@@ -214,7 +215,7 @@ public class PackingDao implements IPackingDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -261,7 +262,8 @@ public class PackingDao implements IPackingDao {
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -304,7 +306,8 @@ public class PackingDao implements IPackingDao {
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
         }
@@ -341,7 +344,8 @@ public class PackingDao implements IPackingDao {
                                 .parentId(bookingId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -405,7 +409,8 @@ public class PackingDao implements IPackingDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -435,7 +440,7 @@ public class PackingDao implements IPackingDao {
         return res;
     }
 
-    public List<Packing> removeContainerFromPacking(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws Exception {
+    public List<Packing> removeContainerFromPacking(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
@@ -449,11 +454,11 @@ public class PackingDao implements IPackingDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
-    public List<Packing> insertContainerInPacking(List<Packing> packings, Long containerId) throws Exception {
+    public List<Packing> insertContainerInPacking(List<Packing> packings, Long containerId) throws RunnerException {
         List<Packing> res = new ArrayList<>();
         Optional<Packing> oldEntity = Optional.empty();
         for (Packing req : packings) {
@@ -524,7 +529,7 @@ public class PackingDao implements IPackingDao {
         saveEntityFromContainer(packings.getContent(), null);
     }
 
-    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Containers> containers, Map<UUID, String> packMap) throws Exception {
+    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Containers> containers, Map<UUID, String> packMap) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         Map<UUID, Packing> packingMap = new HashMap<>();
@@ -569,7 +574,7 @@ public class PackingDao implements IPackingDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

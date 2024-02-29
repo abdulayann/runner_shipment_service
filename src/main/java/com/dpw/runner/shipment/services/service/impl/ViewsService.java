@@ -19,7 +19,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IViewsService;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +47,7 @@ public class ViewsService implements IViewsService {
     private JsonHelper jsonHelper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ViewsRequest request = null;
         request = (ViewsRequest) commonRequestModel.getData();
@@ -78,7 +77,7 @@ public class ViewsService implements IViewsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ViewsRequest request = (ViewsRequest) commonRequestModel.getData();
         if(request == null) {
@@ -128,7 +127,7 @@ public class ViewsService implements IViewsService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(view));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -149,7 +148,7 @@ public class ViewsService implements IViewsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -168,7 +167,7 @@ public class ViewsService implements IViewsService {
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -199,7 +198,7 @@ public class ViewsService implements IViewsService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();

@@ -27,11 +27,14 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping(value = NPMConstants.NPM_API_HANDLE)
 public class NPMController {
-    @Autowired
-    private JsonHelper jsonHelper;
+    private final JsonHelper jsonHelper;
+    private final INPMServiceAdapter npmService;
 
     @Autowired
-    private INPMServiceAdapter npmService;
+    public NPMController(JsonHelper jsonHelper, INPMServiceAdapter npmService) {
+        this.jsonHelper = jsonHelper;
+        this.npmService = npmService;
+    }
 
     @PostMapping(NPMConstants.LIST_CONTRACT)
     @ApiResponses(value = {
@@ -43,7 +46,7 @@ public class NPMController {
         String responseMsg;
         ListContractRequest listContractRequest = jsonHelper.convertValue(request, ListContractRequest.class);
         try {
-             return  (ResponseEntity<RunnerResponse>) npmService.fetchContracts(CommonRequestModel.buildRequest(listContractRequest));
+             return  npmService.fetchContracts(CommonRequestModel.buildRequest(listContractRequest));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : NPMConstants.CONTRACT_LIST_FAILED;
@@ -61,7 +64,7 @@ public class NPMController {
     public ResponseEntity<?> fetchContract(@RequestBody @Valid ListContractRequest request) {
         String responseMsg;
         try {
-            return  (ResponseEntity<RunnerResponse>) npmService.fetchContract(CommonRequestModel.buildRequest(request));
+            return  npmService.fetchContract(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : NPMConstants.CONTRACT_LIST_FAILED;
@@ -79,7 +82,7 @@ public class NPMController {
     public ResponseEntity<?> getNPMOffers(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) npmService.fetchOffers(CommonRequestModel.buildRequest(request));
+            return npmService.fetchOffers(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -97,7 +100,7 @@ public class NPMController {
     public ResponseEntity<?> getNPMOffersV8(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) npmService.fetchOffersV8(CommonRequestModel.buildRequest(request));
+            return npmService.fetchOffersV8(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

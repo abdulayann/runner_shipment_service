@@ -117,7 +117,7 @@ public class ExcelUtils {
         return new XSSFWorkbook();
     }
 
-    public Resource getResource(XSSFWorkbook workbook) {
+    public Resource getResource(XSSFWorkbook workbook) throws RunnerException {
         Resource fileResource;
         try {
             String tempFile = writeWorkbook(workbook);
@@ -133,7 +133,7 @@ public class ExcelUtils {
         return fileResource;
     }
 
-    public Resource createExcelAsResource(List<Map<String, Object>> listAsMap, Map<String, String> columnHeadersToFieldName, String sheetName) {
+    public Resource createExcelAsResource(List<Map<String, Object>> listAsMap, Map<String, String> columnHeadersToFieldName, String sheetName) throws RunnerException {
         XSSFWorkbook workbook = createWorkBook();
         XSSFSheet sheet = createSheet(workbook, sheetName);
         writeHeader(workbook, columnHeadersToFieldName.keySet(), sheet);

@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
@@ -93,7 +94,7 @@ public class EventDao implements IEventDao {
     }
 
     @Override
-    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws Exception {
+    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws RunnerException {
         String responseMsg;
         List<Events> responseEvents = new ArrayList<>();
         try {
@@ -124,7 +125,7 @@ public class EventDao implements IEventDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -157,7 +158,8 @@ public class EventDao implements IEventDao {
                                 .parentId(entityId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -201,7 +203,8 @@ public class EventDao implements IEventDao {
                                 .parentId(entityId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
         }
@@ -225,7 +228,8 @@ public class EventDao implements IEventDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -238,7 +242,7 @@ public class EventDao implements IEventDao {
     }
 
     @Override
-    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws Exception {
+    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Events> eventsMap = new HashMap<>();
         if (oldEntityList != null && oldEntityList.size() > 0) {
@@ -272,7 +276,7 @@ public class EventDao implements IEventDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

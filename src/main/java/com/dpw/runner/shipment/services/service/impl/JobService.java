@@ -60,7 +60,7 @@ public class JobService implements IJobService {
     private IAuditLogService auditLogService;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         JobRequest request = (JobRequest) commonRequestModel.getData();
         if(request == null) {
@@ -98,7 +98,7 @@ public class JobService implements IJobService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         JobRequest request = (JobRequest) commonRequestModel.getData();
         if(request == null) {
@@ -149,7 +149,7 @@ public class JobService implements IJobService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(jobs));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -174,7 +174,7 @@ public class JobService implements IJobService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -200,7 +200,7 @@ public class JobService implements IJobService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         if(commonRequestModel == null) {
             log.debug("Request is empty for Job delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -239,7 +239,7 @@ public class JobService implements IJobService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();

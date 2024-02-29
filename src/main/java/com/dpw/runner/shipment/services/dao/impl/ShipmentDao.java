@@ -1,13 +1,15 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -81,7 +83,7 @@ public class ShipmentDao implements IShipmentDao {
     private IV1Service v1Service;
 
     @Override
-    public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) {
+    public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails) , Constants.SHIPMENT, LifecycleHooks.ON_CREATE, false);
         ShipmentDetails oldShipment = null;
         if(shipmentDetails.getId() != null){
@@ -117,8 +119,7 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentDetails;
     }
 
-    public List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments)
-    {
+    public List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException {
         List<ShipmentDetails> res = new ArrayList<>();
         for(ShipmentDetails req : shipments){
             req = save(req, false);
