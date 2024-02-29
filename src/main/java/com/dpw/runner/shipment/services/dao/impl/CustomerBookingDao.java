@@ -115,4 +115,10 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     public int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated){
         return customerBookingRepository.updateIsPlatformBookingCreated(id, isPlatformBookingCreated);
     }
+
+    @Override
+    @Transactional
+    public int updateBillStatus(Long id, Boolean isBillCreated){
+        return customerBookingRepository.updateBillingStatus(id, isBillCreated);
+    }
 }

@@ -352,6 +352,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                     customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
                     customerBooking.setShipmentGuid(shipmentCreationResponse.getShipmentGuid());
                     customerBooking.setShipmentCreatedDate(LocalDateTime.now());
+                    customerBooking.setIsBillCreated(true);
                     customerBooking = customerBookingDao.save(customerBooking);
                 }
             }
@@ -581,6 +582,38 @@ public class CustomerBookingService implements ICustomerBookingService {
         } else {
             log.error("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking");
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> retryForBilling(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if (Objects.isNull(request) || Objects.isNull(request.getId()))
+                log.error("Request Id is null for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+
+            Optional<CustomerBooking> customerBookingOptional = customerBookingDao.findById(request.getId());
+            if (customerBookingOptional.isEmpty()) {
+                log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            CustomerBooking customerBooking = customerBookingOptional.get();
+            if (!Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT))
+                throw new RunnerException(String.format("Booking should be in: %s stage for this operation", BookingStatus.READY_FOR_SHIPMENT));
+            if (!Objects.isNull(customerBooking.getIsBillCreated()) && Boolean.TRUE.equals(customerBooking.getIsBillCreated()))
+                throw new RunnerException(String.format("Bill is already created for booking with id: %s", request.getId()));
+
+            V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking, false, true, UUID.fromString(customerBooking.getShipmentGuid()), V1AuthHelper.getHeaders()).getBody(), V1ShipmentCreationResponse.class);
+            customerBooking.setIsBillCreated(true);
+            customerBookingDao.save(customerBooking);
+            return ResponseHelper.buildSuccessResponse(shipmentCreationResponse);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
 

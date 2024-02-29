@@ -164,10 +164,9 @@ public class ValidatorUtility {
     private Set<String> validateRequired(JsonObject jsonObject, JsonObject jsonSchema, String at) {
         Set<String> errors = new LinkedHashSet();
         JsonValue fieldValue = jsonObject.get(at);
-        if (jsonSchema.containsKey(ValidatorConstants.REQUIRED) && jsonSchema.getBoolean(ValidatorConstants.REQUIRED)) {
-            if (fieldValue == null || fieldValue.getValueType() == JsonValue.ValueType.NULL) {
-                errors.add(String.format(ErrorConstants.INVALID_REQUIRED_FIELD_VALIDATION, at));
-            }
+        if (jsonSchema.containsKey(ValidatorConstants.REQUIRED) && jsonSchema.getBoolean(ValidatorConstants.REQUIRED)
+                && (fieldValue == null || fieldValue.getValueType() == JsonValue.ValueType.NULL || (fieldValue.getValueType() == JsonValue.ValueType.STRING && StringUtility.isEmpty(jsonObject.getString(at)))) ) {
+            errors.add(String.format(ErrorConstants.INVALID_REQUIRED_FIELD_VALIDATION, at));
         }
         return errors;
     }
