@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.masterdata.helper.impl.v1;
 
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.FlightScheduleRequest;
@@ -23,11 +22,18 @@ import java.util.List;
 @Service
 public class V1MasterDataImpl implements IMasterDataService {
 
-    @Autowired
-    private IV1Service v1Service;
+    public static final String ARRIVAL_ESTIMATED_RUNWAY = "ArrivalEstimatedRunway";
+    public static final String DEPARTURE_ESTIMATED_RUNWAY = "DepartureEstimatedRunway";
+
+    private final IV1Service v1Service;
+
+    private final JsonHelper jsonHelper;
 
     @Autowired
-    private JsonHelper jsonHelper;
+    public V1MasterDataImpl(IV1Service v1Service, JsonHelper jsonHelper){
+        this.v1Service = v1Service;
+        this.jsonHelper = jsonHelper;
+    }
 
     @Override
     public DependentServiceResponse fetchMasterData(Object request) {
@@ -356,17 +362,17 @@ public class V1MasterDataImpl implements IMasterDataService {
     public DependentServiceResponse importFlightSchedules(Object request) {
         FlightScheduleRequest flightScheduleRequest = jsonHelper.convertValue(request, FlightScheduleRequest.class);
         if(flightScheduleRequest != null && flightScheduleRequest.getEqualityFilter() != null) {
-            if(flightScheduleRequest.getEqualityFilter().containsKey("ArrivalEstimatedRunway") && StringUtility.isNotEmpty(flightScheduleRequest.getEqualityFilter().get("ArrivalEstimatedRunway"))) {
+            if(flightScheduleRequest.getEqualityFilter().containsKey(ARRIVAL_ESTIMATED_RUNWAY) && StringUtility.isNotEmpty(flightScheduleRequest.getEqualityFilter().get(ARRIVAL_ESTIMATED_RUNWAY))) {
                 try {
-                    LocalDateTime dateTime = LocalDateTime.parse(flightScheduleRequest.getEqualityFilter().get("ArrivalEstimatedRunway"), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                    flightScheduleRequest.getEqualityFilter().put("ArrivalEstimatedRunway", dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                    LocalDateTime dateTime = LocalDateTime.parse(flightScheduleRequest.getEqualityFilter().get(ARRIVAL_ESTIMATED_RUNWAY), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    flightScheduleRequest.getEqualityFilter().put(ARRIVAL_ESTIMATED_RUNWAY, dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                 } catch (Exception e) {
                 }
             }
-            if(flightScheduleRequest.getEqualityFilter().containsKey("DepartureEstimatedRunway") && StringUtility.isNotEmpty(flightScheduleRequest.getEqualityFilter().get("DepartureEstimatedRunway"))) {
+            if(flightScheduleRequest.getEqualityFilter().containsKey(DEPARTURE_ESTIMATED_RUNWAY) && StringUtility.isNotEmpty(flightScheduleRequest.getEqualityFilter().get(DEPARTURE_ESTIMATED_RUNWAY))) {
                 try {
-                    LocalDateTime dateTime = LocalDateTime.parse(flightScheduleRequest.getEqualityFilter().get("DepartureEstimatedRunway"), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                    flightScheduleRequest.getEqualityFilter().put("DepartureEstimatedRunway", dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                    LocalDateTime dateTime = LocalDateTime.parse(flightScheduleRequest.getEqualityFilter().get(DEPARTURE_ESTIMATED_RUNWAY), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    flightScheduleRequest.getEqualityFilter().put(DEPARTURE_ESTIMATED_RUNWAY, dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                 } catch (Exception e) {
                 }
             }

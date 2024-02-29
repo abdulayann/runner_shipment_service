@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity {
+public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, Serializable {
     private UUID guid;
     public EntityTransferCarrierDetails carrierDetails;
     public String houseBill;
