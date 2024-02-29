@@ -3114,9 +3114,11 @@ public class ConsolidationService implements IConsolidationService {
                 .build();
 
 
+        String transportMode = shipment.getTransportMode() == null ? tenantSettings.get().getDefaultTransportMode(): shipment.getTransportMode();
+
         consol = ConsolidationDetailsResponse.builder()
                 .consolidationType(Constants.SHIPMENT_TYPE_DRT)
-                .transportMode(shipment.getTransportMode() == null ? tenantSettings.get().getDefaultTransportMode(): shipment.getTransportMode())
+                .transportMode(transportMode)
                 .containerCategory(shipment.getShipmentType() == null ? tenantSettings.get().getDefaultContainerType() : shipment.getShipmentType())
                 .declarationType(additionalDetails != null ? additionalDetails.getCustomDeclType() : null)
                 .carrierDetails(CarrierDetailResponse.builder()
@@ -3155,7 +3157,7 @@ public class ConsolidationService implements IConsolidationService {
                 .igmInwardDate(additionalDetails != null ? additionalDetails.getIGMInwardDate() : null)
                 .inwardDateAndTime(additionalDetails != null ? additionalDetails.getInwardDateAndTime() : null)
                 .warehouseId(additionalDetails != null ? additionalDetails.getWarehouseId() : null)
-                .bol(shipment.getMasterBill() != null && !shipment.getMasterBill().isEmpty() ? shipment.getMasterBill() : generateCustomBolNumber())
+                .bol(shipment.getMasterBill() != null && !shipment.getMasterBill().isEmpty() ? shipment.getMasterBill() : ((transportMode == null || !transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) ? generateCustomBolNumber() : null))
                 .referenceNumber(shipment.getBookingReference())
                 .payment(isPayment ? shipment.getPaymentTerms() : null)
                 .routingsList(List.of(customRouting))
