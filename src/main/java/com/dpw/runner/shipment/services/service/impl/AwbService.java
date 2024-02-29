@@ -1353,7 +1353,9 @@ public class AwbService implements IAwbService {
     public ResponseEntity<IRunnerResponse> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync){
         try{
             AwbRequestV2 request = (AwbRequestV2) commonRequestModel.getData();
-
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.AWB, StringUtility.convertToString(request.getGuid()), request);
+            }
             Long entityId = null;
             var awbType = request.getAwbShipmentInfo().getEntityType();
             Optional<ConsolidationDetails> consolidation = consolidationDetailsDao.findByGuid(request.getConsolidationGuid());
@@ -1375,9 +1377,7 @@ public class AwbService implements IAwbService {
             else {
                 throw new RunnerException("Shipment/Consolidation not present, Please create that first !");
             }
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.AWB, StringUtility.convertToString(entityId), request);
-            }
+
             setEntityId(awb, entityId);
             if(existingAwb.isEmpty()){
                 // SAVE
