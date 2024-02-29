@@ -165,7 +165,8 @@ public class ValidatorUtility {
         Set<String> errors = new LinkedHashSet();
         JsonValue fieldValue = jsonObject.get(at);
         if (jsonSchema.containsKey(ValidatorConstants.REQUIRED) && jsonSchema.getBoolean(ValidatorConstants.REQUIRED)) {
-            if (fieldValue == null || fieldValue.getValueType() == JsonValue.ValueType.NULL) {
+            if (fieldValue == null || fieldValue.getValueType() == JsonValue.ValueType.NULL
+                    || (fieldValue.getValueType() == JsonValue.ValueType.STRING && StringUtility.isEmpty(jsonObject.getString(at)))) {
                 errors.add(String.format(ErrorConstants.INVALID_REQUIRED_FIELD_VALIDATION, at));
             }
         }
