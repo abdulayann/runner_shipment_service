@@ -29,6 +29,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 public class PreAlertReport extends IReport {
 
+    public static final String COMMODITY = "Commodity";
     @Autowired
     private JsonHelper jsonHelper;
 
@@ -181,15 +182,15 @@ public class PreAlertReport extends IReport {
         dictionary.put(ReportConstants.MARKS_NO, preAlertModel.shipmentDetails.getMarksNum());
 //        dictionary.put(ReportConstants.CMS_REMARKS, preAlertModel.shipmentDetails.) TODO- Where is Remarks Field in Shipment?
         if(preAlertModel.shipmentDetails.getVolumetricWeight() != null)
-            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolumetricWeight()), preAlertModel.shipmentDetails.getVolumetricWeightUnit()));
+            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format(REGEX_S_S, twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolumetricWeight()), preAlertModel.shipmentDetails.getVolumetricWeightUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format("%s %s", ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format(REGEX_S_S, ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format("%s %s", ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.TOTAL_VOLUME_, String.format("%s %s", ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.TOTAL_VOLUME_, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format("%s %s", ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format(REGEX_S_S, ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
         dictionary.put(ReportConstants.TOTAL_PCS, preAlertModel.noofpackages_word);
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(preAlertModel.shipmentDetails);
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
@@ -226,8 +227,8 @@ public class PreAlertReport extends IReport {
             if(packDictionary.size() > 0) {
                 for(Map<String, Object> v: packDictionary) {
                     JsonDateFormat(v);
-                    if(v.containsKey("Commodity") && v.get("Commodity") != null) {
-                        CommodityResponse commodityResponse = getCommodity(v.get("Commodity").toString());
+                    if(v.containsKey(COMMODITY) && v.get(COMMODITY) != null) {
+                        CommodityResponse commodityResponse = getCommodity(v.get(COMMODITY).toString());
                         if(commodityResponse != null)
                             dictionary.put(ReportConstants.COMMODITY_DESC, commodityResponse.getDescription());
                     }
