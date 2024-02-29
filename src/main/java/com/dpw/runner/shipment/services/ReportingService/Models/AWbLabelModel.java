@@ -9,5 +9,5 @@ import java.util.List;
 public class AWbLabelModel implements IDocumentModel{
     public TenantModel tenant;
     public ShipmentModel shipment;
-    public List<String> TenantAddress;
+    private List<String> TenantAddress;
 }

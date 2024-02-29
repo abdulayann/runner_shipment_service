@@ -15,11 +15,9 @@ import java.util.Objects;
 public class CustomerBookingValidations {
 
     public void onSave(CustomerBooking oldEntity, CustomerBooking newEntity) {
-        if (!Objects.isNull(oldEntity)) {
-            if (!Objects.equals(oldEntity.getBookingNumber(), newEntity.getBookingNumber())) {
-                log.error("Updating Booking number from {} to {} is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber());
-                throw new ValidationException(String.format("Updating Booking number from: %s to: %s is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber()));
-            }
+        if (!Objects.isNull(oldEntity) && !Objects.equals(oldEntity.getBookingNumber(), newEntity.getBookingNumber())) {
+            log.error("Updating Booking number from {} to {} is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber());
+            throw new ValidationException(String.format("Updating Booking number from: %s to: %s is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber()));
         }
         // FCL
         switch (newEntity.getBookingStatus()) {
@@ -38,6 +36,8 @@ public class CustomerBookingValidations {
             case READY_FOR_SHIPMENT:
                 this.validateOnPendingForCreditCheck(newEntity);
                 this.validateOnReadyForShipment(newEntity);
+                break;
+            case CANCELLED:
                 break;
         }
     }
