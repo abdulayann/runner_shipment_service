@@ -42,7 +42,7 @@ public class SyncService implements ISyncService {
             .build();
 
     @Override
-    public void callSync(String json, String id, String guid, String entity, HttpHeaders headers) {
+    public void callSync(String json, String id, String guid, String entity, HttpHeaders headers) throws RunnerException {
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if (ctx.getLastThrowable() != null) {
@@ -64,7 +64,7 @@ public class SyncService implements ISyncService {
     }
     @Override
     @Async
-    public void callSyncAsync(String json, String id, String guid, String entity, HttpHeaders headers) {
+    public void callSyncAsync(String json, String id, String guid, String entity, HttpHeaders headers) throws RunnerException {
         callSync(json, id, guid, entity, headers);
     }
 

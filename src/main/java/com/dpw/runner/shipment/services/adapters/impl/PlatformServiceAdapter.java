@@ -2,9 +2,11 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +37,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<?> createAtPlatform(CommonRequestModel requestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> createAtPlatform(CommonRequestModel requestModel) throws RunnerException {
         PlatformCreateRequest request = (PlatformCreateRequest) requestModel.getData();
         String url = baseUrl + "/booking/external";
         log.info("Platform Create Request for booking reference {}: {}", request.getBooking_ref_code(), request);
@@ -45,7 +47,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<?> updateAtPlaform(CommonRequestModel requestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> updateAtPlaform(CommonRequestModel requestModel) throws RunnerException {
         PlatformUpdateRequest request = (PlatformUpdateRequest) requestModel.getData();
         String url = baseUrl + "/notifications/booking/" + request.getBooking_reference_code();
         log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- RequestPayload: {}", jsonHelper.convertToJson(request));

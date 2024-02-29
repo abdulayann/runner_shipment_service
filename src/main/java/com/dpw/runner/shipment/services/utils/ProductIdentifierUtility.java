@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entity.enums.ProductType;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -741,7 +742,7 @@ public class ProductIdentifierUtility {
     }
   }
 
-  public String getCustomizedBLNumber(ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings){
+  public String getCustomizedBLNumber(ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) throws RunnerException {
     List<TenantProducts> enabledTenantProducts = this.populateEnabledTenantProducts(tenantSettings);
 
     TenantProducts identifiedProduct = this.IdentifyProduct(shipmentDetails, enabledTenantProducts);

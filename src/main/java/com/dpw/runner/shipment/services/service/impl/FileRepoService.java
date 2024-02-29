@@ -51,18 +51,21 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Service
 @Slf4j
 public class FileRepoService implements IFileRepoService {
-    @Autowired
-    private IFileRepoDao fileRepoDao;
-    @Autowired
-    private JsonHelper jsonHelper;
-    @Autowired
-    private DocumentService documentService;
+    private final IFileRepoDao fileRepoDao;
+    private final JsonHelper jsonHelper;
+    private final DocumentService documentService;
+    private final IAuditLogService auditLogService;
 
     @Autowired
-    private IAuditLogService auditLogService;
+    public FileRepoService(IFileRepoDao fileRepoDao, JsonHelper jsonHelper, DocumentService documentService, IAuditLogService auditLogService) {
+        this.fileRepoDao = fileRepoDao;
+        this.jsonHelper = jsonHelper;
+        this.documentService = documentService;
+        this.auditLogService = auditLogService;
+    }
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         FileRepoRequest request = null;
         request = (FileRepoRequest) commonRequestModel.getData();
@@ -93,7 +96,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         FileRepoRequest request = (FileRepoRequest) commonRequestModel.getData();
         if(request == null) {
@@ -140,7 +143,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -164,7 +167,7 @@ public class FileRepoService implements IFileRepoService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -188,7 +191,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -229,7 +232,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -260,7 +263,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveByEntityIdAndEntityType(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveByEntityIdAndEntityType(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             EntityIdAndTypeRequest request = (EntityIdAndTypeRequest) commonRequestModel.getData();
@@ -295,7 +298,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<?> uploadDocument(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> uploadDocument(CommonRequestModel commonRequestModel) throws RunnerException {
         UploadDocumentRequest uploadDocumentRequest = (UploadDocumentRequest) commonRequestModel.getData();
 
         List<MultipartFile> files = uploadDocumentRequest.getFiles();
@@ -323,8 +326,10 @@ public class FileRepoService implements IFileRepoService {
                 FileRepoRequest fileRepoRequest = FileRepoRequest.builder().fileName(filename).path(responseBody.getBody().getPath()).
                         entityId(entityId).entityType(entityType).docType(uploadDocumentRequest.getDocType()).
                         clientEnabled(uploadDocumentRequest.getClientEnabled()).eventCode(uploadDocumentRequest.getEventCode()).build();
-                ResponseEntity<RunnerResponse<EventsResponse>> response = (ResponseEntity<RunnerResponse<EventsResponse>>) create(CommonRequestModel.buildRequest(fileRepoRequest));
-                responseBodyList.add(response.getBody().getData());
+                ResponseEntity<IRunnerResponse> response = create(CommonRequestModel.buildRequest(fileRepoRequest));
+                if(response == null || !response.hasBody())
+                    throw new RunnerException("File Repo Service create failed, response is null or response does not have body");
+                responseBodyList.add((EventsResponse)((RunnerResponse)response.getBody()).getData());
             }
         } else if(uploadDocumentRequest.getFileResource() != null) {
             ByteArrayResource file = uploadDocumentRequest.getFileResource();
@@ -347,13 +352,13 @@ public class FileRepoService implements IFileRepoService {
             FileRepoRequest fileRepoRequest = FileRepoRequest.builder().fileName(filename).path(responseBody.getBody().getPath()).
                     entityId(entityId).entityType(entityType).docType(uploadDocumentRequest.getDocType()).
                     clientEnabled(uploadDocumentRequest.getClientEnabled()).eventCode(uploadDocumentRequest.getEventCode()).build();
-            ResponseEntity<RunnerResponse<EventsResponse>> response = (ResponseEntity<RunnerResponse<EventsResponse>>) create(CommonRequestModel.buildRequest(fileRepoRequest));
-            responseBodyList.add(response.getBody().getData());
+            ResponseEntity<IRunnerResponse> response = create(CommonRequestModel.buildRequest(fileRepoRequest));
+            responseBodyList.add((EventsResponse)((RunnerResponse)response.getBody()).getData());
         }
         return ResponseHelper.buildListSuccessResponse(responseBodyList);
     }
 
-    public ResponseEntity<?> downloadDocument(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> downloadDocument(CommonRequestModel commonRequestModel) {
         FileRepoResponse response = (FileRepoResponse) ((RunnerResponse) retrieveById(commonRequestModel).getBody()).getData();
         String path = response.getPath();
         ResponseEntity<?> responseBody;
@@ -369,6 +374,6 @@ public class FileRepoService implements IFileRepoService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return responseBody;
+        return ResponseHelper.buildSuccessResponse(responseBody);
     }
 }

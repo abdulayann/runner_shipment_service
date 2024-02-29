@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.v1.util;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
@@ -315,7 +316,7 @@ public class V1ServiceUtil {
         }
     }
 
-    public ResponseEntity<?> fetchEmailIdsForShipment(ShipmentDetails shipmentDetail) {
+    public ResponseEntity<IRunnerResponse> fetchEmailIdsForShipment(ShipmentDetails shipmentDetail) {
         Set<String> emailSet = new HashSet<>();
         OrgAddressResponse response = fetchOrgInfoFromV1(Arrays.asList(shipmentDetail.getClient(), shipmentDetail.getConsignee(), shipmentDetail.getConsigner()));
         setEmails(shipmentDetail.getClient(), emailSet, response.getOrganizations(), response.getAddresses());
@@ -326,7 +327,7 @@ public class V1ServiceUtil {
         return ResponseHelper.buildSuccessResponse(String.join(";", emailSet.stream().filter(StringUtility::isNotEmpty).toList()));
     }
 
-    public ResponseEntity<?> fetchEmailIdsForConsolidation(ConsolidationDetails consolidationDetail) {
+    public ResponseEntity<IRunnerResponse> fetchEmailIdsForConsolidation(ConsolidationDetails consolidationDetail) {
         Set<String> emailSet = new HashSet<>();
         OrgAddressResponse response = fetchOrgInfoFromV1(Arrays.asList(consolidationDetail.getSendingAgent(), consolidationDetail.getReceivingAgent()));
         if (Objects.equals(consolidationDetail.getShipmentType(), Constants.DIRECTION_IMP))

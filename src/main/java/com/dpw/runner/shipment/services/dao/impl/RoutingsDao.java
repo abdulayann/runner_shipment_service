@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
@@ -86,7 +87,7 @@ public class RoutingsDao implements IRoutingsDao {
     }
 
     @Override
-    public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws Exception {
+    public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws RunnerException {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
@@ -117,7 +118,7 @@ public class RoutingsDao implements IRoutingsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -150,7 +151,8 @@ public class RoutingsDao implements IRoutingsDao {
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -193,7 +195,8 @@ public class RoutingsDao implements IRoutingsDao {
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
         }
@@ -201,7 +204,7 @@ public class RoutingsDao implements IRoutingsDao {
     }
 
     @Override
-    public List<Routings> updateEntityFromBooking(List<Routings> routingsList, Long bookingId) throws Exception {
+    public List<Routings> updateEntityFromBooking(List<Routings> routingsList, Long bookingId) throws RunnerException {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
@@ -227,7 +230,7 @@ public class RoutingsDao implements IRoutingsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -262,7 +265,8 @@ public class RoutingsDao implements IRoutingsDao {
                                 .parentId(bookingId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -270,7 +274,7 @@ public class RoutingsDao implements IRoutingsDao {
         return res;
     }
 
-    public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId) throws Exception {
+    public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId) throws RunnerException {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
@@ -301,12 +305,12 @@ public class RoutingsDao implements IRoutingsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId, List<Routings> oldEntityList) throws Exception {
+    public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId, List<Routings> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Routings> routingMap = new HashMap<>();
         if (oldEntityList != null && oldEntityList.size() > 0) {
@@ -339,7 +343,7 @@ public class RoutingsDao implements IRoutingsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -400,7 +404,8 @@ public class RoutingsDao implements IRoutingsDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -413,7 +418,7 @@ public class RoutingsDao implements IRoutingsDao {
     }
 
     @Override
-    public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws Exception {
+    public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Routings> routingMap = new HashMap<>();
         if (oldEntityList != null && oldEntityList.size() > 0) {
@@ -446,7 +451,7 @@ public class RoutingsDao implements IRoutingsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

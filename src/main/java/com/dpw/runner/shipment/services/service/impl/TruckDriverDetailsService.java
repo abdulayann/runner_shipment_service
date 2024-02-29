@@ -39,16 +39,19 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Service
 @Slf4j
 public class TruckDriverDetailsService implements ITruckDriverDetailsService {
-    @Autowired
-    private ITruckDriverDetailsDao truckDriverDetailsDao;
+    private final ITruckDriverDetailsDao truckDriverDetailsDao;
+    private final JsonHelper jsonHelper;
+    private final IAuditLogService auditLogService;
 
     @Autowired
-    private JsonHelper jsonHelper;
+    public TruckDriverDetailsService(ITruckDriverDetailsDao truckDriverDetailsDao, JsonHelper jsonHelper, IAuditLogService auditLogService) {
+        this.truckDriverDetailsDao = truckDriverDetailsDao;
+        this.jsonHelper = jsonHelper;
+        this.auditLogService = auditLogService;
+    }
 
-    @Autowired
-    private IAuditLogService auditLogService;
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
         if(request == null) {
@@ -79,7 +82,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
         if(request == null) {
@@ -126,7 +129,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -150,7 +153,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -173,7 +176,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -213,7 +216,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();

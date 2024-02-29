@@ -43,13 +43,13 @@ public class ShipmentCANReport extends IReport {
     private IHblDao hblDao;
 
     @Override
-    public Map<String, Object> getData(Long id) {
+    public Map<String, Object> getData(Long id) throws RunnerException {
         ShipmentCANModel shipmentCANModel = (ShipmentCANModel) getDocumentModel(id);
         return populateDictionary(shipmentCANModel);
     }
 
     @Override
-    public IDocumentModel getDocumentModel(Long id) {
+    public IDocumentModel getDocumentModel(Long id) throws RunnerException {
         ShipmentCANModel shipmentCANModel = new ShipmentCANModel();
             List<Hbl> hblList = hblDao.findByShipmentId(id);
             if(hblList == null || hblList.size() == 0)

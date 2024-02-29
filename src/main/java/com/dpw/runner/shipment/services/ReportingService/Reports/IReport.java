@@ -40,6 +40,7 @@ import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -127,8 +128,8 @@ public abstract class IReport {
     @Autowired
     private IContainerService containerService;
 
-    public abstract Map<String, Object> getData(Long id);
-    abstract IDocumentModel getDocumentModel(Long id);
+    public abstract Map<String, Object> getData(Long id) throws RunnerException;
+    abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
     abstract Map<String, Object> populateDictionary(IDocumentModel documentModel);
 
     public ShipmentContainers getShipmentContainer(ContainerModel row)

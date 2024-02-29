@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,5 +13,5 @@ public interface IAllocationsDao {
     Page<Allocations> findAll(Specification<Allocations> spec, Pageable pageable);
     Optional<Allocations> findById(Long id);
     void delete(Allocations allocations);
-    Allocations updateEntityFromShipmentConsole(Allocations allocations) throws Exception;
+    Allocations updateEntityFromShipmentConsole(Allocations allocations) throws RunnerException;
 }

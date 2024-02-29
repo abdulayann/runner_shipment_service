@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,5 +13,5 @@ public interface IAchievedQuantitiesDao {
     Page<AchievedQuantities> findAll(Specification<AchievedQuantities> spec, Pageable pageable);
     Optional<AchievedQuantities> findById(Long id);
     void delete(AchievedQuantities achievedQuantities);
-    AchievedQuantities updateEntityFromShipmentConsole(AchievedQuantities achievedQuantities) throws Exception;
+    AchievedQuantities updateEntityFromShipmentConsole(AchievedQuantities achievedQuantities) throws RunnerException;
 }

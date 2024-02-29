@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -13,7 +12,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.impl.MawbHawbLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
@@ -167,7 +165,7 @@ public class AwbService implements IAwbService {
     private String iataCode;
     private String executedAt;
 
-    public ResponseEntity<?> createAwb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
@@ -208,7 +206,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
-    public ResponseEntity<?> updateAwb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         AwbRequest request = (AwbRequest) commonRequestModel.getData();
         if (request == null) {
@@ -271,7 +269,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
-    private void updateAwbPacking(long mawbId, List<AwbPackingInfo> awbPackingInfoList) {
+    private void updateAwbPacking(long mawbId, List<AwbPackingInfo> awbPackingInfoList) throws RunnerException {
         if(awbPackingInfoList == null) {
             return;
         }
@@ -292,7 +290,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             FetchAwbListRequest request = (FetchAwbListRequest) commonRequestModel.getData();
@@ -377,7 +375,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -429,7 +427,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    public ResponseEntity<?> createMawb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createMawb(CommonRequestModel commonRequestModel) {
         String responseMsg;
 
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
@@ -482,7 +480,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
-    public ResponseEntity<?> updateGoodsAndPacksForMawb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateGoodsAndPacksForMawb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
@@ -508,7 +506,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
-    private void updateGoodsAndPacks(CreateAwbRequest request) {
+    private void updateGoodsAndPacks(CreateAwbRequest request) throws RunnerException {
         Awb mawb = awbDao.findByConsolidationId(request.getConsolidationId()).get(0);
         List<Awb> linkedHawb = getLinkedAwbFromMawb(mawb.getId());
         List<AwbPackingInfo> allHawbPacks = new ArrayList<>();
@@ -530,7 +528,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void updateGoodsDescForMawb(Awb mawb) {
+    private void updateGoodsDescForMawb(Awb mawb) throws RunnerException {
         AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = null;
         if (mawb.getAwbGoodsDescriptionInfo() != null && mawb.getAwbGoodsDescriptionInfo().size() > 0) {
             awbGoodsDescriptionInfo = mawb.getAwbGoodsDescriptionInfo().get(0);
@@ -543,7 +541,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void calculateAndUpdateGoodsPacksMawb(List<AwbPackingInfo> allHawbPacks, Awb mawb, ShipmentSettingsDetails tenantSettings) {
+    private void calculateAndUpdateGoodsPacksMawb(List<AwbPackingInfo> allHawbPacks, Awb mawb, ShipmentSettingsDetails tenantSettings) throws RunnerException {
         AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo = null;
         if (mawb.getAwbGoodsDescriptionInfo() != null && mawb.getAwbGoodsDescriptionInfo().size() > 0) {
             // V1 always fetches via FirstOrDefault method post repo list call
@@ -559,7 +557,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private Pair<BigDecimal, AwbGoodsDescriptionInfo> calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap, boolean isPackUpdate) {
+    private Pair<BigDecimal, AwbGoodsDescriptionInfo> calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap, boolean isPackUpdate) throws RunnerException {
         Long mawbGoodsDescId = null; //mawbGoodsDescriptionInfo.getId();  // TODO goodsDescId where to get this
         UUID mawbGoodsDescGuid = mawbGoodsDescriptionInfo.getGuid();
         Integer noOfPacks = 0;
@@ -696,8 +694,13 @@ public class AwbService implements IAwbService {
                 } catch (Exception ignored) {}
             }
             generateDefaultAwbInformation(awbShipmentInfo, res);
-            if(res.getAwbShipmentInfo().getEntityType().equals("MAWB"))
-                res.setErrors(validateMawb(awbShipmentInfo));
+            if(res.getAwbShipmentInfo().getEntityType().equals("MAWB")) {
+                try {
+                    res.setErrors(validateMawb(awbShipmentInfo));
+                } catch (RunnerException e) {
+                    throw new RuntimeException(e);
+                }
+            }
             responseList.add(res);
         });
         return responseList;
@@ -719,7 +722,7 @@ public class AwbService implements IAwbService {
         return awb;
     }
 
-    private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails, List<AwbPackingInfo> awbPackingInfo) {
+    private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails, List<AwbPackingInfo> awbPackingInfo) throws RunnerException {
 
         if(request.getIsReset() == null || request.getIsReset() == false) {
             List<Awb> existingAwbs = awbDao.findByConsolidationId(request.getConsolidationId());
@@ -762,7 +765,7 @@ public class AwbService implements IAwbService {
                 .build();
     }
 
-    private AwbShipmentInfo generateMawbShipmentInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, AwbCargoInfo awbCargoInfo) {
+    private AwbShipmentInfo generateMawbShipmentInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, AwbCargoInfo awbCargoInfo) throws RunnerException {
         AwbShipmentInfo awbShipmentInfo = new AwbShipmentInfo();
         TenantModel tenantModel = null;
         try {
@@ -962,7 +965,7 @@ public class AwbService implements IAwbService {
         return awbOtherInfo;
     }
 
-    private void LinkHawbMawb(ConsolidationDetails consolidationDetails, Awb mawb, List<Awb> awbList) {
+    private void LinkHawbMawb(ConsolidationDetails consolidationDetails, Awb mawb, List<Awb> awbList) throws RunnerException {
         for (var awb : awbList) {
             if(awb.getAwbPackingInfo() != null) {
                 for(AwbPackingInfo awbPackingInfo : awb.getAwbPackingInfo()) {
@@ -1012,7 +1015,7 @@ public class AwbService implements IAwbService {
         return hawbPacksLinkedToMawb;
     }
 
-    private Awb generateAwb(CreateAwbRequest request) {
+    private Awb generateAwb(CreateAwbRequest request) throws RunnerException {
 
         if(request.getIsReset() == null || request.getIsReset() == false) {
             List<Awb> existingAwbs = awbDao.findByShipmentId(request.getShipmentId());
@@ -1062,7 +1065,7 @@ public class AwbService implements IAwbService {
                 .build();
     }
 
-    private AwbShipmentInfo generateAwbShipmentInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, AwbCargoInfo awbCargoInfo) {
+    private AwbShipmentInfo generateAwbShipmentInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, AwbCargoInfo awbCargoInfo) throws RunnerException {
         AwbShipmentInfo awbShipmentInfo = new AwbShipmentInfo();
         awbShipmentInfo.setEntityId(shipmentDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
@@ -1347,7 +1350,7 @@ public class AwbService implements IAwbService {
         return null;
     }
 
-    public ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync){
+    public ResponseEntity<IRunnerResponse> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync){
         try{
             AwbRequestV2 request = (AwbRequestV2) commonRequestModel.getData();
 
@@ -1461,7 +1464,7 @@ public class AwbService implements IAwbService {
         awbSync.sync(entity, saveStatus);
     }
 
-    public ResponseEntity<?> customAwbRetrieve(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> customAwbRetrieve(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CustomAwbRetrieveRequest request = (CustomAwbRetrieveRequest) commonRequestModel.getData();
@@ -1486,7 +1489,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> reset(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> reset(CommonRequestModel commonRequestModel) throws RunnerException {
         ResetAwbRequest resetAwbRequest = (ResetAwbRequest) commonRequestModel.getData();
         Optional<Awb> awbOptional = awbDao.findById(resetAwbRequest.getId());
 
@@ -1592,7 +1595,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> partialAutoUpdateAwb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> partialAutoUpdateAwb(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
@@ -2095,7 +2098,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> partialAutoUpdateMawb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> partialAutoUpdateMawb(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
@@ -2392,7 +2395,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel, boolean isShipment) {
+    public ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel, boolean isShipment) {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
@@ -2429,7 +2432,7 @@ public class AwbService implements IAwbService {
         return masterDataResponse;
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
 
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         AtomicInteger count = new AtomicInteger();
@@ -2468,7 +2471,7 @@ public class AwbService implements IAwbService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllUnlocationDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         AtomicInteger count = new AtomicInteger();
         List<String> locationCodes = new ArrayList<>();
@@ -2501,7 +2504,7 @@ public class AwbService implements IAwbService {
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
-    private CompletableFuture<ResponseEntity<?>> addAllCommodityTypesInSingleCallPacksList(Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCallPacksList(Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> commodityTypes = new HashSet<>();
         AtomicInteger count = new AtomicInteger();
@@ -2523,7 +2526,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> generateAwbPaymentInfo(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> generateAwbPaymentInfo(CommonRequestModel commonRequestModel) throws RunnerException {
 
         GenerateAwbPaymentInfoRequest req = (GenerateAwbPaymentInfoRequest) commonRequestModel.getData();
 
@@ -2638,7 +2641,7 @@ public class AwbService implements IAwbService {
         return sum;
     }
 
-    public ResponseEntity<?> retrieveByAwbByMawb(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveByAwbByMawb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -2674,7 +2677,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private BigDecimal updateGoodsDescriptionInfoFromPacks(GenerateAwbPaymentInfoRequest request) {
+    private BigDecimal updateGoodsDescriptionInfoFromPacks(GenerateAwbPaymentInfoRequest request) throws RunnerException {
         BigDecimal totalVolumeticWeight = BigDecimal.ZERO;
         List<AwbPackingInfo> packsInfo = request.getAwbPackingInfo();
         List<AwbGoodsDescriptionInfo> goodsDescriptionInfos = request.getAwbGoodsDescriptionInfo();
@@ -2774,7 +2777,7 @@ public class AwbService implements IAwbService {
 
 
     @Override
-    public ResponseEntity<?> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel) throws RunnerException {
         GenerateAwbPaymentInfoRequest request = (GenerateAwbPaymentInfoRequest) commonRequestModel.getData();
         String natureAndQuantGoodsValue = request.getAwbCargoInfo() == null || request.getAwbCargoInfo().getNtrQtyGoods() == null ? null : request.getAwbCargoInfo().getNtrQtyGoods();
         String packsDescriptionValue = "";
@@ -2872,7 +2875,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> getChargeTypeMasterData(CommonGetRequest commonGetRequest) {
+    public ResponseEntity<IRunnerResponse> getChargeTypeMasterData(CommonGetRequest commonGetRequest) throws RunnerException {
         Long chargeTypeId = commonGetRequest.getId();
         if(chargeTypeId == null)
             throw new RunnerException("Please provide a valid Id");
@@ -3013,7 +3016,7 @@ public class AwbService implements IAwbService {
         return locMap.get(name);
     }
 
-    private void populateIssuingAgent(AwbShipmentInfo awbShipmentInfo, TenantModel tenantModel, AwbCargoInfo awbCargoInfo) {
+    private void populateIssuingAgent(AwbShipmentInfo awbShipmentInfo, TenantModel tenantModel, AwbCargoInfo awbCargoInfo) throws RunnerException {
         if(tenantModel.DefaultOrgId != null) {
             // Fetch Organization Data for defaultOrgId
             try {
@@ -3049,7 +3052,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private String validateMawb(Awb awb) {
+    private String validateMawb(Awb awb) throws RunnerException {
         List<String> errors = new ArrayList<>();
         boolean allHawbsGenerated = true;
         var id = awb.getConsolidationId();

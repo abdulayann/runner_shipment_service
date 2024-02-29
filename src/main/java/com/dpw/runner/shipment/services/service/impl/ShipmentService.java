@@ -371,7 +371,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
-    public List<ShipmentDetails> createTestShipment(Integer count) {
+    public List<ShipmentDetails> createTestShipment(Integer count) throws RunnerException {
         List<ShipmentDetails> response = new ArrayList<>();
         /**
          * BL details
@@ -401,7 +401,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> fetchShipments(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchShipments(CommonRequestModel commonRequestModel) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
@@ -544,7 +544,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    private ResponseEntity<?> createFromBooking(CommonRequestModel commonRequestModel)
+    public ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel)
     {
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         if (request == null) {
@@ -617,7 +617,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         //ExecutorService executorService = Executors.newFixedThreadPool(100);
 
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
@@ -679,7 +679,7 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
     }
 
-    ShipmentDetails getShipment(ShipmentDetails shipmentDetails) {
+    ShipmentDetails getShipment(ShipmentDetails shipmentDetails) throws RunnerException {
         if(shipmentDetails.getShipmentId() == null){
             shipmentDetails.setShipmentId(generateShipmentId(shipmentDetails));
         }
@@ -837,7 +837,7 @@ public class ShipmentService implements IShipmentService {
     }
 
 
-    public Optional<ShipmentDetails> retrieveByIdOrGuid(ShipmentRequest request){
+    public Optional<ShipmentDetails> retrieveByIdOrGuid(ShipmentRequest request) throws RunnerException {
         String responseMsg;
 
         if (request == null) {
@@ -873,7 +873,7 @@ public class ShipmentService implements IShipmentService {
     }
     @Override
     @Transactional
-    public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
+    public ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException
     {
         List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
         List<ContainerRequest> containerList = new ArrayList<>();
@@ -1031,7 +1031,7 @@ public class ShipmentService implements IShipmentService {
         return packingRequests;
     }
 
-    private List<ContainerRequest> calculateAutoContainerWeightAndVolume(List<ContainerRequest> containersList, List<PackingRequest> packingList) throws Exception {
+    private List<ContainerRequest> calculateAutoContainerWeightAndVolume(List<ContainerRequest> containersList, List<PackingRequest> packingList) throws RunnerException {
         if(containersList != null && containersList.size() > 0) {
             for (ContainerRequest containers : containersList) {
                 if(packingList != null) {
@@ -1058,7 +1058,7 @@ public class ShipmentService implements IShipmentService {
         return containersList;
     }
 
-    public ResponseEntity<?> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
             AutoUpdateWtVolRequest request = (AutoUpdateWtVolRequest) commonRequestModel.getData();
@@ -1073,7 +1073,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> calculateWtVolInShipmentOnChanges(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateWtVolInShipmentOnChanges(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
             AutoUpdateWtVolRequest request = (AutoUpdateWtVolRequest) commonRequestModel.getData();
@@ -1088,7 +1088,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private AutoUpdateWtVolResponse calculateShipmentWV(AutoUpdateWtVolRequest request) throws Exception {
+    private AutoUpdateWtVolResponse calculateShipmentWV(AutoUpdateWtVolRequest request) throws RunnerException {
         AutoUpdateWtVolResponse response = jsonHelper.convertValue(request, AutoUpdateWtVolResponse.class);
         List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
         List<Containers> containersList = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
@@ -1140,7 +1140,7 @@ public class ShipmentService implements IShipmentService {
         return response;
     }
 
-    private AutoUpdateWtVolResponse updateShipmentDetails(AutoUpdateWtVolResponse response, List<Containers> containersList) throws Exception { // to account for updateShipmentDetails flag in v1 container summary
+    private AutoUpdateWtVolResponse updateShipmentDetails(AutoUpdateWtVolResponse response, List<Containers> containersList) throws RunnerException { // to account for updateShipmentDetails flag in v1 container summary
         double totalWeight = 0;
         double packageCount = 0;
         double tareWeight = 0;
@@ -1227,7 +1227,7 @@ public class ShipmentService implements IShipmentService {
         return packsUnit;
     }
 
-    private AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws Exception {
+    private AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws RunnerException {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
         if(IsStringNullOrEmpty(request.getWeightUnit()))
@@ -1250,7 +1250,7 @@ public class ShipmentService implements IShipmentService {
         return response;
     }
 
-    private AutoUpdateWtVolResponse calculateVW(AutoUpdateWtVolRequest request, AutoUpdateWtVolResponse response, boolean recalculateVwObInKgAndM3) throws Exception{
+    private AutoUpdateWtVolResponse calculateVW(AutoUpdateWtVolRequest request, AutoUpdateWtVolResponse response, boolean recalculateVwObInKgAndM3) throws RunnerException{
         if(IsStringNullOrEmpty(request.getTransportMode()))
             return response;
         if(!IsStringNullOrEmpty(response.getWeightUnit()) && !IsStringNullOrEmpty(response.getVolumeUnit())) {
@@ -1311,7 +1311,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         if (request == null) {
@@ -1344,7 +1344,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
 
@@ -1428,7 +1428,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
     }
-    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
+    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException{
         List<Long> tempConsolIds = new ArrayList<>();
         List<Long> removedConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
@@ -1543,7 +1543,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
         }
     }
-    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole) throws Exception {
+    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole) throws RunnerException {
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
@@ -1724,7 +1724,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void createShipmentRouteInConsole (ShipmentRequest shipmentRequest) throws Exception{
+    private void createShipmentRouteInConsole (ShipmentRequest shipmentRequest) throws RunnerException{
         List<ConsolidationDetailsRequest> consoleRequest = shipmentRequest.getConsolidationList();
         List<Routings> createRoutes = new ArrayList<>();
         if(shipmentRequest.getCreateMainLegRoute() != null && shipmentRequest.getCreateMainLegRoute()){
@@ -1767,7 +1767,7 @@ public class ShipmentService implements IShipmentService {
         return responseList;
     }
 
-    public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) {
+    public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) throws RunnerException {
         ShipmentSettingsDetails shipmentSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         if(shipmentSettings.getShipConsolidationContainerEnabled()) {
             ConsolidationDetails consolidationDetails = new ConsolidationDetails();
@@ -1994,7 +1994,7 @@ public class ShipmentService implements IShipmentService {
     }
 
 
-    public ResponseEntity<?> fullShipmentsList(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fullShipmentsList(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             // TODO- implement actual logic with filters
@@ -2018,7 +2018,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> assignShipmentContainers(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> assignShipmentContainers(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ShipmentContainerAssignRequest request = (ShipmentContainerAssignRequest) commonRequestModel.getData();
@@ -2065,7 +2065,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> assignAllContainers(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> assignAllContainers(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         boolean lclAndSeaOrRoadFlag = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
@@ -2177,7 +2177,7 @@ public class ShipmentService implements IShipmentService {
         return responseList;
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             // TODO- implement actual logic with filters
@@ -2247,7 +2247,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -2272,7 +2272,7 @@ public class ShipmentService implements IShipmentService {
 
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             // TODO- implement Validation logic
@@ -2312,7 +2312,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -2347,7 +2347,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Async
-    public CompletableFuture<ResponseEntity<?>> retrieveByIdAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> retrieveByIdAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -2378,7 +2378,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
+    public ResponseEntity<IRunnerResponse> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
@@ -2389,7 +2389,7 @@ public class ShipmentService implements IShipmentService {
             }
             long id = request.getId();
 
-            CompletableFuture<ResponseEntity<?>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
+            CompletableFuture<ResponseEntity<IRunnerResponse>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
             RunnerResponse<ShipmentDetailsResponse> res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
             if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
                 return ResponseHelper.buildSuccessResponse(res.getData());
@@ -2404,12 +2404,12 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception {
+    public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException {
 
         ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
         if ((shipmentRequest.getId() == null && shipmentRequest.getGuid() == null) && (shipmentRequest.getShipmentId() == null || shipmentRequest.getShipmentId().get() == "")) {
             log.error("Request Id is null for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new Exception("Request Id is null");
+            throw new RunnerException("Request Id is null");
         }
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
@@ -2564,7 +2564,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long id = commonGetRequest.getId();
         ShipmentDetails shipmentDetails = shipmentDao.findById(id).get();
@@ -2585,7 +2585,7 @@ public class ShipmentService implements IShipmentService {
     }
 
 
-    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<?>> responseEntity) throws ExecutionException, InterruptedException {
+    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity) throws ExecutionException, InterruptedException {
         RunnerListResponse runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
         return (List<T>) runnerListResponse.getData();
     }
@@ -2632,7 +2632,7 @@ public class ShipmentService implements IShipmentService {
 //        return createShipmentSequence(shipmentSettingsList.get(0));
     }
 
-    private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType, ShipmentDetails currentShipment) {
+    private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType, ShipmentDetails currentShipment) throws RunnerException {
         List<TenantProducts> tenantProducts = productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
         // to check the commmon sequence
         var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
@@ -2696,7 +2696,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws RunnerException {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
 
@@ -2881,7 +2881,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
@@ -2907,7 +2907,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CalculateContainerSummaryRequest request = (CalculateContainerSummaryRequest) commonRequestModel.getData();
         try {
@@ -2923,7 +2923,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
         try {
@@ -2940,7 +2940,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
@@ -3038,7 +3038,7 @@ public class ShipmentService implements IShipmentService {
 
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
 
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() ));
@@ -3081,7 +3081,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllUnlocationDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> locationCodes = new ArrayList<>();
         if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
@@ -3116,7 +3116,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllTenantDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
         if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
@@ -3137,7 +3137,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllCurrencyDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCurrencyDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> currencyList = new ArrayList<>(masterDataUtils.createInBulkCurrencyRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
         Map v1Data = masterDataUtils.fetchInCurrencyList(currencyList);
@@ -3153,7 +3153,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> carrierList = new ArrayList<>();
         if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
@@ -3179,7 +3179,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllCommodityTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> commodityTypes = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
@@ -3204,7 +3204,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllWarehouseDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllWarehouseDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> wareHouseTypes = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
@@ -3224,7 +3224,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllActivityDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllActivityDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> activityTypes = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
@@ -3244,7 +3244,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllSalesAgentInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllSalesAgentInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> salesAgents = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse))
@@ -3264,7 +3264,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllContainerTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> containerTypes = new ArrayList<>();
         if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
@@ -3284,7 +3284,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllVesselDataInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> vesselList = new ArrayList<>();
         if (!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
@@ -3307,7 +3307,7 @@ public class ShipmentService implements IShipmentService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
-    private CompletableFuture<ResponseEntity<?>> addAllDGSubstanceDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllDGSubstanceDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> dgSubstanceIdList = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse.getPackingList()))
@@ -3403,7 +3403,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<?> cloneShipment(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> cloneShipment(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -3450,7 +3450,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> transportInstructionList(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> transportInstructionList(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             TIListRequest tiListRequest = (TIListRequest) commonRequestModel.getData();
@@ -3475,7 +3475,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> containerListForTI(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> containerListForTI(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             TIContainerListRequest tiContainerListRequest = (TIContainerListRequest) commonRequestModel.getData();
@@ -3500,7 +3500,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveByOrderId(String orderId) {
+    public ResponseEntity<IRunnerResponse> retrieveByOrderId(String orderId) throws RunnerException {
         try {
             ShipmentDetailsResponse response = jsonHelper.convertValue(orderManagementAdapter.getOrder(orderId), ShipmentDetailsResponse.class);
             this.createShipmentPayload(null, response);
@@ -3513,7 +3513,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> generateCustomHouseBLNumber() {
+    public ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException {
         try {
             return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(generateCustomHouseBL(null)).build());
         } catch (Exception e) {
@@ -3522,7 +3522,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> getShipmentFromConsol(Long consolidationId, String bookingNumber) {
+    public ResponseEntity<IRunnerResponse> getShipmentFromConsol(Long consolidationId, String bookingNumber) {
         var tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         // Populate shipment details on basis of tenant settings
 
@@ -3709,7 +3709,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> getDefaultShipment() {
+    public ResponseEntity<IRunnerResponse> getDefaultShipment() {
         String responseMsg;
         try {
             var tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
@@ -3761,7 +3761,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> getMasterDataMappings() {
+    public ResponseEntity<IRunnerResponse> getMasterDataMappings() {
         String responseMsg;
         try {
             List<MasterDataDescriptionResponse> response = new ArrayList<>();
@@ -3782,7 +3782,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> attachListShipment(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> attachListShipment(CommonRequestModel commonRequestModel){
         AttachListShipmentRequest request = (AttachListShipmentRequest) commonRequestModel.getData();
 
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId());
@@ -3944,7 +3944,7 @@ public class ShipmentService implements IShipmentService {
      * @param current_shipment
      * @param old_shipment
      */
-    private void updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) {
+    private void updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) throws RunnerException {
         List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
         var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
         if(linkedConsol != null && (oldEntity == null || !Objects.equals(shipment.getMasterBill(),oldEntity.getMasterBill()) ||
@@ -3999,7 +3999,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> getIdFromGuid(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -4025,7 +4025,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> getGuidFromId(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -4096,7 +4096,7 @@ public class ShipmentService implements IShipmentService {
         return events;
     }
 
-    public ResponseEntity<?> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
         if(request.getId() == null) {
             log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -4112,7 +4112,7 @@ public class ShipmentService implements IShipmentService {
         return fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    public ResponseEntity<?> fetchActiveInvoices(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchActiveInvoices(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
         if(request.getGuid() == null) {
             log.error("Request guid is null for fetch active invoices with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -4135,7 +4135,7 @@ public class ShipmentService implements IShipmentService {
         return res;
     }
 
-    public ResponseEntity<?> showAssignAllContainers(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> showAssignAllContainers(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ShipmentConsoleIdDto request = (ShipmentConsoleIdDto) commonRequestModel.getData();
@@ -4175,7 +4175,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<?> fetchCreditLimit(String orgCode, String addressCode) {
+    public ResponseEntity<IRunnerResponse> fetchCreditLimit(String orgCode, String addressCode) throws RunnerException {
         if(StringUtility.isEmpty(orgCode)) {
             throw new RunnerException("OrgCode to fetch creditLimit can't be null");
         }
@@ -4225,7 +4225,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public void updateDateAndStatus(long id, LocalDateTime date, Integer status){
+    public void updateDateAndStatus(long id, LocalDateTime date, Integer status) throws RunnerException {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
         if(shipmentDetails.isPresent()) {
             ShipmentDetails shipment = shipmentDetails.get();
@@ -4245,7 +4245,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> fetchEmails(Long shipmentId, Long consolidationId) {
+    public ResponseEntity<IRunnerResponse> fetchEmails(Long shipmentId, Long consolidationId) {
         if(Objects.isNull(shipmentId) && Objects.isNull(consolidationId)) {
             log.error("Invalid request for fetchEmails");
             throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);

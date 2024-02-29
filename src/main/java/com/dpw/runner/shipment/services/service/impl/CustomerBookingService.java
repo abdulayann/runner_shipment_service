@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -39,6 +40,7 @@ import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -53,6 +55,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -139,7 +142,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) throws RunnerException {
 
         CustomerBookingRequest request = (CustomerBookingRequest) commonRequestModel.getData();
         if (request == null) {
@@ -162,12 +165,12 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw e;
+            throw new RunnerException(e.getMessage());
         }
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
-    private void createEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws Exception {
+    private void createEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         if (customerBooking.getIsPlatformBookingCreated() == null) {
             customerBooking.setIsPlatformBookingCreated(false);
         }
@@ -235,7 +238,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         CustomerBookingRequest request = (CustomerBookingRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -275,7 +278,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
-    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request, String oldEntity) throws Exception {
+    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request, String oldEntity) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         populateTotalRevenueDetails(customerBooking, request);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
@@ -365,7 +368,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -389,7 +392,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -412,7 +415,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -440,7 +443,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             double _start = System.currentTimeMillis();
@@ -476,7 +479,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     @Override
-    public ResponseEntity<?> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws RunnerException {
         CreditLimitRequest creditLimitRequest = (CreditLimitRequest) commonRequestModel.getData();
         V1RetrieveResponse v1RetrieveResponse = v1Service.retrieveTenantSettings();
 
@@ -555,12 +558,12 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (v1TenantSettingsResponse.getIsGlobalFusionIntegrationEnabled()) {
             request.getReq_Params().setCalling_System(CustomerBookingConstants.GCR_FUSION);
             request.getReq_Params().setBu_id(v1TenantSettingsResponse.getBusinessUnitName());
-            ResponseEntity<DependentServiceResponse> response = (ResponseEntity<DependentServiceResponse>) fusionServiceAdapter.checkCreditLimitP100(CommonRequestModel.buildRequest(request));
-            if(response.getBody() == null || response.getBody().getData() == null){
+            ResponseEntity<IRunnerResponse> response = fusionServiceAdapter.checkCreditLimitP100(CommonRequestModel.buildRequest(request));
+            if(response == null || response.getBody() == null || ((DependentServiceResponse)response.getBody()).getData() == null){
                 log.error("No Data found on Fusion with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException("No Data found on Fusion");
             }
-            CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse = modelMapper.map(response.getBody().getData(), CheckCreditBalanceFusionResponse.class);
+            CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse = modelMapper.map(((DependentServiceResponse)response.getBody()).getData(), CheckCreditBalanceFusionResponse.class);
             CheckCreditLimitResponse checkCreditLimitResponse = createCheckCreditLimitPayload(checkCreditBalanceFusionResponse);
             try{
                 UpdateOrgCreditLimitBookingResponse updateOrgCreditLimitBookingResponse = jsonHelper.convertValue(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(checkCreditLimitResponse).getBody(), UpdateOrgCreditLimitBookingResponse.class);
@@ -615,7 +618,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> platformCreateBooking(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> platformCreateBooking(CommonRequestModel commonRequestModel) throws RunnerException {
         PlatformToRunnerCustomerBookingRequest request = (PlatformToRunnerCustomerBookingRequest) commonRequestModel.getData();
         if (request.getIsSingleUsageContract() != null)
             request.setContractStatus(request.getIsSingleUsageContract() ? "SINGLE_USAGE" : "MULTI_USAGE");
@@ -872,7 +875,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
 
 
-    private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request, CustomerBooking oldEntity) throws Exception {
+    private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request, CustomerBooking oldEntity) throws RunnerException {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         customerBooking.setSource(BookingSource.Platform);
@@ -880,12 +883,12 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity));
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw e;
+            throw new RunnerException(e.getMessage());
         }
         return jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class);
     }
 
-    private CustomerBookingResponse createPlatformBooking(CustomerBookingRequest request) throws Exception {
+    private CustomerBookingResponse createPlatformBooking(CustomerBookingRequest request) throws RunnerException {
         if (request == null) {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
@@ -900,7 +903,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             createEntities(customerBooking, request);
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw e;
+            throw new RunnerException(e.getMessage());
         }
         return jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class);
     }
@@ -930,7 +933,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return responseList;
     }
 
-    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws Exception {
+    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws RunnerException {
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
             // Alteration on same contract
             _npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
@@ -952,7 +955,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
     }
 
-    private void _npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws Exception {
+    private void _npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws RunnerException {
         if (Objects.equals(current.getTransportType(),Constants.TRANSPORT_MODE_SEA) && !Objects.isNull(current.getContractId()) ) {
             List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(current, old, operation);
 
@@ -1061,12 +1064,12 @@ public class CustomerBookingService implements ICustomerBookingService {
     private void createCustomerBookingResponse(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         try {
             double _start = System.currentTimeMillis();
-            var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
-            var unLocationsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllLocationDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
-            var vesselsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllVesselDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
-            var carrierFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllCarrierDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
-            var containerTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse)), executorService);
-            var chargeTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCall(customerBookingResponse)), executorService);
+            var unLocationsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllLocationDataInSingleCall(customerBookingResponse)), executorService);
+            var vesselsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllVesselDataInSingleCall(customerBookingResponse)), executorService);
+            var carrierFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllCarrierDataInSingleCall(customerBookingResponse)), executorService);
+            var containerTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllContainerTypesInSingleCall(customerBookingResponse)), executorService);
+            var chargeTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllChargeTypesInSingleCall(customerBookingResponse)), executorService);
             if(customerBookingResponse.getBookingStatus() == BookingStatus.READY_FOR_SHIPMENT) {
                 DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenantSettings();
                 V1TenantSettingsResponse tenantSettingsResponse = modelMapper.map(dependentServiceResponse.getData(), V1TenantSettingsResponse.class);
@@ -1135,7 +1138,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
 //    @Async
-    private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName() ));
@@ -1164,7 +1167,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
 //    @Async
-    private CompletableFuture<ResponseEntity<?>> addAllLocationDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllLocationDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> locationCodes = new ArrayList<>();
@@ -1185,7 +1188,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
 //    @Async
-    private CompletableFuture<ResponseEntity<?>> addAllChargeTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllChargeTypesInSingleCall(CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> chargeTypes = new ArrayList<>();
 
@@ -1200,7 +1203,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 //    @Async
-    private CompletableFuture<ResponseEntity<?>> addAllContainerTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> containerTypes = new ArrayList<>();
         if (!Objects.isNull(customerBookingResponse.getContainersList()))
@@ -1216,7 +1219,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
 //    @Async
-    private CompletableFuture<ResponseEntity<?>> addAllVesselDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkVesselsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
@@ -1228,7 +1231,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
 //    @Async
-    private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));

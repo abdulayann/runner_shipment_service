@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -1308,7 +1309,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<MasterDataDescriptionResponse> getMasterDataDescription(ShipmentSettingsDetails tenantSetting) throws Exception {
+    public List<MasterDataDescriptionResponse> getMasterDataDescription(ShipmentSettingsDetails tenantSetting) throws RunnerException, ClassNotFoundException, IllegalAccessException, NoSuchFieldException {
         ShipmentSettingsDetailsResponse shipmentSettingsDetailsResponse = jsonHelper.convertValue(tenantSetting, ShipmentSettingsDetailsResponse.class);
         List<MasterDataDescriptionResponse> res = new ArrayList<>();
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();

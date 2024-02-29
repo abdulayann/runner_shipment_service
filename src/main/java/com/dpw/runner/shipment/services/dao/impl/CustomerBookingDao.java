@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -84,7 +85,7 @@ public class CustomerBookingDao implements ICustomerBookingDao {
         customerBookingRepository.delete(customerBooking);
     }
 
-    public CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws Exception {
+    public CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws RunnerException {
         String responseMsg;
         try {
             if (customerBooking.getId() != null) {
@@ -101,7 +102,7 @@ public class CustomerBookingDao implements ICustomerBookingDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

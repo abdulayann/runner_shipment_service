@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.DenialParty.request.SearchEntity;
 import com.dpw.runner.shipment.services.dto.DenialParty.request.SearchEntityRequest;
 import com.dpw.runner.shipment.services.dto.request.DenialPartySearchEntityRequest;
@@ -19,10 +20,15 @@ import java.util.List;
 @Service
 public class DenialPartyScreeningService implements IDenialPartyScreeningService {
 
+    private final RestTemplate restTemplate;
+    private final IDescartsService descartsService;
+
     @Autowired
-    private RestTemplate restTemplate;
-    @Autowired
-    private IDescartsService descartsService;
+    public DenialPartyScreeningService(RestTemplate restTemplate, IDescartsService descartsService) {
+        this.restTemplate = restTemplate;
+        this.descartsService = descartsService;
+    }
+
     @Value("${descarts.service.searchentity.url}")
     private String externalApiUrl;
     @Value("${descarts.service.searchtype}")
@@ -32,7 +38,7 @@ public class DenialPartyScreeningService implements IDenialPartyScreeningService
     @Value("${descarts.service.password}")
     private String descartPassword;
     @Override
-    public ResponseEntity<?> createRequestAndSearchEntity(DenialPartySearchEntityRequest commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createRequestAndSearchEntity(DenialPartySearchEntityRequest commonRequestModel) {
 
         SearchEntity searchQuery = new SearchEntity();
         searchQuery.setSname(commonRequestModel.getName());
@@ -53,6 +59,5 @@ public class DenialPartyScreeningService implements IDenialPartyScreeningService
         finalSearchQuery.setSpassword(descartPassword);
         finalSearchQuery.setSearches(queryList);
         return descartsService.searchEntity(finalSearchQuery);
-
     }
 }

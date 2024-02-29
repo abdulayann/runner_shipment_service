@@ -100,7 +100,7 @@ public class EventService implements IEventService {
     private String trackEventDetailsUrl;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         EventsRequest request = null;
         request = (EventsRequest) commonRequestModel.getData();
@@ -132,7 +132,7 @@ public class EventService implements IEventService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         EventsRequest request = (EventsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -177,7 +177,7 @@ public class EventService implements IEventService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(events));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -203,7 +203,7 @@ public class EventService implements IEventService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -228,7 +228,7 @@ public class EventService implements IEventService {
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -269,7 +269,7 @@ public class EventService implements IEventService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -318,7 +318,7 @@ public class EventService implements IEventService {
     }
 
     @Override
-    public ResponseEntity<?> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
@@ -355,7 +355,7 @@ public class EventService implements IEventService {
         }
     }
 
-  public ResponseEntity<?> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) {
+  public ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) throws RunnerException {
     Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
     Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
     String referenceNumber = null;

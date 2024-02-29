@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.repository.interfaces.ITenantProductsRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +68,7 @@ public class TenantProductsDao implements ITenantProductsDao {
     }
 
     @Override
-    public List<TenantProducts> updateEntityFromSettings(List<TenantProducts> tenantProductsList, Long shipmentSettingsId) throws Exception {
+    public List<TenantProducts> updateEntityFromSettings(List<TenantProducts> tenantProductsList, Long shipmentSettingsId) throws RunnerException {
         String responseMsg;
         List<TenantProducts> responseTenantProducts = new ArrayList<>();
         try {
@@ -94,12 +95,12 @@ public class TenantProductsDao implements ITenantProductsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<TenantProducts> updateEntityFromV1Settings(List<TenantProducts> tenantProductsList, Long shipmentSettingsId, List<TenantProducts> oldTenantProducts) throws Exception {
+    public List<TenantProducts> updateEntityFromV1Settings(List<TenantProducts> tenantProductsList, Long shipmentSettingsId, List<TenantProducts> oldTenantProducts) throws RunnerException {
         String responseMsg;
         List<TenantProducts> responseTenantProducts = new ArrayList<>();
         try {
@@ -124,7 +125,7 @@ public class TenantProductsDao implements ITenantProductsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

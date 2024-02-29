@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -81,7 +82,7 @@ public class ContainersSync implements IContainersSync {
             .build();
 
     @Override
-    public ResponseEntity<?> sync(List<Long> containerIds, Page<ShipmentsContainersMapping> shipmentsContainersMappingPageable) {
+    public ResponseEntity<IRunnerResponse> sync(List<Long> containerIds, Page<ShipmentsContainersMapping> shipmentsContainersMappingPageable) {
         List<Containers> containers = getContainersFromIds(containerIds);
         if(containers == null || containers.size() == 0) {
             log.error("Error in syncing containers: Not able to get containers for ids: " + containerIds.toString());

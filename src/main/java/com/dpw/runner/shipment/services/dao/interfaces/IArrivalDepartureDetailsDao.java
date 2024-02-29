@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,5 +13,5 @@ public interface IArrivalDepartureDetailsDao {
     Page<ArrivalDepartureDetails> findAll(Specification<ArrivalDepartureDetails> spec, Pageable pageable);
     Optional<ArrivalDepartureDetails> findById(Long id);
     void delete(ArrivalDepartureDetails arrivalDepartureDetails);
-    ArrivalDepartureDetails updateEntityFromShipmentConsole(ArrivalDepartureDetails arrivalDepartureDetails) throws Exception;
+    ArrivalDepartureDetails updateEntityFromShipmentConsole(ArrivalDepartureDetails arrivalDepartureDetails) throws RunnerException;
 }

@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +51,7 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
         pickupDeliveryDetailsRepository.delete(pickupDeliveryDetails);
     }
 
-    public List<PickupDeliveryDetails> updateEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsList, Long shipmentId) throws Exception {
+    public List<PickupDeliveryDetails> updateEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsList, Long shipmentId) throws RunnerException {
         String responseMsg;
         List<PickupDeliveryDetails> responsePickupDeliveryDetails = new ArrayList<>();
         try {
@@ -77,7 +78,7 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
