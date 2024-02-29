@@ -1092,10 +1092,10 @@ public class ShipmentService implements IShipmentService {
         AutoUpdateWtVolResponse response = jsonHelper.convertValue(request, AutoUpdateWtVolResponse.class);
         List<Packing> packingList = new ArrayList<>();
         if(request.getPackingList() != null)
-            jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
+            packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
         List<Containers> containersList = new ArrayList<>();
         if(request.getContainersList() != null)
-            jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
+            containersList = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
 //        if(request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
 //            response = calculatePacksAndPacksUnit(packingList, response);
 //        }
