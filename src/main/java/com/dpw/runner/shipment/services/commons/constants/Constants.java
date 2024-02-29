@@ -161,6 +161,7 @@ public class Constants {
     public static final String SERVICE = "Service";
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
     public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
+    public static final String CARRIER_BOOKING_STATUS = "CarrierBookingStatus";
 
     /**
      * Events
@@ -336,6 +337,7 @@ public class Constants {
     public static final String ORDER_MANAGEMENT_ID = "orderManagementId";
     public static final String HANDLING_INFO = "handlingInfo";
     public static final String DESCRIPTION_OF_GOODS = "descriptionOfGoods";
+    public static final String BOOKING_STATUS_FIELD = "bookingStatus";
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber","descriptionOfGoods","noOfPackages","netWeight","netWeightUnit",
             "grossWeight","grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
