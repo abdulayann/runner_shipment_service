@@ -10,4 +10,6 @@ public class PackingConstants {
     public static final String PACKING_ID = "Packing Id";
     public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String FLASH_POINT_INVALID_ERROR =  "FlashPoint is invalid at row: ";
+    public static final String PACKS_NOT_VALID = "Packs is not valid at row: ";
+    public static final String FAILURE_EXECUTING_REQUEST = "failure executing request ";
 }

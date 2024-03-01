@@ -36,7 +36,7 @@ public class TokenUtility {
 
     public String getUserIdAndBranchId(String token) {
         try {
-            if(token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], "Bearer"))
+            if(token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], BEARER))
                 return null;
             token = token.split(" ")[1];
 

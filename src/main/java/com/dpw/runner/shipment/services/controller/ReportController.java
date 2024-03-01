@@ -5,8 +5,10 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import io.swagger.annotations.ApiResponse;
@@ -31,11 +33,11 @@ public class ReportController {
     private IReportService reportService;
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ReportConstants.REPORT_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = ReportConstants.REPORT_CREATE_SUCCESSFUL, response = ByteArrayResourceResponse.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<?> createReport(@RequestBody @Valid ReportRequest request) {
+    public ResponseEntity<IRunnerResponse> createReport(@RequestBody @Valid ReportRequest request) {
         String responseMsg;
         try {
             return ResponseHelper.buildFileResponse(reportService.getDocumentData(CommonRequestModel.buildRequest(request)), MediaType.APPLICATION_OCTET_STREAM, request.getReportInfo() + ".pdf");
