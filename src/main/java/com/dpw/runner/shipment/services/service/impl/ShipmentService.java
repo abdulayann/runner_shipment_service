@@ -3360,6 +3360,7 @@ public class ShipmentService implements IShipmentService {
             for (PackingResponse pack : packings) {
                 if(pack.getContainerId() != null) {
                     if(map.containsKey(pack.getContainerId())) {
+                        pack.setContainerNumber(map.get(pack.getContainerId()).getContainerNumber());
                         pack.setContainerDesc(String.format("%s-%s-%s", map.get(pack.getContainerId()).getContainerCount(), map.get(pack.getContainerId()).getContainerNumber(), map.get(pack.getContainerId()).getContainerCode()));
                     }
                     if(flag) {
