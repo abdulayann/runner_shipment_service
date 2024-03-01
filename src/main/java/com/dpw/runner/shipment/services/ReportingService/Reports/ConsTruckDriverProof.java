@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TruckDriverModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -14,8 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +34,7 @@ public class ConsTruckDriverProof extends IReport {
         truckDriverModel.consolidationDetails = getConsolidation(id);
         if(truckDriverModel.consolidationDetails != null && truckDriverModel.consolidationDetails.getTruckDriverDetails() != null && !truckDriverModel.consolidationDetails.getTruckDriverDetails().isEmpty())
         {
-            truckDriverModel.truckDriverDetails = truckDriverModel.consolidationDetails.getTruckDriverDetails();
+            truckDriverModel.setTruckDriverDetails(truckDriverModel.consolidationDetails.getTruckDriverDetails());
         }
         if(truckDriverModel.consolidationDetails != null) {
             List<ShipmentModel> shipments = truckDriverModel.consolidationDetails.getShipmentsList();
@@ -72,7 +69,7 @@ public class ConsTruckDriverProof extends IReport {
         populateConsolidationFields(truckDriverModel.consolidationDetails, dictionary);
         populateUserFields(truckDriverModel.usersDto, dictionary);
         populateTenantFields(dictionary, truckDriverModel.tenant);
-        for(var truckDriver: truckDriverModel.truckDriverDetails)
+        for(var truckDriver: truckDriverModel.getTruckDriverDetails())
         {
             if(StringUtility.isEmpty(truckDriver.getSelfTransporterName()))
             {
@@ -81,7 +78,7 @@ public class ConsTruckDriverProof extends IReport {
             else
                 truckDriver.setTransporterName(truckDriver.getSelfTransporterName());
         }
-        dictionary.put(ReportConstants.SHIPMENT_TRUCKDRIVERDETAILS, truckDriverModel.truckDriverDetails);
+        dictionary.put(ReportConstants.SHIPMENT_TRUCKDRIVERDETAILS, truckDriverModel.getTruckDriverDetails());
         dictionary.put(ReportConstants.TOTAL_PACKS, truckDriverModel.totalPacks);
         dictionary.put(ReportConstants.SHIPMENT_DETAILS_TOTALWEIGHT, truckDriverModel.totalWeight);
         return dictionary;
