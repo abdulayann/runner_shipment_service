@@ -1,46 +1,44 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.DenialParty.request.SearchEntity;
 import com.dpw.runner.shipment.services.dto.DenialParty.request.SearchEntityRequest;
 import com.dpw.runner.shipment.services.dto.request.DenialPartySearchEntityRequest;
-import com.dpw.runner.shipment.services.dto.response.DenialPartySearchResponse;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.descarts.IDescartsService;
-import com.dpw.runner.shipment.services.service.descarts.impl.DescartsService;
 import com.dpw.runner.shipment.services.service.interfaces.IDenialPartyScreeningService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.map.MultiValueMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
 @Service
 public class DenialPartyScreeningService implements IDenialPartyScreeningService {
 
+    private final RestTemplate restTemplate;
+    private final IDescartsService descartsService;
+
     @Autowired
-    private RestTemplate restTemplate;
-    @Autowired
-    private IDescartsService descartsService;
+    public DenialPartyScreeningService(RestTemplate restTemplate, IDescartsService descartsService) {
+        this.restTemplate = restTemplate;
+        this.descartsService = descartsService;
+    }
+
     @Value("${descarts.service.searchentity.url}")
-    private String EXTERNAL_API_URL;
+    private String externalApiUrl;
     @Value("${descarts.service.searchtype}")
-    private String DescartSearchType;
+    private String descartSearchType;
     @Value("${descarts.service.ssecno}")
-    private String DescartSsecNo;
+    private String descartSsecNo;
     @Value("${descarts.service.password}")
-    private String Descartpassword;
+    private String descartPassword;
     @Override
-    public ResponseEntity<?> createRequestAndSearchEntity(DenialPartySearchEntityRequest commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createRequestAndSearchEntity(DenialPartySearchEntityRequest commonRequestModel) {
 
         SearchEntity searchQuery = new SearchEntity();
         searchQuery.setSname(commonRequestModel.getName());
@@ -56,11 +54,10 @@ public class DenialPartyScreeningService implements IDenialPartyScreeningService
         List<SearchEntity> queryList = new ArrayList<>();
         queryList.add(searchQuery);
         SearchEntityRequest finalSearchQuery = new SearchEntityRequest();
-        finalSearchQuery.set__type(DescartSearchType);
-        finalSearchQuery.setSsecno(DescartSsecNo);
-        finalSearchQuery.setSpassword(Descartpassword);
+        finalSearchQuery.set__type(descartSearchType);
+        finalSearchQuery.setSsecno(descartSsecNo);
+        finalSearchQuery.setSpassword(descartPassword);
         finalSearchQuery.setSearches(queryList);
         return descartsService.searchEntity(finalSearchQuery);
-
     }
 }

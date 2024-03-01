@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -101,13 +102,13 @@ public class HblService implements IHblService {
             .build();
 
     @Value("${v1service.url.base}${v1service.url.hblSync}")
-    private String HBL_V1_SYNC_URL;
+    private String hblV1SyncUrl;
 
     @Autowired
     private IHblSync hblSync;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         HblRequest request = null;
         request = (HblRequest) commonRequestModel.getData();
@@ -121,7 +122,7 @@ public class HblService implements IHblService {
                 hblSync.sync(hbl, UUID.randomUUID().toString());
             }
             catch (Exception e) {
-                log.error("Error performing sync on hbl entity, {}", e);
+                log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
             }
             log.info("Hbl Details created successfully for Id {} with Request Id {}", hbl.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
@@ -134,7 +135,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         HblRequest request = (HblRequest) commonRequestModel.getData();
         long id = request.getId();
@@ -155,7 +156,7 @@ public class HblService implements IHblService {
                 hblSync.sync(hbl, UUID.randomUUID().toString());
             }
             catch (Exception e) {
-                log.error("Error performing sync on hbl entity, {}", e);
+                log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
             }
             log.info("Updated the Hbl details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
@@ -168,17 +169,17 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -198,15 +199,15 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         Long id = ((CommonGetRequest)commonRequestModel.getData()).getId();
         Optional<Hbl> hbl = hblDao.findById(id);
         if (hbl.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
        CommonGetRequest request=((CommonGetRequest)commonRequestModel.getData());
-        if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl.get()));
+        if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl.get()));
         else
             return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
@@ -256,7 +257,7 @@ public class HblService implements IHblService {
         return hbl;
     }
 
-    private Hbl getHblFromShipmentId(Long shipmentId) {
+    private Hbl getHblFromShipmentId(Long shipmentId) throws RunnerException {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
         if (shipmentDetails.isEmpty())
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -292,7 +293,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> generateHBL(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> generateHBL(CommonRequestModel commonRequestModel) throws RunnerException {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
@@ -300,13 +301,13 @@ public class HblService implements IHblService {
             hblSync.sync(hbl, UUID.randomUUID().toString());
         }
         catch (Exception e) {
-            log.error("Error performing sync on hbl entity, {}", e);
+            log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
         }
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
     @Override
-    public ResponseEntity<?> partialUpdateHBL(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) throws RunnerException {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
         if (shipmentDetails.isEmpty())
@@ -317,16 +318,11 @@ public class HblService implements IHblService {
             throw new ValidationException(String.format(HblConstants.HBL_NO_DATA_FOUND_SHIPMENT, shipmentDetails.get().getShipmentId()));
 
         Hbl hbl = hbls.get(0);
-        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-        if(shipmentSettingsDetailsList.isEmpty()){
-            log.error("Failed to fetch Shipment Settings Details");
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
-        if(shipmentSettingsDetails.getRestrictBLEdit()) {
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        if(shipmentSettingsDetails.getRestrictBLEdit() != null && shipmentSettingsDetails.getRestrictBLEdit()) {
             HblResetRequest resetRequest = HblResetRequest.builder().id(hbl.getId()).resetType(HblReset.ALL).build();
             return resetHbl(CommonRequestModel.buildRequest(resetRequest));
-        } else if (shipmentSettingsDetails.getAutoUpdateShipmentBL()){
+        } else if (shipmentSettingsDetails.getAutoUpdateShipmentBL() != null && shipmentSettingsDetails.getAutoUpdateShipmentBL()){
             updateHblFromShipment(shipmentDetails.get(), hbl, shipmentSettingsDetails);
             hbl = hblDao.save(hbl);
         }
@@ -335,7 +331,7 @@ public class HblService implements IHblService {
             hblSync.sync(hbl, UUID.randomUUID().toString());
         }
         catch (Exception e) {
-            log.error("Error performing sync on hbl entity, {}", e);
+            log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
         }
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
@@ -350,14 +346,24 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveByShipmentId(CommonRequestModel request) {
+    public ResponseEntity<IRunnerResponse> retrieveByShipmentId(CommonRequestModel request) {
         Long shipmentId = ((CommonGetRequest) request.getData()).getId();
+
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        if(shipmentSettingsDetails != null && ((shipmentSettingsDetails.getRestrictBLEdit() != null && shipmentSettingsDetails.getRestrictBLEdit()) || (shipmentSettingsDetails.getAutoUpdateShipmentBL() != null && shipmentSettingsDetails.getAutoUpdateShipmentBL()))){
+            HblGenerateRequest req = HblGenerateRequest.builder().shipmentId(shipmentId).build();
+            try {
+                partialUpdateHBL(CommonRequestModel.buildRequest(req));
+            } catch (Exception ex){
+                log.error("Error while partially updating Hbl fields due to: "+ ex.getMessage());
+            }
+        }
         List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
         return ResponseHelper.buildSuccessResponse(hbls.isEmpty() ? null : convertEntityToDto(hbls.get(0)));
     }
 
     @Override
-    public ResponseEntity<?> resetHbl(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel commonRequestModel) throws RunnerException {
         HblResetRequest request = (HblResetRequest) commonRequestModel.getData();
         Optional<Hbl> hblOptional = hblDao.findById(request.getId());
         if (hblOptional.isEmpty()) {
@@ -400,7 +406,7 @@ public class HblService implements IHblService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
 
-    private Hbl getDefaultHblFromShipment(ShipmentDetails shipmentDetails) {
+    private Hbl getDefaultHblFromShipment(ShipmentDetails shipmentDetails) throws RunnerException {
         HblDataDto hblData = mapShipmentToHBL(shipmentDetails);
         List<HblCargoDto> hblCargos = mapShipmentCargoToHBL(shipmentDetails.getPackingList(), shipmentDetails.getContainersList());
         List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails);
@@ -435,7 +441,7 @@ public class HblService implements IHblService {
     }
 
 
-    private HblDataDto mapShipmentToHBL(ShipmentDetails shipmentDetail) {
+    private HblDataDto mapShipmentToHBL(ShipmentDetails shipmentDetail) throws RunnerException {
         HblDataDto hblData = HblDataDto.builder().build();
         hblData.setShipmentId(shipmentDetail.getId());
         if(shipmentDetail.getConsigner() != null) {
@@ -478,17 +484,17 @@ public class HblService implements IHblService {
             syncShipment = true;
         }
         hblData.setHouseBill(shipmentDetail.getHouseBill());
-        hblData.setVesselName(carrierDetails.getVessel());
+        hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
         hblData.setNoOfCopies(StringUtility.convertToString(additionalDetails.getCopy()));
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
         hblData.setVoyage(carrierDetails.getVoyage());
-        if (!Objects.isNull(additionalDetails.getExportBroker())) {
-            Parties exportBroker = additionalDetails.getExportBroker();
-            if (!Objects.isNull(exportBroker.getOrgData()) && exportBroker.getOrgData().containsKey(PartiesConstants.FULLNAME))
-                hblData.setDeliveryAgent(String.valueOf(exportBroker.getOrgData().get(PartiesConstants.FULLNAME)));
-            if (!Objects.isNull(exportBroker.getAddressData()) )
-                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(exportBroker.getAddressData()));
+        if (!Objects.isNull(additionalDetails.getImportBroker())) {
+            Parties broker = additionalDetails.getImportBroker();
+            if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME))
+                hblData.setDeliveryAgent(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)));
+            if (!Objects.isNull(broker.getAddressData()) )
+                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(broker.getAddressData()));
         }
         UnlocationsResponse destination = masterDataUtil.getUNLocRow(carrierDetails.getDestination());
         // TODO: This needs to re-visit after incorporating this setting in service
@@ -534,16 +540,18 @@ public class HblService implements IHblService {
         String newLine = "\r\n";
         if (addressData.containsKey(PartiesConstants.COMPANY_NAME))
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.COMPANY_NAME)));
+        if (addressData.containsKey(PartiesConstants.ADDRESS1))
+            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1)));
         if (addressData.containsKey(PartiesConstants.CITY))
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CITY)));
         if (addressData.containsKey(PartiesConstants.COUNTRY))
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)));
-        if (addressData.containsKey(PartiesConstants.PIN_CODE))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.PIN_CODE)));
-        if (addressData.containsKey(PartiesConstants.CONTACT_NUMBER))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CONTACT_NUMBER)));
+        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE))
+            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE)));
+        if (addressData.containsKey(PartiesConstants.CONTACT_PHONE))
+            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CONTACT_PHONE)));
 
-        return sb.toString();
+        return  !sb.isEmpty() && sb.toString().length() >= 2 ? sb.substring(2) : sb.toString();
     }
 
     private List<HblContainerDto> mapShipmentContainersToHBL(ShipmentDetails shipment) {
@@ -654,7 +662,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> saveV1Hbl(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> saveV1Hbl(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         String responseMsg;
         HblRequestV2 request = (HblRequestV2) commonRequestModel.getData();
         if(request == null) {
@@ -751,7 +759,7 @@ public class HblService implements IHblService {
         if(!hblLock.getHouseBillLock())
             hblData.setHouseBill(shipmentDetail.getHouseBill());
         if(!hblLock.getVesselNameLock())
-            hblData.setVesselName(carrierDetails.getVessel());
+            hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
 
         // TODO: This needs to re-visit after incorporating this setting in service
         if (/*Unico HBL*/true) {
@@ -804,19 +812,21 @@ public class HblService implements IHblService {
         if(containers != null && containers.size() > 0)
             map = containers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         Map<Long, String> finalMap = map;
-        hbl.getHblCargo().forEach(cargo -> {
-            if(packMap.containsKey(cargo.getGuid())){
-                String containerNumber = null;
-                Packing packing = packMap.get(cargo.getGuid());
-                if(packing != null && packing.getContainerId() != null && finalMap.containsKey(packing.getContainerId()))
-                    containerNumber = finalMap.get(packing.getContainerId());
-                updateShipmentCargoFieldToHbl(packing, cargo, hblLock, containerNumber);
-                packMap.remove(cargo.getGuid());
-            }else {
-                deletedList.add(cargo);
-            }
-        });
-        hbl.getHblCargo().removeAll(deletedList);
+        if(hbl.getHblCargo() != null && !hbl.getHblCargo().isEmpty()) {
+            hbl.getHblCargo().forEach(cargo -> {
+                if (packMap.containsKey(cargo.getGuid())) {
+                    String containerNumber = null;
+                    Packing packing = packMap.get(cargo.getGuid());
+                    if (packing != null && packing.getContainerId() != null && finalMap.containsKey(packing.getContainerId()))
+                        containerNumber = finalMap.get(packing.getContainerId());
+                    updateShipmentCargoFieldToHbl(packing, cargo, hblLock, containerNumber);
+                    packMap.remove(cargo.getGuid());
+                } else {
+                    deletedList.add(cargo);
+                }
+            });
+            hbl.getHblCargo().removeAll(deletedList);
+        }
 
         packMap.forEach((guid, pack) -> {
             HblCargoDto cargo = HblCargoDto.builder().build();
@@ -833,6 +843,9 @@ public class HblService implements IHblService {
             cargo.setMarksAndNumbers(pack.getMarksnNums());
             cargo.setPackageCount(Integer.parseInt(pack.getPacks() == null ? "0" : pack.getPacks()));
             cargo.setPackageType(pack.getPacksType());
+            if(hbl.getHblCargo() == null){
+                hbl.setHblCargo(new ArrayList<>());
+            }
             hbl.getHblCargo().add(cargo);
         });
     }
@@ -867,15 +880,17 @@ public class HblService implements IHblService {
             contMap.put(cont.getGuid(), cont);
         });
         List<HblContainerDto> deletedList = new ArrayList<>();
-        hbl.getHblContainer().forEach(hblCont -> {
-            if(contMap.containsKey(hblCont.getGuid())){
-                updateShipmentContainersToHBL(contMap.get(hblCont.getGuid()), hblCont, hblLock);
-                contMap.remove(hblCont.getGuid());
-            }else {
-                deletedList.add(hblCont);
-            }
-        });
-        hbl.getHblContainer().removeAll(deletedList);
+        if(hbl.getHblContainer() != null && !hbl.getHblContainer().isEmpty()) {
+            hbl.getHblContainer().forEach(hblCont -> {
+                if (contMap.containsKey(hblCont.getGuid())) {
+                    updateShipmentContainersToHBL(contMap.get(hblCont.getGuid()), hblCont, hblLock);
+                    contMap.remove(hblCont.getGuid());
+                } else {
+                    deletedList.add(hblCont);
+                }
+            });
+            hbl.getHblContainer().removeAll(deletedList);
+        }
 
         if(!contMap.isEmpty()) {
             contMap.forEach((guid, container) -> {
@@ -894,6 +909,9 @@ public class HblService implements IHblService {
                 hblContainer.setCustomsSealNumber(container.getCustomsSealNumber());
                 hblContainer.setContainerDesc(container.getDescriptionOfGoods());
                 hblContainer.setQuantity(container.getContainerCount());
+                if(hbl.getHblContainer() == null){
+                    hbl.setHblContainer(new ArrayList<>());
+                }
                 hbl.getHblContainer().add(hblContainer);
             });
         }
@@ -925,22 +943,24 @@ public class HblService implements IHblService {
     private void updateShipmentPartiesToHBL(Parties party, Hbl hbl, HblLockSettings hblLock) {
         boolean createNotifyParty = true;
         HblPartyDto deleteParty = new HblPartyDto();
-        for(var hblParty: hbl.getHblNotifyParty()){
-            if(hblParty.getIsShipmentCreated() != null && hblParty.getIsShipmentCreated()){
-                createNotifyParty = false;
-                if(party != null){
-                    if(!hblLock.getNotifyPartyNameLock())
-                        hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
-                    if(!hblLock.getNotifyPartyAddressLock())
-                        hblParty.setAddress(constructAddress(party.getAddressData()));
-                    if(!hblLock.getNotifyPartyEmailLock())
-                        hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
-                } else {
-                    deleteParty = hblParty;
+        if(hbl.getHblNotifyParty() != null && !hbl.getHblNotifyParty().isEmpty()) {
+            for (var hblParty : hbl.getHblNotifyParty()) {
+                if (hblParty.getIsShipmentCreated() != null && hblParty.getIsShipmentCreated()) {
+                    createNotifyParty = false;
+                    if (party != null) {
+                        if (!hblLock.getNotifyPartyNameLock())
+                            hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
+                        if (!hblLock.getNotifyPartyAddressLock())
+                            hblParty.setAddress(constructAddress(party.getAddressData()));
+                        if (!hblLock.getNotifyPartyEmailLock())
+                            hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+                    } else {
+                        deleteParty = hblParty;
+                    }
                 }
             }
+            hbl.getHblNotifyParty().remove(deleteParty);
         }
-        hbl.getHblNotifyParty().remove(deleteParty);
 
         HblPartyDto hblParty = HblPartyDto.builder().build();
         if (party != null && createNotifyParty) {
@@ -948,6 +968,9 @@ public class HblService implements IHblService {
             hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
             hblParty.setAddress(constructAddress(party.getAddressData()));
             hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+            if(hbl.getHblNotifyParty() == null){
+                hbl.setHblNotifyParty(new ArrayList<>());
+            }
             hbl.getHblNotifyParty().add(hblParty);
         }
 
@@ -997,6 +1020,7 @@ public class HblService implements IHblService {
                     hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
                 }
                 break;
+            default:
         }
 
     }
@@ -1005,7 +1029,7 @@ public class HblService implements IHblService {
         if (Objects.isNull(key) || !v1Data.containsKey(key))
             return StringUtility.getEmptyString();
 
-        return v1Data.get(key).getPortName();
+        return v1Data.get(key).getLocCode() + " " + v1Data.get(key).getNameWoDiacritics();
     }
-    
+
 }

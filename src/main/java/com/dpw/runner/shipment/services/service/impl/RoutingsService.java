@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.RoutingsConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -84,7 +85,7 @@ public class RoutingsService implements IRoutingsService {
     private SyncEntityConversionService syncEntityConversionService;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -115,7 +116,7 @@ public class RoutingsService implements IRoutingsService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -128,7 +129,7 @@ public class RoutingsService implements IRoutingsService {
         long id = request.getId();
         Optional<Routings> oldEntity = routingsDao.findById(id);
         if (oldEntity.isEmpty()) {
-            log.debug("Routings is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(RoutingsConstants.ROUTING_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -161,7 +162,7 @@ public class RoutingsService implements IRoutingsService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -185,7 +186,7 @@ public class RoutingsService implements IRoutingsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -208,7 +209,7 @@ public class RoutingsService implements IRoutingsService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -222,7 +223,7 @@ public class RoutingsService implements IRoutingsService {
 
             Optional<Routings> routings = routingsDao.findById(id);
             if (routings.isEmpty()) {
-                log.debug("Routings is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(RoutingsConstants.ROUTING_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
@@ -249,7 +250,7 @@ public class RoutingsService implements IRoutingsService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -262,13 +263,13 @@ public class RoutingsService implements IRoutingsService {
             long id = request.getId();
             Optional<Routings> notes = routingsDao.findById(id);
             if (notes.isEmpty()) {
-                log.debug("Routings is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(RoutingsConstants.ROUTING_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Routings details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             RoutingsResponse response = convertEntityToDto(notes.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response,request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -293,7 +294,7 @@ public class RoutingsService implements IRoutingsService {
     }
 
     @Override
-    public ResponseEntity<?> V1RoutingsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1RoutingsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         RoutingsRequestV2 routingsRequestV2 = (RoutingsRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
@@ -301,7 +302,7 @@ public class RoutingsService implements IRoutingsService {
             }
             Optional<Routings> existingRouting = routingsDao.findByGuid(routingsRequestV2.getGuid());
             Routings routings = syncEntityConversionService.routingV1ToV2(routingsRequestV2);
-            if (existingRouting != null && existingRouting.isPresent()) {
+            if (existingRouting.isPresent()) {
                 routings.setId(existingRouting.get().getId());
                 routings.setConsolidationId(existingRouting.get().getConsolidationId());
                 routings.setShipmentId(existingRouting.get().getShipmentId());

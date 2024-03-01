@@ -12,5 +12,6 @@ public class RoutingsConstants {
     public static final String ROUTINGS_DELETE_SUCCESSFUL = "Successful Routings Delete";
 
     public static final String ROUTINGS_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Routings Retrieval By Id";
+    public static final String ROUTING_RETRIEVE_BY_ID_ERROR = "Routings is null for Id {} with Request Id {}";
 
 }

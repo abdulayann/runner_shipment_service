@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.commons.constants;
 import java.util.List;
 
 public class Constants {
-    public static final String TRANSPORT_MODE = "transportMode";
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
     public static final String SHIPMENT_TYPE = "shipmentType";
@@ -118,6 +117,7 @@ public class Constants {
     public static final String TRANSPORT_MODE_FSA = "FSA";
     public static final String TRANSPORT_MODE_FAS = "FAS";
     public static final String SHIPMENT_TYPE_LCL = "LCL";
+    public static final String SHIPMENT_TYPE_LSE = "LSE";
     public static final String CARGO_TYPE_FCL = "FCL";
     public static final String DIRECTION_EXP = "EXP";
     public static final String JOB_TYPE_CLB = "CLB";
@@ -161,6 +161,7 @@ public class Constants {
     public static final String SERVICE = "Service";
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
     public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
+    public static final String CARRIER_BOOKING_STATUS = "CarrierBookingStatus";
 
     /**
      * Events
@@ -264,7 +265,7 @@ public class Constants {
     public static final String IN = "IN";
     public static final String FT = "FT";
     public static final String M = "M";
-    public static final String EQUALS = "=";
+    public static final String EQ = "=";
     public static final String CROSS = "X";
     public static final String DEFAULT_DIMN_TEXT = "DIMS: In ";
     public static final String KGS = "KGS";
@@ -289,37 +290,87 @@ public class Constants {
     public static final String CARRIER_BOOKING_CREATE = "CarrierBooking:Create";
     public static final String CARRIER_BOOKING_VIEW = "CarrierBooking:View";
 
-    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber","descriptionOfGoods","noOfPackages","netWeight","netWeightUnit",
+    public static final String CONTAINER_CODE = "containerCode";
+    public static final String IS_DELETED = "isDeleted";
+    public static final String SHIPMENT_ID = "shipmentId";
+    public static final String TENANT_ID = "tenantId";
+    public static final String CONSOLIDATION_ID = "consolidationId";
+    public static final String SHIPMENTS_LIST = "shipmentsList";
+    public static final String CREATED_AT = "createdAt";
+    public static final String UPDATED_BY = "updatedBy";
+    public static final String CREATED_BY = "createdBy";
+    public static final String UPDATED_AT = "updatedAt";
+    public static final String TRANSPORT_MODE = "transportMode";
+    public static final String YYYY_MM_DD_T_HH_MM_SS = "yyyy-MM-dd'T'HH:mm:ss";
+    public static final String CONTAINER_ID = "containerId";
+    public static final String CARRIER_DETAILS = "carrierDetails";
+    public static final String CONSOLIDATION_DETAILS = "ConsolidationDetails";
+    public static final String ERROR_OCCURRED_FOR_EVENT = "Request: {} || Error occured for event: {} with exception: {}";
+    public static final String XLSX = ".xlsx";
+    public static final String YYYY_MM_DD_HH_MM_SS_FORMAT = "yyyyMMddHHmmss";
+    public static final String CONTENT_TYPE_FOR_EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    public static final String CONTENT_DISPOSITION = "Content-Disposition";
+    public static final String ATTACHMENT_FILENAME = "attachment; filename=";
+    public static final String STRING_FORMAT = "%.2f %s";
+    public static final String ORG_CODE = "orgCode";
+    public static final String ADDRESS_CODE = "addressCode";
+    public static final String DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR = "View is null for Id {} with Request Id {}";
+    public static final String SALT_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+    public static final String CLIENT = "client";
+    public static final String CONSIGNER = "consigner";
+    public static final String CONSIGNEE = "consignee";
+    public static final String SHIPMENT_DETAILS = "ShipmentDetails";
+    public static final String ADDITIONAL_DETAILS = "additionalDetails";
+    public static final String STATUS = "status";
+    public static final String JOB_TYPE = "jobType";
+    public static final String DELIVERY_DETAILS = "deliveryDetails";
+    public static final String PICKUP_DETAILS = "pickupDetails";
+    public static final String FLIGHT_NUMBER = "flightNumber";
+    public static final String SHIPPING_LINE = "shippingLine";
+    public static final String VESSEL = "vessel";
+    public static final String VOYAGE = "voyage";
+    public static final String ORIGIN_PORT = "originPort";
+    public static final String DESTINATION_PORT = "destinationPort";
+    public static final String IS_NULL = "ISNULL";
+    public static final String CONTAINERS_LIST = "containersList";
+    public static final String CONSOLIDATION_LIST = "consolidationList";
+    public static final String ORDER_MANAGEMENT_ID = "orderManagementId";
+    public static final String HANDLING_INFO = "handlingInfo";
+    public static final String DESCRIPTION_OF_GOODS = "descriptionOfGoods";
+    public static final String BOOKING_STATUS_FIELD = "bookingStatus";
+
+    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,"noOfPackages","netWeight","netWeightUnit",
             "grossWeight","grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
-            "containerComments","containerCode","isReefer","minTemp","minTempUnit", "hblDeliveryMode","dgClass","hazardous",
-            "hazardousUn","commodityCode","isDeleted","pacrNumber","serialNumber","innerPackageNumber","innerPackageType",
+            "containerComments", CONTAINER_CODE,"isReefer","minTemp","minTempUnit", "hblDeliveryMode","dgClass","hazardous",
+            "hazardousUn","commodityCode", IS_DELETED,"pacrNumber","serialNumber","innerPackageNumber","innerPackageType",
             "packageLength","packageBreadth","packageHeight","isTemperatureMaintained",
-            "id", "bookingId", "consolidationId", "shipmentId", "containerTypeId", "maxTemp", "maxTempUnit", "tenantId",
-            "containerTypeDescription", "allocationDate", "CommodityGstPercentage", "createdBy", "createdAt", "updatedBy",
-            "updatedAt", "guid", "containerStuffingLocation","containerCount", "truckingDetails");
+            "id", "bookingId", CONSOLIDATION_ID, SHIPMENT_ID, "containerTypeId", "maxTemp", "maxTempUnit", TENANT_ID,
+            "containerTypeDescription", "allocationDate", "CommodityGstPercentage", CREATED_BY, CREATED_AT, UPDATED_BY,
+            UPDATED_AT, "guid", "containerStuffingLocation","containerCount", "truckingDetails");
 
-    public static final List<String> ColumnsToBeDeleted = List.of("id", "bookingId", "ShippingInstructionId", "consolidationId",
-            "shipmentId", "containerCode", "commodityCode", "maxTemp", "maxTempUnit", "tenantId",
+    public static final List<String> ColumnsToBeDeleted = List.of("id", "bookingId", "ShippingInstructionId", CONSOLIDATION_ID,
+            SHIPMENT_ID, CONTAINER_CODE, "commodityCode", "maxTemp", "maxTempUnit", TENANT_ID,
             "containerTypeTEU", "perContainerCostRate","perContainerSellRate","currentCostRate",
             "minimumCost",  "totalCostValue","currentSellRate", "minimumSell", "totalSellValue", "pickupAddress",
-            "deliveryAddress", "allocationDate", "createdBy", "createdAt", "updatedBy",
-            "updatedAt", "eventsList", "isDeleted", "truckingDetails");
+            "deliveryAddress", "allocationDate", CREATED_BY, CREATED_AT, UPDATED_BY,
+            UPDATED_AT, "eventsList", IS_DELETED, "truckingDetails");
 
-    public static final List<String> ColumnsToBeDeletedForCargo = List.of("sealNumber","noOfPackages", "isOwnContainer", "ownType", "isDeleted",
+    public static final List<String> ColumnsToBeDeletedForCargo = List.of("sealNumber","noOfPackages", "isOwnContainer", "ownType", IS_DELETED,
             "measurement","measurementUnit","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber",
-            "containerCode","isReefer","containerNumber",
-            "containerStuffingLocation","containerCount","transportMode","hazardousCheckBox");
+            CONTAINER_CODE,"isReefer","containerNumber",
+            "containerStuffingLocation","containerCount", TRANSPORT_MODE,"hazardousCheckBox");
 
-    public static final List<String> ColumnsToBeDeletedForContainer = List.of( "isDeleted","serialNumber", "innerPackageNumber", "innerPackageType",
+    public static final List<String> ColumnsToBeDeletedForContainer = List.of(IS_DELETED,"serialNumber", "innerPackageNumber", "innerPackageType",
             "packageLength", "packageBreadth", "packageHeight", "innerPackageMeasurementUnit",
-            "isTemperatureMaintained","chargeable", "chargeableUnit", "transportMode",
+            "isTemperatureMaintained","chargeable", "chargeableUnit", TRANSPORT_MODE,
             "hazardousCheckBox");
 
-    public static final List<String> ColumnsToBeDeletedForConsolidationCargo = List.of( "id", "consolidationId", "DGGoodsId",
-            "shipmentId", "commodityId", "tenantId", "containerId", "transportMode",
-            "createdBy", "createdAt", "updatedBy", "updatedAt", "isDeleted", "vinNumber");
+    public static final List<String> ColumnsToBeDeletedForConsolidationCargo = List.of( "id", CONSOLIDATION_ID, "DGGoodsId",
+            SHIPMENT_ID, "commodityId", TENANT_ID, CONTAINER_ID, TRANSPORT_MODE,
+            CREATED_BY, CREATED_AT, UPDATED_BY, UPDATED_AT, IS_DELETED, "vinNumber");
 
+    public static final String WITH_REQUEST_ID_MSG = " with Request Id {}";
 }

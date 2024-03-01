@@ -100,7 +100,7 @@ public class BookingConfirmationReport extends IReport{
             bookingConfirmationModel.podCountry = location.getCountry();
         }
 
-        bookingConfirmationModel.referenceNumbersList = bookingConfirmationModel.shipment.getReferenceNumbersList();
+        bookingConfirmationModel.setReferenceNumbersList(bookingConfirmationModel.shipment.getReferenceNumbersList());
         MasterData masterData = getMasterListData(MasterDataType.PAYMENT, bookingConfirmationModel.shipment.getPaymentTerms());
         bookingConfirmationModel.paymentTerms = (masterData != null ? masterData.getItemDescription() : null);
         masterData = getMasterListData(MasterDataType.SERVICE_MODE, bookingConfirmationModel.shipment.getServiceType());
@@ -172,7 +172,7 @@ public class BookingConfirmationReport extends IReport{
 
         dictionary.put(ReportConstants.MOVEMENT_TYPE, bookingConfirmationModel.shipment.getTransportMode());
 
-        List<ReferenceNumbersModel> referenceNumbers = bookingConfirmationModel.referenceNumbersList;
+        List<ReferenceNumbersModel> referenceNumbers = bookingConfirmationModel.getReferenceNumbersList();
 
         if (referenceNumbers != null && referenceNumbers.size() > 0) {
             List<ReferenceNumbersModel> conditionBasedReferenceNo = new ArrayList<>();

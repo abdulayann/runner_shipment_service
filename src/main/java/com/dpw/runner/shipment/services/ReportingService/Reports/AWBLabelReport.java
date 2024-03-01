@@ -79,12 +79,12 @@ public class AWBLabelReport extends IReport{
         }
         if(awbLabelModel.tenant != null) {
             ReportHelper.addTenantDetails(dictionary, awbLabelModel.tenant);
-            awbLabelModel.TenantAddress = ReportHelper.getListOfStrings(awbLabelModel.tenant.tenantName, awbLabelModel.tenant.address1,
+            awbLabelModel.setTenantAddress(ReportHelper.getListOfStrings(awbLabelModel.tenant.tenantName, awbLabelModel.tenant.address1,
                     awbLabelModel.tenant.address2, awbLabelModel.tenant.city, awbLabelModel.tenant.state,
                     awbLabelModel.tenant.zipPostCode, awbLabelModel.tenant.country, awbLabelModel.tenant.email,
-                    awbLabelModel.tenant.websiteUrl, awbLabelModel.tenant.phone);
-            if (awbLabelModel.TenantAddress != null)
-                dictionary.put(ReportConstants.TENANT, awbLabelModel.TenantAddress);
+                    awbLabelModel.tenant.websiteUrl, awbLabelModel.tenant.phone));
+            if (awbLabelModel.getTenantAddress() != null)
+                dictionary.put(ReportConstants.TENANT, awbLabelModel.getTenantAddress());
         }
         dictionary.put(ReportConstants.HAWB_NUMBER, awbLabelModel.shipment.getHouseBill());
 

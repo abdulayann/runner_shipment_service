@@ -68,9 +68,9 @@ public class CreateBookingModuleInV1 {
         private String ConsignorCountryFilter;
         private String ConsigneeCountryFilter;
         private String NotifyPartyCountryFilter;
-        private String SalesBranch;
-        private String PrimarySalesAgentEmail;
-        private String SecondarySalesAgentEmail;
+//        private String SalesBranch;
+//        private String PrimarySalesAgentEmail;
+//        private String SecondarySalesAgentEmail;
 
         private List<QuoteContainer> QuoteContainers;
         private List<Routing> RoutingList;
@@ -79,6 +79,7 @@ public class CreateBookingModuleInV1 {
         private List<OrgDetail> OrgDetails;
         private List<BillCharge> BillCharges;
         private List<Notes> CustomerBookingNoteList;
+        private String LastTransactionLoadJson;
 
         @Data
         @Builder
@@ -250,6 +251,15 @@ public class CreateBookingModuleInV1 {
                 private String Mobile;
                 private String Email;
             }
+        }
+
+        @Data
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class LastTransactionLoadDetails {
+            private String LoadKey;
+            private Integer LoadQuantity;
         }
     }
 }

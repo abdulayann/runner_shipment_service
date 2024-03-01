@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
@@ -35,7 +36,7 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
     IShipmentSettingsDao shipmentSettingsDao;
 
     @Override
-    public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel) {
         String responseMessage;
         ShipmentSettingsSyncRequest req = (ShipmentSettingsSyncRequest) commonRequestModel.getData();
         try {

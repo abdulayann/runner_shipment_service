@@ -18,4 +18,5 @@ public class ValidatorConstants {
     public static final String VALUE = "value";
     public static final String ARRAY_PROPERTIES = "array-properties";
     public static final String UNIQUE = "unique";
+    public static final String ERRORS = "errors";
 }

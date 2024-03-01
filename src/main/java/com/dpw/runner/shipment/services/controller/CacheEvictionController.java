@@ -1,9 +1,14 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CacheRequest;
+import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
 import com.dpw.runner.shipment.services.service.impl.CacheEvictionService;
@@ -13,21 +18,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
-
-
 @RestController
 @Slf4j
 @RequestMapping(CacheConstants.CACHE_API_HANDLE)
 public class CacheEvictionController {
+
+    private final CacheEvictionService cacheEviction;
+    private final ApiKeyAuthenticationService authenticationService;
+
+
     @Autowired
-    private CacheEvictionService cacheEviction;
-    @Autowired
-    private ApiKeyAuthenticationService authenticationService;
+    public CacheEvictionController(CacheEvictionService cacheEviction, ApiKeyAuthenticationService authenticationService) {
+        this.cacheEviction = cacheEviction;
+        this.authenticationService = authenticationService;
+    }
 
     @GetMapping(CacheConstants.EVICT_ALL_CACHE)
     @ExcludeTimeZone
-    public ResponseEntity<?> evictAllCache(@RequestHeader("x-api-key") String xApiKey) {
+    public ResponseEntity<IRunnerResponse> evictAllCache(@RequestHeader(ApiConstants.X_API_KEY) String xApiKey) {
         String responseMsg;
         try {
             log.info("Request received for EVICT_ALL_CACHE");
@@ -44,7 +52,7 @@ public class CacheEvictionController {
 
     @PostMapping(CacheConstants.EVICT_CACHE_BY_KEY)
     @ExcludeTimeZone
-    public ResponseEntity<?> evictCache(@RequestBody CacheRequest request, @RequestHeader("x-api-key") String xApiKey) {
+    public ResponseEntity<IRunnerResponse> evictCache(@RequestBody CacheRequest request, @RequestHeader(ApiConstants.X_API_KEY) String xApiKey) {
         String responseMsg;
         try {
             log.info("Request received for EVICT_CACHE_BY_KEY with key: {}", request.getKey());

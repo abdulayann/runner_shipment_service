@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.FreightCertifica
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
@@ -53,11 +54,11 @@ public class FreightCertificationReport extends IReport{
         FreightCertificationModel freightCertificationModel = new FreightCertificationModel();
         freightCertificationModel.shipmentDetails = getShipment(id);
         freightCertificationModel.tenantDetails = getTenant();
-        freightCertificationModel.allContainersList = new ArrayList<>();
+        freightCertificationModel.setAllContainersList(new ArrayList<>());
         if(freightCertificationModel.shipmentDetails.getContainersList() != null && freightCertificationModel.shipmentDetails.getContainersList().size() > 0) {
             for (ContainerModel containers: freightCertificationModel.shipmentDetails.getContainersList()) {
                 ShipmentContainers shipmentContainers = jsonHelper.convertValue(containers, ShipmentContainers.class);
-                freightCertificationModel.allContainersList.add(shipmentContainers);
+                freightCertificationModel.getAllContainersList().add(shipmentContainers);
             }
         }
         freightCertificationModel.noofpackages_word = numberToWords(freightCertificationModel.shipmentDetails.getNoOfPacks());
@@ -77,8 +78,8 @@ public class FreightCertificationReport extends IReport{
             consigner = getOrgAddress(freightCertificationModel.shipmentDetails.getConsigner());
             if(freightCertificationModel.shipmentDetails.getConsigner().getOrgData() != null) {
                 Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getConsigner().getOrgData();
-                if(getValueFromMap(partyOrg, "FullName") != null) {
-                    consigner.add(0, getValueFromMap(partyOrg, "FullName"));
+                if(getValueFromMap(partyOrg, FULL_NAME1) != null) {
+                    consigner.add(0, getValueFromMap(partyOrg, FULL_NAME1));
                 }
             }
         }
@@ -88,8 +89,8 @@ public class FreightCertificationReport extends IReport{
             consignee = getOrgAddress(freightCertificationModel.shipmentDetails.getConsignee());
             if(freightCertificationModel.shipmentDetails.getConsignee().getOrgData() != null) {
                 Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getConsignee().getOrgData();
-                if(getValueFromMap(partyOrg, "FullName") != null) {
-                    consignee.add(0, getValueFromMap(partyOrg, "FullName"));
+                if(getValueFromMap(partyOrg, FULL_NAME1) != null) {
+                    consignee.add(0, getValueFromMap(partyOrg, FULL_NAME1));
                 }
             }
         }
@@ -99,8 +100,8 @@ public class FreightCertificationReport extends IReport{
             notify = getOrgAddress(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
             if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null) {
                 Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData();
-                if(getValueFromMap(partyOrg, "FullName") != null) {
-                    notify.add(0, getValueFromMap(partyOrg, "FullName"));
+                if(getValueFromMap(partyOrg, FULL_NAME1) != null) {
+                    notify.add(0, getValueFromMap(partyOrg, FULL_NAME1));
                 }
             }
         }
@@ -110,8 +111,8 @@ public class FreightCertificationReport extends IReport{
                 freightCertificationModel.tenantDetails.email, freightCertificationModel.tenantDetails.websiteUrl, freightCertificationModel.tenantDetails.phone);
         if(tenantsDataList != null)
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
-        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(freightCertificationModel.allContainersList));
-        dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(freightCertificationModel.shipmentDetails.getClient().getOrgData(), "FullName"));
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(freightCertificationModel.getAllContainersList()));
+        dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(freightCertificationModel.shipmentDetails.getClient().getOrgData(), FULL_NAME1));
         dictionary.put(ReportConstants.CONSIGNER, consigner);
         dictionary.put(ReportConstants.CONSIGNEE, consignee);
         dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
@@ -138,7 +139,7 @@ public class FreightCertificationReport extends IReport{
                 }
             }
         }
-        V1TenantSettingsResponse tenantSettingsRow = getTenantSettings();
+        V1TenantSettingsResponse tenantSettingsRow = TenantSettingsDetailsContext.getCurrentTenantSettings();
 
         if(tenantSettingsRow != null && tenantSettingsRow.isEnableIGMDetails())
         {

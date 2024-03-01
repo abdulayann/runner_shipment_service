@@ -15,9 +15,10 @@ import java.util.List;
 public class ListCommonRequest implements IRunnerRequest{
     private List<FilterCriteria> filterCriteria;
     private SortRequest sortRequest;
-    @Min(value = 1, message = Constants.PageNumberError)
-    private int pageNo;
-    private int pageSize;
+    @Builder.Default
+    private Integer pageNo = 1;
+    @Builder.Default
+    private Integer pageSize = Integer.MAX_VALUE;
     private List<String> includeTbls;
     private String containsText;
     private List<String> includeColumns;

@@ -10,13 +10,12 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -24,7 +23,6 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
@@ -478,6 +476,7 @@ public class MasterDataUtils{
         criteria.addAll(List.of(field, operator, List.of(chargeCode)));
         V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(CommonV1ListRequest.builder().criteriaRequests(criteria).build());
         List<EntityTransferChargeType> list = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferChargeType.class);
+        log.info("ChargeCodes list from V1: " + jsonHelper.convertToJson(list));
         return list.stream().collect(Collectors.toMap(EntityTransferChargeType::getChargeCode, Function.identity(), (oldValue, newValue) -> newValue));
 
     }
@@ -1045,7 +1044,7 @@ public class MasterDataUtils{
             return fieldNameMasterDataMap;
 
         fieldNameKeyMap.forEach((key, value) -> {
-            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType, value));
+            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType.equalsIgnoreCase(CacheConstants.UNLOCATIONS_AWB) ? CacheConstants.UNLOCATIONS : masterDataType, value));
             if(!Objects.isNull(cache)) {
                 switch (masterDataType) {
                     case CacheConstants.UNLOCATIONS:
@@ -1310,7 +1309,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<MasterDataDescriptionResponse> getMasterDataDescription(ShipmentSettingsDetails tenantSetting) throws Exception {
+    public List<MasterDataDescriptionResponse> getMasterDataDescription(ShipmentSettingsDetails tenantSetting) throws RunnerException, ClassNotFoundException, IllegalAccessException, NoSuchFieldException {
         ShipmentSettingsDetailsResponse shipmentSettingsDetailsResponse = jsonHelper.convertValue(tenantSetting, ShipmentSettingsDetailsResponse.class);
         List<MasterDataDescriptionResponse> res = new ArrayList<>();
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -1529,20 +1528,104 @@ public class MasterDataUtils{
             orgRequest.setCriteriaRequests(orgCriteria);
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
             response = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
-        } catch (Exception e) {
-        }
+        } catch (Exception e) { }
         return response;
     }
 
-    public List<String> GetTheVesselNameForMMSINUmber(List<String> vessels) {
-        if (vessels == null || vessels.isEmpty())
-            return new ArrayList<>();
-        List<Object> vesselCriteria = new ArrayList<>(List.of(Arrays.asList("Mmsi"), Operators.IN.getValue(), List.of(vessels)));
-        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
-        V1DataResponse vesselResponse = v1Service.fetchVesselData(vesselRequest);
-        List<VesselsResponse> vesselsResponse = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
-        if (vesselsResponse != null && vesselsResponse.size() > 0)
-            return vesselsResponse.stream().map(v -> v.getName()).collect(Collectors.toList());
-        return new ArrayList<>();
+    public Map<String, WareHouseResponse> fetchWareHouseData(List<Long> request) {
+        return fetchInWareHousesList(request.stream().filter(Objects::nonNull)
+                .map(StringUtility::convertToString).collect(Collectors.toList()));
+    }
+
+    /**
+     * * Used to Fetch Bill Info from V1 for Shipments
+     * @param shipmentDetails
+     * @param responseList
+     */
+    public void fetchBillDataForShipments(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
+        Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
+        for (IRunnerResponse response : responseList)
+            dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
+
+        if(shipmentDetails != null && shipmentDetails.size() > 0) {
+            List<UUID> guidsList = createBillRequest(shipmentDetails);
+            if (!guidsList.isEmpty()) {
+                ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
+                        .guidsList(guidsList).build();
+                ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+                pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING);
+            }
+
+            for (ShipmentDetails details: shipmentDetails) {
+                var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).
+                        get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, details.getGuid().toString()));
+
+                if (!Objects.isNull(cache)) {
+                    var billingData = (ShipmentBillingListResponse.BillingData) cache.get();
+                    if (!Objects.isNull(billingData)) {
+                        ShipmentListResponse shipmentListResponse = dataMap.get(details.getId());
+
+                        shipmentListResponse.setBillStatus(billingData.getBillStatus());
+                        shipmentListResponse.setTotalEstimatedCost(billingData.getTotalEstimatedCost());
+                        shipmentListResponse.setTotalEstimatedRevenue(billingData.getTotalEstimatedRevenue());
+                        shipmentListResponse.setTotalEstimatedProfit(billingData.getTotalEstimatedProfit());
+                        shipmentListResponse.setTotalEstimatedProfitPercent(billingData.getTotalEstimatedProfitPercent());
+                        shipmentListResponse.setTotalCost(billingData.getTotalCost());
+                        shipmentListResponse.setTotalRevenue(billingData.getTotalRevenue());
+                        shipmentListResponse.setTotalProfit(billingData.getTotalProfit());
+                        shipmentListResponse.setTotalProfitPercent(billingData.getTotalProfitPercent());
+                        shipmentListResponse.setTotalPostedCost(billingData.getTotalPostedCost());
+                        shipmentListResponse.setTotalPostedRevenue(billingData.getTotalPostedRevenue());
+                        shipmentListResponse.setTotalPostedProfit(billingData.getTotalPostedProfit());
+                        shipmentListResponse.setTotalPostedProfitPercent(billingData.getTotalPostedProfitPercent());
+                        shipmentListResponse.setWayBillNumber(billingData.getWayBillNumber());
+                    }
+
+                }
+            }
+        }
+    }
+
+    private List<UUID> createBillRequest(List<ShipmentDetails> shipmentDetails) {
+        List<UUID> guidsList = new ArrayList<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        shipmentDetails.forEach(shipment -> {
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, shipment.getGuid().toString()));
+            if (Objects.isNull(value)) guidsList.add(shipment.getGuid());
+        });
+        return guidsList;
+    }
+
+    public com.dpw.runner.shipment.services.masterdata.dto.MasterData getMasterListData(MasterDataType type, String ItemValue)
+    {
+        if (ItemValue == null || StringUtility.isEmpty(ItemValue)) return null;
+        MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(type.getDescription()).ItemValue(ItemValue).build();
+        MasterListRequestV2 masterListRequests = new MasterListRequestV2();
+        masterListRequests.getMasterListRequests().add(masterListRequest);
+        Object masterDataList = v1Service.fetchMultipleMasterData(masterListRequests).getEntities();
+        List<com.dpw.runner.shipment.services.masterdata.dto.MasterData> masterData = new ArrayList<>();
+        if (masterDataList != null) {
+            for (Object data : (ArrayList<?>) masterDataList) {
+                com.dpw.runner.shipment.services.masterdata.dto.MasterData masterDataObject = modelMapper.map(data, com.dpw.runner.shipment.services.masterdata.dto.MasterData.class);
+                masterData.add(masterDataObject);
+            }
+        }
+        if (masterData.isEmpty())
+            return null;
+        return masterData.get(0);
+    }
+
+    public String getVesselName(String code) {
+        if (StringUtility.isEmpty(code))
+            return null;
+        var resp = fetchInBulkVessels(Arrays.asList(code));
+        return resp.containsKey(code) ? resp.get(code).getName() : null;
+    }
+
+    public String getCarrierName(String code) {
+        if (StringUtility.isEmpty(code))
+            return null;
+        var resp = fetchInBulkCarriers(Arrays.asList(code));
+        return resp.containsKey(code) ? resp.get(code).getItemDescription() : null;
     }
 }

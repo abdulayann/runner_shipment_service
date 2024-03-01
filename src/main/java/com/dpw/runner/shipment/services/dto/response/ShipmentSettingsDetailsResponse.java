@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import lombok.Data;
 
+import javax.persistence.Column;
 import java.util.List;
 
 @Data
@@ -150,4 +151,6 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private String cancelledBLSuffix;
     private Integer volumeDecimalPlace;
     private Integer weightDecimalPlace;
+    private Boolean restrictBLEdit;
+    private Boolean restrictAWBEdit;
 }

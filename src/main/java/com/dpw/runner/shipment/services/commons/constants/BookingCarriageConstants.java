@@ -16,5 +16,5 @@ public class BookingCarriageConstants {
     public static final String BOOKING_CARRIAGE_ID = "Booking Carriage Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
-
+    public static final String BOOKING_CARRIAGE_RETRIEVE_ERROR = "Booking Carriage is null for Id {} with Request Id {}";
 }

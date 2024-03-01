@@ -143,10 +143,6 @@ public class Packing extends MultiTenancy {
     @Column(name = "hazardous")
     private Boolean hazardous;
 
-    @Column(name = "commodity_id")
-    @DedicatedMasterData(type = Constants.COMMODITY_TYPE_MASTER_DATA)
-    private Long commodityId; // TODO- remove this because commodity code already exists with name "commodity"
-
     @Column(name = "net_weight")
     private BigDecimal netWeight;
 

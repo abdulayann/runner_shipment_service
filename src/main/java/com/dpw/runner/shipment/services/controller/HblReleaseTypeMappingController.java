@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dto.request.HblReleaseTypeMappingListRequest;
 import com.dpw.runner.shipment.services.dto.response.HblReleaseTypeMappingResponse;
@@ -18,18 +19,22 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping(HblReleaseTypeMappingConstants.HBL_RELEASE_TYPE_MAPPING_API_HANDLE)
 public class HblReleaseTypeMappingController {
+    private final IHblReleaseTypeMappingService hblReleaseTypeMappingService;
+
+
+    private class MyListResponseClass extends RunnerListResponse<HblReleaseTypeMappingResponse> {}
 
     @Autowired
-    private IHblReleaseTypeMappingService hblReleaseTypeMappingService;
-
-
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = HblReleaseTypeMappingConstants.HBL_RELEASE_TYPE_MAPPING_LIST_SUCCESSFUL, responseContainer = HblReleaseTypeMappingConstants.HBL_RELEASE_TYPE_MAPPING_LIST_SUCCESSFUL)
-    })
-    @PostMapping(HblReleaseTypeMappingConstants.FETCH_BY_HBL_AND_RELEASE_TYPE)
-    public ResponseEntity<RunnerListResponse<HblReleaseTypeMappingResponse>> list(@RequestBody @NonNull @Valid HblReleaseTypeMappingListRequest request) {
-        return (ResponseEntity<RunnerListResponse<HblReleaseTypeMappingResponse>>) hblReleaseTypeMappingService.retrieveByHblIdAndReleaseType(CommonRequestModel.buildRequest(request));
+    public HblReleaseTypeMappingController(IHblReleaseTypeMappingService hblReleaseTypeMappingService) {
+        this.hblReleaseTypeMappingService = hblReleaseTypeMappingService;
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = MyListResponseClass.class, message = HblReleaseTypeMappingConstants.HBL_RELEASE_TYPE_MAPPING_LIST_SUCCESSFUL, responseContainer = HblReleaseTypeMappingConstants.HBL_RELEASE_TYPE_MAPPING_LIST_SUCCESSFUL)
+    })
+    @PostMapping(HblReleaseTypeMappingConstants.FETCH_BY_HBL_AND_RELEASE_TYPE)
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid HblReleaseTypeMappingListRequest request) {
+        return hblReleaseTypeMappingService.retrieveByHblIdAndReleaseType(CommonRequestModel.buildRequest(request));
+    }
 
 }

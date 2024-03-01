@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -42,6 +42,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Repository
 @Slf4j
 public class ConsolidationDao implements IConsolidationDetailsDao {
+    public static final String CONSUMED = "Consumed";
+    public static final String UNUSED = "Unused";
     @Autowired
     private IConsolidationRepository consolidationRepository;
 
@@ -109,7 +111,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private void onSave(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean fromV1Sync) {
         errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole));
         if (!errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         if (consolidationDetails.getTransportMode() != null && consolidationDetails.getCarrierDetails() != null) {
             LocalDateTime eta = consolidationDetails.getCarrierDetails().getEta();
             LocalDateTime etd = consolidationDetails.getCarrierDetails().getEtd();
@@ -195,7 +197,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private Set<String> applyConsolidationValidations(ConsolidationDetails request, ConsolidationDetails oldEntity) {
         Set<String> errors = new LinkedHashSet<>();
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
 
         // Container Number can not be repeated
         if (request.getContainersList() != null && request.getContainersList().size() > 0) {
@@ -284,10 +286,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(consolidationDetails.getMawb());
         if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
             MawbStocksLink res = mawbStocksLinks.get(0);
-            if(!res.getStatus().equalsIgnoreCase("Consumed")) {
+            if(!res.getStatus().equalsIgnoreCase(CONSUMED)) {
                 res.setEntityId(consolidationDetails.getId());
                 res.setEntityType(Constants.CONSOLIDATION);
-                res.setStatus("Consumed");
+                res.setShipConsNumber(consolidationDetails.getConsolidationNumber());
+                res.setStatus(CONSUMED);
                 mawbStocksLinkDao.save(res);
                 setAvaliableCount(res.getParentId());
             }
@@ -307,7 +310,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private String assignNextMawbNumber(Long parentId) {
         ListCommonRequest listCommonRequest;
         listCommonRequest = CommonUtils.andCriteria("parentId", parentId, "=", null);
-        CommonUtils.andCriteria("status", "Unused", "=", listCommonRequest);
+        CommonUtils.andCriteria("status", UNUSED, "=", listCommonRequest);
         listCommonRequest.setSortRequest(SortRequest.builder()
                 .fieldName("seqNumber")
                 .order("DESC")
@@ -320,14 +323,15 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return null;
     }
 
-    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode) {
+    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode, String agentType) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
         criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+        carrierListObject.setType(agentType);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
         return response;
     }
 
@@ -340,7 +344,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             throw new ValidationException("Please enter a valid MAWB number.");
 
         String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);
-        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
+        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode, consolidationRequest.getConsolidationType());
         List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
 
         if (carrierDetails == null || carrierDetails.size()==0)
@@ -370,7 +374,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         if (isMAWBNumberExist){
-            if (mawbStocksLink.getStatus().equals("Consumed") && !mawbStocksLink.getEntityId().equals(consolidationRequest.getId())) {
+            if (mawbStocksLink.getStatus().equals(CONSUMED) && !mawbStocksLink.getEntityId().equals(consolidationRequest.getId())) {
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
             }
         } else {
@@ -387,7 +391,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         mawbStocks.setFrom(consolidationRequest.getMawb());
         mawbStocks.setTo(consolidationRequest.getMawb());
         mawbStocks.setMawbNumber(consolidationRequest.getMawb());
-        mawbStocks.setStatus("Unused");
+        mawbStocks.setStatus(UNUSED);
         if(consolidationRequest.getBorrowedFrom()!=null){
             mawbStocks.setBorrowedFrom(consolidationRequest.getBorrowedFrom().getOrgCode());
             if(consolidationRequest.getBorrowedFrom().getOrgData() != null && consolidationRequest.getBorrowedFrom().getOrgData().containsKey("FullName")) {
@@ -403,7 +407,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             entryForMawbStocksLinkRow.setParentId(mawbStocks.getId());
             entryForMawbStocksLinkRow.setSeqNumber(consolidationRequest.getMawb().substring(4, 10));
             entryForMawbStocksLinkRow.setMawbNumber(consolidationRequest.getMawb());
-            entryForMawbStocksLinkRow.setStatus("Unused");
+            entryForMawbStocksLinkRow.setStatus(UNUSED);
             entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
         }
     }

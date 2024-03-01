@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IBookingChargesDao;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingChargesRepository;
@@ -51,7 +52,7 @@ public class BookingChargesDao implements IBookingChargesDao {
     public BookingCharges save(BookingCharges bookingCharges) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCharges) , Constants.BOOKING_CHARGES, LifecycleHooks.ON_CREATE, false);
         if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         return bookingChargesRepository.save(bookingCharges);
     }
 
@@ -70,7 +71,7 @@ public class BookingChargesDao implements IBookingChargesDao {
         bookingChargesRepository.delete(bookingCharges);
     }
 
-    public BookingCharges updateEntityFromShipmentConsole(BookingCharges bookingCharges) throws Exception {
+    public BookingCharges updateEntityFromShipmentConsole(BookingCharges bookingCharges) throws RunnerException {
         String responseMsg;
         try {
             if (bookingCharges.getId() != null) {
@@ -87,7 +88,7 @@ public class BookingChargesDao implements IBookingChargesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -108,7 +109,8 @@ public class BookingChargesDao implements IBookingChargesDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -150,7 +152,8 @@ public class BookingChargesDao implements IBookingChargesDao {
                                 .parentId(bookingId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -158,7 +161,7 @@ public class BookingChargesDao implements IBookingChargesDao {
         return res;
     }
 
-    public List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws Exception {
+    public List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws RunnerException {
         String responseMsg;
         List<BookingCharges> responseBookingCharges = new ArrayList<>();
         try {
@@ -185,7 +188,7 @@ public class BookingChargesDao implements IBookingChargesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -16,5 +17,5 @@ public interface IAdditionalDetailDao {
 
     void delete(AdditionalDetails additionalDetails);
 
-    AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws Exception;
+    AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws RunnerException;
 }

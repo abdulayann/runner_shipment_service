@@ -28,6 +28,6 @@ public class AwbGoodsDescriptionInfoResponse implements IRunnerResponse {
     private Boolean isShipmentCreated;
 
     //Master Data
-    public Map<String, String> masterData;
-    public Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
 }

@@ -47,6 +47,20 @@ public class ShipmentConstants {
     public static final String GET_ACTIVE_INVOICES = "/get-active-invoices";
     public static final String SHOW_ASSIGN_ALL_CONTAINERS = "/show/assign/allContainers";
     public static final String FETCH_CREDIT_LIMIT = "/creditLimit";
+    public static final String FETCH_EMAILS = "/email";
 
     public static final String SHIPMENT_CREATION = "SHPCR";
+
+    // Shipment Statuses
+    public static final String PENDING = "PENDING";
+    public static final String BOOKED = "BOOKED";
+    public static final String CANCELLED = "CANCELLED";
+    public static final String CONFIRMED = "CONFIRMED";
+    public static final String SHIPMENT_RETRIEVE_BY_ID_ERROR = "Shipment Details is null for Id {} with Request Id {}";
+    public static final String SHIPMENT_DETAILS_NULL_FOR_ID_ERROR = "Shipment Details is null for Id {}";
+    public static final String SHIPMENT_LIST_REQUEST_EMPTY_ERROR = "Request is empty for Shipment list with Request Id {}";
+    public static final String SHIPMENT_LIST_RESPONSE_SUCCESS = "Shipment list retrieved successfully for Request Id {} ";
+    public static final String SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR = "Request is empty for Shipment retrieve with Request Id {}";
+    public static final String NO_DATA_FOUND_FOR_ORG_CODE = "No Data found for org code {}";
+    public static final String SHIPMENT_LIST_REQUEST_NULL_ERROR = "Shipment List Request is Null";
 }

@@ -84,7 +84,6 @@ public class AwbSync implements IAwbSync {
     private ISyncService syncService;
 
     @Override
-    @Async
     public ResponseEntity<?> sync(Awb awb, SaveStatus saveStatus) {
         boolean isMawb = awb.getAwbShipmentInfo().getEntityType().equalsIgnoreCase("mawb");
         AwbRequestV2 awbRequest = generateAwbSyncRequest(awb);

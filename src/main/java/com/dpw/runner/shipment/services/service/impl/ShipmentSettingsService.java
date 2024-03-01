@@ -10,7 +10,11 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -24,6 +28,7 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -85,7 +90,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ShipmentSettingRequest request = null;
         request = (ShipmentSettingRequest) commonRequestModel.getData();
@@ -108,7 +113,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(shipmentSettingsDetails.getProductSequenceConfig() != null) {
                 if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
                     for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
-                        ListCommonRequest listCommonRequest = constructListCommonRequest("productType", productSequenceConfig.getTenantProducts().getProductType(), "=");
+                        ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, productSequenceConfig.getTenantProducts().getProductType(), "=");
                         Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
                         Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
                         productSequenceConfig.setTenantProducts(tenantProducts.getContent().get(0));
@@ -135,11 +140,11 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
-            log.error("Request is empty for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            log.error(ShipmentSettingsConstants.UPDATE_REQUEST_EMPTY, LoggerHelper.getRequestIdFromMDC());
         }
 
         if(request.getId() == null) {
@@ -148,7 +153,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         long id = request.getId();
         Optional<ShipmentSettingsDetails> oldEntity = shipmentSettingsDao.findById(id);
         if(!oldEntity.isPresent()) {
-            log.debug("Shipment Setting is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -169,11 +174,11 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     @Transactional
     @Override
-    public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
-            log.error("Request is empty for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            log.error(ShipmentSettingsConstants.UPDATE_REQUEST_EMPTY, LoggerHelper.getRequestIdFromMDC());
         }
 
         if(request.getId() == null && request.getTenantId() == null) {
@@ -196,7 +201,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             oldEntity = shipmentSettingsDao.findById(id);
         }
         if(oldEntity == null || !oldEntity.isPresent()) {
-            log.debug("Shipment Setting is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -260,7 +265,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 if(productSequenceConfigList.size() > 0) {
                     for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                         if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
-                            ListCommonRequest listCommonRequest = constructListCommonRequest("productType", stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
+                            ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
                             Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
                             Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
                             productSequenceConfig.setTenantProducts(convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
@@ -291,11 +296,11 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     @Transactional
     @Override
-    public ResponseEntity<?> completeSettingsUpdateCreateV1(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeSettingsUpdateCreateV1(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
-            log.error("Request is empty for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            log.error(ShipmentSettingsConstants.UPDATE_REQUEST_EMPTY, LoggerHelper.getRequestIdFromMDC());
         }
 
         if(request.getTenantId() == null) {
@@ -320,7 +325,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
         if(oldEntity == null || !oldEntity.isPresent()) {
             try{
-                return completeCreateFromV1(commonRequestModel);
+                return (ResponseEntity<IRunnerResponse>) completeCreateFromV1(commonRequestModel);
             } catch (Exception e) {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -342,7 +347,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
 
-    public ResponseEntity<?> completeCreateFromV1(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeCreateFromV1(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = null;
         request = (ShipmentSettingRequest) commonRequestModel.getData();
@@ -367,7 +372,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
                     for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
                         if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
-                            ListCommonRequest listCommonRequest = constructListCommonRequest("productType", String.valueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
+                            ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, String.valueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
                             Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
                             Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
                             if(tenantProducts != null && !tenantProducts.isEmpty()) {
@@ -390,7 +395,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
-    public ResponseEntity<?> completeUpdateFromV1(Optional<ShipmentSettingsDetails> oldEntity, CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> completeUpdateFromV1(Optional<ShipmentSettingsDetails> oldEntity, CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
 
@@ -469,7 +474,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 if(productSequenceConfigList.size() > 0) {
                     for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                         if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
-                            listCommonRequest = constructListCommonRequest("productType", stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
+                            listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
                             Pair<Specification<TenantProducts>, Pageable> pair2 = fetchData(listCommonRequest, TenantProducts.class);
                             Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair2.getLeft(), pair2.getRight());
                             if(tenantProducts != null && !tenantProducts.isEmpty()) {
@@ -495,7 +500,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -517,7 +522,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 long id = request.getId();
                 shipmentSettingsDetails = shipmentSettingsDao.findById(id);
                 if(!shipmentSettingsDetails.isPresent()) {
-                    log.debug("Shipment Setting is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, id, LoggerHelper.getRequestIdFromMDC());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 log.info("Shipment Settings details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -542,7 +547,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
 
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -566,7 +571,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -589,7 +594,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -649,20 +654,20 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
 
     @Override
-    public ResponseEntity<?> uploadTemplate(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> uploadTemplate(CommonRequestModel commonRequestModel) {
         TemplateUploadRequest templateUploadRequest = (TemplateUploadRequest) commonRequestModel.getData();
         if(templateUploadRequest.getPreviousFileId() == null || templateUploadRequest.getPreviousFileId().length() == 0) {
             try {
-                ResponseEntity<TemplateUploadResponse> response = documentService.CreateDocumentTemplate(templateUploadRequest);
+                ResponseEntity<TemplateUploadResponse> response = documentService.createDocumentTemplate(templateUploadRequest);
                 if(response.getStatusCode() != HttpStatus.CREATED) {
-                    LoggerHelper.error("Error While Uploading Template To Document Service");
+                    LoggerHelper.error(ShipmentSettingsConstants.ERROR_UPLOADING_TEMPLATE);
                     String responseMsg = ShipmentSettingsConstants.UPLOAD_TEMPLATE_FAILED + " : " + response.getBody();
                     return ResponseHelper.buildFailedResponse(responseMsg);
                 }
                 return ResponseHelper.buildSuccessResponse(response.getBody());
             }
             catch (Exception e){
-                LoggerHelper.error("Error While Uploading Template To Document Service");
+                LoggerHelper.error(ShipmentSettingsConstants.ERROR_UPLOADING_TEMPLATE);
                 String responseMsg = e.getMessage() != null ? e.getMessage()
                         : ShipmentSettingsConstants.UPLOAD_TEMPLATE_FAILED;
                 return ResponseHelper.buildFailedResponse(responseMsg);
@@ -670,7 +675,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
         else{
             try {
-                ResponseEntity<?> response = documentService.UpdateDocumentTemplate(templateUploadRequest);
+                ResponseEntity<String> response = documentService.updateDocumentTemplate(templateUploadRequest);
                 if(response.getStatusCode() != HttpStatus.OK){
                     LoggerHelper.error("Error While Updating Template To Document Service");
                     String responseMsg = ShipmentSettingsConstants.UPDATE_TEMPLATE_FAILED + " : " + response.getBody();
@@ -680,7 +685,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                         .templateId(templateUploadRequest.getPreviousFileId()).build();
                 return ResponseHelper.buildSuccessResponse(templateUploadResponse);
             } catch (Exception e) {
-                LoggerHelper.error("Error While Uploading Template To Document Service");
+                LoggerHelper.error(ShipmentSettingsConstants.ERROR_UPLOADING_TEMPLATE);
                 String responseMsg = e.getMessage() != null ? e.getMessage()
                         : ShipmentSettingsConstants.UPDATE_TEMPLATE_FAILED;
                 log.error(responseMsg, e);
@@ -689,21 +694,21 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
     @Override
-    public ResponseEntity<?> downloadTemplate(String templateId) {
+    public ResponseEntity<ByteArrayResource> downloadTemplate(String templateId) {
         try {
-            byte[] response = documentService.DownloadTemplate(templateId);
+            byte[] response = documentService.downloadTemplate(templateId);
             return ResponseHelper.buildFileResponse(response, null, "DownloadDocument.docx");
         } catch (Exception e) {
             LoggerHelper.error("Error While Downloading Template From Document Service");
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : ShipmentSettingsConstants.DOWNLOAD_TEMPLATE_FAILED;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
     @Override
-    public ResponseEntity<?> retrieveByTenantId(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> retrieveByTenantId(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();

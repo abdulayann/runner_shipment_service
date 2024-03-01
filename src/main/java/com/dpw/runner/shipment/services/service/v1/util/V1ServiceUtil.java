@@ -1,18 +1,23 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -27,6 +32,8 @@ public class V1ServiceUtil {
     INotesDao notesDao;
     @Autowired
     IV1Service v1Service;
+    @Autowired
+    JsonHelper jsonHelper;
 
     public CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         return CreateBookingModuleInV1.builder()
@@ -83,9 +90,9 @@ public class V1ServiceUtil {
                 .ConsignorCountryFilter(customerBooking.getConsignorCountry())
                 .ConsigneeCountryFilter(customerBooking.getConsigneeCountry())
                 .NotifyPartyCountryFilter(customerBooking.getNotifyPartyCountry())
-                .SalesBranch(customerBooking.getSalesBranch())
-                .PrimarySalesAgentEmail(customerBooking.getPrimarySalesAgentEmail())
-                .SecondarySalesAgentEmail(customerBooking.getSecondarySalesAgentEmail())
+//                .SalesBranch(customerBooking.getSalesBranch())
+//                .PrimarySalesAgentEmail(customerBooking.getPrimarySalesAgentEmail())
+//                .SecondarySalesAgentEmail(customerBooking.getSecondarySalesAgentEmail())
                 .QuoteContainers(createContainers(customerBooking.getContainersList()))
                 .RoutingList(createRoutingList(customerBooking.getRoutingList()))
                 .Documents(createDocuments(customerBooking.getFileRepoList()))
@@ -93,6 +100,7 @@ public class V1ServiceUtil {
                 .OrgDetails(null)
                 .BillCharges(createQuoteCharges(customerBooking.getBookingCharges()))
                 .CustomerBookingNoteList(createNotes(notes))
+                .LastTransactionLoadJson(getLastLoadJson(customerBooking.getContainersList()))
                 .build();
     }
 
@@ -150,10 +158,10 @@ public class V1ServiceUtil {
         if (customerBooking == null)
             return null;
         List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText() | customerBooking.getIsConsigneeAddressFreeText());
-        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText() | customerBooking.getIsConsignorAddressFreeText());
-        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText() | customerBooking.getIsNotifyPartyAddressFreeText());
-        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText() | customerBooking.getIsCustomerAddressFreeText());
+        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText() || customerBooking.getIsConsigneeAddressFreeText());
+        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText() || customerBooking.getIsConsignorAddressFreeText());
+        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText() || customerBooking.getIsNotifyPartyAddressFreeText());
+        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText() || customerBooking.getIsCustomerAddressFreeText());
         Set<CreateBookingModuleInV1.BookingEntity.OrgDetail> hs = new HashSet<>();
         if (customerBooking.getBookingCharges() != null) {
             for (var bc : customerBooking.getBookingCharges()) {
@@ -306,6 +314,73 @@ public class V1ServiceUtil {
             log.error("Check Credit Limit failed due to : " + ex.getMessage());
             throw new ValidationException(ex.getMessage());
         }
+    }
+
+    public ResponseEntity<IRunnerResponse> fetchEmailIdsForShipment(ShipmentDetails shipmentDetail) {
+        Set<String> emailSet = new HashSet<>();
+        OrgAddressResponse response = fetchOrgInfoFromV1(Arrays.asList(shipmentDetail.getClient(), shipmentDetail.getConsignee(), shipmentDetail.getConsigner()));
+        setEmails(shipmentDetail.getClient(), emailSet, response.getOrganizations(), response.getAddresses());
+        if (Objects.equals(shipmentDetail.getDirection(), Constants.DIRECTION_IMP))
+            setEmails(shipmentDetail.getConsignee(), emailSet, response.getOrganizations(), response.getAddresses());
+        else
+            setEmails(shipmentDetail.getConsigner(), emailSet, response.getOrganizations(), response.getAddresses());
+        return ResponseHelper.buildSuccessResponse(String.join(";", emailSet.stream().filter(StringUtility::isNotEmpty).toList()));
+    }
+
+    public ResponseEntity<IRunnerResponse> fetchEmailIdsForConsolidation(ConsolidationDetails consolidationDetail) {
+        Set<String> emailSet = new HashSet<>();
+        OrgAddressResponse response = fetchOrgInfoFromV1(Arrays.asList(consolidationDetail.getSendingAgent(), consolidationDetail.getReceivingAgent()));
+        if (Objects.equals(consolidationDetail.getShipmentType(), Constants.DIRECTION_IMP))
+            setEmails(consolidationDetail.getReceivingAgent(), emailSet, response.getOrganizations(), response.getAddresses());
+        else
+            setEmails(consolidationDetail.getSendingAgent(), emailSet, response.getOrganizations(), response.getAddresses());
+        return ResponseHelper.buildSuccessResponse(String.join(";", emailSet.stream().filter(StringUtility::isNotEmpty).toList()));
+    }
+
+    private void setEmails(Parties party, Set<String> emailSet, Map<String, Map<String, Object>> organizations, Map<String, Map<String, Object>> addresses) {
+        if (Objects.isNull(party))
+            return;
+
+        if (!Objects.isNull(party.getOrgCode()) && organizations.containsKey(party.getOrgCode())
+                && organizations.get(party.getOrgCode()).containsKey(PartiesConstants.EMAIL))
+            emailSet.add(StringUtility.convertToString(organizations.get(party.getOrgCode()).get(PartiesConstants.EMAIL)));
+
+        if (!Objects.isNull(party.getOrgCode()) && !Objects.isNull(party.getAddressCode())) {
+            String key = party.getOrgCode() + "#" + party.getAddressCode();
+            if (addresses.containsKey(key) && addresses.get(key).containsKey(PartiesConstants.EMAIL) )
+                emailSet.add(StringUtility.convertToString(addresses.get(key).get(PartiesConstants.EMAIL)));
+        }
+    }
+
+    private AddressTranslationRequest.OrgAddressCode createV1OrgRequest(Parties parties) {
+        if (Objects.isNull(parties) || Objects.isNull(parties.getOrgCode()) || Objects.isNull(parties.getAddressCode()))
+            return null;
+        return AddressTranslationRequest.OrgAddressCode.builder().OrgCode(parties.getOrgCode()).AddressCode(parties.getAddressCode()).build();
+    }
+
+    private OrgAddressResponse fetchOrgInfoFromV1(List<Parties> parties) {
+        var orgRequest = new ArrayList<AddressTranslationRequest.OrgAddressCode>();
+        parties.forEach(p -> {
+            orgRequest.add(createV1OrgRequest(p));
+        });
+        return v1Service.fetchOrgAddresses(AddressTranslationRequest.builder().OrgAddressCodeList(orgRequest.stream().filter(Objects::nonNull).toList()).build());
+    }
+
+    private String getLastLoadJson(List<Containers> containersList) {
+        var list = new ArrayList<CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails>();
+        containersList.forEach(c -> {
+            var _current = new CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails();
+            _current.setLoadKey(generateLoadKeyForContainer(c));
+            _current.setLoadQuantity(Objects.isNull(c.getContainerCount()) ? 1 : c.getContainerCount().intValue());
+            list.add(_current);
+        });
+        return jsonHelper.convertToJson(list);
+    }
+
+    private String generateLoadKeyForContainer(Containers container) {
+        return StringUtility.convertToString(container.getGuid()) + "#"
+                + (StringUtility.isNotEmpty(container.getContainerCode()) ? container.getContainerCode() : NPMConstants.ANY) + "#"
+                + (StringUtility.isNotEmpty(container.getCommodityGroup()) ? container.getCommodityGroup() : NPMConstants.FAK);
     }
 
 }

@@ -2,12 +2,15 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangeResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangesRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -34,11 +37,19 @@ import java.util.List;
 @RequestMapping(value = ContainerConstants.CONTAINER_API_HANDLE)
 public class ContainerController {
 
-    @Autowired
-    IContainerService containerService;
+    private final IContainerService containerService;
+    private final JsonHelper jsonHelper;
+
+    private class MyResponseClass extends RunnerResponse<ContainerResponse> {}
+    private class MyListResponseClass extends RunnerListResponse<ContainerResponse> {}
+    private class CheckAllocatedDataChangeResponseClass extends RunnerResponse<CheckAllocatedDataChangeResponse> {}
+
 
     @Autowired
-    JsonHelper jsonHelper;
+    public ContainerController(IContainerService containerService, JsonHelper jsonHelper) {
+        this.containerService = containerService;
+        this.jsonHelper = jsonHelper;
+    }
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL),
@@ -112,47 +123,47 @@ public class ContainerController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(value = ApiConstants.API_CREATE)
-    public ResponseEntity<RunnerResponse<ContainerResponse>> create(@RequestBody ContainerRequest request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody ContainerRequest request) {
         String responseMessage;
         try {
             ContainerRequest req = jsonHelper.convertValue(request, ContainerRequest.class);
-            return (ResponseEntity<RunnerResponse<ContainerResponse>>) containerService.create(CommonRequestModel.buildRequest(request));
+            return containerService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMessage = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMessage, e);
         }
 
-        return (ResponseEntity<RunnerResponse<ContainerResponse>>) ResponseHelper.buildFailedResponse(responseMessage);
+        return ResponseHelper.buildFailedResponse(responseMessage);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = MyListResponseClass.class)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<ContainerResponse>> list(@RequestParam Long shipmentId) {
+    public ResponseEntity<IRunnerResponse> list(@RequestParam Long shipmentId) {
         CommonGetRequest request = CommonGetRequest.builder().id(shipmentId).build();
-        return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.list(CommonRequestModel.buildRequest(request));
+        return containerService.list(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = MyListResponseClass.class) })
     @PostMapping(ApiConstants.API_LIST_CONTAINERS_TO_ASSIGN)
-    public ResponseEntity<RunnerListResponse<ContainerResponse>> getContainersForSelection(@RequestBody ContainerAssignListRequest containerAssignRequest) {
-        return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignRequest));
+    public ResponseEntity<IRunnerResponse> getContainersForSelection(@RequestBody ContainerAssignListRequest containerAssignRequest) {
+        return containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = MyListResponseClass.class) })
     @PostMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
-    public ResponseEntity<RunnerListResponse<ContainerResponse>> calculateAchieved_AllocatedForSameUnit(@RequestBody ContainerRequest containerRequest) {
-        return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(containerRequest));
+    public ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(@RequestBody ContainerRequest containerRequest) {
+        return containerService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(containerRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, response = CheckAllocatedDataChangeResponseClass.class ,message = ContainerConstants.CALCULATION_SUCCESSFUL) })
     @PostMapping(ApiConstants.API_CHECK_ALLOCATED_DATA_CHANGE)
-    public ResponseEntity<?> calculateAllocatedData(@RequestBody CheckAllocatedDataChangesRequest containerRequest) {
-        return (ResponseEntity<?>) containerService.calculateAllocatedData(CommonRequestModel.buildRequest(containerRequest));
+    public ResponseEntity<IRunnerResponse> calculateAllocatedData(@RequestBody CheckAllocatedDataChangesRequest containerRequest) {
+        return (ResponseEntity<IRunnerResponse>) containerService.calculateAllocatedData(CommonRequestModel.buildRequest(containerRequest));
     }
 
 //    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
@@ -161,10 +172,10 @@ public class ContainerController {
 //        return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchievedQuantity_onPackAssign(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
 //    }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DETACH_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DETACH_SUCCESSFUL, response = RunnerListResponse.class) })
     @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_PACK_DETACH)
-    public ResponseEntity<RunnerListResponse<ContainerResponse>> calculateAchievedOnPackDetach(@RequestBody ContainerPackADInShipmentRequest containerPackAssignDetachRequest) {
-        return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
+    public ResponseEntity<IRunnerResponse> calculateAchievedOnPackDetach(@RequestBody ContainerPackADInShipmentRequest containerPackAssignDetachRequest) {
+        return containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED) })
@@ -173,27 +184,27 @@ public class ContainerController {
         return (ResponseEntity<?>) containerService.validateContainerNumber(containerNumber);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PutMapping(value = ApiConstants.API_UPDATE)
-    public ResponseEntity<RunnerResponse<ContainerResponse>> update(@RequestBody ContainerRequest request) {
+    public ResponseEntity<IRunnerResponse> update(@RequestBody ContainerRequest request) {
         String responseMessage;
         try {
-            return (ResponseEntity<RunnerResponse<ContainerResponse>>) containerService.update(CommonRequestModel.buildRequest(request));
+            return containerService.update(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMessage = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            return (ResponseEntity<RunnerResponse<ContainerResponse>>) ResponseHelper.buildFailedResponse(responseMessage);
+            return ResponseHelper.buildFailedResponse(responseMessage);
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
     @DeleteMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
+    public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         String responseMessage;
         try {
-            return (ResponseEntity<RunnerResponse>) containerService.delete(CommonRequestModel.buildRequest(id));
+            return containerService.delete(CommonRequestModel.buildRequest(id));
         } catch (Exception e) {
             responseMessage = e.getMessage();
-            return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMessage);
+            return ResponseHelper.buildFailedResponse(responseMessage);
         }
     }
 
@@ -231,16 +242,16 @@ public class ContainerController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS, response = MyListResponseClass.class)})
     @PostMapping(ContainerConstants.GET_CONTAINERS)
-    public ResponseEntity<RunnerListResponse<EventsResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        return (ResponseEntity<RunnerListResponse<EventsResponse>>) containerService.getContainers(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        return containerService.getContainers(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = RunnerListResponse.class)})
     @GetMapping(ContainerConstants.CHECK_CONTAINERS_DELETE)
-    public ResponseEntity<RunnerListResponse<EventsResponse>> checkForDelete(@RequestParam Long containerId) {
-        return (ResponseEntity<RunnerListResponse<EventsResponse>>) containerService.checkForDelete(CommonRequestModel.buildRequest(containerId));
+    public ResponseEntity<IRunnerResponse> checkForDelete(@RequestParam Long containerId) {
+        return containerService.checkForDelete(CommonRequestModel.buildRequest(containerId));
     }
 
     @PostMapping(ApiConstants.API_SYNC_CONTAINERS)

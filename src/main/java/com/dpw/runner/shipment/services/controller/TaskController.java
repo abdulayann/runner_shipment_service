@@ -3,6 +3,10 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
 import io.swagger.annotations.ApiResponse;
@@ -22,23 +26,27 @@ import javax.validation.Valid;
 @Slf4j
 public class TaskController {
 
+    private final ITasksService tasksService;
+    private class MyResponseClass extends RunnerResponse<DependentServiceResponse> {}
     @Autowired
-    private ITasksService tasksService;
+    public TaskController(ITasksService tasksService) {
+        this.tasksService = tasksService;
+    }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = TaskConstants.TASK_CREATION_SUCCESSFUL),
+            @ApiResponse(code = 200, message = TaskConstants.TASK_CREATION_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
     })
     @PostMapping(TaskConstants.TASK_CREATION)
-    public ResponseEntity<DependentServiceResponse> create(@RequestBody @Valid Object request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
-            return (ResponseEntity<DependentServiceResponse>) tasksService.createTask(CommonRequestModel.buildDependentDataRequest(request));
+            return tasksService.createTask(CommonRequestModel.buildDependentDataRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

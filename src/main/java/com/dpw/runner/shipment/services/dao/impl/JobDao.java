@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
@@ -36,6 +37,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Repository
 @Slf4j
 public class JobDao implements IJobDao {
+    public static final String JOB_IS_NULL_FOR_ID_MSG = "Job is null for Id {}";
     @Autowired
     private IJobRepository jobRepository;
 
@@ -52,7 +54,7 @@ public class JobDao implements IJobDao {
     public Jobs save(Jobs jobs) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(jobs) , Constants.JOBS, LifecycleHooks.ON_CREATE, false);
         if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         return jobRepository.save(jobs);
     }
     @Override
@@ -60,7 +62,7 @@ public class JobDao implements IJobDao {
         for (var jobs: jobsList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(jobs), Constants.JOBS, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
-                throw new ValidationException(errors.toString());
+                throw new ValidationException(String.join(",", errors));
         }
         return jobRepository.saveAll(jobsList);
     }
@@ -81,7 +83,7 @@ public class JobDao implements IJobDao {
     }
 
     @Override
-    public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId) throws Exception {
+    public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId) throws RunnerException {
         String responseMsg;
         List<Jobs> responseJobs = new ArrayList<>();
         try {
@@ -112,7 +114,7 @@ public class JobDao implements IJobDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -126,7 +128,7 @@ public class JobDao implements IJobDao {
                 long id = req.getId();
                 Optional<Jobs> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Job is null for Id {}", req.getId());
+                    log.debug(JOB_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -145,7 +147,8 @@ public class JobDao implements IJobDao {
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -160,7 +163,7 @@ public class JobDao implements IJobDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Job is null for Id {}", req.getId());
+                    log.debug(JOB_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
@@ -188,7 +191,8 @@ public class JobDao implements IJobDao {
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
         }
@@ -196,7 +200,7 @@ public class JobDao implements IJobDao {
     }
 
     @Override
-    public List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long consolidationId) throws Exception {
+    public List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long consolidationId) throws RunnerException {
         String responseMsg;
         List<Jobs> responseJobs = new ArrayList<>();
         try {
@@ -227,12 +231,12 @@ public class JobDao implements IJobDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long consolidationId, List<Jobs> oldEntityList) throws Exception {
+    public List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long consolidationId, List<Jobs> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Jobs> jobsMap = new HashMap<>();
         if(oldEntityList != null && oldEntityList.size() > 0) {
@@ -265,7 +269,7 @@ public class JobDao implements IJobDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -277,7 +281,7 @@ public class JobDao implements IJobDao {
                 long id = req.getId();
                 Optional<Jobs> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Job is null for Id {}", req.getId());
+                    log.debug(JOB_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -296,7 +300,7 @@ public class JobDao implements IJobDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Job is null for Id {}", req.getId());
+                    log.debug(JOB_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
@@ -326,7 +330,8 @@ public class JobDao implements IJobDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -339,7 +344,7 @@ public class JobDao implements IJobDao {
     }
 
     @Override
-    public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws Exception {
+    public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Jobs> jobsMap = new HashMap<>();
         if(oldEntityList != null && oldEntityList.size() > 0) {
@@ -372,7 +377,7 @@ public class JobDao implements IJobDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

@@ -1,9 +1,8 @@
 package com.dpw.runner.shipment.services.dto.request.hbl;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -13,7 +12,7 @@ import java.util.UUID;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class HblCargoDto  {
+public class HblCargoDto implements Serializable {
 
     private Long id;
     private UUID guid;

@@ -11,4 +11,5 @@ public class AchievedQuantitiesConstants {
     public static final String ACHIEVED_QUANTITIES_DELETE_SUCCESSFUL = "Successful Achieved Quantities Delete";
 
     public static final String ACHIEVED_QUANTITIES_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Achieved Quantities Retrieval By Id";
+    public static final String ACHIEVED_QUANTITIES_RETRIEVE_ERROR = "Achieved Quantities is null for Id {} with Request Id {}";
 }

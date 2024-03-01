@@ -11,5 +11,6 @@ public class NotesConstants {
     public static final String NOTES_DELETE_SUCCESSFUL = "Successful Notes Delete";
 
     public static final String NOTES_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Notes Retrieval By Id";
+    public static final String NOTES_RETRIEVE_BY_ID_ERROR = "Notes is null for Id {} with Request Id {}";
 
 }

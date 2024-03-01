@@ -52,7 +52,7 @@ public class PermissionsAspect {
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, true);
 
         FilterCriteria criteria1 = null;
-        if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 1) {
+        if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 0) {
            criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
         }
         FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
@@ -83,7 +83,7 @@ public class PermissionsAspect {
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, false);
 
         FilterCriteria criteria1 = null;
-        if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 1) {
+        if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 0) {
             criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
         }
         FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();

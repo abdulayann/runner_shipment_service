@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.commons.constants.Permissions;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.hibernate.Session;
@@ -11,12 +11,7 @@ import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-
-import static com.fasterxml.jackson.databind.cfg.CoercionInputShape.Array;
 
 @Aspect
 @Component
@@ -38,7 +33,7 @@ public class TenantAspect {
 
         Map<String, Boolean> permissions = UserContext.getUser().Permissions;
 
-        if (!permissions.containsKey(Permissions.tenantSuperAdmin) && !permissions.containsKey(Permissions.companySuperAdmin)) {
+        if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantListPermission) && !permissions.containsKey(PermissionConstants.crossTenantRetrievePermission) && !permissions.containsKey(PermissionConstants.companySuperAdmin)) {
             entityManager.unwrap(Session.class)
                     .enableFilter(MultiTenancy.TENANT_FILTER_NAME)
                     .setParameter(MultiTenancy.TENANT_PARAMETER_NAME, tenantId);

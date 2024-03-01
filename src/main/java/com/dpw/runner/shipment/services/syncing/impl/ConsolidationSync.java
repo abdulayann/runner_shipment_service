@@ -1,9 +1,13 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
@@ -14,10 +18,12 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
@@ -32,6 +38,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ConsolidationSync implements IConsolidationSync {
 
+    public static final String RAW_DATA = "rawData";
     @Autowired
     ModelMapper modelMapper;
 
@@ -58,6 +65,8 @@ public class ConsolidationSync implements IConsolidationSync {
     private CommonUtils commonUtils;
     @Autowired
     private ISyncService syncService;
+    @Autowired
+    private V1AuthHelper v1AuthHelper;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -69,7 +78,7 @@ public class ConsolidationSync implements IConsolidationSync {
     private String CONSOLIDATION_V1_SYNC_URL;
 
     @Override
-    public ResponseEntity<?> sync(ConsolidationDetails request, String transactionId) {
+    public ResponseEntity<IRunnerResponse> sync(ConsolidationDetails request, String transactionId, boolean isDirectSync) throws RunnerException {
         CustomConsolidationRequest response = new CustomConsolidationRequest();
 
         response = modelMapper.map(request, CustomConsolidationRequest.class);
@@ -104,15 +113,15 @@ public class ConsolidationSync implements IConsolidationSync {
         mapShipmentGuids(response, request);
         if(request.getCreditor() != null && request.getCreditor().getIsAddressFreeText() != null && request.getCreditor().getIsAddressFreeText()){
             response.setIsCreditorFreeTextAddress(true);
-            var rawData = request.getCreditor().getAddressData() != null ? request.getCreditor().getAddressData().get("rawData"): null;
+            var rawData = request.getCreditor().getAddressData() != null ? request.getCreditor().getAddressData().get(RAW_DATA): null;
             if(rawData!=null)
-            response.setCreditorFreeTextAddress(rawData.toString());
+                response.setCreditorFreeTextAddress(rawData.toString());
         }
         else  response.setIsCreditorFreeTextAddress(false);
 
         if(request.getReceivingAgent() != null && request.getReceivingAgent().getIsAddressFreeText() != null && request.getReceivingAgent().getIsAddressFreeText()){
             response.setIsReceivingAgentFreeTextAddress(true);
-            var rawData = request.getReceivingAgent().getAddressData() != null ? request.getReceivingAgent().getAddressData().get("rawData"): null;
+            var rawData = request.getReceivingAgent().getAddressData() != null ? request.getReceivingAgent().getAddressData().get(RAW_DATA): null;
             if(rawData!=null)
                 response.setReceivingAgentFreeTextAddress(rawData.toString());
         }
@@ -120,7 +129,7 @@ public class ConsolidationSync implements IConsolidationSync {
 
         if(request.getSendingAgent() != null && request.getSendingAgent().getIsAddressFreeText() != null && request.getSendingAgent().getIsAddressFreeText()){
             response.setIsSendingAgentFreeTextAddress(true);
-            var rawData = request.getSendingAgent().getAddressData() != null ? request.getSendingAgent().getAddressData().get("rawData"): null;
+            var rawData = request.getSendingAgent().getAddressData() != null ? request.getSendingAgent().getAddressData().get(RAW_DATA): null;
             if(rawData!=null)
                 response.setSendingAgentFreeTextAddress(rawData.toString());
         }
@@ -128,16 +137,20 @@ public class ConsolidationSync implements IConsolidationSync {
 
         response.setGuid(request.getGuid());
         String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
-//        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(consolidationRequest, request.getId(), request.getGuid())), commonUtils.syncExecutorService);
-        syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId);
-        return ResponseHelper.buildSuccessResponse(response);
+        if (isDirectSync) {
+            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
+            syncService.callSyncAsync(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", httpHeaders);
+        }
+        else
+            syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId);
+       return ResponseHelper.buildSuccessResponse(response);
     }
 
     @Override
     public void syncLockStatus(ConsolidationDetails consolidationDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(consolidationDetails.getGuid()).lockStatus(consolidationDetails.getIsLocked()).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.CONSOLIDATION_LOCK).build());
-        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", UUID.randomUUID().toString());
+        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", StringUtility.convertToString(consolidationDetails.getGuid()));
     }
 
     private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetails request) {

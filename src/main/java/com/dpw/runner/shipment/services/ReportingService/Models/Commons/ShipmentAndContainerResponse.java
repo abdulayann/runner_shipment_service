@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.Commons;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentAndContainerResponse {
+public class ShipmentAndContainerResponse implements IRunnerResponse {
         @JsonProperty("HsnNumber")
         public String hsnNumber;
         @JsonProperty("MasterBill")
@@ -50,13 +51,13 @@ public class ShipmentAndContainerResponse {
         @JsonProperty("NotifyZip")
         public String notifyZip;
         @JsonProperty("ConsignerAddressFreeText")
-        public List<String> consignerAddressFreeText;
+        private List<String> consignerAddressFreeText;
         @JsonProperty("ConsigneeAddressFreeText")
-        public List<String> consigneeAddressFreeText;
+        private List<String> consigneeAddressFreeText;
         @JsonProperty("NotifyPartyAddressFreeText")
-        public List<String> notifyPartyAddressFreeText;
+        private List<String> notifyPartyAddressFreeText;
         @JsonProperty("Containers")
-        public List<ShipmentContainers> shipmentContainers;
+        private List<ShipmentContainers> shipmentContainers;
         @JsonProperty("Description")
         public String description;
         @JsonProperty("Weight")

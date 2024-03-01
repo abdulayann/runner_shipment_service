@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.EnumConstantResponse;
 import com.dpw.runner.shipment.services.dto.response.EnumResponse;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -18,7 +19,7 @@ import java.util.Map;
 @Service
 public class EnumConstantService implements IEnumConstantService {
     @Override
-    public ResponseEntity<?> list() {
+    public ResponseEntity<IRunnerResponse> list() {
         Map<String, List<EnumConstantResponse>> response = new HashMap<>();
 
         List<EnumConstantResponse> enumList = new ArrayList<>();
@@ -56,6 +57,11 @@ public class EnumConstantService implements IEnumConstantService {
             enumList.add(EnumConstantResponse.builder().id(dataType.getValue()).description(dataType.getDescription()).name(dataType.name()).build());
         }
         response.put(Constants.CUSTOMER_CATEGORY_RATES, enumList);
+
+        for (CarrierBookingStatus status : CarrierBookingStatus.values()) {
+            enumList.add(EnumConstantResponse.builder().id(status.getValue()).description(status.getDescription()).name(status.name()).build());
+        }
+        response.put(Constants.CARRIER_BOOKING_STATUS, enumList);
 
         return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
 

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.descarts.impl;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.DenialParty.request.SearchEntity;
 import com.dpw.runner.shipment.services.dto.DenialParty.request.SearchEntityRequest;
 import com.dpw.runner.shipment.services.dto.request.DenialPartySearchEntityRequest;
@@ -24,9 +25,9 @@ public class DescartsService implements IDescartsService {
     //private static final String EXTERNAL_API_URL = "https://rpstest.visualcompliance.com/RPS/RPSService.svc/SearchEntity";
 
     @Override
-    public ResponseEntity<?> searchEntity(SearchEntityRequest commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> searchEntity(SearchEntityRequest commonRequestModel) {
 
-        ResponseEntity<?> response;
+        ResponseEntity<Object> response;
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -39,12 +40,9 @@ public class DescartsService implements IDescartsService {
                     Object.class
             );
 
-            if (response.getStatusCode() == HttpStatus.OK) {
-                return new ResponseEntity<>(response.getBody(), HttpStatus.OK);
-            }
+            return ResponseHelper.buildSuccessResponse(response.getBody());
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
-        return response;
     }
 }

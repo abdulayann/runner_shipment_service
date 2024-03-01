@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tec.units.ri.unit.MetricPrefix;
@@ -16,7 +17,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrE
 @Slf4j
 @Component
 public class UnitConversionUtility {
-    public static Number convertUnit(String type, BigDecimal value, String fromUnit, String toUnit) throws Exception {
+    public static Number convertUnit(String type, BigDecimal value, String fromUnit, String toUnit) throws RunnerException {
         String responseMsg;
         try {
             if(value == null)
@@ -32,7 +33,7 @@ public class UnitConversionUtility {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service_bus;
 import com.azure.messaging.servicebus.*;
 import com.azure.messaging.servicebus.administration.models.QueueRuntimeProperties;
 import com.azure.messaging.servicebus.administration.models.SubscriptionRuntimeProperties;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -52,11 +53,14 @@ public class SBUtilsImpl implements ISBUtils {
 
             // Add that message that we couldn't before.
             if (!messageBatch.tryAddMessage(message)) {
+                log.error("ERROR | Message is too large for an empty batch. Skipping. Max size: {}.", messageBatch.getMaxSizeInBytes());
                 System.err.printf("Message is too large for an empty batch. Skipping. Max size: %s.", messageBatch.getMaxSizeInBytes());
             }
         }
         if (messageBatch.getCount() > 0) {
+            var messagesList = messages.stream().map(c -> StringUtility.convertToString(c.getBody())).toList();
             senderClient.sendMessages(messageBatch);
+            log.info("Sent a batch of messages to the topic: {} with messages: {}" , topicName, String.join(", ", messagesList));
             System.out.println("Sent a batch of messages to the topic: " + topicName);
         }
         //close the client

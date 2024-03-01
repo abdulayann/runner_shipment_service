@@ -124,11 +124,11 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
     private String carrierBookingRef;
-    public Map<String, String> masterData;
-    public Map<String, String> unlocationData;
-    public Map<String, String> currenciesMasterData;
-    public Map<String, String> tenantIdsData;
-    public Map<String, String> textData;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> currenciesMasterData;
+    private Map<String, String> tenantIdsData;
+    private Map<String, String> textData;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
     private String modeOfBooking;

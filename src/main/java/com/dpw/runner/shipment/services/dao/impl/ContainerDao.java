@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -28,6 +29,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -64,7 +66,7 @@ public class ContainerDao implements IContainerDao {
     public Containers save(Containers containers) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(containers) , Constants.CONTAINER, LifecycleHooks.ON_CREATE, false);
         if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         if(containers.getId() != null) {
             long id = containers.getId();
             Optional<Containers> oldEntity = findById(id);
@@ -133,7 +135,7 @@ public class ContainerDao implements IContainerDao {
         containerRepository.deleteById(id);
     }
 
-    public List<Containers> updateEntityFromBooking(List<Containers> containersList, Long bookingId) throws Exception {
+    public List<Containers> updateEntityFromBooking(List<Containers> containersList, Long bookingId) throws RunnerException {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
@@ -159,7 +161,7 @@ public class ContainerDao implements IContainerDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(responseMsg);
         }
     }
 
@@ -193,7 +195,8 @@ public class ContainerDao implements IContainerDao {
                                 .parentId(bookingId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -218,7 +221,8 @@ public class ContainerDao implements IContainerDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -231,7 +235,7 @@ public class ContainerDao implements IContainerDao {
     }
 
     @Override
-    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long shipmentId, boolean fromConsolidation) throws Exception {
+    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long shipmentId, boolean fromConsolidation) throws RunnerException {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
@@ -251,6 +255,8 @@ public class ContainerDao implements IContainerDao {
                     for (Containers containers: containerList) {
                         containers.setConsolidationId(consolidationId);
                         Long id = containers.getId();
+                        if (Objects.isNull(containers.getAllocationDate()) && !Objects.isNull(containers.getContainerNumber()))
+                            containers.setAllocationDate(LocalDateTime.now());
                         if (id != null) {
                             hashMap.remove(id);
                         }
@@ -280,6 +286,8 @@ public class ContainerDao implements IContainerDao {
                 {
                     for (Containers container: containerList) {
                         container.setConsolidationId(consolidationId);
+                        if (Objects.isNull(container.getAllocationDate()) && !Objects.isNull(container.getContainerNumber()))
+                            container.setAllocationDate(LocalDateTime.now());
                         String operation = DBOperationType.CREATE.name();
                         Containers oldEntityJson = null;
                         if(container.getId() != null)
@@ -312,7 +320,7 @@ public class ContainerDao implements IContainerDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -325,7 +333,7 @@ public class ContainerDao implements IContainerDao {
         return res;
     }
 
-    public List<Containers> updateEntityFromConsolidationV1(List<Containers> containersList, Long consolidationId, List<Containers> oldEntityList) throws Exception {
+    public List<Containers> updateEntityFromConsolidationV1(List<Containers> containersList, Long consolidationId, List<Containers> oldEntityList) throws RunnerException {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         Map<UUID, Containers> containersMap = new HashMap<>();
@@ -362,12 +370,12 @@ public class ContainerDao implements IContainerDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldEntityList) throws Exception {
+    public List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldEntityList) throws RunnerException {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         Map<UUID, Containers> containersMap = new HashMap<>();
@@ -403,7 +411,7 @@ public class ContainerDao implements IContainerDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

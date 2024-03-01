@@ -1,11 +1,12 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
-public class AwbOtherChargesInfoV2 {
+public class AwbOtherChargesInfoV2 implements IRunnerRequest {
     // public Integer entityId;
     public String entityType;
     public String chargeTypeId;

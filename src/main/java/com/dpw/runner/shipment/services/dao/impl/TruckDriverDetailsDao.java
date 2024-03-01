@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ITruckDriverDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
@@ -32,6 +33,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Repository
 @Slf4j
 public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
+    public static final String TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG = "Truck driver detail is null for Id {}";
     @Autowired
     private ITruckDriverDetailsRepository truckDriverDetailsRepository;
     @Autowired
@@ -80,7 +82,8 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -93,7 +96,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     }
 
     @Override
-    public List<TruckDriverDetails> updateEntityFromShipment(List<TruckDriverDetails> truckDriverDetailsList, Long shipmentId) throws Exception {
+    public List<TruckDriverDetails> updateEntityFromShipment(List<TruckDriverDetails> truckDriverDetailsList, Long shipmentId) throws RunnerException {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
@@ -124,7 +127,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -138,7 +141,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 long id = req.getId();
                 Optional<TruckDriverDetails> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Truck driver detail is null for Id {}", req.getId());
+                    log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -157,7 +160,8 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -172,7 +176,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Truck driver detail is null for Id {}", req.getId());
+                    log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
@@ -200,7 +204,8 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
         }
@@ -208,7 +213,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     }
 
     @Override
-    public List<TruckDriverDetails> updateEntityFromShipment(List<TruckDriverDetails> truckDriverDetailsList, Long shipmentId, List<TruckDriverDetails> oldEntityList) throws Exception {
+    public List<TruckDriverDetails> updateEntityFromShipment(List<TruckDriverDetails> truckDriverDetailsList, Long shipmentId, List<TruckDriverDetails> oldEntityList) throws RunnerException {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         Map<UUID, TruckDriverDetails> truckDriverDetailsMap = new HashMap<>();
@@ -242,12 +247,12 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId) throws Exception {
+    public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId) throws RunnerException {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
@@ -278,12 +283,12 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     @Override
-    public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId, List<TruckDriverDetails> oldEntityList) throws Exception {
+    public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId, List<TruckDriverDetails> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, TruckDriverDetails> truckDriverDetailsMap = new HashMap<>();
         if(oldEntityList != null && oldEntityList.size() > 0) {
@@ -316,7 +321,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -328,7 +333,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 long id = req.getId();
                 Optional<TruckDriverDetails> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Truck driver detail is null for Id {}", req.getId());
+                    log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -347,7 +352,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Truck driver detail is null for Id {}", req.getId());
+                    log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());

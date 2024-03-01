@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.UUID;
 
 public class DenialPartySearchResponse implements IRunnerResponse {
-List<DenialPartySearchChild> entity;
+    List<DenialPartySearchChild> entity;
 }
 

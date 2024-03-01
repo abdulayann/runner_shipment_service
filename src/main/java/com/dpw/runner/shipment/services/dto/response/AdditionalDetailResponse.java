@@ -127,9 +127,9 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private PartiesResponse borrowedFrom;
     private PartiesResponse sendingAgent;
     private PartiesResponse receivingAgent;
-    Map<String, String> masterData;
-    Map<String, String> unlocationData;
-    public Map<String, String> tenantIdsData;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> tenantIdsData;
     private String customDeclType;
     private String agentReference;
     private String bLTermsandConditionsId;
@@ -140,7 +140,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private String bLRemarksDescription;
     private String summary;
     private Boolean isSummaryUpdated;
-    public Map<String, String> textData;
+    private Map<String, String> textData;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {

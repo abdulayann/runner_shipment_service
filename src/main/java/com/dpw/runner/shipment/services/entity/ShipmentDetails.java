@@ -67,7 +67,7 @@ public class ShipmentDetails extends MultiTenancy {
     @JoinTable(name = "shipments_containers_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "container_id"))
-    @JsonIgnoreProperties("shipmentsList")
+    @JsonIgnoreProperties(value = "shipmentsList", allowSetters = true)
     @BatchSize(size = 50)
     private List<Containers> containersList;
 
@@ -346,7 +346,7 @@ public class ShipmentDetails extends MultiTenancy {
     @JoinTable(name = "console_shipment_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
-    @JsonIgnoreProperties({"shipmentsList", "containersList"})
+    @JsonIgnoreProperties(value = {"shipmentsList", "containersList"}, allowSetters = true)
     private List<ConsolidationDetails> consolidationList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")

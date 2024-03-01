@@ -44,4 +44,8 @@ public class StringUtility {
 
         return String.valueOf(object);
     }
+
+    public static String getNullIfEmpty(String value) {
+        return StringUtility.isEmpty(value) ? null : value;
+    }
 }

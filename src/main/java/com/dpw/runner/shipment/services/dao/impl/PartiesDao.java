@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
@@ -32,6 +33,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRe
 @Repository
 @Slf4j
 public class PartiesDao implements IPartiesDao {
+    public static final String PARTIES_IS_NULL_FOR_ID_MSG = "Parties is null for Id {}";
     @Autowired
     private IPartiesRepository partiesRepository;
     @Autowired
@@ -62,7 +64,7 @@ public class PartiesDao implements IPartiesDao {
         partiesRepository.delete(parties);
     }
 
-    public Parties updateEntityFromShipment(Parties parties, Long shipmentId) throws Exception {
+    public Parties updateEntityFromShipment(Parties parties) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
@@ -70,7 +72,7 @@ public class PartiesDao implements IPartiesDao {
                 long id = parties.getId();
                 Optional<Parties> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Parties is null for Id {}", id);
+                    log.debug(PARTIES_IS_NULL_FOR_ID_MSG, id);
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
@@ -80,11 +82,11 @@ public class PartiesDao implements IPartiesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
-    public List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType) throws Exception {
+    public List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType) throws RunnerException {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         try {
@@ -115,7 +117,7 @@ public class PartiesDao implements IPartiesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -128,7 +130,7 @@ public class PartiesDao implements IPartiesDao {
                 long id = req.getId();
                 Optional<Parties> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Parties is null for Id {}", req.getId());
+                    log.debug(PARTIES_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
@@ -148,7 +150,8 @@ public class PartiesDao implements IPartiesDao {
                                 .parentId(entityId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -163,7 +166,7 @@ public class PartiesDao implements IPartiesDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Parties is null for Id {}", req.getId());
+                    log.debug(PARTIES_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
@@ -192,7 +195,8 @@ public class PartiesDao implements IPartiesDao {
                                 .parentId(entityId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
         }
@@ -216,7 +220,8 @@ public class PartiesDao implements IPartiesDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -228,7 +233,7 @@ public class PartiesDao implements IPartiesDao {
         }
     }
 
-    public List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType, List<Parties> oldEntityList) throws Exception {
+    public List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType, List<Parties> oldEntityList) throws RunnerException {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         Map<UUID, Parties> partiesMap = new HashMap<>();
@@ -262,7 +267,7 @@ public class PartiesDao implements IPartiesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 

@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.CustomsInstructionsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
@@ -42,9 +43,9 @@ public class CustomsInstructionsReport extends IReport{
                 shipmentContainersList.add(shipmentContainers);
             }
             if(shipmentContainersList.size() > 0)
-                customsInstructionsModel.shipmentContainers = shipmentContainersList;
+                customsInstructionsModel.setShipmentContainers(shipmentContainersList);
         }
-        customsInstructionsModel.shipmentDetails.setShipmentContainersList(customsInstructionsModel.shipmentContainers);
+        customsInstructionsModel.shipmentDetails.setShipmentContainersList(customsInstructionsModel.getShipmentContainers());
         return customsInstructionsModel;
     }
 
@@ -80,7 +81,7 @@ public class CustomsInstructionsReport extends IReport{
         if (customsInstructionsModel.shipmentDetails.getPackingList() != null && customsInstructionsModel.shipmentDetails.getPackingList().size() > 0) {
             dictionary.put(ReportConstants.HAS_PACKAGES, true);
         }
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         if (customsInstructionsModel.shipmentDetails.getCarrierDetails() != null)
             dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
