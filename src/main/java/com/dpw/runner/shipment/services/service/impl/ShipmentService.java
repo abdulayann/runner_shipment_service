@@ -2007,15 +2007,15 @@ public class ShipmentService implements IShipmentService {
                         shipmentDetailsPage.getTotalPages(),
                         shipmentDetailsPage.getTotalElements());
             else {
-                List<IRunnerResponse>filtered_list=new ArrayList<>();
+                List<IRunnerResponse>filteredList=new ArrayList<>();
                 for( var curr: convertEntityListToFullShipmentList(shipmentDetailsPage.getContent())){
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
                     res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
-                    filtered_list.add( res);
+                    filteredList.add( res);
 
                 }
                 return ResponseHelper.buildListSuccessResponse(
-                        filtered_list,
+                        filteredList,
                         shipmentDetailsPage.getTotalPages(),
                         shipmentDetailsPage.getTotalElements());
             }
