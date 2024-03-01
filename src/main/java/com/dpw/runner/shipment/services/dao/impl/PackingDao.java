@@ -39,6 +39,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Repository
 @Slf4j
 public class PackingDao implements IPackingDao {
+    public static final String PACKING_IS_NULL_FOR_ID_MSG = "Packing is null for Id {}";
     @Autowired
     private IPackingRepository packingRepository;
 
@@ -243,7 +244,7 @@ public class PackingDao implements IPackingDao {
                 long id = req.getId();
                 Optional<Packing> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Packing is null for Id {}", req.getId());
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -278,7 +279,7 @@ public class PackingDao implements IPackingDao {
             if (req.getId() != null) {
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Packing is null for Id {}", req.getId());
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
@@ -327,7 +328,7 @@ public class PackingDao implements IPackingDao {
             if (req.getId() != null) {
                 long id = req.getId();
                 if (hashMap.get(id) == null) {
-                    log.debug("Packing is null for Id {}", req.getId());
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
@@ -361,7 +362,7 @@ public class PackingDao implements IPackingDao {
                 long id = req.getId();
                 Optional<Packing> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Packing is null for Id {}", req.getId());
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -379,7 +380,7 @@ public class PackingDao implements IPackingDao {
             if (req.getId() != null) {
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Packing is null for Id {}", req.getId());
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
@@ -466,7 +467,7 @@ public class PackingDao implements IPackingDao {
                 long id = req.getId();
                 oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Packing is null for Id {}", req.getId());
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
@@ -487,7 +488,7 @@ public class PackingDao implements IPackingDao {
                 long id = req.getId();
                 Optional<Packing> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Packing is null for Id {}", req.getId());
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
@@ -510,7 +511,7 @@ public class PackingDao implements IPackingDao {
                     long id = req.getId();
                     Optional<Packing> oldEntity = findById(id);
                     if (!oldEntity.isPresent()) {
-                        log.debug("Packing is null for Id {}", req.getId());
+                        log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
                         throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                     }
                 }

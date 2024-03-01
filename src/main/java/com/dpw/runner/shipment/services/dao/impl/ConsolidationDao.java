@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -43,6 +42,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Repository
 @Slf4j
 public class ConsolidationDao implements IConsolidationDetailsDao {
+    public static final String CONSUMED = "Consumed";
+    public static final String UNUSED = "Unused";
     @Autowired
     private IConsolidationRepository consolidationRepository;
 
@@ -285,11 +286,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(consolidationDetails.getMawb());
         if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
             MawbStocksLink res = mawbStocksLinks.get(0);
-            if(!res.getStatus().equalsIgnoreCase("Consumed")) {
+            if(!res.getStatus().equalsIgnoreCase(CONSUMED)) {
                 res.setEntityId(consolidationDetails.getId());
                 res.setEntityType(Constants.CONSOLIDATION);
                 res.setShipConsNumber(consolidationDetails.getConsolidationNumber());
-                res.setStatus("Consumed");
+                res.setStatus(CONSUMED);
                 mawbStocksLinkDao.save(res);
                 setAvaliableCount(res.getParentId());
             }
@@ -309,7 +310,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private String assignNextMawbNumber(Long parentId) {
         ListCommonRequest listCommonRequest;
         listCommonRequest = CommonUtils.andCriteria("parentId", parentId, "=", null);
-        CommonUtils.andCriteria("status", "Unused", "=", listCommonRequest);
+        CommonUtils.andCriteria("status", UNUSED, "=", listCommonRequest);
         listCommonRequest.setSortRequest(SortRequest.builder()
                 .fieldName("seqNumber")
                 .order("DESC")
@@ -373,7 +374,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         if (isMAWBNumberExist){
-            if (mawbStocksLink.getStatus().equals("Consumed") && !mawbStocksLink.getEntityId().equals(consolidationRequest.getId())) {
+            if (mawbStocksLink.getStatus().equals(CONSUMED) && !mawbStocksLink.getEntityId().equals(consolidationRequest.getId())) {
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
             }
         } else {
@@ -390,7 +391,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         mawbStocks.setFrom(consolidationRequest.getMawb());
         mawbStocks.setTo(consolidationRequest.getMawb());
         mawbStocks.setMawbNumber(consolidationRequest.getMawb());
-        mawbStocks.setStatus("Unused");
+        mawbStocks.setStatus(UNUSED);
         if(consolidationRequest.getBorrowedFrom()!=null){
             mawbStocks.setBorrowedFrom(consolidationRequest.getBorrowedFrom().getOrgCode());
             if(consolidationRequest.getBorrowedFrom().getOrgData() != null && consolidationRequest.getBorrowedFrom().getOrgData().containsKey("FullName")) {
@@ -406,7 +407,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             entryForMawbStocksLinkRow.setParentId(mawbStocks.getId());
             entryForMawbStocksLinkRow.setSeqNumber(consolidationRequest.getMawb().substring(4, 10));
             entryForMawbStocksLinkRow.setMawbNumber(consolidationRequest.getMawb());
-            entryForMawbStocksLinkRow.setStatus("Unused");
+            entryForMawbStocksLinkRow.setStatus(UNUSED);
             entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
         }
     }

@@ -33,6 +33,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Repository
 @Slf4j
 public class ReferenceNumbersDao implements IReferenceNumbersDao {
+    public static final String REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG = "Reference number is null for Id {}";
     @Autowired
     private IReferenceNumbersRepository referenceNumbersRepository;
     @Autowired
@@ -110,7 +111,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 long id = req.getId();
                 Optional<ReferenceNumbers> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Reference number is null for Id {}", req.getId());
+                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
@@ -145,7 +146,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!hashMap.containsKey(id)) {
-                    log.debug("Reference number is null for Id {}", req.getId());
+                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(hashMap.get(id).getCreatedAt());
@@ -266,7 +267,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 long id = req.getId();
                 Optional<ReferenceNumbers> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Reference number is null for Id {}", req.getId());
+                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
@@ -301,7 +302,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!hashMap.containsKey(id)) {
-                    log.debug("Reference number is null for Id {}", req.getId());
+                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 String oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
