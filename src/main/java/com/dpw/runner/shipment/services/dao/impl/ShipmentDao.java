@@ -190,9 +190,8 @@ public class ShipmentDao implements IShipmentDao {
         }
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
                 && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)
-                && shipmentDetails.getMasterBill() != null
-                && (oldShipment == null || oldShipment.getMasterBill() == null || !oldShipment.getMasterBill().equalsIgnoreCase(shipmentDetails.getMasterBill())))
-            directShipmentMAWBCheck(shipmentDetails);
+                && shipmentDetails.getMasterBill() != null)
+            directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null);
 
         validateIataCode(shipmentDetails);
 
@@ -410,22 +409,34 @@ public class ShipmentDao implements IShipmentDao {
         return null;
     }
 
-    private void directShipmentMAWBCheck(ShipmentDetails shipmentRequest) {
+    private void directShipmentMAWBCheck(ShipmentDetails shipmentRequest, String oldMasterBill) {
         if (StringUtility.isEmpty(shipmentRequest.getMasterBill())) {
+            mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
             return;
         }
+        if (!Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill)) {
+            mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
+        }
 
-        if (!isMAWBNumberValid(shipmentRequest.getMasterBill()))
+        if (Boolean.FALSE.equals(isMAWBNumberValid(shipmentRequest.getMasterBill())))
             throw new ValidationException("Please enter a valid MAWB number.");
 
-        String mawbAirlineCode = shipmentRequest.getMasterBill().substring(0, 3);
+        if(shipmentRequest.getCarrierDetails() == null || StringUtility.isEmpty(shipmentRequest.getCarrierDetails().getShippingLine()) ||
+            !Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill)) {
+            String mawbAirlineCode = shipmentRequest.getMasterBill().substring(0, 3);
 
-        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
-        List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
-        if (carrierDetails == null || carrierDetails.size()==0)
-            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
+            V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
+            List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
+            if (carrierDetails == null || carrierDetails.isEmpty())
+                throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
 
-        CarrierResponse correspondingCarrier = carrierDetails.get(0);
+            CarrierResponse correspondingCarrier = carrierDetails.get(0);
+
+            if(shipmentRequest.getCarrierDetails() == null)
+                shipmentRequest.setCarrierDetails(new CarrierDetails());
+
+            shipmentRequest.getCarrierDetails().setShippingLine(correspondingCarrier.getItemValue());
+        }
 
         Boolean isMAWBNumberExist = false;
 
@@ -435,15 +446,10 @@ public class ShipmentDao implements IShipmentDao {
 
         MawbStocksLink mawbStocksLink = null;
 
-        if (mawbStocksLinkPage.getContent() != null && mawbStocksLinkPage.getTotalElements() > 0) {
+        if (!mawbStocksLinkPage.isEmpty() && mawbStocksLinkPage.getTotalElements() > 0) {
             isMAWBNumberExist = true;
             mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
         }
-
-        if(shipmentRequest.getCarrierDetails() == null)
-            shipmentRequest.setCarrierDetails(new CarrierDetails());
-
-        shipmentRequest.getCarrierDetails().setShippingLine(correspondingCarrier.getItemValue());
 
         if (shipmentRequest.getDirection().equals("IMP")) {
             return;

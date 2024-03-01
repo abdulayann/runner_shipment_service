@@ -384,4 +384,5 @@ public class Constants {
             CREATED_BY, CREATED_AT, UPDATED_BY, UPDATED_AT, IS_DELETED, "vinNumber");
 
     public static final String WITH_REQUEST_ID_MSG = " with Request Id {}";
+    public static final String UNUSED = "Unused";
 }
