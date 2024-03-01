@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
@@ -37,9 +38,13 @@ public class HblModel implements IDocumentModel{
     public VesselsResponse preCarriageVessel;
     public String paidPlaceCountry;
     public long noofPackages = 0;
+    @JsonProperty("containerCountGrouped")
     private Map<String, Long> containerCountGrouped;
+    @JsonProperty("containerPacksGrouped")
     private Map<String, Long> containerPacksGrouped;
+    @JsonProperty("containerWeightGrouped")
     private Map<String, Double> containerWeightGrouped;
+    @JsonProperty("containerVolumeGrouped")
     private Map<String, Double> containerVolumeGrouped;
     public ShipmentSettingsDetails shipmentSettingsDetails;
     public V1TenantSettingsResponse tenantSettingsResponse;
