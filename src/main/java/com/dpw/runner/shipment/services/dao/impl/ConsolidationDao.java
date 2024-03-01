@@ -348,7 +348,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (!isMAWBNumberValid(consolidationRequest.getMawb()))
             throw new ValidationException("Please enter a valid MAWB number.");
 
-        if(consolidationRequest.getCarrierDetails() == null || StringUtility.isEmpty(consolidationRequest.getCarrierDetails().getShippingLine()) ) {
+        if(consolidationRequest.getCarrierDetails() == null || StringUtility.isEmpty(consolidationRequest.getCarrierDetails().getShippingLine()) ||
+            !Objects.equals(consolidationRequest.getMawb(), oldMawb) ) {
             String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);
             V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode, consolidationRequest.getConsolidationType());
             List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);

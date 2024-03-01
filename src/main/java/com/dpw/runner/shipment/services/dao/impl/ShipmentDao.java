@@ -423,7 +423,8 @@ public class ShipmentDao implements IShipmentDao {
         if (Boolean.FALSE.equals(isMAWBNumberValid(shipmentRequest.getMasterBill())))
             throw new ValidationException("Please enter a valid MAWB number.");
 
-        if(shipmentRequest.getCarrierDetails() == null || StringUtility.isEmpty(shipmentRequest.getCarrierDetails().getShippingLine())) {
+        if(shipmentRequest.getCarrierDetails() == null || StringUtility.isEmpty(shipmentRequest.getCarrierDetails().getShippingLine()) ||
+            !Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill)) {
             String mawbAirlineCode = shipmentRequest.getMasterBill().substring(0, 3);
 
             V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
