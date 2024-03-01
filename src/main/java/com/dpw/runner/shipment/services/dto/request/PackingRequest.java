@@ -58,7 +58,6 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private String volumeWeightUnit;
     private String vinNumber;
     private Long containerId;
-    private String containerNumber;
     private String transportMode;
     private String innerPackageNumber;
     private String innerPackageType;
