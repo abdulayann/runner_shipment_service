@@ -1013,19 +1013,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     private List<PackingRequest> setPackingDetails(List<Containers> containersList, List<PackingRequest> packingRequests, String transportMode, Long consolidationId) {
-        if(containersList != null) {
-            Map<String, Long> map = containersList.stream().filter(c -> !IsStringNullOrEmpty(c.getContainerNumber())).collect(Collectors.toMap(element -> element.getContainerNumber(), element -> element.getId()));
-            if(packingRequests != null && packingRequests.size() > 0) {
-                for (PackingRequest packingRequest : packingRequests) {
-                    if(packingRequest.getContainerId() == null && !IsStringNullOrEmpty(packingRequest.getContainerNumber())) {
-                        if(map.containsKey(packingRequest.getContainerNumber()))
-                            packingRequest.setContainerId(map.get(packingRequest.getContainerNumber()));
-                        else
-                            packingRequest.setContainerId(null);
-                    }
-                    if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
-                        packingRequest.setConsolidationId(consolidationId);
-                    }
+        if(packingRequests != null && packingRequests.size() > 0) {
+            for (PackingRequest packingRequest : packingRequests) {
+                if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+                    packingRequest.setConsolidationId(consolidationId);
                 }
             }
         }
@@ -3351,7 +3342,6 @@ public class ShipmentService implements IShipmentService {
             for (PackingResponse pack : packings) {
                 if(pack.getContainerId() != null) {
                     if(map.containsKey(pack.getContainerId())) {
-                        pack.setContainerNumber(map.get(pack.getContainerId()).getContainerNumber());
                         pack.setContainerDesc(String.format("%s-%s-%s", map.get(pack.getContainerId()).getContainerCount(), map.get(pack.getContainerId()).getContainerNumber(), map.get(pack.getContainerId()).getContainerCode()));
                     }
                     if(flag) {

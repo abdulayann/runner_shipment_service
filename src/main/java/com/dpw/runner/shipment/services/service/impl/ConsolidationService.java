@@ -801,7 +801,7 @@ public class ConsolidationService implements IConsolidationService {
                 consoleShipmentMappings = oldConsoleShipmentMappings.getContent();
                 for (ConsoleShipmentMapping consoleShipmentMapping : oldConsoleShipmentMappings.getContent()) {
                     if(!consoleShipmentMapping.getConsolidationId().equals(consolidationId))
-                        throw new ValidationException("Multiple consolidations are attached to the shipment, please verify.");
+                        return ResponseHelper.buildFailedResponse("Multiple consolidations are attached to the shipment, please verify.");
                 }
             }
             List<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds, consoleShipmentMappings);
