@@ -694,7 +694,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
     @Override
-    public ResponseEntity<ByteArrayResource> downloadTemplate(String templateId) {
+    public ResponseEntity<IRunnerResponse> downloadTemplate(String templateId) {
         try {
             byte[] response = documentService.downloadTemplate(templateId);
             return ResponseHelper.buildFileResponse(response, null, "DownloadDocument.docx");
@@ -703,7 +703,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : ShipmentSettingsConstants.DOWNLOAD_TEMPLATE_FAILED;
             log.error(responseMsg, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
 

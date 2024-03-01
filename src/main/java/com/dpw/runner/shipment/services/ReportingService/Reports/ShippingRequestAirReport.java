@@ -33,7 +33,7 @@ public class ShippingRequestAirReport extends IReport{
     IDocumentModel getDocumentModel(Long id) {
         ShippingRequestAirModel shippingRequestAirModel = new ShippingRequestAirModel();
         shippingRequestAirModel.shipment = getShipment(id);
-        shippingRequestAirModel.shipmentPacking = shippingRequestAirModel.shipment.getPackingList();
+        shippingRequestAirModel.setShipmentPacking(shippingRequestAirModel.shipment.getPackingList());
         return shippingRequestAirModel;
     }
 
@@ -45,7 +45,7 @@ public class ShippingRequestAirReport extends IReport{
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
 
         List<Map<String, Object>> packDictionary = new ArrayList<>();
-        List<PackingModel> listOfPacks = shippingRequestAirModel.shipmentPacking;
+        List<PackingModel> listOfPacks = shippingRequestAirModel.getShipmentPacking();
 
         StringBuilder commodities = new StringBuilder();
         for (var pack: listOfPacks) {

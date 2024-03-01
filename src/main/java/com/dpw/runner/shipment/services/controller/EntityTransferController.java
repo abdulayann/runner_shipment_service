@@ -3,7 +3,10 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -27,6 +30,12 @@ public class EntityTransferController {
 
     private final IEntityTransferService entityTransferService;
     private final JsonHelper jsonHelper;
+    private class CheckTaskExistResponseClass extends RunnerResponse<CheckTaskExistResponse>{}
+    private class ValidationResponseClass extends RunnerResponse<ValidationResponse>{}
+    private class ImportConsolidationResponseClass extends RunnerResponse<ImportConsolidationResponse>{}
+    private class ImportShipmentResponseClass extends RunnerResponse<ImportShipmentResponse>{}
+    private class SendConsolidationResponseClass extends RunnerResponse<SendConsolidationResponse>{}
+    private class SendShipmentResponseClass extends RunnerResponse<SendShipmentResponse>{}
 
     @Autowired
     public EntityTransferController(IEntityTransferService entityTransferService, JsonHelper jsonHelper) {
@@ -36,9 +45,9 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL, response = SendShipmentResponseClass.class)
     })
-    public ResponseEntity<?> sendShipment(@RequestBody @Valid SendShipmentRequest request) {
+    public ResponseEntity<IRunnerResponse> sendShipment(@RequestBody @Valid SendShipmentRequest request) {
         String responseMsg;
         try {
             return entityTransferService.sendShipment(CommonRequestModel.buildRequest(request));
@@ -52,9 +61,9 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_CONSOLIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_CONSOLIDATION_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_CONSOLIDATION_SUCCESSFUL, response = SendConsolidationResponseClass.class)
     })
-    public ResponseEntity<?> sendConsolidation(@RequestBody @Valid @NonNull SendConsolidationRequest request) {
+    public ResponseEntity<IRunnerResponse> sendConsolidation(@RequestBody @Valid @NonNull SendConsolidationRequest request) {
         String responseMsg;
         try {
             return entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(request));
@@ -68,9 +77,9 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.IMPORT_SHIPMENT)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL, response = ImportShipmentResponseClass.class)
     })
-    public ResponseEntity<?> importShipment(@RequestBody @Valid ImportShipmentRequest request) {
+    public ResponseEntity<IRunnerResponse> importShipment(@RequestBody @Valid ImportShipmentRequest request) {
         String responseMsg;
         ImportShipmentRequest importShipmentRequest = jsonHelper.convertValue(request, ImportShipmentRequest.class);
         try {
@@ -85,9 +94,9 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.IMPORT_CONSOLIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_CONSOLIDATION_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_CONSOLIDATION_SUCCESSFUL, response = ImportConsolidationResponseClass.class)
     })
-    public ResponseEntity<?> importConsolidation(@RequestBody @Valid ImportConsolidationRequest request) {
+    public ResponseEntity<IRunnerResponse> importConsolidation(@RequestBody @Valid ImportConsolidationRequest request) {
         String responseMsg;
         ImportConsolidationRequest importConsolidationRequest = jsonHelper.convertValue(request, ImportConsolidationRequest.class);
         try {
@@ -102,9 +111,9 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_CONSOLIDATION_VALIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL, response = ValidationResponseClass.class)
     })
-    public ResponseEntity<?> sendConsolidationValidation(@RequestBody @Valid ValidateSendConsolidationRequest request) {
+    public ResponseEntity<IRunnerResponse> sendConsolidationValidation(@RequestBody @Valid ValidateSendConsolidationRequest request) {
         String responseMsg;
         try {
             return entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request));
@@ -118,9 +127,9 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT_VALIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL, response = ValidationResponseClass.class)
     })
-    public ResponseEntity<?> sendShipmentValidation(@RequestBody @Valid ValidateSendShipmentRequest request) {
+    public ResponseEntity<IRunnerResponse> sendShipmentValidation(@RequestBody @Valid ValidateSendShipmentRequest request) {
         String responseMsg;
         try {
             return entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(request));
@@ -135,9 +144,9 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.CHECK_TASK_EXIST)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.CHECK_TASK_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.CHECK_TASK_SUCCESSFUL, response = CheckTaskExistResponseClass.class)
     })
-    public ResponseEntity<?> checkTaskExist(@RequestBody @Valid CheckTaskExistRequest request) {
+    public ResponseEntity<IRunnerResponse> checkTaskExist(@RequestBody @Valid CheckTaskExistRequest request) {
         String responseMsg;
         try {
             return entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));

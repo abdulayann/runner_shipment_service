@@ -258,7 +258,7 @@ public class MasterDataUtils{
             fieldNameKeyMap.forEach((key, value) -> {
                 if(keyUnlocationDataMap.containsKey(value)) {
                     fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value).LocCode + " " + keyUnlocationDataMap.get(value).NameWoDiacritics);
-                    fieldNameUnlocationDataMap.put(key + "_country", keyUnlocationDataMap.get(value).Country);
+                    fieldNameUnlocationDataMap.put(key + Constants.COUNTRY, keyUnlocationDataMap.get(value).Country);
                 }
             });
             return fieldNameUnlocationDataMap;
@@ -725,7 +725,7 @@ public class MasterDataUtils{
         fieldNameKeyMap.forEach((key, value) -> {
             if(keyMasterDataMap.containsKey(value)) {
                 fieldNameMasterDataMap.put(key, keyMasterDataMap.get(value).LocCode + " " + keyMasterDataMap.get(value).NameWoDiacritics);
-                fieldNameMasterDataMap.put(key + "_country", keyMasterDataMap.get(value).Country);
+                fieldNameMasterDataMap.put(key + Constants.COUNTRY, keyMasterDataMap.get(value).Country);
             }
         });
         return fieldNameMasterDataMap;
@@ -1050,12 +1050,12 @@ public class MasterDataUtils{
                     case CacheConstants.UNLOCATIONS:
                         EntityTransferUnLocations object = (EntityTransferUnLocations) cache.get();
                         fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
-                        fieldNameMasterDataMap.put(key + "_country", object.Country);
+                        fieldNameMasterDataMap.put(key + Constants.COUNTRY, object.Country);
                         break;
                     case CacheConstants.UNLOCATIONS_AWB:
                         EntityTransferUnLocations obj = (EntityTransferUnLocations) cache.get();
                         fieldNameMasterDataMap.put(key, obj.NameWoDiacritics);
-                        fieldNameMasterDataMap.put(key + "_country", obj.Country);
+                        fieldNameMasterDataMap.put(key + Constants.COUNTRY, obj.Country);
                         break;
                     case CacheConstants.CONTAINER_TYPE:
                         EntityTransferContainerType object1 = (EntityTransferContainerType) cache.get();
@@ -1108,6 +1108,7 @@ public class MasterDataUtils{
                         EntityTransferCommodityType object11 = (EntityTransferCommodityType) cache.get();
                         fieldNameMasterDataMap.put(key, object11.getDescription());
                         break;
+                    default:
                 }
 
             }

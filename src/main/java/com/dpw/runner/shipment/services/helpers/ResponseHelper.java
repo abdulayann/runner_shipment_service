@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.responses.*;
+import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
@@ -121,8 +122,8 @@ public class ResponseHelper {
     }
 
 
-    public static ResponseEntity<ByteArrayResource> buildFileResponse(byte[] bytes, MediaType contentType, String fileName) {
-        ByteArrayResource resource = new ByteArrayResource(bytes);
+    public static ResponseEntity<IRunnerResponse> buildFileResponse(byte[] bytes, MediaType contentType, String fileName) {
+        ByteArrayResourceResponse resource = new ByteArrayResourceResponse(bytes);
         return ResponseEntity.ok()
                 .contentType(contentType)
                 .contentLength(resource.contentLength())
