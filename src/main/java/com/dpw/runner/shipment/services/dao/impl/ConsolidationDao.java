@@ -34,6 +34,8 @@ import org.springframework.stereotype.Repository;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
@@ -132,9 +134,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
         if (!fromV1Sync && consolidationDetails.getTransportMode() != null
                 && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
-                && consolidationDetails.getMawb() != null
-                && (oldConsole == null || oldConsole.getMawb() == null || !oldConsole.getMawb().equalsIgnoreCase(consolidationDetails.getMawb())))
-            consolidationMAWBCheck(consolidationDetails);
+                && consolidationDetails.getMawb() != null)
+            consolidationMAWBCheck(consolidationDetails, oldConsole != null ? oldConsole.getMawb() : null);
         consolidationDetails = consolidationRepository.save(consolidationDetails);
         if (!fromV1Sync && StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
             setMawbStock(consolidationDetails);
@@ -335,22 +336,34 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return response;
     }
 
-    private void consolidationMAWBCheck(ConsolidationDetails consolidationRequest) {
+    private void consolidationMAWBCheck(ConsolidationDetails consolidationRequest, String oldMawb) {
         if (StringUtility.isEmpty(consolidationRequest.getMawb())) {
+            mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMawb);
             return;
+        }
+        if (!Objects.equals(consolidationRequest.getMawb(), oldMawb)) {
+            mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMawb);
         }
 
         if (!isMAWBNumberValid(consolidationRequest.getMawb()))
             throw new ValidationException("Please enter a valid MAWB number.");
 
-        String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);
-        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode, consolidationRequest.getConsolidationType());
-        List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
+        if(consolidationRequest.getCarrierDetails() == null || StringUtility.isEmpty(consolidationRequest.getCarrierDetails().getShippingLine()) ) {
+            String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);
+            V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode, consolidationRequest.getConsolidationType());
+            List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
 
-        if (carrierDetails == null || carrierDetails.size()==0)
-            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
+            if (carrierDetails == null || carrierDetails.size()==0)
+                throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
 
-        CarrierResponse correspondingCarrier = carrierDetails.get(0);
+            CarrierResponse correspondingCarrier = carrierDetails.get(0);
+
+            if(consolidationRequest.getCarrierDetails() == null)
+                consolidationRequest.setCarrierDetails(new CarrierDetails());
+
+            consolidationRequest.getCarrierDetails().setShippingLine(correspondingCarrier.getItemValue());
+        }
+
 
         Boolean isMAWBNumberExist = false;
 
@@ -359,15 +372,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         Page<MawbStocksLink> mawbStocksLinkPage = mawbStocksLinkDao.findAll(mawbStocksLinkPair.getLeft(), mawbStocksLinkPair.getRight());
 
         MawbStocksLink mawbStocksLink = null;
+
         if (!mawbStocksLinkPage.getContent().isEmpty()){
-            mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
             isMAWBNumberExist = true;
+            mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
         }
-
-        if(consolidationRequest.getCarrierDetails() == null)
-            consolidationRequest.setCarrierDetails(new CarrierDetails());
-
-        consolidationRequest.getCarrierDetails().setShippingLine(correspondingCarrier.getItemValue());
 
         if (consolidationRequest.getShipmentType().equals(Constants.IMP)) {
             return;

@@ -12,4 +12,6 @@ public interface IMawbStocksLinkDao {
     Page<MawbStocksLink> findAll(Specification<MawbStocksLink> spec, Pageable pageable);
     List<MawbStocksLink> findByMawbNumber(String mawbNumber);
     void deleteByParentId(Long parentId);
+    void deLinkExistingMawbStockLink(String mawbNumber);
+    String assignNextMawbNumber(Long parentId);
 }
