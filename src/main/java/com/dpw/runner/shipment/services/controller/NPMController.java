@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
@@ -42,7 +43,7 @@ public class NPMController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @ExcludeTimeZone
-    public ResponseEntity<?> fetchContracts(@RequestBody @Valid ListContractRequest request) {
+    public ResponseEntity<IRunnerResponse> fetchContracts(@RequestBody @Valid ListContractRequest request) {
         String responseMsg;
         ListContractRequest listContractRequest = jsonHelper.convertValue(request, ListContractRequest.class);
         try {
@@ -61,7 +62,7 @@ public class NPMController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @ExcludeTimeZone
-    public ResponseEntity<?> fetchContract(@RequestBody @Valid ListContractRequest request) {
+    public ResponseEntity<IRunnerResponse> fetchContract(@RequestBody @Valid ListContractRequest request) {
         String responseMsg;
         try {
             return  npmService.fetchContract(CommonRequestModel.buildRequest(request));
@@ -79,7 +80,7 @@ public class NPMController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @ExcludeTimeZone
-    public ResponseEntity<?> getNPMOffers(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
+    public ResponseEntity<IRunnerResponse> getNPMOffers(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
         String responseMsg;
         try {
             return npmService.fetchOffers(CommonRequestModel.buildRequest(request));
@@ -97,7 +98,7 @@ public class NPMController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @ExcludeTimeZone
-    public ResponseEntity<?> getNPMOffersV8(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
+    public ResponseEntity<IRunnerResponse> getNPMOffersV8(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
         String responseMsg;
         try {
             return npmService.fetchOffersV8(CommonRequestModel.buildRequest(request));
@@ -111,7 +112,7 @@ public class NPMController {
 
     @PostMapping("/getAwbAutoSell")
     @ExcludeTimeZone
-    public ResponseEntity <?> getAwbAutoSell(@RequestBody NPMAutoSellRequest request) {
+    public ResponseEntity <IRunnerResponse> getAwbAutoSell(@RequestBody NPMAutoSellRequest request) {
         String responseMsg;
         try {
             return npmService.awbAutoSell(CommonRequestModel.buildRequest(request));
@@ -125,7 +126,7 @@ public class NPMController {
 
     @PostMapping("/getAwbImportRates")
     @ExcludeTimeZone
-    public ResponseEntity <?> getAwbImportRates(@RequestBody NPMImportRatesRequest request) {
+    public ResponseEntity <IRunnerResponse> getAwbImportRates(@RequestBody NPMImportRatesRequest request) {
         String responseMsg;
         try {
             return npmService.awbImportRates(CommonRequestModel.buildRequest(request));

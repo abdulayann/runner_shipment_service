@@ -215,7 +215,7 @@ public class SyncEntityConversionService {
         if(partyRequestV2.getIsFreeTextAddress()){
             var rawData = parties.getAddressData() != null ? parties.getAddressData().get("rawData"): null;
             if(rawData != null)
-            partyRequestV2.setFreeTextAddress(rawData.toString());
+                partyRequestV2.setFreeTextAddress(rawData.toString());
         }
         return partyRequestV2;
     }

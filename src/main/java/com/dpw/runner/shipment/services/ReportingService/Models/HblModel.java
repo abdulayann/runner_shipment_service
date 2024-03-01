@@ -9,10 +9,13 @@ import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
 import java.util.List;
 import java.util.Map;
 
+@Data
 public class HblModel implements IDocumentModel{
     //public List<BillChargesRow> billCharges;
     //public BigDecimal prepaidTotalAmount;
@@ -24,7 +27,7 @@ public class HblModel implements IDocumentModel{
     public Boolean isHbl;
     public UsersDto user;
     public String podCountry;
-    public List<ShipmentContainers> commonContainers;
+    private List<ShipmentContainers> commonContainers;
     public String paymentTerms;
     public String serviceMode;
     public String releaseType;
@@ -35,10 +38,14 @@ public class HblModel implements IDocumentModel{
     public VesselsResponse preCarriageVessel;
     public String paidPlaceCountry;
     public long noofPackages = 0;
-    public Map<String, Long> containerCountGrouped;
-    public Map<String, Long> containerPacksGrouped;
-    public Map<String, Double> containerWeightGrouped;
-    public Map<String, Double> containerVolumeGrouped;
+    @JsonProperty("containerCountGrouped")
+    private Map<String, Long> containerCountGrouped;
+    @JsonProperty("containerPacksGrouped")
+    private Map<String, Long> containerPacksGrouped;
+    @JsonProperty("containerWeightGrouped")
+    private Map<String, Double> containerWeightGrouped;
+    @JsonProperty("containerVolumeGrouped")
+    private Map<String, Double> containerVolumeGrouped;
     public ShipmentSettingsDetails shipmentSettingsDetails;
     public V1TenantSettingsResponse tenantSettingsResponse;
 }

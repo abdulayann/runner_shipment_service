@@ -1,9 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -54,7 +52,8 @@ public class UsersDto implements Serializable {
     public Boolean QuoteNumberLock;
     public String QuotePrefix;
     public Boolean OrgCodeLock ;
-    public Map<String, Boolean> Permissions;
+    @JsonProperty("Permissions")
+    private Map<String, Boolean> Permissions;
     public String EmployeeToken;
     public List<String> userAllowedPermissions;
     public HashSet<String> customeTenantCountry;

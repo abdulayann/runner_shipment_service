@@ -102,6 +102,7 @@ public class MasterDataKeyUtils {
                                 EntityTransferDGSubstance object12 = (EntityTransferDGSubstance) cache.get();
                                 response.put(value, object12.getProperShippingName());
                                 break;
+                            default:
                         }
                     }
                 });

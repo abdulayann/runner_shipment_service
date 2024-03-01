@@ -147,7 +147,7 @@ public class PackingController {
     })
     @PostMapping(ApiConstants.API_LIST_PACKS_TO_DETACH)
     public ResponseEntity<IRunnerResponse> listPacksToDetach(@RequestBody @Valid DetachPacksListDto request) {
-        String responseMsg = "failure executing :(";
+        String responseMsg = Constants.FAILURE_EXECUTING;
         try {
             return packingService.listPacksToDetach(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
@@ -164,7 +164,7 @@ public class PackingController {
     })
     @PostMapping(ApiConstants.SYNC)
     public ResponseEntity<IRunnerResponse> syncPackingToService(@RequestBody @Valid PackingRequestV2 request) {
-        String responseMsg = "failure executing :(";
+        String responseMsg = Constants.FAILURE_EXECUTING;
         try {
             return packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e) {
@@ -181,7 +181,7 @@ public class PackingController {
     })
     @PostMapping(ApiConstants.BULK_SYNC)
     public ResponseEntity<IRunnerResponse> syncBulkPackingToService(@RequestBody @Valid BulkPackingRequestV2 request) {
-        String responseMsg = "failure executing :(";
+        String responseMsg = Constants.FAILURE_EXECUTING;
         try {
             return packingService.V1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
@@ -198,7 +198,7 @@ public class PackingController {
     })
     @PostMapping(ApiConstants.AUTO_CALCULATE_VOLUMETRIC_WEIGHT)
     public ResponseEntity<IRunnerResponse> autoCalculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) {
-        String responseMsg = "failure executing request " + request.getId();
+        String responseMsg = PackingConstants.FAILURE_EXECUTING_REQUEST + request.getId();
         try {
             return packingService.autoCalculateVolumetricWeight(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
@@ -215,7 +215,7 @@ public class PackingController {
     })
     @PostMapping(ApiConstants.AUTO_CALCULATE_CHARGABLE)
     public ResponseEntity<IRunnerResponse> autoCalculateChargable(@RequestBody AutoCalculatePackingRequest request) {
-        String responseMsg = "failure executing request " + request.getId();
+        String responseMsg = PackingConstants.FAILURE_EXECUTING_REQUEST + request.getId();
         try {
             return packingService.autoCalculateChargable(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
@@ -232,7 +232,7 @@ public class PackingController {
     })
     @PostMapping(ApiConstants.AUTO_CALCULATE_VOLUME)
     public ResponseEntity<IRunnerResponse> autoCalculateVolume(@RequestBody AutoCalculatePackingRequest request) {
-        String responseMsg = "failure executing request " + request.getId();
+        String responseMsg = PackingConstants.FAILURE_EXECUTING_REQUEST + request.getId();
         try {
             return packingService.autoCalculateVolume(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {

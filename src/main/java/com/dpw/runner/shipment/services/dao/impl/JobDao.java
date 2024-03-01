@@ -37,6 +37,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Repository
 @Slf4j
 public class JobDao implements IJobDao {
+    public static final String JOB_IS_NULL_FOR_ID_MSG = "Job is null for Id {}";
     @Autowired
     private IJobRepository jobRepository;
 
@@ -127,7 +128,7 @@ public class JobDao implements IJobDao {
                 long id = req.getId();
                 Optional<Jobs> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Job is null for Id {}", req.getId());
+                    log.debug(JOB_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -162,7 +163,7 @@ public class JobDao implements IJobDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Job is null for Id {}", req.getId());
+                    log.debug(JOB_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
@@ -280,7 +281,7 @@ public class JobDao implements IJobDao {
                 long id = req.getId();
                 Optional<Jobs> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Job is null for Id {}", req.getId());
+                    log.debug(JOB_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -299,7 +300,7 @@ public class JobDao implements IJobDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Job is null for Id {}", req.getId());
+                    log.debug(JOB_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());

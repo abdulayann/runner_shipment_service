@@ -6,11 +6,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CarrierMasterData {
+public class CarrierMasterData implements Serializable {
     @JsonProperty("Id")
     private int id;
     @JsonProperty("ItemValue")

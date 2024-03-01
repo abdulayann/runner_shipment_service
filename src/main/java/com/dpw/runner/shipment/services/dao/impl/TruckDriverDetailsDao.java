@@ -33,6 +33,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Repository
 @Slf4j
 public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
+    public static final String TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG = "Truck driver detail is null for Id {}";
     @Autowired
     private ITruckDriverDetailsRepository truckDriverDetailsRepository;
     @Autowired
@@ -140,7 +141,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 long id = req.getId();
                 Optional<TruckDriverDetails> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Truck driver detail is null for Id {}", req.getId());
+                    log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -175,7 +176,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Truck driver detail is null for Id {}", req.getId());
+                    log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
@@ -332,7 +333,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 long id = req.getId();
                 Optional<TruckDriverDetails> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Truck driver detail is null for Id {}", req.getId());
+                    log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
@@ -351,7 +352,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Truck driver detail is null for Id {}", req.getId());
+                    log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());

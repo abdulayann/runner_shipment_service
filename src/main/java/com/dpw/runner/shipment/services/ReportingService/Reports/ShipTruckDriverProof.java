@@ -40,7 +40,7 @@ public class ShipTruckDriverProof extends IReport {
         }
         if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getTruckDriverDetails() != null && truckDriverModel.shipmentDetails.getTruckDriverDetails().size() > 0)
         {
-            truckDriverModel.truckDriverDetails = truckDriverModel.shipmentDetails.getTruckDriverDetails();
+            truckDriverModel.setTruckDriverDetails(truckDriverModel.shipmentDetails.getTruckDriverDetails());
         }
         truckDriverModel.tenant = getTenant();
         truckDriverModel.usersDto = UserContext.getUser();
@@ -55,7 +55,7 @@ public class ShipTruckDriverProof extends IReport {
         populateShipmentFields(truckDriverModel.shipmentDetails, false, dictionary);
         populateUserFields(truckDriverModel.usersDto, dictionary);
         populateTenantFields(dictionary, truckDriverModel.tenant);
-        for(var truckDriver: truckDriverModel.truckDriverDetails)
+        for(var truckDriver: truckDriverModel.getTruckDriverDetails())
         {
             if(StringUtility.isEmpty(truckDriver.getSelfTransporterName()))
             {
@@ -64,7 +64,7 @@ public class ShipTruckDriverProof extends IReport {
             else
                 truckDriver.setTransporterName(truckDriver.getSelfTransporterName());
         }
-        dictionary.put(ReportConstants.SHIPMENT_TRUCKDRIVERDETAILS, truckDriverModel.truckDriverDetails);
+        dictionary.put(ReportConstants.SHIPMENT_TRUCKDRIVERDETAILS, truckDriverModel.getTruckDriverDetails());
         return dictionary;
     }
 }

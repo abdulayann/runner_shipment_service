@@ -338,6 +338,17 @@ public class Constants {
     public static final String HANDLING_INFO = "handlingInfo";
     public static final String DESCRIPTION_OF_GOODS = "descriptionOfGoods";
     public static final String BOOKING_STATUS_FIELD = "bookingStatus";
+    public static final String CONTAINER_NUMBER = "containerNumber";
+    public static final String NET_WEIGHT = "netWeight";
+    public static final String GROSS_WEIGHT = "grossWeight";
+    public static final String PACKS = "packs";
+    public static final String UNLOCATIONS = "Unlocations";
+    public static final String CONTAINER_TYPES = "ContainerTypes";
+    public static final String FLASH_POINT = "flashpoint";
+    public static final String BRANCH = "branch";
+    public static final String PRODUCT_PROCESS_TYPES = "productProcessTypes";
+    public static final String COUNTRY = "_country";
+    public static final String FAILURE_EXECUTING = "failure executing :(";
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,"noOfPackages","netWeight","netWeightUnit",
             "grossWeight","grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",

@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -81,6 +80,7 @@ public class HblSync implements IHblSync {
 
     private HblRequestV2 convertEntityToDto(Hbl hbl) {
         HblRequestV2 response = jsonHelper.convertValue(hbl.getHblData(), HblRequestV2.class);
+        response.setGuid(hbl.getGuid());
         response.setCargoes(convertToList(hbl.getHblCargo(), HblCargoRequestV2.class));
         response.setContainers(convertToList(hbl.getHblContainer(), HblContainerRequestV2.class));
         response.setNotifyParties(convertToList(hbl.getHblNotifyParty(), HblPartyRequestV2.class));

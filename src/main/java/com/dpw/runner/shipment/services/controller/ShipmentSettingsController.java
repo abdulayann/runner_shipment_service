@@ -154,7 +154,7 @@ public class ShipmentSettingsController {
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.TEMPLATE_DOWNLOAD_SUCCESSFUL, response = RunnerListResponse.class) })
     @GetMapping(value = ShipmentSettingsConstants.DOWNLOAD_TEMPLATE, produces = "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-    public ResponseEntity<?> downloadTemplate(@RequestParam String templateId) {
+    public ResponseEntity<IRunnerResponse> downloadTemplate(@RequestParam String templateId) {
         return shipmentSettingsService.downloadTemplate(templateId);
     }
 
