@@ -691,6 +691,7 @@ public class HblService implements IHblService {
             HblRequest hblRequest = jsonHelper.convertValue(request, HblRequest.class);
             Hbl entity = convertRequestToEntity(hblRequest);
             entity.setShipmentId(shipmentDetails.get().collect(Collectors.toList()).get(0).getId());
+            entity.setGuid(request.getGuid());
             if(!hblList.isEmpty() && hblList.size() > 0) {
                 entity.setId(hblList.get(0).getId());
                 entity.setGuid(hblList.get(0).getGuid());

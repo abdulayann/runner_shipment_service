@@ -52,9 +52,9 @@ public class PreAlertReport extends IReport {
                 shipmentContainersList.add(shipmentContainers);
             }
             if(shipmentContainersList.size() > 0)
-                preAlertModel.shipmentContainers = shipmentContainersList;
+                preAlertModel.setShipmentContainers(shipmentContainersList);
         }
-        preAlertModel.shipmentDetails.setShipmentContainersList(preAlertModel.shipmentContainers);
+        preAlertModel.shipmentDetails.setShipmentContainersList(preAlertModel.getShipmentContainers());
         preAlertModel.noofpackages_word = numberToWords(preAlertModel.shipmentDetails.getNoOfPacks());
         preAlertModel.userdisplayname = UserContext.getUser().DisplayName;
         return preAlertModel;
@@ -157,8 +157,8 @@ public class PreAlertReport extends IReport {
         if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
         }
-        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, preAlertModel.shipmentContainers);
-        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(preAlertModel.shipmentContainers));
+        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, preAlertModel.getShipmentContainers());
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(preAlertModel.getShipmentContainers()));
         if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             UnlocationsResponse origin = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
             if (origin != null && origin.getIataCode() != null)

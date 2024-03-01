@@ -3,8 +3,10 @@ package com.dpw.runner.shipment.services.masterdata.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class VesselsResponse {
+public class VesselsResponse implements Serializable {
     @JsonProperty("Id")
     private int id;
     @JsonProperty("Name")

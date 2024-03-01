@@ -54,7 +54,7 @@ public class UsersDto implements Serializable {
     public Boolean QuoteNumberLock;
     public String QuotePrefix;
     public Boolean OrgCodeLock ;
-    public Map<String, Boolean> Permissions;
+    private Map<String, Boolean> Permissions;
     public String EmployeeToken;
     public List<String> userAllowedPermissions;
     public HashSet<String> customeTenantCountry;
