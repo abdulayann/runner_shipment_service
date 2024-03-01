@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -43,7 +44,8 @@ public class TokenUtility {
             JWT parse = JWTParser.parse(token);
             JWTClaimsSet claimsSet = parse.getJWTClaimsSet();
             validateValidity(claimsSet);
-            return claimsSet.getClaim(USER_ID_FIELD) + "|" + claimsSet.getClaim(BRANCH_ID_FIELD);
+            String key = claimsSet.getClaim(USER_ID_FIELD) + "|" + claimsSet.getClaim(BRANCH_ID_FIELD);
+            log.info("Token key for RequestId {} is {}", LoggerHelper.getRequestIdFromMDC(), key);
         } catch (Exception ex) {
             log.error("Error occurred during decrypting token: {} || Exception message: {}", token, ex.getMessage());
         }

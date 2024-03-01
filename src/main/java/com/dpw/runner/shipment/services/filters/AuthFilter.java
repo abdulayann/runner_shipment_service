@@ -108,7 +108,7 @@ public class AuthFilter extends OncePerRequestFilter {
             //res.getWriter().write(filterLevelException(new UnAuthorizedException(errormessage)));
             return;
         }
-        log.debug("Auth Successful, username:-{},tenantId:-{}", user.getUsername(), user.getTenantId());
+        log.info("Auth Successful, username:-{},tenantId:-{} for request: {}", user.getUsername(), user.getTenantId(), LoggerHelper.getRequestIdFromMDC());
         UserContext.setUser(user);
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
