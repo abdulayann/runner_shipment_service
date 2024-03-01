@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -27,6 +28,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -61,6 +63,8 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class EntityTransferService implements IEntityTransferService {
+    public static final String SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Shipment Details is null for Id {} with Request Id {}";
+    public static final String CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Consolidation Details is null for Id {} with Request Id {}";
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
     @Autowired
@@ -91,7 +95,7 @@ public class EntityTransferService implements IEntityTransferService {
     MasterDataFactory masterDataFactory;
     @Transactional
     @Override
-    public ResponseEntity<?> sendShipment(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel) {
         SendShipmentRequest sendShipmentRequest = (SendShipmentRequest) commonRequestModel.getData();
         Long shipId = sendShipmentRequest.getShipId();
         List<Integer> sendToBranch = sendShipmentRequest.getSendToBranch();
@@ -102,7 +106,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
         if (!shipmentDetails.isPresent()) {
-            log.debug("Shipment Details is null for Id {} with Request Id {}", shipId, LoggerHelper.getRequestIdFromMDC());
+            log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, shipId, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(shipmentDetails.isPresent()) {
@@ -650,7 +654,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> sendConsolidation(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> sendConsolidation(CommonRequestModel commonRequestModel) {
         SendConsolidationRequest sendConsolidationRequest = (SendConsolidationRequest) commonRequestModel.getData();
         Long consolId = sendConsolidationRequest.getConsolId();
         List<Integer> sendToBranch = sendConsolidationRequest.getSendToBranch();
@@ -663,7 +667,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolId);
         if (!consolidationDetails.isPresent()) {
-            log.debug("Consolidation Details is null for Id {} with Request Id {}", consolId, LoggerHelper.getRequestIdFromMDC());
+            log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consolId, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(consolidationDetails.isPresent()) {
@@ -688,21 +692,22 @@ public class EntityTransferService implements IEntityTransferService {
                 consolidationDetails.get().getShipmentsList().forEach(shipment -> {
                     shipmentIds.add(shipment.getShipmentId());
                     houseBills.add(shipment.getHouseBill());
-                    shipment.setGuid(UUID.randomUUID());
-                    shipment.getContainersList().forEach(cont -> {
-                        if(idVsGuidMap.containsKey(cont.getId())){
-                            cont.setGuid(idVsGuidMap.get(cont.getId()));
-                            if(!containerVsShipmentGuid.containsKey(cont.getGuid())) {
-                                containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
-                            } else {
-                                containerVsShipmentGuid.get(cont.getGuid()).add(shipment.getGuid());
-                            }
-                        } else {
-                            cont.setGuid(UUID.randomUUID());
-                            idVsGuidMap.put(cont.getId(), cont.getGuid());
-                            containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
-                        }
-                    });
+                    // TODO For V2 payload creation
+//                    shipment.setGuid(UUID.randomUUID());
+//                    shipment.getContainersList().forEach(cont -> {
+//                        if(idVsGuidMap.containsKey(cont.getId())){
+//                            cont.setGuid(idVsGuidMap.get(cont.getId()));
+//                            if(!containerVsShipmentGuid.containsKey(cont.getGuid())) {
+//                                containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
+//                            } else {
+//                                containerVsShipmentGuid.get(cont.getGuid()).add(shipment.getGuid());
+//                            }
+//                        } else {
+//                            cont.setGuid(UUID.randomUUID());
+//                            idVsGuidMap.put(cont.getId(), cont.getGuid());
+//                            containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
+//                        }
+//                    });
                     if(shipAdditionalDocs != null && shipAdditionalDocs.containsKey(shipment.getGuid().toString())){
                         if(shipAdditionalDocs.get(shipment.getGuid().toString()) != null) {
 //                            var shipFileRepoList = shipment.getFileRepoList().stream().filter(fileRepo -> {
@@ -894,7 +899,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
     @Transactional
     @Override
-    public ResponseEntity<?> importShipment (CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> importShipment (CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ImportShipmentRequest importShipmentRequest = (ImportShipmentRequest) commonRequestModel.getData();
         EntityTransferShipmentDetails entityTransferShipmentDetails = importShipmentRequest.getEntityTransferShipmentDetails();
@@ -909,11 +914,11 @@ public class EntityTransferService implements IEntityTransferService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
     @Transactional
-    private ShipmentDetailsResponse createShipment (EntityTransferShipmentDetails entityTransferShipmentDetails){
+    public ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails) throws RunnerException {
         ShipmentRequest request = jsonHelper.convertValue(entityTransferShipmentDetails, ShipmentRequest.class);
 
         String Hbl = request.getHouseBill();
@@ -924,25 +929,29 @@ public class EntityTransferService implements IEntityTransferService {
         if(shipmentDetails != null && shipmentDetails.size() > 0){
             request.setId(shipmentDetails.get(0).getId());
             try {
-                ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> response = (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeUpdate(CommonRequestModel.buildRequest(request));
+                ResponseEntity<IRunnerResponse> response = shipmentService.completeUpdate(CommonRequestModel.buildRequest(request));
                 log.info("Update payload: "+request);
-                return response.getBody().getData();
+                if(response == null || response.getBody() == null)
+                    throw new RunnerException("Response body from shipment service v1 for Complete Update is null");
+                return (ShipmentDetailsResponse) ((RunnerResponse)response.getBody()).getData();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }else {
-            ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> response = (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.create(CommonRequestModel.buildRequest(request));
-            return response.getBody().getData();
+            ResponseEntity<IRunnerResponse> response = shipmentService.create(CommonRequestModel.buildRequest(request));
+            if(response == null || response.getBody() == null)
+                throw new RunnerException("Response body from shipment service v1 for Complete Update is null");
+            return (ShipmentDetailsResponse) ((RunnerResponse)response.getBody()).getData();
         }
     }
     @Transactional
-    private void createShipmentMasterData (EntityTransferShipmentDetails entityTransferShipmentDetails) {
+    public void createShipmentMasterData(EntityTransferShipmentDetails entityTransferShipmentDetails) {
         this.createAllMasterData(entityTransferShipmentDetails);
         this.createAllUnlocationData(entityTransferShipmentDetails);
         this.createAllDedicatedMasterData(entityTransferShipmentDetails);
     }
     @Transactional
-    private void createAllMasterData (EntityTransferShipmentDetails entityTransferShipmentDetails) {
+    public void createAllMasterData(EntityTransferShipmentDetails entityTransferShipmentDetails) {
         List<EntityTransferMasterLists> masterDataList = new ArrayList<>();
         if(entityTransferShipmentDetails.getMasterData() != null)
             masterDataList.addAll(entityTransferShipmentDetails.getMasterData().values());
@@ -990,7 +999,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.createMasterData(masterDataList);
     }
     @Transactional
-    private void createMasterData (List<EntityTransferMasterLists> masterData) {
+    public void createMasterData(List<EntityTransferMasterLists> masterData) {
         MasterListRequestV2 masterListRequest = new MasterListRequestV2();
         Set<String> masterDataKey = new HashSet<>();
         masterData.forEach(value -> {
@@ -1016,7 +1025,7 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     @Transactional
-    private void createAllUnlocationData (EntityTransferShipmentDetails entityTransferShipmentDetails) {
+    public void createAllUnlocationData(EntityTransferShipmentDetails entityTransferShipmentDetails) {
         List<EntityTransferUnLocations> unLocationsList = new ArrayList<>();
         if(entityTransferShipmentDetails.getAdditionalDetails() != null && entityTransferShipmentDetails.getAdditionalDetails().getUnlocationData() != null)
             unLocationsList.addAll(entityTransferShipmentDetails.getAdditionalDetails().getUnlocationData().values());
@@ -1026,7 +1035,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.createUnlocationData(unLocationsList);
     }
     @Transactional
-    private void createUnlocationData (List<EntityTransferUnLocations> unlocationData) {
+    public void createUnlocationData(List<EntityTransferUnLocations> unlocationData) {
         Set<String> locCodesList = new HashSet<>();
         locCodesList.addAll(unlocationData.stream().map(x->x.getLocCode()).collect(Collectors.toSet()));
         if (locCodesList.size() > 0) {
@@ -1050,7 +1059,7 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     @Transactional
-    private void createAllDedicatedMasterData (EntityTransferShipmentDetails entityTransferShipmentDetails) {
+    public void createAllDedicatedMasterData(EntityTransferShipmentDetails entityTransferShipmentDetails) {
         List<EntityTransferCarrier> carrierList = new ArrayList<>();
         List<EntityTransferContainerType> containerTypeList = new ArrayList<>();
         List<EntityTransferCurrency> currencyList = new ArrayList<>();
@@ -1090,7 +1099,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     }
     @Transactional
-    private void createCarrierMasterData (List<EntityTransferCarrier> carrierData) {
+    public void createCarrierMasterData(List<EntityTransferCarrier> carrierData) {
         Set<String> itemValueList = new HashSet<>();
         itemValueList.addAll(carrierData.stream().map(x->x.getItemValue()).collect(Collectors.toSet()));
         if (itemValueList.size() > 0) {
@@ -1115,7 +1124,7 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     @Transactional
-    private void createContainerTypeMasterData (List<EntityTransferContainerType> containerData) {
+    public void createContainerTypeMasterData(List<EntityTransferContainerType> containerData) {
         Set<String> containerCodeList = new HashSet<>();
         containerCodeList.addAll(containerData.stream().map(x->x.getCode()).collect(Collectors.toSet()));
         if (containerCodeList.size() > 0) {
@@ -1138,7 +1147,7 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     @Transactional
-    private void createCurrencyMasterData (List<EntityTransferCurrency> currencyData) {
+    public void createCurrencyMasterData(List<EntityTransferCurrency> currencyData) {
         Set<String> currCodeList = new HashSet<>();
         currCodeList.addAll(currencyData.stream().map(x->x.getCurrenyCode()).collect(Collectors.toSet()));
         if (currCodeList.size() > 0) {
@@ -1161,7 +1170,7 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     @Transactional
-    private void createCommodityTypeMasterData (List<EntityTransferCommodityType> commodityData) {
+    public void createCommodityTypeMasterData(List<EntityTransferCommodityType> commodityData) {
         Set<String> commodityCodeList = new HashSet<>();
         commodityCodeList.addAll(commodityData.stream().map(x->x.getCode()).collect(Collectors.toSet()));
         if (commodityCodeList.size() > 0) {
@@ -1209,7 +1218,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> importConsolidation (CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) {
         String responseMsg;
         ImportConsolidationRequest importConsolidationRequest = (ImportConsolidationRequest) commonRequestModel.getData();
         if(importConsolidationRequest == null || importConsolidationRequest.getEntityTransferConsolidationDetails() == null) {
@@ -1219,6 +1228,9 @@ public class EntityTransferService implements IEntityTransferService {
         String consolidationNumber = null;
         try {
             ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails);
+            if(consolidationDetailsResponse == null) {
+                throw new RunnerException("Create Consolidation failed for " + commonRequestModel.getId());
+            }
             consolidationNumber = consolidationDetailsResponse.getConsolidationNumber();
 
             this.createAllConsolidationMasterData(entityTransferConsolidationDetails);
@@ -1240,7 +1252,12 @@ public class EntityTransferService implements IEntityTransferService {
         if(entityTransferConsolidationDetails.getShipmentsList() != null){
             entityTransferConsolidationDetails.getShipmentsList().forEach(shipment -> {
                 shipment.setContainersList(null);
-                ShipmentDetailsResponse shipmentDetailsResponse = createShipment(shipment);
+                ShipmentDetailsResponse shipmentDetailsResponse = null;
+                try {
+                    shipmentDetailsResponse = createShipment(shipment);
+                } catch (RunnerException e) {
+                    throw new RuntimeException(e);
+                }
                 shipmentGuidVsIdMap.put(shipmentDetailsResponse.getGuid(), shipmentDetailsResponse.getId());
                 shipmentIds.add(shipmentDetailsResponse.getId());
             });
@@ -1250,24 +1267,26 @@ public class EntityTransferService implements IEntityTransferService {
         if(mbl != null && !mbl.equalsIgnoreCase("")) {
             consolidationDetails = consolidationDetailsDao.findByBol(mbl);
         }
-        ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> response;
+        ResponseEntity<IRunnerResponse> response;
+        ConsolidationDetailsResponse consolidationDetailsResponse = null;
         if(consolidationDetails != null && consolidationDetails.size() > 0) {
             request.setId(consolidationDetails.get(0).getId());
             try {
-                response = (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeUpdate(CommonRequestModel.buildRequest(request));
+                response = consolidationService.completeUpdate(CommonRequestModel.buildRequest(request));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         } else {
             try {
                 request.setPackingList(null);
-                response = (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.create(CommonRequestModel.buildRequest(request));
+                response = consolidationService.create(CommonRequestModel.buildRequest(request));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-        if(response != null) {
-            response.getBody().getData().getContainersList().forEach(cont -> {
+        if(response != null && response.hasBody()) {
+            consolidationDetailsResponse = ((ConsolidationDetailsResponse)((RunnerResponse)response.getBody()).getData());
+            consolidationDetailsResponse.getContainersList().forEach(cont -> {
                 List<Long> newShipmentIds = new ArrayList<>();
                 if(containerVsShipmentGuid.containsKey(cont.getGuid())) {
                     List<UUID> shipmentGuids = containerVsShipmentGuid.get(cont.getGuid());
@@ -1276,12 +1295,12 @@ public class EntityTransferService implements IEntityTransferService {
                 }
             });
             try {
-                consolidationService.attachShipments(response.getBody().getData().getId(), shipmentIds);
+                consolidationService.attachShipments(consolidationDetailsResponse.getId(), shipmentIds);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-        return response.getBody().getData();
+        return consolidationDetailsResponse;
     }
     private void createAllConsolidationMasterData (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
         createConsolidationMasterDatas(entityTransferConsolidationDetails);
@@ -1401,11 +1420,11 @@ public class EntityTransferService implements IEntityTransferService {
 
 
     @Override
-    public ResponseEntity<?> sendConsolidationValidation(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> sendConsolidationValidation(CommonRequestModel commonRequestModel) {
         ValidateSendConsolidationRequest request = (ValidateSendConsolidationRequest) commonRequestModel.getData();
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
         if (!consolidationDetails.isPresent()) {
-            log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
@@ -1524,11 +1543,11 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     @Override
-    public ResponseEntity<?> sendShipmentValidation(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> sendShipmentValidation(CommonRequestModel commonRequestModel) {
         ValidateSendShipmentRequest request = (ValidateSendShipmentRequest) commonRequestModel.getData();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipId());
         if (!shipmentDetails.isPresent()) {
-            log.debug("Shipment Details is null for Id {} with Request Id {}", request.getShipId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getShipId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
@@ -1602,7 +1621,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     @Override
-    public ResponseEntity<?> checkTaskExist(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel) {
         CheckTaskExistRequest request = (CheckTaskExistRequest) commonRequestModel.getData();
         CheckTaskExistV1Request requestV1 = CheckTaskExistV1Request.builder().entityType(request.getEntityType())
                 .sendToBranch(request.getSendToBranch())
@@ -1617,14 +1636,14 @@ public class EntityTransferService implements IEntityTransferService {
         if(request.getEntityType().equals(Constants.Shipments)){
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getEntityId());
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             requestV1.setShipId(shipmentDetails.get().getShipmentId());
         } else if (request.getEntityType().equals(Constants.Consolidations)) {
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getEntityId());
             if (!consolidationDetails.isPresent()) {
-                log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             requestV1.setConsoleId(consolidationDetails.get().getConsolidationNumber());

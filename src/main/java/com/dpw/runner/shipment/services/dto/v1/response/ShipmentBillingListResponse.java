@@ -5,21 +5,23 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ShipmentBillingListResponse {
+public class ShipmentBillingListResponse implements Serializable {
 
-    private HashMap<UUID, BillingData> data;
+    private Map<String, BillingData> data;
 
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class BillingData {
+    public static class BillingData implements Serializable {
         @JsonProperty("BillStatus")
         private String BillStatus;
 //        @JsonProperty("JobStatus")

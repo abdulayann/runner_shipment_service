@@ -3,12 +3,11 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.OrderNumberRequest;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderNumberResponse;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IOrderNumberService;
 import io.swagger.annotations.ApiParam;
@@ -27,63 +26,68 @@ import java.util.List;
 @RestController
 @RequestMapping(value = OrderNumberConstants.ORDER_NUMBER_API_HANDLE)
 public class OrderNumberController {
+    private final IOrderNumberService orderNumberService;
+    private static class MyResponseClass extends RunnerResponse<OrderNumberResponse>{}
+    private static class MyListResponseClass extends RunnerListResponse<OrderNumberResponse>{}
+
+
     @Autowired
-    private IOrderNumberService orderNumberService;
-    @Autowired
-    JsonHelper jsonHelper;
+    public OrderNumberController(IOrderNumberService orderNumberService) {
+        this.orderNumberService = orderNumberService;
+    }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = OrderNumberConstants.ORDER_NUMBER_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = OrderNumberConstants.ORDER_NUMBER_CREATE_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(value = ApiConstants.API_CREATE)
-    public ResponseEntity<RunnerResponse<OrderNumberResponse>> create(@RequestBody OrderNumberRequest request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody OrderNumberRequest request) {
         String responseMessage;
         try {
-            return (ResponseEntity<RunnerResponse<OrderNumberResponse>>) orderNumberService.create(CommonRequestModel.buildRequest(request));
+            return orderNumberService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMessage = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMessage, e);
         }
 
-        return (ResponseEntity<RunnerResponse<OrderNumberResponse>>) ResponseHelper.buildFailedResponse(responseMessage);
+        return ResponseHelper.buildFailedResponse(responseMessage);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = OrderNumberConstants.ORDER_NUMBER_LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = OrderNumberConstants.ORDER_NUMBER_LIST_SUCCESSFUL, response = MyListResponseClass.class)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<OrderNumberResponse>> list(@RequestParam Long shipmentId) {
-        return (ResponseEntity<RunnerListResponse<OrderNumberResponse>>) orderNumberService.list(CommonRequestModel.buildRequest(shipmentId));
+    public ResponseEntity<IRunnerResponse> list(@RequestParam Long shipmentId) {
+        return orderNumberService.list(CommonRequestModel.buildRequest(shipmentId));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENTS_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENTS_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<EventsResponse>> retrieveById(@ApiParam(value = OrderNumberConstants.ORDER_NUMBER_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = OrderNumberConstants.ORDER_NUMBER_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
-        return (ResponseEntity<RunnerResponse<EventsResponse>>) orderNumberService.retrieveById(CommonRequestModel.buildRequest(request));
+        return orderNumberService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = OrderNumberConstants.ORDER_NUMBER_UPDATE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = OrderNumberConstants.ORDER_NUMBER_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PutMapping(value = ApiConstants.API_UPDATE)
-    public ResponseEntity<RunnerResponse<OrderNumberResponse>> update(@RequestBody OrderNumberRequest request) {
+    public ResponseEntity<IRunnerResponse> update(@RequestBody OrderNumberRequest request) {
         String responseMessage;
         try {
-            return (ResponseEntity<RunnerResponse<OrderNumberResponse>>) orderNumberService.update(CommonRequestModel.buildRequest(request));
+            return orderNumberService.update(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMessage = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            return (ResponseEntity<RunnerResponse<OrderNumberResponse>>) ResponseHelper.buildFailedResponse(responseMessage);
+            return ResponseHelper.buildFailedResponse(responseMessage);
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = OrderNumberConstants.ORDER_NUMBER_DELETE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = OrderNumberConstants.ORDER_NUMBER_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
     @DeleteMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
+    public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         String responseMessage;
         try {
-            return (ResponseEntity<RunnerResponse>) orderNumberService.delete(CommonRequestModel.buildRequest(id));
+            return orderNumberService.delete(CommonRequestModel.buildRequest(id));
         } catch (Exception e) {
             responseMessage = e.getMessage();
-            return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMessage);
+            return ResponseHelper.buildFailedResponse(responseMessage);
         }
     }
 

@@ -58,6 +58,6 @@ public class AwbPackingInfoResponse implements IRunnerResponse {
     private UUID awbGoodsDescriptionInfoGuid;
 
     //Master Data
-    public Map<String, String> masterData;
-    public Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
 }

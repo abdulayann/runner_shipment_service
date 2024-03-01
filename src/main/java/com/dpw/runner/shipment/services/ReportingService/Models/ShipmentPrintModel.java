@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import lombok.Data;
 
 @Data
-public class ShipmentPrintModel {
+public class ShipmentPrintModel implements IDocumentModel{
 
     private final String basePath = "Upload/";
 

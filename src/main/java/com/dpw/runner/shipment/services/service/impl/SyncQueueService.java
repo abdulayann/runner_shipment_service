@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.TriggerSyncRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
@@ -61,7 +62,7 @@ public class SyncQueueService implements ISyncQueueService {
     private HttpServletRequest request;
 
     @Transactional
-    public ResponseEntity<?> saveSyncRequest(String moduleType, String moduleId, Object data) {
+    public ResponseEntity<IRunnerResponse> saveSyncRequest(String moduleType, String moduleId, Object data) {
         String responseMsg;
         try {
             log.info("RequestId: {} || Request received for saveSyncRequest() for moduleType: {}, moduleId: {}, Data: {}", LoggerHelper.getRequestIdFromMDC(), moduleType, moduleId, jsonHelper.convertToJson(data));
@@ -89,7 +90,7 @@ public class SyncQueueService implements ISyncQueueService {
 
     }
 
-    public ResponseEntity<?> triggerSyncRequest(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> triggerSyncRequest(CommonRequestModel commonRequestModel) {
         TriggerSyncRequest request = (TriggerSyncRequest) commonRequestModel.getData();
         double _start = System.currentTimeMillis();
         log.error("Request: {} || TRIGGER_SYNC request received with data: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -159,6 +160,7 @@ public class SyncQueueService implements ISyncQueueService {
                     case SyncingConstants.PICKUP_DELIVERY:
                         pickupDeliveryDetailsService.V1PickupDeliveryCreateAndUpdate(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), PickupDeliveryDetailsRequestV2.class)).build(), false);
                         break;
+                    default:
 
                 }
 

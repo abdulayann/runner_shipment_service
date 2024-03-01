@@ -159,9 +159,9 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("IGMInwardDate")
     private LocalDateTime IGMInwardDate;
     @JsonProperty("SMTPIGMDate")
-    private LocalDateTime SMTPIGMDate;
+    private LocalDateTime SMTPIGMDateCaps;
     @JsonProperty("SMTPIGMNumber")
-    private String SMTPIGMNumber;
+    private String SMTPIGMNumberCaps;
 
     @JsonProperty("ShipmentGuids")
     private List<UUID> ShipmentGuids;

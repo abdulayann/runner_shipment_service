@@ -11,4 +11,5 @@ public class AllocationsConstants {
     public static final String ALLOCATIONS_DELETE_SUCCESSFUL = "Successful Allocations Delete";
 
     public static final String ALLOCATIONS_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Allocations Retrieval By Id";
+    public static final String ALLOCATIONS_RETRIEVE_ERROR = "Allocations is null for Id {} with Request Id {}";
 }

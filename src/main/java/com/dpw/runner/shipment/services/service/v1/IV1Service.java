@@ -12,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import java.util.UUID;
 
 public interface IV1Service {
-    ResponseEntity<?> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid);
-    ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request);
+    ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers);
+    ResponseEntity<UpdateOrgCreditLimitBookingResponse> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request);
 
     V1DataResponse fetchMasterData(Object request);
 
@@ -128,6 +128,7 @@ public interface IV1Service {
 
     V1DataResponse tenantNameByTenantId(Object request);
     V1DataResponse fetchChargeCodeData(Object request);
+    V1RetrieveResponse retrieveChargeCodeData(Object request);
     V1DataResponse fetchUnlocationOriginAndDestinationList(Object request);
     V1DataResponse fetchListUnlocationTransportModeBased(Object request);
     V1DataResponse fetchActivityMaster(Object request);
@@ -161,4 +162,5 @@ public interface IV1Service {
     AddressTranslationListResponse getAddressTranslation(AddressTranslationRequest request);
     CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request);
     V1DataResponse fetchCreditLimit(Object request);
+    OrgAddressResponse fetchOrgAddresses(Object request);
 }

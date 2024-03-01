@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
@@ -17,17 +18,15 @@ import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
+import com.dpw.runner.shipment.services.dto.response.npm.NpmAwbImportRateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
-import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -35,6 +34,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +51,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class NPMServiceAdapter implements INPMServiceAdapter {
 
+    public static final String PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG = "Payload sent for event: {} with request payload: {}";
+    public static final String NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG = "NPM Fetch contract failed due to: {}";
+    public static final String ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG = "Error from NPM while fetching contracts: ";
+    public static final String LOCATIONS_REFERENCE_GUID = "LocationsReferenceGUID";
     @Value("${NPM.BaseUrl}")
     private String npmBaseUrl;
 
@@ -80,6 +84,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     @Autowired
     JsonHelper jsonHelper;
+
+    @Autowired
+    ModelMapper modelMapper;
 
     @Value("${NPM.xApikeyV2}")
     private String xApikeyV2;
@@ -112,59 +119,59 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private ICustomerBookingDao customerBookingDao;
 
     @Override
-    public ResponseEntity<?> fetchContract(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
-            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             this.setOriginAndDestinationName(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM Fetch contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException("Error from NPM while fetching contracts: " + npmErrorResponse.getErrorMessage());
+            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
 
     @Override
-    public ResponseEntity<?> fetchContracts(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
-            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
             List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(listResponse,0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM Fetch contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException("Error from NPM while fetching contracts: " + npmErrorResponse.getErrorMessage());
+            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
 
     @Override
-    public ResponseEntity<?> fetchContractsTemp(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> fetchContractsTemp(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
-            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             this.setOriginAndDestinationNameTemp(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM Fetch contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException("Error from NPM while fetching contracts: " + npmErrorResponse.getErrorMessage());
+            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
 
     @Override
-    public ResponseEntity<?> updateContracts(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmUpdateUrl;
-            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_UPDATE_UTILISATION, jsonHelper.convertToJson(updateContractRequest));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_UPDATE_UTILISATION, jsonHelper.convertToJson(updateContractRequest));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.patch(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
@@ -175,12 +182,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<?> fetchOffers(CommonRequestModel req) throws Exception {
+    public ResponseEntity<IRunnerResponse> fetchOffers(CommonRequestModel req) throws RunnerException {
         String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
         var request = createNPMOffersRequest(fetchOffersRequest);
         try {
-            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
             ResponseEntity<FetchOffersResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), FetchOffersResponse.class);
             this.setMeasurementBasis(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
@@ -192,12 +199,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<?> fetchOffersV8(CommonRequestModel req) throws Exception {
+    public ResponseEntity<IRunnerResponse> fetchOffersV8(CommonRequestModel req) throws RunnerException {
         try {
             String url = npmBaseUrl + npmOffersV8Url;
             NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
             var request = createNPMOffersV8Request(fetchOffersRequest);
-            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_OFFER_FETCH_V8, jsonHelper.convertToJson(request));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_OFFER_FETCH_V8, jsonHelper.convertToJson(request));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
@@ -209,7 +216,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<?> awbAutoSell(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> awbAutoSell(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             String url = npmServiceBaseUrl + npmAwbAutoSell;
             NPMAutoSellRequest autoSellRequest = (NPMAutoSellRequest) commonRequestModel.getData();
@@ -224,15 +231,15 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<?> awbImportRates(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> awbImportRates(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             String url = npmServiceBaseUrl + npmAwbImportRates;
             NPMImportRatesRequest importRatesRequest = (NPMImportRatesRequest) commonRequestModel.getData();
             var req = jsonHelper.convertToJson(importRatesRequest);
             ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
-            Awb updatedAwb = jsonHelper.convertValue(response.getBody().getData(), Awb.class);
-            log.info("Updated AWB from npm service : {}", updatedAwb);
-            awbDao.save(updatedAwb);
+            NpmAwbImportRateResponse npmAwbImportRateResponse = jsonHelper.convertValue(response.getBody().getData(), NpmAwbImportRateResponse.class);
+            log.info("Updated AWB from npm service : {}", npmAwbImportRateResponse.updatedAwb);
+            awbDao.save(npmAwbImportRateResponse.updatedAwb);
             return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(),0,0);
         } catch (HttpStatusCodeException ex) {
             RunnerResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
@@ -258,7 +265,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 }
             });
             List<Object> criteria = Arrays.asList(
-                    Arrays.asList("LocationsReferenceGUID"),
+                    Arrays.asList(LOCATIONS_REFERENCE_GUID),
                     "In",
                     Arrays.asList(locCodes)
             );
@@ -283,7 +290,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 locCodes.add(cont.getDestination());
             });
             List<Object> criteria = Arrays.asList(
-                    Arrays.asList("LocationsReferenceGUID"),
+                    Arrays.asList(LOCATIONS_REFERENCE_GUID),
                     "In",
                     Arrays.asList(locCodes)
             );
@@ -314,7 +321,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 locCodes.add(cont.getDestination());
             });
             List<Object> criteria = Arrays.asList(
-                    Arrays.asList("LocationsReferenceGUID"),
+                    Arrays.asList(LOCATIONS_REFERENCE_GUID),
                     "In",
                     Arrays.asList(locCodes)
             );
@@ -611,11 +618,11 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .build();
     }
     @Override
-    public NPMFetchLangChargeCodeResponse fetchMultiLangChargeCode(CommonRequestModel commonRequestModel) throws Exception {
+    public NPMFetchLangChargeCodeResponse fetchMultiLangChargeCode(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             NPMFetchMultiLangChargeCodeRequest request = (NPMFetchMultiLangChargeCodeRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmMultiLangChargeCode;
-            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE, jsonHelper.convertToJson(request));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE, jsonHelper.convertToJson(request));
             ResponseEntity<NPMFetchLangChargeCodeResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), NPMFetchLangChargeCodeResponse.class);
             return response.getBody();
         } catch (HttpStatusCodeException ex) {

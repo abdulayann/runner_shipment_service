@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.BookingCarriageConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -56,7 +57,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     private IAuditLogService auditLogService;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         BookingCarriageRequest request = null;
         request = (BookingCarriageRequest) commonRequestModel.getData();
@@ -88,7 +89,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         BookingCarriageRequest request = (BookingCarriageRequest) commonRequestModel.getData();
         if (request == null) {
@@ -101,7 +102,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         long id = request.getId();
         Optional<BookingCarriage> oldEntity = bookingCarriageDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Booking Carriage is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(BookingCarriageConstants.BOOKING_CARRIAGE_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -135,7 +136,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -161,7 +162,7 @@ public class BookingCarriageService implements IBookingCarriageService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -187,7 +188,7 @@ public class BookingCarriageService implements IBookingCarriageService {
 
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -200,7 +201,7 @@ public class BookingCarriageService implements IBookingCarriageService {
             long id = request.getId();
             Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
             if (!bookingCarriage.isPresent()) {
-                log.debug("Booking Carriage is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(BookingCarriageConstants.BOOKING_CARRIAGE_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
@@ -227,7 +228,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -240,12 +241,12 @@ public class BookingCarriageService implements IBookingCarriageService {
             long id = request.getId();
             Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
             if (!bookingCarriage.isPresent()) {
-                log.debug("Booking Carriage is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(BookingCarriageConstants.BOOKING_CARRIAGE_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Booking carriage fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             BookingCarriageResponse response = convertEntityToDto(bookingCarriage.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0){
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().isEmpty()){
                 return ResponseHelper.buildSuccessResponse(response);
             }
             return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
@@ -259,7 +260,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     }
 
     @Transactional
-    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel) {
         String responseMsg;
         BookingCarriagePatchRequest request = (BookingCarriagePatchRequest) commonRequestModel.getData();
         if (request == null) {
@@ -271,7 +272,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         long id = request.getId();
         Optional<BookingCarriage> oldEntity = bookingCarriageDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Booking Carriage is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(BookingCarriageConstants.BOOKING_CARRIAGE_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -296,9 +297,7 @@ public class BookingCarriageService implements IBookingCarriageService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<BookingCarriage> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(bookingCarriage -> {
-            responseList.add(convertEntityToDto(bookingCarriage));
-        });
+        lst.forEach(bookingCarriage -> responseList.add(convertEntityToDto(bookingCarriage)));
         return responseList;
     }
 

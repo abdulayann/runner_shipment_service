@@ -8,21 +8,23 @@ import com.dpw.runner.shipment.services.entity.Hbl;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
+@Data
 public class ArrivalNoticeModel implements IDocumentModel{
     public ShipmentModel shipmentDetails;
     public UsersDto usersDto;
-    public List<ShipmentContainers> containers;
+    private List<ShipmentContainers> containers;
     public ConsolidationModel consolidationDetails;
     public Hbl hbl;
-    public List<ArrivalNoticeBillCharges> arrivalNoticeBillCharges;
+    private List<ArrivalNoticeBillCharges> arrivalNoticeBillCharges;
     @Builder
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ArrivalNoticeBillCharges {
+    public static class ArrivalNoticeBillCharges implements Serializable {
         @JsonProperty("ChargeTypeDescription")
         private String ChargeTypeDescription;
         @JsonProperty("ChargeTypeDescriptionLL")

@@ -13,4 +13,5 @@ import lombok.NoArgsConstructor;
 public class ValidateMawbNumberRequest implements IRunnerRequest {
     private String mawb;
     private String shippingLine;
+    private String type;
 }

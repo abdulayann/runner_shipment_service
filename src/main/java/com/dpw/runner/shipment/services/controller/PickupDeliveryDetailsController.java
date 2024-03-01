@@ -4,10 +4,12 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.syncing.Entity.PickupDeliveryDetailsRequestV2;
@@ -27,66 +29,73 @@ import java.util.List;
 @RestController
 @RequestMapping(value = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_API_HANDLE)
 public class PickupDeliveryDetailsController {
+    private final IPickupDeliveryDetailsService pickupDeliveryDetailsService;
+
+    private static class MyResponseClass extends RunnerResponse<PickupDeliveryDetailsResponse>{}
+    private static class MyListResponseClass extends RunnerListResponse<PickupDeliveryDetailsResponse>{}
+
     @Autowired
-    private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
+    public PickupDeliveryDetailsController(IPickupDeliveryDetailsService pickupDeliveryDetailsService) {
+        this.pickupDeliveryDetailsService = pickupDeliveryDetailsService;
+    }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_CREATE_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>> createPickupDeliveryDetailsData(@RequestBody @Valid PickupDeliveryDetailsRequest request) {
+    public ResponseEntity<IRunnerResponse> createPickupDeliveryDetailsData(@RequestBody @Valid PickupDeliveryDetailsRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>>) pickupDeliveryDetailsService.create(CommonRequestModel.buildRequest(request));
+            return pickupDeliveryDetailsService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_DELETE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class , message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
+    public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return (ResponseEntity<RunnerResponse>) pickupDeliveryDetailsService.delete(CommonRequestModel.buildRequest(request));
+        return pickupDeliveryDetailsService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_LIST_SUCCESSFUL, responseContainer = PickupDeliveryDetailsConstants.RESPONSE_CONTAINER_LIST)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyListResponseClass.class, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_LIST_SUCCESSFUL, responseContainer = PickupDeliveryDetailsConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<PickupDeliveryDetailsResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        return (ResponseEntity<RunnerListResponse<PickupDeliveryDetailsResponse>>) pickupDeliveryDetailsService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        return pickupDeliveryDetailsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>> retrieveById(@ApiParam(value = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
-        return (ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>>) pickupDeliveryDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
+        return pickupDeliveryDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_UPDATE_SUCCESSFUL)})
     @PutMapping(ApiConstants.API_UPDATE)
-    public ResponseEntity<RunnerResponse> update(@RequestBody @Valid PickupDeliveryDetailsRequest request) {
+    public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid PickupDeliveryDetailsRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) pickupDeliveryDetailsService.update(CommonRequestModel.buildRequest(request));
+            return pickupDeliveryDetailsService.update(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL, response = RunnerResponse.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.SYNC)
-    public ResponseEntity<?> syncPickupDeliveryToService(@RequestBody @Valid PickupDeliveryDetailsRequestV2 request) {
+    public ResponseEntity<IRunnerResponse> syncPickupDeliveryToService(@RequestBody @Valid PickupDeliveryDetailsRequestV2 request) {
         String responseMsg = "failure executing :(";
         try {
             return pickupDeliveryDetailsService.V1PickupDeliveryCreateAndUpdate(CommonRequestModel.buildRequest(request), true);

@@ -193,6 +193,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setPlaceOfIssue(cs.getPlaceOfIssueName());
         additionalDetails.setPlaceOfSupply(cs.getPlaceOfSupplyName());
         additionalDetails.setPaidPlace(cs.getPaidPlaceName());
+        additionalDetails.setCIFValue(cs.getCIFValue());
         sd.setAdditionalDetails(additionalDetails);
     }
 

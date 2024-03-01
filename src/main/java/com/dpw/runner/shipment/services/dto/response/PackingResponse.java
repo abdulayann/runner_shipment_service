@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.Data;
@@ -53,7 +54,6 @@ public class PackingResponse implements IRunnerResponse {
     private String referenceNumber;
     private String DGClass;
     private Boolean hazardous;
-    private Long commodityId;
     @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal netWeight;
     private String netWeightUnit;
@@ -62,10 +62,10 @@ public class PackingResponse implements IRunnerResponse {
     private String volumeWeightUnit;
     private String vinNumber;
     private Long containerId;
-    private String containerNumber;
     private String transportMode;
     private String innerPackageNumber;
     private String innerPackageType;
+    @JsonSerialize(using = DecimalPlaceValueSerializer.class)
     private BigDecimal chargeable;
     private String chargeableUnit;
     private String customsReleaseCode;
@@ -73,12 +73,13 @@ public class PackingResponse implements IRunnerResponse {
     private Long innerPacksId;
     private Long innerPacksCount;
     private String commodityGroup;
-    public Map<String, String> unlocationData;
-    public Map<String, String> masterData;
-    public Map<String, String> commodityTypeData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> commodityTypeData;
     private Boolean isDimension;
     private Boolean isContractEnforced;
     private String handlingInfo;
     private Long contractEnforcedQuantityLimit;
+    private String containerDesc;
 }
 

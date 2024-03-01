@@ -7,11 +7,13 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ViewsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ITruckDriverDetailsService;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -33,63 +35,68 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.NO_DA
 @RequestMapping(TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_API_HANDLE)
 @Slf4j
 public class TruckDriverDetailsController {
+    private final ITruckDriverDetailsService truckDriverDetailsService;
 
+    private class MyResponseClass extends RunnerResponse<TruckDriverDetailsResponse>{}
+    private class MyListResponseClass extends RunnerListResponse<TruckDriverDetailsResponse>{}
     @Autowired
-    private ITruckDriverDetailsService truckDriverDetailsService;
+    public TruckDriverDetailsController(ITruckDriverDetailsService truckDriverDetailsService) {
+        this.truckDriverDetailsService = truckDriverDetailsService;
+    }
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_CREATE_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = NO_DATA, response = RunnerResponse.class)
     })
-    public ResponseEntity<RunnerResponse<TruckDriverDetailsResponse>> create(@RequestBody @Valid @NonNull TruckDriverDetailsRequest request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull TruckDriverDetailsRequest request) {
         try {
-            return (ResponseEntity<RunnerResponse<TruckDriverDetailsResponse>>) truckDriverDetailsService.create(CommonRequestModel.buildRequest(request));
+            return truckDriverDetailsService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return (ResponseEntity<RunnerResponse<TruckDriverDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_UPDATE_SUCCESSFUL)
+            @ApiResponse(code = 200, response = MyResponseClass.class, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_UPDATE_SUCCESSFUL)
     })
     @PutMapping(ApiConstants.API_UPDATE)
-    public ResponseEntity update(@RequestBody @Valid @NonNull TruckDriverDetailsRequest request) {
+    public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid @NonNull TruckDriverDetailsRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) truckDriverDetailsService.update(CommonRequestModel.buildRequest(request));
+            return truckDriverDetailsService.update(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
 
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_DELETE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_DELETE_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
+    public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return (ResponseEntity<RunnerResponse>) truckDriverDetailsService.delete(CommonRequestModel.buildRequest(request));
+        return truckDriverDetailsService.delete(CommonRequestModel.buildRequest(request));
 
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+    public ResponseEntity<IRunnerResponse> retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
-        return (ResponseEntity<RunnerResponse<TruckDriverDetailsResponse>>) truckDriverDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
+        return truckDriverDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_LIST_SUCCESSFUL, responseContainer = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_LIST_SUCCESSFUL)
+            @ApiResponse(code = 200, response = MyListResponseClass.class, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_LIST_SUCCESSFUL, responseContainer = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
-        return (ResponseEntity<RunnerListResponse<TruckDriverDetailsResponse>>) truckDriverDetailsService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
+        return truckDriverDetailsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
 }

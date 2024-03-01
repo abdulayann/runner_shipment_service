@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AuditLogConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
@@ -10,7 +11,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.AuditLogResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -25,7 +25,6 @@ import com.dpw.runner.shipment.services.utils.ExcelUtils;
 import com.dpw.runner.shipment.services.utils.ExcludeAuditLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
@@ -37,7 +36,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.*;
@@ -46,11 +44,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -69,10 +64,10 @@ public class AuditLogService implements IAuditLogService {
         COLUMN_HEADERS_TO_FIELD_NAME.put("Module", "moduleTypeCode");
         COLUMN_HEADERS_TO_FIELD_NAME.put("Module id", "moduleId");
         COLUMN_HEADERS_TO_FIELD_NAME.put("Field Name", "fieldName");
-        COLUMN_HEADERS_TO_FIELD_NAME.put("Old value", "oldValue");
-        COLUMN_HEADERS_TO_FIELD_NAME.put("New value", "newValue");
-        COLUMN_HEADERS_TO_FIELD_NAME.put("User Name", "createdBy");
-        COLUMN_HEADERS_TO_FIELD_NAME.put("Changed Date", "createdAt");
+        COLUMN_HEADERS_TO_FIELD_NAME.put("Old value", AuditLogConstants.OLD_VALUE);
+        COLUMN_HEADERS_TO_FIELD_NAME.put("New value", AuditLogConstants.NEW_VALUE);
+        COLUMN_HEADERS_TO_FIELD_NAME.put("User Name", Constants.CREATED_BY);
+        COLUMN_HEADERS_TO_FIELD_NAME.put("Changed Date", Constants.CREATED_AT);
     }
 
     public ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -87,7 +82,7 @@ public class AuditLogService implements IAuditLogService {
     @Autowired
     private CommonUtils commonUtils;
 
-    public Resource downloadExcel(CommonRequestModel commonRequestModel) {
+    public Resource downloadExcel(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
             var triplet = fetchList(commonRequestModel);
@@ -98,7 +93,7 @@ public class AuditLogService implements IAuditLogService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw e;
+            throw new RunnerException(responseMsg);
         }
     }
 
@@ -109,8 +104,8 @@ public class AuditLogService implements IAuditLogService {
             Map<String, Object> asMap = new HashMap<>();
             asMap.put("moduleTypeCode", ct.getEntity());
             asMap.put("moduleId", ct.getEntityId().toString());
-            asMap.put("createdBy", ct.getCreatedBy());
-            asMap.put("createdAt", DateUtils.getDateAsString(ct.getCreatedAt()));
+            asMap.put(Constants.CREATED_BY, ct.getCreatedBy());
+            asMap.put(Constants.CREATED_AT, DateUtils.getDateAsString(ct.getCreatedAt()));
             //field name, old value, new value
             JsonNode nodeChanges = jsonHelper.convertValue(ct.getChanges(), JsonNode.class);
             Iterator<String> fieldNames = nodeChanges.fieldNames();
@@ -119,15 +114,15 @@ public class AuditLogService implements IAuditLogService {
                 clone.putAll(asMap);
                 String field = fieldNames.next();
                 clone.put("fieldName", field);
-                clone.put("oldValue", nodeChanges.get(field).get("oldValue").asText());
-                clone.put("newValue", nodeChanges.get(field).get("newValue").asText());
+                clone.put(AuditLogConstants.OLD_VALUE, nodeChanges.get(field).get(AuditLogConstants.OLD_VALUE).asText());
+                clone.put(AuditLogConstants.NEW_VALUE, nodeChanges.get(field).get(AuditLogConstants.NEW_VALUE).asText());
                 result.add(clone);
             }
         }
         return result;
     }
 
-    public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException {
+    public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException, RunnerException {
         validateRequest(auditLogMetaData);
         AuditLog auditLog = new AuditLog();
         auditLog.setOperation(auditLogMetaData.getOperation());
@@ -171,8 +166,8 @@ public class AuditLogService implements IAuditLogService {
             return;
         if(oldEntity == null)
         {
-            auditLogChangesMap.put("createdAt", createAuditLogChangesObject("createdAt", LocalDateTime.now().toString(), null));
-            auditLogChangesMap.put("createdBy", createAuditLogChangesObject("createdBy", UserContext.getUser().Username, null));
+            auditLogChangesMap.put(Constants.CREATED_AT, createAuditLogChangesObject(Constants.CREATED_AT, LocalDateTime.now().toString(), null));
+            auditLogChangesMap.put(Constants.CREATED_BY, createAuditLogChangesObject(Constants.CREATED_BY, UserContext.getUser().Username, null));
         }
         else
         {
@@ -182,7 +177,7 @@ public class AuditLogService implements IAuditLogService {
         }
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             var triplet = fetchList(commonRequestModel);
@@ -302,7 +297,7 @@ public class AuditLogService implements IAuditLogService {
         return key;
     }
 
-    private void validateRequest(AuditLogMetaData auditLogMetaData) {
+    private void validateRequest(AuditLogMetaData auditLogMetaData) throws RunnerException {
         if (ObjectUtils.isEmpty(auditLogMetaData.getParent()) || ObjectUtils.isEmpty(auditLogMetaData.getParentId())) {
             throw new RunnerException("Parent or parent id is missing");
         } else if (ObjectUtils.isEmpty(auditLogMetaData.getNewData()) && ObjectUtils.isEmpty(auditLogMetaData.getPrevData())) {
@@ -364,7 +359,9 @@ public class AuditLogService implements IAuditLogService {
                 try{
                     temp  = PropertyUtils.getProperty(newEntity, fieldName);
                     prevTemp = PropertyUtils.getProperty(prevEntity, fieldName);
-                } catch(NoSuchMethodException e){}
+                } catch(NoSuchMethodException e){
+                    log.error(e.getMessage());
+                }
 
                 if (field.getType() == LocalDateTime.class && !ObjectUtils.isEmpty(temp)) {
                     newValue = temp.toString();
@@ -420,8 +417,6 @@ public class AuditLogService implements IAuditLogService {
                 }
                 if(Arrays.stream(field.getDeclaredAnnotations()).anyMatch(annotation -> annotation.annotationType() == OneToOne.class))
                 {
-//                    fieldValueMap.putAll(getChanges(null, (BaseEntity) prevTemp, DBOperationType.DELETE.name()));
-                    // Handle related entities (one-to-one or one-to-many relationships)
                     Map<String, AuditLogChanges> childChanges = getChanges(null, (BaseEntity) prevTemp, DBOperationType.DELETE.name());
 
                     // Prefix the property names with the entity name
@@ -438,7 +433,6 @@ public class AuditLogService implements IAuditLogService {
         }
 
         return fieldValueMap;
-        // return fieldValueMap.toString();
     }
 
     private List<Field> getListOfAllFields(BaseEntity newEntity) {

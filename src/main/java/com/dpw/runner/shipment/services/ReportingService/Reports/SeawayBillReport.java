@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,12 +19,20 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 public class SeawayBillReport extends IReport {
 
+    public static final String GROSS_VOLUME_ALIAS = "GrossVolume";
+    public static final String BL_GROSS_VOLUME_ALIAS = "BL_GrossVolume";
+    public static final String BL_GROSS_WEIGHT_ALIAS = "BL_GrossWeight";
+    public static final String GROSS_WEIGHT = "GrossWeight";
+    public static final String NET_WEIGHT = "NetWeight";
+    public static final String NOOF_PACKAGES = "NoofPackages";
+    private final HblReport hblReport;
+    private final JsonHelper jsonHelper;
+
     @Autowired
-    HblReport hblReport;
-    @Autowired
-    IShipmentDao shipmentDao;
-    @Autowired
-    JsonHelper jsonHelper;
+    public SeawayBillReport(HblReport hblReport, JsonHelper jsonHelper) {
+        this.hblReport = hblReport;
+        this.jsonHelper = jsonHelper;
+    }
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -74,25 +82,23 @@ public class SeawayBillReport extends IReport {
 
 
         if (model.shipment.getShipmentContainersList() != null) {
-            V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
-//            String json = jsonHelper.convertToJson(model.shipment.getShipmentContainersList());
+            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
             var values = model.shipment.getShipmentContainersList().stream()
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                     .toList();
-//            var values = jsonHelper.convertValue(json, new TypeReference<List<Map<String, Object>>>() {});
             values.forEach(v -> {
-                if (v.get("GrossWeight") != null && v.get("GrossWeight").toString() != null)
-                    v.put("GrossWeight", ConvertToWeightNumberFormat(v.get("GrossWeight"), v1TenantSettingsResponse));
-                if (v.get("NetWeight") != null && v.get("NetWeight").toString() != null)
-                    v.put("NetWeight", ConvertToWeightNumberFormat(v.get("NetWeight"), v1TenantSettingsResponse));
-                if (v.get("NoofPackages") != null && v.get("NoofPackages").toString() != null)
-                    v.put("NoofPackages", addCommaWithoutDecimal((BigDecimal) v.get("NoofPackages")));
-                if (v.get("GrossVolume") != null && v.get("GrossVolume").toString() != null)
-                    v.put("GrossVolume", addCommas(v.get("GrossVolume").toString()));
-                if (v.get("BL_GrossVolume") != null && v.get("BL_GrossVolume").toString() != null)
-                    v.put("BL_GrossVolume", addCommas(v.get("BL_GrossVolume").toString()));
-                if (v.get("BL_GrossWeight") != null && v.get("BL_GrossWeight").toString() != null)
-                    v.put("BL_GrossWeight", ConvertToWeightNumberFormat(v.get("BL_GrossWeight"), v1TenantSettingsResponse));
+                if (v.get(GROSS_WEIGHT) != null && v.get(GROSS_WEIGHT).toString() != null)
+                    v.put(GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(GROSS_WEIGHT), v1TenantSettingsResponse));
+                if (v.get(NET_WEIGHT) != null && v.get(NET_WEIGHT).toString() != null)
+                    v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
+                if (v.get(NOOF_PACKAGES) != null && v.get(NOOF_PACKAGES).toString() != null)
+                    v.put(NOOF_PACKAGES, addCommaWithoutDecimal((BigDecimal) v.get(NOOF_PACKAGES)));
+                if (v.get(GROSS_VOLUME_ALIAS) != null && v.get(GROSS_VOLUME_ALIAS).toString() != null)
+                    v.put(GROSS_VOLUME_ALIAS, addCommas(v.get(GROSS_VOLUME_ALIAS).toString()));
+                if (v.get(BL_GROSS_VOLUME_ALIAS) != null && v.get(BL_GROSS_VOLUME_ALIAS).toString() != null)
+                    v.put(BL_GROSS_VOLUME_ALIAS, addCommas(v.get(BL_GROSS_VOLUME_ALIAS).toString()));
+                if (v.get(BL_GROSS_WEIGHT_ALIAS) != null && v.get(BL_GROSS_WEIGHT_ALIAS).toString() != null)
+                    v.put(BL_GROSS_WEIGHT_ALIAS, ConvertToWeightNumberFormat(v.get(BL_GROSS_WEIGHT_ALIAS), v1TenantSettingsResponse));
             });
             dict.put("ShipmentContainers", values);
         }

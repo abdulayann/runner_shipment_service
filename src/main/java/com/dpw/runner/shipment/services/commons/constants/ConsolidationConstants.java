@@ -38,4 +38,9 @@ public class ConsolidationConstants {
     public static final String  API_RETRIEVE_SHOW_CREATE_BOOKING = "/retrieve/show_create_booking";
 
     public static final String SHOW_CREATE_BOOKING_OPERATION = "Operation Name (CREATE/VIEW)";
+    public static final String CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR = "Consolidation Details is null for Id {}";
+    public static final String CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID = "Consolidation Details is null for Id {} with Request Id {}";
+    public static final String CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY = "Consolidation details fetched successfully for Id {} with Request Id {}";
+    public static final String API_GET_SUCCESSFUL = "Get Custom Consolidation Request Successful";
+    public static final String ATTACH_SHIPMENT_SUCCESSFUL = "Attach Shipment Request Successful";
 }

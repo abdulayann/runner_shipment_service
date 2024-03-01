@@ -1,4 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.common.request;
 
-public interface IEntityTranferBaseEntity {
+import java.io.Serializable;
+
+public interface IEntityTranferBaseEntity extends Serializable {
 }

@@ -48,10 +48,10 @@ public class CarrierDetailResponse implements IRunnerResponse {
     private String destinationPort;
     private String originPortName;
     private String destinationPortName;
-    public Map<String, String> masterData;
-    public Map<String, String> unlocationData;
-    public Map<String, String> carrierMasterData;
-    public Map<String, String> vesselsMasterData;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> carrierMasterData;
+    private Map<String, String> vesselsMasterData;
     private LocalDateTime vesselBerthingDate;
     private String voyageOrFlightNumber;
 }

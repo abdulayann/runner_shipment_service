@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IArrivalDepartureDetailsDao;
 import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.repository.interfaces.IArrivalDepartureDetailsRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +43,7 @@ public class ArrivalDepartureDetailsDao implements IArrivalDepartureDetailsDao {
     }
 
     @Override
-    public ArrivalDepartureDetails updateEntityFromShipmentConsole(ArrivalDepartureDetails arrivalDepartureDetails) throws Exception {
+    public ArrivalDepartureDetails updateEntityFromShipmentConsole(ArrivalDepartureDetails arrivalDepartureDetails) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
@@ -60,7 +61,7 @@ public class ArrivalDepartureDetailsDao implements IArrivalDepartureDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

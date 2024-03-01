@@ -46,25 +46,27 @@ public class ValidatorUtility {
         Set<String> errors = new LinkedHashSet<>();
         Map jsonMap = new HashMap();
 
-        JsonObject jsonObject = Json.createReader(new StringReader(json)).readObject();
-        generateMap(jsonObject, StringUtility.getEmptyString(), jsonMap);
+        try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
+            JsonObject jsonObject = jsonReader.readObject();
+            generateMap(jsonObject, StringUtility.getEmptyString(), jsonMap);
 
-        Optional<List<Validations>> validations = validationsDao.findByLifecycleHookAndEntity(lifecycleHook, entity);
-        for (Validations validation : validations.get()) {
-
-            try {
-                log.info("Initiating Validation Layer with JSON Converted Entity Data: {}", jsonObject);
-                log.info("Initiating Validation Layer with raw data: {}", json);
-                log.info("Initiating Validation Layer with SchemaObject: {}", objectMapper.writeValueAsString(validation.getJsonSchema()));
-                JsonObject schemaObject = Json.createReader(new StringReader(objectMapper.writeValueAsString(validation.getJsonSchema()))).readObject();
-                errors.addAll(validateJson(jsonObject, schemaObject, jsonMap, failOnFirst));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
+            Optional<List<Validations>> validations = validationsDao.findByLifecycleHookAndEntity(lifecycleHook, entity);
+            for (Validations validation : validations.get()) {
+                try {
+                    log.info("Initiating Validation Layer with JSON Converted Entity Data: {}", jsonObject);
+                    log.info("Initiating Validation Layer with raw data: {}", json);
+                    log.info("Initiating Validation Layer with SchemaObject: {}", objectMapper.writeValueAsString(validation.getJsonSchema()));
+                    try (JsonReader schemaReader = Json.createReader(new StringReader(objectMapper.writeValueAsString(validation.getJsonSchema())))) {
+                        JsonObject schemaObject = schemaReader.readObject();
+                        errors.addAll(validateJson(jsonObject, schemaObject, jsonMap, failOnFirst));
+                    }
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
         return errors;
-
     }
 
     private Set<String> validateJson(JsonObject jsonObject, JsonObject schemaObject, Map<String, Object> jsonMap, boolean failOnFirst) {
@@ -162,10 +164,9 @@ public class ValidatorUtility {
     private Set<String> validateRequired(JsonObject jsonObject, JsonObject jsonSchema, String at) {
         Set<String> errors = new LinkedHashSet();
         JsonValue fieldValue = jsonObject.get(at);
-        if (jsonSchema.containsKey(ValidatorConstants.REQUIRED) && jsonSchema.getBoolean(ValidatorConstants.REQUIRED)) {
-            if (fieldValue == null || fieldValue.getValueType() == JsonValue.ValueType.NULL) {
-                errors.add(String.format(ErrorConstants.INVALID_REQUIRED_FIELD_VALIDATION, at));
-            }
+        if (jsonSchema.containsKey(ValidatorConstants.REQUIRED) && jsonSchema.getBoolean(ValidatorConstants.REQUIRED)
+                && (fieldValue == null || fieldValue.getValueType() == JsonValue.ValueType.NULL || (fieldValue.getValueType() == JsonValue.ValueType.STRING && StringUtility.isEmpty(jsonObject.getString(at)))) ) {
+            errors.add(String.format(ErrorConstants.INVALID_REQUIRED_FIELD_VALIDATION, at));
         }
         return errors;
     }
@@ -175,11 +176,11 @@ public class ValidatorUtility {
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
             String pattern = jsonSchema.getString(ValidatorConstants.PATTERN);
-
-            if (fieldValue != null && fieldValue.getValueType() == JsonValue.ValueType.STRING) {
+            String error = getErrorMessage(jsonSchema.getJsonObject(ValidatorConstants.ERRORS), ValidatorConstants.PATTERN);
+            if (fieldValue.getValueType() == JsonValue.ValueType.STRING) {
                 String fieldValueString = jsonObject.getString(at);
                 if (StringUtility.isNotEmpty(fieldValueString) && !Pattern.matches(pattern, fieldValueString)) {
-                    errors.add(String.format(ErrorConstants.INVALID_PATTERN_VALIDATION, at));
+                    errors.add(StringUtility.isEmpty(error) ? String.format(ErrorConstants.INVALID_PATTERN_VALIDATION, at) : error);
                 }
             }
         }
@@ -682,6 +683,15 @@ public class ValidatorUtility {
 
         }
         return errors;
+    }
+
+    private String getErrorMessage(JsonObject errorJson, String key) {
+        String error = null;
+        if (Objects.isNull(errorJson) || Objects.isNull(key))
+            return null;
+        if (errorJson.containsKey(key) && errorJson.get(key).getValueType() == JsonValue.ValueType.STRING)
+            error = errorJson.getString(key);
+        return error;
     }
 
 }

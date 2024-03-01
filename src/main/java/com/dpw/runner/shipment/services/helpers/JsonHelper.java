@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -63,10 +64,14 @@ public class JsonHelper {
         createMapper.addMixIn(ConsolidationDetails.class, ShipmentMixIn.class);
         createMapper.addMixIn(BookingCarriage.class, ShipmentMixIn.class);
         createMapper.addMixIn(Notes.class, ShipmentMixIn.class);
+        createMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
+        mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     }
 
@@ -75,6 +80,7 @@ public class JsonHelper {
             return mapper.readValue(jsonString, clazz);
         } catch (JsonProcessingException e) {
             log.error("Failed to Parse given Json " + jsonString);
+            log.info("Exception thrown while parsing json: {}", e.toString());
             throw new JsonParseException(e);
         }
     }
@@ -83,7 +89,9 @@ public class JsonHelper {
         try {
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
-            log.error("Failed to Parse given Json");
+            log.error("Failed Parsed Object: {}", object.toString());
+            log.error("Failed to Parse given Json: " + e.getMessage());
+            log.info("Exception thrown while parsing json: {}", e.toString());
             throw new JsonParseException(e);
         }
     }

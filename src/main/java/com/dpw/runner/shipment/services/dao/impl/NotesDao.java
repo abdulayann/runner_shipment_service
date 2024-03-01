@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
@@ -68,7 +69,7 @@ public class NotesDao implements INotesDao {
         return notesRepository.findByEntityIdAndEntityType(entityId, entityType);
     }
 
-    public List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType) throws Exception {
+    public List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType) throws RunnerException {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         try {
@@ -81,7 +82,7 @@ public class NotesDao implements INotesDao {
                 hashMap = notes.stream()
                         .collect(Collectors.toMap(Notes::getId, Function.identity()));
 //            }
-            Map<Long, Notes> copyHashMap = new HashMap<>();
+            Map<Long, Notes> copyHashMap = new HashMap<>(hashMap);
             List<Notes> notesRequestList = new ArrayList<>();
             if (notesList != null && notesList.size() != 0) {
                 for (Notes request : notesList) {
@@ -99,7 +100,7 @@ public class NotesDao implements INotesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -132,7 +133,8 @@ public class NotesDao implements INotesDao {
                                 .parentId(entityId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -176,7 +178,8 @@ public class NotesDao implements INotesDao {
                                 .parentId(entityId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
         }
@@ -200,7 +203,8 @@ public class NotesDao implements INotesDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -212,7 +216,7 @@ public class NotesDao implements INotesDao {
         }
     }
 
-    public List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType, List<Notes> oldEntityList) throws Exception {
+    public List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType, List<Notes> oldEntityList) throws RunnerException {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         Map<UUID, Notes> notesMap = new HashMap<>();
@@ -246,7 +250,7 @@ public class NotesDao implements INotesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

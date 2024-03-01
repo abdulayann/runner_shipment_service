@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 @ToString
@@ -17,7 +19,10 @@ public class EntityTransferChargeType implements IEntityTranferBaseEntity, Seria
     public String ChargeCodeAlt;
     public Double DefaultCost;
     public Double DefaultSell;
-    public Double DefaultCurrency;
+    public String DefaultCurrency;
     public Boolean Taxable;
     public Boolean Hazardous;
+
+    @JsonProperty("ChargeTypeIntegrations")
+    private List<ChargeTypeIntegrations> ChargeTypeIntegrations;
 }

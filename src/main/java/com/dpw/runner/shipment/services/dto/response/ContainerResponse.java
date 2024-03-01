@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
@@ -79,6 +80,7 @@ public class ContainerResponse implements IRunnerResponse {
     private String marksNums;
     private String innerPackageMeasurementUnit;
     private String pacrNumber;
+    @JsonSerialize(using = DecimalPlaceValueSerializer.class)
     private BigDecimal chargeable;
     private String chargeableUnit;
     private Boolean isOwnContainer;
@@ -104,10 +106,10 @@ public class ContainerResponse implements IRunnerResponse {
     private Boolean isContractEnforced;
     private PartiesResponse pickupAddress;
     private PartiesResponse deliveryAddress;
-    public Map<String, String> unlocationData;
-    public Map<String, String> masterData;
-    public Map<String, String> commodityTypeData;
-    public Map<String, String> containerCodeData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> commodityTypeData;
+    private Map<String, String> containerCodeData;
     private Long contractEnforcedQuantityLimit;
     private String ownType;
     private String handlingInfo;
@@ -120,4 +122,5 @@ public class ContainerResponse implements IRunnerResponse {
     private String invoiceNumber;
     private String invoiceCurrency;
     private BigDecimal invoiceValue;
+    private Long tenantId;
 }

@@ -8,14 +8,20 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.WITH_REQUEST_ID_MSG;
+
 @Slf4j
 @Component
 public class LoggerHelper {
+    private LoggerHelper(){}
+    public static final String WITH_REQUEST_ID_AND_PAYLOAD_MSG = " with Request Id {} and payload {}";
+
     private static Boolean printPayload;
     @Value("${logging.print-payload}")
-    public void setPrintPayload(Boolean printPayload){
+    public static void setPrintPayload(Boolean printPayload){
         LoggerHelper.printPayload = printPayload;
     }
+
     public static String getRequestIdFromMDC(){
         return MDC.get(LoggingConstants.REQUEST_ID);
     }
@@ -29,53 +35,53 @@ public class LoggerHelper {
 
     public static void debug(String msg, String payload){
         if (printPayload) {
-            log.debug(msg + " with Request Id {} and payload {}", getRequestIdFromMDC(), payload);
+            log.debug(msg + WITH_REQUEST_ID_AND_PAYLOAD_MSG, getRequestIdFromMDC(), payload);
         } else {
-            log.debug(msg + "with Request Id {}", getRequestIdFromMDC());
+            log.debug(msg + WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
         }
     }
     public static void debug(String msg){
-            log.debug(msg + "with Request Id {}", getRequestIdFromMDC());
+            log.debug(msg + WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
     }
 
     public static void info(String msg, String payload){
         if(printPayload)
-            log.info(msg+" with Request Id {} and payload {}", getRequestIdFromMDC(), payload);
+            log.info(msg+ WITH_REQUEST_ID_AND_PAYLOAD_MSG, getRequestIdFromMDC(), payload);
         else
-            log.info(msg + "with Request Id {}", getRequestIdFromMDC());
+            log.info(msg + WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
     }
     public static void info(String msg){
-        log.info(msg+" with Request Id {}", getRequestIdFromMDC());
+        log.info(msg+WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
     }
 
     public static void warn(String msg, String payload){
         if(printPayload)
-            log.warn(msg+" with Request Id {} and payload {}", getRequestIdFromMDC(), payload);
+            log.warn(msg+ WITH_REQUEST_ID_AND_PAYLOAD_MSG, getRequestIdFromMDC(), payload);
         else
-            log.warn(msg+" with Request Id {}", getRequestIdFromMDC());
+            log.warn(msg+WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
     }
     public static void warn(String msg){
-        log.warn(msg+" with Request Id {}", getRequestIdFromMDC());
+        log.warn(msg+WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
     }
 
     public static void error(String msg, String payload){
         if(printPayload)
-            log.error(msg+" with Request Id {} and payload {}", getRequestIdFromMDC(), payload);
+            log.error(msg+ WITH_REQUEST_ID_AND_PAYLOAD_MSG, getRequestIdFromMDC(), payload);
         else
-            log.error(msg+" with Request Id {}", getRequestIdFromMDC());
+            log.error(msg+WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
     }
     public static void error(String msg){
-        log.error(msg+" with Request Id {}", getRequestIdFromMDC());
+        log.error(msg+WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
     }
 
     public static void trace(String msg, String payload){
         if(printPayload)
-            log.trace(msg+" with Request Id {} and payload {}", getRequestIdFromMDC(), payload);
+            log.trace(msg+ WITH_REQUEST_ID_AND_PAYLOAD_MSG, getRequestIdFromMDC(), payload);
         else
-            log.trace(msg+" with Request Id {}", getRequestIdFromMDC());
+            log.trace(msg+WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
     }
     public static void trace(String msg){
-        log.trace(msg+" with Request Id {}", getRequestIdFromMDC());
+        log.trace(msg+WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
     }
 
 }

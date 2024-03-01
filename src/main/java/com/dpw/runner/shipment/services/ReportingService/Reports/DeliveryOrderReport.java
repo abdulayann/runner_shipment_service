@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DeliveryOrderMod
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -23,10 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
@@ -76,11 +74,11 @@ public class DeliveryOrderReport extends IReport{
                 }
             }
         }
-        deliveryOrderModel.containers = new ArrayList<>();
+        deliveryOrderModel.setContainers(new ArrayList<>());
         if(deliveryOrderModel.shipmentDetails.getContainersList() != null)
         {
             for(ContainerModel container : deliveryOrderModel.shipmentDetails.getContainersList())
-                deliveryOrderModel.containers.add(getShipmentContainer(container));
+                deliveryOrderModel.getContainers().add(getShipmentContainer(container));
         }
         MasterData masterData = getMasterListData(MasterDataType.PAYMENT, deliveryOrderModel.shipmentDetails.getPaymentTerms());
         deliveryOrderModel.paymentTerms = (masterData != null ? masterData.getItemDescription() : null);
@@ -102,14 +100,14 @@ public class DeliveryOrderReport extends IReport{
         dictionary.put(ReportConstants.MASTER_BILL_ISSUE_PLACE, deliveryOrderModel.placeOfIssueName);
         dictionary.put(ReportConstants.PPCC, deliveryOrderModel.paymentTerms);
 
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         dictionary.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.NetWeight, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getNetWeight(), v1TenantSettingsResponse));
-        if(deliveryOrderModel.containers != null && deliveryOrderModel.containers.size() > 0) {
+        if(deliveryOrderModel.getContainers() != null && deliveryOrderModel.getContainers().size() > 0) {
             List<Map<String, Object>> valuesContainer = new ArrayList<>();
-            for (ShipmentContainers shipmentContainers : deliveryOrderModel.containers) {
+            for (ShipmentContainers shipmentContainers : deliveryOrderModel.getContainers()) {
                 String shipContJson = jsonHelper.convertToJson(shipmentContainers);
                 valuesContainer.add(jsonHelper.convertJsonToMap(shipContJson));
             }
@@ -124,8 +122,8 @@ public class DeliveryOrderReport extends IReport{
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
         }
 
-        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(deliveryOrderModel.containers));
-        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, deliveryOrderModel.containers);
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(deliveryOrderModel.getContainers()));
+        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, deliveryOrderModel.getContainers());
 
         //Add P0 tags
         PickupDeliveryDetailsModel deliveryDetails = deliveryOrderModel.shipmentDetails.getDeliveryDetails();
@@ -135,7 +133,25 @@ public class DeliveryOrderReport extends IReport{
             dictionary.put(DELIVERY_TIME,  ConvertToDPWDateFormatWithTime(deliveryTime, v1TenantSettingsResponse.getDPWDateFormat(), true));
         }
 
-        getPackingDetails(deliveryOrderModel.shipmentDetails, dictionary);
+        if(!Objects.isNull(deliveryOrderModel.shipmentDetails.getPackingList()) && !deliveryOrderModel.shipmentDetails.getPackingList().isEmpty()) {
+            getPackingDetails(deliveryOrderModel.shipmentDetails, dictionary);
+            dictionary.put(HAS_PACK_DETAILS, true);
+            var hazardousCheck = deliveryOrderModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
+            var temperatureCheck = deliveryOrderModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
+            if (hazardousCheck)
+                dictionary.put(HAS_DANGEROUS_GOODS, true);
+            else
+                dictionary.put(HAS_DANGEROUS_GOODS, false);
+            if (temperatureCheck)
+                dictionary.put(HAS_TEMPERATURE_DETAILS, true);
+            else
+                dictionary.put(HAS_TEMPERATURE_DETAILS, false);
+
+        } else {
+            dictionary.put(HAS_PACK_DETAILS, false);
+        }
+
+//        getPackingDetails(deliveryOrderModel.shipmentDetails, dictionary);
 
         if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
             List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);

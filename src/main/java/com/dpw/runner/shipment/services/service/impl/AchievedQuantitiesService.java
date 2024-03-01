@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.AchievedQuantitiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -50,7 +51,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
     private IAuditLogService auditLogService;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         AchievedQuantitiesRequest request = (AchievedQuantitiesRequest) commonRequestModel.getData();
         if (request == null) {
@@ -81,7 +82,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         AchievedQuantitiesRequest request = (AchievedQuantitiesRequest) commonRequestModel.getData();
         if (request == null) {
@@ -94,7 +95,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
         long id = request.getId();
         Optional<AchievedQuantities> oldEntity = achievedQuantitiesDao.findById(id);
         if (oldEntity.isEmpty()) {
-            log.debug("Achieved Quantities is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(AchievedQuantitiesConstants.ACHIEVED_QUANTITIES_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -128,7 +129,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -152,7 +153,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -176,7 +177,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -189,7 +190,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
             long id = request.getId();
             Optional<AchievedQuantities> achievedQuantities = achievedQuantitiesDao.findById(id);
             if (achievedQuantities.isEmpty()) {
-                log.debug("Achieved Quantities is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(AchievedQuantitiesConstants.ACHIEVED_QUANTITIES_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Deleted Achieved Quantities for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -217,7 +218,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -230,7 +231,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
             long id = request.getId();
             Optional<AchievedQuantities> achievedQuantities = achievedQuantitiesDao.findById(id);
             if (achievedQuantities.isEmpty()) {
-                log.debug("Achieved Quantities is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(AchievedQuantitiesConstants.ACHIEVED_QUANTITIES_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Achieved Quantities fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());

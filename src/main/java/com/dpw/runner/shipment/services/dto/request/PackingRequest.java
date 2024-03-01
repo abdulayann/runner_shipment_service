@@ -52,14 +52,12 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private String referenceNumber;
     private String DGClass;
     private Boolean hazardous;
-    private Long commodityId;
     private BigDecimal netWeight;
     private String netWeightUnit;
     private BigDecimal volumeWeight;
     private String volumeWeightUnit;
     private String vinNumber;
     private Long containerId;
-    private String containerNumber;
     private String transportMode;
     private String innerPackageNumber;
     private String innerPackageType;

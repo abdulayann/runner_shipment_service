@@ -53,31 +53,36 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Service
 @Slf4j
 public class ELDetailsService implements IELDetailsService {
-    @Autowired
-    private IELDetailsDao elDetailsDao;
+    private final IELDetailsDao elDetailsDao;
+    private final JsonHelper jsonHelper;
+    private final IAuditLogService auditLogService;
+    private final ObjectMapper objectMapper;
+    private final ModelMapper modelMapper;
+    private final IShipmentDao shipmentDao;
+    private final ISyncQueueService syncQueueService;
+    private final SyncConfig syncConfig;
 
     @Autowired
-    private JsonHelper jsonHelper;
-
-    @Autowired
-    private IAuditLogService auditLogService;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private IShipmentDao shipmentDao;
-    @Lazy
-    @Autowired
-    private ISyncQueueService syncQueueService;
-    @Autowired
-    private SyncConfig syncConfig;
+    public ELDetailsService(IELDetailsDao elDetailsDao,
+                            JsonHelper jsonHelper,
+                            IAuditLogService auditLogService,
+                            ObjectMapper objectMapper,
+                            ModelMapper modelMapper,
+                            IShipmentDao shipmentDao,
+                            @Lazy ISyncQueueService syncQueueService,
+                            SyncConfig syncConfig) {
+        this.elDetailsDao = elDetailsDao;
+        this.jsonHelper = jsonHelper;
+        this.auditLogService = auditLogService;
+        this.objectMapper = objectMapper;
+        this.modelMapper = modelMapper;
+        this.shipmentDao = shipmentDao;
+        this.syncQueueService = syncQueueService;
+        this.syncConfig = syncConfig;
+    }
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -108,7 +113,7 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -155,7 +160,7 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -179,7 +184,7 @@ public class ELDetailsService implements IELDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -203,7 +208,7 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -244,7 +249,7 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> validateElNumber(CommonRequestModel requestModel) {
+    public ResponseEntity<IRunnerResponse> validateElNumber(CommonRequestModel requestModel) {
         String responseMsg;
         try {
             ElNumbersRequest request = (ElNumbersRequest) (requestModel.getData());
@@ -272,15 +277,15 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> V1ELDetailsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1ELDetailsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         ElDetailsRequestV2 elDetailsRequestV2 = (ElDetailsRequestV2) commonRequestModel.getData();
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && Boolean.TRUE.equals(!syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
                 return syncQueueService.saveSyncRequest(SyncingConstants.EL_DETAILS, StringUtility.convertToString(elDetailsRequestV2.getGuid()), elDetailsRequestV2);
             }
             Optional<ELDetails> existingELDetails = elDetailsDao.findByGuid(elDetailsRequestV2.getGuid());
             ELDetails elDetails = modelMapper.map(elDetailsRequestV2, ELDetails.class);
-            if (existingELDetails != null && existingELDetails.isPresent()) {
+            if (existingELDetails.isPresent()) {
                 elDetails.setId(existingELDetails.get().getId());
                 elDetails.setShipmentId(existingELDetails.get().getShipmentId());
             } else {
@@ -303,7 +308,7 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -321,8 +326,8 @@ public class ELDetailsService implements IELDetailsService {
             }
             log.info("EL details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ELDetailsResponse response = convertEntityToDto(elDetail.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else{
               return   ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
             }

@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PreAlertModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -28,6 +29,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 public class PreAlertReport extends IReport {
 
+    public static final String COMMODITY = "Commodity";
     @Autowired
     private JsonHelper jsonHelper;
 
@@ -65,6 +67,7 @@ public class PreAlertReport extends IReport {
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         JsonDateFormat(dictionary);
         addTenantDetails(dictionary, preAlertModel.tenantDetails);
+        populateShipmentFields(preAlertModel.shipmentDetails, false, dictionary);
         populateShipmentOrganizationsLL(preAlertModel.shipmentDetails, dictionary);
         List<String> consigner = new ArrayList<>();
         if(preAlertModel.shipmentDetails.getConsigner() != null) {
@@ -127,10 +130,10 @@ public class PreAlertReport extends IReport {
                 preAlertModel.tenantDetails.email, preAlertModel.tenantDetails.websiteUrl, preAlertModel.tenantDetails.phone);
         if (tenantsDataList != null)
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
-        dictionary.put(ReportConstants.no_OF_PACKAGES, preAlertModel.shipmentDetails.getNoOfPacks());
+        dictionary.put(ReportConstants.NO_OF_PACKAGES_ALIAS, preAlertModel.shipmentDetails.getNoOfPacks());
         dictionary.put(ReportConstants.NO_OF_PACKAGES_WORD, preAlertModel.noofpackages_word);
         dictionary.put(ReportConstants.USER_DISPLAY_NAME, preAlertModel.userdisplayname);
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
         dictionary.put(ReportConstants.DELIVERY_AGENT, null);
@@ -179,15 +182,15 @@ public class PreAlertReport extends IReport {
         dictionary.put(ReportConstants.MARKS_NO, preAlertModel.shipmentDetails.getMarksNum());
 //        dictionary.put(ReportConstants.CMS_REMARKS, preAlertModel.shipmentDetails.) TODO- Where is Remarks Field in Shipment?
         if(preAlertModel.shipmentDetails.getVolumetricWeight() != null)
-            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolumetricWeight()), preAlertModel.shipmentDetails.getVolumetricWeightUnit()));
+            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format(REGEX_S_S, twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolumetricWeight()), preAlertModel.shipmentDetails.getVolumetricWeightUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format("%s %s", ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format(REGEX_S_S, ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format("%s %s", ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.TOTAL_VOLUME_, String.format("%s %s", ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.TOTAL_VOLUME_, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format("%s %s", ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format(REGEX_S_S, ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
         dictionary.put(ReportConstants.TOTAL_PCS, preAlertModel.noofpackages_word);
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(preAlertModel.shipmentDetails);
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
@@ -208,9 +211,9 @@ public class PreAlertReport extends IReport {
             dictionary.put(ReportConstants.POD_COUNTRY, pod.getCountry());
         }
         if (origin != null)
-            dictionary.put(ReportConstants.PLACE_oF_RECEIPT, origin.getName());
+            dictionary.put(ReportConstants.PLACE_OF_RECEIPT_ALIAS, origin.getName());
         if (destination != null)
-            dictionary.put(ReportConstants.PLACE_oF_DELIVERY, destination.getName());
+            dictionary.put(ReportConstants.PLACE_OF_DELIVERY_ALIAS, destination.getName());
         if (preAlertModel.consolidationDetails != null && preAlertModel.consolidationDetails.getPayment() != null)
             dictionary.put(ReportConstants.PPCC, preAlertModel.consolidationDetails.getPayment());
         else
@@ -224,8 +227,8 @@ public class PreAlertReport extends IReport {
             if(packDictionary.size() > 0) {
                 for(Map<String, Object> v: packDictionary) {
                     JsonDateFormat(v);
-                    if(v.containsKey("Commodity") && v.get("Commodity") != null) {
-                        CommodityResponse commodityResponse = getCommodity(v.get("Commodity").toString());
+                    if(v.containsKey(COMMODITY) && v.get(COMMODITY) != null) {
+                        CommodityResponse commodityResponse = getCommodity(v.get(COMMODITY).toString());
                         if(commodityResponse != null)
                             dictionary.put(ReportConstants.COMMODITY_DESC, commodityResponse.getDescription());
                     }

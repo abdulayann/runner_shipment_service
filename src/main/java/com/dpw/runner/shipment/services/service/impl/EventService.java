@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -96,10 +97,10 @@ public class EventService implements IEventService {
     private SyncConfig syncConfig;
 
     @Value("${v1service.url.base}${v1.service.url.trackEventDetails}")
-    private String TRACK_EVENT_DETAILS_URL;
+    private String trackEventDetailsUrl;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         EventsRequest request = null;
         request = (EventsRequest) commonRequestModel.getData();
@@ -131,7 +132,7 @@ public class EventService implements IEventService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         EventsRequest request = (EventsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -144,7 +145,7 @@ public class EventService implements IEventService {
         long id = request.getId();
         Optional<Events> oldEntity = eventDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Event is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -176,7 +177,7 @@ public class EventService implements IEventService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(events));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -202,7 +203,7 @@ public class EventService implements IEventService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -227,7 +228,7 @@ public class EventService implements IEventService {
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -241,7 +242,7 @@ public class EventService implements IEventService {
 
             Optional<Events> events = eventDao.findById(id);
             if (!events.isPresent()) {
-                log.debug("Event is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
@@ -268,7 +269,7 @@ public class EventService implements IEventService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -281,14 +282,14 @@ public class EventService implements IEventService {
             long id = request.getId();
             Optional<Events> events = eventDao.findById(id);
             if (events.isEmpty()) {
-                log.debug("Event is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Event details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            EventsResponse response = (EventsResponse) convertEntityToDto(events.get());
+            EventsResponse response = convertEntityToDto(events.get());
 
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else{
                 return  ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
             }
@@ -312,14 +313,12 @@ public class EventService implements IEventService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Events> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(event -> {
-            responseList.add(convertEntityToDto(event));
-        });
+        lst.forEach(event -> responseList.add(convertEntityToDto(event)));
         return responseList;
     }
 
     @Override
-    public ResponseEntity<?> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
@@ -356,7 +355,7 @@ public class EventService implements IEventService {
         }
     }
 
-  public ResponseEntity<?> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) {
+  public ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) throws RunnerException {
     Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
     Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
     String referenceNumber = null;
@@ -378,7 +377,7 @@ public class EventService implements IEventService {
                     LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        referenceNumber = optionalConsolidationDetails.get().getReferenceNumber();
+        referenceNumber = optionalConsolidationDetails.get().getConsolidationNumber();
     } else {
         throw new RunnerException("Both shipmentId and consolidationId are empty !");
     }
@@ -388,7 +387,7 @@ public class EventService implements IEventService {
 
     HttpEntity<V1DataResponse> entity = new HttpEntity(trackingRequest, V1AuthHelper.getHeaders());
     try {
-      var v1Response = this.restTemplate.postForEntity(TRACK_EVENT_DETAILS_URL, entity, TrackingEventsResponse.class);
+      var v1Response = this.restTemplate.postForEntity(trackEventDetailsUrl, entity, TrackingEventsResponse.class);
       trackingEventsResponse = v1Response.getBody();
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
       throw new V1ServiceException(
@@ -407,7 +406,7 @@ public class EventService implements IEventService {
           }
       }
 
-      if(optionalShipmentDetails.isPresent()) {
+      if((trackingEventsResponse.getShipmentAta() != null || trackingEventsResponse.getShipmentAtd() != null) && optionalShipmentDetails.isPresent()) {
           ShipmentDetails shipment = optionalShipmentDetails.get();
           CarrierDetails carrierDetails =
                   shipment.getCarrierDetails() != null

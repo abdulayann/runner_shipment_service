@@ -235,4 +235,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "is_notify_consignee_equal")
     private Boolean isNotifyConsigneeEqual;
+
+    @Column(name = "is_bill_created")
+    private Boolean isBillCreated;
 }

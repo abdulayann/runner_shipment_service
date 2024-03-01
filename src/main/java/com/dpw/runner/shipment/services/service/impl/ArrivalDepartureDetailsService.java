@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.ArrivalDepartureConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -49,7 +50,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     private IAuditLogService auditLogService;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ArrivalDepartureDetailsRequest request = (ArrivalDepartureDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -81,7 +82,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         ArrivalDepartureDetailsRequest request = (ArrivalDepartureDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -94,7 +95,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
         long id = request.getId();
         Optional<ArrivalDepartureDetails> oldEntity = arrivalDepartureDetailsDao.findById(id);
         if (oldEntity.isEmpty()) {
-            log.debug("Arrival Departure Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(ArrivalDepartureConstants.ARRIVAL_DEPARTURE_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -128,7 +129,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -152,7 +153,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -176,7 +177,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -189,7 +190,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
             long id = request.getId();
             Optional<ArrivalDepartureDetails> arrivalDepartureDetails = arrivalDepartureDetailsDao.findById(id);
             if (arrivalDepartureDetails.isEmpty()) {
-                log.debug("Arrival Departure Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ArrivalDepartureConstants.ARRIVAL_DEPARTURE_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Deleted Arrival Departure Details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -216,7 +217,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -229,7 +230,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
             long id = request.getId();
             Optional<ArrivalDepartureDetails> arrivalDepartureDetails = arrivalDepartureDetailsDao.findById(id);
             if (arrivalDepartureDetails.isEmpty()) {
-                log.debug("Arrival Departure Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ArrivalDepartureConstants.ARRIVAL_DEPARTURE_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Arrival Departure Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());

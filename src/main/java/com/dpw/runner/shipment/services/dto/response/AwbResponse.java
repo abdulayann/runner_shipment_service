@@ -18,25 +18,25 @@ public class AwbResponse implements IRunnerResponse {
     private Long shipmentId;
     private Long consolidationId;
     private AwbShipmentInfoResponse awbShipmentInfo;
-    public List<AwbNotifyPartyInfo> awbNotifyPartyInfo;
-    public List<AwbRoutingInfoResponse> awbRoutingInfo;
-    public AwbCargoInfo awbCargoInfo;
-    public AwbPaymentInfo awbPaymentInfo;
-    public List<AwbOtherChargesInfo> awbOtherChargesInfo;
-    public AwbOtherInfoResponse awbOtherInfo;
-    public List<AwbOCIInfo> awbOciInfo;
-    public List<AwbGoodsDescriptionInfoResponse> awbGoodsDescriptionInfo;
-    public List<AwbPackingInfoResponse> awbPackingInfo;
-    public List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;
-    public AwbShipConsoleDto awbKafkaEntity;
-    public Map<String, String> masterData;
-    public Map<String, String> unlocationData;
-    public MasterData chargeDetails;
+    private List<AwbNotifyPartyInfo> awbNotifyPartyInfo;
+    private List<AwbRoutingInfoResponse> awbRoutingInfo;
+    private AwbCargoInfo awbCargoInfo;
+    private AwbPaymentInfo awbPaymentInfo;
+    private List<AwbOtherChargesInfo> awbOtherChargesInfo;
+    private AwbOtherInfoResponse awbOtherInfo;
+    private List<AwbOCIInfo> awbOciInfo;
+    private List<AwbGoodsDescriptionInfoResponse> awbGoodsDescriptionInfo;
+    private List<AwbPackingInfoResponse> awbPackingInfo;
+    private List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;
+    private AwbShipConsoleDto awbKafkaEntity;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
+    private MasterData chargeDetails;
     // Default Awb objects for UI
     private AwbShipmentInfoResponse defaultAwbShipmentInfo;
-    public List<AwbNotifyPartyInfo> defaultAwbNotifyPartyInfo;
-    public List<AwbRoutingInfoResponse> defaultAwbRoutingInfo;
-    public String errors;
+    private List<AwbNotifyPartyInfo> defaultAwbNotifyPartyInfo;
+    private List<AwbRoutingInfoResponse> defaultAwbRoutingInfo;
+    private String errors;
     //Used to provide special handling codes for UI
     private List<String> shcIdList;
 

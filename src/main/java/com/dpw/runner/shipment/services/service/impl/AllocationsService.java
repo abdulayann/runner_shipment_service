@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.AllocationsConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -49,7 +50,7 @@ public class AllocationsService implements IAllocationsService {
     private IAuditLogService auditLogService;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         AllocationsRequest request = (AllocationsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -80,7 +81,7 @@ public class AllocationsService implements IAllocationsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         AllocationsRequest request = (AllocationsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -93,7 +94,7 @@ public class AllocationsService implements IAllocationsService {
         long id = request.getId();
         Optional<Allocations> oldEntity = allocationsDao.findById(id);
         if (oldEntity.isEmpty()) {
-            log.debug("Allocations is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(AllocationsConstants.ALLOCATIONS_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -128,7 +129,7 @@ public class AllocationsService implements IAllocationsService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -152,7 +153,7 @@ public class AllocationsService implements IAllocationsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -176,7 +177,7 @@ public class AllocationsService implements IAllocationsService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -189,7 +190,7 @@ public class AllocationsService implements IAllocationsService {
             long id = request.getId();
             Optional<Allocations> allocations = allocationsDao.findById(id);
             if (allocations.isEmpty()) {
-                log.debug("Allocations is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(AllocationsConstants.ALLOCATIONS_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Deleted Allocations for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -216,7 +217,7 @@ public class AllocationsService implements IAllocationsService {
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -229,7 +230,7 @@ public class AllocationsService implements IAllocationsService {
             long id = request.getId();
             Optional<Allocations> allocations = allocationsDao.findById(id);
             if (allocations.isEmpty()) {
-                log.debug("Allocations is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(AllocationsConstants.ALLOCATIONS_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Allocations fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());

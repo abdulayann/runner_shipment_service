@@ -79,7 +79,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     private SyncConfig syncConfig;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         PickupDeliveryDetailsRequest request = null;
         request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
@@ -110,7 +110,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         PickupDeliveryDetailsRequest request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
         if(request == null) {
@@ -156,7 +156,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(pickupDeliveryDetails));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -181,7 +181,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -204,7 +204,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -244,7 +244,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -262,8 +262,8 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             }
             log.info("Pickup Delivery details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             PickupDeliveryDetailsResponse response = convertEntityToDto(pickupDeliveryDetails.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -274,10 +274,10 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     }
 
     @Override
-    public ResponseEntity<?> V1PickupDeliveryCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+    public ResponseEntity<IRunnerResponse> V1PickupDeliveryCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         PickupDeliveryDetailsRequestV2 pickupDeliveryDetailsRequestV2 = (PickupDeliveryDetailsRequestV2) commonRequestModel.getData();
         if(pickupDeliveryDetailsRequestV2 == null || pickupDeliveryDetailsRequestV2.getShipmentGuid() == null) {
-            throw new Exception("Request guid is null");
+            throw new RunnerException("Request guid is null");
         }
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
@@ -329,9 +329,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<PickupDeliveryDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(pickupDeliveryDetail -> {
-            responseList.add(convertEntityToDto(pickupDeliveryDetail));
-        });
+        lst.forEach(pickupDeliveryDetail -> responseList.add(convertEntityToDto(pickupDeliveryDetail)));
         return responseList;
     }
 

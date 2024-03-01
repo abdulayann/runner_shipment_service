@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dto.request.DenialPartySearchEntityRequest;
 import com.dpw.runner.shipment.services.dto.response.DenialPartySearchResponse;
@@ -25,8 +26,8 @@ public class DenialPartyScreeningController {
     @Autowired
     private IDenialPartyScreeningService denialPartyScreeningService;
     @PostMapping(value = "/denial-party/search-entity")
-    public ResponseEntity<?> fetchbyQuery(@Valid @RequestBody @NonNull DenialPartySearchEntityRequest request) {
-            return  denialPartyScreeningService.createRequestAndSearchEntity(request);
+    public ResponseEntity<IRunnerResponse> fetchbyQuery(@Valid @RequestBody @NonNull DenialPartySearchEntityRequest request) {
+        return denialPartyScreeningService.createRequestAndSearchEntity(request);
     }
 
 }

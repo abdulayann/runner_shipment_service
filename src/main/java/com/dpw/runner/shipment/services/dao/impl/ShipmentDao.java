@@ -1,13 +1,15 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -36,6 +38,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.ConstraintViolationException;
 import java.time.Duration;
@@ -48,6 +51,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 @Repository
 @Slf4j
 public class ShipmentDao implements IShipmentDao {
+    public static final String CONSUMED = "Consumed";
+    public static final String UNUSED = "Unused";
     @Autowired
     private IShipmentRepository shipmentRepository;
 
@@ -69,8 +74,6 @@ public class ShipmentDao implements IShipmentDao {
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
-    @Autowired
-    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
     private IMawbStocksDao mawbStocksDao;
@@ -82,7 +85,7 @@ public class ShipmentDao implements IShipmentDao {
     private IV1Service v1Service;
 
     @Override
-    public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) {
+    public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails) , Constants.SHIPMENT, LifecycleHooks.ON_CREATE, false);
         ShipmentDetails oldShipment = null;
         if(shipmentDetails.getId() != null){
@@ -118,8 +121,7 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentDetails;
     }
 
-    public List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments)
-    {
+    public List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException {
         List<ShipmentDetails> res = new ArrayList<>();
         for(ShipmentDetails req : shipments){
             req = save(req, false);
@@ -154,7 +156,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
-        if (!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()) &&
+        if (!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()) && (oldShipment != null && !Objects.equals(oldShipment.getStatus(), shipmentDetails.getStatus())) &&
                 Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
             ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             if (tenantSettings != null) {
@@ -167,7 +169,7 @@ public class ShipmentDao implements IShipmentDao {
         }
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (!errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         if (shipmentDetails.getTransportMode() != null && shipmentDetails.getCarrierDetails() != null) {
             LocalDateTime eta = shipmentDetails.getCarrierDetails().getEta();
             LocalDateTime etd = shipmentDetails.getCarrierDetails().getEtd();
@@ -245,7 +247,10 @@ public class ShipmentDao implements IShipmentDao {
     public Set<String> applyShipmentValidations(ShipmentDetails request, ShipmentDetails oldEntity) {
         Set<String> errors = new LinkedHashSet<>();
 
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        if(request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {
+            errors.add("Multiple consolidations are attached to the shipment, please verify.");
+        }
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         // Routings leg no can not be repeated
         if (request.getRoutingsList() != null && request.getRoutingsList().size() > 0) {
             HashSet<Long> hashSet = new HashSet<>();
@@ -368,10 +373,11 @@ public class ShipmentDao implements IShipmentDao {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(shipmentDetails.getMasterBill());
         if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
             MawbStocksLink res = mawbStocksLinks.get(0);
-            if(!Objects.isNull(res.getStatus()) && !res.getStatus().equals("Consumed")) {
+            if(!Objects.isNull(res.getStatus()) && !res.getStatus().equals(CONSUMED)) {
                 res.setEntityId(shipmentDetails.getId());
                 res.setEntityType(Constants.SHIPMENT);
-                res.setStatus("Consumed");
+                res.setShipConsNumber(shipmentDetails.getShipmentId());
+                res.setStatus(CONSUMED);
                 mawbStocksLinkDao.save(res);
                 setAvaliableCount(res.getParentId());
             }
@@ -391,7 +397,7 @@ public class ShipmentDao implements IShipmentDao {
     private String assignNextMawbNumber(Long parentId) {
         ListCommonRequest listCommonRequest;
         listCommonRequest = CommonUtils.andCriteria("parentId", parentId, "=", null);
-        CommonUtils.andCriteria("status", "Unused", "=", listCommonRequest);
+        CommonUtils.andCriteria("status", UNUSED, "=", listCommonRequest);
         listCommonRequest.setSortRequest(SortRequest.builder()
                 .fieldName("seqNumber")
                 .order("DESC")
@@ -444,7 +450,7 @@ public class ShipmentDao implements IShipmentDao {
         }
 
         if (isMAWBNumberExist) {
-            if (mawbStocksLink.getStatus().equals("Consumed") && mawbStocksLink.getEntityId() != shipmentRequest.getId()) // If MasterBill number is already Consumed.
+            if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId())) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
         } else {
             createNewMAWBEntry(shipmentRequest);
@@ -460,7 +466,7 @@ public class ShipmentDao implements IShipmentDao {
         mawbStocks.setFrom(shipmentRequest.getMasterBill());
         mawbStocks.setTo(shipmentRequest.getMasterBill());
         mawbStocks.setMawbNumber(shipmentRequest.getMasterBill());
-        mawbStocks.setStatus("Unused");
+        mawbStocks.setStatus(UNUSED);
         if(shipmentRequest.getAdditionalDetails().getBorrowedFrom()!=null){
              mawbStocks.setBorrowedFrom(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode());
              if(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgData() != null && shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgData().containsKey("FullName")) {
@@ -476,7 +482,7 @@ public class ShipmentDao implements IShipmentDao {
             entryForMawbStocksLinkRow.setParentId(mawbStocks.getId());
             entryForMawbStocksLinkRow.setSeqNumber(shipmentRequest.getMasterBill().substring(4, 10));
             entryForMawbStocksLinkRow.setMawbNumber(shipmentRequest.getMasterBill());
-            entryForMawbStocksLinkRow.setStatus("Unused");
+            entryForMawbStocksLinkRow.setStatus(UNUSED);
             entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
         }
     }
@@ -515,7 +521,7 @@ public class ShipmentDao implements IShipmentDao {
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
         return response;
     }
 
@@ -536,10 +542,10 @@ public class ShipmentDao implements IShipmentDao {
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
         return response;
     }
-
+    @Transactional
     public void saveJobStatus(Long id, String jobStatus) {
         shipmentRepository.saveJobStatus(id, jobStatus);
     }

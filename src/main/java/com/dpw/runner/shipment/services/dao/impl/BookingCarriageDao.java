@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
@@ -51,7 +52,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
     public BookingCarriage save(BookingCarriage bookingCarriage) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCarriage) , Constants.CARRIAGE, LifecycleHooks.ON_CREATE, false);
         if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         return bookingCarriageRepository.save(bookingCarriage);
     }
     @Override
@@ -59,7 +60,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         for(var bookingCarriage: bookingCarriageList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCarriage), Constants.CARRIAGE, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
-                throw new ValidationException(errors.toString());
+                throw new ValidationException(String.join(",", errors));
         }
         return bookingCarriageRepository.saveAll(bookingCarriageList);
     }
@@ -79,7 +80,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         bookingCarriageRepository.delete(bookingCarriage);
     }
 
-    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId) throws Exception {
+    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId) throws RunnerException {
         String responseMsg;
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         try {
@@ -110,7 +111,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -142,7 +143,8 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -185,7 +187,8 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
                 log.error(e.getMessage());
             }
         }
@@ -209,7 +212,8 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -221,7 +225,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         }
     }
 
-    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId, List<BookingCarriage> oldEntityList) throws Exception {
+    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId, List<BookingCarriage> oldEntityList) throws RunnerException {
         String responseMsg;
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         Map<UUID, BookingCarriage> bookingMap = new HashMap<>();
@@ -255,7 +259,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

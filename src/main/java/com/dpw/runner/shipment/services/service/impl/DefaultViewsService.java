@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -9,13 +10,11 @@ import com.dpw.runner.shipment.services.dao.interfaces.IDefaultViewsDao;
 import com.dpw.runner.shipment.services.dto.request.DefaultViewsRequest;
 import com.dpw.runner.shipment.services.dto.response.DefaultViewsResponse;
 import com.dpw.runner.shipment.services.entity.DefaultViews;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDefaultViewsService;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +40,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     private JsonHelper jsonHelper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         DefaultViewsRequest request = null;
         request = (DefaultViewsRequest) commonRequestModel.getData();
@@ -62,7 +61,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         DefaultViewsRequest request = (DefaultViewsRequest) commonRequestModel.getData();
         if(request == null) {
@@ -75,7 +74,7 @@ public class DefaultViewsService implements IDefaultViewsService {
         long id = request.getId();
         Optional<DefaultViews> oldEntity = defaultViewsDao.findById(id);
         if(!oldEntity.isPresent()) {
-            log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(Constants.DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -93,7 +92,7 @@ public class DefaultViewsService implements IDefaultViewsService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(view));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -113,7 +112,7 @@ public class DefaultViewsService implements IDefaultViewsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -131,7 +130,7 @@ public class DefaultViewsService implements IDefaultViewsService {
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -145,7 +144,7 @@ public class DefaultViewsService implements IDefaultViewsService {
 
             Optional<DefaultViews> view = defaultViewsDao.findById(id);
             if(!view.isPresent()) {
-                log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(Constants.DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             defaultViewsDao.delete(view.get());
@@ -159,7 +158,7 @@ public class DefaultViewsService implements IDefaultViewsService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -172,7 +171,7 @@ public class DefaultViewsService implements IDefaultViewsService {
             long id = request.getId();
             Optional<DefaultViews> view = defaultViewsDao.findById(id);
             if(!view.isPresent()) {
-                log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(Constants.DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Default view fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());

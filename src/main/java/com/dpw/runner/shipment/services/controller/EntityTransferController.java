@@ -1,11 +1,10 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
-import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import io.swagger.annotations.ApiResponse;
@@ -26,10 +25,14 @@ import javax.validation.Valid;
 @Slf4j
 public class EntityTransferController {
 
+    private final IEntityTransferService entityTransferService;
+    private final JsonHelper jsonHelper;
+
     @Autowired
-    private IEntityTransferService entityTransferService;
-    @Autowired
-    JsonHelper jsonHelper;
+    public EntityTransferController(IEntityTransferService entityTransferService, JsonHelper jsonHelper) {
+        this.entityTransferService = entityTransferService;
+        this.jsonHelper = jsonHelper;
+    }
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT)
     @ApiResponses(value = {
@@ -38,7 +41,7 @@ public class EntityTransferController {
     public ResponseEntity<?> sendShipment(@RequestBody @Valid SendShipmentRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.sendShipment(CommonRequestModel.buildRequest(request));
+            return entityTransferService.sendShipment(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -54,7 +57,7 @@ public class EntityTransferController {
     public ResponseEntity<?> sendConsolidation(@RequestBody @Valid @NonNull SendConsolidationRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(request));
+            return entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -71,7 +74,7 @@ public class EntityTransferController {
         String responseMsg;
         ImportShipmentRequest importShipmentRequest = jsonHelper.convertValue(request, ImportShipmentRequest.class);
         try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest));
+            return entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -88,7 +91,7 @@ public class EntityTransferController {
         String responseMsg;
         ImportConsolidationRequest importConsolidationRequest = jsonHelper.convertValue(request, ImportConsolidationRequest.class);
         try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
+            return entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -104,7 +107,7 @@ public class EntityTransferController {
     public ResponseEntity<?> sendConsolidationValidation(@RequestBody @Valid ValidateSendConsolidationRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request));
+            return entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -120,7 +123,7 @@ public class EntityTransferController {
     public ResponseEntity<?> sendShipmentValidation(@RequestBody @Valid ValidateSendShipmentRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(request));
+            return entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -137,7 +140,7 @@ public class EntityTransferController {
     public ResponseEntity<?> checkTaskExist(@RequestBody @Valid CheckTaskExistRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<CheckTaskExistResponse>) entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
+            return entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

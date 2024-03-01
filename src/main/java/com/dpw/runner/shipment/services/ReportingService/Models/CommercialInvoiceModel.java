@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommercialInvoiceModel extends ShipmentPrintModel implements IDocumentModel{
-    public List<String> packageSummary;
+    private List<String> packageSummary;
     public BigDecimal totalAmount;
     public String commercialInvoiceNumber;
 }

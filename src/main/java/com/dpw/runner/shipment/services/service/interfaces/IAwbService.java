@@ -1,25 +1,29 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
 public interface IAwbService {
-    ResponseEntity<?> createAwb(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> updateAwb(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> list(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> createMawb(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> updateGoodsAndPacksForMawb(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync);
+    ResponseEntity<IRunnerResponse> createAwb(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateAwb(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createMawb(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateGoodsAndPacksForMawb(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync);
 
-    ResponseEntity<?> customAwbRetrieve(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> customAwbRetrieve(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> reset(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> partialAutoUpdateAwb(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> partialAutoUpdateMawb(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel, boolean isShipment);
-    ResponseEntity<?> generateAwbPaymentInfo(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> retrieveByAwbByMawb(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> reset(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> partialAutoUpdateAwb(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> partialAutoUpdateMawb(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel, boolean isShipment);
+    ResponseEntity<IRunnerResponse> generateAwbPaymentInfo(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> retrieveByAwbByMawb(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> getChargeTypeMasterData(CommonGetRequest commonGetRequest) throws RunnerException;
 
 }

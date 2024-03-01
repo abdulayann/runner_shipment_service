@@ -39,6 +39,8 @@ public class GetNextNumberHelper {
 
   @Autowired
   private IShipmentSettingsSync shipmentSettingsSync;
+  @Autowired
+  private V1AuthHelper v1AuthHelper;
 
   public String generateCustomSequence(
       ProductSequenceConfig sequenceSettings,
@@ -46,7 +48,7 @@ public class GetNextNumberHelper {
       int tenantId,
       boolean updateCounter,
       UsersDto user,
-      boolean updateBranchCode) {
+      boolean updateBranchCode) throws RunnerException {
     if (regexPattern.isEmpty()) {
       throw new RunnerException("RegexExpression can't be empty or null");
     }
@@ -85,7 +87,7 @@ public class GetNextNumberHelper {
           if (wordSplit.get(0).equalsIgnoreCase("seq")) {
             String resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
             suffix += padLeft(
-                    GetNextRegexSequenceNumber(sequenceSettings, tenantId, resetFreq),
+                    GetNextRegexSequenceNumber(sequenceSettings, resetFreq),
                     Integer.parseInt(wordSplit.get(1)),
                     '0');
           }
@@ -127,7 +129,7 @@ public class GetNextNumberHelper {
     if (updateCounter) {
       sequenceSettings = productSequenceConfigDao.save(sequenceSettings);
       try {
-        shipmentSettingsSync.syncProductSequence(sequenceSettings);
+        shipmentSettingsSync.syncProductSequence(sequenceSettings, v1AuthHelper.getHeadersForDataSync());
       } catch (Exception e) {
         log.error("Error performing sync on shipment settings product sequence entity, {}", e);
       }
@@ -136,7 +138,7 @@ public class GetNextNumberHelper {
   }
 
   public String GetNextRegexSequenceNumber(
-      ProductSequenceConfig sequenceSettings, int TenantId, String resetFreq) {
+      ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {
     LocalDateTime seqStartTime = sequenceSettings.getSequenceStartTime();
     boolean resetCounter = seqStartTime == null;
     if (resetFreq.equalsIgnoreCase("daily")) {
@@ -223,7 +225,7 @@ public class GetNextNumberHelper {
 
     Pair<Specification<ProductSequenceConfig>, Pageable> pair = DbAccessHelper.fetchData(listCommonRequest, ProductSequenceConfig.class, tableNames);
     Page<ProductSequenceConfig> productSequenceConfigPage = productSequenceConfigDao.findAll(pair.getLeft(), pair.getRight());
-    return productSequenceConfigPage.getTotalElements() > 0 ? productSequenceConfigPage.getContent().get(0) : new ProductSequenceConfig();
+    return productSequenceConfigPage.getTotalElements() > 0 ? productSequenceConfigPage.getContent().get(0) : null;
   }
 
   public String padLeft(String input, int len, char c) {

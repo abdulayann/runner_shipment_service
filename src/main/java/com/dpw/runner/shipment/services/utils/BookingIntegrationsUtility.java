@@ -3,9 +3,12 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
@@ -13,15 +16,20 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -30,6 +38,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -37,6 +46,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -79,21 +89,20 @@ public class BookingIntegrationsUtility {
             Map.entry(BookingStatus.PENDING_FOR_CREDIT_LIMIT, "BOOKED")
     );
 
-    @Async
     public void createBookingInPlatform(CustomerBooking customerBooking) {
         try {
             platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
-            customerBooking.setIsPlatformBookingCreated(true);
-            customerBookingDao.save(customerBooking);
+            int count = customerBookingDao.updateIsPlatformBookingCreated(customerBooking.getId(), true);
+            if(count == 0){
+                throw new ValidationException("No booking found to update IsPlatformBookingCreated flag");
+            }
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.SUCCESS, "SAVED SUCESSFULLY");
         } catch (Exception ex) {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, ex.getLocalizedMessage());
             log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
         }
-        throw new RuntimeException();
     }
 
-    @Async
     public void updateBookingInPlatform(CustomerBooking customerBooking) {
         try {
             platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
@@ -103,9 +112,19 @@ public class BookingIntegrationsUtility {
         }
     }
 
-    public ResponseEntity<?> createShipmentInV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
+    public void updateBookingInPlatform(ShipmentDetails shipmentDetails) {
         try {
-            var response = v1Service.createBooking(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid);
+            if (Objects.equals(shipmentDetails.getBookingType(), CustomerBookingConstants.ONLINE))
+                platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequestFromShipment(shipmentDetails));
+        } catch (Exception e) {
+            this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
+            log.error("Booking Update error from Platform for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
+        }
+    }
+
+    public ResponseEntity<V1ShipmentCreationResponse> createShipmentInV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers) {
+        try {
+            var response = v1Service.createBooking(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid, headers);
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.SUCCESS, "SAVED SUCESSFULLY");
             return response;
         } catch (Exception ex) {
@@ -116,33 +135,38 @@ public class BookingIntegrationsUtility {
     }
 
     @Async
-    public void createShipment(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, ShipmentDetailsResponse shipmentResponse) {
+    public void createShipment(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, ShipmentDetailsResponse shipmentResponse, HttpHeaders headers) {
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if (ctx.getLastThrowable() != null) {
                 log.error("V1 error for bill creation -> {}", ctx.getLastThrowable().getMessage());
             }
             try {
-                this.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
+                try {
+                    TimeUnit.SECONDS.sleep(2);
+                } catch (Exception ex) {
+                    log.error("Wait failed due to {}", ex.getMessage());
+                }
+                this.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid(), headers);
+                customerBookingDao.updateBillStatus(customerBooking.getId(), true);
             } catch (Exception e) {
-                log.error("Bill creation for shipment with booking reference {} failed due to following error: {}", shipmentResponse.getBookingReference(), e.getMessage());
+                log.error("Event: {} Bill creation  for shipment with booking reference {} failed due to following error: {}", IntegrationType.V1_SHIPMENT_CREATION, shipmentResponse.getBookingReference(), e.getMessage());
                 throw e;
             }
             return ResponseHelper.buildSuccessResponse();
         });
     }
 
-    public ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request) {
+    public ResponseEntity<UpdateOrgCreditLimitBookingResponse> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request) {
         try {
-            var response = v1Service.updateOrgCreditLimitFromBooking(request);
-            return response;
+            return v1Service.updateOrgCreditLimitFromBooking(request);
         } catch (Exception ex) {
             log.error("Error updating Credit Limit for Org with CustomerIdentifier: {} with error message: {}", request.getAccountNumber(), ex.getMessage());
             throw ex;
         }
     }
 
-    public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception {
+    public ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException {
         try {
             var response = shipmentService.createShipmentInV2(customerBookingRequest);
             return response;
@@ -179,10 +203,10 @@ public class BookingIntegrationsUtility {
                 .business_code(customerBooking.getBusinessCode())
                 .bill_to_party(Arrays.asList(createOrgRequest(customerBooking.getCustomer())))
                 .parent_contract_id(customerBooking.getParentContractId())
-                .branch_info(ListContractResponse.BranchInfo.builder().
-                        id(customerBooking.getSalesBranch()).
-                        opportunity_owner_email_ids(createEmailIds(customerBooking.getPrimarySalesAgentEmail(), customerBooking.getSecondarySalesAgentEmail())).
-                        build())
+//                .branch_info(ListContractResponse.BranchInfo.builder().
+//                        id(customerBooking.getSalesBranch()).
+//                        opportunity_owner_email_ids(createEmailIds(customerBooking.getPrimarySalesAgentEmail(), customerBooking.getSecondarySalesAgentEmail())).
+//                        build())
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
@@ -236,12 +260,70 @@ public class BookingIntegrationsUtility {
                         .quantity_uom("unit")
                         .volume(packing.getVolume())
                         .volume_uom(packing.getVolumeUnit())
-                        .dimensions(getDimension(customerBooking, packing))
+                        .dimensions(getDimension(customerBooking.getCargoType(), packing))
                         .build());
             });
         }
 
         return loadRequests;
+    }
+
+
+    private List<LoadRequest> createLoad(final ShipmentDetails shipmentDetails) {
+        List<LoadRequest> loadRequests = new ArrayList<>();
+        if (Objects.equals(shipmentDetails.getShipmentType(), Constants.CARGO_TYPE_FCL)) {
+            List<Containers> containers = shipmentDetails.getContainersList();
+            containers.forEach(container -> {
+                loadRequests.add(LoadRequest.builder()
+                        .load_uuid(container.getGuid())
+                        .load_type(shipmentDetails.getShipmentType())
+                        .container_type_code(container.getContainerCode())
+                        .pkg_type(container.getPacksType())
+                        .is_package(StringUtility.isNotEmpty(container.getPacksType()))
+                        .product_category_code(container.getCommodityGroup())
+                        .product_name(getItemDescription(MasterDataType.COMMODITY_GROUP, container.getCommodityGroup()))
+                        .is_reefer(container.getIsReefer())
+                        .reefer_info(ReeferInfoRequest.builder().temperature(!Objects.isNull(container.getMinTemp()) ? container.getMinTemp().intValue() : null).build())
+                        .is_hazardous(container.getHazardous() != null && container.getHazardous())
+                        .hazardous_info(HazardousInfoRequest.builder().product_un_id(container.getHazardousUn()).product_class(container.getDgClass()).build()) // TODO
+                        .weight(container.getGrossWeight())
+                        .weight_uom(container.getGrossWeightUnit())
+                        .quantity(container.getContainerCount())
+                        .quantity_uom(CustomerBookingConstants.UNIT)
+                        .volume(container.getGrossVolume())
+                        .volume_uom(container.getGrossVolumeUnit())
+                        .build());
+            });
+        }
+
+        if (Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) || Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LSE)) {
+            List<Packing> packings = shipmentDetails.getPackingList();
+            packings.forEach(packing -> {
+                loadRequests.add(LoadRequest.builder()
+                        .load_uuid(packing.getGuid())
+                        .load_type(shipmentDetails.getShipmentType())
+                        .pkg_type(packing.getPacksType())
+                        .is_package(true)
+                        .product_category_code(packing.getCommodityGroup())
+                        .product_name(getItemDescription(MasterDataType.COMMODITY_GROUP, packing.getCommodityGroup()))
+                        .weight(packing.getWeight())
+                        .weight_uom(packing.getWeightUnit())
+                        .quantity(Long.valueOf(packing.getPacks()))
+                        .quantity_uom(CustomerBookingConstants.UNIT)
+                        .volume(packing.getVolume())
+                        .volume_uom(packing.getVolumeUnit())
+                        .dimensions(getDimension(shipmentDetails.getShipmentType(), packing))
+                        .is_hazardous(packing.getHazardous() != null && packing.getHazardous())
+                        .build());
+            });
+        }
+
+        return loadRequests;
+    }
+
+    private String getItemDescription(MasterDataType type, String itemValue) {
+        var masterData = masterDataUtils.getMasterListData(type, itemValue);
+        return Objects.isNull(masterData) ? null : masterData.getItemDescription();
     }
 
     private RouteRequest createRoute(CustomerBooking customerBooking) {
@@ -262,8 +344,8 @@ public class BookingIntegrationsUtility {
                 .build();
     }
 
-    private DimensionDTO getDimension(CustomerBooking booking, Packing packing) {
-        if (booking.getCargoType() != null && (booking.getCargoType().equals("LCL") || booking.getCargoType().equals("LSE")))
+    private DimensionDTO getDimension(String cargoType, Packing packing) {
+        if (Objects.equals(cargoType, "LSE") || Objects.equals(cargoType, "LCL"))
             return DimensionDTO.builder()
                     .length(packing.getLength())
                     .width(packing.getWidth())
@@ -276,8 +358,9 @@ public class BookingIntegrationsUtility {
     private List<ChargesRequest> createCharges(CustomerBooking customerBooking) {
         var bookingCharges = customerBooking.getBookingCharges();
         List<ChargesRequest> charges = new ArrayList<>();
-        List<String> chargeTypes = bookingCharges.stream().map(c -> c.getChargeType()).collect(Collectors.toList());
+        List<String> chargeTypes = bookingCharges.stream().map(BookingCharges::getChargeType).collect(Collectors.toList());
         Map<String, EntityTransferChargeType> chargeTypeMap = masterDataUtils.getChargeTypes(chargeTypes);
+        log.info("ChargeTypeMap from V1 Charge Codes: "+ jsonHelper.convertToJson(chargeTypeMap));
 
         bookingCharges.forEach(
                 bookingCharge -> {
@@ -324,6 +407,38 @@ public class BookingIntegrationsUtility {
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }
 
+    private CommonRequestModel createPlatformUpdateRequestFromShipment(@NonNull final ShipmentDetails shipmentDetails) {
+        var carrierDetails = shipmentDetails.getCarrierDetails();
+        PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
+                .booking_reference_code(StringUtility.getNullIfEmpty(shipmentDetails.getBookingReference()))
+                .origin_code(StringUtility.getNullIfEmpty(carrierDetails.getOrigin()))
+                .destination_code(StringUtility.getNullIfEmpty(carrierDetails.getDestination()))
+                .load(createLoad(shipmentDetails))
+                .pol(StringUtility.getNullIfEmpty(carrierDetails.getOriginPort()))
+                .pod(StringUtility.getNullIfEmpty(carrierDetails.getDestinationPort()))
+                .carrier_code(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine()))
+                .carrier_display_name(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
+                .vessel_name(masterDataUtils.getVesselName(carrierDetails.getVessel()))
+                .air_carrier_details(null)
+                .status(mapBookingStatus(ShipmentStatus.fromValue(shipmentDetails.getStatus())))
+                .pickup_date(null)
+                .eta(carrierDetails.getEta())
+                .ets(carrierDetails.getEtd())
+                .voyage(StringUtility.getNullIfEmpty(carrierDetails.getVoyage()))
+                .build();
+        return CommonRequestModel.builder().data(platformUpdateRequest).build();
+    }
+
+    private String mapBookingStatus(ShipmentStatus status) {
+        if (status == ShipmentStatus.Created)
+            return ShipmentConstants.PENDING;
+        else if (status == ShipmentStatus.Booked)
+            return ShipmentConstants.BOOKED;
+        else if (status == ShipmentStatus.Cancelled)
+            return ShipmentConstants.CANCELLED;
+        else
+            return ShipmentConstants.CONFIRMED;
+    }
     private OrgRequest createOrgRequest(Parties parties) {
         return OrgRequest.builder()
                 .org_id(parties.getOrgCode())
