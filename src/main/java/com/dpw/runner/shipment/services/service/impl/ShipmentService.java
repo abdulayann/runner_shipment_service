@@ -1102,8 +1102,9 @@ public class ShipmentService implements IShipmentService {
                 || request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) || isPacksPresent) {
             ShipmentMeasurementDetailsDto dto = new ShipmentMeasurementDetailsDto();
             response.setPackSummary(packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType(), dto));
-            if(request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
-            && request.getShipmentType() != null && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL)) {
+            if(request.getTransportMode() != null && ((request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
+            && request.getShipmentType() != null && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
+            || request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))) {
                 response.setInnerPacks(dto.getInnerPacks());
                 response.setInnerPackUnit(dto.getInnerPackUnit());
             }
@@ -2000,7 +2001,24 @@ public class ShipmentService implements IShipmentService {
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildListSuccessResponse(convertEntityListToFullShipmentList(shipmentDetailsPage.getContent()));
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildListSuccessResponse(
+                        convertEntityListToFullShipmentList(shipmentDetailsPage.getContent()),
+                        shipmentDetailsPage.getTotalPages(),
+                        shipmentDetailsPage.getTotalElements());
+            else {
+                List<IRunnerResponse>filtered_list=new ArrayList<>();
+                for( var curr: convertEntityListToFullShipmentList(shipmentDetailsPage.getContent())){
+                    RunnerPartialListResponse res=new RunnerPartialListResponse();
+                    res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    filtered_list.add( res);
+
+                }
+                return ResponseHelper.buildListSuccessResponse(
+                        filtered_list,
+                        shipmentDetailsPage.getTotalPages(),
+                        shipmentDetailsPage.getTotalElements());
+            }
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
