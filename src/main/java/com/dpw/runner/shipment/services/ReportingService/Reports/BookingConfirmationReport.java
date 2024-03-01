@@ -55,14 +55,14 @@ public class BookingConfirmationReport extends IReport{
             bookingConfirmationModel.consolidation = bookingConfirmationModel.shipment.getConsolidationList().get(0);
         }
         bookingConfirmationModel.blObject = getHbl(id);
-        bookingConfirmationModel.commonContainers = new ArrayList<>();
+        bookingConfirmationModel.setCommonContainers(new ArrayList<>());
         if(bookingConfirmationModel.shipment.getContainersList() != null)
         {
             for(ContainerModel container : bookingConfirmationModel.shipment.getContainersList())
             {
                 ShipmentContainers shipmentContainer = getShipmentContainer(container);
                 shipmentContainer.BL_SealNumber = container.getCustomsSealNumber();
-                bookingConfirmationModel.commonContainers.add(shipmentContainer);
+                bookingConfirmationModel.getCommonContainers().add(shipmentContainer);
             }
         }
 

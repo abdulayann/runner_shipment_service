@@ -6,16 +6,12 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ConsolidationMan
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.dto.v1.response.SailingSchedulesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
@@ -25,20 +21,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.addCommaWithoutDecimal;
 
 @Component
 public class ContainerManifestPrint extends IReport {
     @Autowired
     private JsonHelper jsonHelper;
     private ConsolidationModel consol;
-
-    @Autowired
-    private IV1Service v1Service;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -63,27 +52,6 @@ public class ContainerManifestPrint extends IReport {
         for (var shipmentDetails : manifestPrintModel.getShipments()) {
             populateShipmentFields(shipmentDetails, false, dictionary);
         }
-        //set the mmis in the routings
-        if (consol.getRoutingsList() != null) {
-            List<String> vesselNames = new ArrayList<>();
-            consol.getRoutingsList().stream().forEach(routingsModel -> {
-                vesselNames.add(routingsModel.getVesselName());
-            });
-            List<String> vesselNamesFromV1 = masterDataUtils.GetTheVesselNameForMMSINUmber(vesselNames);
-            int index = 0;
-            for (index = 0; index < consol.getRoutingsList().size(); index++) {
-                var routingsModel = consol.getRoutingsList().get(index);
-                routingsModel.setVesselName(index < vesselNamesFromV1.size() ? vesselNamesFromV1.get(index) : StringUtils.EMPTY);
-                var unlocPod = getUNLocRow(routingsModel.getPod());
-                var unlocPol = getUNLocRow(routingsModel.getPol());
-                if (unlocPod != null)
-                    routingsModel.setPod(unlocPod.getNameWoDiacritics() + " " + unlocPod.getCountry());
-                if (unlocPol != null)
-                    routingsModel.setPol(unlocPol.getNameWoDiacritics() + " " + unlocPol.getCountry());
-                routingsModel.setCarrier(getCarrierFromSailingSchedules(consol, routingsModel));
-            }
-        }
-
         populateConsolidationFields(consol, dictionary);
 
         List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestPrintModel.getShipments().toArray(new ShipmentModel[0])));
@@ -163,7 +131,7 @@ public class ContainerManifestPrint extends IReport {
             importAgentFreeTextAddress = importAgentAddress;
         }
 
-        if (consol.getShipmentType() != null && consol.getShipmentType().equalsIgnoreCase("EXP")) {
+        if (consol.getShipmentType().equalsIgnoreCase("EXP")) {
             dictionary.put(ReportConstants.EXPORT_AGENT, exportAgentAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT, importAgentAddress);
             dictionary.put(ReportConstants.EXPORT_AGENT_FREETEXT, exportAgentFreeTextAddress);
@@ -172,13 +140,13 @@ public class ContainerManifestPrint extends IReport {
             if (arrival != null)
                 dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, ReportHelper.getCityCountry(arrival.getNameWoDiacritics(), arrival.getCountry()));
 
-        } else if (consol.getShipmentType() != null && consol.getShipmentType().equalsIgnoreCase("IMP")) {
+        } else if (consol.getShipmentType().equalsIgnoreCase("IMP")) {
             dictionary.put(ReportConstants.EXPORT_AGENT, importAgentAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT, exportAgentAddress);
             dictionary.put(ReportConstants.EXPORT_AGENT_FREETEXT, importAgentFreeTextAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT_FREETEXT, exportAgentFreeTextAddress);
             UnlocationsResponse depart = consol.getDepartureDetails() == null ? null : getUNLocRow(consol.getDepartureDetails().getLastForeignPort());
-            if (depart != null) {
+            if(depart != null) {
                 dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, ReportHelper.getCityCountry(depart.getNameWoDiacritics(), depart.getCountry()));
             }
         } else {
@@ -192,27 +160,11 @@ public class ContainerManifestPrint extends IReport {
         dictionary.put(ReportConstants.TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
         var user = UserContext.getUser();
         dictionary.put(ReportConstants.UN, user.getUsername());
-        List<Map<String, Object>> valuesContainer = new ArrayList<>();
-        for (var container : consol.getContainersList()) {
-            String shipContJson = jsonHelper.convertToJson(container);
-            valuesContainer.add(jsonHelper.convertJsonToMap(shipContJson));
-        }
-        for (Map<String, Object> v : valuesContainer) {
-            if (v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
-                v.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
-            if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
-                v.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
-            if (v.containsKey(ReportConstants.SHIPMENT_PACKS) && v.get(ReportConstants.SHIPMENT_PACKS) != null)
-                v.put(ReportConstants.SHIPMENT_PACKS, addCommaWithoutDecimal(new BigDecimal(v.get(ReportConstants.SHIPMENT_PACKS).toString())));
-            if (v.containsKey(ReportConstants.TareWeight) && v.get(ReportConstants.TareWeight) != null)
-                v.put(ReportConstants.TareWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.TareWeight), v1TenantSettingsResponse));
-            if (v.containsKey(ReportConstants.NET_WEIGHT) && v.get(ReportConstants.NET_WEIGHT) != null)
-                v.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.NET_WEIGHT), v1TenantSettingsResponse));
-        }
+        dictionary.put(ReportConstants.COMMON_CONTAINERS, consol.getContainersList());
         dictionary.put(ReportConstants.SHIPMENTS, consol.getShipmentsList());
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE,
                 getCountByContainerTypeCode(consol.getContainersList().stream().map(c -> getShipmentContainer(c)).toList()));
-        dictionary.put(ReportConstants.COMMON_CONTAINERS, valuesContainer);
+
         if (consol.getCarrierDetails() != null) {
             UnlocationsResponse originUnloc = null;
             UnlocationsResponse destinationUnloc = null;
@@ -220,8 +172,9 @@ public class ContainerManifestPrint extends IReport {
                 originUnloc = getUNLocRow(consol.getCarrierDetails().getOriginPort());
             }
             if (consol.getCarrierDetails().getDestinationPort() != null) {
-                destinationUnloc = getUNLocRow(consol.getCarrierDetails().getDestinationPort());
+
             }
+            destinationUnloc = getUNLocRow(consol.getCarrierDetails().getDestinationPort());
             if (originUnloc != null)
                 dictionary.put(ReportConstants.ORIGIN_CODE, ReportHelper.getCityCountry(originUnloc.getNameWoDiacritics(), originUnloc.getCountry()));
             if (destinationUnloc != null)
@@ -229,26 +182,4 @@ public class ContainerManifestPrint extends IReport {
         }
         return dictionary;
     }
-
-    private String getCarrierFromSailingSchedules(ConsolidationModel consol, RoutingsModel routingsModel) {
-        LocalDate currentDate = LocalDate.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        String currentDatetime = currentDate.format(formatter);
-
-        List<Object> criteria = new ArrayList<>();
-        criteria.add(Arrays.asList(List.of("OriginDepartureDate"), ">=", currentDatetime));
-        criteria.add("and");
-        criteria.add(Arrays.asList(List.of("VoyageNumber"), "==", routingsModel.getVoyage()));
-        criteria.add("and");
-        criteria.add(Arrays.asList(List.of("Mmsi"), "==", routingsModel.getVesselName()));
-
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        var response = v1Service.listSailingSchedule(commonV1ListRequest);
-        List<SailingSchedulesResponse> list = jsonHelper.convertValueToList(response.entities, SailingSchedulesResponse.class);
-        if (list != null && !list.isEmpty())
-            return list.get(0).carrierName;
-        return StringUtils.EMPTY;
-    }
-
-
 }

@@ -36,11 +36,11 @@ public class ManifestShipmentReport extends IReport{
         {
             manifestShipmentModel.consolidationDetails = manifestShipmentModel.shipmentDetails.getConsolidationList().get(0);
         }
-        manifestShipmentModel.containers = new ArrayList<>();
+        manifestShipmentModel.setContainers(new ArrayList<>());
         if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getContainersList() != null)
         {
             for(ContainerModel container : manifestShipmentModel.shipmentDetails.getContainersList())
-                manifestShipmentModel.containers.add(getShipmentContainer(container));
+                manifestShipmentModel.getContainers().add(getShipmentContainer(container));
         }
         if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getCarrierDetails() != null) {
             manifestShipmentModel.carrier = getCarrier(manifestShipmentModel.shipmentDetails.getCarrierDetails().getShippingLine());
@@ -63,7 +63,7 @@ public class ManifestShipmentReport extends IReport{
         if (manifestShipmentModel.shipmentDetails != null) {
             dictionary.put(ReportConstants.OBJECT_TYPE, manifestShipmentModel.shipmentDetails.getTransportMode());
         }
-        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(manifestShipmentModel.containers));
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(manifestShipmentModel.getContainers()));
 
         dictionary.put(ReportConstants.SHIPMENT_AND_CONTAINER, getShipmentAndContainerResponse(List.of(manifestShipmentModel.shipmentDetails)));
         var listShipmentReponse = getShipmentResponse(List.of(manifestShipmentModel.shipmentDetails));
