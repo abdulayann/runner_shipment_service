@@ -31,7 +31,7 @@ public class TenantAspect {
 
         long tenantId = tenantContext.getCurrentTenant();
 
-        Map<String, Boolean> permissions = UserContext.getUser().Permissions;
+        Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
         if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantListPermission) && !permissions.containsKey(PermissionConstants.crossTenantRetrievePermission) && !permissions.containsKey(PermissionConstants.companySuperAdmin)) {
             entityManager.unwrap(Session.class)
