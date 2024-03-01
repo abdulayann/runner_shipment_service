@@ -86,4 +86,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private Boolean isNotifyConsigneeEqual;
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
+    private Boolean isBillCreated;
 }

@@ -339,7 +339,7 @@ public class Constants {
     public static final String DESCRIPTION_OF_GOODS = "descriptionOfGoods";
     public static final String BOOKING_STATUS_FIELD = "bookingStatus";
 
-    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber","descriptionOfGoods","noOfPackages","netWeight","netWeightUnit",
+    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,"noOfPackages","netWeight","netWeightUnit",
             "grossWeight","grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
@@ -369,8 +369,8 @@ public class Constants {
             "hazardousCheckBox");
 
     public static final List<String> ColumnsToBeDeletedForConsolidationCargo = List.of( "id", CONSOLIDATION_ID, "DGGoodsId",
-            SHIPMENT_ID, "commodityId", TENANT_ID, "containerId", TRANSPORT_MODE,
+            SHIPMENT_ID, "commodityId", TENANT_ID, CONTAINER_ID, TRANSPORT_MODE,
             CREATED_BY, CREATED_AT, UPDATED_BY, UPDATED_AT, IS_DELETED, "vinNumber");
 
-
+    public static final String WITH_REQUEST_ID_MSG = " with Request Id {}";
 }

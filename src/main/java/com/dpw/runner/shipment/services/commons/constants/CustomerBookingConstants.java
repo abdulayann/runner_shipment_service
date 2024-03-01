@@ -12,6 +12,7 @@ public class CustomerBookingConstants {
     public static final String CRP_LIST = "/external/crp-list";
     public static final String CRP_RETRIEVE = "/external/crp-retrieve";
     public static final String FUSION_CHECK_CREDIT_LIMIT = "/external/fusion-credit-limit";
+    public static final String RETRY_FOR_BILLING = "/retry/bill";
     public static final String LIST_SUCCESSFUL = "Successful CRP List";
     public static final String RETRIEVE_SUCCESSFUL = "Successfully retrieved data";
     public static final String CREDIT_LIMIT_RETRIEVE_SUCCESSFUL = "Successfully retrieved credit limit";

@@ -54,11 +54,11 @@ public class FreightCertificationReport extends IReport{
         FreightCertificationModel freightCertificationModel = new FreightCertificationModel();
         freightCertificationModel.shipmentDetails = getShipment(id);
         freightCertificationModel.tenantDetails = getTenant();
-        freightCertificationModel.allContainersList = new ArrayList<>();
+        freightCertificationModel.setAllContainersList(new ArrayList<>());
         if(freightCertificationModel.shipmentDetails.getContainersList() != null && freightCertificationModel.shipmentDetails.getContainersList().size() > 0) {
             for (ContainerModel containers: freightCertificationModel.shipmentDetails.getContainersList()) {
                 ShipmentContainers shipmentContainers = jsonHelper.convertValue(containers, ShipmentContainers.class);
-                freightCertificationModel.allContainersList.add(shipmentContainers);
+                freightCertificationModel.getAllContainersList().add(shipmentContainers);
             }
         }
         freightCertificationModel.noofpackages_word = numberToWords(freightCertificationModel.shipmentDetails.getNoOfPacks());
@@ -111,7 +111,7 @@ public class FreightCertificationReport extends IReport{
                 freightCertificationModel.tenantDetails.email, freightCertificationModel.tenantDetails.websiteUrl, freightCertificationModel.tenantDetails.phone);
         if(tenantsDataList != null)
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
-        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(freightCertificationModel.allContainersList));
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(freightCertificationModel.getAllContainersList()));
         dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(freightCertificationModel.shipmentDetails.getClient().getOrgData(), FULL_NAME1));
         dictionary.put(ReportConstants.CONSIGNER, consigner);
         dictionary.put(ReportConstants.CONSIGNEE, consignee);

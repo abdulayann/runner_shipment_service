@@ -11,5 +11,5 @@ import java.util.List;
 public class ContainerPackADInShipmentRequest implements IRunnerRequest {
     Long shipmentId;
     Long containerId;
-    List<Long> packsId;
+    private List<Long> packsId;
 }

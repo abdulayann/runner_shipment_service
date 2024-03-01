@@ -669,6 +669,7 @@ public class ShipmentService implements IShipmentService {
             );
 
         } catch (Exception e) {
+            log.error("Error occurred due to: " + e.getStackTrace());
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
@@ -1090,8 +1091,12 @@ public class ShipmentService implements IShipmentService {
 
     private AutoUpdateWtVolResponse calculateShipmentWV(AutoUpdateWtVolRequest request) throws RunnerException {
         AutoUpdateWtVolResponse response = jsonHelper.convertValue(request, AutoUpdateWtVolResponse.class);
-        List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
-        List<Containers> containersList = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
+        List<Packing> packingList = new ArrayList<>();
+        if(request.getPackingList() != null)
+            packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
+        List<Containers> containersList = new ArrayList<>();
+        if(request.getContainersList() != null)
+            containersList = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
 //        if(request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
 //            response = calculatePacksAndPacksUnit(packingList, response);
 //        }
@@ -1099,18 +1104,13 @@ public class ShipmentService implements IShipmentService {
         response = calculateWeightAndVolumeUnit(request, packingList, response);
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         boolean isPacksPresent = packingList != null && packingList.size() > 0;
-        if(shipmentSettingsDetails.getIsShipmentLevelContainer() && !request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isPacksPresent) {
-            response.setContainerSummary(containerService.calculateContainerSummary(containersList, request.getTransportMode(), request.getShipmentType()));
+        if(!isPacksPresent)
             response = updateShipmentDetails(response, containersList);
-            response = calculateVW(request, response, true);
-        }
-        else {
-            response = calculateVW(request, response, true);
+        response = calculateVW(request, response, true);
+        if(shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer().booleanValue()
+                || request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) || isPacksPresent) {
             ShipmentMeasurementDetailsDto dto = new ShipmentMeasurementDetailsDto();
             response.setPackSummary(packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType(), dto));
-            if(request.getPackingList() == null || request.getPackingList().size() == 0) {
-                response.setContainerSummary(containerService.calculateContainerSummary(containersList, request.getTransportMode(), request.getShipmentType()));
-            }
             if(request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
             && request.getShipmentType() != null && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL)) {
                 response.setInnerPacks(dto.getInnerPacks());
@@ -1392,6 +1392,7 @@ public class ShipmentService implements IShipmentService {
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error("Error occurred due to: " + e.getStackTrace());
             log.error(responseMsg, e);
             throw new ValidationException(e.getMessage());
         }
@@ -3429,6 +3430,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setConsolidationList(null);
             cloneShipmentDetails.setStatus(ShipmentStatus.Created.getValue());
             cloneShipmentDetails.setConsolRef(null);
+            cloneShipmentDetails.setEventsList(null);
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 
