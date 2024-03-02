@@ -1124,9 +1124,8 @@ public class ShipmentService implements IShipmentService {
                 response.setPacksUnit(dto.getPacksUnit());
             }
         }
-        V1RetrieveResponse v1RetrieveResponse = v1Service.retrieveTenantSettings();
-        V1TenantSettingsResponse v1TenantSettingsResponse = modelMapper.map(v1RetrieveResponse.getEntity(), V1TenantSettingsResponse.class);
-        if(v1TenantSettingsResponse.getP100Branch() && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(v1TenantSettingsResponse.getP100Branch()) && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
             response = calculatePacksAndPacksUnitFromContainer(response, containersList);
         }
         return response;
@@ -1523,7 +1522,7 @@ public class ShipmentService implements IShipmentService {
         if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
             shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
-        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
+//        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
 
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()) {
             ConsolidationDetails console = shipmentDetails.getConsolidationList().get(0);
@@ -2326,6 +2325,7 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            double _start = System.currentTimeMillis();
             if(request.getId() == null && request.getGuid() == null) {
                 log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new RunnerException("Id and GUID can't be null. Please provide any one !");
@@ -2342,9 +2342,11 @@ public class ShipmentService implements IShipmentService {
                 log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
+            double current = System.currentTimeMillis();
+            log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - _start);
             ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
             response.setCustomerBookingNotesList(convertToDtoList(notes,NotesResponse.class));
             createShipmentPayload(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
