@@ -189,8 +189,7 @@ public class ShipmentDao implements IShipmentDao {
             }
         }
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
-                && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)
-                && shipmentDetails.getMasterBill() != null)
+                && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT))
             directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null);
 
         validateIataCode(shipmentDetails);
@@ -410,17 +409,21 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void directShipmentMAWBCheck(ShipmentDetails shipmentRequest, String oldMasterBill) {
+
         if (StringUtility.isEmpty(shipmentRequest.getMasterBill())) {
-            mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
+            if(!shipmentRequest.getDirection().equals("IMP")) {
+                mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
+            }
             return;
         }
-        if (!Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill)) {
+        if (!Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill) && !shipmentRequest.getDirection().equals("IMP")) {
             mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
         }
 
         if (Boolean.FALSE.equals(isMAWBNumberValid(shipmentRequest.getMasterBill())))
             throw new ValidationException("Please enter a valid MAWB number.");
 
+        CarrierResponse correspondingCarrier = null;
         if(shipmentRequest.getCarrierDetails() == null || StringUtility.isEmpty(shipmentRequest.getCarrierDetails().getShippingLine()) ||
             !Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill)) {
             String mawbAirlineCode = shipmentRequest.getMasterBill().substring(0, 3);
@@ -430,15 +433,21 @@ public class ShipmentDao implements IShipmentDao {
             if (carrierDetails == null || carrierDetails.isEmpty())
                 throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
 
-            CarrierResponse correspondingCarrier = carrierDetails.get(0);
+            correspondingCarrier = carrierDetails.get(0);
 
-            if(shipmentRequest.getCarrierDetails() == null)
-                shipmentRequest.setCarrierDetails(new CarrierDetails());
+            if(shipmentRequest.getCarrierDetails() == null || StringUtility.isEmpty(shipmentRequest.getCarrierDetails().getShippingLine())) {
+                if (shipmentRequest.getCarrierDetails() == null)
+                    shipmentRequest.setCarrierDetails(new CarrierDetails());
 
-            shipmentRequest.getCarrierDetails().setShippingLine(correspondingCarrier.getItemValue());
+                shipmentRequest.getCarrierDetails().setShippingLine(correspondingCarrier.getItemValue());
+            }
         }
 
-        Boolean isMAWBNumberExist = false;
+        if (shipmentRequest.getDirection().equals("IMP")) {
+            return;
+        }
+
+        boolean isMAWBNumberExist = false;
 
         ListCommonRequest listMawbRequest = constructListCommonRequest("mawbNumber", shipmentRequest.getMasterBill(), "=");
         Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listMawbRequest, MawbStocksLink.class);
@@ -451,21 +460,17 @@ public class ShipmentDao implements IShipmentDao {
             mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
         }
 
-        if (shipmentRequest.getDirection().equals("IMP")) {
-            return;
-        }
-
         if (isMAWBNumberExist) {
             if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId())) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
         } else {
-            createNewMAWBEntry(shipmentRequest);
+            createNewMAWBEntry(shipmentRequest, correspondingCarrier != null ? correspondingCarrier.getItemValue() : shipmentRequest.getCarrierDetails().getShippingLine());
         }
     }
 
-    private void createNewMAWBEntry(ShipmentDetails shipmentRequest) {
+    private void createNewMAWBEntry(ShipmentDetails shipmentRequest, String shippingLine) {
         MawbStocks mawbStocks = new MawbStocks();
-        mawbStocks.setAirLinePrefix(shipmentRequest.getCarrierDetails().getShippingLine());
+        mawbStocks.setAirLinePrefix(shippingLine);
         mawbStocks.setCount("1");
         mawbStocks.setAvailableCount("1");
         mawbStocks.setStartNumber(Long.valueOf(shipmentRequest.getMasterBill().substring(4, 10)));
