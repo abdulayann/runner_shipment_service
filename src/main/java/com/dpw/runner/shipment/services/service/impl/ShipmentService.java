@@ -1522,7 +1522,7 @@ public class ShipmentService implements IShipmentService {
         if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
             shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
-//        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
+        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
 
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()) {
             ConsolidationDetails console = shipmentDetails.getConsolidationList().get(0);
@@ -2325,7 +2325,7 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            double _start = System.currentTimeMillis();
+            double start = System.currentTimeMillis();
             if(request.getId() == null && request.getGuid() == null) {
                 log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new RunnerException("Id and GUID can't be null. Please provide any one !");
@@ -2344,7 +2344,7 @@ public class ShipmentService implements IShipmentService {
             }
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
             double current = System.currentTimeMillis();
-            log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - _start);
+            log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
             ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
             log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
             response.setCustomerBookingNotesList(convertToDtoList(notes,NotesResponse.class));
