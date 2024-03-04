@@ -51,9 +51,9 @@ public class ShipmentCANReport extends IReport {
     @Override
     public IDocumentModel getDocumentModel(Long id) throws RunnerException {
         ShipmentCANModel shipmentCANModel = new ShipmentCANModel();
-            List<Hbl> hblList = hblDao.findByShipmentId(id);
-            if(hblList == null || hblList.size() == 0)
-                throw new RunnerException("Bl Object not found!");
+//            List<Hbl> hblList = hblDao.findByShipmentId(id);
+//            if(hblList == null || hblList.size() == 0)
+//                throw new RunnerException("Bl Object not found!");
             shipmentCANModel.shipmentDetails = getShipment(id);
             shipmentCANModel.tenantDetails = getTenant();
             shipmentCANModel.consolidationModel = getFirstConsolidationFromShipmentId(id);
