@@ -60,7 +60,7 @@ public class SyncEntityConversionService {
 
                         return p;
                     })
-                    .collect(Collectors.toList());
+                    .toList();
             return res;
         }
         return new ArrayList<>();

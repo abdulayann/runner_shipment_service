@@ -122,12 +122,10 @@ public class ShippingInstructionReport extends IReport{
         dictionary.put(PPCC, model.getShipment().getPaymentTerms());
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
 
-//        dictionary.put(CARRIER, model.getShipment())
 
         dictionary.put(JOB_NUMBER, model.getShipment().getShipmentId());
         dictionary.put(TRANSPORT_MODE, model.getShipment().getTransportMode());
         dictionary.put(SHIPMENT_TYPE, model.getShipment().getShipmentType());
-//        dictionary.put(SUMMARY, model.getShipment().getSummary());
 
         long totalPacks = 0L;
         BigDecimal totalVolume = BigDecimal.ZERO;
@@ -139,8 +137,6 @@ public class ShippingInstructionReport extends IReport{
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
 
         if (model.getShipment().getPackingList() != null) {
-//            String packingJson = jsonHelper.convertToJson(model.getShipment().getPackingList());
-//            var values = jsonHelper.convertValue(packingJson, new TypeReference<List<Map<String, Object>>>() {});
             var values = model.getShipment().getPackingList().stream()
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                     .toList();

@@ -59,7 +59,7 @@ public class AwbController {
         try {
             return awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         } catch (Exception ex) {
-            System.out.println(ex.toString());
+            log.error(ex.toString());
         }
         return ResponseEntity.ok(null);
 

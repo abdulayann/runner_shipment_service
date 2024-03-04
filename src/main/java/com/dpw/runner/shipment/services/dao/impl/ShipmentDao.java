@@ -503,11 +503,9 @@ public class ShipmentDao implements IShipmentDao {
         if (masterBill.length() == 12) {
             String mawbSeqNum = masterBill.substring(4, 11);
             String checkDigit = masterBill.substring(11, 12);
-            Long imawbSeqNum = 0L;
-            Long icheckDigit = 0L;
             if (areAllCharactersDigits(masterBill, 4, 12)) { // masterBill.substring(4, 12).matches("\\d+")
-                imawbSeqNum = Long.valueOf(mawbSeqNum);
-                icheckDigit = Long.valueOf(checkDigit);
+                Long imawbSeqNum = Long.valueOf(mawbSeqNum);
+                Long icheckDigit = Long.valueOf(checkDigit);
                 if (imawbSeqNum % 7 != icheckDigit)
                     MAWBNumberValidity = false;
             } else MAWBNumberValidity = false;

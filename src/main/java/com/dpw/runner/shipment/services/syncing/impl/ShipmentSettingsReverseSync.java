@@ -140,7 +140,7 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {
         if(obj == null)

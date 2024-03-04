@@ -48,7 +48,7 @@ public class ManifestPrintReport extends IReport {
         ConsolidationManifestPrintModel manifestPrintModel = (ConsolidationManifestPrintModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         for (var shipmentDetails : manifestPrintModel.getShipments()) {
-            populateShipmentFields(shipmentDetails, false, dictionary);
+            populateShipmentFields(shipmentDetails, dictionary);
         }
         populateConsolidationFields(consol, dictionary);
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
@@ -58,8 +58,6 @@ public class ManifestPrintReport extends IReport {
         Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packings);
 
         var listShipments = (List<ShipmentModel>) dictionary.get(ReportConstants.SHIPMENTS);
-//        List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<List<Map<String, Object>>>() {
-//        });
 
         if(listShipments != null) {
             var values = listShipments.stream()

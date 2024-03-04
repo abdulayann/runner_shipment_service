@@ -687,10 +687,10 @@ public class HblService implements IHblService {
         }
 
         try{
-            List<Hbl> hblList = hblDao.findByShipmentId(shipmentDetails.get().collect(Collectors.toList()).get(0).getId());
+            List<Hbl> hblList = hblDao.findByShipmentId(shipmentDetails.get().toList().get(0).getId());
             HblRequest hblRequest = jsonHelper.convertValue(request, HblRequest.class);
             Hbl entity = convertRequestToEntity(hblRequest);
-            entity.setShipmentId(shipmentDetails.get().collect(Collectors.toList()).get(0).getId());
+            entity.setShipmentId(shipmentDetails.get().toList().get(0).getId());
             entity.setGuid(request.getGuid());
             if(!hblList.isEmpty() && hblList.size() > 0) {
                 entity.setId(hblList.get(0).getId());
@@ -989,7 +989,7 @@ public class HblService implements IHblService {
             locCodes.add(additionalDetails.getPlaceOfSupply());
         }
 
-        Map<String, EntityTransferUnLocations> v1Data = masterDataUtil.fetchInBulkUnlocations(locCodes.stream().filter(Objects::nonNull).collect(Collectors.toList()), EntityTransferConstants.LOCATION_SERVICE_GUID);
+        Map<String, EntityTransferUnLocations> v1Data = masterDataUtil.fetchInBulkUnlocations(locCodes.stream().filter(Objects::nonNull).toList(), EntityTransferConstants.LOCATION_SERVICE_GUID);
         return v1Data;
     }
 

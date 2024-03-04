@@ -284,7 +284,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                 return syncQueueService.saveSyncRequest(SyncingConstants.PICKUP_DELIVERY, StringUtility.convertToString(pickupDeliveryDetailsRequestV2.getShipmentGuid()), pickupDeliveryDetailsRequestV2);
             }
             Optional<ShipmentDetails> existingShipment = shipmentDao.findByGuid(pickupDeliveryDetailsRequestV2.getShipmentGuid());
-            if(existingShipment == null || existingShipment.get() == null) {
+            if(existingShipment.isEmpty() || existingShipment.get() == null) {
                 log.debug("Shipment Details is null for Guid {} with Request Id {}", pickupDeliveryDetailsRequestV2.getShipmentGuid(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }

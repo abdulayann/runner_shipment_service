@@ -92,6 +92,6 @@ public class HblSync implements IHblSync {
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 }

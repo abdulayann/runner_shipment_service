@@ -29,7 +29,7 @@ public class PermissionUtil {
             // De-construct permission string into individual elements and strip the last element
             List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
                     .filter(e -> !e.contains("list"))
-                    .collect(Collectors.toList());
+                    .toList();
             String transportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
             String direction = getParameterFromPermission(DIRECTION_INDEX, parameterList);
             String shipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);

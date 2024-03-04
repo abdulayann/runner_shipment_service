@@ -126,7 +126,7 @@ public class ContainersSync implements IContainersSync {
                             ShipmentsContainersMapping::getContainerId,
                             Collectors.mapping(ShipmentsContainersMapping::getShipmentId, Collectors.toList())
                     ));
-            shipmentIds = shipmentsContainersMappingPageable.getContent().stream().map(ShipmentsContainersMapping::getShipmentId).collect(Collectors.toList());
+            shipmentIds = shipmentsContainersMappingPageable.getContent().stream().map(ShipmentsContainersMapping::getShipmentId).toList();
         }
         Map<Long, UUID> shipmentIdGuidMap = new HashMap<>();
         if(shipmentIds.size() > 0) {

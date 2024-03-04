@@ -134,7 +134,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
                     p.setGuid(item);
                     return p;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setConsolidationList(req);
     }
 
@@ -239,7 +239,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {
         return modelMapper.map(obj, clazz);

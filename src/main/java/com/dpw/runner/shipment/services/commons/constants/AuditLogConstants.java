@@ -100,8 +100,6 @@ public class AuditLogConstants {
                 put("goodsValueCurrency", "Goods Value Currency");
                 put("insuranceValue", "Insurance Value");
                 put("InsuranceValueCurrency", "Insurance Value Currency");
-
-                // put("notesList", "Notes List");
                 put("jobsList", "Jobs List");
                 put("consolidationList", "Consolidation List");
                 put("shipmentAddresses", "Shipment Addresses");
@@ -615,10 +613,6 @@ public class AuditLogConstants {
                 put("weightUtilization", "Weight Utilization");
                 put("volumeUtilization", "Volume Utilization");
 
-                // put("eventsList", "Events List");
-                // put("packsList", "Packs List");
-                // put("shipmentsList", "Shipments List");
-                // put("bookingCharges", "Booking Charges");
                 put("commodityGroup", "Commodity Group");
                 put("isContractEnforced", "Is Contract Enforced");
                 put("contractEnforcedQuantityLimit", "Contract Enforced Quantity Limit");
@@ -626,7 +620,6 @@ public class AuditLogConstants {
                 put("handlingInfo", "Handling Info");
                 put("isPart", "Is Part");
                 put("isAttached", "Is Attached");
-                // put("truckingDetails", "Trucking Details");
 
                 put("pickupAddress", "Pickup Address");
                 put("pickupAddress.entityId", ENTITY_ID_VAL);

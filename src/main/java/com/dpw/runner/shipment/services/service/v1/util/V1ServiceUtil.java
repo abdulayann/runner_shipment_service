@@ -116,7 +116,7 @@ public class V1ServiceUtil {
                         .InsertUserDisplayName(note.getCreatedBy())
                         .IsPublic(note.getIsPublic())
                         .InsertDate(note.getCreatedAt() != null ? DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_TIME_FORMAT).format(note.getCreatedAt()) : null)
-                        .build()).collect(Collectors.toList());
+                        .build()).toList();
     }
     private static List<CreateBookingModuleInV1.BookingEntity.BillCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
         if (bookingCharges == null) return null;
@@ -155,7 +155,7 @@ public class V1ServiceUtil {
         if (bc.getContainersList() == null)
             return new ArrayList<>();
         return bc.getContainersList().stream().filter(Objects::nonNull)
-                .map(container -> container.getGuid()).collect(Collectors.toList());
+                .map(container -> container.getGuid()).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.OrgDetail> createOrgDetails(CustomerBooking customerBooking) {
@@ -247,7 +247,7 @@ public class V1ServiceUtil {
                         .CommodityGroup(packing.getCommodityGroup())
                         .HazardousCheckBox(packing.getHazardous())
                         .HsCode(packing.getHSCode())
-                        .build()).collect(Collectors.toList());
+                        .build()).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.Document> createDocuments(List<FileRepo> fileRepoList) {
@@ -259,7 +259,7 @@ public class V1ServiceUtil {
                 .Path(fileRepo.getPath())
                 .FileName(fileRepo.getFileName())
                 .EventCode(fileRepo.getEventCode())
-                .build()).collect(Collectors.toList());
+                .build()).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.Routing> createRoutingList(List<Routings> routingList) {
@@ -273,7 +273,7 @@ public class V1ServiceUtil {
                         .PolCode(routings.getPol())
                         .PodCode(routings.getPod())
                         .build()
-        ).collect(Collectors.toList());
+        ).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.QuoteContainer> createContainers(List<Containers> containersList) {
@@ -289,7 +289,7 @@ public class V1ServiceUtil {
                         .WeightUnit(container.getGrossWeightUnit())
                         .ReferenceGuid(container.getGuid())
                         .build()
-        ).collect(Collectors.toList());
+        ).toList();
     }
 
     public CheckCreditLimitFromV1Response validateCreditLimit(Parties client, String restrictedItem, UUID shipmentGuid, Boolean taskCreation) {

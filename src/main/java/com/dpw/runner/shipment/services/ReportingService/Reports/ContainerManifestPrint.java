@@ -50,7 +50,7 @@ public class ContainerManifestPrint extends IReport {
         Map<String, Object> dictionary = new HashMap<>();
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         for (var shipmentDetails : manifestPrintModel.getShipments()) {
-            populateShipmentFields(shipmentDetails, false, dictionary);
+            populateShipmentFields(shipmentDetails, dictionary);
         }
         populateConsolidationFields(consol, dictionary);
 

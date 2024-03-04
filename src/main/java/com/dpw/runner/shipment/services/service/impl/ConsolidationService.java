@@ -98,7 +98,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
@@ -350,7 +349,7 @@ public class ConsolidationService implements IConsolidationService {
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         lst.forEach(consolidationDetails -> {
             var res = (modelMapper.map(consolidationDetails, ConsolidationListResponse.class));
-            if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).collect(Collectors.toList()).contains(consolidationDetails.getBookingStatus()))
+            if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             updateHouseBillsShippingIds(consolidationDetails, res);
             containerCountUpdate(consolidationDetails, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
@@ -432,9 +431,9 @@ public class ConsolidationService implements IConsolidationService {
         List<String> shipmentIds = null;
         List<String> houseBills = null;
         if (shipments != null)
-            shipmentIds = shipments.stream().map(shipment -> shipment.getShipmentId()).collect(Collectors.toList());
+            shipmentIds = shipments.stream().map(shipment -> shipment.getShipmentId()).toList();
         if (shipmentIds != null)
-            houseBills = shipments.stream().map(shipment -> shipment.getHouseBill()).filter(houseBill -> Objects.nonNull(houseBill)).collect(Collectors.toList());
+            houseBills = shipments.stream().map(shipment -> shipment.getHouseBill()).filter(houseBill -> Objects.nonNull(houseBill)).toList();
         consolidationRes.setHouseBills(houseBills);
         consolidationRes.setShipmentIds(shipmentIds);
     }
@@ -491,7 +490,6 @@ public class ConsolidationService implements IConsolidationService {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        System.out.println(jsonHelper.convertToJson(request));
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
@@ -518,7 +516,6 @@ public class ConsolidationService implements IConsolidationService {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        System.out.println(jsonHelper.convertToJson(request));
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
@@ -1050,7 +1047,7 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType())
                 )))) {
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
-            List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
+            List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
             ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
             Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
@@ -1685,7 +1682,7 @@ public class ConsolidationService implements IConsolidationService {
             ContainerShipmentADInConsoleResponse response = new ContainerShipmentADInConsoleResponse();
             Optional<Containers> containersOpt = containerDao.findById(request.getContainer().getId());
             Containers container = null;
-            if(containersOpt != null && containersOpt.isPresent()) {
+            if(containersOpt.isPresent()) {
                 container = containersOpt.get();
             }
             if(container != null && request.getPacksList() != null && request.getPacksList().size() > 0) {
@@ -1759,7 +1756,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private Containers attachContainer(ContainerShipmentADInConsoleRequest request, Set<Long> newShipmentsIncluded, Containers container, BigDecimal weight, BigDecimal volume) {
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksList().stream().filter(e -> e.getId() != null && e.getId() > 0).map(e -> e.getId()).collect(Collectors.toList()), "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksList().stream().filter(e -> e.getId() != null && e.getId() > 0).map(e -> e.getId()).toList(), "IN");
         Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
         Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
         List<Packing> packingList = null;
@@ -1792,7 +1789,7 @@ public class ConsolidationService implements IConsolidationService {
             ContainerResponse response = null;
             Optional<Containers> containersOpt = containerDao.findById(request.getContainer().getId());
             Containers container = null;
-            if(containersOpt != null && containersOpt.isPresent()) {
+            if(containersOpt.isPresent()) {
                 container = containersOpt.get();
             }
             if(container != null && request.getPacksList() != null && request.getPacksList().size() > 0) {
@@ -2114,7 +2111,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             Long id = commonRequestModel.getId();
             Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationDetailsDao.findById(id);
-            if(consolidationDetailsOptional == null || !consolidationDetailsOptional.isPresent()) {
+            if(!consolidationDetailsOptional.isPresent()) {
                 log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -2160,7 +2157,7 @@ public class ConsolidationService implements IConsolidationService {
             var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
             var calculationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.calculationsOnRetrieve(consolidationDetails, consolidationDetailsResponse)), executorService);
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, calculationsFuture).join();
-            if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).collect(Collectors.toList()).contains(consolidationDetails.getBookingStatus()))
+            if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 consolidationDetailsResponse.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONSOLE_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
         }  catch (Exception ex) {
@@ -2623,7 +2620,7 @@ public class ConsolidationService implements IConsolidationService {
 
 
         UUID guid = consolidationDetailsRequest.getGuid();
-        Optional<ConsolidationDetails> oldEntity = null;
+        Optional<ConsolidationDetails> oldEntity = Optional.empty();
         try {
             oldEntity = consolidationDetailsDao.findByGuid(guid);
         }
@@ -2651,11 +2648,11 @@ public class ConsolidationService implements IConsolidationService {
             Long id = null;
             ConsolidationDetails oldConsolidation = null;
             boolean isCreate = true;
-            if(oldEntity != null && oldEntity.isPresent()) {
+            if(oldEntity.isPresent()) {
                 oldConsolidation = oldEntity.get();
                 id = oldEntity.get().getId();
-                List<Long> oldShipList = oldConsolidation.getShipmentsList().stream().map(e -> e.getId()).collect(Collectors.toList());
-                oldShipList = oldShipList.stream().filter(item -> !newShipList.contains(item)).collect(Collectors.toList());
+                List<Long> oldShipList = oldConsolidation.getShipmentsList().stream().map(e -> e.getId()).toList();
+                oldShipList = oldShipList.stream().filter(item -> !newShipList.contains(item)).toList();
                 detachShipmentsReverseSync(oldEntity.get().getId(), oldShipList);
                 isCreate = false;
             }
@@ -3153,7 +3150,7 @@ public class ConsolidationService implements IConsolidationService {
                             return Integer.compare(itd1, itd2);
                         })
                         .map(EntityTransferMasterLists::getItemValue)
-                        .collect(Collectors.toList());
+                        .toList();
                 for (var item : priorityList){
                     switch (item.toUpperCase()){
                         case "VOYAGE NUMBER":
@@ -3210,7 +3207,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             Long id = commonRequestModel.getId();
             Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationDetailsDao.findById(id);
-            if(consolidationDetailsOptional == null || !consolidationDetailsOptional.isPresent()) {
+            if(!consolidationDetailsOptional.isPresent()) {
                 log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }

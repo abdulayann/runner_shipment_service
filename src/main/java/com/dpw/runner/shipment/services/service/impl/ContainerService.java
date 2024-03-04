@@ -239,7 +239,7 @@ public class ContainerService implements IContainerService {
 
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
-        ).collect(Collectors.toList());
+        ).toList();
 
         applyContainerValidations(containerNumbersSet, locCodeToLocationReferenceGuidMap, containersList, request, masterDataMap);
         containersList = containerDao.saveAll(containersList);
@@ -448,7 +448,7 @@ public class ContainerService implements IContainerService {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");
             return c;
-        }).collect(Collectors.toList());
+        }).toList();
         eventsList = eventDao.saveAll(eventsList);
         // TODO- revisit Abhimanyu and handle sync as well
 //        if (request.getShipmentId() != null) {
@@ -489,7 +489,7 @@ public class ContainerService implements IContainerService {
                 if (result.isEmpty()) {
                     result.addAll(containersList);
                 } else {
-                    result = result.stream().filter(result::contains).collect(Collectors.toList());
+                    result = result.stream().filter(result::contains).toList();
                 }
             }
             LocalDateTime currentTime = LocalDateTime.now();
@@ -691,7 +691,7 @@ public class ContainerService implements IContainerService {
 
 
     @Transactional
-    public ResponseEntity<?> attachPacks(Long containerId, List<Long> packsId) {
+    public ResponseEntity<IRunnerResponse> attachPacks(Long containerId, List<Long> packsId) {
         Containers containers = containerDao.findById(containerId).get();
 
         if (containers != null) {
@@ -1575,7 +1575,7 @@ public class ContainerService implements IContainerService {
                     Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
                     Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
                     if (shipmentDetails.get() != null && shipmentDetails.get().count() > 0) {
-                        shipIds = shipmentDetails.get().map(e -> e.getId()).collect(Collectors.toList());
+                        shipIds = shipmentDetails.get().map(e -> e.getId()).toList();
                     }
                 }
             }
@@ -1620,7 +1620,7 @@ public class ContainerService implements IContainerService {
     @Override
     public void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws RunnerException, IOException, IllegalAccessException {
         List<ShipmentsContainersMapping> mappings;
-        Optional<ConsolidationDetails> consol = null;
+        Optional<ConsolidationDetails> consol = Optional.empty();
         List<IRunnerResponse> containersList = null;
         if (request.getConsolidationId() != null) {
             consol = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()));

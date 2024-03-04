@@ -97,7 +97,6 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     private final RestTemplate restTemplate;
 
-    private final RestTemplate restTemp;
     @Autowired
     private IV1Service v1Service;
 
@@ -112,9 +111,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private IAwbDao awbDao;
 
     @Autowired
-    public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate, @Qualifier("restTemplateForExchangeRates") RestTemplate restTemp) {
+    public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
-        this.restTemp = restTemp;
     }
     @Autowired
     private ICustomerBookingDao customerBookingDao;
@@ -249,7 +247,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         }
     }
 
-    private String getCurrencyCode(String countryCode)  {
+    private String getCurrencyCode()  {
         return UserContext.getUser().CompanyCurrency;
     }
 
@@ -473,7 +471,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .POD(request.getPod())
                 .POL(request.getPol())
                 .exchange_rates(null)
-                .currency(getCurrencyCode(request.getCountryCode()))
+                .currency(getCurrencyCode())
                 .preferred_date(request.getPreferredDate())
                 .preferred_date_type(request.getPreferredDateType())
                 .carrier(NPMConstants.ANY) //hardcoded
