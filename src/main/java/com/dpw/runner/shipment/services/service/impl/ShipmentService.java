@@ -1505,7 +1505,11 @@ public class ShipmentService implements IShipmentService {
         validateBeforeSave(shipmentDetails);
 
         if(!isCreate){
-            updateLinkedShipmentData(shipmentDetails, oldEntity);
+            consolidationDetails = updateLinkedShipmentData(shipmentDetails, oldEntity);
+            if(!Objects.isNull(consolidationDetails)) {
+                shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                syncConsole = true;
+            }
         }
 
         if(shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0)
@@ -1621,7 +1625,11 @@ public class ShipmentService implements IShipmentService {
             // create Shipment event on the bases of auto create event flag
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
-            updateLinkedShipmentData(shipmentDetails, null);
+            ConsolidationDetails consolidationDetails = updateLinkedShipmentData(shipmentDetails, null);
+            if(!Objects.isNull(consolidationDetails)) {
+                shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                syncConsole = true;
+            }
         }
         // Create events on basis of shipment status Confirmed/Created
         autoGenerateEvents(shipmentDetails, previousStatus);
@@ -2499,7 +2507,10 @@ public class ShipmentService implements IShipmentService {
             entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             validateBeforeSave(entity);
 
-            updateLinkedShipmentData(entity, oldEntity.get());
+            ConsolidationDetails consolidationDetails = updateLinkedShipmentData(entity, oldEntity.get());
+            if(!Objects.isNull(consolidationDetails)) {
+                entity.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+            }
             entity = shipmentDao.update(entity, false);
 
             entity.setContainersList(updatedContainers);
@@ -2558,11 +2569,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             if(fromV1 == null || !fromV1) {
-                try {
-                    shipmentSync.sync(entity, null, null, entity.getGuid().toString(), false);
-                } catch (Exception e) {
-                    log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
-                }
+                syncShipment(entity, null, null, null, consolidationDetails, true);
             }
 
             pushShipmentDataToDependentService(entity, false);
@@ -3957,7 +3964,7 @@ public class ShipmentService implements IShipmentService {
      * @param current_shipment
      * @param old_shipment
      */
-    private void updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) throws RunnerException {
+    private ConsolidationDetails updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) throws RunnerException {
         List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
         var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
         if(linkedConsol != null && (oldEntity == null || !Objects.equals(shipment.getMasterBill(),oldEntity.getMasterBill()) ||
@@ -3979,7 +3986,7 @@ public class ShipmentService implements IShipmentService {
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(linkedConsol.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().filter(c -> !Objects.equals(c.getShipmentId(), shipment.getId()))
                         .map(i -> i.getShipmentId()).collect(Collectors.toList());
-            consolidationDetailsDao.save(linkedConsol, false);
+            linkedConsol = consolidationDetailsDao.save(linkedConsol, false);
             if (!shipmentIdList.isEmpty()) {
                 ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
                 Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class, tableNames);
@@ -4007,8 +4014,9 @@ public class ShipmentService implements IShipmentService {
                     }
                 }
             }
-
+            return linkedConsol;
         }
+        return null;
     }
 
     @Override
