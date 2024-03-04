@@ -40,8 +40,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private String ChargeableUnit;
     @JsonProperty("CommodityCode")
     private String CommodityCode;
-    @JsonProperty("ConsolidationId")
-    private Long ConsolidationId;
     @JsonProperty("ContainerCode")
     private String ContainerCode;
     @JsonProperty("ContainerComments")
