@@ -2583,14 +2583,6 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void syncConsole(ConsolidationDetails entity, boolean isDirectSync) {
-        try {
-            consolidationSync.sync(entity, StringUtility.convertToString(entity.getGuid()), isDirectSync);
-        } catch (Exception e) {
-            log.error("Error performing sync on consol entity, {}", e);
-        }
-    }
-
     public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long id = commonGetRequest.getId();
