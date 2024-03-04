@@ -49,8 +49,6 @@ public class PickupDeliveryDetailsRequestV2 implements IRunnerRequest {
     private LocalDateTime PortTransportAdvised;
     @JsonProperty("RequiredBy")
     private LocalDateTime RequiredBy;
-    @JsonProperty("ShipmentId")
-    private Long ShipmentId;
     @JsonProperty("ShipperRef")
     private String ShipperRef;
     @JsonProperty("SourceDetail")

@@ -10,18 +10,12 @@ import java.util.UUID;
 public class ReferenceNumbersRequestV2 implements IRunnerRequest {
     @JsonProperty("Guid")
     private UUID Guid;
-    @JsonProperty("ConsolidationId")
-    public Long ConsolidationId;
     @JsonProperty("CountryOfIssue")
     public String CountryOfIssue;
     @JsonProperty("Type")
     public String Type;
-    @JsonProperty("ShipmentId")
-    public Long ShipmentId;
     @JsonProperty("ReferenceNumber")
     public String ReferenceNumber;
     @JsonProperty("IsPortalEnable")
     public Boolean IsPortalEnable;
-//    public String EntityType;
-//    public Long EntityId;
 }
