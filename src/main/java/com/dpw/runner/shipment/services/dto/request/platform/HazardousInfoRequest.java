@@ -5,10 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class HazardousInfoRequest {
+public class HazardousInfoRequest implements Serializable {
     private String description;
     private String product_class;
     private String product_un_id;

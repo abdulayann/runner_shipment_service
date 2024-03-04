@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ExchangeRates {
+    public static class ExchangeRates implements Serializable{
         private String base;
         private Map<String, Double> rate;
     }
@@ -60,7 +61,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class LoadInformation {
+    public static class LoadInformation implements Serializable {
         private LoadDetail load_detail;
         private LoadAttributes load_attributes;
     }
@@ -69,7 +70,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class LoadDetail {
+    public static class LoadDetail implements Serializable{
         private String load_type;
         private String cargo_type;
         private String product_category_code;
@@ -81,7 +82,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class LoadAttributes {
+    public static class LoadAttributes implements Serializable{
         private BigDecimal weight;
         private String weight_uom;
         private Long quantity;
@@ -97,7 +98,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ContractDetails {
+    public static class ContractDetails implements Serializable{
         private List<String> contracts;
         private String company_code;
     }
@@ -106,7 +107,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class BusinessInfo {
+    public static class BusinessInfo implements Serializable{
         private String product_name;
         private String tenant_id;
     }
@@ -115,7 +116,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ContractsInfo {
+    public static class ContractsInfo implements Serializable{
         private String customer_org_id;
         private String contract_id;
     }
