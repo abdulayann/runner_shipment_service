@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.enums.RegStatus;
-import com.dpw.runner.shipment.services.entitytransfer.enums.RemoteIdTypes;
 import lombok.*;
 
 import java.util.List;
@@ -13,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferOrganizations implements IEntityTranferBaseEntity {
-     public long Id;
+    public long Id;
     public String OrganizationCode;
     public String OrganizationCategory;
     public String RemoteId;
@@ -77,12 +76,11 @@ public class EntityTransferOrganizations implements IEntityTranferBaseEntity {
     public String TaxGoods;
     public String TaxKind;
     public String TaxRep;
-    public List<Long> OrgServices;
+    private List<Long> OrgServices;
     public Boolean AirCarrier;
     public Boolean RoadCarrier;
     public Boolean RailCarrier;
     public Boolean SeaCarrier;
-
     public String StateCode;
     public String StateID;
     public String IECode;

@@ -2,8 +2,10 @@ package com.dpw.runner.shipment.services.dto.response.OrderManagement;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class OrderEventsResponse {
+public class OrderEventsResponse implements Serializable {
     private String eventId;
     private String eventCode;
     private String eventDescription;
