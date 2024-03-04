@@ -106,6 +106,6 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     public EntityTransferParties borrowedFrom;
     public EntityTransferParties sendingAgent;
     public EntityTransferParties receivingAgent;
-    Map<String, EntityTransferMasterLists> masterData;
-    Map<String, EntityTransferUnLocations> unlocationData;
+    private Map<String, EntityTransferMasterLists> masterData;
+    private Map<String, EntityTransferUnLocations> unlocationData;
 }
