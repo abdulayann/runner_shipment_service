@@ -2,10 +2,11 @@ package com.dpw.runner.shipment.services.dto.response.OrderManagement;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 @Data
-public class OrderLineResponse {
+public class OrderLineResponse implements Serializable {
     private String itemId;
     private String itemDescription;
     private String skuId;
