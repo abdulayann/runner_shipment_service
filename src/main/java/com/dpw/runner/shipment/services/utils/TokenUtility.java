@@ -46,6 +46,7 @@ public class TokenUtility {
             validateValidity(claimsSet);
             String key = claimsSet.getClaim(USER_ID_FIELD) + "|" + claimsSet.getClaim(BRANCH_ID_FIELD);
             log.info("Token key for RequestId {} is {}", LoggerHelper.getRequestIdFromMDC(), key);
+            return key;
         } catch (Exception ex) {
             log.error("Error occurred during decrypting token: {} || Exception message: {}", token, ex.getMessage());
         }
