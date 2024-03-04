@@ -87,7 +87,6 @@ public class ManifestConsolReport extends IReport {
             values.forEach(v -> {
                 v.put(GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
                 v.put(GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(VOLUME), v1TenantSettingsResponse));
-//                v.put(PACKS, AmountNumberFormatter.formatWithoutDecimal(v.get(PACKS), v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY) != null ? v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY).toString() : null, v1TenantSettingsResponse));
                 v.put(HSN_NUMBER, AmountNumberFormatter.formatWithoutDecimal(v.get(HSN_NUMBER), v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY) != null ? v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY).toString() : null, v1TenantSettingsResponse));
             });
             dictionary.put(SHIPMENT_AND_CONTAINER, values);

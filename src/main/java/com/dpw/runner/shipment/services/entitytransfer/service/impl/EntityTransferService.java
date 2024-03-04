@@ -114,7 +114,7 @@ public class EntityTransferService implements IEntityTransferService {
 //            if(additionalDocs != null) {
 //                var fileRepoList = shipmentDetails.get().getFileRepoList().stream().filter(fileRepo -> {
 //                    return additionalDocs.indexOf(fileRepo.getId()) != -1;
-//                }).collect(Collectors.toList());
+//                }).toList();
 //                shipmentDetails.get().setFileRepoList(fileRepoList);
 //            } else {
 //                shipmentDetails.get().setFileRepoList(null);
@@ -674,7 +674,7 @@ public class EntityTransferService implements IEntityTransferService {
 //            if(additionalDocs != null) {
 //                var fileRepoList = consolidationDetails.get().getFileRepoList().stream().filter(fileRepo -> {
 //                    return additionalDocs.indexOf(fileRepo.getId()) != -1;
-//                }).collect(Collectors.toList());
+//                }).toList();
 //                consolidationDetails.get().setFileRepoList(fileRepoList);
 //            } else {
 //                consolidationDetails.get().setFileRepoList(null);
@@ -712,7 +712,7 @@ public class EntityTransferService implements IEntityTransferService {
                         if(shipAdditionalDocs.get(shipment.getGuid().toString()) != null) {
 //                            var shipFileRepoList = shipment.getFileRepoList().stream().filter(fileRepo -> {
 //                                return shipAdditionalDocs.get(shipment.getGuid().toString()).indexOf(fileRepo.getId()) != -1;
-//                            }).collect(Collectors.toList());
+//                            }).toList();
 //                            shipment.setFileRepoList(shipFileRepoList);
                             shipId.add(shipment.getShipmentId());
                             docList.add(shipAdditionalDocs.get(shipment.getGuid().toString()));
@@ -1287,7 +1287,7 @@ public class EntityTransferService implements IEntityTransferService {
                 List<Long> newShipmentIds = new ArrayList<>();
                 if(containerVsShipmentGuid.containsKey(cont.getGuid())) {
                     List<UUID> shipmentGuids = containerVsShipmentGuid.get(cont.getGuid());
-                    newShipmentIds = shipmentGuids.stream().map(x -> shipmentGuidVsIdMap.get(x)).collect(Collectors.toList());
+                    newShipmentIds = shipmentGuids.stream().map(x -> shipmentGuidVsIdMap.get(x)).toList();
                     shipmentsContainersMappingDao.assignShipments(cont.getId(), newShipmentIds, false);
                 }
             });
@@ -1676,7 +1676,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         List<V1TenantResponse> v1TenantResponse = jsonHelper.convertValueToList(tenantName.entities, V1TenantResponse.class);
         if(v1TenantResponse != null) {
-            return v1TenantResponse.stream().map(V1TenantResponse::getTenantName).collect(Collectors.toList());
+            return v1TenantResponse.stream().map(V1TenantResponse::getTenantName).toList();
         }
         return null;
     }

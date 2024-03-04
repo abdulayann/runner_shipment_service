@@ -253,7 +253,7 @@ public abstract class IReport {
         shipmentContainer.BL_PackageUnit = blObjectContainer.getPackageUnit();
     }
 
-    public void populateShipmentFields(ShipmentModel shipment, Boolean isHBL, Map<String, Object> dictionary)
+    public void populateShipmentFields(ShipmentModel shipment, Map<String, Object> dictionary)
     {
         if (shipment == null) {
             return;
@@ -283,7 +283,6 @@ public abstract class IReport {
         UnlocationsResponse origin = unlocationsMap.get(shipment.getCarrierDetails().getOrigin());
         UnlocationsResponse destination = unlocationsMap.get(shipment.getCarrierDetails().getDestination());
         UnlocationsResponse paidPlace = unlocationsMap.get(shipment.getAdditionalDetails().getPaidPlace());
-        UnlocationsResponse placeOfSupply = unlocationsMap.get(shipment.getAdditionalDetails().getPlaceOfSupply());
         UnlocationsResponse placeOfIssue = unlocationsMap.get(shipment.getAdditionalDetails().getPlaceOfIssue());
         Map<String, WareHouseResponse> wareHouseResponseMap = masterDataUtils.fetchWareHouseData(
                 Arrays.asList(shipment.getAdditionalDetails().getWarehouseId(), shipment.getAdditionalDetails().getBondedWarehouseId()));
@@ -621,8 +620,7 @@ public abstract class IReport {
             }
             if(shipment.getReferenceNumbersList() != null)
             {
-                List<String> referenceNumberList;
-                referenceNumberList = shipment.getReferenceNumbersList().stream()
+                List<String> referenceNumberList = shipment.getReferenceNumbersList().stream()
                         .filter(i -> i.getType().equals(DLV)).map(ReferenceNumbersModel::getReferenceNumber).toList();
                 if(!referenceNumberList.isEmpty()){
                     dictionary.put(DO_MESSAGE, String.join(",", referenceNumberList));
@@ -640,8 +638,7 @@ public abstract class IReport {
             }
         }
         if(shipment.getReferenceNumbersList() != null) {
-            List<String> referenceNumberList;
-            referenceNumberList = shipment.getReferenceNumbersList().stream()
+            List<String> referenceNumberList = shipment.getReferenceNumbersList().stream()
                     .filter(i -> i.getType().equals(ERN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
             if(!referenceNumberList.isEmpty()){
                 dictionary.put(EXPORTER_REFERENCE_NUMBER, String.join(",", referenceNumberList));
@@ -1755,7 +1752,6 @@ public abstract class IReport {
                 response.consigneeCompanyName =  consignee.getAddressData().get(COMPANY_NAME) != null ? consignee.getAddressData().get(COMPANY_NAME).toString() : null;
                 response.consigneeLocalName = consignee.getAddressData().get(ReportConstants.LOCAL_NAME) != null ? consignee.getAddressData().get(ReportConstants.LOCAL_NAME).toString() : null;
             }
-//            response.Weight = addCommas(StringUtility.convertToString(shipment.getWeight()));
             response.weight = shipment.getWeight();
             response.weightUnit = shipment.getWeightUnit();
             response.setConsigner(getPartyAddress(shipment.getConsigner()));

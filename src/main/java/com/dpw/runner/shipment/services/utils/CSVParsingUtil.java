@@ -113,7 +113,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -128,7 +128,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -143,7 +143,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields)
             headers.add(field.getName());
         return headers;
@@ -156,7 +156,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields)
             headers.add(field.getName());
         return headers;
@@ -169,7 +169,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -183,7 +183,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -197,7 +197,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -211,7 +211,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -228,7 +228,7 @@ public class CSVParsingUtil<T> {
         containerFields = containerFields.stream().filter(field -> {
             if (requiredFields.contains(field.getName())) return true;
             else return false;
-        }).collect(Collectors.toList());
+        }).toList();
 
         for (Field field : containerFields) {
             headers.add(field.getName());
@@ -245,7 +245,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -265,7 +265,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -285,7 +285,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -305,7 +305,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -325,7 +325,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -345,7 +345,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -366,7 +366,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -386,7 +386,7 @@ public class CSVParsingUtil<T> {
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -408,7 +408,7 @@ public class CSVParsingUtil<T> {
         containerFields = containerFields.stream().filter(field -> {
             if (requiredFields.contains(field.getName())) return true;
             else return false;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 

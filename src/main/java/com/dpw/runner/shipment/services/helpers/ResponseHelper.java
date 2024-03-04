@@ -3,8 +3,10 @@ package com.dpw.runner.shipment.services.helpers;
 import com.dpw.runner.shipment.services.commons.responses.*;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -14,6 +16,8 @@ import java.util.List;
 @SuppressWarnings("rawtypes")
 @Slf4j
 public class ResponseHelper {
+
+    private ResponseHelper(){}
 
     public static final String RETURN_RESPONSE_WITH_ERROR_MSG = "Return Response with error {}";
     public static final String RETURN_RESPONSE_WITH_DATA_MSG = "Return Response with data {}";

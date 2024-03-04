@@ -10,6 +10,8 @@ import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 
 public class LocalTimeZoneHelper {
+
+    private LocalTimeZoneHelper(){}
     public static LocalDateTime getDateTime(LocalDateTime value) {
         String timeZone = MDC.get("x-browser-time-zone");
         if(timeZone == null)
@@ -17,9 +19,6 @@ public class LocalTimeZoneHelper {
         UsersDto userDetails = UserContext.getUser();
         Boolean enableTimeZoneFlag = userDetails.getEnableTimeZone();
         String tenantTimeZone = userDetails.getTimeZoneId();
-        String targetTimeZone = timeZone;
-        if(enableTimeZoneFlag && tenantTimeZone != null)
-            targetTimeZone = tenantTimeZone;
         return DateUtils.convertDateToUserTimeZone(value, timeZone, tenantTimeZone, enableTimeZoneFlag);
     }
 

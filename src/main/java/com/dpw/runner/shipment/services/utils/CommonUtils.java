@@ -32,10 +32,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Component
@@ -164,25 +163,25 @@ public class CommonUtils {
     public static <T,P extends IRunnerResponse > List<P> convertToDtoList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public static <T,P extends MultiTenancy> List<P> convertToEntityList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public <T,P extends MultiTenancy> List<P> convertToEntityList(final List<T> lst, Class<P> clazz, Boolean isCreate) {
         return  lst.stream()
                 .map(item -> isCreate ? this.convertToCreateClass(item, clazz) : convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public <T,P extends MultiTenancy> List<P> convertToCreateEntityList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> this.convertToCreateClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
@@ -190,7 +189,7 @@ public class CommonUtils {
             return null;
         return  lst.stream()
                 .map(item -> convertToClassModelMapper(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private  <T,P> P convertToClassModelMapper(T obj, Class<P> clazz) {

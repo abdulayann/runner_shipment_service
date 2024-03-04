@@ -63,6 +63,7 @@ public class AuthFilter extends OncePerRequestFilter {
             "/api/v2/enums/**",
             "/api/v2/cache/**"};
 
+    @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         return Arrays.stream(ignoredPaths)
                 .anyMatch(e -> new AntPathMatcher().match(e, request.getServletPath()));
