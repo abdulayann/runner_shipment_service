@@ -836,7 +836,10 @@ public class PackingService implements IPackingService {
         String weightUnit = request.getWeightUnit();
         String volumeUnit = request.getVolumeUnit();
         if (volume == null || weight == null) {
-            return ResponseHelper.buildFailedResponse("Volume or weight is 0");
+            if(volume == null)
+                volume = BigDecimal.ZERO;
+            if(weight == null)
+                weight = BigDecimal.ZERO;
         }
         var obj = calculateVolumetricWeightForAir(volume, weight, transportMode, weightUnit, volumeUnit);
         calculateChargeableForAir(response, request);
