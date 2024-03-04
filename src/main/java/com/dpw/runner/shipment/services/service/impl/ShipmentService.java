@@ -2510,11 +2510,6 @@ public class ShipmentService implements IShipmentService {
             ConsolidationDetails consolidationDetails = updateLinkedShipmentData(entity, oldEntity.get());
             if(!Objects.isNull(consolidationDetails)) {
                 entity.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
-                try {
-                    consolidationSync.sync(consolidationDetails, entity.getGuid().toString(), false);
-                } catch (Exception e) {
-                    log.error("Error performing sync on consol entity, {}", e);
-                }
             }
             entity = shipmentDao.update(entity, false);
 
@@ -2574,11 +2569,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             if(fromV1 == null || !fromV1) {
-                try {
-                    shipmentSync.sync(entity, null, null, entity.getGuid().toString(), false);
-                } catch (Exception e) {
-                    log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
-                }
+                syncShipment(entity, null, null, null, consolidationDetails, true);
             }
 
             pushShipmentDataToDependentService(entity, false);
@@ -2589,6 +2580,14 @@ public class ShipmentService implements IShipmentService {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             throw new RunnerException(responseMsg);
+        }
+    }
+
+    private void syncConsole(ConsolidationDetails entity, boolean isDirectSync) {
+        try {
+            consolidationSync.sync(entity, StringUtility.convertToString(entity.getGuid()), isDirectSync);
+        } catch (Exception e) {
+            log.error("Error performing sync on consol entity, {}", e);
         }
     }
 
