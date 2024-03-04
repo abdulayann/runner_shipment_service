@@ -341,13 +341,13 @@ public class V1ServiceUtil {
         if (Objects.isNull(party))
             return;
 
-        if (!Objects.isNull(party.getOrgCode()) && organizations.containsKey(party.getOrgCode())
+        if (!Objects.isNull(party.getOrgCode()) && organizations.containsKey(party.getOrgCode()) && organizations.get(party.getOrgCode()) != null
                 && organizations.get(party.getOrgCode()).containsKey(PartiesConstants.EMAIL))
             emailSet.add(StringUtility.convertToString(organizations.get(party.getOrgCode()).get(PartiesConstants.EMAIL)));
 
         if (!Objects.isNull(party.getOrgCode()) && !Objects.isNull(party.getAddressCode())) {
             String key = party.getOrgCode() + "#" + party.getAddressCode();
-            if (addresses.containsKey(key) && addresses.get(key).containsKey(PartiesConstants.EMAIL) )
+            if (addresses.containsKey(key) && addresses.get(key) != null && addresses.get(key).containsKey(PartiesConstants.EMAIL) )
                 emailSet.add(StringUtility.convertToString(addresses.get(key).get(PartiesConstants.EMAIL)));
         }
     }
