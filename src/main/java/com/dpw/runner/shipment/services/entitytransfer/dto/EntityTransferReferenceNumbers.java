@@ -14,5 +14,5 @@ public class EntityTransferReferenceNumbers implements IEntityTranferBaseEntity 
     public String countryOfIssue;
     public String type;
     public String referenceNumber;
-    public Map<String, EntityTransferMasterLists> masterData;
+    private Map<String, EntityTransferMasterLists> masterData;
 }
