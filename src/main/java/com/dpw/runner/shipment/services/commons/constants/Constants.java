@@ -349,6 +349,7 @@ public class Constants {
     public static final String PRODUCT_PROCESS_TYPES = "productProcessTypes";
     public static final String COUNTRY = "_country";
     public static final String FAILURE_EXECUTING = "failure executing :(";
+    public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,"noOfPackages","netWeight","netWeightUnit",
             "grossWeight","grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
