@@ -971,7 +971,14 @@ public class ShipmentService implements IShipmentService {
                 primarySalesAgentEmail(customerBookingRequest.getPrimarySalesAgentEmail()).
                 secondarySalesAgentEmail(customerBookingRequest.getSecondarySalesAgentEmail()).
                 containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? containerList : null).
-                packingList(customerBookingRequest.getPackingList()).
+                packingList(customerBookingRequest.getPackingList() != null ? customerBookingRequest.getPackingList().stream().map(obj -> {
+                    if(!StringUtility.isEmpty(obj.getLengthUnit()))
+                    {
+                        obj.setWidthUnit(obj.getLengthUnit());
+                        obj.setHeightUnit(obj.getLengthUnit());
+                    }
+                    return obj;
+                }).collect(Collectors.toList()) : null).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
                 routingsList(customerBookingRequest.getRoutingList()).
                 consolidationList(customerBookingRequest.getCargoType().equals("FCL") ? consolidationDetails : null).
