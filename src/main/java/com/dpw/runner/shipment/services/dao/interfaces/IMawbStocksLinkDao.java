@@ -14,4 +14,5 @@ public interface IMawbStocksLinkDao {
     void deleteByParentId(Long parentId);
     void deLinkExistingMawbStockLink(String mawbNumber);
     String assignNextMawbNumber(Long parentId);
+    Long validateDuplicateMawbNumber(List<String> mawbNumbers);
 }
