@@ -23,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -90,12 +91,12 @@ public class AuthFilter extends OncePerRequestFilter {
         UsersDto user = null;
         try{
             user = userService.getUserByToken(tokenUtility.getUserIdAndBranchId(authToken), authToken);
-        } catch (Exception e)
+        } catch (HttpStatusCodeException e)
         {
             log.info("Error while validating token with exception: {}", e.getMessage());
             e.printStackTrace();
             res.setContentType(APPLICATION_JSON);
-            res.setStatus(HttpStatus.UNAUTHORIZED.value());
+            res.setStatus(e.getRawStatusCode());
             return;
         }
         log.info("Time taken to retrieve user definition: {} for request: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
@@ -105,7 +106,6 @@ public class AuthFilter extends OncePerRequestFilter {
             log.info(errormessage);
             res.setContentType(APPLICATION_JSON);
             res.setStatus(HttpStatus.UNAUTHORIZED.value());
-            //res.getWriter().write(filterLevelException(new UnAuthorizedException(errormessage)));
             return;
         }
         log.info("Auth Successful, username:-{},tenantId:-{} for request: {}", user.getUsername(), user.getTenantId(), LoggerHelper.getRequestIdFromMDC());
