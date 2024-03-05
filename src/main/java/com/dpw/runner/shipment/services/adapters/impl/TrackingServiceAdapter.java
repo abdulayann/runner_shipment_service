@@ -204,7 +204,9 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         if (shipmentDetails != null) {
             allEvents.addAll(shipmentDetails.getEventsList() != null ? shipmentDetails.getEventsList() : Collections.emptyList());
             // Fetch Consol events based on ref number
-            allEvents.addAll(getEventsFromConsolidation(refNumber));
+            if(StringUtility.isNotEmpty(refNumber)) {
+                allEvents.addAll(getEventsFromConsolidation(refNumber));
+            }
         }
         if(consolidationDetails != null) {
             allEvents.addAll(consolidationDetails.getEventsList() != null ? consolidationDetails.getEventsList() : Collections.emptyList());
@@ -212,7 +214,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             allEvents.addAll(getEventsFromShipment(refNumber));
         }
 
-        allEvents = allEvents.stream().filter(i -> !i.getIsPublicTrackingEvent()).toList();
+        allEvents = allEvents.stream().filter(i -> (i.getIsPublicTrackingEvent() == null || !i.getIsPublicTrackingEvent())).toList();
         return allEvents;
     }
 
