@@ -115,7 +115,7 @@ public class ReportHelper {
     public static List<String> getAddressList(String address)
     {
         if(address == null)
-            return null;
+            return Collections.emptyList();
         return List.of(address.split("\n"));
     }
 

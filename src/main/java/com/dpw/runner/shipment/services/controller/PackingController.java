@@ -87,7 +87,6 @@ public class PackingController {
     public ResponseEntity<IRunnerResponse> create(@RequestBody PackingRequest request) {
         String responseMessage;
         try {
-            PackingRequest req = jsonHelper.convertValue(request, PackingRequest.class);
             return packingService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMessage = e.getMessage() != null ? e.getMessage()

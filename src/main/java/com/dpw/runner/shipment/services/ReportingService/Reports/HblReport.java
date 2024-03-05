@@ -67,7 +67,7 @@ public class HblReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         HblModel hblModel = new HblModel();
         hblModel.shipment = getShipment(id);
-        hblModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
+        hblModel.shipmentSettingsDetails = getShipmentSettings();
         hblModel.tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         hblModel.user = UserContext.getUser();
         if(hblModel.shipment != null && hblModel.shipment.getConsolidationList() != null && !hblModel.shipment.getConsolidationList().isEmpty())
@@ -262,11 +262,9 @@ public class HblReport extends IReport{
             }
         }
 
-        AdditionalDetailModel additionalDetail = hblModel.shipment.getAdditionalDetails();
-        CarrierDetailModel carrierDetails = hblModel.shipment.getCarrierDetails();
 
         if (hblModel.tenantSettingsResponse != null && hblModel.tenantSettingsResponse.isEnableIGMDetails()) {
-            if (hblModel.shipment.getDirection() != null && hblModel.shipment.getDirection() == Constants.IMP) {
+            if (hblModel.shipment.getDirection() != null && hblModel.shipment.getDirection().equals(Constants.IMP)) {
                 if (hblModel.shipment.getAdditionalDetails().getIGMFileDate() != null) {
                     dictionary.put(ReportConstants.IGM_FILE_DATE, hblModel.shipment.getAdditionalDetails().getIGMFileDate());
                 }

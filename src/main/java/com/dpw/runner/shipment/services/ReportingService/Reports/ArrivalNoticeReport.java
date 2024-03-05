@@ -110,9 +110,7 @@ public class ArrivalNoticeReport extends IReport {
         }
         catch (Exception e) { }
         List<BillChargesResponse> charges = new ArrayList<>();
-        BillingResponse billRow = null;
         if(billingsList != null && billingsList.size() > 0) {
-            billRow = billingsList.get(0);
             for(BillingResponse billingResponse : billingsList) {
                 List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse.getGuid());
                 if(billChargesResponses != null) {

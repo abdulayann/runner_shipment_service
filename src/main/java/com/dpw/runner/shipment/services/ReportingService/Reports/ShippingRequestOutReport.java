@@ -78,7 +78,7 @@ public class ShippingRequestOutReport extends IReport {
         }
 
         var consolContainers = new ArrayList<ShipmentContainers>();
-        var tenantSettings = getShipmentSettings(TenantContext.getCurrentTenant());
+        var tenantSettings = getShipmentSettings();
 
         if (tenantSettings.getIsShipmentLevelContainer() != null && tenantSettings.getIsShipmentLevelContainer().equals(true)) {
             if (model.getShipment() != null) {
