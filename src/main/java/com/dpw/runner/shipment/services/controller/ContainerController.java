@@ -128,7 +128,6 @@ public class ContainerController {
     public ResponseEntity<IRunnerResponse> create(@RequestBody ContainerRequest request) {
         String responseMessage;
         try {
-            ContainerRequest req = jsonHelper.convertValue(request, ContainerRequest.class);
             return containerService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMessage = e.getMessage() != null ? e.getMessage()

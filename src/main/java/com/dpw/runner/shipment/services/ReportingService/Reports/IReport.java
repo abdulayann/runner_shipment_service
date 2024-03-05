@@ -598,7 +598,7 @@ public abstract class IReport {
                     notifyPartyFreeText = ReportHelper.getAddressList(rawData);
                     dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notifyPartyFreeText);
                     dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT_IN_CAPS, notifyPartyFreeText == null ? null : notifyPartyFreeText.stream().map(StringUtility::toUpperCase).toList());
-                    dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notifyPartyFreeText.isEmpty() ? null : StringUtility.toUpperCase(notifyPartyFreeText.get(0)));
+                    dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notifyPartyFreeText == null || notifyPartyFreeText.isEmpty() ? null : StringUtility.toUpperCase(notifyPartyFreeText.get(0)));
                 } else {
                     dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notify);
                 }
@@ -664,7 +664,7 @@ public abstract class IReport {
             }
             if(shipment.getReferenceNumbersList() != null)
             {
-                List<String> referenceNumberList = new ArrayList<>();
+                List<String> referenceNumberList;
                 referenceNumberList = shipment.getReferenceNumbersList().stream()
                         .filter(i -> i.getType().equals(DLV)).map(ReferenceNumbersModel::getReferenceNumber).toList();
                 if(!referenceNumberList.isEmpty()){
@@ -683,7 +683,7 @@ public abstract class IReport {
             }
         }
         if(shipment.getReferenceNumbersList() != null) {
-            List<String> referenceNumberList = new ArrayList<>();
+            List<String> referenceNumberList;
             referenceNumberList = shipment.getReferenceNumbersList().stream()
                     .filter(i -> i.getType().equals(ERN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
             if(!referenceNumberList.isEmpty()){
@@ -691,7 +691,7 @@ public abstract class IReport {
             }
         }
         if(shipment.getReferenceNumbersList() != null) {
-            List<String> referenceNumberList = new ArrayList<>();
+            List<String> referenceNumberList;
             referenceNumberList = shipment.getReferenceNumbersList().stream()
                     .filter(i -> i.getType().equals(CEN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
             if(!referenceNumberList.isEmpty()){
@@ -699,7 +699,7 @@ public abstract class IReport {
             }
         }
         if(shipment.getReferenceNumbersList() != null) {
-            List<String> referenceNumberList = new ArrayList<>();
+            List<String> referenceNumberList;
             referenceNumberList = shipment.getReferenceNumbersList().stream()
                     .filter(i -> i.getType().equals(FRN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
             if(!referenceNumberList.isEmpty()){
@@ -771,10 +771,10 @@ public abstract class IReport {
         return modelMapper.map(dependentServiceResponse.getData(), TenantModel.class);
     }
 
-    public ShipmentSettingsDetails getShipmentSettings(Integer tenantId) {
+    public ShipmentSettingsDetails getShipmentSettings() {
         ShipmentSettingsDetails tenantSettingsRow = new ShipmentSettingsDetails();
         List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
-        if (shipmentSettingsDetailsList != null && shipmentSettingsDetailsList.size() >= 1) {
+        if (shipmentSettingsDetailsList != null && !shipmentSettingsDetailsList.isEmpty()) {
             tenantSettingsRow = shipmentSettingsDetailsList.get(0);
         }
         return tenantSettingsRow;
@@ -879,7 +879,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.MASTER_BILL, consolidation.getBol());
         List<String> exportAgentAddress = new ArrayList<>();
         List<String> importAgentAddress = new ArrayList<>();
-        List<String> creditorAgentAddress = new ArrayList<>();
+        List<String> creditorAgentAddress;
         if(sendingAgent != null)
         {
             Map<String, Object> addressData = sendingAgent.getAddressData();
@@ -921,7 +921,7 @@ public abstract class IReport {
 
         List<String> exportAgentFreeTextAddress = new ArrayList<>();
         List<String> importAgentFreeTextAddress = new ArrayList<>();
-        List<String> creditorAgentFreeTextAddress = new ArrayList<>();
+        List<String> creditorAgentFreeTextAddress;
         if (consolidation.getSendingAgent() != null && consolidation.getIsSendingAgentFreeTextAddress() != null && consolidation.getIsSendingAgentFreeTextAddress()) {
             Map sendingAgentAddressData = consolidation.getSendingAgent().getAddressData();
             if (sendingAgentAddressData != null && sendingAgentAddressData.containsKey(PartiesConstants.RAW_DATA))
@@ -1805,8 +1805,8 @@ public abstract class IReport {
             if(shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
                 Long entityId = shipmentModel.getId();
                 List<Awb> awbList = awbDao.findByShipmentId(entityId);
-                String entityType = (shipmentModel.getJobType() == Constants.SHIPMENT_TYPE_DRT) ? Constants.DMAWB : Constants.HAWB;
-                if (awbList != null && awbList.size() > 0) {
+                String entityType = (shipmentModel.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) ? Constants.DMAWB : Constants.HAWB;
+                if (awbList != null && !awbList.isEmpty()) {
                     if(awbList.get(0).getAwbShipmentInfo().getEntityType().equalsIgnoreCase(entityType))
                         return false;
                 }
@@ -1899,9 +1899,8 @@ public abstract class IReport {
     }
 
     public Map<Integer, Map<String, MasterData>> fetchInBulkMasterList(MasterListRequestV2 requests) {
-        Map<String, MasterData> keyMasterDataMap = new HashMap<>();
         Map<Integer, Map<String, MasterData>> dataMap = new HashMap<>();
-        if(requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
+        if(requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<MasterData> masterLists = jsonHelper.convertValueToList(response.entities, MasterData.class);
             masterLists.forEach(masterData -> {
@@ -2240,22 +2239,22 @@ public abstract class IReport {
     public void SetContainerCount(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
         var shipmentContainerList = shipmentModel.getContainersList();
         if (!shipmentContainerList.isEmpty()) {
-            StringBuilder containerEtcCount = new StringBuilder(String.format("ETC {} CNTR", countAllContainers(shipmentContainerList) - 1));
+            StringBuilder containerEtcCount = new StringBuilder(String.format("ETC %d CNTR", countAllContainers(shipmentContainerList) - 1));
             StringBuilder containerTypeValues = new StringBuilder(StringUtility.getEmptyString());
             var containerNumbers = shipmentContainerList.stream().filter(x -> !Objects.isNull(x.getContainerNumber()))
                     .map(ContainerModel::getContainerNumber).toList();
             String containerNumber = "";
-            if (containerNumbers.size() > 0) {
+            if (!containerNumbers.isEmpty()) {
                 containerNumber = containerNumbers.get(0);
             }
-            dictionary.put(CONTAINER_NUMBER_WITH_ETC_COUNT, String.format("{} {}", containerNumber, containerEtcCount));
+            dictionary.put(CONTAINER_NUMBER_WITH_ETC_COUNT, String.format("%s %s", containerNumber, containerEtcCount));
 
             var containerCodeMap = shipmentContainerList.stream().filter(x -> !Objects.isNull(x.getContainerCode()))
                     .collect(Collectors.groupingBy(ContainerModel::getContainerCode));
 
             for (String containerCode : containerCodeMap.keySet()) {
                 long containerCount = containerCodeMap.get(containerCode).stream().mapToLong(ContainerModel::getContainerCount).sum();
-                containerTypeValues.append(String.format("{} * {}", containerCode, containerCount));
+                containerTypeValues.append(String.format("%s * %d", containerCode, containerCount));
             }
             dictionary.put(CONTAINER_COUNT_WITH_ETC_COUNT, containerTypeValues);
         }

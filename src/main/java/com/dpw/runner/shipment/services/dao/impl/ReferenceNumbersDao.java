@@ -81,7 +81,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
 //            }
             Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
-            if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
+            if (referenceNumbersList != null && !referenceNumbersList.isEmpty()) {
                 for (ReferenceNumbers request : referenceNumbersList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -188,8 +188,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
-            var referenceNumbersIdList = referenceNumbersList.stream().map(ReferenceNumbers::getId).toList();
+            Map<Long, ReferenceNumbers> hashMap;
 //            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
                 Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
@@ -199,7 +198,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
 //            }
             Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
-            if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
+            if (!referenceNumbersList.isEmpty()) {
                 for (ReferenceNumbers request : referenceNumbersList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -234,7 +233,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         try {
             ReferenceNumbers oldEntity;
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
-            if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
+            if (referenceNumbersList != null && !referenceNumbersList.isEmpty()) {
                 for (ReferenceNumbers request : referenceNumbersList) {
                     oldEntity = referenceNumbersMap.get(request.getGuid());
                     if(oldEntity != null) {
@@ -383,7 +382,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         try {
             ReferenceNumbers oldEntity;
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
-            if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
+            if (referenceNumbersList != null && !referenceNumbersList.isEmpty()) {
                 for (ReferenceNumbers request : referenceNumbersList) {
                     oldEntity = referenceNumbersMap.get(request.getGuid());
                     if(oldEntity != null) {

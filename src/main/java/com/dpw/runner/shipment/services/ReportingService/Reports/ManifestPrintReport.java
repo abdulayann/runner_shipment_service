@@ -123,8 +123,8 @@ public class ManifestPrintReport extends IReport {
         var exportAgentAddress = ReportHelper.getOrgAddress(consol.getSendingAgent());
         var importAgentAddress = ReportHelper.getOrgAddress(consol.getReceivingAgent());
         var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList<>() : ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
-        List<String> exportAgentFreeTextAddress = new ArrayList<>();
-        List<String> importAgentFreeTextAddress = new ArrayList<>();
+        List<String> exportAgentFreeTextAddress;
+        List<String> importAgentFreeTextAddress;
 
         if (consol.getIsSendingAgentFreeTextAddress() != null && consol.getIsSendingAgentFreeTextAddress()) {
             exportAgentFreeTextAddress = ReportHelper.getAddressList(consol.getSendingAgentFreeTextAddress());

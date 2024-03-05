@@ -140,7 +140,7 @@ public class PreAlertReport extends IReport {
         dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notify);
         dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, consignee);
         dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
-        List<String> deliveryAgent = new ArrayList<>();
+        List<String> deliveryAgent;
         if (preAlertModel.shipmentDetails.getDeliveryDetails() != null && preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail() != null) {
             deliveryAgent = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail());
             if (preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgData() != null) {

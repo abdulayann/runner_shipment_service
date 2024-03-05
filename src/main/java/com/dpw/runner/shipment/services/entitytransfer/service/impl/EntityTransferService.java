@@ -239,37 +239,37 @@ public class EntityTransferService implements IEntityTransferService {
         if(shipmentDetails != null) {
             shipmentDetails.setMasterData(addMasterData(shipmentDetails, ShipmentDetails.class));
         }
-        if(shipmentDetails.getAdditionalDetails() != null) {
+        if(shipmentDetails != null && shipmentDetails.getAdditionalDetails() != null) {
             shipmentDetails.getAdditionalDetails().setMasterData(addMasterData(shipmentDetails.getAdditionalDetails(), AdditionalDetails.class));
         }
-        if(shipmentDetails.getCarrierDetails() != null) {
+        if(shipmentDetails != null && shipmentDetails.getCarrierDetails() != null) {
             shipmentDetails.getCarrierDetails().setMasterData(addMasterData(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
         }
-        var BookingCarriagesList = shipmentDetails.getBookingCarriagesList();
-        if(BookingCarriagesList != null) {
-            BookingCarriagesList.forEach(bookingCarriage -> {
+        var bookingCarriagesList = shipmentDetails != null ? shipmentDetails.getBookingCarriagesList() : null;
+        if(bookingCarriagesList != null) {
+            bookingCarriagesList.forEach(bookingCarriage -> {
                 bookingCarriage.setMasterData(addMasterData(bookingCarriage, BookingCarriage.class));
             });
         }
-        var containers = shipmentDetails.getContainersList();
+        var containers = shipmentDetails != null ? shipmentDetails.getContainersList() : null;
         if(containers != null) {
             containers.forEach(cont -> {
                 cont.setMasterData(addMasterData(cont, Containers.class));
             });
         }
-        var packs = shipmentDetails.getPackingList();
+        var packs = shipmentDetails != null ? shipmentDetails.getPackingList() : null;
         if(packs != null) {
             packs.forEach(pack -> {
                 pack.setMasterData(addMasterData(pack, Packing.class));
             });
         }
-        var referenceNumbers = shipmentDetails.getReferenceNumbersList();
+        var referenceNumbers = shipmentDetails != null ? shipmentDetails.getReferenceNumbersList(): null;
         if (referenceNumbers != null) {
             referenceNumbers.forEach(referenceNumber -> {
                 referenceNumber.setMasterData(addMasterData(referenceNumber, ReferenceNumbers.class));
             });
         }
-        var serviceDetails = shipmentDetails.getServicesList();
+        var serviceDetails = shipmentDetails != null ? shipmentDetails.getServicesList() : null;
         if (serviceDetails != null) {
             serviceDetails.forEach(service -> {
                 service.setMasterData(addMasterData(service, ServiceDetails.class));
@@ -826,57 +826,55 @@ public class EntityTransferService implements IEntityTransferService {
         if(entityTransferConsolidationDetails != null) {
             entityTransferConsolidationDetails.setMasterData(addMasterData(entityTransferConsolidationDetails, ConsolidationDetails.class));
         }
-        if (entityTransferConsolidationDetails.getAchievedQuantities() != null) {
+        if (entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getAchievedQuantities() != null) {
             entityTransferConsolidationDetails.getAchievedQuantities().setMasterData(addMasterData(entityTransferConsolidationDetails.getAchievedQuantities(), AchievedQuantities.class));
         }
-        if (entityTransferConsolidationDetails.getAllocations() != null) {
+        if (entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getAllocations() != null) {
             entityTransferConsolidationDetails.getAllocations().setMasterData(addMasterData(entityTransferConsolidationDetails.getAllocations(), Allocations.class));
         }
-        if(entityTransferConsolidationDetails.getArrivalDepartureDetails() != null) {
+        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getArrivalDepartureDetails() != null) {
             entityTransferConsolidationDetails.getArrivalDepartureDetails().setMasterData(addMasterData(entityTransferConsolidationDetails.getArrivalDepartureDetails(), ArrivalDepartureDetails.class));
         }
-        if(entityTransferConsolidationDetails.getCarrierDetails() != null) {
+        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getCarrierDetails() != null) {
             entityTransferConsolidationDetails.getCarrierDetails().setMasterData(addMasterData(entityTransferConsolidationDetails.getCarrierDetails(), CarrierDetails.class));
         }
-        if(entityTransferConsolidationDetails.getRoutingsList() != null) {
+        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getRoutingsList() != null) {
             entityTransferConsolidationDetails.getRoutingsList().forEach(routing -> {
                 routing.setMasterData(addMasterData(routing, Routings.class));
             });
         }
-        if(entityTransferConsolidationDetails.getContainersList() != null) {
+        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getContainersList() != null) {
             entityTransferConsolidationDetails.getContainersList().forEach(cont -> {
                 cont.setMasterData(addMasterData(cont, Containers.class));
             });
         }
-        if(entityTransferConsolidationDetails.getPackingList() != null) {
+        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getPackingList() != null) {
             entityTransferConsolidationDetails.getPackingList().forEach(pack -> {
                 pack.setMasterData(addMasterData(pack, Packing.class));
             });
         }
-        if(entityTransferConsolidationDetails.getReferenceNumbersList() != null) {
+        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getReferenceNumbersList() != null) {
             entityTransferConsolidationDetails.getReferenceNumbersList().forEach(referenceNumber -> {
                 referenceNumber.setMasterData(addMasterData(referenceNumber, ReferenceNumbers.class));
             });
         }
-        if(entityTransferConsolidationDetails.getShipmentsList() != null) {
-            entityTransferConsolidationDetails.getShipmentsList().forEach(shipment -> {
-                addAllMasterDatas(shipment);
-            });
+        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getShipmentsList() != null) {
+            entityTransferConsolidationDetails.getShipmentsList().forEach(this::addAllMasterDatas);
         }
     }
     private void addConsolidationUnlocationDatas (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
         if(entityTransferConsolidationDetails != null) {
             entityTransferConsolidationDetails.setUnlocationData(addUnlocationData(entityTransferConsolidationDetails, ConsolidationDetails.class));
         }
-        if(entityTransferConsolidationDetails.getArrivalDepartureDetails() != null) {
+        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getArrivalDepartureDetails() != null) {
             entityTransferConsolidationDetails.getArrivalDepartureDetails().setUnlocationData(addUnlocationData(entityTransferConsolidationDetails.getArrivalDepartureDetails(), ArrivalDepartureDetails.class));
         }
-        if(entityTransferConsolidationDetails.getRoutingsList() != null) {
+        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getRoutingsList() != null) {
             entityTransferConsolidationDetails.getRoutingsList().forEach(routing -> {
                 routing.setUnlocationData(addUnlocationData(routing, Routings.class));
             });
         }
-        if(entityTransferConsolidationDetails.getCarrierDetails() != null) {
+        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getCarrierDetails() != null) {
             entityTransferConsolidationDetails.getCarrierDetails().setUnlocationData(addUnlocationData(entityTransferConsolidationDetails.getCarrierDetails(), CarrierDetails.class));
         }
     }
@@ -1245,7 +1243,6 @@ public class EntityTransferService implements IEntityTransferService {
 
     private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
         ConsolidationDetailsRequest request = jsonHelper.convertValue(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
-        List<ShipmentRequest> shipmentRequests = request.getShipmentsList();
         Map<UUID, List<UUID>> containerVsShipmentGuid = entityTransferConsolidationDetails.getContainerVsShipmentGuid();
         Map<UUID, Long> shipmentGuidVsIdMap = new HashMap<>();
         List<Long> shipmentIds = new ArrayList<>();

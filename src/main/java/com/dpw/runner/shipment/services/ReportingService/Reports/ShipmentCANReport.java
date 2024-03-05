@@ -57,7 +57,7 @@ public class ShipmentCANReport extends IReport {
             shipmentCANModel.shipmentDetails = getShipment(id);
             shipmentCANModel.tenantDetails = getTenant();
             shipmentCANModel.consolidationModel = getFirstConsolidationFromShipmentId(id);
-            shipmentCANModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
+            shipmentCANModel.shipmentSettingsDetails = getShipmentSettings();
             shipmentCANModel.tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
             shipmentCANModel.isHBL = getIsHbl(shipmentCANModel.shipmentDetails);
             return shipmentCANModel;
@@ -140,14 +140,14 @@ public class ShipmentCANReport extends IReport {
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, shipmentCANModel.shipmentDetails.getFreightOverseasCurrency());
         if(shipmentCANModel.shipmentDetails.getShipmentAddresses() != null && shipmentCANModel.shipmentDetails.getShipmentAddresses().size() > 0) {
             for (PartiesModel shipmentAddress: shipmentCANModel.shipmentDetails.getShipmentAddresses()) {
-                if(shipmentAddress.getType() == CUSTOM_HOUSE_AGENT && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
+                if(shipmentAddress.getType().equals(CUSTOM_HOUSE_AGENT) && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
                     dictionary.put(CHAPartyDescription, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
                 }
             }
         }
         if(shipmentCANModel.tenantSettingsResponse != null && shipmentCANModel.tenantSettingsResponse.isEnableIGMDetails())
         {
-            if(shipmentCANModel.shipmentDetails.getDirection() != null && shipmentCANModel.shipmentDetails.getDirection() == Constants.IMP) {
+            if(shipmentCANModel.shipmentDetails.getDirection() != null && shipmentCANModel.shipmentDetails.getDirection().equals(Constants.IMP)) {
                 if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getIGMFileDate() != null) {
                     dictionary.put(ReportConstants.IGM_FILE_DATE, shipmentCANModel.shipmentDetails.getAdditionalDetails().getIGMFileDate());
                 }

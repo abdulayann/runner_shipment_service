@@ -134,7 +134,7 @@ public class FreightCertificationReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, freightCertificationModel.shipmentDetails.getFreightOverseasCurrency());
         if(freightCertificationModel.shipmentDetails.getShipmentAddresses() != null && freightCertificationModel.shipmentDetails.getShipmentAddresses().size() > 0) {
             for (PartiesModel shipmentAddress: freightCertificationModel.shipmentDetails.getShipmentAddresses()) {
-                if(shipmentAddress.getType() == CUSTOM_HOUSE_AGENT && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
+                if(shipmentAddress.getType().equals(CUSTOM_HOUSE_AGENT) && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
                     dictionary.put(CHAPartyDescription, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
                 }
             }
@@ -143,7 +143,7 @@ public class FreightCertificationReport extends IReport{
 
         if(tenantSettingsRow != null && tenantSettingsRow.isEnableIGMDetails())
         {
-            if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getDirection() != null && freightCertificationModel.shipmentDetails.getDirection().toUpperCase() == Constants.IMP) {
+            if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getDirection() != null && freightCertificationModel.shipmentDetails.getDirection().equalsIgnoreCase(Constants.IMP)) {
                 if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getIGMFileDate() != null) {
                     dictionary.put(ReportConstants.IGM_FILE_DATE, freightCertificationModel.shipmentDetails.getAdditionalDetails().getIGMFileDate());
                 }
