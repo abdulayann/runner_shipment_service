@@ -2761,7 +2761,7 @@ public class ShipmentService implements IShipmentService {
                 oldShipment = oldEntity.get();
                 id = oldEntity.get().getId();
                 containers = oldEntity.get().getContainersList();
-                if(containers != null && containers.size() > 0) {
+                if(containers != null && !containers.isEmpty()) {
                     if(oldContainers == null)
                         oldContainers = new ArrayList<>();
                     oldContainers.addAll(containers);
