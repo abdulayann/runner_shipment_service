@@ -2756,10 +2756,16 @@ public class ShipmentService implements IShipmentService {
             Long id = null;
             ShipmentDetails oldShipment = null;
             boolean isCreate = true;
+            List<Containers> containers;
             if(oldEntity != null && oldEntity.isPresent()) {
                 oldShipment = oldEntity.get();
                 id = oldEntity.get().getId();
-                oldContainers = oldEntity.get().getContainersList();
+                containers = oldEntity.get().getContainersList();
+                if(containers != null && !containers.isEmpty()) {
+                    if(oldContainers == null)
+                        oldContainers = new ArrayList<>();
+                    oldContainers.addAll(containers);
+                }
                 isCreate = false;
             }
             shipmentRequest.setConsolidationList(null);
