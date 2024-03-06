@@ -1445,6 +1445,7 @@ public class ShipmentService implements IShipmentService {
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
+        boolean isNewConsolAttached = false;
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         if (consolidationDetailsRequests != null) {
             Set<Long> oldConsolIds = Objects.isNull(oldEntity) ? null : oldEntity.getConsolidationList().stream().map(e -> e.getId()).collect(Collectors.toSet());
@@ -1458,17 +1459,7 @@ public class ShipmentService implements IShipmentService {
             removedConsolIds = !Objects.isNull(oldConsolIds) ? oldConsolIds.stream().toList() : new ArrayList<>();
 
             if(consolidationDetailsRequests.size() > 0 && (oldEntity.getConsolidationList() == null ||  oldEntity.getConsolidationList().size() == 0 || removedConsolIds.size() > 0)) {
-                shipmentDetails.setMasterBill(consolidationDetailsRequests.get(0).getBol());
-                shipmentDetails.setDirection(consolidationDetailsRequests.get(0).getShipmentType());
-                if(shipmentDetails.getCarrierDetails() == null) {
-                    shipmentDetails.setCarrierDetails(new CarrierDetails());
-                }
-                if (consolidationDetailsRequests.get(0).getCarrierDetails() != null) {
-                    shipmentDetails.getCarrierDetails().setVoyage(consolidationDetailsRequests.get(0).getCarrierDetails().getVoyage());
-                    shipmentDetails.getCarrierDetails().setVessel(consolidationDetailsRequests.get(0).getCarrierDetails().getVessel());
-                    shipmentDetails.getCarrierDetails().setShippingLine(consolidationDetailsRequests.get(0).getCarrierDetails().getShippingLine());
-                    shipmentDetails.getCarrierDetails().setAircraftType(consolidationDetailsRequests.get(0).getCarrierDetails().getAircraftType());
-                }
+                isNewConsolAttached = true;
             }
         }
         else
@@ -1525,6 +1516,22 @@ public class ShipmentService implements IShipmentService {
             }
         }
         validateBeforeSave(shipmentDetails);
+
+
+        if(isNewConsolAttached) {
+            ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().get(0);
+            shipmentDetails.setMasterBill(consolidationDetails1.getBol());
+            shipmentDetails.setDirection(consolidationDetails1.getShipmentType());
+            if (shipmentDetails.getCarrierDetails() == null) {
+                shipmentDetails.setCarrierDetails(new CarrierDetails());
+            }
+            if (consolidationDetails1.getCarrierDetails() != null) {
+                shipmentDetails.getCarrierDetails().setVoyage(consolidationDetails1.getCarrierDetails().getVoyage());
+                shipmentDetails.getCarrierDetails().setVessel(consolidationDetails1.getCarrierDetails().getVessel());
+                shipmentDetails.getCarrierDetails().setShippingLine(consolidationDetails1.getCarrierDetails().getShippingLine());
+                shipmentDetails.getCarrierDetails().setAircraftType(consolidationDetails1.getCarrierDetails().getAircraftType());
+            }
+        }
 
         if(!isCreate){
             consolidationDetails = updateLinkedShipmentData(shipmentDetails, oldEntity);
