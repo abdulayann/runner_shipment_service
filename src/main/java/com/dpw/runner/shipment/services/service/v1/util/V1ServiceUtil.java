@@ -312,7 +312,7 @@ public class V1ServiceUtil {
             }
         } catch (Exception ex) {
             log.error("Check Credit Limit failed due to : " + ex.getMessage());
-            throw new ValidationException(ex.getMessage());
+            throw new ValidationException("Check Credit Limit failed due to : " + ex.getMessage());
         }
     }
 
