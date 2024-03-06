@@ -128,8 +128,8 @@ public class CreateBookingModuleInV1 {
             private String DebitorAddressCode;
             private String CreditorAddressCode;
             private String PerMeasurementBasis;
-            private BigDecimal TotalUnitsCount;
-            private String MeasurementsUnit;
+            //private BigDecimal TotalUnitsCount;
+            //private String MeasurementsUnit;
         }
 
         @Data
