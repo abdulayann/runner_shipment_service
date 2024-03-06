@@ -43,6 +43,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -393,7 +394,27 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                                 for(FetchOffersResponse.AssociatedRate associatedRate: loadsRatesInfo.getAssociated_rates())
                                 {
                                     if(associatedRate != null)
+                                    {
                                         associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
+                                        if(Objects.equals(associatedRate.getRates_uom(), "ContainerCount"))
+                                        {
+                                            if(loadsRatesInfo.getQuantity() != null)
+                                            {
+                                                associatedRate.setTotal_unit_count(BigDecimal.valueOf(loadsRatesInfo.getQuantity()));
+                                                associatedRate.setMeasurement_unit("Containers");
+                                            }
+                                        }
+                                        else if(Objects.equals(associatedRate.getRates_uom(), "Shipment"))
+                                        {
+                                            associatedRate.setTotal_unit_count(BigDecimal.valueOf(1));
+                                            associatedRate.setMeasurement_unit("SHIPMENT");
+                                        }
+                                        else
+                                        {
+                                            associatedRate.setTotal_unit_count(associatedRate.getChargeable());
+                                            associatedRate.setMeasurement_unit(associatedRate.getChargeable_uom());
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -406,8 +427,27 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                             {
                                 for(FetchOffersResponse.AssociatedRate associatedRate: loadsRatesInfo.getAssociated_rates())
                                 {
-                                    if(associatedRate != null)
+                                    if(associatedRate != null) {
                                         associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
+                                        if(Objects.equals(associatedRate.getRates_uom(), "ContainerCount"))
+                                        {
+                                            if(loadsRatesInfo.getQuantity() != null)
+                                            {
+                                                associatedRate.setTotal_unit_count(BigDecimal.valueOf(loadsRatesInfo.getQuantity()));
+                                                associatedRate.setMeasurement_unit("Containers");
+                                            }
+                                        }
+                                        else if(Objects.equals(associatedRate.getRates_uom(), "Shipment"))
+                                        {
+                                            associatedRate.setTotal_unit_count(BigDecimal.valueOf(1));
+                                            associatedRate.setMeasurement_unit("SHIPMENT");
+                                        }
+                                        else
+                                        {
+                                            associatedRate.setTotal_unit_count(associatedRate.getChargeable());
+                                            associatedRate.setMeasurement_unit(associatedRate.getChargeable_uom());
+                                        }
+                                    }
                                 }
                             }
                         }
