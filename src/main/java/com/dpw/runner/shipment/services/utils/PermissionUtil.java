@@ -14,6 +14,7 @@ import static com.dpw.runner.shipment.services.utils.V1PermissionMapUtil.getPerm
  * Creating filter criteria from input list of permission
  */
 public class PermissionUtil {
+    private PermissionUtil(){}
 
     public static List<FilterCriteria> generateFilterCriteriaFromPermissions(List<String> permissionList, Boolean isShipment) {
 

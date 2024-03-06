@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AuditLogConstants {
+
+        private AuditLogConstants(){}
     public static final String AUDIT_LOG_API_HANDLE = "/api/v2/audit-log";
 
     public static final String AUDIT_LOG_LIST_SUCCESSFUL = "Successful Audit Log Data List Retrieval";

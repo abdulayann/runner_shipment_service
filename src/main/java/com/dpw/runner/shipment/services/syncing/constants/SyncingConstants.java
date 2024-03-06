@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.constants;
 
 public class SyncingConstants {
+    private SyncingConstants(){}
 
     public static final String SHIPMENT = "SHIPMENT";
     public static final String SHIPMENT_LOCK = "SHIPMENT_LOCK";

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.validator.constants;
 
 public class ErrorConstants {
+    private ErrorConstants(){}
 
     public static final String INVALID_FIELD_TYPE_VALIDATION = "Invalid field type for field: %s, given field type: %s but expected type was: %s.";
     public static final String INVALID_COMPARISION_VALIDATION = "Comparison validation failed between field %s and %s.";

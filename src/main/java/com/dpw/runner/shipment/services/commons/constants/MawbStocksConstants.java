@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class MawbStocksConstants {
+    private MawbStocksConstants(){}
     public static final String MAWB_STOCKS_API_HANDLE = "/api/v2/mawb-stocks";
 
     public static final String MAWB_STOCKS_CREATE_SUCCESSFUL = "Successful MAWB Stocks Data Creation";

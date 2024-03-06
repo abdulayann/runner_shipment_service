@@ -22,6 +22,7 @@ import static org.springframework.data.jpa.domain.Specification.where;
 
 @SuppressWarnings("ALL")
 public class DbAccessHelper {
+    private DbAccessHelper(){}
     public static final String YYYY_MM_DD = "yyyy-MM-dd";
     private static Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
 

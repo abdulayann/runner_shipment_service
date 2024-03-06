@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ShipmentConstants {
+    private ShipmentConstants(){}
     public static final String SHIPMENT_API_HANDLE = "/api/v2/shipment";
 
     public static final String CREATE_SUCCESSFUL = "Successful Shipment Data Creation";

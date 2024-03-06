@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class CarrierDetailConstants {
+    private CarrierDetailConstants(){}
     public static final String CARRIER_DETAIL_API_HANDLE = "/api/v2/carrier-detail";
     public static final String CARRIER_DETAIL_CREATE_SUCCESSFUL = "Successful Carrier Detail Creation";
 
