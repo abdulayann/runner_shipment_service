@@ -144,6 +144,8 @@ public class V1ServiceUtil {
                         .DebitorAddressCode(bc.getDebtor() != null ? bc.getDebtor().getAddressCode() : null)
                         .CreditorAddressCode(bc.getCreditor() != null ? bc.getCreditor().getAddressCode() : null)
                         .PerMeasurementBasis(bc.getMeasurementBasis())
+                        .MeasurementsUnit(bc.getMeasurementUnit())
+                        .TotalUnitsCount(bc.getTotalUnitCount())
                         .build()).collect(Collectors.toList());
     }
 
