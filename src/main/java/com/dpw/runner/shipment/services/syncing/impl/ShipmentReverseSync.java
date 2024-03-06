@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
@@ -48,7 +49,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
     @Autowired
     private SyncEntityConversionService syncEntityConversionService;
 
-    public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync, boolean dataMigration) {
+    public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync, boolean dataMigration) {
         String responseMsg;
         try {
 
