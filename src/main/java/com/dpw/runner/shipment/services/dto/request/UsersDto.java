@@ -13,6 +13,8 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
+@Builder
 public class UsersDto implements Serializable {
     private static final long serialVersionUID = 1L;
     private Integer Id;
