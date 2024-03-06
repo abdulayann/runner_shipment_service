@@ -316,7 +316,7 @@ public class ShipmentDao implements IShipmentDao {
         }
 
         // Shipment restricted unlocations validation
-        if (shipmentSettingsDetails.getRestrictedLocationsEnabled() && request.getCarrierDetails() != null) {
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getRestrictedLocationsEnabled()) && request.getCarrierDetails() != null) {
             String unLoc = null;
             if (request.getDirection().equals(Constants.DIRECTION_EXP)) {
                 unLoc = request.getCarrierDetails().getOriginPort();
