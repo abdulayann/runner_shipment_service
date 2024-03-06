@@ -2830,12 +2830,15 @@ public class ShipmentService implements IShipmentService {
             }
             if (packingRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
-                if(entity.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !tempConsolidations.isEmpty()) {
-                    listCommonRequest = orCriteria(Constants.CONSOLIDATION_ID, tempConsolidations.get(0).getId(), "=", listCommonRequest);
-                }
                 Pair<Specification<Packing>, Pageable> packingPair = fetchData(listCommonRequest, Packing.class);
                 Page<Packing> oldPackings = packingDao.findAll(packingPair.getLeft(), packingPair.getRight());
-                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, oldPackings.stream().toList(), updatedContainers, map);
+                List<Packing> oldConsolPackings = new ArrayList<>();
+                if(entity.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !tempConsolidations.isEmpty()) {
+                    listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, tempConsolidations.get(0).getId(), "=");
+                    packingPair = fetchData(listCommonRequest, Packing.class);
+                    oldConsolPackings = packingDao.findAll(packingPair.getLeft(), packingPair.getRight()).stream().toList();
+                }
+                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, oldPackings.stream().toList(), oldConsolPackings, updatedContainers, map);
                 entity.setPackingList(updatedPackings);
             }
             if (elDetailsRequestList != null) {
