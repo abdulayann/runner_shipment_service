@@ -450,7 +450,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.PICKUP_CFS, (pickup != null && !Objects.isNull(pickup.getDestinationDetail()) && !Objects.isNull(pickup.getDestinationDetail().getOrgData()) )? pickup.getDestinationDetail().getOrgData().get(FULL_NAME) : null);
         dictionary.put(ReportConstants.MARKS_N_NUMS,shipment.getMarksNum());
         dictionary.put(ReportConstants.ORIGINALS,additionalDetails.getOriginal() == null ? 1 : additionalDetails.getOriginal());
-        dictionary.put(ReportConstants.ORIGINAL_WORDS, "");
+        dictionary.put(ReportConstants.ORIGINAL_WORDS, numberToWords(additionalDetails.getOriginal() == null ? 1 : additionalDetails.getOriginal()));
         dictionary.put(ReportConstants.COPY_BILLS,additionalDetails.getCopy() == null ? 0 : additionalDetails.getCopy());
 
         dictionary.put(ReportConstants.ISSUE_PLACE_NAME, placeOfIssue !=  null ? placeOfIssue.getName() : null);

@@ -935,7 +935,7 @@ public class HblReport extends IReport{
         if (packageType == null || packageType.isEmpty())
             return packageType;
 
-        MasterData masterData = getMasterListData(MasterDataType.PAYMENT_TYPE, packageType);
+        MasterData masterData = getMasterListData(MasterDataType.PACKS_UNIT, packageType);
         return (masterData != null ? masterData.getItemDescription() : null);
     }
 
