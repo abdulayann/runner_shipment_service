@@ -390,6 +390,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CHARGEABLE_UNIT, shipment.getChargeableUnit());
         dictionary.put(ReportConstants.TRANSPORT_MODE, shipment.getTransportMode());
+        dictionary.put(ReportConstants.ContainerType, shipment.getShipmentType());
 
         MasterData masterData = null;
         if (masterListsMap.containsKey(MasterDataType.TRANSPORT_MODE.getId()) && masterListsMap.get(MasterDataType.TRANSPORT_MODE.getId()).containsKey(shipment.getTransportMode()))
@@ -530,52 +531,8 @@ public abstract class IReport {
                     dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
                 }
             }
-            List<String> consignee = null;
-            if(shipmentConsignee != null)
-            {
-                Map<String, Object> consigneeAddress = shipmentConsignee.getAddressData();
-                if(consigneeAddress != null)
-                {
-                    consignee = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consigneeAddress, COMPANY_NAME), getValueFromMap(consigneeAddress, ADDRESS1),
-                            getValueFromMap(consigneeAddress, ADDRESS2),
-                            ReportHelper.getCityCountry(getValueFromMap(consigneeAddress, CITY), getValueFromMap(consigneeAddress, COUNTRY)),
-                            getValueFromMap(consigneeAddress, email), getValueFromMap(consigneeAddress, CONTACT_PHONE),
-                            getValueFromMap(consigneeAddress,ZIP_POST_CODE));
-                    dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
-                    dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON,getValueFromMap(consigneeAddress, CONTACT_PERSON_ALIAS));
-                    String contactPerson = getValueFromMap(consigneeAddress, CONTACT_PERSON_ALIAS);
-                    dictionary.put(ReportConstants.CONSIGNEE_PIC, contactPerson == null ? "" : contactPerson.toUpperCase());
-                    dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, ReportHelper.getOrgAddress(shipmentConsignee));
+            List<String> consignee = populateConsigneeData(dictionary, shipmentConsignee);
 
-                    try {
-                        dictionary.put(ReportConstants.CONSIGNEE_PHONE, consigneeAddress.get("ContactPhone"));
-                        dictionary.put(ReportConstants.CONSIGNEE_FULL_NAME, shipmentConsignee.getOrgData().get(FULL_NAME1));
-                    } catch (Exception ignored) { }
-                }
-                String consigneeFullName = null;
-                if(shipmentConsignee.getOrgData() != null) {
-                    dictionary.put(ReportConstants.CONSIGNEE_LOCAL_NAME, getValueFromMap(shipmentConsignee.getOrgData(), LOCAL_NAME));
-                    consigneeFullName = getValueFromMap(shipmentConsignee.getOrgData(), ReportConstants.FULL_NAME);
-                }
-
-                if (shipmentConsignee.getIsAddressFreeText() != null && shipmentConsignee.getIsAddressFreeText())
-                {
-                    String rawData = shipmentConsignee.getAddressData() != null && shipmentConsignee.getAddressData().containsKey(RAW_DATA)? String.valueOf(shipmentConsignee.getAddressData().get(RAW_DATA)): null;
-                    List<String> consigneeRawAddress = ReportHelper.getAddressList(rawData);
-                    if(consigneeRawAddress != null && consigneeRawAddress.size() > 0)
-                    {
-                        //Display the consignee name, in case of free text needs to display the first line entered in the address.
-                        dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consigneeRawAddress.get(0).toUpperCase());
-                        dictionary.put(CONSIGNEE_FREETEXT, consigneeRawAddress);
-                        dictionary.put(CONSIGNEE_FREETEXTInCaps, consigneeRawAddress == null ? null : consigneeRawAddress.stream().map(StringUtility::toUpperCase).toList());
-                    }
-                }
-                else
-                {
-                    dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consigneeFullName == null ? "": consigneeFullName.toUpperCase());
-                    dictionary.put(CONSIGNEE_FREETEXT, consignee);
-                }
-            }
             List<String> notify = null;
             if(shipmentNotify != null)
             {
@@ -735,6 +692,56 @@ public abstract class IReport {
         SetContainerCount(shipment, dictionary);
         populateUserFields(UserContext.getUser(), dictionary);
         populateHasContainerFields(shipment, dictionary, v1TenantSettingsResponse);
+    }
+
+    public List<String> populateConsigneeData(Map<String, Object> dictionary, PartiesModel shipmentConsignee) {
+        List<String> consignee = null;
+        if(shipmentConsignee != null)
+        {
+            Map<String, Object> consigneeAddress = shipmentConsignee.getAddressData();
+            if(consigneeAddress != null)
+            {
+                consignee = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consigneeAddress, COMPANY_NAME), getValueFromMap(consigneeAddress, ADDRESS1),
+                        getValueFromMap(consigneeAddress, ADDRESS2),
+                        ReportHelper.getCityCountry(getValueFromMap(consigneeAddress, CITY), getValueFromMap(consigneeAddress, COUNTRY)),
+                        getValueFromMap(consigneeAddress, "Email"), getValueFromMap(consigneeAddress, CONTACT_PHONE),
+                        getValueFromMap(consigneeAddress,ZIP_POST_CODE));
+                dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
+                dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON,getValueFromMap(consigneeAddress, CONTACT_PERSON_ALIAS));
+                String contactPerson = getValueFromMap(consigneeAddress, CONTACT_PERSON_ALIAS);
+                dictionary.put(ReportConstants.CONSIGNEE_PIC, contactPerson == null ? "" : contactPerson.toUpperCase());
+                dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, ReportHelper.getOrgAddress(shipmentConsignee));
+
+                try {
+                    dictionary.put(ReportConstants.CONSIGNEE_PHONE, consigneeAddress.get("ContactPhone"));
+                    dictionary.put(ReportConstants.CONSIGNEE_FULL_NAME, shipmentConsignee.getOrgData().get(FULL_NAME1));
+                } catch (Exception ignored) { }
+            }
+            String consigneeFullName = null;
+            if(shipmentConsignee.getOrgData() != null) {
+                dictionary.put(ReportConstants.CONSIGNEE_LOCAL_NAME, getValueFromMap(shipmentConsignee.getOrgData(), LOCAL_NAME));
+                consigneeFullName = getValueFromMap(shipmentConsignee.getOrgData(), ReportConstants.FULL_NAME);
+            }
+
+            if (shipmentConsignee.getIsAddressFreeText() != null && shipmentConsignee.getIsAddressFreeText())
+            {
+                String rawData = shipmentConsignee.getAddressData() != null && shipmentConsignee.getAddressData().containsKey(RAW_DATA)? String.valueOf(shipmentConsignee.getAddressData().get(RAW_DATA)): null;
+                List<String> consigneeRawAddress = ReportHelper.getAddressList(rawData);
+                if(consigneeRawAddress != null && consigneeRawAddress.size() > 0)
+                {
+                    //Display the consignee name, in case of free text needs to display the first line entered in the address.
+                    dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consigneeRawAddress.get(0).toUpperCase());
+                    dictionary.put(CONSIGNEE_FREETEXT, consigneeRawAddress);
+                    dictionary.put(CONSIGNEE_FREETEXTInCaps, consigneeRawAddress == null ? null : consigneeRawAddress.stream().map(StringUtility::toUpperCase).toList());
+                }
+            }
+            else
+            {
+                dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consigneeFullName == null ? "": consigneeFullName.toUpperCase());
+                dictionary.put(CONSIGNEE_FREETEXT, consignee);
+            }
+        }
+        return consignee;
     }
 
     public ShipmentModel getShipment(Long Id)
