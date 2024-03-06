@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RequestAuthContext {
+    private RequestAuthContext(){}
     private static ThreadLocal<String> currentToken = new InheritableThreadLocal<>();
 
     public static String getAuthToken() {

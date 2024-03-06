@@ -15,10 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.json.*;
-
-
 import java.io.StringReader;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -29,10 +26,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ValidatorUtility {
 
+    private final ObjectMapper objectMapper;
+    private final IValidationsDao validationsDao;
+
     @Autowired
-    private ObjectMapper objectMapper;
-    @Autowired
-    private IValidationsDao validationsDao;
+    public ValidatorUtility(ObjectMapper objectMapper, IValidationsDao validationsDao) {
+        this.objectMapper = objectMapper;
+        this.validationsDao = validationsDao;
+    }
 
 
     /**

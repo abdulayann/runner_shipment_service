@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class PartiesConstants {
+    private PartiesConstants(){}
     public static final String PARTIES_API_HANDLE = "/api/v2/parties";
     public static final String PARTIES_CREATE_SUCCESSFUL = "Successful Parties  Creation";
 

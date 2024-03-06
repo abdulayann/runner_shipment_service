@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class PickupDeliveryDetailsConstants {
+    private PickupDeliveryDetailsConstants(){}
     public static final String PICKUP_DELIVERY_DETAILS_API_HANDLE = "/api/v2/pickup-delivery-details";
 
     public static final String PICKUP_DELIVERY_DETAILS_CREATE_SUCCESSFUL = "Successful Pickup Delivery Details Data Creation";

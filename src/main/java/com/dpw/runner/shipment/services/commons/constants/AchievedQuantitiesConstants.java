@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class AchievedQuantitiesConstants {
+    private AchievedQuantitiesConstants(){}
     public static final String ACHIEVED_QUANTITIES_API_HANDLE = "/api/v2/achieved-quantities";
     public static final String ACHIEVED_QUANTITIES_CREATE_SUCCESSFUL = "Successful Achieved Quantities Creation";
 

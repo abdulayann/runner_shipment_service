@@ -6,6 +6,7 @@ import java.util.Map;
 
 @SuppressWarnings("rawtypes")
 public class ObjectUtility {
+    private ObjectUtility(){}
 
     public static Map<String, Class> getAllFields(final Class<?> type, Map<String, Class> fields) {
         if(fields == null) {

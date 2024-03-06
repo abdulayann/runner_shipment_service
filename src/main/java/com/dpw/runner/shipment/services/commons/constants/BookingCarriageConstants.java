@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class BookingCarriageConstants {
+    private BookingCarriageConstants(){}
     public static final String BOOKING_CARRIAGE_API_HANDLE = "/api/v2/booking-carriage";
 
     public static final String BOOKING_CARRIAGE_CREATE_SUCCESSFUL = "Successful Booking Carriage Data Creation";

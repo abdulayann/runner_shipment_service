@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 
 public class EntityTransferConstants {
+    private EntityTransferConstants(){}
     public static final String ENTITY_TRANSFER_API_HANDLE = "/api/v2/entity-transfer";
     public static final String SEND_SHIPMENT = "/send-shipment";
     public static final String SEND_SHIPMENT_VALIDATION = "/send-shipment-validation";

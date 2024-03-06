@@ -17,6 +17,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrE
 @Slf4j
 @Component
 public class UnitConversionUtility {
+    private UnitConversionUtility(){}
     public static Number convertUnit(String type, BigDecimal value, String fromUnit, String toUnit) throws RunnerException {
         String responseMsg;
         try {

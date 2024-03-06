@@ -2485,7 +2485,7 @@ public class ShipmentService implements IShipmentService {
         CarrierPatchRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
         // TODO- implement Validation logic
         Long id = null;
-        Optional<ShipmentDetails> oldEntity = Optional.empty();
+        Optional<ShipmentDetails> oldEntity;
         ShipmentRequest fetchShipmentRequest = new ShipmentRequest();
         fetchShipmentRequest.setId(shipmentRequest.getId() != null ? shipmentRequest.getId().get() : null);
         fetchShipmentRequest.setGuid(shipmentRequest.getGuid());

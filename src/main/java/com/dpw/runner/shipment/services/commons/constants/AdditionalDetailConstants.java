@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class AdditionalDetailConstants {
+    private AdditionalDetailConstants(){}
     public static final String ADDITIONAL_DETAILS_API_HANDLE = "/api/v2/additional-detail";
 
     public static final String ADDITIONAL_DETAILS_CREATE_SUCCESSFUL = "Successful Shipment Additional Detail Data Creation";
