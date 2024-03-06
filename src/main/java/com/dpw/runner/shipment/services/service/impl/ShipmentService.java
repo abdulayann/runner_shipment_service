@@ -1455,6 +1455,20 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             removedConsolIds = !Objects.isNull(oldConsolIds) ? oldConsolIds.stream().toList() : new ArrayList<>();
+
+            if(consolidationDetailsRequests.size() > 0 && (oldEntity.getConsolidationList() == null ||  oldEntity.getConsolidationList().size() == 0 || removedConsolIds.size() > 0)) {
+                shipmentDetails.setMasterBill(consolidationDetailsRequests.get(0).getBol());
+                shipmentDetails.setDirection(consolidationDetailsRequests.get(0).getShipmentType());
+                if(shipmentDetails.getCarrierDetails() == null) {
+                    shipmentDetails.setCarrierDetails(new CarrierDetails());
+                }
+                if (consolidationDetailsRequests.get(0).getCarrierDetails() != null) {
+                    shipmentDetails.getCarrierDetails().setVoyage(consolidationDetailsRequests.get(0).getCarrierDetails().getVoyage());
+                    shipmentDetails.getCarrierDetails().setVessel(consolidationDetailsRequests.get(0).getCarrierDetails().getVessel());
+                    shipmentDetails.getCarrierDetails().setShippingLine(consolidationDetailsRequests.get(0).getCarrierDetails().getShippingLine());
+                    shipmentDetails.getCarrierDetails().setAircraftType(consolidationDetailsRequests.get(0).getCarrierDetails().getAircraftType());
+                }
+            }
         }
         else
             tempConsolIds = Objects.isNull(oldEntity) ? new ArrayList<>() : oldEntity.getConsolidationList().stream().map(e -> e.getId()).collect(Collectors.toList());
@@ -3979,6 +3993,7 @@ public class ShipmentService implements IShipmentService {
      */
     private ConsolidationDetails updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) throws RunnerException {
         List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
+        ConsolidationDetails consolidationDetails;
         var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
         if(linkedConsol != null && (oldEntity == null || !Objects.equals(shipment.getMasterBill(),oldEntity.getMasterBill()) ||
                 !Objects.equals(shipment.getDirection(),oldEntity.getDirection()) ||
@@ -3988,18 +4003,19 @@ public class ShipmentService implements IShipmentService {
                         !Objects.equals(shipment.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()) ||
                         !Objects.equals(shipment.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType())
                 )))) {
-            linkedConsol.setBol(shipment.getMasterBill());
-            if(linkedConsol.getCarrierDetails() == null)
-                linkedConsol.setCarrierDetails(new CarrierDetails());
-            linkedConsol.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
-            linkedConsol.getCarrierDetails().setShippingLine(shipment.getCarrierDetails().getShippingLine());
-            linkedConsol.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
-            linkedConsol.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
-            linkedConsol.setShipmentType(shipment.getDirection());
-            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(linkedConsol.getId());
+            consolidationDetails = consolidationDetailsDao.findById(consolidationList.get(0).getId()).get();
+            consolidationDetails.setBol(shipment.getMasterBill());
+            if(consolidationDetails.getCarrierDetails() == null)
+                consolidationDetails.setCarrierDetails(new CarrierDetails());
+            consolidationDetails.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
+            consolidationDetails.getCarrierDetails().setShippingLine(shipment.getCarrierDetails().getShippingLine());
+            consolidationDetails.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
+            consolidationDetails.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
+            consolidationDetails.setShipmentType(shipment.getDirection());
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().filter(c -> !Objects.equals(c.getShipmentId(), shipment.getId()))
                         .map(i -> i.getShipmentId()).collect(Collectors.toList());
-            linkedConsol = consolidationDetailsDao.save(linkedConsol, false);
+            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
             if (!shipmentIdList.isEmpty()) {
                 ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
                 Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class, tableNames);
@@ -4027,7 +4043,7 @@ public class ShipmentService implements IShipmentService {
                     }
                 }
             }
-            return linkedConsol;
+            return consolidationDetails;
         }
         return null;
     }
