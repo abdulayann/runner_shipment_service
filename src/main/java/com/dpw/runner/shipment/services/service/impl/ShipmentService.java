@@ -2722,7 +2722,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes, boolean dataMigration) throws RunnerException {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
 
@@ -2909,7 +2909,8 @@ public class ShipmentService implements IShipmentService {
                     List<Notes> updatedNotes = notesDao.saveEntityFromOtherEntity(convertToEntityList(customerBookingNotes, Notes.class), id, Constants.CUSTOMER_BOOKING);
                 }
             }
-            pushShipmentDataToDependentService(entity, isCreate);
+            if(!dataMigration)
+                pushShipmentDataToDependentService(entity, isCreate);
             ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);

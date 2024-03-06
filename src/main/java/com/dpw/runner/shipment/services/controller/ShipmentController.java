@@ -206,12 +206,12 @@ public class ShipmentController {
             @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
-    @PostMapping(ShipmentConstants.SHIPMENT_V1_CREATE)
+    @PostMapping(ShipmentConstants.SHIPMENT_V1_CREATE) // for testing purpose only
     public ResponseEntity<IRunnerResponse> createV1Shipment(@RequestBody @Valid ShipmentRequest request) {
         String responseMsg;
         try {
             ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
-            return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>(), null);
+            return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>(), null, false);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -314,10 +314,10 @@ public class ShipmentController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.SYNC)
-    public ResponseEntity<?> syncShipmentToService(@RequestBody @Valid CustomShipmentSyncRequest request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync){
+    public ResponseEntity<?> syncShipmentToService(@RequestBody @Valid CustomShipmentSyncRequest request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync, @RequestParam(required = false, defaultValue = "false") boolean dataMigration){
         String responseMsg = "failure executing :(";
         try {
-            return shipmentReverseSync.reverseSync(CommonRequestModel.buildRequest(request), checkForSync);
+            return shipmentReverseSync.reverseSync(CommonRequestModel.buildRequest(request), checkForSync, dataMigration);
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Shipment";
