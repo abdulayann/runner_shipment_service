@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
@@ -48,7 +49,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
     @Autowired
     private SyncEntityConversionService syncEntityConversionService;
 
-    public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync) {
+    public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync, boolean dataMigration) {
         String responseMsg;
         try {
 
@@ -112,7 +113,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
 
             List<NotesRequest> customerBookingNotes = convertToList(cs.getCustomerBookingNotesList(), NotesRequest.class);
             return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.
-                    buildRequest(modelMapper.map(sd, ShipmentRequest.class)), map, customerBookingNotes);
+                    buildRequest(modelMapper.map(sd, ShipmentRequest.class)), map, customerBookingNotes, dataMigration);
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;

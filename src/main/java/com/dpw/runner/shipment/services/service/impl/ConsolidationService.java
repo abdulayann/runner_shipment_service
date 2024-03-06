@@ -2607,7 +2607,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel, boolean dataMigration) throws RunnerException {
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
 
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
@@ -2739,7 +2739,8 @@ public class ConsolidationService implements IConsolidationService {
                 List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(convertToEntityList(routingsRequestList, Routings.class), id, oldRoutings.stream().toList());
                 entity.setRoutingsList(updatedRoutings);
             }
-            pushShipmentDataToDependentService(entity, isCreate);
+            if(!dataMigration)
+                pushShipmentDataToDependentService(entity, isCreate);
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
