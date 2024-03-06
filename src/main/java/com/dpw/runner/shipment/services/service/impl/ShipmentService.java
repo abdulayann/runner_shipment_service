@@ -947,7 +947,8 @@ public class ShipmentService implements IShipmentService {
                 volumetricWeight(customerBookingRequest.getWeightVolume()).
                 volumetricWeightUnit(customerBookingRequest.getWeightVolumeUnit()).
                 bookingReference(customerBookingRequest.getBookingNumber()).
-                shipmentCreatedOn(customerBookingRequest.getBookingDate()).
+                bookingCreatedDate(customerBookingRequest.getBookingDate()).
+                shipmentCreatedOn(LocalDateTime.now()).
                 client(createPartiesRequest(customerBookingRequest.getCustomer())).
                 consignee(createPartiesRequest(customerBookingRequest.getConsignee())).
                 consigner(createPartiesRequest(customerBookingRequest.getConsignor())).
