@@ -2911,7 +2911,13 @@ public class AwbService implements IAwbService {
                 BigDecimal totalVW = updateGoodsDescriptionInfoFromPacks(request);
                 BigDecimal totalVWt = totalVW.setScale(2, RoundingMode.HALF_UP);
 
-                packsDescriptionValue += "Total Volumetric Weight " + totalVWt.toString() + " " + "";
+                packsDescriptionValue += "Total Volumetric Weight " + totalVWt.toString() + " ";
+
+                ShipmentSettingsDetails tenantSettingsList = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+
+                if (tenantSettingsList != null && tenantSettingsList.getWeightChargeableUnit().equalsIgnoreCase(Constants.WEIGHT_UNIT_KG)) {
+                    packsDescriptionValue += packsDescriptionValue + " " + Constants.KGS;
+                }
 
             }
 
