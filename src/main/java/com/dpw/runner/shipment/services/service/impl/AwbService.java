@@ -2779,7 +2779,7 @@ public class AwbService implements IAwbService {
     @Override
     public ResponseEntity<IRunnerResponse> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel) throws RunnerException {
         GenerateAwbPaymentInfoRequest request = (GenerateAwbPaymentInfoRequest) commonRequestModel.getData();
-        String natureAndQuantGoodsValue = request.getAwbCargoInfo() == null || request.getAwbCargoInfo().getNtrQtyGoods() == null ? null : request.getAwbCargoInfo().getNtrQtyGoods();
+        String natureAndQuantGoodsValue = request.getAwbCargoInfo() == null || request.getAwbCargoInfo().getNtrQtyGoods() == null ? "" : request.getAwbCargoInfo().getNtrQtyGoods();
         String packsDescriptionValue = "";
         String dimensionText = Constants.DEFAULT_DIMN_TEXT;
         Set<String> uniqueDimension = new HashSet<>();
