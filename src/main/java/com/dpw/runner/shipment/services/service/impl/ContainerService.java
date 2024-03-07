@@ -4,10 +4,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -45,10 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
@@ -1641,32 +1635,81 @@ public class ContainerService implements IContainerService {
             throw new RuntimeException("Consolidation does not exist, pls save the consol first");
         }
 
+        Map<String, Integer> headerMap = new HashMap<>();
+        for (int i = 0; i < ShipmentConstants.SHIPMENT_HEADERS.size(); i++) {
+            headerMap.put(ShipmentConstants.SHIPMENT_HEADERS.get(i), i);
+        }
+
+
         try(Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("ContainersList");
-            makeHeadersInSheet(sheet, consol);
+            makeHeadersInSheet(sheet, workbook);
 
             for (int i = 0; i < containersList.size(); i++) {
                 Row itemRow = sheet.createRow(i + 1);
                 ContainerResponse container = (ContainerResponse) containersList.get(i);
-                var consolBasicValues = parser.getAllAttributeValuesAsListContainer(container);
-                int offset = 0;
-                for (int j = 0; j < consolBasicValues.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(consolBasicValues.get(j));
-                offset += consolBasicValues.size();
-
-                itemRow.createCell(offset + 0).setCellValue(consol.get().getBol());
-                itemRow.createCell(offset + 1).setCellValue(0);
-                itemRow.createCell(offset + 2).setCellValue(0);
-                itemRow.createCell(offset + 3).setCellValue(request.getFreeTimeNoOfDaysDetention());
-                itemRow.createCell(offset + 4).setCellValue(request.getFreeTimeNoOfDaysStorage());
-                itemRow.createCell(offset + 5).setCellValue(consol.get().getCarrierDetails().getVoyage());
-
-                var booking = customerBookingDao.findById(container.getBookingId());
-                var bookingNum = booking.isPresent() ? booking.get().getBookingNumber() : "";
-                var bookingDate = booking.isPresent() ? booking.get().getBookingDate() : null;
-
-                itemRow.createCell(offset + 6).setCellValue(bookingDate);
-                itemRow.createCell(offset + 7).setCellValue(bookingNum);
+                itemRow.createCell(headerMap.get("REFERENCE NO.")).setCellValue(consol.get().getCarrierBookingRef());
+                itemRow.createCell(headerMap.get("BOOKING DATE")).setCellValue("");
+                itemRow.createCell(headerMap.get("BOOKING NUMBER")).setCellValue(consol.get().getBookingNumber());
+                itemRow.createCell(headerMap.get("BOL")).setCellValue(consol.get().getBol());
+                itemRow.createCell(headerMap.get("CONTAINER NUMBER")).setCellValue(container.getContainerNumber());
+                itemRow.createCell(headerMap.get("20'")).setCellValue("");
+                itemRow.createCell(headerMap.get("40'")).setCellValue("");
+                itemRow.createCell(headerMap.get("VESSEL")).setCellValue("");
+                itemRow.createCell(headerMap.get("VOYAGE NUMBER")).setCellValue("");
+                itemRow.createCell(headerMap.get("1ST ETD BASED ON LTS")).setCellValue("");
+                itemRow.createCell(headerMap.get("1ST REVISION")).setCellValue("");
+                itemRow.createCell(headerMap.get("2ND REVISION")).setCellValue("");
+                itemRow.createCell(headerMap.get("3RD REVISION")).setCellValue("");
+                itemRow.createCell(headerMap.get("Remarks?")).setCellValue("");
+                itemRow.createCell(headerMap.get("ATD")).setCellValue("");
+                itemRow.createCell(headerMap.get("ETA DESTINATION")).setCellValue("");
+                itemRow.createCell(headerMap.get("ATA DESTINATION")).setCellValue("");
+                itemRow.createCell(headerMap.get("DATE CONTAINER GATED IN")).setCellValue("");
+                itemRow.createCell(headerMap.get("FREE TIME NO OF DAYS (STORAGE)")).setCellValue("");
+                itemRow.createCell(headerMap.get("NO OF DAYS (STORAGE)")).setCellValue("");
+                itemRow.createCell(headerMap.get("NO OF DAYS STORAGE")).setCellValue("");
+                itemRow.createCell(headerMap.get("DATE OF EMPTY PULL-OUT FROM CY")).setCellValue("");
+                itemRow.createCell(headerMap.get("FREE TIME NO OF DAYS (DETENTION)")).setCellValue("");
+                itemRow.createCell(headerMap.get("NO OF DAYS (DETENION)")).setCellValue("");
+                itemRow.createCell(headerMap.get("NO OF DAYS DETENTION")).setCellValue("");
+                itemRow.createCell(headerMap.get("NO. OF PACKAGES")).setCellValue(container.getPacks());
+                itemRow.createCell(headerMap.get("PACKAGE TYPE")).setCellValue(container.getPacksType());
+                itemRow.createCell(headerMap.get("MARKS & NUMBERS")).setCellValue(container.getMarksNums());
+                itemRow.createCell(headerMap.get("PACK ID")).setCellValue("");
+                itemRow.createCell(headerMap.get("TRANSPORT MODE")).setCellValue("");
+                itemRow.createCell(headerMap.get("MEASUREMENT UNIT.")).setCellValue("");
+                itemRow.createCell(headerMap.get("HANDLING INFORMATION")).setCellValue("");
+                itemRow.createCell(headerMap.get("COMMODITY CATEGORY")).setCellValue(container.getCommodityGroup());
+                itemRow.createCell(headerMap.get("STATUS")).setCellValue(container.getStatus().toString());
+                itemRow.createCell(headerMap.get("IS PARTIAL")).setCellValue(container.getIsPart());
+                itemRow.createCell(headerMap.get("CONTAINER TYPE CUBIC CAPACITY")).setCellValue("");
+                itemRow.createCell(headerMap.get("CONTAINER TYPE CUBIC CAPACITY UNIT")).setCellValue("");
+                itemRow.createCell(headerMap.get("CONTAINER TYPE MAX CARGO GROSS WEIGHT")).setCellValue("");
+                itemRow.createCell(headerMap.get("CONTAINER TYPE MAX CARGO GROSS WEIGHT UNIT")).setCellValue("");
+                itemRow.createCell(headerMap.get("HAZARDOUS CLASS")).setCellValue(container.getHazardous());
+                itemRow.createCell(headerMap.get("OWN CONTAINER")).setCellValue(container.getIsOwnContainer());
+                itemRow.createCell(headerMap.get("OWN TYPE")).setCellValue(container.getOwnType());
+                itemRow.createCell(headerMap.get("CHARGEABLE")).setCellValue(container.getChargeable().toString());
+                itemRow.createCell(headerMap.get("CHARGEABLE UNIT")).setCellValue(container.getChargeableUnit());
+                itemRow.createCell(headerMap.get("EXTRA PARAMS")).setCellValue(container.getExtraParams());
+                itemRow.createCell(headerMap.get("REMARKS")).setCellValue(container.getRemarks());
+                itemRow.createCell(headerMap.get("WEIGHT")).setCellValue(container.getGrossWeight().toString());
+                itemRow.createCell(headerMap.get("WEIGHT UNIT")).setCellValue(container.getGrossWeightUnit());
+                itemRow.createCell(headerMap.get("VOLUME")).setCellValue(container.getGrossVolume().toString());
+                itemRow.createCell(headerMap.get("VOLUME UNIT")).setCellValue(container.getGrossVolumeUnit());
+                itemRow.createCell(headerMap.get("ACHIEVED WEIGHT")).setCellValue(container.getAchievedWeight().toString());
+                itemRow.createCell(headerMap.get("ACHIEVED WEIGHT UNIT")).setCellValue(container.getAchievedWeightUnit());
+                itemRow.createCell(headerMap.get("ACHIEVED VOLUME")).setCellValue(container.getAchievedVolume().toString());
+                itemRow.createCell(headerMap.get("ACHIEVED VOLUME UNIT")).setCellValue(container.getAchievedVolumeUnit());
+                itemRow.createCell(headerMap.get("WEIGHT UTILIZATION")).setCellValue(container.getWeightUtilization());
+                itemRow.createCell(headerMap.get("VOLUME UTILIZATION")).setCellValue(container.getVolumeUtilization());
+                itemRow.createCell(headerMap.get("SHIPMENTIDS")).setCellValue("");
+                itemRow.createCell(headerMap.get("INTEGRATION CODE")).setCellValue("");
+                itemRow.createCell(headerMap.get("ISO CODE")).setCellValue("");
+                itemRow.createCell(headerMap.get("CONTAINER INVOICE NUMBER")).setCellValue(container.getInvoiceNumber());
+                itemRow.createCell(headerMap.get("CONTAINER INVOICE VALUE")).setCellValue(container.getInvoiceValue().toString());
+                itemRow.createCell(headerMap.get("CONTAINER INVOICE CURRENCY ?")).setCellValue(container.getInvoiceCurrency());
             }
 
             LocalDateTime currentTime = LocalDateTime.now();
@@ -1684,23 +1727,20 @@ public class ContainerService implements IContainerService {
 
     }
 
-    private void makeHeadersInSheet(Sheet sheet, Optional<ConsolidationDetails> consol) {
-//        Row preHeaderRow = sheet.createRow(0);
+    private void makeHeadersInSheet(Sheet sheet, Workbook workbook) {
         Row headerRow = sheet.createRow(0);
-        List<String> containerHeader = parser.getHeadersForContainer();
+        List<String> containerHeader = ContainerConstants.CONTAINER_HEADER;
+
+        CellStyle boldStyle = workbook.createCellStyle();
+        Font boldFont = workbook.createFont();
+        boldFont.setBold(true);
+        boldStyle.setFont(boldFont);
+
         for (int i = 0; i < containerHeader.size(); i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(containerHeader.get(i));
+            cell.setCellStyle(boldStyle);
         }
-
-        containerHeader.add("bol");
-        containerHeader.add("NoOfDays (Detention)");
-        containerHeader.add("NoOfDays (Storage)");
-        containerHeader.add("FreeTimeNoOfDays (Storage)");
-        containerHeader.add("FreeTimeNoOfDays (Detention)");
-        containerHeader.add("Voyage");
-        containerHeader.add("Booking Date");
-        containerHeader.add("Booking Number");
     }
 
 

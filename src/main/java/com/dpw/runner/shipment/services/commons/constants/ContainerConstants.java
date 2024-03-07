@@ -1,6 +1,32 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public class ContainerConstants {
+    private ContainerConstants(){}
+
+    public static ArrayList<String> CONTAINER_HEADER = new ArrayList<>(Arrays.asList(
+            "REFERENCE NO.", "BOOKING DATE", "BOOKING NUMBER", "BOL", "CONTAINER NUMBER",
+            "20'", "40'", "VESSEL", "VOYAGE NUMBER", "1ST ETD BASED ON LTS",
+            "1ST REVISION", "2ND REVISION", "3RD REVISION", "Remarks?",
+            "ATD", "ETA DESTINATION", "ATA DESTINATION", "DATE CONTAINER GATED IN",
+            "FREE TIME NO OF DAYS (STORAGE)", "NO OF DAYS (STORAGE)", "NO OF DAYS STORAGE",
+            "DATE OF EMPTY PULL-OUT FROM CY", "FREE TIME NO OF DAYS (DETENTION)",
+            "NO OF DAYS (DETENION)", "NO OF DAYS DETENTION", "NO. OF PACKAGES",
+            "PACKAGE TYPE", "MARKS & NUMBERS", "PACK ID", "TRANSPORT MODE",
+            "MEASUREMENT UNIT.", "HANDLING INFORMATION", "COMMODITY CATEGORY",
+            "STATUS", "IS PARTIAL", "CONTAINER TYPE CUBIC CAPACITY",
+            "CONTAINER TYPE CUBIC CAPACITY UNIT", "CONTAINER TYPE MAX CARGO GROSS WEIGHT",
+            "CONTAINER TYPE MAX CARGO GROSS WEIGHT UNIT", "HAZARDOUS CLASS",
+            "OWN CONTAINER", "OWN TYPE", "CHARGEABLE", "CHARGEABLE UNIT", "EXTRA PARAMS",
+            "REMARKS", "WEIGHT", "WEIGHT UNIT", "VOLUME", "VOLUME UNIT", "ACHIEVED WEIGHT",
+            "ACHIEVED WEIGHT UNIT", "ACHIEVED VOLUME", "ACHIEVED VOLUME UNIT",
+            "WEIGHT UTILIZATION", "VOLUME UTILIZATION", "SHIPMENTIDS", "INTEGRATION CODE",
+            "ISO CODE", "CONTAINER INVOICE NUMBER", "CONTAINER INVOICE VALUE",
+            "CONTAINER INVOICE CURRENCY ?"
+    ));
+
     public static final String CONTAINER_API_HANDLE = "/api/v2/containers";
     public static final String CONTAINER_CREATE_SUCCESSFUL = "Successful Container Data Creation";
     public static final String CONTAINER_UPDATE_SUCCESSFUL = "Successful Container Data Update";

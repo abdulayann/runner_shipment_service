@@ -61,11 +61,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1896,59 +1892,118 @@ public class ShipmentService implements IShipmentService {
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+        Map<String, Integer> headerMap = new HashMap<>();
+        for (int i = 0; i < ShipmentConstants.SHIPMENT_HEADERS.size(); i++) {
+            headerMap.put(ShipmentConstants.SHIPMENT_HEADERS.get(i), i);
+        }
 
         try(Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("ShipmentList");
-            makeHeadersInSheet(sheet);
+            makeHeadersInSheet(sheet, workbook);
 
             //Filling the data
             List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoList(shipmentDetailsPage.getContent());
 
             for (int i = 0; i < shipmentListResponseData.size(); i++) {
-                Row itemRow = sheet.createRow(i + 2);
+                Row itemRow = sheet.createRow(i + 1);
                 ShipmentListResponse shipment = (ShipmentListResponse) shipmentListResponseData.get(i);
                 LocalTimeZoneHelper.transformTimeZone(shipment);
-                var shipmentBasicValues = parser.getAllAttributeValuesAsList(shipment);
-                int offset = 0;
-                for (int j = 0; j < shipmentBasicValues.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(shipmentBasicValues.get(j));
-                offset += shipmentBasicValues.size();
-
-                var shipmentClientValues = parser.getAllAttributeValuesAsListForParty(shipment.getClient());
-                for (int j = 0; j < shipmentClientValues.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(shipmentClientValues.get(j));
-                offset += shipmentClientValues.size();
-
-                var shipmentConsigneeValues = parser.getAllAttributeValuesAsListForParty(shipment.getConsignee());
-                for (int j = 0; j < shipmentConsigneeValues.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(shipmentConsigneeValues.get(j));
-                offset += shipmentConsigneeValues.size();
-
-                var shipmentConsignerValues = parser.getAllAttributeValuesAsListForParty(shipment.getConsignee());
-                for (int j = 0; j < shipmentConsignerValues.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(shipmentConsignerValues.get(j));
-                offset += shipmentConsignerValues.size();
-
-                var carrierDetails = parser.getAllAttributeValuesAsListForCarrier(shipment.getCarrierDetails());
-                for (int j = 0; j < carrierDetails.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(carrierDetails.get(j));
-                offset += carrierDetails.size();
-
-                var pickupDetails = parser.getAllAttributeValuesAsListForPDDetail(shipment.getPickupDetails());
-                for (int j = 0; j < pickupDetails.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(pickupDetails.get(j));
-                offset += pickupDetails.size();
-
-                var deliveryDetails = parser.getAllAttributeValuesAsListForPDDetail(shipment.getDeliveryDetails());
-                for (int j = 0; j < deliveryDetails.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(deliveryDetails.get(j));
-                offset += deliveryDetails.size();
+                itemRow.createCell(headerMap.get("Shipment Clone")).setCellValue("");
+                itemRow.createCell(headerMap.get("Shipment Number")).setCellValue(shipment.getShipmentId());
+                itemRow.createCell(headerMap.get("Order Number")).setCellValue(shipment.getOrderManagementNumber());
+                itemRow.createCell(headerMap.get("Status")).setCellValue(shipment.getStatus());
+                itemRow.createCell(headerMap.get("Transport Mode")).setCellValue(shipment.getTransportMode());
+                itemRow.createCell(headerMap.get("Bill Status")).setCellValue(shipment.getBillStatus());
+                itemRow.createCell(headerMap.get("MBL Number")).setCellValue(shipment.getMasterBill());
+                itemRow.createCell(headerMap.get("Incoterm")).setCellValue(shipment.getIncoterms());
+                itemRow.createCell(headerMap.get("Service Type")).setCellValue(shipment.getServiceType());
+                itemRow.createCell(headerMap.get("Release Type")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) ? "" : shipment.getAdditionalDetails().getReleaseType());
+                itemRow.createCell(headerMap.get("House Bill Type")).setCellValue(shipment.getAdditionalDetails().getHouseBillType());
+                itemRow.createCell(headerMap.get("Delivery Mode")).setCellValue(Objects.isNull(shipment.getDeliveryDetails()) ? "" : shipment.getDeliveryDetails().getDropMode());
+                itemRow.createCell(headerMap.get("Consolidation Type")).setCellValue("STD");
+                itemRow.createCell(headerMap.get("Activity Type")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) ? "" : shipment.getAdditionalDetails().getActivityType());
+                itemRow.createCell(headerMap.get("Shipment Type")).setCellValue(shipment.getShipmentType());
+                itemRow.createCell(headerMap.get("Carrier")).setCellValue(Objects.isNull(shipment.getCarrierDetails()) ? "" : shipment.getCarrierDetails().getShippingLine());
+                itemRow.createCell(headerMap.get("Vessel Name/Flight")).setCellValue(shipment.getCarrierDetails().getVessel());
+                itemRow.createCell(headerMap.get("Flight Number")).setCellValue(Optional.ofNullable(shipment.getCarrierDetails()).map(c -> c.getFlightNumber()).orElse(""));
+                itemRow.createCell(headerMap.get("Voyage/Flight No.")).setCellValue(Objects.isNull(shipment.getCarrierDetails()) ? "" : shipment.getCarrierDetails().getVoyage());
+                itemRow.createCell(headerMap.get("Paid Place Name")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) ? "" : shipment.getAdditionalDetails().getPaidPlace());
+                itemRow.createCell(headerMap.get("Issued Place Name")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) ? "" : shipment.getAdditionalDetails().getPlaceOfIssue());
+                itemRow.createCell(headerMap.get("Source1")).setCellValue(shipment.getSource());
+                itemRow.createCell(headerMap.get("Date of Issue")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) || Objects.isNull(shipment.getAdditionalDetails().getDateOfIssue()) ? "" : shipment.getAdditionalDetails().getDateOfIssue().toString());
+                itemRow.createCell(headerMap.get("Date of Receipt")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) || Objects.isNull(shipment.getAdditionalDetails().getDateOfReceipt()) ? "" : shipment.getAdditionalDetails().getDateOfReceipt().toString());
+                itemRow.createCell(headerMap.get("Country of Origin")).setCellValue(Objects.isNull(shipment.getCarrierDetails()) ? "" : shipment.getCarrierDetails().getOrigin());
+                itemRow.createCell(headerMap.get("Notify Party Name")).setCellValue("");
+                itemRow.createCell(headerMap.get("Cargo Type")).setCellValue(shipment.getShipmentType());
+                itemRow.createCell(headerMap.get("Origin")).setCellValue(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getOrigin() : "");
+                itemRow.createCell(headerMap.get("Destination")).setCellValue(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getDestination() : "");
+                itemRow.createCell(headerMap.get("Domestic")).setCellValue(shipment.getIsDomestic());
+                itemRow.createCell(headerMap.get("Route")).setCellValue(shipment.getRoute());
+                itemRow.createCell(headerMap.get("Client Name")).setCellValue(shipment.getClient() != null && shipment.getClient().getOrgData() != null ? shipment.getClient().getOrgData().getOrDefault(PartiesConstants.FULLNAME, "").toString() : "");
+                itemRow.createCell(headerMap.get("Consignor Name")).setCellValue(shipment.getConsigner() != null && shipment.getConsigner().getOrgData() != null ? shipment.getConsigner().getOrgData().getOrDefault(PartiesConstants.FULLNAME, "").toString() : "");
+                itemRow.createCell(headerMap.get("Consignee Name")).setCellValue(shipment.getConsignee() != null && shipment.getConsignee().getOrgData() != null ? shipment.getConsignee().getOrgData().getOrDefault(PartiesConstants.FULLNAME, "").toString() : "");
+                itemRow.createCell(headerMap.get("HBL Number")).setCellValue(shipment.getHouseBill());
+                itemRow.createCell(headerMap.get("BOE Number")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getBOENumber() : "");
+                itemRow.createCell(headerMap.get("Screening Status")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getScreeningStatus() : "");
+                itemRow.createCell(headerMap.get("BOE Date")).setCellValue(shipment.getAdditionalDetails() != null && shipment.getAdditionalDetails().getBOEDate() != null ? shipment.getAdditionalDetails().getBOEDate().toString() : "");
+                itemRow.createCell(headerMap.get("ETD")).setCellValue(shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getEtd() != null ? shipment.getCarrierDetails().getEtd().toString() : "");
+                itemRow.createCell(headerMap.get("ETA")).setCellValue(shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getEta() != null ? shipment.getCarrierDetails().getEta().toString() : "");
+                itemRow.createCell(headerMap.get("ATD")).setCellValue(shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getAtd() != null ? shipment.getCarrierDetails().getAtd().toString() : "");
+                itemRow.createCell(headerMap.get("ATA")).setCellValue(shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getAta() != null ? shipment.getCarrierDetails().getAta().toString() : "");
+                itemRow.createCell(headerMap.get("Estimated Delivery")).setCellValue(shipment.getDeliveryDetails() != null && shipment.getDeliveryDetails().getEstimatedPickupOrDelivery() != null ? shipment.getDeliveryDetails().getEstimatedPickupOrDelivery().toString() : "");
+                itemRow.createCell(headerMap.get("Actual Delivery")).setCellValue(shipment.getDeliveryDetails() != null && shipment.getDeliveryDetails().getActualPickupOrDelivery() != null ? shipment.getDeliveryDetails().getActualPickupOrDelivery().toString() : "");
+                itemRow.createCell(headerMap.get("Goods Description")).setCellValue(shipment.getGoodsDescription());
+                itemRow.createCell(headerMap.get("Gross Weight")).setCellValue(String.valueOf(shipment.getWeight()));
+                itemRow.createCell(headerMap.get("Gross Weight Unit")).setCellValue(shipment.getWeightUnit());
+                itemRow.createCell(headerMap.get("Volume")).setCellValue(String.valueOf(shipment.getVolume()));
+                itemRow.createCell(headerMap.get("Volume Unit")).setCellValue(shipment.getVolumeUnit());
+                itemRow.createCell(headerMap.get("Chargeable Weight")).setCellValue(String.valueOf(shipment.getChargable()));
+                itemRow.createCell(headerMap.get("Volumetric Weight")).setCellValue(String.valueOf(shipment.getVolumetricWeight()));
+                itemRow.createCell(headerMap.get("No. Of Packages")).setCellValue(shipment.getNoOfPacks());
+                itemRow.createCell(headerMap.get("Package Type")).setCellValue("");
+                itemRow.createCell(headerMap.get("No. Of Inner Packages")).setCellValue(shipment.getInnerPacks());
+                itemRow.createCell(headerMap.get("IU")).setCellValue("");
+                itemRow.createCell(headerMap.get("Customer Booking Number")).setCellValue(shipment.getBookingNumber());
+                itemRow.createCell(headerMap.get("Pickup Transporter")).setCellValue("");
+                itemRow.createCell(headerMap.get("Delivery Transporter")).setCellValue("");
+                itemRow.createCell(headerMap.get("Job Status")).setCellValue(shipment.getShipmentStatus());
+                itemRow.createCell(headerMap.get("Assigned To")).setCellValue(shipment.getAssignedTo());
+                itemRow.createCell(headerMap.get("Created By")).setCellValue(shipment.getCreatedBy());
+                itemRow.createCell(headerMap.get("Created Source")).setCellValue("");
+                itemRow.createCell(headerMap.get("Updated Date")).setCellValue(shipment.getUpdatedAt());
+                itemRow.createCell(headerMap.get("20RE")).setCellValue(shipment.getContainer20RECount());
+                itemRow.createCell(headerMap.get("20GP")).setCellValue(shipment.getContainer20GPCount());
+                itemRow.createCell(headerMap.get("40RE")).setCellValue(shipment.getContainer40RECount());
+                itemRow.createCell(headerMap.get("40GP")).setCellValue(shipment.getContainer40GPCount());
+                itemRow.createCell(headerMap.get("Container Number")).setCellValue(shipment.getContainerNumbers().stream().findFirst().get());
+                itemRow.createCell(headerMap.get("Created Date")).setCellValue(shipment.getCreatedAt());
+                itemRow.createCell(headerMap.get("Estimated Cost")).setCellValue("");
+                itemRow.createCell(headerMap.get("Estimated Revenue")).setCellValue("");
+                itemRow.createCell(headerMap.get("Estimated Profit")).setCellValue("");
+                itemRow.createCell(headerMap.get("Estimated Profit %")).setCellValue("");
+                itemRow.createCell(headerMap.get("Captured Cost")).setCellValue("");
+                itemRow.createCell(headerMap.get("Captured Revenue")).setCellValue("");
+                itemRow.createCell(headerMap.get("Captured Profit")).setCellValue("");
+                itemRow.createCell(headerMap.get("Captured Profit %")).setCellValue("");
+                itemRow.createCell(headerMap.get("Invoiced Payable Cost")).setCellValue("");
+                itemRow.createCell(headerMap.get("Invoiced Receivable Revenue")).setCellValue("");
+                itemRow.createCell(headerMap.get("Invoiced Profit")).setCellValue("");
+                itemRow.createCell(headerMap.get("Invoiced Profit %")).setCellValue("");
+                itemRow.createCell(headerMap.get("20s Count")).setCellValue(shipment.getContainer20Count());
+                itemRow.createCell(headerMap.get("40s Count")).setCellValue(shipment.getContainer40Count());
+                itemRow.createCell(headerMap.get("TEU Count")).setCellValue(shipment.getTeuCount().toString());
+                itemRow.createCell(headerMap.get("CreatedBy")).setCellValue(shipment.getCreatedBy());
+                itemRow.createCell(headerMap.get("POL")).setCellValue(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getDestinationPort(): "");
+                itemRow.createCell(headerMap.get("POD")).setCellValue(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getOriginPort() : "");
+                itemRow.createCell(headerMap.get("Waybill Number")).setCellValue(shipment.getWayBillNumber());
+                itemRow.createCell(headerMap.get("Additional Terms")).setCellValue(shipment.getAdditionalTerms());
+                itemRow.createCell(headerMap.get("Reference Number")).setCellValue(shipment.getBookingReference());
             }
 
             LocalDateTime currentTime = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Shipments_" + Constants.XLSX;
+            String filenameWithTimestamp = "Shipments_" + timestamp + Constants.XLSX;
 
             response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
             response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
@@ -1960,71 +2015,20 @@ public class ShipmentService implements IShipmentService {
 
     }
 
-    private void makeHeadersInSheet(Sheet sheet) {
-        Row preHeaderRow = sheet.createRow(0);
-        Row headerRow = sheet.createRow(1);
-        List<String> shipmentHeader = parser.getHeadersForShipment();
+    private void makeHeadersInSheet(Sheet sheet, Workbook workbook) {
+        Row headerRow = sheet.createRow(0);
+        List<String> shipmentHeader = ShipmentConstants.SHIPMENT_HEADERS;
+
+        CellStyle boldStyle = workbook.createCellStyle();
+        Font boldFont = workbook.createFont();
+        boldFont.setBold(true);
+        boldStyle.setFont(boldFont);
+
         for (int i = 0; i < shipmentHeader.size(); i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(shipmentHeader.get(i));
+            cell.setCellStyle(boldStyle);
         }
-
-        //Create Parties Headers
-        int offSet = shipmentHeader.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("Client");
-        List<String> partiesClientHeader = parser.getHeadersForParties();
-        for (int i = 0; i < partiesClientHeader.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(partiesClientHeader.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + partiesClientHeader.size() - 1));
-        offSet += partiesClientHeader.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("Consignee");
-        List<String> partiesConsigneeHeader = parser.getHeadersForParties();
-        for (int i = 0; i < partiesConsigneeHeader.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(partiesConsigneeHeader.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + partiesConsigneeHeader.size() - 1));
-        offSet += partiesConsigneeHeader.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("Consigner");
-        List<String> partiesConsignerHeader = parser.getHeadersForParties();
-        for (int i = 0; i < partiesConsignerHeader.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(partiesConsignerHeader.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + partiesConsignerHeader.size() - 1));
-        offSet += partiesConsignerHeader.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("Carrier Details");
-        List<String> carrierHeader = parser.getHeadersForCarrier();
-        for (int i = 0; i < carrierHeader.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(carrierHeader.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + carrierHeader.size() - 1));
-        offSet += carrierHeader.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("Pickup Details");
-        List<String> pickupDeliveryDetails = parser.getHeadersForPDDetails();
-        for (int i = 0; i < pickupDeliveryDetails.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(pickupDeliveryDetails.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + pickupDeliveryDetails.size() - 1));
-        offSet += pickupDeliveryDetails.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("Delivery Details");
-        for (int i = 0; i < pickupDeliveryDetails.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(pickupDeliveryDetails.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + pickupDeliveryDetails.size() - 1));
-        offSet += pickupDeliveryDetails.size();
-
     }
 
 

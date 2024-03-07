@@ -1,6 +1,31 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class ShipmentConstants {
+    public static final List<String> SHIPMENT_HEADERS = Arrays.asList(
+            "Shipment Clone", "Shipment Number", "Order Number", "Status", "Transport Mode",
+            "Bill Status", "MBL Number", "Incoterm", "Service Type", "Release Type", "House Bill Type",
+            "Delivery Mode", "Consolidation Type", "Activity Type", "Shipment Type", "Carrier",
+            "Vessel Name/Flight", "Flight Number", "Voyage/Flight No.", "Paid Place Name",
+            "Issued Place Name", "Source1", "Date of Issue", "Date of Receipt", "Country of Origin",
+            "Notify Party Name", "Cargo Type", "Origin", "Destination", "Domestic", "Route",
+            "Client Name", "Consignor Name", "Consignee Name", "HBL Number", "BOE Number",
+            "Screening Status", "BOE Date", "ETD", "ETA", "ATD", "ATA", "Estimated Delivery",
+            "Actual Delivery", "Goods Description", "Gross Weight", "Gross Weight Unit", "Volume",
+            "Volume Unit", "Chargeable Weight", "Volumetric Weight", "No. Of Packages", "Package Type",
+            "No. Of Inner Packages", "IU", "Customer Booking Number", "Pickup Transporter",
+            "Delivery Transporter", "Job Status", "Assigned To", "Created By", "Created Source",
+            "Updated Date", "20RE", "20GP", "40RE", "40GP", "Container Number", "Created Date",
+            "Estimated Cost", "Estimated Revenue", "Estimated Profit", "Estimated Profit %",
+            "Captured Cost", "Captured Revenue", "Captured Profit", "Captured Profit %",
+            "Invoiced Payable Cost", "Invoiced Receivable Revenue", "Invoiced Profit",
+            "Invoiced Profit %", "20s Count", "40s Count", "TEU Count", "CreatedBy", "POL",
+            "POD", "Waybill Number", "Additional Terms", "Reference Number"
+    );
+
+    private ShipmentConstants(){}
     public static final String SHIPMENT_API_HANDLE = "/api/v2/shipment";
 
     public static final String CREATE_SUCCESSFUL = "Successful Shipment Data Creation";
