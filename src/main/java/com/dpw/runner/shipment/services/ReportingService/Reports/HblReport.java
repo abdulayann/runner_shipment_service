@@ -889,7 +889,7 @@ public class HblReport extends IReport{
         // ====================  END OF MIGRATION PLACEHOLDER ===================
         populateShipmentFields(hblModel.shipment, false, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
-        populateBlFields(hblModel.blObject, dictionary);
+//        populateBlFields(hblModel.blObject, dictionary);
         dictionary.put(ReportConstants.PAID_PLACE_COUNTRY_NAME, hblModel.paidPlaceCountry);
         dictionary.put(ReportConstants.SERVICE_MODE_DESCRIPTION, hblModel.serviceMode);
         dictionary.put(ReportConstants.PPCC, hblModel.paymentTerms);
