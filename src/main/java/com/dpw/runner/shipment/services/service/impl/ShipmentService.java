@@ -1459,7 +1459,7 @@ public class ShipmentService implements IShipmentService {
             }
             removedConsolIds = !Objects.isNull(oldConsolIds) ? oldConsolIds.stream().toList() : new ArrayList<>();
 
-            if(consolidationDetailsRequests.size() > 0 && (oldEntity.getConsolidationList() == null ||  oldEntity.getConsolidationList().size() == 0 || removedConsolIds.size() > 0)) {
+            if(!consolidationDetailsRequests.isEmpty() && (oldEntity == null || oldEntity.getConsolidationList() == null ||  oldEntity.getConsolidationList().size() == 0 || removedConsolIds.size() > 0)) {
                 isNewConsolAttached = true;
             }
         }
