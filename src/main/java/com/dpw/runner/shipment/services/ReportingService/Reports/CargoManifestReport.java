@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -123,10 +124,14 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.PP_CC, cargoManifestModel.shipmentDetails.getPaymentTerms());
         dictionary.put(ReportConstants.BOOKING_NO, cargoManifestModel.shipmentDetails.getBookingNumber());
         if(cargoManifestModel.shipmentDetails.getPackingList() != null && cargoManifestModel.shipmentDetails.getPackingList().size() > 0) {
+            var request = cargoManifestModel.shipmentDetails.getPackingList().stream().filter(c -> StringUtility.isNotEmpty(c.getCommodity())).map(PackingModel::getCommodity).toList();
+            var v1DataMap = masterDataUtils.fetchInBulkCommodityTypes(request);
             List<Map<String, Object>> packDictionary = new ArrayList<>();
             for (PackingModel pack : cargoManifestModel.shipmentDetails.getPackingList()) {
-                String packJson = jsonHelper.convertToJson(pack);
-                packDictionary.add(jsonHelper.convertJsonToMap(packJson));
+                var map = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(pack));
+                if (v1DataMap.containsKey(pack.getCommodity()))
+                    map.put(ReportConstants.COMMODITY_NAME, v1DataMap.get(pack.getCommodity()).getDescription());
+                packDictionary.add(map);
             }
             packDictionary.forEach(v -> JsonDateFormat(v));
             dictionary.put(ReportConstants.ITEMS, packDictionary);
