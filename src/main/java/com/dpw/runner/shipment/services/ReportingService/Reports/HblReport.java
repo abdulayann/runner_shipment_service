@@ -692,19 +692,6 @@ public class HblReport extends IReport{
             dictionary.put("DeliveryCfs", address);
         }
 
-        PartiesModel pickupFrom = null;
-        if(hblModel.shipment.getPickupDetails() != null)
-            pickupFrom = hblModel.shipment.getPickupDetails().getSourceDetail();
-        if (pickupFrom != null && pickupFrom.getAddressData() != null)
-        {
-            Map<String, Object> addressMap = pickupFrom.getAddressData();
-            populateAddress(addressMap, dictionary, "PickupFrom");
-            var address = getOrgAddress(getValueFromMap(addressMap, ORG_FULL_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
-                    getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
-                    getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
-            dictionary.put("PickupFrom", address);
-        }
-
         PartiesModel pickupTransportCompany = null;
         if(hblModel.shipment.getPickupDetails() != null)
             pickupTransportCompany = hblModel.shipment.getPickupDetails().getTransporterDetail();
@@ -928,6 +915,20 @@ public class HblReport extends IReport{
         }
 
         dictionary.put(MARKS_N_NUMS, hblModel.shipment.getMarksNum());
+
+        PartiesModel pickupFrom = null;
+        if(hblModel.shipment.getPickupDetails() != null)
+            pickupFrom = hblModel.shipment.getPickupDetails().getSourceDetail();
+        if (pickupFrom != null && pickupFrom.getAddressData() != null)
+        {
+            Map<String, Object> addressMap = pickupFrom.getAddressData();
+            populateAddress(addressMap, dictionary, ReportConstants.PickupFrom);
+            var address = getOrgAddress(getValueFromMap(addressMap, ORG_FULL_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
+                    getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
+                    getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
+            dictionary.put(ReportConstants.PickupFrom, address);
+        }
+
         return dictionary;
     }
     // isActive Criteria not clear from v1 impl
