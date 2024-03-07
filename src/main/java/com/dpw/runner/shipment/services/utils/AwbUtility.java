@@ -65,7 +65,7 @@ public class AwbUtility {
     }
 
     public static String generateNatureAndQuantGoodsField(String goodsDescription, BigDecimal volumeWeight, List<AwbPackingInfo> packingList) {
-        String natureAndQuantGoodsValue = goodsDescription;
+        String natureAndQuantGoodsValue = goodsDescription != null ? goodsDescription : "";
         String packsDescriptionValue = "";
         String dimensionText = "DIMS: In ";
         HashSet<String> uniqueDimension = new HashSet<String>();
