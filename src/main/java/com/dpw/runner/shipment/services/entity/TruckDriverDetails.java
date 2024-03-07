@@ -18,6 +18,7 @@ import javax.validation.constraints.Size;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @SQLDelete(sql = "UPDATE truck_driver_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class TruckDriverDetails extends MultiTenancy {
