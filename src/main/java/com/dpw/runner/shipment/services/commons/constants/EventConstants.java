@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 public class EventConstants {
 
+    private EventConstants(){}
     public static final String EVENT_API_HANDLE = "api/v2/events";
     public static final String EVENT_CREATE_SUCCESS = "Events created successfully !";
     public static final String EVENT_UPDATE_SUCCESS = "Events updated successfully !";

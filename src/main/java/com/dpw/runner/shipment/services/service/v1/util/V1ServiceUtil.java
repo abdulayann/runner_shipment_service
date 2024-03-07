@@ -5,11 +5,13 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -114,7 +116,7 @@ public class V1ServiceUtil {
                         .InsertUserDisplayName(note.getCreatedBy())
                         .IsPublic(note.getIsPublic())
                         .InsertDate(note.getCreatedAt() != null ? DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_TIME_FORMAT).format(note.getCreatedAt()) : null)
-                        .build()).collect(Collectors.toList());
+                        .build()).toList();
     }
     private static List<CreateBookingModuleInV1.BookingEntity.BillCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
         if (bookingCharges == null) return null;
@@ -144,14 +146,16 @@ public class V1ServiceUtil {
                         .DebitorAddressCode(bc.getDebtor() != null ? bc.getDebtor().getAddressCode() : null)
                         .CreditorAddressCode(bc.getCreditor() != null ? bc.getCreditor().getAddressCode() : null)
                         .PerMeasurementBasis(bc.getMeasurementBasis())
-                        .build()).collect(Collectors.toList());
+                        //.MeasurementsUnit(bc.getMeasurementUnit())
+                        //.TotalUnitsCount(bc.getTotalUnitCount())
+                        .build()).toList();
     }
 
     private static List<UUID> createContainersGuid(BookingCharges bc) {
         if (bc.getContainersList() == null)
             return new ArrayList<>();
         return bc.getContainersList().stream().filter(Objects::nonNull)
-                .map(container -> container.getGuid()).collect(Collectors.toList());
+                .map(container -> container.getGuid()).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.OrgDetail> createOrgDetails(CustomerBooking customerBooking) {
@@ -243,7 +247,7 @@ public class V1ServiceUtil {
                         .CommodityGroup(packing.getCommodityGroup())
                         .HazardousCheckBox(packing.getHazardous())
                         .HsCode(packing.getHSCode())
-                        .build()).collect(Collectors.toList());
+                        .build()).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.Document> createDocuments(List<FileRepo> fileRepoList) {
@@ -255,7 +259,7 @@ public class V1ServiceUtil {
                 .Path(fileRepo.getPath())
                 .FileName(fileRepo.getFileName())
                 .EventCode(fileRepo.getEventCode())
-                .build()).collect(Collectors.toList());
+                .build()).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.Routing> createRoutingList(List<Routings> routingList) {
@@ -269,7 +273,7 @@ public class V1ServiceUtil {
                         .PolCode(routings.getPol())
                         .PodCode(routings.getPod())
                         .build()
-        ).collect(Collectors.toList());
+        ).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.QuoteContainer> createContainers(List<Containers> containersList) {
@@ -285,14 +289,15 @@ public class V1ServiceUtil {
                         .WeightUnit(container.getGrossWeightUnit())
                         .ReferenceGuid(container.getGuid())
                         .build()
-        ).collect(Collectors.toList());
+        ).toList();
     }
 
-    public void validateCreditLimit(Parties client, String restrictedItem, UUID shipmentGuid) {
+    public CheckCreditLimitFromV1Response validateCreditLimit(Parties client, String restrictedItem, UUID shipmentGuid, Boolean taskCreation) {
         try {
             Boolean enableCreditLimitManagement = TenantSettingsDetailsContext.getCurrentTenantSettings() != null? TenantSettingsDetailsContext.getCurrentTenantSettings().getEnableCreditLimitManagement() : false;
+            CheckCreditLimitFromV1Response creditLimitResponse = CheckCreditLimitFromV1Response.builder().isValid(true).build();
             if(!enableCreditLimitManagement){
-                return;
+                return creditLimitResponse;
             }
             Integer clientId = null;
             Integer clientAddressId = null;
@@ -305,14 +310,25 @@ public class V1ServiceUtil {
                     .clientId(clientId)
                     .clientAddressId(clientAddressId)
                     .shipmentGuid(shipmentGuid != null ? shipmentGuid.toString(): null)
+                    .taskCreation(taskCreation)
                     .build());
             if (!response.getIsValid()){
+                if(response.getTaskRequiredMessage() != null){
+                    creditLimitResponse.setIsValid(response.getIsValid());
+                    creditLimitResponse.setTaskRequiredMessage(response.getTaskRequiredMessage());
+                    creditLimitResponse.setMessage(response.getMessage());
+                    return creditLimitResponse;
+                }
                 log.error(response.getMessage() + " " + response.getError());
                 throw new ValidationException(response.getMessage());
             }
-        } catch (Exception ex) {
-            log.error("Check Credit Limit failed due to : " + ex.getMessage());
+            return creditLimitResponse;
+        } catch (V1ServiceException ex) {
+            log.error(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
             throw new ValidationException(ex.getMessage());
+        } catch (Exception ex) {
+            log.error(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
+            throw new ValidationException(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
         }
     }
 
@@ -341,13 +357,13 @@ public class V1ServiceUtil {
         if (Objects.isNull(party))
             return;
 
-        if (!Objects.isNull(party.getOrgCode()) && organizations.containsKey(party.getOrgCode())
+        if (!Objects.isNull(party.getOrgCode()) && organizations.containsKey(party.getOrgCode()) && organizations.get(party.getOrgCode()) != null
                 && organizations.get(party.getOrgCode()).containsKey(PartiesConstants.EMAIL))
             emailSet.add(StringUtility.convertToString(organizations.get(party.getOrgCode()).get(PartiesConstants.EMAIL)));
 
         if (!Objects.isNull(party.getOrgCode()) && !Objects.isNull(party.getAddressCode())) {
             String key = party.getOrgCode() + "#" + party.getAddressCode();
-            if (addresses.containsKey(key) && addresses.get(key).containsKey(PartiesConstants.EMAIL) )
+            if (addresses.containsKey(key) && addresses.get(key) != null && addresses.get(key).containsKey(PartiesConstants.EMAIL) )
                 emailSet.add(StringUtility.convertToString(addresses.get(key).get(PartiesConstants.EMAIL)));
         }
     }

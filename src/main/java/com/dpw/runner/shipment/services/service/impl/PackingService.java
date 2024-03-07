@@ -390,7 +390,7 @@ public class PackingService implements IPackingService {
                 if (result.isEmpty()) {
                     result.addAll(packingList);
                 } else {
-                    result = result.stream().filter(result::contains).collect(Collectors.toList());
+                    result = result.stream().filter(result::contains).toList();
                 }
             }
             LocalDateTime currentTime = LocalDateTime.now();
@@ -835,9 +835,6 @@ public class PackingService implements IPackingService {
         String transportMode = request.getTransportMode();
         String weightUnit = request.getWeightUnit();
         String volumeUnit = request.getVolumeUnit();
-        if (volume == null || weight == null) {
-            return ResponseHelper.buildFailedResponse("Volume or weight is 0");
-        }
         var obj = calculateVolumetricWeightForAir(volume, weight, transportMode, weightUnit, volumeUnit);
         calculateChargeableForAir(response, request);
         response.setVolumeWeight(obj.getVolumeWeight());
@@ -1070,7 +1067,7 @@ public class PackingService implements IPackingService {
             }
             Optional<Packing> existingPacking = packingDao.findByGuid(packingRequestV2.getGuid());
             Packing packing = modelMapper.map(packingRequestV2, Packing.class);
-            if (existingPacking != null && existingPacking.isPresent()) {
+            if (existingPacking.isPresent()) {
                 packing.setId(existingPacking.get().getId());
                 packing.setConsolidationId(existingPacking.get().getConsolidationId());
                 packing.setShipmentId(existingPacking.get().getShipmentId());

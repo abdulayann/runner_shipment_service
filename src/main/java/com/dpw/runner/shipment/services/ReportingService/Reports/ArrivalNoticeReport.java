@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ArrivalNoticeMod
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
@@ -19,10 +20,9 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
 public class ArrivalNoticeReport extends IReport {
@@ -60,10 +60,12 @@ public class ArrivalNoticeReport extends IReport {
         ArrivalNoticeModel arrivalNoticeModel = (ArrivalNoticeModel) documentModel;
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(arrivalNoticeModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        populateShipmentFields(arrivalNoticeModel.shipmentDetails, false, dictionary);
+        populateShipmentFields(arrivalNoticeModel.shipmentDetails, dictionary);
         populateUserFields(arrivalNoticeModel.usersDto, dictionary);
         populateBlFields(arrivalNoticeModel.hbl, dictionary);
         populateShipmentOrganizationsLL(arrivalNoticeModel.shipmentDetails, dictionary);
+        List<String> consignee = populateConsigneeData(dictionary, arrivalNoticeModel.shipmentDetails.getConsignee());
+        dictionary.put(ReportConstants.CONSIGNEE,consignee);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(arrivalNoticeModel.getContainers()));
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, arrivalNoticeModel.getContainers());
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
@@ -100,6 +102,25 @@ public class ArrivalNoticeReport extends IReport {
             dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_OVERSEASCURRENCY, currency);
         }
 
+        Optional<ReferenceNumbersModel> referenceNumber = Optional.empty();
+
+        if (arrivalNoticeModel.shipmentDetails.getReferenceNumbersList() != null) {
+            referenceNumber = arrivalNoticeModel.shipmentDetails.getReferenceNumbersList().stream().
+                    filter(i -> i.getType().equals(ERN)).findFirst();
+        }
+        if (referenceNumber.isEmpty() && arrivalNoticeModel.consolidationDetails != null && arrivalNoticeModel.consolidationDetails.getReferenceNumbersList() != null) {
+            referenceNumber = arrivalNoticeModel.consolidationDetails.getReferenceNumbersList().stream()
+                    .filter(i -> i.getType().equals(ERN)).findFirst();
+        }
+        referenceNumber.ifPresent(i -> dictionary.put(EXPORT_REFERENCE_NUMBER, i.getReferenceNumber()));
+
+        if(arrivalNoticeModel.consolidationDetails != null) {
+            dictionary.put(AGENT_REFERENCE, arrivalNoticeModel.consolidationDetails.getAgentReference());
+        }
+        else if(arrivalNoticeModel.shipmentDetails.getAdditionalDetails() != null) {
+            dictionary.put(AGENT_REFERENCE, arrivalNoticeModel.shipmentDetails.getAdditionalDetails().getAgentReference());
+        }
+
         return dictionary;
     }
 
@@ -110,9 +131,7 @@ public class ArrivalNoticeReport extends IReport {
         }
         catch (Exception e) { }
         List<BillChargesResponse> charges = new ArrayList<>();
-        BillingResponse billRow = null;
         if(billingsList != null && billingsList.size() > 0) {
-            billRow = billingsList.get(0);
             for(BillingResponse billingResponse : billingsList) {
                 List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse.getGuid());
                 if(billChargesResponses != null) {

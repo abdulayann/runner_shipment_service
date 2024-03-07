@@ -11,7 +11,9 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -206,12 +208,12 @@ public class ShipmentController {
             @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
-    @PostMapping(ShipmentConstants.SHIPMENT_V1_CREATE)
+    @PostMapping(ShipmentConstants.SHIPMENT_V1_CREATE) // for testing purpose only
     public ResponseEntity<IRunnerResponse> createV1Shipment(@RequestBody @Valid ShipmentRequest request) {
         String responseMsg;
         try {
             ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
-            return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>(), null);
+            return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>(), null, false);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -314,10 +316,10 @@ public class ShipmentController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.SYNC)
-    public ResponseEntity<?> syncShipmentToService(@RequestBody @Valid CustomShipmentSyncRequest request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync){
+    public ResponseEntity<?> syncShipmentToService(@RequestBody @Valid CustomShipmentSyncRequest request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync, @RequestParam(required = false, defaultValue = "false") boolean dataMigration){
         String responseMsg = "failure executing :(";
         try {
-            return shipmentReverseSync.reverseSync(CommonRequestModel.buildRequest(request), checkForSync);
+            return shipmentReverseSync.reverseSync(CommonRequestModel.buildRequest(request), checkForSync, dataMigration);
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Shipment";
@@ -491,6 +493,16 @@ public class ShipmentController {
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(id).build();
             return shipmentService.getGuidFromId(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = CheckCreditLimitFromV1Response.class)})
+    @PostMapping(value = ShipmentConstants.CHECK_CREDIT_LIMIT_FROM_V1)
+    public ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(@RequestBody CheckCreditLimitFromV1Request request) {
+        try {
+            return shipmentService.checkCreditLimitFromV1(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

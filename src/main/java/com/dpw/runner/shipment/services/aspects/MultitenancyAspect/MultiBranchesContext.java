@@ -6,6 +6,7 @@ import java.util.List;
 
 @Component
 public class MultiBranchesContext {
+    private MultiBranchesContext(){}
     private static ThreadLocal<List<Long>> branches = new InheritableThreadLocal<>();
 
     public static List<Long> getBranches() {

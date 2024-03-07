@@ -23,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -62,6 +63,7 @@ public class AuthFilter extends OncePerRequestFilter {
             "/api/v2/enums/**",
             "/api/v2/cache/**"};
 
+    @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         return Arrays.stream(ignoredPaths)
                 .anyMatch(e -> new AntPathMatcher().match(e, request.getServletPath()));
@@ -90,12 +92,12 @@ public class AuthFilter extends OncePerRequestFilter {
         UsersDto user = null;
         try{
             user = userService.getUserByToken(tokenUtility.getUserIdAndBranchId(authToken), authToken);
-        } catch (Exception e)
+        } catch (HttpStatusCodeException e)
         {
             log.info("Error while validating token with exception: {}", e.getMessage());
             e.printStackTrace();
             res.setContentType(APPLICATION_JSON);
-            res.setStatus(HttpStatus.UNAUTHORIZED.value());
+            res.setStatus(e.getRawStatusCode());
             return;
         }
         log.info("Time taken to retrieve user definition: {} for request: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
@@ -105,10 +107,9 @@ public class AuthFilter extends OncePerRequestFilter {
             log.info(errormessage);
             res.setContentType(APPLICATION_JSON);
             res.setStatus(HttpStatus.UNAUTHORIZED.value());
-            //res.getWriter().write(filterLevelException(new UnAuthorizedException(errormessage)));
             return;
         }
-        log.debug("Auth Successful, username:-{},tenantId:-{}", user.getUsername(), user.getTenantId());
+        log.info("Auth Successful, username:-{},tenantId:-{} for request: {}", user.getUsername(), user.getTenantId(), LoggerHelper.getRequestIdFromMDC());
         UserContext.setUser(user);
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());

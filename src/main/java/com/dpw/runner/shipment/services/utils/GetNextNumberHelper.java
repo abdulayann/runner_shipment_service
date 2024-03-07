@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -64,7 +65,7 @@ public class GetNextNumberHelper {
       var ValueOf = new HashMap<String, String>();
       LocalDateTime currDate = LocalDateTime.now();
 
-      ValueOf.put("branch", "BR"); // branch is not clear
+      ValueOf.put(Constants.BRANCH, "BR"); // branch is not clear
       ValueOf.put("dd", DateTimeFormatter.ofPattern("dd").format(currDate));
       ValueOf.put("yy", Integer.valueOf(currDate.getYear()).toString().substring(2)); // last 2 digits
       ValueOf.put("mm", padLeft(Integer.valueOf(currDate.getMonthValue()).toString(), 2, '0'));
@@ -107,9 +108,9 @@ public class GetNextNumberHelper {
         //                    }
         //                    suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
         //                }
-        else if (updateBranchCode && wordSplit.get(0).equalsIgnoreCase("branch")) {
+        else if (updateBranchCode && wordSplit.get(0).equalsIgnoreCase(Constants.BRANCH)) {
           if (user != null) {
-            ValueOf.put("branch", user.getCode());
+            ValueOf.put(Constants.BRANCH, user.getCode());
           }
           suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
         }
@@ -192,7 +193,7 @@ public class GetNextNumberHelper {
                         .logicOperator("AND")
                         .criteria(
                             Criteria.builder()
-                                .fieldName("productProcessTypes")
+                                .fieldName(Constants.PRODUCT_PROCESS_TYPES)
                                 .operator("=")
                                 .value(processType.toString())
                                 .build())
@@ -216,11 +217,11 @@ public class GetNextNumberHelper {
                     .fieldName("id")
                     .build()),
             Map.entry(
-                "productProcessTypes",
+                    Constants.PRODUCT_PROCESS_TYPES,
                 RunnerEntityMapping.builder()
                     .tableName("ProductSequenceConfig")
                     .dataType(ProductProcessTypes.class)
-                    .fieldName("productProcessTypes")
+                    .fieldName(Constants.PRODUCT_PROCESS_TYPES)
                     .build()));
 
     Pair<Specification<ProductSequenceConfig>, Pageable> pair = DbAccessHelper.fetchData(listCommonRequest, ProductSequenceConfig.class, tableNames);

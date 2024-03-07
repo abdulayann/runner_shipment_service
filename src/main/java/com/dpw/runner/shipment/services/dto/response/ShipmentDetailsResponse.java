@@ -179,4 +179,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long consignorDpsAddressId;
     private Long notifyPartyDpsAddressId;
     private Long shipmentCount;
+    private LocalDateTime bookingCreatedDate;
 }

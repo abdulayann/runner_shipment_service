@@ -2,8 +2,10 @@ package com.dpw.runner.shipment.services.dto.response.OrderManagement;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class OrderDocumentResponse {
+public class OrderDocumentResponse implements Serializable {
     private String documentId;
     private String documentName;
     private String uploadName;

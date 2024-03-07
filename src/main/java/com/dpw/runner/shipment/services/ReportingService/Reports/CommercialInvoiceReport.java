@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -45,6 +46,6 @@ public class CommercialInvoiceReport extends IReport{
 
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
-        return null;
+        return Collections.emptyMap();
     }
 }

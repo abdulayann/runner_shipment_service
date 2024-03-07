@@ -103,4 +103,12 @@ public class MawbStocksLinkDao implements IMawbStocksLinkDao {
         return null;
     }
 
+    @Override
+    public Long validateDuplicateMawbNumber(List<String> mawbNumbers) {
+        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("mawbNumber", mawbNumbers, "IN");
+        Pair<Specification<MawbStocksLink>, Pageable> pair = fetchData(listCommonRequest, MawbStocksLink.class);
+        Page<MawbStocksLink> page = findAll(pair.getLeft(), pair.getRight());
+        return page.getTotalElements();
+    }
+
 }

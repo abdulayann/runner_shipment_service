@@ -186,8 +186,8 @@ public class BookingConfirmationReport extends IReport{
             }
             for (ReferenceNumbersModel refNo : referenceNumbers) {
                 if (refNo != null && refNo.getType() != null &&
-                        refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL) ||
-                        refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)) {
+                        (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL) ||
+                        refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL))) {
                     if (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)) {
                         motherReferenceNo.add(refNo);
                     } else if (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL)) {

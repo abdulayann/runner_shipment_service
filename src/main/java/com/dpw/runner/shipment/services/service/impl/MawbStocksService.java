@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -257,7 +258,7 @@ public class MawbStocksService implements IMawbStocksService {
         return ResponseHelper.buildSuccessResponse(NextMawbCarrierResponse.builder().nextMawbNumber(null).build());
     }
 
-    private List<MawbStocksLink> mawbStocksLinkBulkUpdate(MawbStocksRequest mawbStocksRequest){
+    private List<MawbStocksLink> mawbStocksLinkBulkUpdate(MawbStocksRequest mawbStocksRequest) throws ValidationException {
         int count =  Integer.parseInt(mawbStocksRequest.getAvailableCount());
         List<MawbStocksLink> requestlist = new ArrayList<>();
 
@@ -272,7 +273,7 @@ public class MawbStocksService implements IMawbStocksService {
             }
             nums.add(stNum);
         }
-
+        List<String> mawbNumbers = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             MawbStocksLink mawbStocksLink = new MawbStocksLink();
             mawbStocksLink.setParentId(mawbStocksRequest.getId());
@@ -282,9 +283,12 @@ public class MawbStocksService implements IMawbStocksService {
                 mawbStocksLink.setSeqNumber("0" + mawbStocksLink.getSeqNumber());
             }
             mawbStocksLink.setMawbNumber((mawbStocksRequest.getPrefix() + "-" + nums.get(i)));
+            mawbNumbers.add(mawbStocksLink.getMawbNumber());
             mawbStocksLink.setStatus("Unused");
             requestlist.add(mawbStocksLink);
         }
+
+        beforeSave(mawbStocksRequest, mawbNumbers);
 
         for (MawbStocksLink request:requestlist) {
             mawbStocksLinkDao.save(request);
@@ -335,6 +339,21 @@ public class MawbStocksService implements IMawbStocksService {
             throw new RunnerException(e.getMessage());
         }
         return (ResponseEntity<IRunnerResponse>) ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
+    }
+
+    private void beforeSave(MawbStocksRequest mawbStocks, List<String> mawbNumbers) throws ValidationException {
+        if(isValidMawb(mawbStocks.getFrom()) && isValidMawb(mawbStocks.getTo())) {
+            Long count = mawbStocksLinkDao.validateDuplicateMawbNumber(mawbNumbers);
+            if(count > 0) {
+                throw new ValidationException(MawbStocksConstants.DUPLICATE_MAWB_STOCK_VALIDATION);
+            }
+        }
+    }
+
+    private boolean isValidMawb(String mawb) {
+        if(!StringUtility.isEmpty(mawb) && mawb.contains("-") && (mawb.length() - mawb.indexOf("-") == 9))
+            return true;
+        return false;
     }
 
 //    private void setManyToOneRelationships(MawbStocks mawbStocks){

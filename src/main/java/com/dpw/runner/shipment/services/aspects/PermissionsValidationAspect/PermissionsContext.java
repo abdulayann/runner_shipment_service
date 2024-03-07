@@ -10,6 +10,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 
 @Component
 public class PermissionsContext {
+    private PermissionsContext(){}
     private static ThreadLocal<Map<String,List<String>>> Permissions = new InheritableThreadLocal<>();
 
     public static List<String> getPermissions(String key) {

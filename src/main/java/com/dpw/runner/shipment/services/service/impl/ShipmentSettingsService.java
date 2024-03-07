@@ -28,7 +28,6 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,7 +41,6 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
@@ -185,7 +183,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             log.error("Request Id and Tenant Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        Optional<ShipmentSettingsDetails> oldEntity = null;
+        Optional<ShipmentSettingsDetails> oldEntity = Optional.empty();
         if(request.getTenantId() != null) {
             ListCommonRequest newRequest = new ListCommonRequest();
             newRequest.setPageNo(1);
@@ -193,14 +191,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             newRequest.setFilterCriteria(new ArrayList<>());
             Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
             Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
-            if(shipmentSettingsPage.get().collect(Collectors.toList()) != null && shipmentSettingsPage.get().collect(Collectors.toList()).size() > 0)
-                oldEntity = Optional.ofNullable(shipmentSettingsPage.get().collect(Collectors.toList()).get(0));
+            if(shipmentSettingsPage.get().toList() != null && shipmentSettingsPage.get().toList().size() > 0)
+                oldEntity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
         }
         else {
             long id = request.getId();
             oldEntity = shipmentSettingsDao.findById(id);
         }
-        if(oldEntity == null || !oldEntity.isPresent()) {
+        if(!oldEntity.isPresent()) {
             log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -308,7 +306,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        Optional<ShipmentSettingsDetails> oldEntity = null;
+        Optional<ShipmentSettingsDetails> oldEntity = Optional.empty();
         if(request.getTenantId() != null) {
             ListCommonRequest newRequest = new ListCommonRequest();
             newRequest.setPageNo(1);
@@ -316,14 +314,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             newRequest.setFilterCriteria(new ArrayList<>());
             Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
             Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
-            if(shipmentSettingsPage.get().collect(Collectors.toList()) != null && shipmentSettingsPage.get().collect(Collectors.toList()).size() > 0)
-                oldEntity = Optional.ofNullable(shipmentSettingsPage.get().collect(Collectors.toList()).get(0));
+            if(shipmentSettingsPage.get().toList() != null && shipmentSettingsPage.get().toList().size() > 0)
+                oldEntity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
         }
         else {
             long id = request.getId();
             oldEntity = shipmentSettingsDao.findById(id);
         }
-        if(oldEntity == null || !oldEntity.isPresent()) {
+        if(!oldEntity.isPresent()) {
             try{
                 return (ResponseEntity<IRunnerResponse>) completeCreateFromV1(commonRequestModel);
             } catch (Exception e) {
@@ -694,7 +692,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
     @Override
-    public ResponseEntity<ByteArrayResource> downloadTemplate(String templateId) {
+    public ResponseEntity<IRunnerResponse> downloadTemplate(String templateId) {
         try {
             byte[] response = documentService.downloadTemplate(templateId);
             return ResponseHelper.buildFileResponse(response, null, "DownloadDocument.docx");
@@ -703,7 +701,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : ShipmentSettingsConstants.DOWNLOAD_TEMPLATE_FAILED;
             log.error(responseMsg, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
 

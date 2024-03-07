@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -107,11 +109,11 @@ public class CSVParsingUtil<T> {
     public List<String> getHeadersForShipment() {
         List<String> headers = new ArrayList<>();
         List<Field> fields = Arrays.stream(ShipmentListResponse.class.getDeclaredFields()).toList();
-        Set removedFields = Set.of("client", "consigner", "consignee", "additionalDetails", "carrierDetails", "pickupDetails", "deliveryDetails");
+        Set<String> removedFields = Set.of("client", "consigner", "consignee", "additionalDetails", Constants.CARRIER_DETAILS, "pickupDetails", "deliveryDetails");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -122,11 +124,11 @@ public class CSVParsingUtil<T> {
     public List<String> getHeadersForAllocations() {
         List<String> headers = new ArrayList<>();
         List<Field> fields = Arrays.stream(AllocationsResponse.class.getDeclaredFields()).toList();
-        Set removedFields = Set.of("id", "guid");
+        Set<String> removedFields = Set.of("id", "guid");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -136,12 +138,12 @@ public class CSVParsingUtil<T> {
     public List<String> getHeadersForConsolidation() {
         List<String> headers = new ArrayList<>();
         List<Field> fields = Arrays.stream(ConsolidationListResponse.class.getDeclaredFields()).toList();
-        Set removedFields = Set.of("sendingAgent", "receivingAgent", "borrowedFrom", "creditor", "coLoadWith", "arrivalDetails",
-                "departureDetails", "carrierDetails", "achievedQuantities", "allocations");
+        Set<String> removedFields = Set.of("sendingAgent", "receivingAgent", "borrowedFrom", "creditor", "coLoadWith", "arrivalDetails",
+                "departureDetails", Constants.CARRIER_DETAILS, "achievedQuantities", "allocations");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields)
             headers.add(field.getName());
         return headers;
@@ -150,11 +152,11 @@ public class CSVParsingUtil<T> {
     public List<String> getHeadersForArrivalDepartureDetails() {
         List<String> headers = new ArrayList<>();
         List<Field> fields = Arrays.stream(ConsolidationListResponse.class.getDeclaredFields()).toList();
-        Set removedFields = Set.of("id", "guid", "containerYardId", "transportPortId", "CFSId", "CTOId", "firstForeignPortId", "lastForeignPortId");
+        Set<String> removedFields = Set.of("id", "guid", "containerYardId", "transportPortId", "CFSId", "CTOId", "firstForeignPortId", "lastForeignPortId");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields)
             headers.add(field.getName());
         return headers;
@@ -163,11 +165,11 @@ public class CSVParsingUtil<T> {
     public List<String> getHeadersForParties() {
         List<String> headers = new ArrayList<>();
         List<Field> fields = Arrays.stream(PartiesResponse.class.getDeclaredFields()).toList();
-        Set removedFields = Set.of("guid", "id", "orgData", "addressData");
+        Set<String> removedFields = Set.of("guid", "id", "orgData", "addressData");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -177,11 +179,11 @@ public class CSVParsingUtil<T> {
     public List<String> getHeadersForAchievedQuantities() {
         List<String> headers = new ArrayList<>();
         List<Field> fields = Arrays.stream(AchievedQuantitiesResponse.class.getDeclaredFields()).toList();
-        Set removedFields = Set.of("guid", "id");
+        Set<String> removedFields = Set.of("guid", "id");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -191,11 +193,11 @@ public class CSVParsingUtil<T> {
     public List<String> getHeadersForCarrier() {
         List<String> headers = new ArrayList<>();
         List<Field> fields = Arrays.stream(CarrierDetailResponse.class.getDeclaredFields()).toList();
-        Set removedFields = Set.of("guid", "id", "masterData", "unlocationData", "carrierMasterData", "vesselsMasterData");
+        Set<String> removedFields = Set.of("guid", "id", "masterData", "unlocationData", "carrierMasterData", "vesselsMasterData");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -205,11 +207,11 @@ public class CSVParsingUtil<T> {
     public List<String> getHeadersForPDDetails() {
         List<String> headers = new ArrayList<>();
         List<Field> fields = Arrays.stream(PickupDeliveryDetailsListResponse.class.getDeclaredFields()).toList();
-        Set removedFields = Set.of("guid", "id");
+        Set<String> removedFields = Set.of("guid", "id");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
         for (Field field : fields) {
             headers.add(field.getName());
         }
@@ -219,14 +221,14 @@ public class CSVParsingUtil<T> {
     public List<String> getHeadersForContainer() {
         List<String> headers = new ArrayList<>();
         List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
-        final Set requiredFields = Set.of("containerNumber", "volumeUtilization", "weightUtilization", "achievedVolume",
+        final Set<String> requiredFields = Set.of(Constants.CONTAINER_NUMBER, "volumeUtilization", "weightUtilization", "achievedVolume",
                 "achievedVolumeUnit", "achievedWeight", "achievedWeightUnit", "grossVolume", "grossVolumeUnit",
-                "allocatedWeight", "allocatedWeightUnit", "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "remarks",
-                "extraParams", "chargeable", "chargeableUnit", "ownType", "packs", "packsType", "marksNums", "innerPackageMeasurementUnit", "pacrNumber");
+                "allocatedWeight", "allocatedWeightUnit", Constants.NET_WEIGHT, "netWeightUnit", Constants.GROSS_WEIGHT, "grossWeightUnit", "remarks",
+                "extraParams", "chargeable", "chargeableUnit", "ownType", Constants.PACKS, "packsType", "marksNums", "innerPackageMeasurementUnit", "pacrNumber");
         containerFields = containerFields.stream().filter(field -> {
             if (requiredFields.contains(field.getName())) return true;
             else return false;
-        }).collect(Collectors.toList());
+        }).toList();
 
         for (Field field : containerFields) {
             headers.add(field.getName());
@@ -239,11 +241,11 @@ public class CSVParsingUtil<T> {
         Class<?> clazz = carrierDetailResponse.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
 
-        Set removedFields = Set.of("guid", "id", "masterData", "unlocationData", "carrierMasterData", "vesselsMasterData");
+        Set<String> removedFields = Set.of("guid", "id", "masterData", "unlocationData", "carrierMasterData", "vesselsMasterData");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -259,11 +261,11 @@ public class CSVParsingUtil<T> {
         if (pdResponse == null) pdResponse = new PickupDeliveryDetailsListResponse();
         Class<?> clazz = pdResponse.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set removedFields = Set.of("guid", "id");
+        Set<String> removedFields = Set.of("guid", "id");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -279,11 +281,11 @@ public class CSVParsingUtil<T> {
         if (party == null) party = new PartiesResponse();
         Class<?> clazz = party.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set removedFields = Set.of("guid", "id", "orgData", "addressData");
+        Set<String> removedFields = Set.of("guid", "id", "orgData", "addressData");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -299,11 +301,11 @@ public class CSVParsingUtil<T> {
         if (shipment == null) shipment = new ShipmentListResponse();
         Class<?> clazz = shipment.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set removedFields = Set.of("client", "consigner", "consignee", "additionalDetails", "carrierDetails", "pickupDetails", "deliveryDetails");
+        Set<String> removedFields = Set.of("client", "consigner", "consignee", "additionalDetails", Constants.CARRIER_DETAILS, "pickupDetails", "deliveryDetails");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -319,11 +321,11 @@ public class CSVParsingUtil<T> {
         if (response == null) response = new ConsolidationListResponse();
         Class<?> clazz = response.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set removedFields = Set.of("sendingAgent", "receivingAgent", "borrowedFrom", "creditor", "coLoadWith", "arrivalDetails", "departureDetails", "carrierDetails", "achievedQuantities", "allocations"); // Parties
+        Set<String> removedFields = Set.of("sendingAgent", "receivingAgent", "borrowedFrom", "creditor", "coLoadWith", "arrivalDetails", "departureDetails", Constants.CARRIER_DETAILS, "achievedQuantities", "allocations"); // Parties
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -339,11 +341,11 @@ public class CSVParsingUtil<T> {
         if (response == null) response = new AllocationsResponse();
         Class<?> clazz = response.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set removedFields = Set.of("id", "guid");
+        Set<String> removedFields = Set.of("id", "guid");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -360,11 +362,11 @@ public class CSVParsingUtil<T> {
         if (response == null) response = new AchievedQuantitiesResponse();
         Class<?> clazz = response.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set removedFields = Set.of("id", "guid");
+        Set<String> removedFields = Set.of("id", "guid");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -380,11 +382,11 @@ public class CSVParsingUtil<T> {
         if (response == null) response = new ArrivalDepartureDetailsResponse();
         Class<?> clazz = response.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set removedFields = Set.of("id", "guid");
+        Set<String> removedFields = Set.of("id", "guid");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -399,14 +401,14 @@ public class CSVParsingUtil<T> {
     public List<String> getAllAttributeValuesAsListContainer(ContainerResponse response) throws IllegalAccessException {
         Class<?> clazz = response.getClass();
         List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
-        final Set requiredFields = Set.of("containerNumber", "volumeUtilization", "weightUtilization", "achievedVolume",
+        final Set<String> requiredFields = Set.of(Constants.CONTAINER_NUMBER, "volumeUtilization", "weightUtilization", "achievedVolume",
                 "achievedVolumeUnit", "achievedWeight", "achievedWeightUnit", "grossVolume", "grossVolumeUnit",
-                "allocatedWeight", "allocatedWeightUnit", "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "remarks",
-                "extraParams", "chargeable", "chargeableUnit", "ownType", "packs", "packsType", "marksNums", "innerPackageMeasurementUnit", "pacrNumber");
+                "allocatedWeight", "allocatedWeightUnit", Constants.NET_WEIGHT, "netWeightUnit", Constants.GROSS_WEIGHT, "grossWeightUnit", "remarks",
+                "extraParams", "chargeable", "chargeableUnit", "ownType", Constants.PACKS, "packsType", "marksNums", "innerPackageMeasurementUnit", "pacrNumber");
         containerFields = containerFields.stream().filter(field -> {
             if (requiredFields.contains(field.getName())) return true;
             else return false;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<String> lst = new ArrayList<>();
 
@@ -489,7 +491,7 @@ public class CSVParsingUtil<T> {
 
         Set<String> mandatoryColumns = new HashSet<>();
         mandatoryColumns.add("shipmentNumber");
-        mandatoryColumns.add("packs");
+        mandatoryColumns.add(Constants.PACKS);
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
         List<String> commodityCodesList = new ArrayList<>();
@@ -507,13 +509,13 @@ public class CSVParsingUtil<T> {
             validateExcel(sheet);
             Row headerRow = sheet.getRow(0);
             if (headerRow.getLastCellNum() < 1) {
-                throw new ValidationException("Empty excel sheet uploaded.");
+                throw new ValidationException(ContainerConstants.EMPTY_EXCEL_SHEET);
             }
             String[] header = new String[headerRow.getLastCellNum()];
             Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
                 if (headerRow.getCell(i) == null || StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
-                    throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
+                    throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
                 }
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
                 if (mandatoryColumns.contains(header[i])) {
@@ -542,7 +544,7 @@ public class CSVParsingUtil<T> {
             }
 
             if (headerSet.size() < headerRow.getLastCellNum()) {
-                throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
+                throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
             }
             Set<String> guidSet = new HashSet<>();
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
@@ -560,7 +562,7 @@ public class CSVParsingUtil<T> {
                 if (guidPos != -1) {
                     String guidCell = getCellValueAsString(row.getCell(guidPos));
                     if (!StringUtils.isEmpty(guidCell) && guidSet.contains(guidCell)) {
-                        throw new ValidationException("GUID is duplicate at row: " + i);
+                        throw new ValidationException(ContainerConstants.GUID_DUPLICATE + i);
                     }
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
@@ -590,11 +592,11 @@ public class CSVParsingUtil<T> {
                         if (!StringUtils.isEmpty(guidVal)) {
                             var packingGuid = UUID.fromString(guidVal);
                             if (mapOfEntity != null && !mapOfEntity.containsKey(packingGuid)) {
-                                throw new ValidationException("GUID at row: " + i + " doesn't exist for this consolidation.");
+                                throw new ValidationException(String.format(ContainerConstants.GUID_NOT_EXIST_FOR_CONSOLIDATION, i));
                             }
                         }
                     } catch (Exception ex) {
-                        throw new ValidationException("GUID not valid at row: " + i);
+                        throw new ValidationException(ContainerConstants.GUID_NOT_VALID + i);
                     }
                 }
                 T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
@@ -622,10 +624,9 @@ public class CSVParsingUtil<T> {
                         String cellValue = getCellValueAsString(cell);
                         checkForUnitValidations(masterListsMap, header[j], cellValue, i, request.getTransportMode());
                         checkForValueValidations(header[j], cellValue, i, request.getTransportMode());
-                        if (header[j].equalsIgnoreCase("origin")) {
-                            if (masterListsMap.containsKey("Unlocations") && !masterListsMap.get("Unlocations").contains(cellValue)) {
-                                throw new ValidationException("Origin " + cellValue + "is not valid at row " + i);
-                            }
+                        if (header[j].equalsIgnoreCase("origin") && masterListsMap.containsKey(Constants.UNLOCATIONS)
+                                && !masterListsMap.get(Constants.UNLOCATIONS).contains(cellValue)) {
+                            throw new ValidationException("Origin " + cellValue + "is not valid at row " + i);
                         }
                         setField(entity, header[j], cellValue, i);
                     }
@@ -637,9 +638,9 @@ public class CSVParsingUtil<T> {
             log.error(e1.getMessage());
             throw new ValidationException(e1.getMessage());
         } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
-            log.debug("Excel sheet is not valid. {}", e);
+            log.debug(ContainerConstants.EXCEL_SHEET_NOT_VALID, e);
             log.error(e.getMessage());
-            throw new ValidationException("Excel sheet is not valid.");
+            throw new ValidationException(ContainerConstants.EXCEL_SHEET_INVALID);
         }
         return entityList;
     }
@@ -683,7 +684,7 @@ public class CSVParsingUtil<T> {
             validateExcel(sheet);
             Row headerRow = sheet.getRow(0);
             if (headerRow.getLastCellNum() < 1) {
-                throw new ValidationException("Empty excel sheet uploaded.");
+                throw new ValidationException(ContainerConstants.EMPTY_EXCEL_SHEET);
             }
             String[] header = new String[headerRow.getLastCellNum()];
             Field[] fields = modelClass.getDeclaredFields();
@@ -692,7 +693,7 @@ public class CSVParsingUtil<T> {
             Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
                 if (headerRow.getCell(i) == null || StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
-                    throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
+                    throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
                 }
 
                 if(renameFieldMap.containsKey(headerRow.getCell(i).getStringCellValue()))
@@ -712,7 +713,7 @@ public class CSVParsingUtil<T> {
             }
 
             if (headerSet.size() < headerRow.getLastCellNum()) {
-                throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
+                throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
             }
             Set<String> guidSet = new HashSet<>();
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
@@ -730,7 +731,7 @@ public class CSVParsingUtil<T> {
                 if (guidPos != -1) {
                     String guidCell = getCellValueAsString(row.getCell(guidPos));
                     if (!StringUtils.isEmpty(guidCell) && guidSet.contains(guidCell)) {
-                        throw new ValidationException("GUID is duplicate at row: " + i);
+                        throw new ValidationException(ContainerConstants.GUID_DUPLICATE + i);
                     }
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
@@ -749,13 +750,13 @@ public class CSVParsingUtil<T> {
                         if (!StringUtils.isEmpty(guidVal)) {
                             var containerGuid = UUID.fromString(guidVal);
                             if (mapOfEntity != null && !mapOfEntity.containsKey(containerGuid)) {
-                                throw new ValidationException("GUID at row: " + i + " doesn't exist for this consolidation.");
+                                throw new ValidationException(String.format(ContainerConstants.GUID_NOT_EXIST_FOR_CONSOLIDATION, i));
                             }
                         }
                     } catch (ValidationException ex) {
                         throw ex;
                     } catch (Exception ex) {
-                        throw new ValidationException("GUID not valid at row: " + i);
+                        throw new ValidationException(ContainerConstants.GUID_NOT_VALID + i);
                     }
                 }
                 T entity = guidPos != -1 &&  mapOfEntity != null && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
@@ -770,7 +771,7 @@ public class CSVParsingUtil<T> {
                         if (header[j].equalsIgnoreCase("containerCode"))
                             checkForContainerCodeValidation(masterListsMap, cellValue, i);
                         checkForValueValidations(header[j], cellValue, i, request.getTransportMode());
-                        if (header[j].equalsIgnoreCase("containerNumber"))
+                        if (header[j].equalsIgnoreCase(Constants.CONTAINER_NUMBER))
                             checkForDuplicateContainerNumberValidation(guidPos, row, cellValue, i, isUpdate, existingContainerNumbers);
                         setField(entity, header[j], cellValue, i);
                     }
@@ -782,9 +783,9 @@ public class CSVParsingUtil<T> {
             log.error(e1.getMessage());
             throw new ValidationException(e1.getMessage());
         } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
-            log.debug("Excel sheet is not valid. {}", e);
+            log.debug(ContainerConstants.EXCEL_SHEET_NOT_VALID, e);
             log.error(e.getMessage());
-            throw new ValidationException("Excel sheet is not valid.");
+            throw new ValidationException(ContainerConstants.EXCEL_SHEET_INVALID);
         }
         return entityList;
     }
@@ -804,7 +805,7 @@ public class CSVParsingUtil<T> {
         List<String> containerNumberList = new ArrayList<>();
         Set<String> mandatoryColumns = new HashSet<>();
         mandatoryColumns.add("eventCode");
-        mandatoryColumns.add("containerNumber");
+        mandatoryColumns.add(Constants.CONTAINER_NUMBER);
 
         int guidPos = -1;
         int containerNumberPos = -1;
@@ -814,20 +815,20 @@ public class CSVParsingUtil<T> {
             validateExcel(sheet);
             Row headerRow = sheet.getRow(0);
             if (headerRow.getLastCellNum() < 1) {
-                throw new ValidationException("Empty excel sheet uploaded.");
+                throw new ValidationException(ContainerConstants.EMPTY_EXCEL_SHEET);
             }
             String[] header = new String[headerRow.getLastCellNum()];
             Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
                 if (headerRow.getCell(i) == null || StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
-                    throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
+                    throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
                 }
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
                 headerSet.add(header[i]);
                 if (header[i].equalsIgnoreCase("guid")) {
                     guidPos = i;
                 }
-                if (header[i].equalsIgnoreCase("containerNumber")) {
+                if (header[i].equalsIgnoreCase(Constants.CONTAINER_NUMBER)) {
                     containerNumberPos = i;
                 }
 
@@ -846,7 +847,7 @@ public class CSVParsingUtil<T> {
             Map<String, Set<String>> masterListsMap = getAllMasterDataEvents(masterDataMap);
 
             if (headerSet.size() < headerRow.getLastCellNum()) {
-                throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
+                throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
             }
             Set<String> guidSet = new HashSet<>();
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
@@ -854,7 +855,7 @@ public class CSVParsingUtil<T> {
                 if (guidPos != -1) {
                     String guidCell = getCellValueAsString(row.getCell(guidPos));
                     if (!StringUtils.isEmpty(guidCell) && guidSet.contains(guidCell)) {
-                        throw new ValidationException("GUID is duplicate at row: " + i);
+                        throw new ValidationException(ContainerConstants.GUID_DUPLICATE + i);
                     }
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
@@ -873,11 +874,11 @@ public class CSVParsingUtil<T> {
                         if (!StringUtils.isEmpty(guidVal)) {
                             var containerGuid = UUID.fromString(guidVal);
                             if (mapOfEntity != null && !mapOfEntity.containsKey(containerGuid)) {
-                                throw new ValidationException("GUID at row: " + i + " doesn't exist for this consolidation.");
+                                throw new ValidationException(String.format(ContainerConstants.GUID_NOT_EXIST_FOR_CONSOLIDATION, i));
                             }
                         }
                     } catch (Exception ex) {
-                        throw new ValidationException("GUID not valid at row: " + i);
+                        throw new ValidationException(ContainerConstants.GUID_NOT_VALID + i);
                     }
                 }
                 T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
@@ -888,7 +889,7 @@ public class CSVParsingUtil<T> {
                     Cell cell = row.getCell(j);
                     if (cell != null) {
                         String cellValue = getCellValueAsString(cell);
-                        if (header[j].equalsIgnoreCase("containerNumber")) {
+                        if (header[j].equalsIgnoreCase(Constants.CONTAINER_NUMBER)) {
                             if (StringUtils.isEmpty(cellValue)) {
                                 throw new ValidationException("Container Number is missing in Line: " + i + ", Please enter and re-upload.");
                             }
@@ -915,16 +916,16 @@ public class CSVParsingUtil<T> {
             log.error(e1.getMessage());
             throw new ValidationException(e1.getMessage());
         } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
-            log.debug("Excel sheet is not valid. {}", e);
+            log.debug(ContainerConstants.EXCEL_SHEET_NOT_VALID, e);
             log.error(e.getMessage());
-            throw new ValidationException("Excel sheet is not valid.");
+            throw new ValidationException(ContainerConstants.EXCEL_SHEET_INVALID);
         }
         return entityList;
     }
 
     private void checkForContainerCodeValidation(Map<String, Set<String>> masterListsMap,
                                                  String cellValue, int i) throws ValidationException {
-        if (masterListsMap.containsKey("ContainerTypes") && !masterListsMap.get("ContainerTypes").contains(cellValue)) {
+        if (masterListsMap.containsKey(Constants.CONTAINER_TYPES) && !masterListsMap.get(Constants.CONTAINER_TYPES).contains(cellValue)) {
             throw new ValidationException("Container Type is not valid at row: " + i);
         }
     }
@@ -948,30 +949,30 @@ public class CSVParsingUtil<T> {
     }
 
     private void checkForValueValidations(String column, String cellValue, int rowNum, String transportMode) throws ValidationException {
-        if (column.equalsIgnoreCase("grossWeight") && cellValue.contains("-")) {
+        if (column.equalsIgnoreCase(Constants.GROSS_WEIGHT) && cellValue.contains("-")) {
             throw new ValidationException("Gross Weight is not valid at row: " + rowNum);
         }
         if (column.equalsIgnoreCase("measurement") && cellValue.contains("-")) {
             throw new ValidationException("Measurement is not valid at row: " + rowNum);
         }
-        if (column.equalsIgnoreCase("netWeight") && cellValue.contains("-")) {
+        if (column.equalsIgnoreCase(Constants.NET_WEIGHT) && cellValue.contains("-")) {
             throw new ValidationException("Net Weight is not valid at row: " + rowNum);
         }
         if (column.equalsIgnoreCase("tareWeight") && cellValue.contains("-")) {
             throw new ValidationException("Tare Weight is not valid at row: " + rowNum);
         }
-        if (column.equalsIgnoreCase("packs")) {
+        if (column.equalsIgnoreCase(Constants.PACKS)) {
             try {
                 if (transportMode != null &&
                         transportMode.equals(Constants.TRANSPORT_MODE_AIR) &&
                         (cellValue == null || Integer.parseInt(cellValue) < 1)) {
-                    throw new ValidationException("Packs is not valid at row: " + rowNum);
+                    throw new ValidationException(PackingConstants.PACKS_NOT_VALID + rowNum);
                 }
                 int t = Integer.parseInt(cellValue);
                 if (t < 1)
-                    throw new ValidationException("Packs is not valid at row: " + rowNum);
+                    throw new ValidationException(PackingConstants.PACKS_NOT_VALID + rowNum);
             } catch (Exception e) {
-                throw new ValidationException("Packs is not valid at row: " + rowNum + ". Please provide integer value and within the range of integer.");
+                throw new ValidationException(PackingConstants.PACKS_NOT_VALID + rowNum + ". Please provide integer value and within the range of integer.");
             }
         }
 
@@ -992,11 +993,9 @@ public class CSVParsingUtil<T> {
                 throw new ValidationException("DG Substance Id is invalid at row: " + rowNum);
             }
         }
-        if (column.toLowerCase().contains("flashpoint")) {
-            if (!StringUtils.isEmpty(cellValue) && masterListsMap.containsKey("flashpoint") &&
-                    !masterListsMap.get("flashpoint").contains(cellValue)) {
-                throw new ValidationException("FlashPoint is invalid at row: " + rowNum);
-            }
+        if (column.toLowerCase().contains(Constants.FLASH_POINT) && !StringUtils.isEmpty(cellValue) && masterListsMap.containsKey(Constants.FLASH_POINT) &&
+                !masterListsMap.get(Constants.FLASH_POINT).contains(cellValue)) {
+            throw new ValidationException("FlashPoint is invalid at row: " + rowNum);
         }
         if (column.toLowerCase().contains("weightunit")) {
             switch (column.toLowerCase()) {
@@ -1021,6 +1020,7 @@ public class CSVParsingUtil<T> {
                     }
                     break;
                 }
+                default:
             }
         }
         if (column.toLowerCase().contains("tempunit")) {
@@ -1069,6 +1069,7 @@ public class CSVParsingUtil<T> {
                     }
                     break;
                 }
+                default:
             }
         }
         if (column.toLowerCase().contains("hbldeliverymode")) {
@@ -1094,7 +1095,7 @@ public class CSVParsingUtil<T> {
             }
         }
         if (column.toLowerCase().contains("containerCode")) {
-            if (!cellValue.isEmpty() && !masterListsMap.containsKey("ContainerTypes") && !masterListsMap.get("ContainerTypes").contains(cellValue)) {
+            if (!cellValue.isEmpty() && !masterListsMap.containsKey(Constants.CONTAINER_TYPES) && !masterListsMap.get(Constants.CONTAINER_TYPES).contains(cellValue)) {
                 throw new ValidationException("Container Type " + cellValue + "is not valid at row " + rowNum);
             }
         }
@@ -1124,7 +1125,7 @@ public class CSVParsingUtil<T> {
         if (column.toLowerCase().contains("countrycode")) {
             if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.COUNTRIES.getDescription()) &&
                     !masterListsMap.get(MasterDataType.COUNTRIES.getDescription()).contains(cellValue)) {
-                throw new ValidationException("Country Code " + cellValue + " is invalid at row: " + rowNum);
+                throw new ValidationException(String.format("Country Code %s is invalid at row: %d", cellValue, rowNum));
             }
         }
     }
@@ -1158,7 +1159,7 @@ public class CSVParsingUtil<T> {
 
         //check excel sheet has rows (empty excelsheet uploaded)
         if (sheet == null || sheet.getLastRowNum() <= 0) {
-            throw new ValidationException("Empty excel sheet uploaded.");
+            throw new ValidationException(ContainerConstants.EMPTY_EXCEL_SHEET);
         }
         //check rows are more than or equal 2 (excel sheet has only header row)
         else if (sheet.getLastRowNum() < 1) {
@@ -1318,7 +1319,7 @@ public class CSVParsingUtil<T> {
                 List<V1ContainerTypeResponse> containerTypeList = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
                 if (containerTypeList != null && !containerTypeList.isEmpty()) {
                     Set<String> containerTypeSet = containerTypeList.stream().filter(Objects::nonNull).map(V1ContainerTypeResponse::getCode).collect(Collectors.toSet());
-                    masterDataMap.put("ContainerTypes", containerTypeSet);
+                    masterDataMap.put(Constants.CONTAINER_TYPES, containerTypeSet);
                 }
             }
         }
@@ -1340,7 +1341,7 @@ public class CSVParsingUtil<T> {
                 if (unlocationList != null && !unlocationList.isEmpty()) {
                     Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
                     locCodeToLocationReferenceGuidMap.putAll(unlocationList.stream().filter(Objects::nonNull).collect(Collectors.toMap(UnlocationsResponse::getLocCode, UnlocationsResponse::getLocationsReferenceGUID)));
-                    masterDataMap.put("Unlocations", unlocationSet);
+                    masterDataMap.put(Constants.UNLOCATIONS, unlocationSet);
                 }
             }
         }

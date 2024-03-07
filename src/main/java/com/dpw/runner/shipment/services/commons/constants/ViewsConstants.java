@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ViewsConstants {
+    private ViewsConstants(){}
     public static final String VIEW_API_HANDLE = "/api/v2/views";
 
     public static final String VIEW_CREATE_SUCCESSFUL = "Successful View Data Creation";

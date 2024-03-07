@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class NotesConstants {
+    private NotesConstants(){}
     public static final String NOTES_API_HANDLE = "/api/v2/notes";
     public static final String NOTES_CREATE_SUCCESSFUL = "Successful NOTES Creation";
 

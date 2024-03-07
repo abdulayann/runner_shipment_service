@@ -13,8 +13,6 @@ public class EventsRequestV2 implements IRunnerRequest {
     private UUID Guid;
     @JsonProperty("EntityType")
     private String EntityType;
-    @JsonProperty("EntityID")
-    private Long EntityId;
     @JsonProperty("Actual")
     private LocalDateTime Actual;
     @JsonProperty("Description")

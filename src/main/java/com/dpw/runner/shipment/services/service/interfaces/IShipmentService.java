@@ -34,7 +34,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws RunnerException;
+    ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes, boolean dataMigration) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> cloneShipment(CommonRequestModel commonRequestModel);
 
@@ -78,5 +78,6 @@ public interface IShipmentService extends ICommonService {
     void updateDateAndStatus(long id, LocalDateTime date, Integer status) throws RunnerException;
     ResponseEntity<IRunnerResponse> fetchEmails(Long shipmentId, Long consolidationId);
     ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(CommonRequestModel commonRequestModel);
 
 }

@@ -15,10 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.json.*;
-
-
 import java.io.StringReader;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -29,10 +26,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ValidatorUtility {
 
+    private final ObjectMapper objectMapper;
+    private final IValidationsDao validationsDao;
+
     @Autowired
-    private ObjectMapper objectMapper;
-    @Autowired
-    private IValidationsDao validationsDao;
+    public ValidatorUtility(ObjectMapper objectMapper, IValidationsDao validationsDao) {
+        this.objectMapper = objectMapper;
+        this.validationsDao = validationsDao;
+    }
 
 
     /**
@@ -150,6 +151,7 @@ public class ValidatorUtility {
                     case ValidatorConstants.ARRAY_PROPERTIES:
                         errors.addAll(validateArrayProperties(jsonObject, fieldSchema.getJsonObject(ValidatorConstants.ARRAY_PROPERTIES), field, jsonMap));
                         break;
+                    default:
                 }
 
                 /** Whenever fails-on-first will be enabled, rest of the validations will not be checked */
@@ -206,6 +208,7 @@ public class ValidatorUtility {
                         errors.add(String.format(ErrorConstants.INVALID_MIN_SIZE_VALIDATION, at, fieldValueArray.size(), size));
                     }
                     break;
+                default:
             }
         }
 
@@ -233,6 +236,7 @@ public class ValidatorUtility {
 
                     }
                     break;
+                default:
             }
         }
 
@@ -282,7 +286,7 @@ public class ValidatorUtility {
             JsonArray enumList = jsonSchema.getJsonArray(ValidatorConstants.ENUM);
             switch (fieldValue.getValueType()) {
                 case STRING:
-                    Set enumStringList = enumList.stream().map(c -> c.toString().replaceAll("\"", "")).collect(Collectors.toSet());
+                    Set<String> enumStringList = enumList.stream().map(c -> c.toString().replace("\"", "")).collect(Collectors.toSet());
                     if (!enumStringList.isEmpty() && !enumStringList.contains(jsonObject.getString(at)))
                         errors.add(String.format(ErrorConstants.INVALID_ENUM_VALIDATION, at, jsonObject.getString(at), enumStringList));
                     break;
@@ -294,6 +298,7 @@ public class ValidatorUtility {
                         errors.add(String.format(ErrorConstants.INVALID_ENUM_VALIDATION, at, fieldValueInteger, enumIntegerList));
 
                     break;
+                default:
             }
         }
         return errors;
@@ -395,6 +400,7 @@ public class ValidatorUtility {
                                 if (! jsonMap.containsKey(compareWith) || ((Boolean) jsonMap.get(compareWith) != jsonObject.getBoolean(at)))
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 break;
+                            default:
 
                         }
                         break;
@@ -418,6 +424,7 @@ public class ValidatorUtility {
                                 if (!jsonMap.containsKey(compareWith) || ((Boolean) jsonMap.get(compareWith) == jsonObject.getBoolean(at)))
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 break;
+                            default:
                         }
                         break;
 
@@ -435,6 +442,7 @@ public class ValidatorUtility {
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 }
                                 break;
+                            default:
                         }
                         break;
 
@@ -453,6 +461,7 @@ public class ValidatorUtility {
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 }
                                 break;
+                            default:
                         }
                         break;
 
@@ -471,6 +480,7 @@ public class ValidatorUtility {
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 }
                                 break;
+                            default:
                         }
                         break;
 
@@ -489,8 +499,10 @@ public class ValidatorUtility {
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 }
                                 break;
+                            default:
                         }
                         break;
+                    default:
                 }
             }
         }
@@ -499,8 +511,8 @@ public class ValidatorUtility {
     }
 
     private boolean isValidDateComparison(String value, String compareTo, Operators operators) {
-        LocalDateTime valueDate = LocalDateTime.parse(value.replaceAll("\"", ""));
-        LocalDateTime compareToData = LocalDateTime.parse(compareTo.replaceAll("\"", ""));
+        LocalDateTime valueDate = LocalDateTime.parse(value.replace("\"", ""));
+        LocalDateTime compareToData = LocalDateTime.parse(compareTo.replace("\"", ""));
         int compare = valueDate.compareTo(compareToData);
 
         switch (operators) {
@@ -516,13 +528,14 @@ public class ValidatorUtility {
                 return compare > 0;
             case GREATER_THAN_EQUALS:
                 return compare >= 0;
+            default:
         }
         return true;
     }
 
     private boolean isValidaDateTime(String date) {
         try {
-            LocalDateTime.parse(date.replaceAll("\"", ""));
+            LocalDateTime.parse(date.replace("\"", ""));
         } catch (Exception ex) {
             return false;
         }
@@ -531,7 +544,7 @@ public class ValidatorUtility {
 
     private boolean isValidaDate(String date) {
         try {
-            LocalDate.parse(date.replaceAll("\"", ""));
+            LocalDate.parse(date.replace("\"", ""));
         } catch (Exception ex) {
             return false;
         }
@@ -564,7 +577,7 @@ public class ValidatorUtility {
                     if (fieldValueInteger != null && fieldValueInteger == schema.getInt(ValidatorConstants.VALUE))
                         isValid = validateAdditionalCompare(jsonObject, compare, at, jsonMap);
                     break;
-
+                default:
             }
 
             if (isValid) {
@@ -587,11 +600,11 @@ public class ValidatorUtility {
 
                     switch (compareWithValue.getValueType()) {
                         case STRING:
-                            String fieldValueString = String.valueOf(jsonMap.get(compareWith)).replaceAll("\"", "");
+                            String fieldValueString = String.valueOf(jsonMap.get(compareWith)).replace("\"", "");
                             switch (operator) {
                                 case IN:
                                     JsonArray enumList = schemaObject.getJsonArray(ValidatorConstants.VALUE);
-                                    Set enumStringList = enumList.stream().map(c -> c.toString().replaceAll("\"", "")).collect(Collectors.toSet());
+                                    Set<String> enumStringList = enumList.stream().map(c -> c.toString().replace("\"", "")).collect(Collectors.toSet());
                                     if (!enumStringList.isEmpty() && !enumStringList.contains(fieldValueString))
                                         return false;
                                     break;
@@ -607,7 +620,7 @@ public class ValidatorUtility {
                                     if (fieldValueString.equals(compareToValue1))
                                         return false;
                                     break;
-
+                                default:
                             }
                             break;
 
@@ -632,10 +645,10 @@ public class ValidatorUtility {
                                     if (compareToValue1 == fieldValueInteger)
                                         return false;
                                     break;
-
+                                default:
                             }
                             break;
-
+                        default:
                     }
                 }
 
@@ -666,7 +679,7 @@ public class ValidatorUtility {
 
                 case ValidatorConstants.UNIQUE:
                     for (JsonValue value :  jsonSchema.getJsonArray(ValidatorConstants.UNIQUE)) {
-                        String uniqueKey = value.toString().replaceAll("\"", "");
+                        String uniqueKey = value.toString().replace("\"", "");
                         Set<JsonValue> set = new HashSet<>();
 
                         for (JsonValue currentValue : fieldValueArray) {
@@ -679,6 +692,7 @@ public class ValidatorUtility {
                         }
                     }
                     break;
+                default:
             }
 
         }

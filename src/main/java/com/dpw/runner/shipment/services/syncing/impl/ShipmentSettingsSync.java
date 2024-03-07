@@ -118,7 +118,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {
         return modelMapper.map(obj, clazz);

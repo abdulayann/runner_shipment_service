@@ -91,7 +91,8 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private Boolean isAtdAtaAutoPopulateEnabled;
 
     @Column(name = "restricted_locations")
-    @ElementCollection
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "shipment_settings_details_restricted_locations", joinColumns = @JoinColumn(name = "shipment_settings_details_id"))//    @OneToMany(fetch = FetchType.EAGER)
     private List<String> restrictedLocations;
 
     @Column(name = "shipment_console_import_approver_role")

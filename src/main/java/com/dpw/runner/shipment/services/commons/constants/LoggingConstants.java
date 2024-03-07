@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class LoggingConstants {
+    private LoggingConstants(){}
     public static final String REQUEST_ID = "request_id";
 }

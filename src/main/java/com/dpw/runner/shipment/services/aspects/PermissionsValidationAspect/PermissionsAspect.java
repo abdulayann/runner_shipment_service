@@ -2,17 +2,13 @@ package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.utils.PermissionUtil;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +24,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 @Component
 public class PermissionsAspect {
 
-    private final Logger LOG = LoggerFactory.getLogger(PermissionsAspect.class);
     @Autowired
     private PermissionsContext permissionsContext;
     @Autowired
@@ -96,8 +91,4 @@ public class PermissionsAspect {
         }
     }
 
-    private FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {
-        Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
-        return FilterCriteria.builder().criteria(criteria).logicOperator(logicalOperator).build();
-    }
 }

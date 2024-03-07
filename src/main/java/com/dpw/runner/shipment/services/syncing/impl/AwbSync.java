@@ -121,7 +121,7 @@ public class AwbSync implements IAwbSync {
             return null;
         return  lst.stream()
                 .map(item -> jsonHelper.convertValue(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private AwbRequestV2 generateAwbSyncRequest(Awb awb) {
@@ -141,7 +141,7 @@ public class AwbSync implements IAwbSync {
         List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
 
         // Fetch all the awb records with the mapped hawbId
-        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", mawbHawbLinks.stream().map(i -> i.getHawbId()).collect(Collectors.toList()), "IN");
+        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", mawbHawbLinks.stream().map(i -> i.getHawbId()).toList(), "IN");
         Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
         Page<Awb> page = awbDao.findAll(pair.getLeft(), pair.getRight());
 

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class FileRepoConstants {
+    private FileRepoConstants(){}
     public static final String FILE_REPO_API_HANDLE = "/api/v2/file-repo";
     public static final String FILE_REPO_LIST_ENTITYID_ENTITYTYPE = "/list-entityidandtype";
 

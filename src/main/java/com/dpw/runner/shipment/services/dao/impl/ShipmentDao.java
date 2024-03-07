@@ -44,8 +44,6 @@ import javax.validation.ConstraintViolationException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
@@ -191,8 +189,7 @@ public class ShipmentDao implements IShipmentDao {
             }
         }
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
-                && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)
-                && shipmentDetails.getMasterBill() != null)
+                && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT))
             directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null);
 
         validateIataCode(shipmentDetails);
@@ -319,7 +316,7 @@ public class ShipmentDao implements IShipmentDao {
         }
 
         // Shipment restricted unlocations validation
-        if (shipmentSettingsDetails.getRestrictedLocationsEnabled() && request.getCarrierDetails() != null) {
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getRestrictedLocationsEnabled()) && request.getCarrierDetails() != null) {
             String unLoc = null;
             if (request.getDirection().equals(Constants.DIRECTION_EXP)) {
                 unLoc = request.getCarrierDetails().getOriginPort();
@@ -412,18 +409,23 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void directShipmentMAWBCheck(ShipmentDetails shipmentRequest, String oldMasterBill) {
+
         if (StringUtility.isEmpty(shipmentRequest.getMasterBill())) {
-            mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
+            if(!shipmentRequest.getDirection().equals("IMP")) {
+                mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
+            }
             return;
         }
-        if (!Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill)) {
+        if (!Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill) && !shipmentRequest.getDirection().equals("IMP")) {
             mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
         }
 
         if (Boolean.FALSE.equals(isMAWBNumberValid(shipmentRequest.getMasterBill())))
             throw new ValidationException("Please enter a valid MAWB number.");
 
-        if(shipmentRequest.getCarrierDetails() == null || StringUtility.isEmpty(shipmentRequest.getCarrierDetails().getShippingLine())) {
+        CarrierResponse correspondingCarrier = null;
+        if(shipmentRequest.getCarrierDetails() == null || StringUtility.isEmpty(shipmentRequest.getCarrierDetails().getShippingLine()) ||
+            !Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill)) {
             String mawbAirlineCode = shipmentRequest.getMasterBill().substring(0, 3);
 
             V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
@@ -431,15 +433,21 @@ public class ShipmentDao implements IShipmentDao {
             if (carrierDetails == null || carrierDetails.isEmpty())
                 throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
 
-            CarrierResponse correspondingCarrier = carrierDetails.get(0);
+            correspondingCarrier = carrierDetails.get(0);
 
-            if(shipmentRequest.getCarrierDetails() == null)
-                shipmentRequest.setCarrierDetails(new CarrierDetails());
+            if(shipmentRequest.getCarrierDetails() == null || StringUtility.isEmpty(shipmentRequest.getCarrierDetails().getShippingLine())) {
+                if (shipmentRequest.getCarrierDetails() == null)
+                    shipmentRequest.setCarrierDetails(new CarrierDetails());
 
-            shipmentRequest.getCarrierDetails().setShippingLine(correspondingCarrier.getItemValue());
+                shipmentRequest.getCarrierDetails().setShippingLine(correspondingCarrier.getItemValue());
+            }
         }
 
-        Boolean isMAWBNumberExist = false;
+        if (shipmentRequest.getDirection().equals("IMP")) {
+            return;
+        }
+
+        boolean isMAWBNumberExist = false;
 
         ListCommonRequest listMawbRequest = constructListCommonRequest("mawbNumber", shipmentRequest.getMasterBill(), "=");
         Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listMawbRequest, MawbStocksLink.class);
@@ -452,21 +460,17 @@ public class ShipmentDao implements IShipmentDao {
             mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
         }
 
-        if (shipmentRequest.getDirection().equals("IMP")) {
-            return;
-        }
-
         if (isMAWBNumberExist) {
             if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId())) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
         } else {
-            createNewMAWBEntry(shipmentRequest);
+            createNewMAWBEntry(shipmentRequest, correspondingCarrier != null ? correspondingCarrier.getItemValue() : shipmentRequest.getCarrierDetails().getShippingLine());
         }
     }
 
-    private void createNewMAWBEntry(ShipmentDetails shipmentRequest) {
+    private void createNewMAWBEntry(ShipmentDetails shipmentRequest, String shippingLine) {
         MawbStocks mawbStocks = new MawbStocks();
-        mawbStocks.setAirLinePrefix(shipmentRequest.getCarrierDetails().getShippingLine());
+        mawbStocks.setAirLinePrefix(shippingLine);
         mawbStocks.setCount("1");
         mawbStocks.setAvailableCount("1");
         mawbStocks.setStartNumber(Long.valueOf(shipmentRequest.getMasterBill().substring(4, 10)));
@@ -499,11 +503,9 @@ public class ShipmentDao implements IShipmentDao {
         if (masterBill.length() == 12) {
             String mawbSeqNum = masterBill.substring(4, 11);
             String checkDigit = masterBill.substring(11, 12);
-            Long imawbSeqNum = 0L;
-            Long icheckDigit = 0L;
             if (areAllCharactersDigits(masterBill, 4, 12)) { // masterBill.substring(4, 12).matches("\\d+")
-                imawbSeqNum = Long.valueOf(mawbSeqNum);
-                icheckDigit = Long.valueOf(checkDigit);
+                Long imawbSeqNum = Long.valueOf(mawbSeqNum);
+                Long icheckDigit = Long.valueOf(checkDigit);
                 if (imawbSeqNum % 7 != icheckDigit)
                     MAWBNumberValidity = false;
             } else MAWBNumberValidity = false;

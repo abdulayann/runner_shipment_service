@@ -30,12 +30,6 @@ public class RunnerShipmentServicesApplication {
     }
 
 
-//    @SuppressWarnings("rawtypes")
-//    @Bean
-//    MeterRegistryCustomizer CustomsMeterRegistryCustomizer(MeterRegistry meterRegistry) {
-//        return registry -> meterRegistry.config().commonTags("application", "runner-shipment-service");
-//    }
-
     @Bean
     RestTemplate restTemplate() {
         return new RestTemplate();

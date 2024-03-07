@@ -18,6 +18,8 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
@@ -35,6 +37,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
 import com.itextpdf.text.DocumentException;
@@ -54,7 +57,9 @@ import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.IntStream;
 
 @Service
@@ -109,7 +114,10 @@ public class ReportService implements IReportService {
     private V1ServiceUtil v1ServiceUtil;
     @Autowired
     private ModelMapper modelMapper;
-
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
+    private ExecutorService executorService;
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException, RunnerException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
@@ -156,17 +164,6 @@ public class ReportService implements IReportService {
             }
         }
 
-        String checkCreditLimitDocs = IReport.checkCreditLimitDocs(reportRequest.getReportInfo());
-        if(!Objects.isNull(checkCreditLimitDocs)){
-            if (!(report instanceof MawbReport && !((MawbReport)report).isDMawb)) {
-                Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
-                ShipmentDetails shipmentDetails = null;
-                if(shipmentsRow.isPresent()) {
-                    shipmentDetails = shipmentsRow.get();
-                    v1ServiceUtil.validateCreditLimit(modelMapper.map(shipmentDetails.getClient(), Parties.class), checkCreditLimitDocs, shipmentDetails.getGuid());
-                }
-            }
-        }
         if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {
             try {
                 //dataRetrived = new ReportRepository().getReportDataNewFlow(ReportInfo, ReportId);
@@ -1187,31 +1184,7 @@ public class ReportService implements IReportService {
             return;
         }
 
-        UploadDocumentRequest uploadDocumentRequest = new UploadDocumentRequest();
-        uploadDocumentRequest.setDocType(uploadRequest.getType());
-        uploadDocumentRequest.setEntityId(uploadRequest.getId());
-        uploadDocumentRequest.setEntityType(uploadRequest.getEntityType());
-        uploadDocumentRequest.setFileResource(CommonUtils.getByteResource(new ByteArrayInputStream(document), filename));
-
-        MultipartFile file = new BASE64DecodedMultipartFile(document);
-        var uploadResponse = documentManagerService.temporaryFileUpload(file, filename);
-        if (!uploadResponse.getSuccess())
-            throw new IOException("File Upload Failed");
-        var saveResponse = documentManagerService.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
-                .entityType(uploadRequest.getEntityType())
-                .secureDownloadLink(uploadResponse.getData().getSecureDownloadLink())
-                .fileSize(uploadResponse.getData().getFileSize())
-                .fileType(uploadResponse.getData().getFileType())
-                .path(uploadResponse.getData().getPath())
-                .entityKey(shipmentGuid)
-                .source("SYSTEM_GENERATED")
-                .docType(uploadRequest.getType())
-                .docName(uploadRequest.getType())
-                .childType(uploadRequest.getType())
-                .build());
-
-        if (!saveResponse.getSuccess())
-            throw new IOException("File Save Failed");
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromReport(new BASE64DecodedMultipartFile(document), filename, uploadRequest, shipmentGuid)), executorService);
 
         Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(uploadRequest.getId());
         ShipmentDetails shipmentDetails = null;
@@ -1246,5 +1219,30 @@ public class ReportService implements IReportService {
             }
             hblReleaseTypeMappingDao.save(releaseTypeMapping);
         }
+    }
+
+    public DocumentManagerResponse<DocumentManagerDataResponse> addFilesFromReport(MultipartFile file, String filename, DocUploadRequest uploadRequest, String entityKey) {
+        try {
+            var uploadResponse = documentManagerService.temporaryFileUpload(file, filename);
+            if (!uploadResponse.getSuccess())
+                throw new IOException("File Upload Failed");
+
+            var saveResponse = documentManagerService.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
+                    .entityType(uploadRequest.getEntityType())
+                    .secureDownloadLink(uploadResponse.getData().getSecureDownloadLink())
+                    .fileSize(uploadResponse.getData().getFileSize())
+                    .fileType(uploadResponse.getData().getFileType())
+                    .path(uploadResponse.getData().getPath())
+                    .entityKey(entityKey)
+                    .source(Constants.SYSTEM_GENERATED)
+                    .docType(uploadRequest.getType())
+                    .docName(uploadRequest.getType())
+                    .childType(uploadRequest.getType())
+                    .build());
+            return saveResponse;
+        } catch (Exception ex) {
+            log.error("Error while file upload : {}", ex.getLocalizedMessage());
+        }
+        return null;
     }
 }

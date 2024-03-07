@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ReportConstants {
+    private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
     public static final String IMPORT_SHIPMENT_MANIFEST = "ImportShipmentManifest";
     public static final String LOADING_PORT_COUNTRY_NAME = "LoadingPortCountryName";

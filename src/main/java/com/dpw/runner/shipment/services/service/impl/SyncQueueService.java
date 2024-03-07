@@ -122,11 +122,11 @@ public class SyncQueueService implements ISyncQueueService {
             try {
                 switch (element.getModuleType()) {
                     case SyncingConstants.SHIPMENT:
-                        shipmentReverseSync.reverseSync(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), CustomShipmentSyncRequest.class)).build(), false);
+                        shipmentReverseSync.reverseSync(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), CustomShipmentSyncRequest.class)).build(), false, true);
                         break;
 
                     case SyncingConstants.CONSOLIDATION:
-                        consolidationReverseSync.reverseSync(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), CustomConsolidationRequest.class)).build(), false);
+                        consolidationReverseSync.reverseSync(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), CustomConsolidationRequest.class)).build(), false, true);
                         break;
 
                     case SyncingConstants.HBL:

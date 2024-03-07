@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class NPMConstants {
+    private NPMConstants(){}
     public static final String NPM_API_HANDLE = "/api/v2/external/npm";
     public static final String LIST_CONTRACT = "/contract";
     public static final String RETRIEVE_CONTRACT = "/retrieve/contract";

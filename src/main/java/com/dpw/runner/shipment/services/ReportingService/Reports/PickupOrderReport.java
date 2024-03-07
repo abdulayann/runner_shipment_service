@@ -24,12 +24,9 @@ public class PickupOrderReport extends IReport {
     @Autowired
     private HblReport hblReport;
 
-    private Long id;
-
     @Override
     public Map<String, Object> getData(Long id) {
         PickUpOrderReportModel pickUpOrderReportModel = (PickUpOrderReportModel) getDocumentModel(id);
-        this.id = id;
         return populateDictionary(pickUpOrderReportModel);
     }
 
