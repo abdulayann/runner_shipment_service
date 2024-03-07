@@ -185,6 +185,8 @@ public class ReportConstants {
     public static final String NOTIFY_PARTY_FREETEXT = "NotifyPartyAddressFreeText";
     public static final String NOTIFY_PARTY_FREETEXT_IN_CAPS = "NotifyPartyAddressFreeTextInCaps";
     public static final String CONSIGNER_NAME = "ConsignerName";
+    public static final String CONSIGNER_COMPANY_NAME = "ConignerAdrs_CompanyName";
+    public static final String CONSIGNEE_COMPANY_NAME = "ConsigneeAdrs_CompanyName";
     public static final String ConsignerFullName = "ConsignerFullName";
     public static final String CONSIGNEE_NAME = "ConsigneeName";
     public static final String CLIENT = "Client";
