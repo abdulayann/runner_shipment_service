@@ -11,7 +11,9 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -491,6 +493,16 @@ public class ShipmentController {
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(id).build();
             return shipmentService.getGuidFromId(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = CheckCreditLimitFromV1Response.class)})
+    @PostMapping(value = ShipmentConstants.CHECK_CREDIT_LIMIT_FROM_V1)
+    public ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(@RequestBody CheckCreditLimitFromV1Request request) {
+        try {
+            return shipmentService.checkCreditLimitFromV1(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

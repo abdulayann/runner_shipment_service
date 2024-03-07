@@ -164,17 +164,6 @@ public class ReportService implements IReportService {
             }
         }
 
-        String checkCreditLimitDocs = IReport.checkCreditLimitDocs(reportRequest.getReportInfo());
-        if(!Objects.isNull(checkCreditLimitDocs)){
-            if (!(report instanceof MawbReport && !((MawbReport)report).isDMawb)) {
-                Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
-                ShipmentDetails shipmentDetails = null;
-                if(shipmentsRow.isPresent()) {
-                    shipmentDetails = shipmentsRow.get();
-                    v1ServiceUtil.validateCreditLimit(modelMapper.map(shipmentDetails.getClient(), Parties.class), checkCreditLimitDocs, shipmentDetails.getGuid());
-                }
-            }
-        }
         if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {
             try {
                 //dataRetrived = new ReportRepository().getReportDataNewFlow(ReportInfo, ReportId);
