@@ -297,7 +297,7 @@ public class ShipmentDao implements IShipmentDao {
         }
 
         // Shipment must be attached to consolidation with same master bill
-        if (!IsStringNullOrEmpty(request.getMasterBill()) && (oldEntity == null || IsStringNullOrEmpty(oldEntity.getMasterBill()) || !oldEntity.getMasterBill().equals(request.getMasterBill()))) {
+        if (!IsStringNullOrEmpty(request.getMasterBill())) {
             ListCommonRequest listCommonRequest = constructListCommonRequest("bol", request.getMasterBill(), "=");
             Pair<Specification<ConsolidationDetails>, Pageable> consolidationPage = fetchData(listCommonRequest, ConsolidationDetails.class);
             Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(consolidationPage.getLeft(), consolidationPage.getRight());
