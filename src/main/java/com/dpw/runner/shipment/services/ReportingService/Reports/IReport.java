@@ -511,6 +511,7 @@ public abstract class IReport {
                             getValueFromMap(consignerAddress, email), getValueFromMap(consignerAddress, CONTACT_PHONE),
                             getValueFromMap(consignerAddress,ZIP_POST_CODE));
                     dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
+                    dictionary.put(ReportConstants.CONSIGNER_COMPANY_NAME, consignerAddress.get(COMPANY_NAME));
                     dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get(CONTACT_PERSON_ALIAS));
                     dictionary.put(ReportConstants.CONSIGNER_ADDRESS, ReportHelper.getOrgAddress(shipmentConsigner));
 
@@ -707,6 +708,7 @@ public abstract class IReport {
                         getValueFromMap(consigneeAddress, "Email"), getValueFromMap(consigneeAddress, CONTACT_PHONE),
                         getValueFromMap(consigneeAddress,ZIP_POST_CODE));
                 dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
+                dictionary.put(CONSIGNEE_COMPANY_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
                 dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON,getValueFromMap(consigneeAddress, CONTACT_PERSON_ALIAS));
                 String contactPerson = getValueFromMap(consigneeAddress, CONTACT_PERSON_ALIAS);
                 dictionary.put(ReportConstants.CONSIGNEE_PIC, contactPerson == null ? "" : contactPerson.toUpperCase());
