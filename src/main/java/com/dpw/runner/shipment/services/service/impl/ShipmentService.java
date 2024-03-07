@@ -1824,6 +1824,9 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setIsInland(false);
             consolidationDetails.setCarrierBookingRef(shipmentDetails.getBookingNumber());
             consolidationDetails.setSourceTenantId(TenantContext.getCurrentTenant().longValue());
+            if(StringUtility.isNotEmpty(shipmentDetails.getMasterBill())) {
+                consolidationDetails.setBol(shipmentDetails.getMasterBill());
+            }
             consolidationService.generateConsolidationNumber(consolidationDetails);
             if(consolidationDetails.getShipmentType() != null && !consolidationDetails.getShipmentType().isEmpty()
             && consolidationDetails.getShipmentType().equals(Constants.IMP) || consolidationDetails.getShipmentType().equals(Constants.DIRECTION_EXP)) {
