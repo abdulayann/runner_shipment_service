@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -12,6 +13,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.ArrivalDepartureDetails;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomConsolidationRequest;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationReverseSync;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -23,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -57,6 +60,10 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                 return syncQueueService.saveSyncRequest(SyncingConstants.CONSOLIDATION, StringUtility.convertToString(request.getGuid()), request);
             }
             response = modelMapper.map(request, ConsolidationDetailsRequest.class);
+
+            response.setCreditor(mapPartyObjectWithFreetext(request.getCreditor(), request.getIsCreditorFreeTextAddress(), request.getCreditorFreeTextAddress()));
+            response.setReceivingAgent(mapPartyObjectWithFreetext(request.getReceivingAgent(), request.getIsReceivingAgentFreeTextAddress(), request.getReceivingAgentFreeTextAddress()));
+            response.setSendingAgent(mapPartyObjectWithFreetext(request.getSendingAgent(), request.getIsSendingAgentFreeTextAddress(), request.getSendingAgentFreeTextAddress()));
 
             response.setLockedBy(request.getLockedByUser());
             response.setMsnNumber(request.getMsnNumberStr());
@@ -227,6 +234,19 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             response2.setCFSId(modelMapper.map(request.getDCFSId(), PartiesRequest.class));
 
         response_.setDepartureDetails(response2);
+    }
+
+    private PartiesRequest mapPartyObjectWithFreetext(PartyRequestV2 sourcePartyObject, Boolean isFreeText, String freeTextAddress) {
+        if(sourcePartyObject == null)
+            return null;
+        PartiesRequest parties = modelMapper.map(sourcePartyObject, PartiesRequest.class);
+        if(isFreeText != null && isFreeText) {
+            parties.setIsAddressFreeText(true);
+            if(parties.getAddressData() == null)
+                parties.setAddressData(new HashMap<>());
+            parties.getAddressData().put(Constants.RAW_DATA, freeTextAddress);
+        }
+        return parties;
     }
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {

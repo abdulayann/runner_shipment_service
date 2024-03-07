@@ -213,7 +213,7 @@ public class SyncEntityConversionService {
         if(partyRequestV2.getIsFreeTextAddress() == null)
             partyRequestV2.setIsFreeTextAddress(false);
         if(partyRequestV2.getIsFreeTextAddress()){
-            var rawData = parties.getAddressData() != null ? parties.getAddressData().get("rawData"): null;
+            var rawData = parties.getAddressData() != null ? parties.getAddressData().get(Constants.RAW_DATA_ADDRESSES): null;
             if(rawData != null)
                 partyRequestV2.setFreeTextAddress(rawData.toString());
         }
@@ -232,6 +232,11 @@ public class SyncEntityConversionService {
     public Parties addressV1ToV2(PartyRequestV2 partyRequestV2) {
         var parties = modelMapper.map(partyRequestV2, Parties.class);
         parties.setIsAddressFreeText(partyRequestV2.getIsFreeTextAddress());
+        if(parties.getIsAddressFreeText() != null && parties.getIsAddressFreeText()) {
+            if(parties.getAddressData() == null)
+                parties.setAddressData(new HashMap<>());
+            parties.getAddressData().put(Constants.RAW_DATA_ADDRESSES, partyRequestV2.getFreeTextAddress());
+        }
         return parties;
     }
 
