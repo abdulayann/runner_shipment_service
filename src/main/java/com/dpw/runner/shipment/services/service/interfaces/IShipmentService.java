@@ -78,5 +78,6 @@ public interface IShipmentService extends ICommonService {
     void updateDateAndStatus(long id, LocalDateTime date, Integer status) throws RunnerException;
     ResponseEntity<IRunnerResponse> fetchEmails(Long shipmentId, Long consolidationId);
     ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(CommonRequestModel commonRequestModel);
 
 }

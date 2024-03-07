@@ -5,11 +5,13 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -288,11 +290,12 @@ public class V1ServiceUtil {
         ).collect(Collectors.toList());
     }
 
-    public void validateCreditLimit(Parties client, String restrictedItem, UUID shipmentGuid) {
+    public CheckCreditLimitFromV1Response validateCreditLimit(Parties client, String restrictedItem, UUID shipmentGuid, Boolean taskCreation) {
         try {
             Boolean enableCreditLimitManagement = TenantSettingsDetailsContext.getCurrentTenantSettings() != null? TenantSettingsDetailsContext.getCurrentTenantSettings().getEnableCreditLimitManagement() : false;
+            CheckCreditLimitFromV1Response creditLimitResponse = CheckCreditLimitFromV1Response.builder().isValid(true).build();
             if(!enableCreditLimitManagement){
-                return;
+                return creditLimitResponse;
             }
             Integer clientId = null;
             Integer clientAddressId = null;
@@ -305,14 +308,25 @@ public class V1ServiceUtil {
                     .clientId(clientId)
                     .clientAddressId(clientAddressId)
                     .shipmentGuid(shipmentGuid != null ? shipmentGuid.toString(): null)
+                    .taskCreation(taskCreation)
                     .build());
             if (!response.getIsValid()){
+                if(response.getTaskRequiredMessage() != null){
+                    creditLimitResponse.setIsValid(response.getIsValid());
+                    creditLimitResponse.setTaskRequiredMessage(response.getTaskRequiredMessage());
+                    creditLimitResponse.setMessage(response.getMessage());
+                    return creditLimitResponse;
+                }
                 log.error(response.getMessage() + " " + response.getError());
                 throw new ValidationException(response.getMessage());
             }
+            return creditLimitResponse;
+        } catch (V1ServiceException ex) {
+            log.error(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
+            throw new ValidationException(ex.getMessage());
         } catch (Exception ex) {
-            log.error("Check Credit Limit failed due to : " + ex.getMessage());
-            throw new ValidationException("Check Credit Limit failed due to : " + ex.getMessage());
+            log.error(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
+            throw new ValidationException(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
         }
     }
 

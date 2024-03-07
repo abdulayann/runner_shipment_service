@@ -4,6 +4,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -1533,7 +1534,8 @@ public class ShipmentService implements IShipmentService {
         if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
             shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
-        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
+//        Credit Limit check while shipment creation is removed for now
+//        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid(), false);
 
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()) {
             ConsolidationDetails console = shipmentDetails.getConsolidationList().get(0);
@@ -4297,5 +4299,23 @@ public class ShipmentService implements IShipmentService {
             return v1ServiceUtil.fetchEmailIdsForConsolidation(consolidationDetails.get());
         }
         return ResponseHelper.buildFailedResponse(DaoConstants.DAO_INVALID_REQUEST_MSG);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(CommonRequestModel commonRequestModel){
+        CheckCreditLimitFromV1Request request = (CheckCreditLimitFromV1Request) commonRequestModel.getData();
+        String checkCreditLimitDocs = IReport.checkCreditLimitDocs(request.getDocType());
+        if(!Objects.isNull(checkCreditLimitDocs)){
+            Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(request.getShipmentId());
+            ShipmentDetails shipmentDetails = null;
+            if(shipmentsRow.isPresent()) {
+                shipmentDetails = shipmentsRow.get();
+                var response = v1ServiceUtil.validateCreditLimit(modelMapper.map(shipmentDetails.getClient(), Parties.class), checkCreditLimitDocs, shipmentDetails.getGuid(), request.getTaskCreation());
+                return ResponseHelper.buildSuccessResponse(response);
+            }
+            return ResponseHelper.buildFailedResponse("Shipment not exist for given id");
+        } else {
+            return ResponseHelper.buildFailedResponse("Please Send a alid doc type for check credit limit.");
+        }
     }
 }
