@@ -57,7 +57,7 @@ public class MasterDataKeyUtils {
                                 break;
                             case CacheConstants.CONTAINER_TYPE:
                                 EntityTransferContainerType object1 = (EntityTransferContainerType) cache.get();
-                                response.put(value, object1.getDescription());
+                                response.put(value, String.format("%s - %s", object1.getCode(), object1.getDescription()));
                                 break;
                             case CacheConstants.CHARGE_TYPE:
                                 EntityTransferChargeType object2 = (EntityTransferChargeType) cache.get();

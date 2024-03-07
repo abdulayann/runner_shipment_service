@@ -1059,7 +1059,7 @@ public class MasterDataUtils{
                         break;
                     case CacheConstants.CONTAINER_TYPE:
                         EntityTransferContainerType object1 = (EntityTransferContainerType) cache.get();
-                        fieldNameMasterDataMap.put(key, object1.getDescription());
+                        fieldNameMasterDataMap.put(key, String.format("%s - %s", object1.getCode(), object1.getDescription()));
                         break;
                     case CacheConstants.CHARGE_TYPE:
                         EntityTransferChargeType object2 = (EntityTransferChargeType) cache.get();
