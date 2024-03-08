@@ -20,6 +20,8 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @Slf4j
 public class SyncService implements ISyncService {
@@ -63,9 +65,16 @@ public class SyncService implements ISyncService {
         });
     }
     @Override
-    @Async
     public void callSyncAsync(String json, String id, String guid, String entity, HttpHeaders headers) throws RunnerException {
         callSync(json, id, guid, entity, headers);
+    }
+
+    @Override
+    @Async
+    public void callSyncAsync(List<String> json, List<String> id, List<String> guid, List<String> entity, HttpHeaders headers) throws RunnerException {
+        for (int i = 0; i < json.size(); i++) {
+            callSync(json.get(i), id.get(i), guid.get(i), entity.get(i), headers);
+        }
     }
 
     @Override

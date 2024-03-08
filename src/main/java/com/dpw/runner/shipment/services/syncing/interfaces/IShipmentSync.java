@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface IShipmentSync {
     ResponseEntity<IRunnerResponse> sync(ShipmentDetails shipmentDetails, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId, boolean isDirectSync) throws RunnerException;
     void syncLockStatus(ShipmentDetails shipmentDetails);
+    ResponseEntity<IRunnerResponse> syncFromBooking(ShipmentDetails shipmentDetails, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes) throws RunnerException;
 }

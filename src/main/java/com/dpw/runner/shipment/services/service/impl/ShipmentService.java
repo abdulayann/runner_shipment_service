@@ -589,18 +589,11 @@ public class ShipmentService implements IShipmentService {
             pushShipmentDataToDependentService(shipmentDetails, true);
             try {
                 shipmentDetails.setNotesList(null);
-                shipmentSync.sync(shipmentDetails, null, notesRequest, transactionId, true);
+                shipmentSync.syncFromBooking(shipmentDetails, null, notesRequest);
             } catch (Exception e){
                 log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
             }
-            if(hbl != null) {
-                try {
-                    hblSync.sync(hbl, transactionId);
-                }
-                catch (Exception e) {
-                    log.error("Error performing sync on hbl entity, {}", e);
-                }
-            }
+
             auditLogService.addAuditLog(
                 AuditLogMetaData.builder()
                         .newData(shipmentDetails)
