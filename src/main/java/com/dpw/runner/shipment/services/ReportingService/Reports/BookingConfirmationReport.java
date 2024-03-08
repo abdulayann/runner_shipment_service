@@ -2,20 +2,11 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.BookingConfirmationModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
+import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -48,93 +39,9 @@ public class BookingConfirmationReport extends IReport{
     @Override
     public IDocumentModel getDocumentModel(Long id) {
         BookingConfirmationModel bookingConfirmationModel = new BookingConfirmationModel();
-        bookingConfirmationModel.shipment = getShipment(id);
-        bookingConfirmationModel.user = UserContext.getUser();
-        if(bookingConfirmationModel.shipment != null && bookingConfirmationModel.shipment.getConsolidationList() != null && !bookingConfirmationModel.shipment.getConsolidationList().isEmpty())
-        {
-            bookingConfirmationModel.consolidation = bookingConfirmationModel.shipment.getConsolidationList().get(0);
-        }
-        bookingConfirmationModel.blObject = getHbl(id);
-        bookingConfirmationModel.setCommonContainers(new ArrayList<>());
-        if(bookingConfirmationModel.shipment.getContainersList() != null)
-        {
-            for(ContainerModel container : bookingConfirmationModel.shipment.getContainersList())
-            {
-                ShipmentContainers shipmentContainer = getShipmentContainer(container);
-                shipmentContainer.BL_SealNumber = container.getCustomsSealNumber();
-                bookingConfirmationModel.getCommonContainers().add(shipmentContainer);
-            }
-        }
-
-        Set<String> locCodes = new HashSet<>();
-        if (bookingConfirmationModel.shipment.getCarrierDetails() != null && bookingConfirmationModel.shipment.getCarrierDetails().getOriginPort() != null) {
-            locCodes.add(bookingConfirmationModel.shipment.getCarrierDetails().getOriginPort());
-        }
-
-        if (bookingConfirmationModel.shipment.getCarrierDetails() != null && bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort() != null) {
-            locCodes.add(bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort());
-        }
-
-        if (bookingConfirmationModel.shipment.getCarrierDetails() != null && bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort() != null) {
-            locCodes.add(bookingConfirmationModel.shipment.getAdditionalDetails().getPaidPlace());
-        }
-
-        Map<String, UnlocationsResponse> unlocationMap = masterDataUtils.getLocationData(locCodes);
-
-        UnlocationsResponse paidPlace = null;
-        UnlocationsResponse location = null;
-        if (bookingConfirmationModel.shipment.getAdditionalDetails() != null &&
-                unlocationMap.get(bookingConfirmationModel.shipment.getAdditionalDetails().getPaidPlace()) != null) {
-            paidPlace = unlocationMap.get(bookingConfirmationModel.shipment.getAdditionalDetails().getPaidPlace());
-        }
-        location = bookingConfirmationModel.shipment.getCarrierDetails() != null ?
-                unlocationMap.get(bookingConfirmationModel.shipment.getCarrierDetails().getOriginPort()) : null;
-        if (location != null) {
-            bookingConfirmationModel.polName = location.getName();
-            bookingConfirmationModel.polCountry = location.getCountry();
-        }
-        location = bookingConfirmationModel.shipment.getCarrierDetails() != null ?
-                unlocationMap.get(bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort()) : null;
-        if (location != null) {
-            bookingConfirmationModel.podName = location.getName();
-            bookingConfirmationModel.podCountry = location.getCountry();
-        }
-
-        bookingConfirmationModel.setReferenceNumbersList(bookingConfirmationModel.shipment.getReferenceNumbersList());
-        MasterData masterData = getMasterListData(MasterDataType.PAYMENT, bookingConfirmationModel.shipment.getPaymentTerms());
-        bookingConfirmationModel.paymentTerms = (masterData != null ? masterData.getItemDescription() : null);
-        masterData = getMasterListData(MasterDataType.SERVICE_MODE, bookingConfirmationModel.shipment.getServiceType());
-        bookingConfirmationModel.serviceMode = (masterData != null ? masterData.getItemDescription() : null);
-
-        if(paidPlace != null) {
-            masterData = getMasterListData(MasterDataType.COUNTRIES, paidPlace.getCountry());
-        }
-        bookingConfirmationModel.paidPlaceCountry = (masterData != null ? masterData.getItemDescription() : null);
-        List<BookingCarriageModel> bookingCarriages = bookingConfirmationModel.shipment.getBookingCarriagesList();
-        BookingCarriageModel bookingCarriage = null;
-        if(bookingCarriages != null)
-        {
-            for (BookingCarriageModel carriage : bookingCarriages) {
-                if (Objects.equals(carriage.getCarriageType(), "PreCarriage")) {
-                    bookingCarriage = carriage;
-                    break;
-                }
-            }
-        }
-        if(bookingCarriage != null)
-        {
-            String vessel = bookingCarriage.getVessel();
-            List<Object> vesselCriteria = Arrays.asList(
-                    List.of("Mmsi"),
-                    "=",
-                    vessel
-            );
-            CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
-            V1DataResponse vesselResponse = v1Service.fetchVesselData(vesselRequest);
-            List<VesselsResponse> vesselsResponse = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
-            if(vesselsResponse != null && vesselsResponse.size() > 0)
-                bookingConfirmationModel.preCarriageVessel = vesselsResponse.get(0);
-        }
+        bookingConfirmationModel.hblModel = (HblModel) hblReport.getDocumentModel(id);
+        bookingConfirmationModel.hblModel.isHbl = false;
+        bookingConfirmationModel.setReferenceNumbersList(bookingConfirmationModel.hblModel.shipment.getReferenceNumbersList());
         return bookingConfirmationModel;
 
     }
@@ -142,12 +49,12 @@ public class BookingConfirmationReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
 
-        Map<String, Object> dictionary = hblReport.getData(this.id);
-
         BookingConfirmationModel bookingConfirmationModel = (BookingConfirmationModel) documentModel;
-        populateShipmentOrganizationsLL(bookingConfirmationModel.shipment, dictionary);
+        Map<String, Object> dictionary = hblReport.populateDictionary(bookingConfirmationModel.hblModel);
+
+        populateShipmentOrganizationsLL(bookingConfirmationModel.hblModel.shipment, dictionary);
         if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
-            List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
+            List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
             for (Map<String, Object> v: values) {
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
                     v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
@@ -155,22 +62,22 @@ public class BookingConfirmationReport extends IReport{
             }
         }
 
-        dictionary.put(ReportConstants.HAWB_NO, bookingConfirmationModel.shipment.getHouseBill());
-        dictionary.put(ReportConstants.MAWB_NO, bookingConfirmationModel.shipment.getMasterBill());
-        dictionary.put(ReportConstants.PORT_OF_DEPARTURE, bookingConfirmationModel.polName);
-        if (bookingConfirmationModel.polName != null)
-            dictionary.put(ReportConstants.PortofDepartureInCaps, bookingConfirmationModel.polName.toUpperCase());
-        dictionary.put(ReportConstants.PORT_OF_DEPARTURE_COUNTRY, bookingConfirmationModel.polCountry);
-        if (bookingConfirmationModel.polCountry != null)
-            dictionary.put(ReportConstants.SHIPMENT_DETAILS_PORTOFDEPARTURECOUNTRYINCAPS, bookingConfirmationModel.polCountry.toUpperCase());
-        dictionary.put(ReportConstants.PORT_OF_ARRIVAL, bookingConfirmationModel.podName);
-        if (bookingConfirmationModel.podName != null)
-            dictionary.put(ReportConstants.PortofArrivalInCaps, bookingConfirmationModel.podName.toUpperCase());
-        dictionary.put(ReportConstants.PORT_OF_ARRIVAL_COUNTRY, bookingConfirmationModel.podCountry);
-        if (bookingConfirmationModel.podCountry != null)
-            dictionary.put(ReportConstants.SHIPMENT_DETAILS_PORTOFARRIVALCOUNTRYINCAPS, bookingConfirmationModel.podCountry.toUpperCase());
+        dictionary.put(ReportConstants.HAWB_NO, bookingConfirmationModel.hblModel.shipment.getHouseBill());
+        dictionary.put(ReportConstants.MAWB_NO, bookingConfirmationModel.hblModel.shipment.getMasterBill());
+        dictionary.put(ReportConstants.PORT_OF_DEPARTURE, bookingConfirmationModel.hblModel.polName);
+        if (bookingConfirmationModel.hblModel.polName != null)
+            dictionary.put(ReportConstants.PortofDepartureInCaps, bookingConfirmationModel.hblModel.polName.toUpperCase());
+        dictionary.put(ReportConstants.PORT_OF_DEPARTURE_COUNTRY, bookingConfirmationModel.hblModel.polCountry);
+        if (bookingConfirmationModel.hblModel.polCountry != null)
+            dictionary.put(ReportConstants.SHIPMENT_DETAILS_PORTOFDEPARTURECOUNTRYINCAPS, bookingConfirmationModel.hblModel.polCountry.toUpperCase());
+        dictionary.put(ReportConstants.PORT_OF_ARRIVAL, bookingConfirmationModel.hblModel.podName);
+        if (bookingConfirmationModel.hblModel.podName != null)
+            dictionary.put(ReportConstants.PortofArrivalInCaps, bookingConfirmationModel.hblModel.podName.toUpperCase());
+        dictionary.put(ReportConstants.PORT_OF_ARRIVAL_COUNTRY, bookingConfirmationModel.hblModel.podCountry);
+        if (bookingConfirmationModel.hblModel.podCountry != null)
+            dictionary.put(ReportConstants.SHIPMENT_DETAILS_PORTOFARRIVALCOUNTRYINCAPS, bookingConfirmationModel.hblModel.podCountry.toUpperCase());
 
-        dictionary.put(ReportConstants.MOVEMENT_TYPE, bookingConfirmationModel.shipment.getTransportMode());
+        dictionary.put(ReportConstants.MOVEMENT_TYPE, bookingConfirmationModel.hblModel.shipment.getTransportMode());
 
         List<ReferenceNumbersModel> referenceNumbers = bookingConfirmationModel.getReferenceNumbersList();
 
@@ -202,7 +109,7 @@ public class BookingConfirmationReport extends IReport{
             dictionary.put(ReportConstants.FEEDER_REFERENCE_NO, feederReferenceNo);
         }
 
-        dictionary.put(ReportConstants.PAYMENT, bookingConfirmationModel.shipment.getPaymentTerms());
+        dictionary.put(ReportConstants.PAYMENT, bookingConfirmationModel.hblModel.shipment.getPaymentTerms());
 
         return dictionary;
     }

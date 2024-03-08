@@ -48,4 +48,7 @@ public class HblModel implements IDocumentModel{
     private Map<String, Double> containerVolumeGrouped;
     public ShipmentSettingsDetails shipmentSettingsDetails;
     public V1TenantSettingsResponse tenantSettingsResponse;
+    public String polName;
+    public String polCountry;
+    public String podName;
 }

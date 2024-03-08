@@ -139,11 +139,14 @@ public class HblReport extends IReport{
             // OriginPort master data
             if (!Objects.isNull(hblModel.shipment.getCarrierDetails().getOriginPort()) && unlocationsMap.containsKey(hblModel.shipment.getCarrierDetails().getOriginPort())) {
                 hblModel.polPort = unlocationsMap.get(hblModel.shipment.getCarrierDetails().getOriginPort());
+                hblModel.polName = hblModel.polPort.getName();
+                hblModel.polCountry =  hblModel.polPort.getCountry();
             }
             // IssuePlace master data
             if (!Objects.isNull(hblModel.shipment.getCarrierDetails().getDestinationPort()) && unlocationsMap.containsKey(hblModel.shipment.getCarrierDetails().getDestinationPort())) {
                 hblModel.podPort = unlocationsMap.get(hblModel.shipment.getCarrierDetails().getDestinationPort());
                 hblModel.podCountry = hblModel.podPort.getCountry();
+                hblModel.podName = hblModel.podPort.getName();
             }
         }
 
