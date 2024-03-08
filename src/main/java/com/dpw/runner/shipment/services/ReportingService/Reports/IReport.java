@@ -85,7 +85,6 @@ public abstract class IReport {
 
 
     public static final String LOCAL_NAME = "LocalName";
-    public static final String RAW_DATA = "rawData";
     public static final String REGEX_S_S = "%s %s";
     @Autowired
     private IShipmentDao shipmentDao;
@@ -523,7 +522,7 @@ public abstract class IReport {
                 if(shipmentConsigner.getOrgData() != null)
                     dictionary.put(ReportConstants.CONSIGNER_LOCAL_NAME,shipmentConsigner.getOrgData().get(LOCAL_NAME));
                 if (shipmentConsigner.getIsAddressFreeText() != null && shipmentConsigner.getIsAddressFreeText()) {
-                    var rawData = consignerAddress != null && consignerAddress.containsKey(RAW_DATA) ? StringUtility.convertToString(consignerAddress.get(RAW_DATA)) : null;
+                    var rawData = consignerAddress != null && consignerAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(consignerAddress.get(PartiesConstants.RAW_DATA)) : null;
                     consignorFreeText = ReportHelper.getAddressList(rawData);
                     dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
                     dictionary.put(ReportConstants.CONSIGNER_FREETEXTInCaps, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).toList());
@@ -552,7 +551,7 @@ public abstract class IReport {
                 if(shipmentNotify.getOrgData() != null)
                     dictionary.put(ReportConstants.NOTIFY_PARTY_LOCAL_NAME,getValueFromMap(shipmentNotify.getOrgData(), LOCAL_NAME));
                 if (shipmentNotify.getIsAddressFreeText() != null && shipmentNotify.getIsAddressFreeText()) {
-                    var rawData = notifyAddress != null && notifyAddress.containsKey(RAW_DATA) ? StringUtility.convertToString(notifyAddress.get(RAW_DATA)) : null;
+                    var rawData = notifyAddress != null && notifyAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(notifyAddress.get(PartiesConstants.RAW_DATA)) : null;
                     notifyPartyFreeText = ReportHelper.getAddressList(rawData);
                     dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notifyPartyFreeText);
                     dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT_IN_CAPS, notifyPartyFreeText == null ? null : notifyPartyFreeText.stream().map(StringUtility::toUpperCase).toList());
@@ -727,7 +726,7 @@ public abstract class IReport {
 
             if (shipmentConsignee.getIsAddressFreeText() != null && shipmentConsignee.getIsAddressFreeText())
             {
-                String rawData = shipmentConsignee.getAddressData() != null && shipmentConsignee.getAddressData().containsKey(RAW_DATA)? String.valueOf(shipmentConsignee.getAddressData().get(RAW_DATA)): null;
+                String rawData = shipmentConsignee.getAddressData() != null && shipmentConsignee.getAddressData().containsKey(PartiesConstants.RAW_DATA)? String.valueOf(shipmentConsignee.getAddressData().get(PartiesConstants.RAW_DATA)): null;
                 List<String> consigneeRawAddress = ReportHelper.getAddressList(rawData);
                 if(consigneeRawAddress != null && consigneeRawAddress.size() > 0)
                 {

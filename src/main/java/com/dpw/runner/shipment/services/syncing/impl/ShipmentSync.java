@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -46,7 +47,6 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 @Slf4j
 public class ShipmentSync implements IShipmentSync {
 
-    public static final String RAW_DATA = "rawData";
     @Autowired
     ModelMapper modelMapper;
     @Autowired
@@ -153,7 +153,7 @@ public class ShipmentSync implements IShipmentSync {
         if(sd.getConsignee() != null && sd.getConsignee().getIsAddressFreeText() != null && sd.getConsignee().getIsAddressFreeText()){
             cs.setIsConsigneeFreeTextAddress(true);
 
-            var rawData = sd.getConsignee().getAddressData() != null ? sd.getConsignee().getAddressData().get(RAW_DATA): null;
+            var rawData = sd.getConsignee().getAddressData() != null ? sd.getConsignee().getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData!=null)
                 cs.setConsigneeFreeTextAddress(rawData.toString());
         }
@@ -161,7 +161,7 @@ public class ShipmentSync implements IShipmentSync {
 
         if(sd.getConsigner() != null && sd.getConsigner().getIsAddressFreeText() != null && sd.getConsigner().getIsAddressFreeText()){
             cs.setIsConsignerFreeTextAddress(true);
-            var rawData = sd.getConsigner().getAddressData() != null ? sd.getConsigner().getAddressData().get(RAW_DATA): null;
+            var rawData = sd.getConsigner().getAddressData() != null ? sd.getConsigner().getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData!=null)
                 cs.setConsignerFreeTextAddress(rawData.toString());
         }
@@ -169,7 +169,7 @@ public class ShipmentSync implements IShipmentSync {
 
         if(sd.getAdditionalDetails() != null && sd.getAdditionalDetails().getNotifyParty() != null && sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText() != null && sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText()){
             cs.setIsNotifyPartyFreeTextAddress(true);
-            var rawData = sd.getAdditionalDetails().getNotifyParty().getAddressData() != null ? sd.getAdditionalDetails().getNotifyParty().getAddressData().get(RAW_DATA): null;
+            var rawData = sd.getAdditionalDetails().getNotifyParty().getAddressData() != null ? sd.getAdditionalDetails().getNotifyParty().getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData!=null)
                 cs.setNotifyPartyFreeTextAddress(rawData.toString());
         }

@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -110,13 +111,13 @@ public class PackingListReport extends IReport {
         dictionary.put(ReportConstants.CONSIGNEE, consignee);
 
         if (shipment.getConsignee() != null && shipment.getConsignee().getIsAddressFreeText() != null) {
-            dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, ReportHelper.getAddressList(stringValueOf(shipment.getConsignee().getAddressData().get("rawData"))));
+            dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, ReportHelper.getAddressList(stringValueOf(shipment.getConsignee().getAddressData().get(PartiesConstants.RAW_DATA))));
         } else {
             dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, consignee);
         }
 
         if (shipment.getConsigner() != null && shipment.getConsigner().getIsAddressFreeText() != null) {
-            dictionary.put(ReportConstants.CONSIGNER_FREETEXT, ReportHelper.getAddressList(stringValueOf(shipment.getConsigner().getAddressData().get("rawData"))));
+            dictionary.put(ReportConstants.CONSIGNER_FREETEXT, ReportHelper.getAddressList(stringValueOf(shipment.getConsigner().getAddressData().get(PartiesConstants.RAW_DATA))));
         } else {
             dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
         }
