@@ -2921,7 +2921,7 @@ public class AwbService implements IAwbService {
 
             }
 
-            StringBuilder responseBuilder = new StringBuilder(natureAndQuantGoodsValue);
+            StringBuilder responseBuilder = new StringBuilder(StringUtility.isEmpty(natureAndQuantGoodsValue) ? StringUtility.getEmptyString() : natureAndQuantGoodsValue);
             responseBuilder.append(dimensionText).append(packsDescriptionValue);
             return responseBuilder.toString();
         } catch (RunnerException ex){
