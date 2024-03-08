@@ -2823,10 +2823,10 @@ public class AwbService implements IAwbService {
             Set<String> uniqueDimension = new HashSet<>();
             String newLine = "\r\n";
 
-            if (StringUtility.isNotEmpty(natureAndQuantGoodsValue)) {
-                natureAndQuantGoodsValue += newLine;
-            }
-            if (request.getAwbPackingInfo() != null) {
+            if (request.getAwbPackingInfo() != null && request.getAwbPackingInfo().size() > 0) {
+                if (StringUtility.isNotEmpty(natureAndQuantGoodsValue)) {
+                    natureAndQuantGoodsValue += newLine;
+                }
                 int counter = 0;
                 for (AwbPackingInfo packings : request.getAwbPackingInfo()) {
                     String pcs = " ";
@@ -2906,9 +2906,11 @@ public class AwbService implements IAwbService {
                 ShipmentSettingsDetails tenantSettingsList = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
 
                 if (tenantSettingsList != null && tenantSettingsList.getWeightChargeableUnit().equalsIgnoreCase(Constants.WEIGHT_UNIT_KG)) {
-                    packsDescriptionValue += packsDescriptionValue + " " + Constants.KGS;
+                    packsDescriptionValue += Constants.KGS;
                 }
 
+            } else {
+                return natureAndQuantGoodsValue;
             }
 
             StringBuilder responseBuilder = new StringBuilder(StringUtility.isEmpty(natureAndQuantGoodsValue) ? StringUtility.getEmptyString() : natureAndQuantGoodsValue);
