@@ -1,0 +1,358 @@
+{
+  "SHIPMENT": {},
+  "HAWB": {
+    "id": 1,
+    "guid": "4545424c-fe16-48c4-b1e9-230589324dba",
+    "awbNumber": "235-88998641",
+    "shipmentId": 1,
+    "awbShipmentInfo": {
+      "entityId": 1,
+      "entityType": "HAWB",
+      "shipperName": "TEST VG CREDIT LIMIT",
+      "shipperAddress": "\r\nADDRESS 1\r\nMH\r\nPUNE\r\nIND",
+      "consigneeName": "NATIONWIDE PAPER LTD",
+      "consigneeAddress": "\r\nABC CO LLC\nAEJEA\r\nARE",
+      "consigneeReferenceNumber": "2436215",
+      "iataCode": "5678",
+      "awbNumber": "235-88998641",
+      "originAirport": "Kempegowda International Airport BLR",
+      "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
+      "firstCarrier": "Turkish Airlines",
+      "agentCASSCode": "8975"
+    },
+    "awbRoutingInfo": [
+      {
+        "entityId": 1,
+        "entityType": "HAWB",
+        "byCarrier": "Turkish Airlines",
+        "flightNumber": "6457",
+        "flightDate": "2024-02-02T01:00:00",
+        "destinationPortName": "USIAH_AIR",
+        "originPortName": "INBLR_AIR",
+        "isShipmentCreated": true
+      }
+    ],
+    "awbCargoInfo": {
+      "entityId": 1,
+      "entityType": "HAWB",
+      "ntrQtyGoods": "DIMS: IN \r\n5=400X300X2,1=100X200X10\r\nTOTAL VOLUMETRIC WEIGHT ",
+      "currency": "EGP",
+      "customsValue": 0
+    },
+    "awbOtherInfo": {
+      "entityId": 1,
+      "entityType": "HAWB",
+      "shipper": "TEST VG CREDIT LIMIT",
+      "carrier": "carrier for mawb from master",
+      "executedOn": "2024-03-07T09:36:38"
+    },
+    "awbGoodsDescriptionInfo": [
+      {
+        "entityId": 1,
+        "entityType": "HAWB",
+        "piecesNo": 6,
+        "guid": "7ad48651-c4c1-492c-be0c-84dfaadde993",
+        "awbPackingInfo": [
+          {
+            "guid": "38bc225a-fa41-40a5-afae-71a11a524dfa",
+            "packs": "5",
+            "packsType": "BAG",
+            "weight": 25,
+            "weightUnit": "KG",
+            "volume": 1.2,
+            "volumeUnit": "M3",
+            "commodity": "530521",
+            "length": 400,
+            "lengthUnit": "CM",
+            "width": 300,
+            "widthUnit": "CM",
+            "height": 2,
+            "heightUnit": "CM",
+            "hsCode": "530521",
+            "volumeWeight": 200.0004,
+            "volumeWeightUnit": "KG",
+            "awbNumber": "235-88998641",
+            "awbGoodsDescriptionInfoGuid": "7ad48651-c4c1-492c-be0c-84dfaadde993"
+          },
+          {
+            "guid": "4fbd511c-26cc-48ae-a2ae-5fe5d9baf803",
+            "packs": "1",
+            "packsType": "BAG",
+            "weight": 100,
+            "weightUnit": "KG",
+            "volume": 0.2,
+            "volumeUnit": "M3",
+            "commodity": "530529",
+            "length": 100,
+            "lengthUnit": "CM",
+            "width": 200,
+            "widthUnit": "CM",
+            "height": 10,
+            "heightUnit": "CM",
+            "minTempUnit": "CEL",
+            "hsCode": "530529",
+            "goodsDescription": "DESC",
+            "netWeightUnit": "KG",
+            "volumeWeight": 33.3334,
+            "volumeWeightUnit": "KG",
+            "awbNumber": "235-88998641",
+            "awbGoodsDescriptionInfoGuid": "7ad48651-c4c1-492c-be0c-84dfaadde993"
+          }
+        ],
+        "isShipmentCreated": true
+      }
+    ],
+    "awbPackingInfo": [
+      {
+        "guid": "38bc225a-fa41-40a5-afae-71a11a524dfa",
+        "packs": "5",
+        "packsType": "BAG",
+        "weight": 25,
+        "weightUnit": "KG",
+        "volume": 1.2,
+        "volumeUnit": "M3",
+        "commodity": "530521",
+        "length": 400,
+        "lengthUnit": "CM",
+        "width": 300,
+        "widthUnit": "CM",
+        "height": 2,
+        "heightUnit": "CM",
+        "hsCode": "530521",
+        "volumeWeight": 200.0004,
+        "volumeWeightUnit": "KG",
+        "awbNumber": "235-88998641",
+        "awbGoodsDescriptionInfoGuid": "7ad48651-c4c1-492c-be0c-84dfaadde993"
+      },
+      {
+        "guid": "4fbd511c-26cc-48ae-a2ae-5fe5d9baf803",
+        "packs": "1",
+        "packsType": "BAG",
+        "weight": 100,
+        "weightUnit": "KG",
+        "volume": 0.2,
+        "volumeUnit": "M3",
+        "commodity": "530529",
+        "length": 100,
+        "lengthUnit": "CM",
+        "width": 200,
+        "widthUnit": "CM",
+        "height": 10,
+        "heightUnit": "CM",
+        "minTempUnit": "CEL",
+        "hsCode": "530529",
+        "goodsDescription": "DESC",
+        "netWeightUnit": "KG",
+        "volumeWeight": 33.3334,
+        "volumeWeightUnit": "KG",
+        "awbNumber": "235-88998641",
+        "awbGoodsDescriptionInfoGuid": "7ad48651-c4c1-492c-be0c-84dfaadde993"
+      }
+    ],
+    "defaultAwbShipmentInfo": {
+      "entityId": 1,
+      "entityType": "HAWB",
+      "shipperName": "TEST VG CREDIT LIMIT",
+      "shipperAddress": "\r\nADDRESS 1\r\nMH\r\nPUNE\r\nIND",
+      "consigneeName": "NATIONWIDE PAPER LTD",
+      "consigneeAddress": "\r\nABC CO LLC\nAEJEA\r\nARE",
+      "consigneeReferenceNumber": "2436215",
+      "iataCode": "5678",
+      "awbNumber": "235-88998641",
+      "originAirport": "Kempegowda International Airport BLR",
+      "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
+      "firstCarrier": "Turkish Airlines",
+      "agentCASSCode": "8975"
+    },
+    "defaultAwbRoutingInfo": [
+      {
+        "entityId": 1,
+        "entityType": "HAWB",
+        "byCarrier": "Turkish Airlines",
+        "flightNumber": "6457",
+        "flightDate": "2024-02-02T01:00:00",
+        "destinationPortName": "USIAH_AIR",
+        "originPortName": "INBLR_AIR",
+        "isShipmentCreated": true
+      }
+    ]
+  },
+  "DMAWB": {
+    "id": 2,
+    "guid": "4545424c-fe16-48c4-b1e9-230589324dba",
+    "awbNumber": "235-88998641",
+    "shipmentId": 2,
+    "awbShipmentInfo": {
+      "entityId": 2,
+      "entityType": "DMAWB",
+      "shipperName": "TEST VG CREDIT LIMIT",
+      "shipperAddress": "\r\nADDRESS 1\r\nMH\r\nPUNE\r\nIND",
+      "consigneeName": "NATIONWIDE PAPER LTD",
+      "consigneeAddress": "\r\nABC CO LLC\nAEJEA\r\nARE",
+      "consigneeReferenceNumber": "2436215",
+      "iataCode": "5678",
+      "awbNumber": "235-88998641",
+      "originAirport": "Kempegowda International Airport BLR",
+      "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
+      "firstCarrier": "Turkish Airlines",
+      "agentCASSCode": "8975"
+    },
+    "awbRoutingInfo": [
+      {
+        "entityId": 2,
+        "entityType": "DMAWB",
+        "byCarrier": "Turkish Airlines",
+        "flightNumber": "6457",
+        "flightDate": "2024-02-02T01:00:00",
+        "destinationPortName": "USIAH_AIR",
+        "originPortName": "INBLR_AIR",
+        "isShipmentCreated": true
+      }
+    ],
+    "awbCargoInfo": {
+      "entityId": 2,
+      "entityType": "DMAWB",
+      "ntrQtyGoods": "DIMS: IN \r\n5=400X300X2,1=100X200X10\r\nTOTAL VOLUMETRIC WEIGHT ",
+      "currency": "EGP",
+      "customsValue": 0
+    },
+    "awbOtherInfo": {
+      "entityId": 2,
+      "entityType": "DMAWB",
+      "shipper": "TEST VG CREDIT LIMIT",
+      "carrier": "carrier for mawb from master",
+      "executedOn": "2024-03-07T09:36:38"
+    },
+    "awbGoodsDescriptionInfo": [
+      {
+        "entityId": 2,
+        "entityType": "DMAWB",
+        "piecesNo": 6,
+        "guid": "7ad48651-c4c1-492c-be0c-84dfaadde993",
+        "awbPackingInfo": [
+          {
+            "guid": "38bc225a-fa41-40a5-afae-71a11a524dfa",
+            "packs": "5",
+            "packsType": "BAG",
+            "weight": 25,
+            "weightUnit": "KG",
+            "volume": 1.2,
+            "volumeUnit": "M3",
+            "commodity": "530521",
+            "length": 400,
+            "lengthUnit": "CM",
+            "width": 300,
+            "widthUnit": "CM",
+            "height": 2,
+            "heightUnit": "CM",
+            "hsCode": "530521",
+            "volumeWeight": 200.0004,
+            "volumeWeightUnit": "KG",
+            "awbNumber": "235-88998641",
+            "awbGoodsDescriptionInfoGuid": "7ad48651-c4c1-492c-be0c-84dfaadde993"
+          },
+          {
+            "guid": "4fbd511c-26cc-48ae-a2ae-5fe5d9baf803",
+            "packs": "1",
+            "packsType": "BAG",
+            "weight": 100,
+            "weightUnit": "KG",
+            "volume": 0.2,
+            "volumeUnit": "M3",
+            "commodity": "530529",
+            "length": 100,
+            "lengthUnit": "CM",
+            "width": 200,
+            "widthUnit": "CM",
+            "height": 10,
+            "heightUnit": "CM",
+            "minTempUnit": "CEL",
+            "hsCode": "530529",
+            "goodsDescription": "DESC",
+            "netWeightUnit": "KG",
+            "volumeWeight": 33.3334,
+            "volumeWeightUnit": "KG",
+            "awbNumber": "235-88998641",
+            "awbGoodsDescriptionInfoGuid": "7ad48651-c4c1-492c-be0c-84dfaadde993"
+          }
+        ],
+        "isShipmentCreated": true
+      }
+    ],
+    "awbPackingInfo": [
+      {
+        "guid": "38bc225a-fa41-40a5-afae-71a11a524dfa",
+        "packs": "5",
+        "packsType": "BAG",
+        "weight": 25,
+        "weightUnit": "KG",
+        "volume": 1.2,
+        "volumeUnit": "M3",
+        "commodity": "530521",
+        "length": 400,
+        "lengthUnit": "CM",
+        "width": 300,
+        "widthUnit": "CM",
+        "height": 2,
+        "heightUnit": "CM",
+        "hsCode": "530521",
+        "volumeWeight": 200.0004,
+        "volumeWeightUnit": "KG",
+        "awbNumber": "235-88998641",
+        "awbGoodsDescriptionInfoGuid": "7ad48651-c4c1-492c-be0c-84dfaadde993"
+      },
+      {
+        "guid": "4fbd511c-26cc-48ae-a2ae-5fe5d9baf803",
+        "packs": "1",
+        "packsType": "BAG",
+        "weight": 100,
+        "weightUnit": "KG",
+        "volume": 0.2,
+        "volumeUnit": "M3",
+        "commodity": "530529",
+        "length": 100,
+        "lengthUnit": "CM",
+        "width": 200,
+        "widthUnit": "CM",
+        "height": 10,
+        "heightUnit": "CM",
+        "minTempUnit": "CEL",
+        "hsCode": "530529",
+        "goodsDescription": "DESC",
+        "netWeightUnit": "KG",
+        "volumeWeight": 33.3334,
+        "volumeWeightUnit": "KG",
+        "awbNumber": "235-88998641",
+        "awbGoodsDescriptionInfoGuid": "7ad48651-c4c1-492c-be0c-84dfaadde993"
+      }
+    ],
+    "defaultAwbShipmentInfo": {
+      "entityId": 2,
+      "entityType": "DMAWB",
+      "shipperName": "TEST VG CREDIT LIMIT",
+      "shipperAddress": "\r\nADDRESS 1\r\nMH\r\nPUNE\r\nIND",
+      "consigneeName": "NATIONWIDE PAPER LTD",
+      "consigneeAddress": "\r\nABC CO LLC\nAEJEA\r\nARE",
+      "consigneeReferenceNumber": "2436215",
+      "iataCode": "5678",
+      "awbNumber": "235-88998641",
+      "originAirport": "Kempegowda International Airport BLR",
+      "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
+      "firstCarrier": "Turkish Airlines",
+      "agentCASSCode": "8975"
+    },
+    "defaultAwbRoutingInfo": [
+      {
+        "entityId": 2,
+        "entityType": "DMAWB",
+        "byCarrier": "Turkish Airlines",
+        "flightNumber": "6457",
+        "flightDate": "2024-02-02T01:00:00",
+        "destinationPortName": "USIAH_AIR",
+        "originPortName": "INBLR_AIR",
+        "isShipmentCreated": true
+      }
+    ]
+  },
+  "MAWB": {}
+}
