@@ -105,5 +105,9 @@ public class Routings extends MultiTenancy {
 
     @Column(name = "truck_reference_number")
     private String truckReferenceNumber;
+
+    public boolean getIsDomestic() {
+        return isDomestic;
+    }
 }
 

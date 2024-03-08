@@ -173,7 +173,7 @@ public class SyncEntityConversionService {
         var routingsRequestV2 = modelMapper.map(routings, RoutingsRequestV2.class);
         if(routingsRequestV2.getMode() != null && routingsRequestV2.getMode().equals(Constants.TRANSPORT_MODE_ROA))
             routingsRequestV2.setVoyage(routings.getTruckReferenceNumber());
-        routingsRequestV2.setIsDomestic(routings.isDomestic());
+        routingsRequestV2.setIsDomestic(routings.getIsDomestic());
         routingsRequestV2.setByCarrier(routings.getCarrier());
         return routingsRequestV2;
     }

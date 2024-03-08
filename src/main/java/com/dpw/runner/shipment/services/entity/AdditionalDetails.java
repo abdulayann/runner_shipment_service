@@ -407,4 +407,20 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "is_summary_updated")
     private Boolean isSummaryUpdated;
+
+    public String getbLRemarks() {
+        return bLRemarks;
+    }
+
+    public String getbLRemarksDescription() {
+        return bLRemarksDescription;
+    }
+
+    public Parties geteTailor() {
+        return eTailor;
+    }
+
+    public String getbLTermsandConditionsId() {
+        return bLTermsandConditionsId;
+    }
 }
