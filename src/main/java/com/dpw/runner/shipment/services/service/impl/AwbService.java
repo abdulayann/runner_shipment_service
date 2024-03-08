@@ -2862,13 +2862,13 @@ public class AwbService implements IAwbService {
                         uniqueDimension.add(packings.getWidthUnit());
                         uniqueDimension.add(packings.getHeightUnit());
                     }
-                    counter++;
 
                     packsDescriptionValue += pcs + len + width + height + ",";
-//                if (counter == listOfPackingRows.length) {
-//                    packsDescriptionValue = packsDescriptionValue.slice(0, -1);
-//                }
+                    if (counter == request.getAwbPackingInfo().size() - 1) {
+                        packsDescriptionValue = packsDescriptionValue.substring(0, packsDescriptionValue.length() - 1);
+                    }
 
+                    counter++;
                     if (counter % 2 == 0) {
                         packsDescriptionValue += newLine;
                     }
