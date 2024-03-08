@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingRequestOutModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -166,7 +165,7 @@ public class ShippingRequestOutReport extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ShippingRequestOutModel model = (ShippingRequestOutModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
-        populateShipmentFields(model.getShipment(), false, dictionary);
+        populateShipmentFields(model.getShipment(), dictionary);
         populateUserFields(model.getUser(), dictionary);
         populateConsolidationFields(model.getConsolidation(), dictionary);
         if (model.getLoadingPort() != null) {
@@ -204,7 +203,7 @@ public class ShippingRequestOutReport extends IReport {
                         map.put("ContainerSummary", map.get("CountDesc"));
                         return map;
                     })
-                    .collect(Collectors.toList());
+                    .toList();
             dictionary.put(ReportConstants.CONSOL_CONTAINERSUMMARY, containerSummary);
         }
 
@@ -256,7 +255,7 @@ public class ShippingRequestOutReport extends IReport {
         }
         List<String> shipmentIds = model.getShipmentList() != null ? model.getShipmentList().stream()
                 .map(i -> i.getId().toString())
-                .collect(Collectors.toList()) : Collections.emptyList();
+                .toList() : Collections.emptyList();
         dictionary.put(ReportConstants.SHIPMENT_IDS, String.join(",", shipmentIds));
         return dictionary;
     }

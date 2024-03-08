@@ -52,7 +52,7 @@ public class ManifestShipmentReport extends IReport{
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ManifestShipmentModel manifestShipmentModel = (ManifestShipmentModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
-        populateShipmentFields(manifestShipmentModel.shipmentDetails, false, dictionary);
+        populateShipmentFields(manifestShipmentModel.shipmentDetails, dictionary);
         populateConsolidationFields(manifestShipmentModel.consolidationDetails, dictionary);
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
 

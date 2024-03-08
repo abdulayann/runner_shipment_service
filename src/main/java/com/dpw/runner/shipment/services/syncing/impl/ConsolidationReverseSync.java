@@ -112,7 +112,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                     p.setGuid(item);
                     return p;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setShipmentsList(req);
     }
 
@@ -128,7 +128,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                         modelMapper.map(item.getEvents(), p.getEventsList());
                     return p;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setJobsList(req);
     }
 
@@ -144,7 +144,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                     t.setTransporterType(Ownership.valueOf(item.getTransporterTypeString()));
                     return t;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setTruckDriverDetails(req);
     }
 
@@ -254,7 +254,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {

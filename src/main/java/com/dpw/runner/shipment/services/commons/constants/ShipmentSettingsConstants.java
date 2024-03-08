@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ShipmentSettingsConstants {
+    private ShipmentSettingsConstants(){}
     public static final String SHIPMENT_SETTINGS_API_HANDLE = "/api/v2/shipment-settings";
     public static final String SHIPMENT_SETTINGS_SUCCESSFUL = "Successful Shipment Settings Data Creation";
     public static final String SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL = "Successful Shipment Settings Data Update";

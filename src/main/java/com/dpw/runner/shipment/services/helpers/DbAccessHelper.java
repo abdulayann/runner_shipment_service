@@ -22,6 +22,7 @@ import static org.springframework.data.jpa.domain.Specification.where;
 
 @SuppressWarnings("ALL")
 public class DbAccessHelper {
+    private DbAccessHelper(){}
     public static final String YYYY_MM_DD = "yyyy-MM-dd";
     private static Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
 
@@ -89,7 +90,7 @@ public class DbAccessHelper {
             }
         }
 //        List<RunnerEntityMapping> entityMappingList = tableName.entrySet().stream()
-//                        .filter(x -> x.getValue().isContainsText()).map(x -> x.getValue()).collect(Collectors.toList());
+//                        .filter(x -> x.getValue().isContainsText()).map(x -> x.getValue()).toList();
 //        entityMappingList.forEach(c -> {
 //
 //
@@ -342,12 +343,12 @@ public class DbAccessHelper {
                                 if (i instanceof String)
                                     return UUID.fromString((String) i);
                                 return (UUID) i;
-                            }).collect(Collectors.toList());
+                            }).toList();
                     return criteriaBuilder.in(path.get(fieldName)).value(querySet);
                 }
                 if (dataType.isAssignableFrom(Long.class) && input.getValue() != null && input.getValue() instanceof List) {
                     List<Long> querySet = ((List<?>) input.getValue()).stream()
-                            .map(i -> Long.valueOf(String.valueOf(i))).collect(Collectors.toList());
+                            .map(i -> Long.valueOf(String.valueOf(i))).toList();
                     return criteriaBuilder.in(path.get(fieldName)).value(querySet);
                 }
                 if (dataType.isEnum()) {

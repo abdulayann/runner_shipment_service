@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 import java.util.Map;
 
 public class V1PermissionMapUtil {
+    private V1PermissionMapUtil(){}
 
     private static final Map<String, String> v1PermissionMapping = Map.ofEntries(
             // SHIPMENT LIST PERMISSION MAPPINGS

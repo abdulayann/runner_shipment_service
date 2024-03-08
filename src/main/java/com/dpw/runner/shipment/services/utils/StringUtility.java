@@ -1,12 +1,12 @@
 package com.dpw.runner.shipment.services.utils;
 
 import java.security.SecureRandom;
-import java.util.Random;
 
 /**
  * this helper is used to implement all common methods in all projects like utils function
  */
 public class StringUtility {
+    private StringUtility(){}
     public static final SecureRandom random = new SecureRandom();
 
     public static boolean isEmpty(String value) {

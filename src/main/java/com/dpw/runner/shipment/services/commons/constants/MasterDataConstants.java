@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 
 public class MasterDataConstants {
+    private MasterDataConstants(){}
     public static final String MASTER_DATA_API_HANDLE = "/api/v2/master-data";
 
     public static final String CARRIER = "/carrier";

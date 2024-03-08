@@ -60,7 +60,7 @@ public class ArrivalNoticeReport extends IReport {
         ArrivalNoticeModel arrivalNoticeModel = (ArrivalNoticeModel) documentModel;
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(arrivalNoticeModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        populateShipmentFields(arrivalNoticeModel.shipmentDetails, false, dictionary);
+        populateShipmentFields(arrivalNoticeModel.shipmentDetails, dictionary);
         populateUserFields(arrivalNoticeModel.usersDto, dictionary);
         populateBlFields(arrivalNoticeModel.hbl, dictionary);
         populateShipmentOrganizationsLL(arrivalNoticeModel.shipmentDetails, dictionary);

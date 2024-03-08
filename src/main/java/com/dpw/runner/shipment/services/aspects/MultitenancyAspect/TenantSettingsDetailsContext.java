@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TenantSettingsDetailsContext {
+    private TenantSettingsDetailsContext(){}
 
     private static ThreadLocal<V1TenantSettingsResponse> tenantSettingsThreadLocal =
       new InheritableThreadLocal<>();

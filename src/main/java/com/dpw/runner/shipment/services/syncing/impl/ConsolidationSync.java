@@ -162,7 +162,7 @@ public class ConsolidationSync implements IConsolidationSync {
                 .map(item -> {
                     return shipmentDao.findById(item.getShipmentId()).get().getGuid();
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setShipmentGuids(req);
     }
 
@@ -177,7 +177,7 @@ public class ConsolidationSync implements IConsolidationSync {
                     modelMapper.map(item.getEventsList(), p.getEvents());
                     return p;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setJobsList(req);
     }
 
@@ -200,7 +200,7 @@ public class ConsolidationSync implements IConsolidationSync {
                     t.setTransporterTypeString(item.getTransporterType().toString());
                     return t;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setTruckDriverDetail(req);
     }
 
@@ -289,7 +289,7 @@ public class ConsolidationSync implements IConsolidationSync {
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {

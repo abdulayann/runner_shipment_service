@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -190,7 +189,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Override
     public UniversalTrackingPayload mapShipmentDataToTrackingServiceData(ShipmentDetails shipmentDetails) {
         UniversalTrackingPayload trackingPayload = null;
-        ConsolidationDetails consol = getConsolidationFromShipment(shipmentDetails.getId(), TenantContext.getCurrentTenant());
+        ConsolidationDetails consol = getConsolidationFromShipment(shipmentDetails.getId());
         trackingPayload = mapDetailsToTSData(consol, shipmentDetails, true);
         log.info("Shipment Tracking Update: {}", trackingPayload.toString());
         return trackingPayload;
@@ -238,7 +237,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return Collections.emptyList();
     }
 
-    private ConsolidationDetails getConsolidationFromShipment(Long shipmentId, Integer currentTenant) {
+    private ConsolidationDetails getConsolidationFromShipment(Long shipmentId) {
         ConsolidationDetails consolidationDetails = null;
         try{
             List<ConsoleShipmentMapping> linkedConsol = consoleShipmentMappingDao.findByShipmentId(shipmentId);

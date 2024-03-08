@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class PackingConstants {
+    private PackingConstants(){}
     public static final String PACKING_API_HANDLE = "/api/v2/packing";
     public static final String PACKING_CREATE_SUCCESSFUL = "Successful Packing Data Creation";
     public static final String PACKING_UPDATE_SUCCESSFUL = "Successful Packing Data Update";

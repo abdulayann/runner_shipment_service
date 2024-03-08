@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ReferenceNumbersConstants {
+    private ReferenceNumbersConstants(){}
     public static final String REFERENCE_NUMBERS_API_HANDLE = "/api/v2/reference-numbers";
 
     public static final String REFERENCE_NUMBERS_CREATE_SUCCESSFUL = "Successful Reference Numbers Data Creation";

@@ -65,7 +65,7 @@ public class PackingListReport extends IReport {
 
         JsonDateFormat(dictionary);
         populateTenantFields(dictionary, model.getTenant());
-        populateShipmentFields(shipment, true, dictionary);
+        populateShipmentFields(shipment, dictionary);
 
         List<String> consigner = null;
         List<String> consignee = null;
@@ -162,9 +162,6 @@ public class PackingListReport extends IReport {
         if (!flag) {
             dictionary.put(ReportConstants.INVOICE_NUMBER, null);
         }
-//        Mapping unclear
-//        dictionary.put(ReportConstants.EXPORTER_TAX_ID, shipment.getConsigner().ConsignerVatRegNumber);
-//        dictionary.put(ReportConstants.CONSIGNEE_TAX_ID, shipment.getConsignee().ConsignerVatRegNumber);
 
         dictionary.put(ReportConstants.AIRWAY_BILL_NUMBER, shipment.getHouseBill());
         dictionary.put(ReportConstants.SPECIAL_INSTRUCTION, shipment.getAdditionalTerms());
@@ -248,12 +245,6 @@ public class PackingListReport extends IReport {
         }
 
         return dictionary;
-    }
-
-    private String getLogoPath(UsersDto user) {
-        String basePath = "Upload/";
-        return basePath + user.TenantId + "/Assets/" + user.TenantPrintLogo;
-
     }
 
     private String getPrintLogoPath(UsersDto user) {

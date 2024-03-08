@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class AllocationsConstants {
+    private AllocationsConstants(){}
     public static final String ALLOCATIONS_API_HANDLE = "/api/v2/allocations";
     public static final String ALLOCATIONS_CREATE_SUCCESSFUL = "Successful Allocations Creation";
 

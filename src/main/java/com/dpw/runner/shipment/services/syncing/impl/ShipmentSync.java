@@ -224,7 +224,7 @@ public class ShipmentSync implements IShipmentSync {
                 .map(item -> {
                     return consolidationDetailsDao.findById(item.getConsolidationId()).get().getGuid()  ;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setConsolidationGuids(req);
     }
 
@@ -248,7 +248,7 @@ public class ShipmentSync implements IShipmentSync {
                         t.setTransporterTypeString(item.getTransporterType().toString());
                     return t;
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         cs.setTruckDriverDetail(req);
 
@@ -327,7 +327,7 @@ public class ShipmentSync implements IShipmentSync {
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {
         return modelMapper.map(obj, clazz);

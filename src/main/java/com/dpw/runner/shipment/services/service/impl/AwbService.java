@@ -469,7 +469,7 @@ public class AwbService implements IAwbService {
             }
 
             // map mawb and hawb affter suuccessful save
-            LinkHawbMawb(consolidationDetails, awb, awbList);
+            LinkHawbMawb(awb, awbList);
             log.info("MAWB created successfully for Id {} with Request Id {}", awb.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -984,7 +984,7 @@ public class AwbService implements IAwbService {
         return awbOtherInfo;
     }
 
-    private void LinkHawbMawb(ConsolidationDetails consolidationDetails, Awb mawb, List<Awb> awbList) throws RunnerException {
+    private void LinkHawbMawb(Awb mawb, List<Awb> awbList) throws RunnerException {
         for (var awb : awbList) {
             if(awb.getAwbPackingInfo() != null) {
                 for(AwbPackingInfo awbPackingInfo : awb.getAwbPackingInfo()) {
@@ -1002,8 +1002,6 @@ public class AwbService implements IAwbService {
 
     private List<AwbPackingInfo> generateMawbPackingInfo(ConsolidationDetails consolidationDetails) {
         List<AwbPackingInfo> awbPackingList = new ArrayList<>();
-        List<AwbGoodsDescriptionInfo> awbGoodsDescList = new ArrayList<>();
-        List<Long> attachedHawbIds = new ArrayList<>();
         List<AwbPackingInfo> hawbPacksLinkedToMawb = new ArrayList<>();
 
         if (consolidationDetails.getShipmentsList().size() > 0) {
@@ -1100,8 +1098,6 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setConsigneeAddress(consigneeAddress == null ? consigneeAddress : consigneeAddress.toUpperCase());
 
         awbShipmentInfo.setConsigneeReferenceNumber(shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getId().toString() : null);
-//        awbShipmentInfo.setOriginAirport(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getOriginPort() : null);
-//        awbShipmentInfo.setDestinationAirport(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getDestinationPort() : null);
         setAwbShipmentInfoUnLocationData(awbShipmentInfo,shipmentDetails.getCarrierDetails());
 
         awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getShippingLine() : null);
@@ -1326,7 +1322,6 @@ public class AwbService implements IAwbService {
             map = shipmentDetails.getContainersList().stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         if (packings != null && packings.size() > 0) {
             List<AwbPackingInfo> awbPackingList = new ArrayList<>();
-            // Integer totalPacks = 0;
             for (var packing : packings) {
                 AwbPackingInfo awbPacking = new AwbPackingInfo();
                 awbPacking.setGuid(packing.getGuid());
@@ -1362,7 +1357,6 @@ public class AwbService implements IAwbService {
                 awbPacking.setReferenceNumber(packing.getReferenceNumber());
                 awbPacking.setDgClass(packing.getDGClass());
                 awbPacking.setHazardous(packing.getHazardous());
-                //awbPacking.setCommodityId(packing.getCommodityId());
                 awbPacking.setNetWeight(packing.getNetWeight());
                 awbPacking.setNetWeightUnit(packing.getNetWeightUnit());
                 awbPacking.setVolumeWeight(packing.getVolumeWeight());
@@ -1426,7 +1420,7 @@ public class AwbService implements IAwbService {
                 var listCriteria = constructListCommonRequest("shipmentId", shipmentId, "IN");
                 Pair<Specification<Awb>, Pageable> pair = fetchData(listCriteria, Awb.class);
                 var hawbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
-                LinkHawbMawb(consolidation.get(), awb, hawbListPage.getContent());
+                LinkHawbMawb(awb, hawbListPage.getContent());
             }
 
             return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(awb, AwbResponse.class));
@@ -1474,7 +1468,7 @@ public class AwbService implements IAwbService {
         List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
 
         // Fetch all the awb records with the mapped hawbId
-        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", mawbHawbLinks.stream().map(i -> i.getHawbId()).collect(Collectors.toList()), "IN");
+        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", mawbHawbLinks.stream().map(i -> i.getHawbId()).toList(), "IN");
         Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
         Page<Awb> page = awbDao.findAll(pair.getLeft(), pair.getRight());
 
@@ -1569,7 +1563,7 @@ public class AwbService implements IAwbService {
                     awb.setAwbPaymentInfo(resetAwb.getAwbPaymentInfo());
                     awb.setAwbSpecialHandlingCodesMappings(resetAwb.getAwbSpecialHandlingCodesMappings());
                     // Link
-                    LinkHawbMawb(consolidationDetails.get(), awb, awbList);
+                    LinkHawbMawb(awb, awbList);
                 }
                 else awb = generateAwb(createAwbRequest);
                 awb.setGuid(awbGuid);
@@ -1590,7 +1584,6 @@ public class AwbService implements IAwbService {
             }
             case AWB_PACKS_AND_GOODS: {
                 if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
-                    //awb.setAwbPackingInfo(generateMawbPackingInfo(consolidationDetails.get()));
                     awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, null));
                     updateLinkHawbMawb(consolidationDetails.get(), awbId);
                 }
@@ -1746,7 +1739,6 @@ public class AwbService implements IAwbService {
                 awbPacking.setReferenceNumber(packing.getReferenceNumber());
                 awbPacking.setDgClass(packing.getDGClass());
                 awbPacking.setHazardous(packing.getHazardous());
-                //awbPacking.setCommodityId(packing.getCommodityId());
                 awbPacking.setNetWeight(packing.getNetWeight());
                 awbPacking.setNetWeightUnit(packing.getNetWeightUnit());
                 awbPacking.setVolumeWeight(packing.getVolumeWeight());
@@ -2213,8 +2205,6 @@ public class AwbService implements IAwbService {
     }
     private List<AwbPackingInfo> updateMawbPackingInfoFromShipment(ConsolidationDetails consolidationDetails) {
         List<AwbPackingInfo> awbPackingList = new ArrayList<>();
-        List<AwbGoodsDescriptionInfo> awbGoodsDescList = new ArrayList<>();
-        List<Long> attachedHawbIds = new ArrayList<>();
         List<AwbPackingInfo> hawbPacksLinkedToMawb = new ArrayList<>();
 
         if (consolidationDetails.getShipmentsList() != null && consolidationDetails.getShipmentsList().size() > 0) {
@@ -3116,7 +3106,7 @@ public class AwbService implements IAwbService {
         }
 
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(id);
-        List<Long> shipmentIdList = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).collect(Collectors.toList());
+        List<Long> shipmentIdList = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
         List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(awb.getId());
         Set<Long> shipmentAwbIdSet = mawbHawbLinks.stream().map(MawbHawbLink::getHawbId).collect(Collectors.toSet());
         // Check whether HAWB is generated for all the linked shipments

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 import java.util.List;
 
 public class Constants {
+    private Constants(){}
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
     public static final String SHIPMENT_TYPE = "shipmentType";
@@ -351,8 +352,8 @@ public class Constants {
     public static final String FAILURE_EXECUTING = "failure executing :(";
     public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
 
-    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,"noOfPackages","netWeight","netWeightUnit",
-            "grossWeight","grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
+    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,"noOfPackages",NET_WEIGHT,"netWeightUnit",
+            GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
             "containerComments", CONTAINER_CODE,"isReefer","minTemp","minTempUnit", "hblDeliveryMode","dgClass","hazardous",
@@ -372,7 +373,7 @@ public class Constants {
     public static final List<String> ColumnsToBeDeletedForCargo = List.of("sealNumber","noOfPackages", "isOwnContainer", "ownType", IS_DELETED,
             "measurement","measurementUnit","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber",
-            CONTAINER_CODE,"isReefer","containerNumber",
+            CONTAINER_CODE,"isReefer",CONTAINER_NUMBER,
             "containerStuffingLocation","containerCount", TRANSPORT_MODE,"hazardousCheckBox");
 
     public static final List<String> ColumnsToBeDeletedForContainer = List.of(IS_DELETED,"serialNumber", "innerPackageNumber", "innerPackageType",
