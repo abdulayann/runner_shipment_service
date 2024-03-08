@@ -2924,7 +2924,8 @@ public class ConsolidationService implements IConsolidationService {
 
         pushShipmentDataToDependentService(consolidationDetails, isCreate);
         try {
-            consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);
+            if (!isFromBooking)
+                consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);
         } catch (Exception e){
             log.error("Error performing sync on consolidation entity, {}", e);
         }

@@ -79,9 +79,27 @@ public class ConsolidationSync implements IConsolidationSync {
 
     @Override
     public ResponseEntity<IRunnerResponse> sync(ConsolidationDetails request, String transactionId, boolean isDirectSync) throws RunnerException {
-        CustomConsolidationRequest response = new CustomConsolidationRequest();
+        CustomConsolidationRequest response = createConsoleSyncReq(request);
+        String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
+        if (isDirectSync) {
+            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
+            syncService.callSyncAsync(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", httpHeaders);
+        }
+        else
+            syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId);
+       return ResponseHelper.buildSuccessResponse(response);
+    }
 
-        response = modelMapper.map(request, CustomConsolidationRequest.class);
+    @Override
+    public void syncLockStatus(ConsolidationDetails consolidationDetails) {
+        LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(consolidationDetails.getGuid()).lockStatus(consolidationDetails.getIsLocked()).build();
+        String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.CONSOLIDATION_LOCK).build());
+        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", StringUtility.convertToString(consolidationDetails.getGuid()));
+    }
+
+    @Override
+    public CustomConsolidationRequest createConsoleSyncReq(ConsolidationDetails request) {
+        CustomConsolidationRequest response = modelMapper.map(request, CustomConsolidationRequest.class);
 
         response.setSourceGuid(request.getSourceGuid());
         response.setLockedByUser(request.getLockedBy());
@@ -136,23 +154,8 @@ public class ConsolidationSync implements IConsolidationSync {
         else response.setIsSendingAgentFreeTextAddress(false);
 
         response.setGuid(request.getGuid());
-        String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
-        if (isDirectSync) {
-            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
-            syncService.callSyncAsync(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", httpHeaders);
-        }
-        else
-            syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId);
-       return ResponseHelper.buildSuccessResponse(response);
+        return response;
     }
-
-    @Override
-    public void syncLockStatus(ConsolidationDetails consolidationDetails) {
-        LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(consolidationDetails.getGuid()).lockStatus(consolidationDetails.getIsLocked()).build();
-        String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.CONSOLIDATION_LOCK).build());
-        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", StringUtility.convertToString(consolidationDetails.getGuid()));
-    }
-
     private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetails request) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getId());
         List<UUID> req = consoleShipmentMappings.stream()
