@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
@@ -95,8 +96,8 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             if(!IsStringNullOrEmpty(cs.getStatusString()))
                 sd.setStatus(ShipmentStatus.valueOf(cs.getStatusString()).getValue());
 
-            sd.setConsigner(mapPartyObject(cs.getConsignerParty()));
-            sd.setConsignee(mapPartyObject(cs.getConsigneeParty()));
+            sd.setConsigner(mapPartyObjectWithFreetext(cs.getConsignerParty(), cs.getIsConsignerFreeTextAddress(), cs.getConsignerFreeTextAddress()));
+            sd.setConsignee(mapPartyObjectWithFreetext(cs.getConsigneeParty(), cs.getIsConsigneeFreeTextAddress(), cs.getConsigneeFreeTextAddress()));
 
             mapTruckDriverDetailReverse(cs, sd);
             sd.setRoutingsList(syncEntityConversionService.routingsV1ToV2(cs.getRoutings()));
@@ -171,6 +172,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setReceivingForwarder(mapPartyObject(cs.getReceivingForwarderParty()));
         additionalDetails.setSendingForwarder(mapPartyObject(cs.getSendingForwarderParty()));
         additionalDetails.setTraderOrSupplier(mapPartyObject(cs.getTraderOrSupplierParty()));
+        additionalDetails.setNotifyParty(mapPartyObjectWithFreetext(cs.getNotifyParty(), cs.getIsNotifyPartyFreeTextAddress(), cs.getNotifyPartyFreeTextAddress()));
         if(!IsStringNullOrEmpty(cs.getAndesStatusString()))
             additionalDetails.setAndesStatus(AndesStatus.valueOf(cs.getAndesStatusString()));
         if(!IsStringNullOrEmpty(cs.getOwnershipString())) {
@@ -217,6 +219,19 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         if(sourcePartyObject == null)
             return null;
         return modelMapper.map(sourcePartyObject, Parties.class);
+    }
+
+    private Parties mapPartyObjectWithFreetext(PartyRequestV2 sourcePartyObject, Boolean isFreeText, String freeTextAddress) {
+        if(sourcePartyObject == null)
+            return null;
+        Parties parties = modelMapper.map(sourcePartyObject, Parties.class);
+        if(isFreeText != null && isFreeText) {
+            parties.setIsAddressFreeText(true);
+            if(parties.getAddressData() == null)
+                parties.setAddressData(new HashMap<>());
+            parties.getAddressData().put(PartiesConstants.RAW_DATA, freeTextAddress);
+        }
+        return parties;
     }
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
