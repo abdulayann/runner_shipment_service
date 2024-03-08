@@ -53,6 +53,12 @@ public class CustomerBookingValidations {
         if (Objects.isNull(entity.getServiceMode()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Service mode"));
 
+        if (Objects.isNull(entity.getCarrierDetails().getOriginPort()))
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POL"));
+
+        if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()))
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POD"));
+
         if (Objects.isNull(entity.getBookingCharges()) || entity.getBookingCharges().isEmpty())
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Bill charge"));
     }
@@ -74,14 +80,14 @@ public class CustomerBookingValidations {
         if (Objects.isNull(entity.getCarrierDetails().getDestination()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Destination"));
 
-        if (Objects.isNull(entity.getCarrierDetails().getOriginPort()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POL"));
-
-        if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POD"));
-
         if (Objects.isNull(entity.getTransportType()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Transport Mode"));
+
+        if (Objects.isNull(entity.getCarrierDetails().getOriginPort()) && !Objects.equals(entity.getTransportType(), Constants.TRANSPORT_MODE_AIR))
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POL"));
+
+        if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()) && !Objects.equals(entity.getTransportType(), Constants.TRANSPORT_MODE_AIR))
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POD"));
 
         if (Objects.isNull(entity.getCargoType()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Cargo Type"));

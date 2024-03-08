@@ -406,7 +406,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                                         }
                                         else if(Objects.equals(associatedRate.getRates_uom(), "Shipment"))
                                         {
-                                            associatedRate.setTotal_unit_count(BigDecimal.valueOf(1));
+                                            associatedRate.setTotal_unit_count(BigDecimal.ONE);
                                             associatedRate.setMeasurement_unit("SHIPMENT");
                                         }
                                         else
@@ -439,7 +439,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                                         }
                                         else if(Objects.equals(associatedRate.getRates_uom(), "Shipment"))
                                         {
-                                            associatedRate.setTotal_unit_count(BigDecimal.valueOf(1));
+                                            associatedRate.setTotal_unit_count(BigDecimal.ONE);
                                             associatedRate.setMeasurement_unit("SHIPMENT");
                                         }
                                         else
@@ -451,6 +451,17 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                                 }
                             }
                         }
+                    }
+                }
+            }
+            if(offer.getShipment_level_rates() != null && offer.getShipment_level_rates().size() > 0)
+            {
+                for(FetchOffersResponse.AssociatedRate associatedRate : offer.getShipment_level_rates())
+                {
+                    if(associatedRate != null) {
+                        associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
+                        associatedRate.setTotal_unit_count(BigDecimal.ONE);
+                        associatedRate.setMeasurement_unit("SHIPMENT");
                     }
                 }
             }

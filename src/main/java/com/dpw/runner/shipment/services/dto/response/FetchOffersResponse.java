@@ -158,6 +158,8 @@ public class FetchOffersResponse implements IRunnerResponse {
         private String tenant_uuid;
         @JsonProperty("meta")
         private Meta meta;
+        @JsonProperty("shipment_level_rates")
+        private List<AssociatedRate> shipment_level_rates;
     }
 
     @Data
