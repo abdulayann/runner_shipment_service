@@ -204,16 +204,19 @@ public class ShipmentSync implements IShipmentSync {
         HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
         String shipment = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         if (!Objects.isNull(sd.getConsolidationList()) && !sd.getConsolidationList().isEmpty()) {
-            var console = sd.getConsolidationList().get(0);
-            CustomConsolidationRequest response = consolidationSync.createConsoleSyncReq(console);
-            String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
-            syncService.callSyncAsync(Arrays.asList(shipment, consolidationRequest) ,
-                    Arrays.asList(StringUtility.convertToString(sd.getId()), StringUtility.convertToString(console.getId())),
-                    Arrays.asList(StringUtility.convertToString(sd.getGuid()), StringUtility.convertToString(console.getGuid())),
-                    Arrays.asList(SyncingConstants.SHIPMENT, SyncingConstants.CONSOLIDATION), httpHeaders);
-        } else {
+            var console = consolidationDetailsDao.findById(sd.getConsolidationList().get(0).getId());
+            if (console.isPresent()) {
+                CustomConsolidationRequest response = consolidationSync.createConsoleSyncReq(console.get());
+                String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
+                syncService.callSyncAsync(Arrays.asList(shipment, consolidationRequest) ,
+                        Arrays.asList(StringUtility.convertToString(sd.getId()), StringUtility.convertToString(console.get().getId())),
+                        Arrays.asList(StringUtility.convertToString(sd.getGuid()), StringUtility.convertToString(console.get().getGuid())),
+                        Arrays.asList(SyncingConstants.SHIPMENT, SyncingConstants.CONSOLIDATION), httpHeaders);
+            }
+            else
+                syncService.callSyncAsync(shipment, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), SyncingConstants.SHIPMENT, httpHeaders);
+        } else
             syncService.callSyncAsync(shipment, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), SyncingConstants.SHIPMENT, httpHeaders);
-        }
 
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
