@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -38,7 +39,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ConsolidationSync implements IConsolidationSync {
 
-    public static final String RAW_DATA = "rawData";
     @Autowired
     ModelMapper modelMapper;
 
@@ -131,7 +131,7 @@ public class ConsolidationSync implements IConsolidationSync {
         mapShipmentGuids(response, request);
         if(request.getCreditor() != null && request.getCreditor().getIsAddressFreeText() != null && request.getCreditor().getIsAddressFreeText()){
             response.setIsCreditorFreeTextAddress(true);
-            var rawData = request.getCreditor().getAddressData() != null ? request.getCreditor().getAddressData().get(RAW_DATA): null;
+            var rawData = request.getCreditor().getAddressData() != null ? request.getCreditor().getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData!=null)
                 response.setCreditorFreeTextAddress(rawData.toString());
         }
@@ -139,7 +139,7 @@ public class ConsolidationSync implements IConsolidationSync {
 
         if(request.getReceivingAgent() != null && request.getReceivingAgent().getIsAddressFreeText() != null && request.getReceivingAgent().getIsAddressFreeText()){
             response.setIsReceivingAgentFreeTextAddress(true);
-            var rawData = request.getReceivingAgent().getAddressData() != null ? request.getReceivingAgent().getAddressData().get(RAW_DATA): null;
+            var rawData = request.getReceivingAgent().getAddressData() != null ? request.getReceivingAgent().getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData!=null)
                 response.setReceivingAgentFreeTextAddress(rawData.toString());
         }
@@ -147,7 +147,7 @@ public class ConsolidationSync implements IConsolidationSync {
 
         if(request.getSendingAgent() != null && request.getSendingAgent().getIsAddressFreeText() != null && request.getSendingAgent().getIsAddressFreeText()){
             response.setIsSendingAgentFreeTextAddress(true);
-            var rawData = request.getSendingAgent().getAddressData() != null ? request.getSendingAgent().getAddressData().get(RAW_DATA): null;
+            var rawData = request.getSendingAgent().getAddressData() != null ? request.getSendingAgent().getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData!=null)
                 response.setSendingAgentFreeTextAddress(rawData.toString());
         }

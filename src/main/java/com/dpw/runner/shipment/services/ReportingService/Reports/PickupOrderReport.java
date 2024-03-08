@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PickUpOrderReportModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -66,7 +67,7 @@ public class PickupOrderReport extends IReport {
             var shipmentConsigner = pickUpOrderReportModel.hblModel.shipment.getConsigner();
             if(shipmentConsigner != null && shipmentConsigner.getAddressData() != null){
                 Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
-                var rawData = consignerAddress != null && consignerAddress.containsKey("rawData") ? StringUtility.convertToString(consignerAddress.get("rawData")) : null;
+                var rawData = consignerAddress != null && consignerAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(consignerAddress.get(PartiesConstants.RAW_DATA)) : null;
                 var consignorFreeText = ReportHelper.getAddressList(rawData);
                 dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
                 dictionary.put(ReportConstants.CONSIGNER_FREETEXTInCaps, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
