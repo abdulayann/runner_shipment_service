@@ -66,11 +66,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -2755,108 +2751,20 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private void makeHeadersInSheet(Sheet sheet) {
-        Row preHeaderRow = sheet.createRow(0);
-        Row headerRow = sheet.createRow(1);
-        List<String> consolHeaders = parser.getHeadersForConsolidation();
-        for (int i = 0; i < consolHeaders.size(); i++) {
+    private void makeHeadersInSheet(Sheet sheet, Workbook workbook) {
+        Row headerRow = sheet.createRow(0);
+        List<String> consolidationHeader = ConsolidationConstants.CONSOLIDATION_HEADER;
+
+        CellStyle boldStyle = workbook.createCellStyle();
+        Font boldFont = workbook.createFont();
+        boldFont.setBold(true);
+        boldStyle.setFont(boldFont);
+
+        for (int i = 0; i < consolidationHeader.size(); i++) {
             Cell cell = headerRow.createCell(i);
-            cell.setCellValue(consolHeaders.get(i));
+            cell.setCellValue(consolidationHeader.get(i));
+            cell.setCellStyle(boldStyle);
         }
-
-        //Create Parties Headers
-        int offSet = consolHeaders.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("sendingAgent");
-        List<String> sendingAgentParty = parser.getHeadersForParties();
-        for (int i = 0; i < sendingAgentParty.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(sendingAgentParty.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + sendingAgentParty.size() - 1));
-        offSet += sendingAgentParty.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("receivingAgent");
-        List<String> receivingAgentParty = parser.getHeadersForParties();
-        for (int i = 0; i < receivingAgentParty.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(receivingAgentParty.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + receivingAgentParty.size() - 1));
-        offSet += receivingAgentParty.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("borrowedFrom");
-        List<String> borrowedFromParty = parser.getHeadersForParties();
-        for (int i = 0; i < borrowedFromParty.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(borrowedFromParty.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + borrowedFromParty.size() - 1));
-        offSet += borrowedFromParty.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("creditor");
-        List<String> creditorParty = parser.getHeadersForParties();
-        for (int i = 0; i < creditorParty.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(creditorParty.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + creditorParty.size() - 1));
-        offSet += creditorParty.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("coLoadWith");
-        List<String> coLoadWith = parser.getHeadersForParties();
-        for (int i = 0; i < coLoadWith.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(coLoadWith.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + coLoadWith.size() - 1));
-        offSet += coLoadWith.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("arrivalDetails");
-        List<String> arrivalDetails = parser.getHeadersForArrivalDepartureDetails();
-        for (int i = 0; i < arrivalDetails.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(arrivalDetails.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + arrivalDetails.size() - 1));
-        offSet += arrivalDetails.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("departureDetails");
-        List<String> departureDetails = parser.getHeadersForArrivalDepartureDetails();
-        for (int i = 0; i < departureDetails.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(departureDetails.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + departureDetails.size() - 1));
-        offSet += departureDetails.size();
-
-
-        preHeaderRow.createCell(offSet).setCellValue("allocations");
-        List<String> allocations = parser.getHeadersForAllocations();
-        for (int i = 0; i < allocations.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(allocations.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + allocations.size() - 1));
-        offSet += allocations.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("Carrier Details");
-        List<String> carrierDetails = parser.getHeadersForCarrier();
-        for (int i = 0; i < carrierDetails.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(carrierDetails.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + carrierDetails.size() - 1));
-        offSet += carrierDetails.size();
-
-        preHeaderRow.createCell(offSet).setCellValue("Achieved Quantities");
-        List<String> achievedQuantities = parser.getHeadersForAchievedQuantities();
-        for (int i = 0; i < achievedQuantities.size(); i++) {
-            Cell cell = headerRow.createCell(offSet + i);
-            cell.setCellValue(achievedQuantities.get(i));
-        }
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + achievedQuantities.size() - 1));
-        offSet += achievedQuantities.size();
     }
 
     @Override
@@ -2871,70 +2779,48 @@ public class ConsolidationService implements IConsolidationService {
         Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
         List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
         log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-
+        Map<String, Integer> headerMap = new HashMap<>();
+        for (int i = 0; i < ConsolidationConstants.CONSOLIDATION_HEADER.size(); i++) {
+            headerMap.put(ConsolidationConstants.CONSOLIDATION_HEADER.get(i), i);
+        }
         try(Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("ConsolidationList");
-            makeHeadersInSheet(sheet);
+            makeHeadersInSheet(sheet, workbook);
 
             for (int i = 0; i < consoleResponse.size(); i++) {
-                Row itemRow = sheet.createRow(i + 2);
+                Row itemRow = sheet.createRow(i + 1);
                 ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
                 LocalTimeZoneHelper.transformTimeZone(consol);
-                var consolBasicValues = parser.getAllAttributeValuesAsListConsol(consol);
-                int offset = 0;
-                for (int j = 0; j < consolBasicValues.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(consolBasicValues.get(j));
-                offset += consolBasicValues.size();
-
-                var sendingAgentValues = parser.getAllAttributeValuesAsListForParty(consol.getSendingAgent());
-                for (int j = 0; j < sendingAgentValues.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(sendingAgentValues.get(j));
-                offset += sendingAgentValues.size();
-
-                var receivingAgentValues = parser.getAllAttributeValuesAsListForParty(consol.getReceivingAgent());
-                for (int j = 0; j < receivingAgentValues.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(receivingAgentValues.get(j));
-                offset += receivingAgentValues.size();
-
-                var borrowedFrom = parser.getAllAttributeValuesAsListForParty(consol.getBorrowedFrom());
-                for (int j = 0; j < borrowedFrom.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(borrowedFrom.get(j));
-                offset += borrowedFrom.size();
-
-                var creditor = parser.getAllAttributeValuesAsListForParty(consol.getCreditor());
-                for (int j = 0; j < creditor.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(creditor.get(j));
-                offset += creditor.size();
-
-                var coLoadWith = parser.getAllAttributeValuesAsListForParty(consol.getCoLoadWith());
-                for (int j = 0; j < coLoadWith.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(coLoadWith.get(j));
-                offset += coLoadWith.size();
-
-                var arrivalDetails = parser.getAllAttributeValuesAsListForArrivalDepartureDetails(consol.getArrivalDetails());
-                for (int j = 0; j < arrivalDetails.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(arrivalDetails.get(j));
-                offset += arrivalDetails.size();
-
-                var departureDetails = parser.getAllAttributeValuesAsListForArrivalDepartureDetails(consol.getDepartureDetails());
-                for (int j = 0; j < departureDetails.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(departureDetails.get(j));
-                offset += departureDetails.size();
-
-                var allocations = parser.getAllAttributeValuesAsListForAllocations(consol.getAllocations());
-                for (int j = 0; j < allocations.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(allocations.get(j));
-                offset += allocations.size();
-
-                var carrierDetails = parser.getAllAttributeValuesAsListForCarrier(consol.getCarrierDetails());
-                for (int j = 0; j < carrierDetails.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(carrierDetails.get(j));
-                offset += carrierDetails.size();
-
-                var achievedQuantities = parser.getAllAttributeValuesAsListForAchievedQuantities(consol.getAchievedQuantities());
-                for (int j = 0; j < achievedQuantities.size(); j++)
-                    itemRow.createCell(offset + j).setCellValue(achievedQuantities.get(j));
-                offset += achievedQuantities.size();
+                itemRow.createCell(headerMap.get("Consolidation Type")).setCellValue(consol.getConsolidationType() != null ? consol.getConsolidationType() : "");
+                itemRow.createCell(headerMap.get("Consolidation Number")).setCellValue(consol.getConsolidationNumber() != null ? consol.getConsolidationNumber() : "");
+                itemRow.createCell(headerMap.get("Transport Mode")).setCellValue(consol.getTransportMode() != null ? consol.getTransportMode() : "");
+                itemRow.createCell(headerMap.get("Cargo Type")).setCellValue(consol.getShipmentType() != null ? consol.getShipmentType() : "");
+                itemRow.createCell(headerMap.get("ETA")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getEta() != null ? consol.getCarrierDetails().getEta().toString() : "");
+                itemRow.createCell(headerMap.get("ATA")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getAta() != null ? consol.getCarrierDetails().getAta().toString() : "");
+                itemRow.createCell(headerMap.get("ETD")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getEtd() != null ? consol.getCarrierDetails().getEtd().toString() : "");
+                itemRow.createCell(headerMap.get("ATD")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getAtd() != null ? consol.getCarrierDetails().getAtd().toString() : "");
+                itemRow.createCell(headerMap.get("Domestic")).setCellValue(consol.getIsDomestic() != null ? consol.getIsDomestic().toString() : "");
+                itemRow.createCell(headerMap.get("Created By")).setCellValue(consol.getCreatedBy() != null ? consol.getCreatedBy() : "");
+                itemRow.createCell(headerMap.get("Voyage/Flight No")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getVoyage() != null ? consol.getCarrierDetails().getVoyage() : "");
+                itemRow.createCell(headerMap.get("Payment Terms")).setCellValue(consol.getPayment() != null ? consol.getPayment() : "");
+                itemRow.createCell(headerMap.get("Carrier")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getShippingLine() != null ? consol.getCarrierDetails().getShippingLine() : "");
+                itemRow.createCell(headerMap.get("Cutoff Date")).setCellValue(consol.getBookingCutoff() != null ? consol.getBookingCutoff().toString() : "");
+                itemRow.createCell(headerMap.get("HBL / HAWB")).setCellValue(consol.getHouseBills() != null && !consol.getHouseBills().isEmpty() ? consol.getHouseBills().get(0) : "");
+                itemRow.createCell(headerMap.get("Estimated Terminal Cutoff")).setCellValue(consol.getEstimatedTerminalCutoff() != null ? consol.getEstimatedTerminalCutoff().toString() : "");
+                itemRow.createCell(headerMap.get("Terminal Cutoff")).setCellValue(consol.getTerminalCutoff() != null ? consol.getTerminalCutoff().toString() : "");
+                itemRow.createCell(headerMap.get("Booking Cutoff")).setCellValue(consol.getBookingCutoff() != null ? consol.getBookingCutoff().toString() : "");
+                itemRow.createCell(headerMap.get("Shipping Instruction Cutoff")).setCellValue(consol.getShipInstructionCutoff() != null ? consol.getShipInstructionCutoff().toString() : "");
+                itemRow.createCell(headerMap.get("Hazardous Booking Cutoff")).setCellValue(consol.getHazardousBookingCutoff() != null ? consol.getHazardousBookingCutoff().toString() : "");
+                itemRow.createCell(headerMap.get("VGM Cutoff")).setCellValue(consol.getVerifiedGrossMassCutoff() != null ? consol.getVerifiedGrossMassCutoff().toString() : "");
+                itemRow.createCell(headerMap.get("Reefer Cutoff")).setCellValue(consol.getReeferCutoff() != null ? consol.getReeferCutoff().toString() : "");
+                itemRow.createCell(headerMap.get("Booking Type")).setCellValue(consol.getBookingType() != null ? consol.getBookingType() : "");
+                itemRow.createCell(headerMap.get("Reference Number")).setCellValue(consol.getReferenceNumber() != null ? consol.getReferenceNumber() : "");
+                itemRow.createCell(headerMap.get("Carrier Booking Status")).setCellValue(consol.getBookingStatus() != null ? consol.getBookingStatus() : "");
+                itemRow.createCell(headerMap.get("Carrier Booking Number")).setCellValue(consol.getBookingNumber() != null ? consol.getBookingNumber() : "");
+                itemRow.createCell(headerMap.get("Container Count")).setCellValue(consol.getContainerCount() != null ? consol.getContainerCount().toString() : "");
+                itemRow.createCell(headerMap.get("POL")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getOriginPort() != null ? consol.getCarrierDetails().getOriginPort() : "");
+                itemRow.createCell(headerMap.get("POD")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getDestinationPort() != null ? consol.getCarrierDetails().getDestinationPort() : "");
+                itemRow.createCell(headerMap.get("MBL / MAWB")).setCellValue(consol.getMawb() != null ? consol.getMawb() : "");
             }
 
             LocalDateTime currentTime = LocalDateTime.now();

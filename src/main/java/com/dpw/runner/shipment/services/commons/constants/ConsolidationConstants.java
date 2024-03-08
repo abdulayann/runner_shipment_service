@@ -1,6 +1,19 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class ConsolidationConstants {
+    private ConsolidationConstants(){}
+    public static List<String> CONSOLIDATION_HEADER = Arrays.asList(
+            "Consolidation Type", "Consolidation Number", "Transport Mode", "Cargo Type",
+            "ETA", "ATA", "ETD", "ATD", "Domestic", "Created By", "Voyage/Flight No",
+            "Payment Terms", "Carrier", "Cutoff Date", "HBL / HAWB", "Estimated Terminal Cutoff",
+            "Terminal Cutoff", "Booking Cutoff", "Shipping Instruction Cutoff", "Hazardous Booking Cutoff",
+            "VGM Cutoff", "Reefer Cutoff", "Booking Type", "Reference Number", "Carrier Booking Status",
+            "Carrier Booking Number", "Container Count", "POL", "POD", "MBL / MAWB"
+    );
+
     public static final String CONSOLIDATION_API_HANDLE = "/api/v2/consolidation";
 
     public static final String CREATE_SUCCESSFUL = "Successful Consolidation Data Creation";
