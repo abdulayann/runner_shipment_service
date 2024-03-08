@@ -214,6 +214,7 @@ public class AdditionalDetailModel implements IDocumentModel {
     private PartiesModel sendingAgent;
     @JsonProperty("ReceivingAgent")
     private PartiesModel receivingAgent;
+    private String agentReference;
     private String cargoTermsDescription;
     private String bLRemarks;
     private String bLRemarksDescription;

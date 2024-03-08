@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.utils;
 
-import java.util.Random;
+import java.security.SecureRandom;
 
 /**
  * this helper is used to implement all common methods in all projects like utils function
  */
 public class StringUtility {
+    private StringUtility(){}
+    public static final SecureRandom random = new SecureRandom();
 
     public static boolean isEmpty(String value) {
         return value == null || value.isEmpty();
@@ -25,7 +27,6 @@ public class StringUtility {
     public static String getRandomString(int length) {
         int lowerLimit = 48;
         int upperLimit = 122;
-        Random random = new Random();
 
         return random.ints(lowerLimit, upperLimit + 1)
                 .filter(i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97))

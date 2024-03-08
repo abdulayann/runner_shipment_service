@@ -55,6 +55,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 @Service
 public class AuditLogService implements IAuditLogService {
+    private AuditLogService(){}
     private static final Set<Class<?>> annotationClassList = new HashSet<>(Arrays.asList(Id.class, OneToMany.class, ManyToOne.class, ManyToMany.class, ExcludeAuditLog.class));
 
     public static Map<String, String> COLUMN_HEADERS_TO_FIELD_NAME = null;
@@ -315,7 +316,7 @@ public class AuditLogService implements IAuditLogService {
             fields = getListOfAllFields(prevEntity);
         }
         Map<String, AuditLogChanges> fieldValueMap = new HashMap<>();
-        fields = fields.stream().filter(field -> !filterFieldBasedOnAnnotation(field)).collect(Collectors.toList());
+        fields = fields.stream().filter(field -> !filterFieldBasedOnAnnotation(field)).toList();
         for (Field field : fields) {
 
             String fieldName = field.getName();

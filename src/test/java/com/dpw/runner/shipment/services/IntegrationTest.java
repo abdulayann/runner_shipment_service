@@ -195,7 +195,7 @@ public class IntegrationTest {
 
         int actualCount = ((List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData()).size();
 //        var actualData = (List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData();
-//        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().collect(Collectors.toList());
+//        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().toList();
         assertTrue(actualCount > 0);
     }
 
@@ -219,7 +219,7 @@ public class IntegrationTest {
 
         int actualCount = ((List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData()).size();
 //        var actualData = (List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData();
-//        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().collect(Collectors.toList());
+//        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().toList();
 
 //        assertEquals(expectedResponseCount, actualCount);
 //        assertEquals(actualDataIdSet.toString(), expectedResponseIdSet.toString());
@@ -247,7 +247,7 @@ public class IntegrationTest {
 
         int actualCount = ((List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData()).size();
 //        var actualData = (List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData();
-//        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().collect(Collectors.toList());
+//        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().toList();
 
         assertTrue(actualCount == 0);
 //        assertEquals(expectedResponseCount, actualCount);
@@ -276,7 +276,7 @@ public class IntegrationTest {
 
         int actualCount = ((List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData()).size();
 //        var actualData = (List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData();
-//        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().collect(Collectors.toList());
+//        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().toList();
 
         assertTrue(actualCount > 0);
         //assertEquals(actualDataIdSet.toString(), expectedResponseIdSet.toString());
@@ -301,7 +301,7 @@ public class IntegrationTest {
 
         int actualCount = ((List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData()).size();
         var actualData = (List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData();
-        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().collect(Collectors.toList());
+        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().toList();
 
         assertTrue(actualCount == 0);
 //        assertEquals(actualDataIdSet.toString(), expectedResponseIdSet.toString());
@@ -334,7 +334,7 @@ public class IntegrationTest {
         //Building the actual Response
         int actualCount = ((List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData()).size();
         var actualData = (List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData();
-        var actualIds = actualData.stream().map(o -> o.getId()).sorted().collect(Collectors.toList());
+        var actualIds = actualData.stream().map(o -> o.getId()).sorted().toList();
 
         //Assertions
 //        assertEquals(expectedCount, actualCount);

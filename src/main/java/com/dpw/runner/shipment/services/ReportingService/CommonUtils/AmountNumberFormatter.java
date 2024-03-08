@@ -10,6 +10,7 @@ import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.
 
 
 public class AmountNumberFormatter {
+    private AmountNumberFormatter(){}
 
     public static String Format(BigDecimal amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
         String formattedAmount = null;

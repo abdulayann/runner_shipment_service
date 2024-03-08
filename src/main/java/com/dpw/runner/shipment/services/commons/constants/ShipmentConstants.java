@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ShipmentConstants {
+    private ShipmentConstants(){}
     public static final String SHIPMENT_API_HANDLE = "/api/v2/shipment";
 
     public static final String CREATE_SUCCESSFUL = "Successful Shipment Data Creation";
@@ -46,6 +47,7 @@ public class ShipmentConstants {
     public static final String LIST_SHIPMENT_FROM_CONSOLE_ID = "/list-shipment-by-console";
     public static final String GET_ACTIVE_INVOICES = "/get-active-invoices";
     public static final String SHOW_ASSIGN_ALL_CONTAINERS = "/show/assign/allContainers";
+    public static final String CHECK_CREDIT_LIMIT_FROM_V1 = "/check-credit-limit";
     public static final String FETCH_CREDIT_LIMIT = "/creditLimit";
     public static final String FETCH_EMAILS = "/email";
 
@@ -63,4 +65,5 @@ public class ShipmentConstants {
     public static final String SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR = "Request is empty for Shipment retrieve with Request Id {}";
     public static final String NO_DATA_FOUND_FOR_ORG_CODE = "No Data found for org code {}";
     public static final String SHIPMENT_LIST_REQUEST_NULL_ERROR = "Shipment List Request is Null";
+    public static final String CHECK_CREDIT_LIMIT_FAILED = "Check Credit Limit failed due to : ";
 }

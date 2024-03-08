@@ -447,7 +447,6 @@ public class HawbReport extends IReport{
 
 
                 if(routingInfoRows.size()>=2){
-                    locCodes = new HashSet<>();
 //                    locCodes.add(routingInfoRows.get(1).getDestination());
 //                    locCodeMap = getLocationData(locCodes);
                     if(locCodeMap.containsKey(routingInfoRows.get(1).getDestination()))

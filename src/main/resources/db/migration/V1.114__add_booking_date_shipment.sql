@@ -1,0 +1,2 @@
+alter table shipment_details
+add column booking_created_date TIMESTAMP;

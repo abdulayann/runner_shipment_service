@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.io.Serializable;
+
 @Data
 @ApiModel("Awb Shipment Info Request Model")
 @ToString
@@ -13,7 +15,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AwbShipmentInfo {
+public class AwbShipmentInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private String shipperName;

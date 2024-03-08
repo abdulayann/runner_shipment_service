@@ -48,7 +48,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     private SyncEntityConversionService syncEntityConversionService;
 
     @Override
-    public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync) {
+    public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync, boolean dataMigration) {
         CustomConsolidationRequest request = (CustomConsolidationRequest) commonRequestModel.getData();
         ConsolidationDetailsRequest response = new ConsolidationDetailsRequest();
         String responseMsg;
@@ -87,7 +87,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             mapReverseShipmentGuids(response, request);
             response.setGuid(request.getGuid());
             response.setSourceGuid(request.getSourceGuid());
-            return consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(response));
+            return consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(response), dataMigration);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
@@ -105,7 +105,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                     p.setGuid(item);
                     return p;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setShipmentsList(req);
     }
 
@@ -121,7 +121,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                         modelMapper.map(item.getEvents(), p.getEventsList());
                     return p;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setJobsList(req);
     }
 
@@ -137,7 +137,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                     t.setTransporterType(Ownership.valueOf(item.getTransporterTypeString()));
                     return t;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setTruckDriverDetails(req);
     }
 
@@ -234,7 +234,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {

@@ -33,7 +33,7 @@ public class ShippingRequestAirReport extends IReport{
     IDocumentModel getDocumentModel(Long id) {
         ShippingRequestAirModel shippingRequestAirModel = new ShippingRequestAirModel();
         shippingRequestAirModel.shipment = getShipment(id);
-        shippingRequestAirModel.shipmentPacking = shippingRequestAirModel.shipment.getPackingList();
+        shippingRequestAirModel.setShipmentPacking(shippingRequestAirModel.shipment.getPackingList());
         return shippingRequestAirModel;
     }
 
@@ -41,11 +41,11 @@ public class ShippingRequestAirReport extends IReport{
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ShippingRequestAirModel shippingRequestAirModel = (ShippingRequestAirModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
-        populateShipmentFields(shippingRequestAirModel.shipment, false, dictionary);
+        populateShipmentFields(shippingRequestAirModel.shipment, dictionary);
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
 
         List<Map<String, Object>> packDictionary = new ArrayList<>();
-        List<PackingModel> listOfPacks = shippingRequestAirModel.shipmentPacking;
+        List<PackingModel> listOfPacks = shippingRequestAirModel.getShipmentPacking();
 
         StringBuilder commodities = new StringBuilder();
         for (var pack: listOfPacks) {

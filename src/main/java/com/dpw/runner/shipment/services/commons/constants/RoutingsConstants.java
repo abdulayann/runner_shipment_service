@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class RoutingsConstants {
+    private RoutingsConstants(){}
     public static final String ROUTINGS_API_HANDLE = "/api/v2/routings";
     public static final String ROUTINGS_CREATE_SUCCESSFUL = "Successful Routings Creation";
 

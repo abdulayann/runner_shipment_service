@@ -530,7 +530,7 @@ public class PackingDao implements IPackingDao {
         saveEntityFromContainer(packings.getContent(), null);
     }
 
-    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Containers> containers, Map<UUID, String> packMap) throws RunnerException {
+    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, List<Containers> containers, Map<UUID, String> packMap) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         Map<UUID, Packing> packingMap = new HashMap<>();
@@ -538,6 +538,13 @@ public class PackingDao implements IPackingDao {
             for (Packing entity :
                     oldEntityList) {
                 packingMap.put(entity.getGuid(), entity);
+            }
+        }
+        Map<UUID, Packing> consolePackingMap = new HashMap<>();
+        if (oldConsoleEntityList != null && !oldConsoleEntityList.isEmpty()) {
+            for (Packing entity :
+                    oldConsoleEntityList) {
+                consolePackingMap.put(entity.getGuid(), entity);
             }
         }
         try {
@@ -555,9 +562,10 @@ public class PackingDao implements IPackingDao {
                         request.setId(oldEntity.getId());
                     }
                     else {
-                        Optional<Packing> oldPackCont = findByGuid(request.getGuid());
-                        if(oldPackCont != null && oldPackCont.isPresent()) {
-                            request.setId(oldPackCont.get().getId());
+                        oldEntity = consolePackingMap.get(request.getGuid());
+                        if (oldEntity != null) {
+                            consolePackingMap.remove(oldEntity.getGuid());
+                            request.setId(oldEntity.getId());
                         }
                     }
                     if(packMap.containsKey(request.getGuid()) && !IsStringNullOrEmpty(packMap.get(request.getGuid())) && contMap.containsKey(packMap.get(request.getGuid())))

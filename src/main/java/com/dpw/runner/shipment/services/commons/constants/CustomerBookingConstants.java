@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 public class CustomerBookingConstants {
 
-
+    private CustomerBookingConstants(){}
     public static final String DATE_FORMAT = "yyyy/MM/dd";
     public static String ONE = "1";
     public static final String Customer_Booking_API_HANDLE = "/api/v2/customer-booking";

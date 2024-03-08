@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 import java.util.List;
 
 public class Constants {
+    private Constants(){}
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
     public static final String SHIPMENT_TYPE = "shipmentType";
@@ -338,10 +339,21 @@ public class Constants {
     public static final String HANDLING_INFO = "handlingInfo";
     public static final String DESCRIPTION_OF_GOODS = "descriptionOfGoods";
     public static final String BOOKING_STATUS_FIELD = "bookingStatus";
-    public static final String UNUSED = "Unused";
+    public static final String CONTAINER_NUMBER = "containerNumber";
+    public static final String NET_WEIGHT = "netWeight";
+    public static final String GROSS_WEIGHT = "grossWeight";
+    public static final String PACKS = "packs";
+    public static final String UNLOCATIONS = "Unlocations";
+    public static final String CONTAINER_TYPES = "ContainerTypes";
+    public static final String FLASH_POINT = "flashpoint";
+    public static final String BRANCH = "branch";
+    public static final String PRODUCT_PROCESS_TYPES = "productProcessTypes";
+    public static final String COUNTRY = "_country";
+    public static final String FAILURE_EXECUTING = "failure executing :(";
+    public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
 
-    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,"noOfPackages","netWeight","netWeightUnit",
-            "grossWeight","grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
+    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,"noOfPackages",NET_WEIGHT,"netWeightUnit",
+            GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
             "containerComments", CONTAINER_CODE,"isReefer","minTemp","minTempUnit", "hblDeliveryMode","dgClass","hazardous",
@@ -361,7 +373,7 @@ public class Constants {
     public static final List<String> ColumnsToBeDeletedForCargo = List.of("sealNumber","noOfPackages", "isOwnContainer", "ownType", IS_DELETED,
             "measurement","measurementUnit","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber",
-            CONTAINER_CODE,"isReefer","containerNumber",
+            CONTAINER_CODE,"isReefer",CONTAINER_NUMBER,
             "containerStuffingLocation","containerCount", TRANSPORT_MODE,"hazardousCheckBox");
 
     public static final List<String> ColumnsToBeDeletedForContainer = List.of(IS_DELETED,"serialNumber", "innerPackageNumber", "innerPackageType",
@@ -374,4 +386,5 @@ public class Constants {
             CREATED_BY, CREATED_AT, UPDATED_BY, UPDATED_AT, IS_DELETED, "vinNumber");
 
     public static final String WITH_REQUEST_ID_MSG = " with Request Id {}";
+    public static final String UNUSED = "Unused";
 }

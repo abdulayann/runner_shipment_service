@@ -434,4 +434,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "notify_party_dps_address_id")
     private Long notifyPartyDpsAddressId;
+
+    @Column(name = "booking_created_date")
+    private LocalDateTime bookingCreatedDate;
 }

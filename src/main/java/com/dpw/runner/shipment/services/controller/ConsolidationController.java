@@ -303,10 +303,10 @@ public class ConsolidationController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ConsolidationConstants.CONSOLIDATION_V1_CREATE)
-    public ResponseEntity<IRunnerResponse> createV1Consolidation(@RequestBody @Valid CustomConsolidationRequest request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
+    public ResponseEntity<IRunnerResponse> createV1Consolidation(@RequestBody @Valid CustomConsolidationRequest request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync, @RequestParam(required = false, defaultValue = "false") boolean dataMigration) {
         String responseMsg;
         try {
-            return consolidationReverseSync.reverseSync(CommonRequestModel.buildRequest(request), checkForSync);
+            return consolidationReverseSync.reverseSync(CommonRequestModel.buildRequest(request), checkForSync, dataMigration);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

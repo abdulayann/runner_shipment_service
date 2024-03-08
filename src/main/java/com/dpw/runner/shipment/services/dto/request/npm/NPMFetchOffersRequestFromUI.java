@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -51,7 +52,7 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class Container {
+    public static class Container implements Serializable {
         private Long id;
         private String containerType;
         private String commodityCode;
@@ -64,7 +65,7 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class Pack {
+    public static class Pack implements Serializable{
         private Long id;
         private Long quantity;
         private BigDecimal length;
@@ -87,7 +88,7 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ContractsInfo {
+    public static class ContractsInfo implements Serializable{
         @JsonProperty("customer_org_id")
         private String customerOrgId;
         @JsonProperty("contract_id")

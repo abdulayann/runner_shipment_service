@@ -89,7 +89,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
             Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
             List<HblTermsConditionTemplate> hashMap = hblTermsConditionTemplates.stream()
                     .filter(e -> e.getIsFrontPrint() == isFrontPrint)
-                    .collect(Collectors.toList());
+                    .toList();
             List<HblTermsConditionTemplate> hblTermsConditionTemplatesRequestList = new ArrayList<>();
             if (hblTermsConditionTemplateList != null && hblTermsConditionTemplateList.size() != 0) {
                 for (HblTermsConditionTemplate request : hblTermsConditionTemplateList) {

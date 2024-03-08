@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ArrivalDepartureConstants {
+    private ArrivalDepartureConstants(){}
     public static final String ARRIVAL_DEPARTURE_API_HANDLE = "/api/v2/arrival-departure-details";
     public static final String ARRIVAL_DEPARTURE_CREATE_SUCCESSFUL = "Successful Arrival Departure Details Creation";
 

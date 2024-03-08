@@ -46,7 +46,7 @@ public class RetrieveValidateAspect {
                     continue;
                 List<String> parameterList = Arrays.stream(getPermissionName(permission).toLowerCase().split(DELIMITER))
                         .filter(e -> !e.contains("retrieve"))
-                        .collect(Collectors.toList());
+                        .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
                 String validDirection = getParameterFromPermission(DIRECTION_INDEX, parameterList);
                 String validShipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);
@@ -98,7 +98,7 @@ public class RetrieveValidateAspect {
                     continue;
                 List<String> parameterList = Arrays.stream(getPermissionName(permission).toLowerCase().split(DELIMITER))
                         .filter(e -> !e.contains("retrieve"))
-                        .collect(Collectors.toList());
+                        .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
                 String validDirection = getParameterFromPermission(DIRECTION_INDEX, parameterList);
                 String validShipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);

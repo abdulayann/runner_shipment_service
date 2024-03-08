@@ -13,9 +13,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RunnerResponse<T> implements IRunnerResponse {
-//    Object data;
-//    long pageNo;
-//    long count;
 
     @ApiModelProperty(position = 1, name = "success")
     private boolean success;

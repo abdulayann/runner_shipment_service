@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
@@ -67,7 +68,9 @@ public class Packing extends MultiTenancy {
     @Column(name = "inspections")
     private String inspections;
 
+
     @Column(name = "origin")
+    @UnlocationData
     private String origin;
 
     @Column(name = "commodity")

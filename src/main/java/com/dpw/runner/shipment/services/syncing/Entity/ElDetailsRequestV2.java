@@ -11,8 +11,6 @@ import java.util.UUID;
 public class ElDetailsRequestV2 implements IRunnerRequest {
     @JsonProperty("Guid")
     private UUID Guid;
-    @JsonProperty("ShipmentId")
-    private Long ShipmentId; //int64
     @JsonProperty("ElNumber")
     private String ElNumber;
     @JsonProperty("Packages")

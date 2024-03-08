@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 
 public interface IShipmentSettingsService extends ICommonService{
     ResponseEntity<IRunnerResponse> uploadTemplate(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> downloadTemplate(String templateId);
+    ResponseEntity<IRunnerResponse> downloadTemplate(String templateId);
     ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> completeSettingsUpdateCreateV1(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> retrieveByTenantId(CommonRequestModel commonRequestModel);

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ServiceDetailsConstants {
+    private ServiceDetailsConstants(){}
     public static final String SERVICE_DETAILS_API_HANDLE = "/api/v2/service-details";
 
     public static final String SERVICE_DETAILS_CREATE_SUCCESSFUL = "Successful Service Details Data Creation";

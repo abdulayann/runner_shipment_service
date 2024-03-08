@@ -20,4 +20,6 @@ public class CreditLimitValidateRequest {
     private Integer clientAddressId;
     @JsonProperty("ShipmentGuid")
     private String shipmentGuid;
+    @JsonProperty("TaskCreation")
+    private Boolean taskCreation;
 }

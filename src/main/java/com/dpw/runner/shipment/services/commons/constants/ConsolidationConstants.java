@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ConsolidationConstants {
+    private ConsolidationConstants(){}
     public static final String CONSOLIDATION_API_HANDLE = "/api/v2/consolidation";
 
     public static final String CREATE_SUCCESSFUL = "Successful Consolidation Data Creation";

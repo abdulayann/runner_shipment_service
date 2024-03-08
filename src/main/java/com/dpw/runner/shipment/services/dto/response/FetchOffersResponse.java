@@ -61,6 +61,10 @@ public class FetchOffersResponse implements IRunnerResponse {
         private BigDecimal chargeable;
         @JsonProperty("chargeable_uom")
         private String chargeable_uom;
+        @JsonProperty("totalUnitsCount")
+        private BigDecimal total_unit_count;
+        @JsonProperty("measurementUnit")
+        private String measurement_unit;
         @JsonProperty("applicable_on_booking")
         private Boolean applicable_on_booking;
         @JsonProperty("mode_of_transport")
@@ -111,6 +115,8 @@ public class FetchOffersResponse implements IRunnerResponse {
     public static class LoadsRatesInfo implements Serializable{
         @JsonProperty("associated_rates")
         private List<AssociatedRate> associated_rates;
+        @JsonProperty("quantity")
+        private Long quantity;
     }
 
     @Data

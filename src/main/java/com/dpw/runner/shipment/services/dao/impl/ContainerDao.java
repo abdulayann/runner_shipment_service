@@ -395,13 +395,7 @@ public class ContainerDao implements IContainerDao {
                         oldContainer = containersMap.get(containers.getGuid());
                         containers.setId(oldContainer.getId());
                     } else {
-                        List<Containers> oldConsolContainer = findByGuid(containers.getGuid());
-                        if(oldConsolContainer.size() > 0) {
-                            containers.setId(oldConsolContainer.get(0).getId());
-                        }
-                        else {
-                            containers.setId(null);
-                        }
+                        containers.setId(null);
                     }
                 }
                 responseContainers = saveAll(containerList);

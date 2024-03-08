@@ -1922,8 +1922,10 @@ public class V1ServiceImpl implements IV1Service {
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            } else if(var6.getStatusCode() == HttpStatus.BAD_REQUEST){
+                throw new V1ServiceException(jsonHelper.readFromJson(var6.getResponseBodyAsString(), CreditLimitValidateResponse.class).getError().getMessage());
             } else {
-                throw new V1ServiceException(var6.getMessage());
+                throw var6;
             }
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());

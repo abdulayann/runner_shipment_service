@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -67,7 +66,7 @@ public class HblReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         HblModel hblModel = new HblModel();
         hblModel.shipment = getShipment(id);
-        hblModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
+        hblModel.shipmentSettingsDetails = getShipmentSettings();
         hblModel.tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         hblModel.user = UserContext.getUser();
         if(hblModel.shipment != null && hblModel.shipment.getConsolidationList() != null && !hblModel.shipment.getConsolidationList().isEmpty())
@@ -262,11 +261,9 @@ public class HblReport extends IReport{
             }
         }
 
-        AdditionalDetailModel additionalDetail = hblModel.shipment.getAdditionalDetails();
-        CarrierDetailModel carrierDetails = hblModel.shipment.getCarrierDetails();
 
         if (hblModel.tenantSettingsResponse != null && hblModel.tenantSettingsResponse.isEnableIGMDetails()) {
-            if (hblModel.shipment.getDirection() != null && hblModel.shipment.getDirection() == Constants.IMP) {
+            if (hblModel.shipment.getDirection() != null && hblModel.shipment.getDirection().equals(Constants.IMP)) {
                 if (hblModel.shipment.getAdditionalDetails().getIGMFileDate() != null) {
                     dictionary.put(ReportConstants.IGM_FILE_DATE, hblModel.shipment.getAdditionalDetails().getIGMFileDate());
                 }
@@ -889,7 +886,7 @@ public class HblReport extends IReport{
             dictionary.put(PRE_CARRIAGE_VESSEL_VOYAGE, String.join(",", bookingCarriageVesselVoyage));
 
         // ====================  END OF MIGRATION PLACEHOLDER ===================
-        populateShipmentFields(hblModel.shipment, false, dictionary);
+        populateShipmentFields(hblModel.shipment, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         populateBlFields(hblModel.blObject, dictionary);
         dictionary.put(ReportConstants.PAID_PLACE_COUNTRY_NAME, hblModel.paidPlaceCountry);
@@ -937,7 +934,7 @@ public class HblReport extends IReport{
         if (packageType == null || packageType.isEmpty())
             return packageType;
 
-        MasterData masterData = getMasterListData(MasterDataType.PAYMENT_TYPE, packageType);
+        MasterData masterData = getMasterListData(MasterDataType.PACKS_UNIT, packageType);
         return (masterData != null ? masterData.getItemDescription() : null);
     }
 

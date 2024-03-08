@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UserContext {
+    private UserContext(){}
     private static ThreadLocal<UsersDto> user = new InheritableThreadLocal<>();
 
     public static UsersDto getUser() {

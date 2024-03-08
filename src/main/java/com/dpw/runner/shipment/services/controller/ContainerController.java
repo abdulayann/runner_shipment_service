@@ -5,14 +5,9 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangeResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangesRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -43,6 +38,7 @@ public class ContainerController {
     private class MyResponseClass extends RunnerResponse<ContainerResponse> {}
     private class MyListResponseClass extends RunnerListResponse<ContainerResponse> {}
     private class CheckAllocatedDataChangeResponseClass extends RunnerResponse<CheckAllocatedDataChangeResponse> {}
+    private class ContainerNumberCheckResponseClass extends RunnerResponse<ContainerNumberCheckResponse>{}
 
 
     @Autowired
@@ -52,18 +48,18 @@ public class ContainerController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = RunnerResponse.class),
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_UPLOAD)
-    public ResponseEntity<?> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
+    public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
         if (request.getFile().isEmpty()) {
-            return ResponseEntity.badRequest().body("No File Found !");
+            return ResponseHelper.buildFailedResponse("No File Found !");
         }
 
         try {
             containerService.uploadContainers(request);
-            return ResponseEntity.ok(ApiConstants.API_UPLOAD_CONTAINER_DETAILS_SUCCESS_MESSAGE);
+            return ResponseHelper.buildSuccessResponse(ApiConstants.API_UPLOAD_CONTAINER_DETAILS_SUCCESS_MESSAGE);
         } catch (Exception e) {
             String responseMessage = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -73,13 +69,13 @@ public class ContainerController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_EVENTS_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_EVENTS_CREATE_SUCCESSFUL, response = RunnerResponse.class),
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_UPLOAD_EVENTS)
-    public ResponseEntity<?> uploadEventsCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
+    public ResponseEntity<IRunnerResponse> uploadEventsCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
         if (request.getFile().isEmpty()) {
-            return ResponseEntity.badRequest().body("No File Found !");
+            return ResponseHelper.buildFailedResponse("No File Found !");
         }
 
         try {
@@ -130,7 +126,6 @@ public class ContainerController {
     public ResponseEntity<IRunnerResponse> create(@RequestBody ContainerRequest request) {
         String responseMessage;
         try {
-            ContainerRequest req = jsonHelper.convertValue(request, ContainerRequest.class);
             return containerService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMessage = e.getMessage() != null ? e.getMessage()
@@ -178,10 +173,10 @@ public class ContainerController {
         return containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerNumberCheckResponseClass.class) })
     @PostMapping(ApiConstants.API_VALIDATE_CONTAINER_NUMBER)
-    public ResponseEntity<?> validateContainerNumber(@RequestParam String containerNumber) {
-        return (ResponseEntity<?>) containerService.validateContainerNumber(containerNumber);
+    public ResponseEntity<IRunnerResponse> validateContainerNumber(@RequestParam String containerNumber) {
+        return containerService.validateContainerNumber(containerNumber);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
@@ -213,7 +208,7 @@ public class ContainerController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.SYNC)
-    public ResponseEntity<?> syncContainerToService(@RequestBody @Valid ContainerRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync){
+    public ResponseEntity<IRunnerResponse> syncContainerToService(@RequestBody @Valid ContainerRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync){
         String responseMsg = "failure executing :(";
         try {
             return containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
@@ -230,7 +225,7 @@ public class ContainerController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.BULK_SYNC)
-    public ResponseEntity<?> syncBulkContainerToService(@RequestBody @Valid BulkContainerRequestV2 request) {
+    public ResponseEntity<IRunnerResponse> syncBulkContainerToService(@RequestBody @Valid BulkContainerRequestV2 request) {
         String responseMsg = "failure executing :(";
         try {
             return containerService.V1BulkContainerCreateAndUpdate(CommonRequestModel.buildRequest(request));
@@ -255,15 +250,15 @@ public class ContainerController {
     }
 
     @PostMapping(ApiConstants.API_SYNC_CONTAINERS)
-    public ResponseEntity<?> getContainers(@RequestBody @Valid List<Long> request) {
+    public ResponseEntity<IRunnerResponse> getContainers(@RequestBody @Valid List<Long> request) {
         String responseMsg;
         try {
-            return (ResponseEntity<?>) containerService.containerSync(request);
+            return containerService.containerSync(request);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<?>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

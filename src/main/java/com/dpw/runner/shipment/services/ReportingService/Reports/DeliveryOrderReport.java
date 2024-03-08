@@ -91,7 +91,7 @@ public class DeliveryOrderReport extends IReport{
         DeliveryOrderModel deliveryOrderModel = (DeliveryOrderModel) documentModel;
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(deliveryOrderModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        populateShipmentFields(deliveryOrderModel.shipmentDetails, false, dictionary);
+        populateShipmentFields(deliveryOrderModel.shipmentDetails, dictionary);
         populateConsolidationFields(deliveryOrderModel.consolidationDetails, dictionary);
         populateUserFields(deliveryOrderModel.usersDto, dictionary);
         populateBlFields(deliveryOrderModel.hbl, dictionary);
