@@ -61,9 +61,9 @@ public class FetchOffersResponse implements IRunnerResponse {
         private BigDecimal chargeable;
         @JsonProperty("chargeable_uom")
         private String chargeable_uom;
-        @JsonProperty("totalUnitsCount")
+        @JsonProperty("total_unit_count")
         private BigDecimal total_unit_count;
-        @JsonProperty("measurementUnit")
+        @JsonProperty("measurement_unit")
         private String measurement_unit;
         @JsonProperty("applicable_on_booking")
         private Boolean applicable_on_booking;
@@ -158,6 +158,8 @@ public class FetchOffersResponse implements IRunnerResponse {
         private String tenant_uuid;
         @JsonProperty("meta")
         private Meta meta;
+        @JsonProperty("shipment_level_rates")
+        private List<AssociatedRate> shipment_level_rates;
     }
 
     @Data
