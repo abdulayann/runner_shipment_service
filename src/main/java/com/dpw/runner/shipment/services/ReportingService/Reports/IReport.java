@@ -1128,8 +1128,10 @@ public abstract class IReport {
         dictionary.put(ReportConstants.MARKS_N_NUMS_CAPS, hblDataDto.getMarksAndNumbers() != null ? hblDataDto.getMarksAndNumbers().toUpperCase() : null);
         dictionary.put(ReportConstants.PACKS, hblDataDto.getPackageCount());
         dictionary.put(ReportConstants.PACKS_UNIT, hblDataDto.getPackageType());
-        dictionary.put(ReportConstants.DESCRIPTION, hblDataDto.getCargoDescription());
-        dictionary.put(ReportConstants.DESCRIPTION_CAPS, hblDataDto.getCargoDescription() != null ? hblDataDto.getCargoDescription().toUpperCase() : null);
+        if(StringUtility.isNotEmpty(hblDataDto.getCargoDescription())) {
+            dictionary.put(ReportConstants.DESCRIPTION, hblDataDto.getCargoDescription());
+            dictionary.put(ReportConstants.DESCRIPTION_CAPS, hblDataDto.getCargoDescription() != null ? hblDataDto.getCargoDescription().toUpperCase() : null);
+        }
         dictionary.put(ReportConstants.PLACE_OF_DELIVERY, hblDataDto.getPlaceOfDelivery());
         dictionary.put(ReportConstants.CARGO_NET_WEIGHT, ConvertToWeightNumberFormat(hblDataDto.getCargoNetWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CARGO_NET_WEIGHT_UNIT, hblDataDto.getCargoNetWeightUnit());
