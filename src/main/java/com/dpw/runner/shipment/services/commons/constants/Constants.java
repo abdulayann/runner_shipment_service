@@ -314,8 +314,6 @@ public class Constants {
     public static final String STRING_FORMAT = "%.2f %s";
     public static final String ORG_CODE = "orgCode";
     public static final String ADDRESS_CODE = "addressCode";
-    public static final String RAW_DATA = "rawData";
-    public static final String RAW_DATA_ADDRESSES = "RawData";
     public static final String DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR = "View is null for Id {} with Request Id {}";
     public static final String SALT_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
     public static final String CLIENT = "client";

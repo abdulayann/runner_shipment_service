@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
@@ -228,7 +229,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             parties.setIsAddressFreeText(true);
             if(parties.getAddressData() == null)
                 parties.setAddressData(new HashMap<>());
-            parties.getAddressData().put(Constants.RAW_DATA, freeTextAddress);
+            parties.getAddressData().put(PartiesConstants.RAW_DATA, freeTextAddress);
         }
         return parties;
     }

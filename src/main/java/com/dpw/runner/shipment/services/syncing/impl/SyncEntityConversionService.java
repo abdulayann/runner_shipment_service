@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -213,7 +214,7 @@ public class SyncEntityConversionService {
         if(partyRequestV2.getIsFreeTextAddress() == null)
             partyRequestV2.setIsFreeTextAddress(false);
         if(partyRequestV2.getIsFreeTextAddress()){
-            var rawData = parties.getAddressData() != null ? parties.getAddressData().get(Constants.RAW_DATA_ADDRESSES): null;
+            var rawData = parties.getAddressData() != null ? parties.getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData != null)
                 partyRequestV2.setFreeTextAddress(rawData.toString());
         }
@@ -235,7 +236,7 @@ public class SyncEntityConversionService {
         if(parties.getIsAddressFreeText() != null && parties.getIsAddressFreeText()) {
             if(parties.getAddressData() == null)
                 parties.setAddressData(new HashMap<>());
-            parties.getAddressData().put(Constants.RAW_DATA_ADDRESSES, partyRequestV2.getFreeTextAddress());
+            parties.getAddressData().put(PartiesConstants.RAW_DATA, partyRequestV2.getFreeTextAddress());
         }
         return parties;
     }
