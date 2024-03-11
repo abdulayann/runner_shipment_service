@@ -1074,11 +1074,13 @@ public class ConsolidationService implements IConsolidationService {
                     }).toList();
 
             shipmentDao.saveAll(shipments);
-            for (ShipmentDetails shipmentDetails : shipments) {
-                try {
-                    shipmentSync.sync(shipmentDetails, null, null, StringUtility.convertToString(console.getGuid()), false);
-                } catch (Exception e) {
-                    log.error("Error performing sync on shipment entity, {}", e);
+            if(fromAttachShipment != null && fromAttachShipment) {
+                for (ShipmentDetails shipmentDetails : shipments) {
+                    try {
+                        shipmentSync.sync(shipmentDetails, null, null, StringUtility.convertToString(console.getGuid()), false);
+                    } catch (Exception e) {
+                        log.error("Error performing sync on shipment entity, {}", e);
+                    }
                 }
             }
         }
