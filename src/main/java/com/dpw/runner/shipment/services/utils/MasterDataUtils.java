@@ -499,6 +499,8 @@ public class MasterDataUtils{
                 if (shipmentListResponse != null && shipmentListResponse.getCarrierDetails() != null) {
                     locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
                 }
+                if (shipmentListResponse != null && shipmentListResponse.getAdditionalDetails() != null)
+                    locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()));
             }
             else if (response instanceof ConsolidationListResponse) {
                 ConsolidationListResponse consolidationListResponse = (ConsolidationListResponse) response;
@@ -523,6 +525,8 @@ public class MasterDataUtils{
                 if (shipmentListResponse != null && shipmentListResponse.getCarrierDetails() != null) {
                     shipmentListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
                 }
+                if (shipmentListResponse != null && shipmentListResponse.getAdditionalDetails() != null)
+                    shipmentListResponse.getAdditionalDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()), CacheConstants.UNLOCATIONS));
             }
             else if (response instanceof ConsolidationListResponse) {
                 ConsolidationListResponse consolidationListResponse = (ConsolidationListResponse) response;
