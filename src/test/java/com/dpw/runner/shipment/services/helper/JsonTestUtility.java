@@ -56,6 +56,10 @@ public class JsonTestUtility {
         return awb;
     }
 
+    public <T> T getJson(String key, Class<T> clazz) {
+        return objectMapper.convertValue(payload.get(key), clazz);
+    }
+
     public <T,F> List<F> convertValueToList(T object, Class<F> clazz) {
         return objectMapper.convertValue(object, objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
