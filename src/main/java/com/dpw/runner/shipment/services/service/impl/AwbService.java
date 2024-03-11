@@ -171,6 +171,7 @@ public class AwbService implements IAwbService {
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for AWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Request can't be empty for creating AWB");
         }
 
         if (request.getShipmentId() == null) {

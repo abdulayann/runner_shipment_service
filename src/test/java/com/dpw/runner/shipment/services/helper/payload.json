@@ -1,5 +1,302 @@
 {
-  "SHIPMENT": {},
+  "SHIPMENT": {
+    "id": 1,
+    "guid": "3d7ac60d-5ada-4cff-9f4d-2fde960e3e06",
+    "houseBill": "AIR-98383736",
+    "transportMode": "AIR",
+    "direction": "EXP",
+    "shipmentType": "LSE",
+    "status": 0,
+    "source": "System",
+    "jobType": "DRT",
+    "serviceType": "D2D",
+    "masterBill": "AIR-98383736",
+    "shipmentId": "SHP000107583",
+    "weightUnit": "KG",
+    "volumeUnit": "M3",
+    "volumetricWeight": 0.00,
+    "volumetricWeightUnit": "KG",
+    "chargable": 0.00,
+    "chargeableUnit": "KG",
+    "freightLocalCurrency": "CAD",
+    "cargoFinanceBooking": false,
+    "route": "New",
+    "sourceTenantId": 66,
+    "intraBranch": false,
+    "client": {
+      "id": 625593,
+      "guid": "84d7e626-130a-4a8a-81ee-e486c21148ce",
+      "orgCode": "00001",
+      "tenantId": 66,
+      "addressCode": "Default",
+      "orgData": {
+        "Email": "unilever.epe@gmail.com",
+        "Unloco": 64061,
+        "CompanyId": 66,
+        "ZipPostCode": "51",
+        "City": "Bairgania",
+        "label": "UNILEVER ANDINA PERU SA",
+        "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4",
+        "UpdateUserIdUsername": "dpwcanuser",
+        "State": "BR",
+        "FullName": "UNILEVER ANDINA PERU SA",
+        "Country": "IND",
+        "OrganizationCode": "00001",
+        "Id": 10516,
+        "value": "00001",
+        "InsertUserIdUsername": "dpwcanuser"
+      },
+      "addressData": {
+        "AddressShortCode": "Default",
+        "Email": "unilever.epe@gmail.com",
+        "OrgFullName": "UNILEVER ANDINA PERU SA",
+        "Unloco": "64854",
+        "ZipPostCode": "51",
+        "AdditionalAddressInfo": "00001 Default Address",
+        "City": "Bairgania",
+        "label": "UNILEVER ANDINA PERU SA\nAV PASEO DE LA REPUBLICA NRO, Bairgania, BR\nIND, 51\n+979788112",
+        "Address1": "AV PASEO DE LA REPUBLICA NRO",
+        "ContactPhone": "+979788112",
+        "CompanyName": "UNILEVER ANDINA PERU SA",
+        "State": "BR",
+        "OrgOrganizationCode": "00001",
+        "Country": "IND",
+        "Id": 29664,
+        "OrgActiveClient": true,
+        "AddressType": 2,
+        "value": "Default"
+      }
+    },
+    "consigner": {
+      "id": 625594,
+      "guid": "ef6d9869-b8d9-4155-b30e-e3a20d60473c",
+      "orgCode": "0001",
+      "tenantId": 66,
+      "addressCode": "Default",
+      "orgData": {
+        "Email": "ss@ss.com",
+        "Unloco": 64854,
+        "CompanyId": 66,
+        "ZipPostCode": "400001",
+        "Address2": "FORT, MUMBAI",
+        "City": "Acharapakkam",
+        "label": "AKSHAY IMAX AKSHAY IMAXAK SHAY IMAX",
+        "Address1": "101, SBS MARG",
+        "UpdateUserIdUsername": "threedpwcanuser@gmail.com",
+        "State": "MH",
+        "FullName": "AKSHAY IMAX AKSHAY IMAXAK SHAY IMAX",
+        "Country": "IND",
+        "OrganizationCode": "0001",
+        "Id": 23538,
+        "value": "0001",
+        "InsertUserIdUsername": "dpwcanuser"
+      },
+      "addressData": {
+        "AddressShortCode": "Default",
+        "Email": "ss@ss.com",
+        "OrgFullName": "AKSHAY IMAX AKSHAY IMAXAK SHAY IMAX",
+        "Unloco": "64854",
+        "ZipPostCode": "400001",
+        "Address2": "FORT, MUMBAI",
+        "AdditionalAddressInfo": "0001 Default Address",
+        "City": "Acharapakkam",
+        "label": "AKSHAY IMAX AKSHAY IMAXAK SHAY IMAX\n101, SBS MARG, FORT, MUMBAI, Acharapakkam, MH\nIND, 400001\n",
+        "Address1": "101, SBS MARG",
+        "CompanyName": "AKSHAY IMAX AKSHAY IMAXAK SHAY IMAX",
+        "State": "MH",
+        "OrgOrganizationCode": "0001",
+        "Country": "IND",
+        "Id": 35128,
+        "OrgActiveClient": true,
+        "AddressType": 2,
+        "value": "Default"
+      }
+    },
+    "consignee": {
+      "id": 625604,
+      "guid": "5be9d1ea-3a64-454f-be78-2ea966ca743c",
+      "orgCode": "300000155161511",
+      "tenantId": 66,
+      "addressCode": "Default",
+      "orgData": {
+        "Email": "contact@godship.com",
+        "Unloco": 24557,
+        "CompanyId": 66,
+        "ZipPostCode": "11095-710",
+        "label": "EMBRAPORT EMPRESA BRASILEIRA DE TERMINAIS PORTUARIOS S/A",
+        "Address1": "Santos SP",
+        "State": "Santos",
+        "FullName": "EMBRAPORT EMPRESA BRASILEIRA DE TERMINAIS PORTUARIOS S/A",
+        "Country": "BRA",
+        "OrganizationCode": "300000155161511",
+        "Id": 12044,
+        "value": "300000155161511",
+        "InsertUserIdUsername": "dpwcanuser"
+      },
+      "addressData": {
+        "AddressShortCode": "Default",
+        "Email": "contact@godship.com",
+        "OrgFullName": "EMBRAPORT EMPRESA BRASILEIRA DE TERMINAIS PORTUARIOS S/A",
+        "Unloco": "24557",
+        "ZipPostCode": "11095-710",
+        "AdditionalAddressInfo": "300000155161511 Default Address",
+        "label": "EMBRAPORT EMPRESA BRASILEIRA DE TERMINAIS PORTUARIOS S/A\nSantos SP, Santos\nBRA, 11095-710\n+9338888888",
+        "Address1": "Santos SP",
+        "ContactPhone": "+9338888888",
+        "CompanyName": "EMBRAPORT EMPRESA BRASILEIRA DE TERMINAIS PORTUARIOS S/A",
+        "State": "Santos",
+        "OrgOrganizationCode": "300000155161511",
+        "Country": "BRA",
+        "Id": 29184,
+        "OrgActiveClient": true,
+        "AddressType": 2,
+        "value": "Default"
+      }
+    },
+    "additionalDetails": {
+      "id": 2421,
+      "guid": "7bc62ac6-e794-411f-bf32-2997b8f501ba",
+      "activityType": "FST",
+      "paidPlace": "cc6789bf-ebdd-496d-ad43-fdd89da5d7c8",
+      "placeOfIssue": "cc6789bf-ebdd-496d-ad43-fdd89da5d7c8",
+      "placeOfSupply": "cc6789bf-ebdd-496d-ad43-fdd89da5d7c8",
+      "exportBroker": {
+        "id": 625592,
+        "guid": "d3162328-51c5-4230-b3fc-3d9b23ff57f3",
+        "orgCode": "29384",
+        "tenantId": 66,
+        "orgData": {
+          "ZipPostCode": "M5W 4K9",
+          "Address2": "Toronto",
+          "Payables": true,
+          "City": "Toronto",
+          "Address1": "PO Box 46033",
+          "Mobile": "604-581-0001",
+          "ActiveClient": true,
+          "TenantId": 66,
+          "Phone": "604-581-0001",
+          "State": "AK",
+          "FullName": "CAN-S Miscellaneous",
+          "Country": "CAN",
+          "OrganizationCode": "29384",
+          "OrganizationCategory": "Internal"
+        }
+      },
+      "borrowedFrom": {
+        "id": 625591,
+        "guid": "1e83f45b-218d-40ee-be9e-a57da891094b",
+        "tenantId": 66
+      },
+      "masterData": {},
+      "unlocationData": {
+        "placeOfIssue": "ASP AsishPort",
+        "paidPlace_country": "IND",
+        "paidPlace": "ASP AsishPort",
+        "placeOfIssue_country": "IND",
+        "placeOfSupply": "ASP AsishPort",
+        "placeOfSupply_country": "IND"
+      },
+      "tenantIdsData": {},
+      "textData": {
+        "activityType": "FST - FREIGHT + FORWARDING + TRUCKING"
+      }
+    },
+    "carrierDetails": {
+      "id": 150949,
+      "guid": "5d7ba893-9714-4bb9-9f6d-313c1140122c",
+      "shippingLine": "KMTC",
+      "flightNumber": "AR123",
+      "origin": "F3E39978-E75F-48A5-9FB7-B66D896FB32F",
+      "destination": "515A000D-FBB1-477D-89FC-7D9EF68CA5FA",
+      "eta": "2024-02-27T00:00:00",
+      "etd": "2024-02-12T00:00:00",
+      "ata": "2024-02-29T00:00:00",
+      "atd": "2024-02-14T00:00:00",
+      "originPort": "8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA",
+      "destinationPort": "428A59C1-1B6C-4764-9834-4CC81912DAC0",
+      "masterData": {},
+      "unlocationData": {
+        "destinationPort": "USJFK John F. Kennedy Apt/New York, NY",
+        "destination_country": "TUR",
+        "destinationPort_country": "USA",
+        "origin": "INNNM NAVI Mumbai",
+        "destination": "TRIZM ?zmir",
+        "originPort": "INMAA Chennai (ex Madras)",
+        "origin_country": "IND",
+        "originPort_country": "IND"
+      },
+      "carrierMasterData": {
+        "shippingLine": "KMTC"
+      },
+      "voyageOrFlightNumber": "AR123"
+    },
+    "notesList": [],
+    "truckDriverDetails": [],
+    "servicesList": [],
+    "routingsList": [],
+    "referenceNumbersList": [],
+    "packingList": [],
+    "fileRepoList": [],
+    "eventsList": [
+      {
+        "id": 863,
+        "guid": "86d295a5-a896-46f1-82a8-26369755cda3",
+        "entityId": 1,
+        "entityType": "SHIPMENT",
+        "eventCode": "ShipmentSent",
+        "estimated": "2024-02-11T17:00:00",
+        "actual": "2024-02-11T17:00:00",
+        "isPublicTrackingEvent": true,
+        "tenantId": "66",
+        "placeName": "HIPL-FF : Hindustan Infralog Private Limited",
+        "placeDescription": "",
+        "source": "CargoRunner"
+      }
+    ],
+    "elDetailsList": [],
+    "bookingCarriagesList": [],
+    "jobsList": [],
+    "consolidationList": [],
+    "containersList": [],
+    "masterData": {
+      "serviceType": "D2D (Door to Door)",
+      "volumeUnit": "M3 (Cubic Meters)",
+      "transportMode": "AIR (Air Freight)",
+      "source": "System (System)",
+      "jobType": "DRT (Direct)",
+      "direction": "EXP (Export)",
+      "shipmentType": "LSE (Loose)",
+      "weightUnit": "KG (KiloGrams)"
+    },
+    "currenciesMasterData": {},
+    "tenantIdsData": {
+      "sourceTenantId": "DP WORLD LOGISTICS CANADA INC"
+    },
+    "shipmentCreatedOn": "2024-02-12T02:05:40",
+    "shipmentAddresses": [],
+    "createdBy": "dpwcanuser",
+    "containerSummary": {
+      "totalPackages": "0.0",
+      "totalContainers": "0.0",
+      "totalWeight": "0.00 KG",
+      "totalTareWeight": "0.00 KG",
+      "totalContainerVolume": "0.00 M3"
+    },
+    "packSummary": {
+      "totalPacks": "",
+      "totalPacksWeight": "0.00 KG",
+      "totalPacksVolume": "0.00 M3",
+      "packsVolumetricWeight": "0.00 KG",
+      "packsChargeableWeight": "0.00 KG"
+    },
+    "textData": {},
+    "customerBookingNotesList": [],
+    "createdAt": "2024-02-12T02:07:21",
+    "updatedAt": "2024-02-12T04:36:09",
+    "customerCategory": "CATEGORY_5",
+    "shipmentCount": 0,
+    "isShipmentReadOnly": false
+  },
   "HAWB": {
     "id": 1,
     "guid": "4545424c-fe16-48c4-b1e9-230589324dba",
@@ -354,5 +651,83 @@
       }
     ]
   },
-  "MAWB": {}
+  "CONSOLIDATION": {},
+  "MAWB": {},
+  "AWB_GENERATE_PAYMENT_INFO_PAYLOAD": {
+    "isFromShipment": true,
+    "awbGoodsDescriptionInfo": [
+      {
+        "entityId": 344,
+        "entityType": "HAWB",
+        "guid": "666322bc-cb98-48e3-8a3f-cb99e061a30f",
+        "isShipmentCreated": true
+      }
+    ],
+    "awbPackingInfo": [],
+    "awbOtherChargesInfo": [
+      {
+        "modeOfPayment": "Collect",
+        "chargeTypeId": "VG_04Oct",
+        "rate": "233",
+        "iataDescription": "ASD",
+        "chargeBasis": 1,
+        "amount": 233,
+        "chargeDue": 2,
+        "chargeTypeDescription": " updated details 123",
+        "chargeTypeGuid": "21b2004f-3288-4625-8069-1c1752b7bf63"
+      }
+    ],
+    "awbPaymentInfo": {
+      "weightCharges": 0,
+      "totalPrepaid": 0,
+      "totalCollect": 0
+    },
+    "chargeDetails": {
+      "Id": 562492,
+      "ItemType": 105,
+      "ItemValue": "CA",
+      "ItemDescription": "Partial Collect Credit — Partial Prepaid Cash",
+      "ValuenDesc": "CA (Partial Collect Credit — Partial Prepaid Cash)",
+      "Identifier1": "false",
+      "Identifier2": "true",
+      "Identifier3": "true",
+      "Identifier4": "false",
+      "TenantId": 1,
+      "IsActive": 1,
+      "AirLinePrefixValue": "false-CA",
+      "DPAManifestMaster": "false - true",
+      "label": "CA (Partial Collect Credit — Partial Prepaid Cash)",
+      "value": "CA"
+    }
+  },
+  "AWB_CALCULATION_RESPONSE": {
+    "awbGoodsDescriptionInfo": [
+      {
+        "entityId": 344,
+        "entityType": "HAWB",
+        "guid": "666322bc-cb98-48e3-8a3f-cb99e061a30f",
+        "isShipmentCreated": true
+      }
+    ],
+    "awbOtherChargesInfo": [
+      {
+        "chargeTypeId": "VG_04Oct",
+        "rate": 233,
+        "chargeBasis": 1,
+        "amount": 233,
+        "modeOfPayment": "Collect",
+        "chargeDue": 2,
+        "iataDescription": "ASD",
+        "chargeTypeDescription": " updated details 123",
+        "chargeTypeGuid": "21b2004f-3288-4625-8069-1c1752b7bf63"
+      }
+    ],
+    "awbPackingInfo": [],
+    "awbPaymentInfo": {
+      "weightCharges": 0,
+      "dueCarrierCharges": 233,
+      "totalPrepaid": 233.0,
+      "totalCollect": 0.0
+    }
+  }
 }
