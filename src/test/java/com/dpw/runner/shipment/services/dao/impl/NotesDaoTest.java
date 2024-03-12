@@ -7,10 +7,11 @@ import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.nimbusds.jose.util.Pair;
-import org.junit.Test;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 import org.junit.runner.RunWith;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,13 +37,15 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 //@ExtendWith({MockitoExtension.class, SpringExtension.class})
 @RunWith(SpringRunner.class)
 @TestPropertySource("classpath:application-test.properties")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-public class NotesDaoTest {
+@Execution(CONCURRENT)
+class NotesDaoTest {
 
     @Container
     private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
@@ -78,7 +82,7 @@ public class NotesDaoTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         TenantContext.setCurrentTenant(2);
-        UserContext.setUser(UsersDto.builder().Username("user").build()); // Set up a mock user for testing
+        UserContext.setUser(UsersDto.builder().Username("user").Permissions(new HashMap<>()).build()); // Set up a mock user for testing
     }
 
     @Test
@@ -121,13 +125,13 @@ public class NotesDaoTest {
     public void testFindById() {
         Long id = 1L;
         Notes notes = new Notes();
-//        when(notesRepository.findById(id)).thenReturn(Optional.of(notes));
+        notes.setText("sample note1");
+        dao.save(notes);
 
         Optional<Notes> retrievedNotes = dao.findById(id);
 
         assertTrue(retrievedNotes.isPresent());
         assertEquals(notes, retrievedNotes.get());
-//        Mockito.verify(notesRepository).findById(id);
     }
 
     @Test
