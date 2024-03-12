@@ -301,7 +301,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             }
 
             oldShipment = shipmentDao.save(oldShipment, true);
-            shipmentService.pushShipmentDataToDependentService(oldShipment, false);
+            shipmentService.pushShipmentDataToDependentService(oldShipment, false, oldShipment.getContainersList());
             try {
                 shipmentSync.sync(oldShipment, null, null, UUID.randomUUID().toString(), false);
             } catch (Exception e) {

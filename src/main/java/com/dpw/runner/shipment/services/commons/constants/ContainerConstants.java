@@ -24,4 +24,6 @@ public class ContainerConstants {
     public static final String GUID_NOT_VALID = "GUID not valid at row: ";
     public static final String EXCEL_SHEET_NOT_VALID = "Excel sheet is not valid. {}";
     public static final String EXCEL_SHEET_INVALID = "Excel sheet is not valid.";
+    public static final String CONTAINER_UPDATE_MSG = "ContainerUpdate";
+    public static final String HAZ = "HAZ";
 }

@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
@@ -42,7 +43,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> containerListForTI(CommonRequestModel commonRequestModel);
 
-    void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate);
+    void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate, List<Containers> oldContainers);
 
     ResponseEntity<IRunnerResponse> fullShipmentsList(CommonRequestModel commonRequestModel);
 
