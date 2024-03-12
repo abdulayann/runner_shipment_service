@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -7,10 +8,13 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -38,13 +42,23 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
     private JsonHelper jsonHelper;
     @Autowired
     private IAuditLogService auditLogService;
+    @Autowired
+    private ValidatorUtility validatorUtility;
 
     @Override
     public ServiceDetails save(ServiceDetails serviceDetails) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(serviceDetails), Constants.SERVICE_DETAILS, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
+            throw new ValidationException(String.join(",", errors));
         return serviceDetailsRepository.save(serviceDetails);
     }
     @Override
     public List<ServiceDetails> saveAll(List<ServiceDetails> serviceDetailsList) {
+        for(var serviceDetails : serviceDetailsList){
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(serviceDetails), Constants.SERVICE_DETAILS, LifecycleHooks.ON_CREATE, false);
+            if (!errors.isEmpty())
+                throw new ValidationException(String.join(",", errors));
+        }
         return serviceDetailsRepository.saveAll(serviceDetailsList);
     }
 
