@@ -1,13 +1,13 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -18,7 +18,9 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -33,6 +35,12 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service_bus.ISBProperties;
+import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.service_bus.model.ContainerBoomiUniversalJson;
+import com.dpw.runner.shipment.services.service_bus.model.ContainerPayloadDetails;
+import com.dpw.runner.shipment.services.service_bus.model.ContainerUpdateRequest;
+import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -138,8 +146,18 @@ public class ContainerService implements IContainerService {
     @Autowired
     private KafkaProducer producer;
 
+    @Autowired
+    private ISBUtils sbUtils;
+
+    @Autowired
+    private ISBProperties isbProperties;
+
     @Value("${containersKafka.queue}")
     private String senderQueue;
+
+    @Value("${containerTransportOrchestrator.queue}")
+    private String transportOrchestratorQueue;
+
     @Lazy
     @Autowired
     private ISyncQueueService syncQueueService;
@@ -1615,6 +1633,56 @@ public class ContainerService implements IContainerService {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
+    }
+
+    public void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers) {
+        Map<Long, String> oldContsMap = new HashMap<>();
+        if(oldContainers != null && oldContainers.size() > 0) {
+            oldContsMap = oldContainers.stream().collect(Collectors.toMap(BaseEntity::getId, Containers::getContainerNumber));
+        }
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(containersList != null && containersList.size() > 0 && (Boolean.TRUE.equals(v1TenantSettingsResponse.getLogicAppIntegrationEnabled())
+        || Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled()))) {
+            EventMessage eventMessage = new EventMessage();
+            eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
+            List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
+            String bookingRef = getRefNum(containersList.get(0));
+            for (Containers containers : containersList) {
+                if(!oldContsMap.containsKey(containers.getId()) ||
+                        ( oldContsMap.containsKey(containers.getId()) && Objects.equals(oldContsMap.get(containers.getId()), containers.getContainerNumber()) ))
+                    payloadDetails.add(prepareQueuePayload(containers, bookingRef));
+            }
+            ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
+            updateRequest.setContainers(payloadDetails);
+            updateRequest.setTenantCode(UserContext.getUser().getCode());
+            eventMessage.setContainerUpdateRequest(updateRequest);
+            String jsonBody = jsonHelper.convertToJson(eventMessage);
+            if (Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled())) {
+                producer.produceToKafka(jsonBody, transportOrchestratorQueue, UUID.randomUUID().toString());
+            }
+            sbUtils.sendMessagesToTopic(isbProperties, isbProperties.getTopics().getMessageTopic(), List.of(new ServiceBusMessage(jsonBody)));
+        }
+    }
+
+    private ContainerPayloadDetails prepareQueuePayload(Containers containers, String bookingRef) {
+        ContainerPayloadDetails details = new ContainerPayloadDetails();
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = jsonHelper.convertValue(containers, ContainerBoomiUniversalJson.class);
+        if(Boolean.TRUE.equals(containerBoomiUniversalJson.getHazardous())) {
+            containerBoomiUniversalJson.setCargoType(ContainerConstants.HAZ);
+            containerBoomiUniversalJson.setHazardousGoodType(containers.getDgClass());
+        }
+        details.setBookingRef(bookingRef);
+        return details;
+    }
+
+    private String getRefNum(Containers containers) {
+        if(containers.getConsolidationId() != null) {
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(containers.getConsolidationId());
+            if(consolidationDetails.isPresent()) {
+                return consolidationDetails.get().getReferenceNumber();
+            }
+        }
+        return null;
     }
 
     @Override

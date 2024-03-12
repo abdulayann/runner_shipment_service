@@ -395,7 +395,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetail.setCarrierDetails(carrierDetail);
 
             shipmentDetail = shipmentDao.save(shipmentDetail, false);
-            pushShipmentDataToDependentService(shipmentDetail, true);
+            pushShipmentDataToDependentService(shipmentDetail, true, shipmentDetail.getContainersList());
         }
 
         return response;
@@ -586,7 +586,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             String transactionId = shipmentDetails.getGuid().toString();
-            pushShipmentDataToDependentService(shipmentDetails, true);
+            pushShipmentDataToDependentService(shipmentDetails, true, null);
             try {
                 shipmentDetails.setNotesList(null);
                 shipmentSync.sync(shipmentDetails, null, notesRequest, transactionId, true);
@@ -1334,7 +1334,7 @@ public class ShipmentService implements IShipmentService {
         // update Ata/Atd in shipment from events
         eventService.updateAtaAtdInShipment(entity.getEventsList(), entity, shipmentSettingsDetails);
         entity = shipmentDao.update(entity, false);
-        pushShipmentDataToDependentService(entity, false);
+        pushShipmentDataToDependentService(entity, false, oldEntity.get().getContainersList());
         try {
             shipmentSync.sync(entity, null, null, entity.getGuid().toString(), false);
         } catch (Exception e){
@@ -1702,7 +1702,7 @@ public class ShipmentService implements IShipmentService {
         if(updatedContainers.size() > 0) {
             hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
         }
-        pushShipmentDataToDependentService(shipmentDetails, isCreate);
+        pushShipmentDataToDependentService(shipmentDetails, isCreate, oldEntity.getContainersList());
 
         ConsolidationDetails consolidationDetails = null;
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
@@ -1714,7 +1714,7 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
     }
 
-    public void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate) {
+    public void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate, List<Containers> oldContainers) {
         try {
             if(shipmentDetails.getTenantId() == null)
                 shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
@@ -1752,6 +1752,12 @@ public class ShipmentService implements IShipmentService {
         }
         catch (Exception e) {
             log.error(e.getMessage());
+        }
+        try {
+            containerService.pushContainersToDependentServices(shipmentDetails.getContainersList(), oldContainers);
+        }
+        catch (Exception e) {
+            log.error("Error producing message due to " + e.getMessage());
         }
     }
 
@@ -1874,7 +1880,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentSettings.getAutoEventCreate() != null && shipmentSettings.getAutoEventCreate()) {
                 consolidationService.autoGenerateEvents(consolidationDetails);
             }
-            consolidationService.pushShipmentDataToDependentService(consolidationDetails, true);
+            consolidationService.pushShipmentDataToDependentService(consolidationDetails, true, null);
             return consolidationDetails;
         }
         return null;
@@ -2603,7 +2609,7 @@ public class ShipmentService implements IShipmentService {
                 syncShipment(entity, null, null, null, consolidationDetails, true);
             }
 
-            pushShipmentDataToDependentService(entity, false);
+            pushShipmentDataToDependentService(entity, false, entity.getContainersList());
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -2630,7 +2636,7 @@ public class ShipmentService implements IShipmentService {
         }
         shipmentDetails = shipmentDao.save(shipmentDetails, false);
         shipmentSync.syncLockStatus(shipmentDetails);
-        pushShipmentDataToDependentService(shipmentDetails, false);
+        pushShipmentDataToDependentService(shipmentDetails, false, shipmentDetails.getContainersList());
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -2937,7 +2943,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             if(!dataMigration)
-                pushShipmentDataToDependentService(entity, isCreate);
+                pushShipmentDataToDependentService(entity, isCreate, oldEntity.get().getContainersList());
             ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);

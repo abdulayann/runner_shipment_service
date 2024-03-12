@@ -24,7 +24,6 @@ import com.dpw.runner.shipment.services.document.service.IDocumentManagerService
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
-import com.dpw.runner.shipment.services.dto.request.UploadDocumentRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
@@ -50,7 +49,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -499,7 +497,7 @@ public class ReportService implements IReportService {
                 shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
             }
             shipmentDetails = shipmentDao.update(shipmentDetails, false);
-            shipmentService.pushShipmentDataToDependentService(shipmentDetails, false);
+            shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, shipmentDetails.getContainersList());
             try {
                 shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
             } catch (Exception e) {
