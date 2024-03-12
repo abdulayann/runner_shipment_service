@@ -1648,8 +1648,8 @@ public class ContainerService implements IContainerService {
             List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
             String bookingRef = getRefNum(containersList.get(0));
             for (Containers containers : containersList) {
-                if(!oldContsMap.containsKey(containers.getId()) ||
-                        ( oldContsMap.containsKey(containers.getId()) && Objects.equals(oldContsMap.get(containers.getId()), containers.getContainerNumber()) ))
+                if(( !oldContsMap.containsKey(containers.getId()) && !IsStringNullOrEmpty(containers.getContainerNumber()) ) ||
+                        ( oldContsMap.containsKey(containers.getId()) && !Objects.equals(oldContsMap.get(containers.getId()), containers.getContainerNumber()) ))
                     payloadDetails.add(prepareQueuePayload(containers, bookingRef));
             }
             ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
@@ -1666,12 +1666,13 @@ public class ContainerService implements IContainerService {
 
     private ContainerPayloadDetails prepareQueuePayload(Containers containers, String bookingRef) {
         ContainerPayloadDetails details = new ContainerPayloadDetails();
-        ContainerBoomiUniversalJson containerBoomiUniversalJson = jsonHelper.convertValue(containers, ContainerBoomiUniversalJson.class);
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = modelMapper.map(containers, ContainerBoomiUniversalJson.class);
         if(Boolean.TRUE.equals(containerBoomiUniversalJson.getHazardous())) {
             containerBoomiUniversalJson.setCargoType(ContainerConstants.HAZ);
             containerBoomiUniversalJson.setHazardousGoodType(containers.getDgClass());
         }
         details.setBookingRef(bookingRef);
+        details.setContainer(containerBoomiUniversalJson);
         return details;
     }
 
