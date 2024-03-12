@@ -37,6 +37,7 @@ public class AdditionalDetails extends MultiTenancy {
     private LocalDateTime expiryDate;
 
     @Size(max=3, message = "max size is 3 for inspection")
+    @Column(name = "inspection")
     private String inspection;
 
     @Size(max=3, message = "max size is 3 for airway_bill_dims")

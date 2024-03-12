@@ -4054,13 +4054,6 @@ public class ShipmentService implements IShipmentService {
                         return i;
                     }).toList();
                 shipmentDao.saveAll(shipments);
-                for (ShipmentDetails shipmentDetails : shipments) {
-                    try {
-                        shipmentSync.sync(shipmentDetails, null, null, shipment.getGuid().toString(), false);
-                    } catch (Exception e) {
-                        log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
-                    }
-                }
             }
             return consolidationDetails;
         }
