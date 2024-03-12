@@ -1171,9 +1171,11 @@ public class ReportService implements IReportService {
             fileVersion = blObject.getHblData().getOriginalSeq() != null ? StringUtility.convertToString(blObject.getHblData().getOriginalSeq()) : null;
             blObject.getHblData().setOriginalSeq(blObject.getHblData().getOriginalSeq() != null ? blObject.getHblData().getOriginalSeq() + 1 : 1);
             updateInReleaseMappingTable(blObject, releaseType, shipmentSettingsDetails);
+            hblDao.save(blObject);
         } else {
             fileVersion = blObject.getHblData().getVersion().toString();
             blObject.getHblData().setVersion(blObject.getHblData().getVersion() + 1);
+            hblDao.save(blObject);
         }
         String filename = uploadRequest.getType() + "_" + printType + "_" + uploadRequest.getId() + "_" + fileVersion + ".pdf";
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria("entityType", uploadRequest.getEntityType(), "=", null);
