@@ -503,7 +503,7 @@ public class ConsolidationService implements IConsolidationService {
 
             getConsolidation(consolidationDetails);
 
-            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false);
+            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false, null);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -529,7 +529,7 @@ public class ConsolidationService implements IConsolidationService {
 
             getConsolidation(consolidationDetails);
 
-            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true);
+            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true, null);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -1005,6 +1005,10 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
+            List<Containers> oldContainers = new ArrayList<>();
+            if(oldEntity.get().getContainersList() != null && !oldEntity.get().getContainersList().isEmpty()) {
+                oldContainers = jsonHelper.convertValueToList(oldEntity.get().getContainersList(), Containers.class);
+            }
             beforeSave(entity, oldEntity.get(), false);
 
             entity = consolidationDetailsDao.update(entity, false);
@@ -1023,7 +1027,7 @@ public class ConsolidationService implements IConsolidationService {
                 log.error("Error writing audit service log", e);
             }
 
-            afterSave(entity, oldEntity.get(), consolidationDetailsRequest, false, shipmentSettingsDetails, false);
+            afterSave(entity, oldEntity.get(), consolidationDetailsRequest, false, shipmentSettingsDetails, false, oldContainers);
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
@@ -2974,7 +2978,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setTriangulationPartner(null);
     }
 
-    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws RunnerException{
+    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, List<Containers> oldContainers) throws RunnerException{
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
         List<ContainerRequest> containerRequestList = consolidationDetailsRequest.getContainersList();
         List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();
@@ -3031,7 +3035,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setConsolidationAddresses(updatedFileRepos);
         }
 
-        pushShipmentDataToDependentService(consolidationDetails, isCreate, oldEntity.getContainersList());
+        pushShipmentDataToDependentService(consolidationDetails, isCreate, oldContainers);
         try {
             consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);
         } catch (Exception e){

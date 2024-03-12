@@ -657,7 +657,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
 
-            afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails, syncConsole);
+            afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails, syncConsole, null);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -1365,6 +1365,10 @@ public class ShipmentService implements IShipmentService {
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
+            List<Containers> oldContainers = new ArrayList<>();
+            if(oldEntity.get().getContainersList() != null && !oldEntity.get().getContainersList().isEmpty()) {
+                oldContainers = jsonHelper.convertValueToList(oldEntity.get().getContainersList(), Containers.class);
+            }
             boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails);
 
             entity = shipmentDao.update(entity, false);
@@ -1385,7 +1389,7 @@ public class ShipmentService implements IShipmentService {
                 log.error("Error creating audit service log", e);
             }
 
-            afterSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, syncConsole);
+            afterSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, syncConsole, oldContainers);
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
@@ -1570,7 +1574,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
         }
     }
-    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole) throws RunnerException {
+    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, List<Containers> oldContainers) throws RunnerException {
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
@@ -1702,7 +1706,7 @@ public class ShipmentService implements IShipmentService {
         if(updatedContainers.size() > 0) {
             hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
         }
-        pushShipmentDataToDependentService(shipmentDetails, isCreate, oldEntity.getContainersList());
+        pushShipmentDataToDependentService(shipmentDetails, isCreate, oldContainers);
 
         ConsolidationDetails consolidationDetails = null;
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
