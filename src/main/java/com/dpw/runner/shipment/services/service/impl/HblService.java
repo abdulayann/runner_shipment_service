@@ -526,7 +526,7 @@ public class HblService implements IHblService {
         }
         if (syncShipment) {
             try {
-                shipmentSync.sync(shipmentDetail, null, null, UUID.randomUUID().toString(), false);
+                shipmentSync.sync(shipmentDetail, null, null, StringUtility.convertToString(shipmentDetail.getGuid()), false);
             } catch (Exception e) {
                 log.error("Error performing sync on shipment entity, {}", e);
             }
