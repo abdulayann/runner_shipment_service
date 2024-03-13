@@ -532,9 +532,9 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("CustomerCategoryString")
     private String CustomerCategoryString;
     @JsonProperty("PrimarySalesAgentEmail")
-    private String PrimarySalesAgentEmail;
+    private String primarySalesAgentEmail;
     @JsonProperty("SecondarySalesAgentEmail")
-    private String SecondarySalesAgentEmail;
+    private String secondarySalesAgentEmail;
     @JsonProperty("Custom_DeclType")
-    private String Custom_DeclType;
+    private String custom_DeclType;
 }
