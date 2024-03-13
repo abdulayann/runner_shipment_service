@@ -530,4 +530,6 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private List<PartyRequestV2> consolidationAddresses;
     @JsonProperty("ModeOfBooking")
     private String ModeOfBooking;
+    @JsonProperty("AutoUpdateGoodsDesc")
+    private Boolean autoUpdateGoodsDesc;
 }

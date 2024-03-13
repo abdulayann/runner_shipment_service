@@ -41,7 +41,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
@@ -160,7 +159,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setConsignorCountryFilter(sd.getConsignorCountry());
         cs.setNotifyPartyCountryFilter(sd.getNotifyPartyCountry());
         cs.setCreatedDate(sd.getShipmentCreatedOn());
-
+        
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
         cs.setWeightVolumeUnit(sd.getVolumetricWeightUnit());
@@ -302,6 +301,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setPlaceOfSupplyName(sd.getAdditionalDetails().getPlaceOfSupply());
         cs.setPaidPlaceName(sd.getAdditionalDetails().getPaidPlace());
         cs.setCIFValue(sd.getAdditionalDetails().getCIFValue());
+        cs.setCustom_DeclType(sd.getAdditionalDetails().getCustomDeclType());
     }
 
     private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
