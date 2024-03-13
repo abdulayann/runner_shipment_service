@@ -531,4 +531,10 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private LocalDateTime CreatedDate;
     @JsonProperty("CustomerCategoryString")
     private String CustomerCategoryString;
+    @JsonProperty("PrimarySalesAgentEmail")
+    private String PrimarySalesAgentEmail;
+    @JsonProperty("SecondarySalesAgentEmail")
+    private String SecondarySalesAgentEmail;
+    @JsonProperty("Custom_DeclType")
+    private String Custom_DeclType;
 }
