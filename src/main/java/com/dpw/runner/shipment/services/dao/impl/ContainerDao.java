@@ -35,6 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
@@ -65,6 +66,9 @@ public class ContainerDao implements IContainerDao {
     @Override
     public Containers save(Containers containers) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(containers) , Constants.CONTAINER, LifecycleHooks.ON_CREATE, false);
+        if(Boolean.TRUE.equals(containers.getHazardous()) && IsStringNullOrEmpty(containers.getDgClass())) {
+            errors.add("DG class is mandatory for Hazardous Goods Containers");
+        }
         if (! errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if(containers.getId() != null) {
