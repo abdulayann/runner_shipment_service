@@ -428,7 +428,7 @@ public class ShipmentDao implements IShipmentDao {
             !Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill)) {
             String mawbAirlineCode = shipmentRequest.getMasterBill().substring(0, 3);
 
-            V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
+            V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode, shipmentRequest.getJobType());
             List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
             if (carrierDetails == null || carrierDetails.isEmpty())
                 throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
@@ -523,13 +523,14 @@ public class ShipmentDao implements IShipmentDao {
         return true;
     }
 
-    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode) {
+    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode, String type) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
         criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
+        carrierListObject.setType(type);
         V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
         return response;
     }
@@ -551,7 +552,7 @@ public class ShipmentDao implements IShipmentDao {
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
         return response;
     }
     @Transactional
