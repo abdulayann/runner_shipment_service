@@ -251,7 +251,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = carrierDetailResponse == null ? null : field.get(carrierDetailResponse);
+            Object value = field.get(carrierDetailResponse);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -271,7 +271,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = pdResponse == null ? null : field.get(pdResponse);
+            Object value = field.get(pdResponse);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -291,7 +291,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = party == null ? null : field.get(party);
+            Object value = field.get(party);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -311,7 +311,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = shipment == null ? null : field.get(shipment);
+            Object value = field.get(shipment);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -331,7 +331,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = response == null ? null : field.get(response);
+            Object value = field.get(response);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -351,7 +351,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = response == null ? null : field.get(response);
+            Object value = field.get(response);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -372,7 +372,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = response == null ? null : field.get(response);
+            Object value = field.get(response);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -392,14 +392,13 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = response == null ? null : field.get(response);
+            Object value = field.get(response);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
     }
 
     public List<String> getAllAttributeValuesAsListContainer(ContainerResponse response) throws IllegalAccessException {
-        Class<?> clazz = response.getClass();
         List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
         final Set<String> requiredFields = Set.of(Constants.CONTAINER_NUMBER, "volumeUtilization", "weightUtilization", "achievedVolume",
                 "achievedVolumeUnit", "achievedWeight", "achievedWeightUnit", "grossVolume", "grossVolumeUnit",
@@ -420,14 +419,14 @@ public class CSVParsingUtil<T> {
         return lst;
     }
 
-    public void addContainerToSheet(T entity, XSSFWorkbook workbook, XSSFSheet sheet, int rowNum) {
+    public void addContainerToSheet(T entity, XSSFSheet sheet, int rowNum) {
         Row row = sheet.createRow(rowNum);
         Field[] fields = Containers.class.getDeclaredFields();
         int counter = 0;
         addRowToSheet(entity, row, fields, counter);
     }
 
-    public void addPackToSheet(T entity, XSSFWorkbook workbook, XSSFSheet sheet, int rowNum) {
+    public void addPackToSheet(T entity, XSSFSheet sheet, int rowNum) {
         Row row = sheet.createRow(rowNum);
         Field[] fields = Packing.class.getDeclaredFields();
         int counter = 0;
@@ -447,7 +446,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    public void addEventToSheet(Events entity, XSSFWorkbook workbook, XSSFSheet sheet, int rowNum) {
+    public void addEventToSheet(Events entity, XSSFSheet sheet, int rowNum) {
         Field[] fields = Events.class.getDeclaredFields();
         Row row = sheet.createRow(rowNum);
         int counter = 0;
@@ -473,9 +472,8 @@ public class CSVParsingUtil<T> {
     }
 
     public Map<Integer, Map<String, MasterData>> fetchInBulkMasterList(MasterListRequestV2 requests) {
-        Map<String, MasterData> keyMasterDataMap = new HashMap<>();
         Map<Integer, Map<String, MasterData>> dataMap = new HashMap<>();
-        if (requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
+        if (requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<MasterData> masterLists = jsonHelper.convertValueToList(response.entities, MasterData.class);
             masterLists.forEach(masterData -> {
@@ -934,11 +932,9 @@ public class CSVParsingUtil<T> {
                                                             int rowNum, boolean isUpdate,
                                                             Map<String, String> existingContainerNumbers) throws ValidationException {
         String guid = guidPos == -1 ? "" : getCellValueAsString(row.getCell(guidPos));
-        if (isUpdate && !StringUtility.isEmpty(containerNumber)) {
-            if (existingContainerNumbers.containsKey(containerNumber)
-                    && !existingContainerNumbers.get(containerNumber).equals(guid)) {
-                throw new ValidationException("Duplicate container number " + containerNumber + " found at row: " + rowNum + ". In a booking all container numbers must be Unique.");
-            }
+        if (isUpdate && !StringUtility.isEmpty(containerNumber) && (existingContainerNumbers.containsKey(containerNumber)
+                    && !existingContainerNumbers.get(containerNumber).equals(guid))) {
+            throw new ValidationException("Duplicate container number " + containerNumber + " found at row: " + rowNum + ". In a booking all container numbers must be Unique.");
         }
         if (existingContainerNumbers.containsKey(containerNumber) && !isUpdate) {
             throw new ValidationException("Duplicate container number " + containerNumber + " found at row: " + rowNum + ". In a booking all container numbers must be Unique.");

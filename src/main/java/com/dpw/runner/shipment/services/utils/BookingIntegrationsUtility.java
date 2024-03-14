@@ -214,7 +214,7 @@ public class BookingIntegrationsUtility {
     private List<String> createEmailIds(String primaryEmail, String secondaryEmail)
     {
         if(primaryEmail == null)
-            return null;
+            return Collections.emptyList();
         if(secondaryEmail == null)
             return Arrays.asList(primaryEmail);
         return Arrays.asList(primaryEmail, secondaryEmail);
@@ -366,7 +366,7 @@ public class BookingIntegrationsUtility {
                 bookingCharge -> {
                     charges.add(
                             ChargesRequest.builder()
-                                    .load_uuid(Objects.isNull(bookingCharge.getContainersList()) || bookingCharge.getContainersList().isEmpty() ? null : bookingCharge.getContainersList().stream().map(c -> c.getGuid()).collect(Collectors.toList()))
+                                    .load_uuid(Objects.isNull(bookingCharge.getContainersList()) || bookingCharge.getContainersList().isEmpty() ? null : bookingCharge.getContainersList().stream().map(c -> c.getGuid()).toList())
                                     .charge_group(chargeTypeMap.containsKey(bookingCharge.getChargeType()) ? chargeTypeMap.get(bookingCharge.getChargeType()).getServices() : null)
                                     .charge_code(bookingCharge.getChargeType())
                                     .charge_code_desc(chargeTypeMap.containsKey(bookingCharge.getChargeType()) ? chargeTypeMap.get(bookingCharge.getChargeType()).getDescription() : null)
@@ -455,7 +455,7 @@ public class BookingIntegrationsUtility {
                 log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,orgCode);
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
             }
-            Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1OrgResponse.getData()).get(0)));
+            Map<String, Object> organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1OrgResponse.getData()).get(0)));
             request.setOrgData(organizationRow);
 
             CommonV1ListRequest addressRequest = createCriteriaForThreeFields("OrgId", organizationRow.get("Id"), "AddressShortCode", addressCode, "Active", Boolean.TRUE);
@@ -464,7 +464,7 @@ public class BookingIntegrationsUtility {
                 log.error("Request: {} || No Address exist in Runner V1 with OrgCode: {} with AddressCode: {}", LoggerHelper.getRequestIdFromMDC(), orgCode , addressCode);
                 throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCode: " + orgCode + " with AddressCode: " + addressCode);
             }
-            Map addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1AddressResponse.getData()).get(0)));
+            Map<String, Object> addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1AddressResponse.getData()).get(0)));
             request.setAddressData(addressRow);
         }
         catch (Exception ex) {

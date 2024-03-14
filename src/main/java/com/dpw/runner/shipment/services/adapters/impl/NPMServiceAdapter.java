@@ -221,7 +221,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             NPMAutoSellRequest autoSellRequest = (NPMAutoSellRequest) commonRequestModel.getData();
             var req = jsonHelper.convertToJson(autoSellRequest);
             ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
-            return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(), 0, 0);
+            return ResponseHelper.buildDependentServiceResponse(Objects.requireNonNull(response.getBody()).getData(), 0, 0);
         } catch (HttpStatusCodeException ex) {
             RunnerResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
             log.error("NPM awb auto sell failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError()));
@@ -236,10 +236,10 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             NPMImportRatesRequest importRatesRequest = (NPMImportRatesRequest) commonRequestModel.getData();
             var req = jsonHelper.convertToJson(importRatesRequest);
             ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
-            NpmAwbImportRateResponse npmAwbImportRateResponse = jsonHelper.convertValue(response.getBody().getData(), NpmAwbImportRateResponse.class);
+            NpmAwbImportRateResponse npmAwbImportRateResponse = jsonHelper.convertValue(Objects.requireNonNull(response.getBody()).getData(), NpmAwbImportRateResponse.class);
             log.info("Updated AWB from npm service : {}", npmAwbImportRateResponse.updatedAwb);
             awbDao.save(npmAwbImportRateResponse.updatedAwb);
-            return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(),0,0);
+            return ResponseHelper.buildDependentServiceResponse(Objects.requireNonNull(response.getBody()).getData(),0,0);
         } catch (HttpStatusCodeException ex) {
             RunnerResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
             log.error("NPM awb import rates failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError() ));

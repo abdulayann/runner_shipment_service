@@ -44,7 +44,7 @@ public class FusionServiceAdapter implements IFusionServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
         } catch (Exception ex) {
             log.error("Fusion credit check failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
-            throw new RuntimeException("Error from Fusion while fetching credit limit: " + ex.getMessage());
+            throw new RunnerException("Error from Fusion while fetching credit limit: " + ex.getMessage());
         }
     }
 }

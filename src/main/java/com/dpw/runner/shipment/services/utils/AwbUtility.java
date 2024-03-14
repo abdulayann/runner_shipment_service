@@ -131,13 +131,13 @@ public class AwbUtility {
 
             if (uniqueDimension.size() == 1) {
                 String dimentionUnit = uniqueDimension.stream().findFirst().get();
-                if (dimentionUnit == "CM") {
+                if (Objects.equals(dimentionUnit, "CM")) {
                     dimentionUnit = "CMS";
-                } else if (dimentionUnit == "IN") {
+                } else if (Objects.equals(dimentionUnit, "IN")) {
                     dimentionUnit = "Inches";
-                } else if (dimentionUnit == "M") {
+                } else if (Objects.equals(dimentionUnit, "M")) {
                     dimentionUnit = "Meter";
-                } else if (dimentionUnit == "FT") {
+                } else if (Objects.equals(dimentionUnit, "FT")) {
                     dimentionUnit = "Feet";
                 } else {
                     dimentionUnit = "";
@@ -153,10 +153,6 @@ public class AwbUtility {
             }
             packsDescriptionValue += "Total Volumetric Weight ";
 
-//            if (tenantSettings != null && tenantSettings.WeightChargeableUnit == "KG") { //TODO fetch values from tenant
-//                packsDescriptionValue += volumetricWeight + " " + "KGS";
-//            }
-
             dimnAndPacksText = dimensionText + packsDescriptionValue;
 
         }
@@ -168,7 +164,7 @@ public class AwbUtility {
             charge = Math.floor(charge) + 0.50;
         else
             charge = Math.ceil(charge);
-        return new BigDecimal(charge);
+        return BigDecimal.valueOf(charge);
     }
 
     public static void validateShipmentInfoBeforeGeneratingAwb(ShipmentDetails shipmentDetails) {

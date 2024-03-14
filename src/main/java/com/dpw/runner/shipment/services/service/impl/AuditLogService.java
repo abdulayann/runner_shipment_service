@@ -311,6 +311,7 @@ public class AuditLogService implements IAuditLogService {
         if(newEntity == null && prevEntity == null)
             return new HashMap<>();
         if (operation.equals(DBOperationType.CREATE.name())) {
+            assert newEntity != null;
             fields = getListOfAllFields(newEntity);
         } else {
             fields = getListOfAllFields(prevEntity);
@@ -322,7 +323,6 @@ public class AuditLogService implements IAuditLogService {
             String fieldName = field.getName();
 
             if(fieldName.startsWith("cachedValue$") || fieldName.startsWith("$$_hibernate_interceptor" ) || fieldName.equalsIgnoreCase("serialVersionUID")) continue;
-            Annotation[] fieldAnnotations = field.getDeclaredAnnotations();
 
             Object newValue, prevValue;
             AuditLogChanges auditLogChanges = null;
@@ -332,7 +332,9 @@ public class AuditLogService implements IAuditLogService {
                 Object temp = field.get(newEntity);
                 try{
                     temp  = PropertyUtils.getProperty(newEntity, fieldName);
-                } catch(NoSuchMethodException e){}
+                } catch(NoSuchMethodException e){
+                    log.error(e.getMessage());
+                }
                 if (field.getType() == LocalDateTime.class && !ObjectUtils.isEmpty(temp)) {
                     newValue = temp.toString();
                 } else {
@@ -340,8 +342,6 @@ public class AuditLogService implements IAuditLogService {
                 }
                 if(Arrays.stream(field.getDeclaredAnnotations()).anyMatch(annotation -> annotation.annotationType() == OneToOne.class))
                 {
-                    // fieldValueMap.putAll(getChanges((BaseEntity) temp, null, DBOperationType.CREATE.name()));
-                    // Handle related entities (one-to-one or one-to-many relationships)
                     Map<String, AuditLogChanges> childChanges = getChanges((BaseEntity) temp, null, DBOperationType.CREATE.name());
 
                     // Prefix the property names with the entity name

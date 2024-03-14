@@ -276,7 +276,7 @@ public class BookingCarriageService implements IBookingCarriageService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        BookingCarriage existingEntity = bookingCarriageDao.findById(id).get();
+        BookingCarriage existingEntity = oldEntity.get();
         bookingCarriageMapper.update(request, existingEntity);
         try {
             existingEntity = bookingCarriageDao.save(existingEntity);
