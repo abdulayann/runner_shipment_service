@@ -1001,4 +1001,6 @@ public class ReportConstants {
     public static final String CHARGEABLE_WEIGHT_UNIT = "ChargeableWeightUnit";
     public static final Set<String> OBJECT_TYPE_REPORTS = Set.of(IMPORT_CONSOL_MANIFEST, EXPORT_CONSOL_MANIFEST, IMPORT_SHIPMENT_MANIFEST, EXPORT_SHIPMENT_MANIFEST);
     public static final String PLEASE_UPLOAD_VALID_TEMPLATE = "Please Upload Valid Template";
+    public static final String DeliveryTo = "DeliveryTo";
+
 }

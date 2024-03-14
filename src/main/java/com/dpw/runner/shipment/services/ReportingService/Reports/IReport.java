@@ -2371,4 +2371,17 @@ public abstract class IReport {
         }
         return Pair.of(totalPacks, packsUnit);
     }
+
+    public void populateAddress(Map<String, Object> addressData, Map<String, Object> dictionary, String prefix) {
+        dictionary.put(prefix + COMPANY_NAME, getValueFromMap(addressData, COMPANY_NAME));
+        dictionary.put(prefix + ADDRESS1, getValueFromMap(addressData, ADDRESS1));
+        dictionary.put(prefix + ADDRESS2, getValueFromMap(addressData, ADDRESS2));
+        dictionary.put(prefix + EMAIL, getValueFromMap(addressData, EMAIL));
+        dictionary.put(prefix + CITY, getValueFromMap(addressData, CITY));
+        dictionary.put(prefix + STATE, getValueFromMap(addressData, STATE));
+        dictionary.put(prefix + COUNTRY, getValueFromMap(addressData, COUNTRY));
+        dictionary.put(prefix + CONTACT_PHONE, getValueFromMap(addressData, CONTACT_PHONE));
+        dictionary.put(prefix + MOBILE, getValueFromMap(addressData, MOBILE));
+        dictionary.put(prefix + ZIP_POST_CODE, getValueFromMap(addressData, ZIP_POST_CODE));
+    }
 }
