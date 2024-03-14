@@ -9,8 +9,4 @@ import org.springframework.stereotype.Component;
 public class AzureServiceBusTopic {
     @Value("${data-sync-topic}")
     private String topic;
-
-    @Value("${boomi-message-topic}")
-    private String messageTopic;
-
 }

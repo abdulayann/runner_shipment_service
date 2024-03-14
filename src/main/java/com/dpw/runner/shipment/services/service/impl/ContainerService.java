@@ -152,6 +152,9 @@ public class ContainerService implements IContainerService {
     @Autowired
     private ISBProperties isbProperties;
 
+    @Value("${boomi-message-topic}")
+    private String messageTopic;
+
     @Value("${containersKafka.queue}")
     private String senderQueue;
 
@@ -1660,7 +1663,7 @@ public class ContainerService implements IContainerService {
             if (Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled())) {
                 producer.produceToKafka(jsonBody, transportOrchestratorQueue, UUID.randomUUID().toString());
             }
-            sbUtils.sendMessagesToTopic(isbProperties, isbProperties.getTopics().getMessageTopic(), List.of(new ServiceBusMessage(jsonBody)));
+            sbUtils.sendMessagesToTopic(isbProperties, messageTopic, List.of(new ServiceBusMessage(jsonBody)));
         }
     }
 
