@@ -931,6 +931,20 @@ public class HblReport extends IReport{
             dictionary.put(ReportConstants.PickupFrom, address);
         }
 
+        PartiesModel deliveryTo = null;
+
+        if(hblModel.shipment.getDeliveryDetails() != null)
+            deliveryTo = hblModel.shipment.getDeliveryDetails().getDestinationDetail();
+        if (deliveryTo != null && deliveryTo.getAddressData() != null)
+        {
+            Map<String, Object> addressMap = deliveryTo.getAddressData();
+            populateAddress(addressMap, dictionary, ReportConstants.DeliveryTo);
+            var address = getOrgAddress(getValueFromMap(addressMap, ORG_FULL_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
+                    getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
+                    getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
+            dictionary.put(ReportConstants.DeliveryTo, address);
+        }
+
         return dictionary;
     }
     // isActive Criteria not clear from v1 impl
@@ -951,24 +965,11 @@ public class HblReport extends IReport{
         return null;
     }
 
-    private void populateAddress(Map<String, Object> addressData, Map<String, Object> dictionary, String prefix) {
-        dictionary.put(prefix + COMPANY_NAME, getValueFromMap(addressData, COMPANY_NAME));
-        dictionary.put(prefix + ADDRESS1, getValueFromMap(addressData, ADDRESS1));
-        dictionary.put(prefix + ADDRESS2, getValueFromMap(addressData, ADDRESS2));
-        dictionary.put(prefix + EMAIL, getValueFromMap(addressData, EMAIL));
-        dictionary.put(prefix + CITY, getValueFromMap(addressData, CITY));
-        dictionary.put(prefix + STATE, getValueFromMap(addressData, STATE));
-        dictionary.put(prefix + COUNTRY, getValueFromMap(addressData, COUNTRY));
-        dictionary.put(prefix + CONTACT_PHONE, getValueFromMap(addressData, CONTACT_PHONE));
-        dictionary.put(prefix + MOBILE, getValueFromMap(addressData, MOBILE));
-        dictionary.put(prefix + ZIP_POST_CODE, getValueFromMap(addressData, ZIP_POST_CODE));
-    }
-
     private List<String> getNotifyOrgAddress(Hbl hbl)
     {
         if(hbl != null && hbl.getHblNotifyParty() != null && !hbl.getHblNotifyParty().isEmpty()) {
             HblPartyDto row = hbl.getHblNotifyParty().get(0);
-            getOrgAddress(row.getName(), row.getAddress(), null, null, row.getEmail(), null);
+            return getOrgAddress(row.getName(), row.getAddress(), null, null, row.getEmail(), null);
         }
         return null;
     }
