@@ -531,8 +531,7 @@ public class ShipmentDao implements IShipmentDao {
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
         carrierListObject.setType(type);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
-        return response;
+        return v1Service.fetchCarrierMasterData(carrierListObject, false);
     }
 
     private void validateIataCode(ShipmentDetails shipmentDetails) {
