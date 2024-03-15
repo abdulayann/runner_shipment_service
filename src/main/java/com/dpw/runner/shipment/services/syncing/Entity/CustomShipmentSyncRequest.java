@@ -537,4 +537,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String secondarySalesAgentEmail;
     @JsonProperty("Custom_DeclType")
     private String custom_DeclType;
+    @JsonProperty("ContainsHazardous")
+    private Boolean ContainsHazardous;
 }

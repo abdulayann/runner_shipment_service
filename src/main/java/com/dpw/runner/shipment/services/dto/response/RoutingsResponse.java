@@ -51,4 +51,8 @@ public class RoutingsResponse implements IRunnerResponse {
     private Map<String, String> unlocationData;
     private Map<String, String> masterData;
     private Map<String, String> carrierMasterData;
+
+    public void setIsDomestic(boolean isDomestic) {
+        this.isDomestic = isDomestic;
+    }
 }

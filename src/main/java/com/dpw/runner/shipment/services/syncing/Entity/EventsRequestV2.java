@@ -21,8 +21,8 @@ public class EventsRequestV2 implements IRunnerRequest {
     private LocalDateTime Estimated;
     @JsonProperty("Event_estimate_update_reasons")
     private String Event_estimate_update_reasons;
-    @JsonProperty("IsprivateTrackingEvent")
-    private Boolean IsprivateTrackingEvent;
+    @JsonProperty("IsPublicTrackingEvent")
+    private Boolean IsPublicTrackingEvent;
     @JsonProperty("Latitude")
     private String Latitude;
     @JsonProperty("Longitude")
