@@ -36,4 +36,5 @@ public class TenantModel implements Serializable {
     public DigitGrouping CurrencyDigitGrouping;
     public GroupingNumber CurrencyGroupingNumber;
     public String UnlocoLocationGuid;
+    public Integer Unloco;
 }

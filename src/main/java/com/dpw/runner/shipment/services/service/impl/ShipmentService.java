@@ -44,6 +44,8 @@ import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -3804,9 +3806,12 @@ public class ShipmentService implements IShipmentService {
                 TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
                 String currencyCode = tenantModel.currencyCode;
                 response.setFreightLocalCurrency(currencyCode);
-                response.getAdditionalDetails().setPlaceOfIssue(tenantModel.getUnlocoLocationGuid());
-                response.getAdditionalDetails().setPaidPlace(tenantModel.getUnlocoLocationGuid());
-                response.getAdditionalDetails().setPlaceOfSupply(tenantModel.getUnlocoLocationGuid());
+                List<UnlocationsResponse> unlocationsResponse = masterDataUtils.fetchUnlocationByOneIdentifier(EntityTransferConstants.ID, StringUtility.convertToString(tenantModel.getUnloco()));
+                if (!Objects.isNull(unlocationsResponse) && !unlocationsResponse.isEmpty()) {
+                    response.getAdditionalDetails().setPlaceOfIssue(unlocationsResponse.get(0).getLocationsReferenceGUID());
+                    response.getAdditionalDetails().setPaidPlace(unlocationsResponse.get(0).getLocationsReferenceGUID());
+                    response.getAdditionalDetails().setPlaceOfSupply(unlocationsResponse.get(0).getLocationsReferenceGUID());
+                }
             } catch (Exception e){
                 log.error("Failed in fetching tenant data from V1 with error : {}", e);
             }
