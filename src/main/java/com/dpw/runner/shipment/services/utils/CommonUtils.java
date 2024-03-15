@@ -12,6 +12,9 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
+import net.sourceforge.barbecue.Barcode;
+import net.sourceforge.barbecue.BarcodeFactory;
+import net.sourceforge.barbecue.BarcodeImageHandler;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
@@ -69,6 +72,14 @@ public class CommonUtils {
 
         barcodeGenerator.generateBarcode(canvas, barcodeText);
         return canvas.getBufferedImage();
+    }
+
+    public static byte[] generateBarcodeImage(String barcodeText) throws Exception {
+        Barcode barcode = BarcodeFactory.createCode128(barcodeText);
+        //BufferedImage image = BarcodeImageHandler.getImage(barcode);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        BarcodeImageHandler.writePNG(barcode, outputStream);
+        return outputStream.toByteArray();
     }
 
     public static ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator) {
