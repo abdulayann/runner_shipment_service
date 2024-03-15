@@ -2736,6 +2736,13 @@ public class ConsolidationService implements IConsolidationService {
                 List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(convertToEntityList(routingsRequestList, Routings.class), id, oldRoutings.stream().toList());
                 entity.setRoutingsList(updatedRoutings);
             }
+            if (consolidationAddresses != null) {
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.CONSOLIDATION_ADDRESSES);
+                Pair<Specification<Parties>, Pageable> pair = fetchData(listCommonRequest, Parties.class);
+                Page<Parties> oldParties = partiesDao.findAll(pair.getLeft(), pair.getRight());
+                List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(convertToEntityList(consolidationAddresses, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES, oldParties.stream().toList());
+                entity.setConsolidationAddresses(updatedParties);
+            }
             if(!dataMigration)
                 pushShipmentDataToDependentService(entity, isCreate);
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
