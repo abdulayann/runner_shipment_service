@@ -247,6 +247,7 @@ public class ReportConstants {
     public static final String CMS_REMARKS = "Remarks";
     public static final String CMS_PICK_CY = "PickUpCy";
     public static final String PickupFrom = "PickupFrom";
+    public static final String PICK_UP_FROM = "PickUpFrom";
     public static final String PRE_CARRIAGE = "PreCarriage";
     public static final String INVNO = "INVNO";
     public static final String EXPORTER_TAX_ID = "ExporterTaxID";
@@ -1003,5 +1004,6 @@ public class ReportConstants {
     public static final Set<String> OBJECT_TYPE_REPORTS = Set.of(IMPORT_CONSOL_MANIFEST, EXPORT_CONSOL_MANIFEST, IMPORT_SHIPMENT_MANIFEST, EXPORT_SHIPMENT_MANIFEST);
     public static final String PLEASE_UPLOAD_VALID_TEMPLATE = "Please Upload Valid Template";
     public static final String DeliveryTo = "DeliveryTo";
+    public static final String DeliveryTransport = "DeliveryTransport";
 
 }
