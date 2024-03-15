@@ -494,10 +494,12 @@ public class ReportService implements IReportService {
             }
 
             //Update shipment issue date
-            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name()))
-            {
-                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
-            }
+
+            //TODO - Commenting As per Product confirmation
+//            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name()))
+//            {
+//                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
+//            }
             shipmentDetails = shipmentDao.update(shipmentDetails, false);
             shipmentService.pushShipmentDataToDependentService(shipmentDetails, false);
             try {
