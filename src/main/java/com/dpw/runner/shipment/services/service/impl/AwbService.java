@@ -319,19 +319,10 @@ public class AwbService implements IAwbService {
                             } catch (Exception ex) {
                                 log.error("Error while updating Mawb due to: " + ex.getMessage());
                             }
+                        }
 
-                        }
-                        List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.getId());
-                        List<AwbPackingInfo> linkedPacks = new ArrayList<>();
-                        for (var hawb : linkedHawb) {
-                            if(hawb.getAwbPackingInfo() != null) {
-                                linkedPacks.addAll(hawb.getAwbPackingInfo());
-                            }
-                        }
-                        awb.setAwbPackingInfo(linkedPacks);
-                        if(awb.getAwbGoodsDescriptionInfo() != null && awb.getAwbGoodsDescriptionInfo().size() > 0) {
-                            calculateGoodsDescription(awb.getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>(), linkedPacks.size() > 0);
-                        }
+                        getMawnLinkPacks(awb);
+
                     } else {
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
                                 &&  tenantSettings != null && ((tenantSettings.getRestrictAWBEdit() != null
@@ -373,6 +364,26 @@ public class AwbService implements IAwbService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    public Awb getMawnLinkPacks(Awb awb) {
+        try {
+            ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.getId());
+            List<AwbPackingInfo> linkedPacks = new ArrayList<>();
+            for (var hawb : linkedHawb) {
+                if(hawb.getAwbPackingInfo() != null) {
+                    linkedPacks.addAll(hawb.getAwbPackingInfo());
+                }
+            }
+            awb.setAwbPackingInfo(linkedPacks);
+            if(awb.getAwbGoodsDescriptionInfo() != null && awb.getAwbGoodsDescriptionInfo().size() > 0) {
+                calculateGoodsDescription(awb.getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>(), linkedPacks.size() > 0);
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+        return awb;
     }
 
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {

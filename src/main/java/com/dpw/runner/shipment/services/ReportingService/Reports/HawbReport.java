@@ -223,8 +223,8 @@ public class HawbReport extends IReport{
             }
             if(StringUtility.isNotEmpty(AwbNumber)){
                 AwbNumber = AwbNumber.replace("-", "");
-                dictionary.put(ReportConstants.MAWB_NO , AwbNumber.substring(0, Math.min(3, AwbNumber.length())));
-                if(AwbNumber.length() > 3) dictionary.put(ReportConstants.MAWB_REMAINING, AwbNumber.substring(3, AwbNumber.length() - 3));
+                dictionary.put(ReportConstants.MAWB_NO3 , AwbNumber.substring(0, Math.min(3, AwbNumber.length())));
+                if(AwbNumber.length() > 3) dictionary.put(ReportConstants.MAWB_REMAINING, AwbNumber.substring(3));
             }
 
             AwbCargoInfo cargoInfoRows = hawbModel.getAwb().getAwbCargoInfo();
@@ -357,9 +357,13 @@ public class HawbReport extends IReport{
                     }
                     if(value.get(ReportConstants.RATE_CHARGE) != null){
                         value.put(ReportConstants.RATE_CHARGE, IReport.addCommas(value.get(ReportConstants.RATE_CHARGE).toString()));
+                    } else {
+                        value.put(ReportConstants.RATE_CHARGE, IReport.addCommas(0));
                     }
                     if(value.get(ReportConstants.TOTAL_AMOUNT) != null){
                         value.put(ReportConstants.TOTAL_AMOUNT, IReport.addCommas(value.get(ReportConstants.TOTAL_AMOUNT).toString()));
+                    } else {
+                        value.put(ReportConstants.TOTAL_AMOUNT, IReport.addCommas(0));
                     }
                 });
                 dictionary.put(ReportConstants.PACKING_LIST, values);

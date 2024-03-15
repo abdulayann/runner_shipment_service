@@ -505,6 +505,7 @@ public class ReportConstants {
     public static final String JOB_NUMBER = "JobNumber";
     public static final String JOB_NO = "JobNo";
     public static final String MAWB_NO = "MAWBNo";
+    public static final String MAWB_NO3 = "MAWB3";
     public static final String NEUTRAL_AWB_NO = "NeutralAWBNo";
     public static final String HAWB_NO = "HAWBNo";
     public static final String PRINT_USER = "PrintUser";

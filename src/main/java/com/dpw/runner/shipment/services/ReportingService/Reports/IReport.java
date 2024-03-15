@@ -53,6 +53,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
 import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.impl.AwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -128,6 +129,8 @@ public abstract class IReport {
 
     @Autowired
     private IContainerService containerService;
+    @Autowired
+    private AwbService awbService;
 
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
@@ -1252,8 +1255,10 @@ public abstract class IReport {
 
     public Awb getMawb(Long Id) {
         List<Awb> awb = awbRepository.findByConsolidationId(Id);
-        if(awb != null && !awb.isEmpty())
+        if(awb != null && !awb.isEmpty()) {
+            awbService.getMawnLinkPacks(awb.get(0));
             return awb.get(0);
+        }
         return null;
     }
 
