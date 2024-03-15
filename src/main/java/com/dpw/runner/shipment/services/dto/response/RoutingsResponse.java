@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -27,6 +28,7 @@ public class RoutingsResponse implements IRunnerResponse {
     private String vesselName;
     private String pol;
     private String pod;
+    @JsonProperty("domestic")
     private boolean isDomestic;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime eta;
