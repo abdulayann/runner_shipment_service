@@ -967,7 +967,6 @@ public class ReportService implements IReportService {
         }
 
         int originalCount = Integer.parseInt((String) json.getOrDefault(ReportConstants.ORIGINALS, -1).toString());
-        originalCount = 1; // TODO- for testing purpose only - To be removed
         int copyCount = Integer.parseInt((String) json.getOrDefault(ReportConstants.COPY_BILLS, -1).toString());
 
         if (!ReportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL))
