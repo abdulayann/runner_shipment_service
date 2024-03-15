@@ -26,8 +26,6 @@ public class MawbReport extends IReport{
 
     public boolean isDMawb;
 
-    @Autowired
-    private AwbService awbService;
 
     @Override
     public Map<String, Object> getData(Long id) {
