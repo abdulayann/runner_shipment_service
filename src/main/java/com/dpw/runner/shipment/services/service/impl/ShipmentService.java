@@ -4296,9 +4296,9 @@ public class ShipmentService implements IShipmentService {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
         if(shipmentDetails.isPresent()) {
             ShipmentDetails shipment = shipmentDetails.get();
-            if(date != null) {
-                shipment.getAdditionalDetails().setDateOfIssue(date);
-            }
+//            if(date != null) {
+//                shipment.getAdditionalDetails().setDateOfIssue(date);
+//            }
             if(status != null) {
                 shipment.setStatus(status);
             }
