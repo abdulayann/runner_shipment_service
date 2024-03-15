@@ -13,8 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import net.sourceforge.barbecue.Barcode;
+import net.sourceforge.barbecue.BarcodeException;
 import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
+import net.sourceforge.barbecue.output.OutputException;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
@@ -74,9 +76,8 @@ public class CommonUtils {
         return canvas.getBufferedImage();
     }
 
-    public static byte[] generateBarcodeImage(String barcodeText) throws Exception {
+    public static byte[] generateBarcodeImage(String barcodeText) throws BarcodeException, OutputException {
         Barcode barcode = BarcodeFactory.createCode128(barcodeText);
-        //BufferedImage image = BarcodeImageHandler.getImage(barcode);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         BarcodeImageHandler.writePNG(barcode, outputStream);
         return outputStream.toByteArray();
