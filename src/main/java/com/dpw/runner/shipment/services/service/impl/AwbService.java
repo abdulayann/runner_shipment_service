@@ -367,6 +367,7 @@ public class AwbService implements IAwbService {
     }
 
     //Calculate mawb packs
+    @Override
     public Awb getMawnLinkPacks(Awb awb) {
         try {
             ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();

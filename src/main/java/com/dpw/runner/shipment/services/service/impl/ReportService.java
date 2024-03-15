@@ -197,7 +197,7 @@ public class ReportService implements IReportService {
                 else dataRetrived.put(ReportConstants.COUNT, null);
                 byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
                 if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
-                byte[] docBytes = AddBarCodeInAWBLableReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER)+copyCount, dataRetrived.get(ReportConstants.HAWB_NUMBER)+"");
+                byte[] docBytes = AddBarCodeInAWBLableReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER)+copyCount : copyCount, dataRetrived.get(ReportConstants.HAWB_NUMBER)+"");
                 pdf_Bytes.add(docBytes);
             }
             return CommonUtils.concatAndAddContent(pdf_Bytes);
@@ -930,7 +930,7 @@ public class ReportService implements IReportService {
                 PdfGState gstate = new PdfGState();
                 dc.saveState();
                 dc.setGState(gstate);
-                byte[] imgBytes1 = CommonUtils.ImageToByte(CommonUtils.generateEAN13BarcodeImage(str, 50));
+                byte[] imgBytes1 = CommonUtils.generateBarcodeImage(str);
                 Image image1 = Image.getInstance(imgBytes1);
                 image1.scaleAbsolute(300, 30);
                 image1.setAbsolutePosition((int) realPageSize.getLeft() + X, realPageSize.getTop() + Y);
@@ -939,6 +939,8 @@ public class ReportService implements IReportService {
                 stamper.close();
                 return ((ByteArrayOutputStream)ms).toByteArray();
             } catch (IOException | DocumentException e) {
+                log.error(e.getMessage());
+            } catch(Exception e) {
                 log.error(e.getMessage());
             }
             return null;

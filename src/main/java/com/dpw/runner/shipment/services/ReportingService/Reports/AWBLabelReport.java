@@ -13,10 +13,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class AWBLabelReport extends IReport{
@@ -35,7 +32,7 @@ public class AWBLabelReport extends IReport{
     IDocumentModel getDocumentModel(Long id) {
         AWbLabelModel awbLabelModel = new AWbLabelModel();
         awbLabelModel.shipment = getShipment(id);
-
+        awbLabelModel.tenant = getTenant();
         // TODO TenantRow required
         return awbLabelModel;
     }
@@ -87,17 +84,31 @@ public class AWBLabelReport extends IReport{
                 dictionary.put(ReportConstants.TENANT, awbLabelModel.getTenantAddress());
         }
         dictionary.put(ReportConstants.HAWB_NUMBER, awbLabelModel.shipment.getHouseBill());
-
-        List<Object>  criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                awbLabelModel.shipment.getCarrierDetails().getDestination()
-        );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-        if(unlocationsResponse != null && !unlocationsResponse.isEmpty())
-            dictionary.put(ReportConstants.HDEST, unlocationsResponse.get(0).getName());
+        List<String> unlocations = new ArrayList<>();
+        if(awbLabelModel.shipment.getCarrierDetails().getDestination() != null)
+            unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestination());
+        if(awbLabelModel.shipment.getCarrierDetails().getDestinationPort() != null)
+            unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestinationPort());
+        if(!unlocations.isEmpty()) {
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
+                    "In",
+                    Arrays.asList(unlocations)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
+                for (var unloc : unlocationsResponse) {
+                    if (Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestination())) {
+                        dictionary.put(ReportConstants.HDEST, unloc.getName());
+                    }
+                    if (Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestinationPort())) {
+                        dictionary.put(ReportConstants.DESTINATION, unloc.getLocCode());
+                    }
+                }
+            }
+        }
         return dictionary;
     }
 }
