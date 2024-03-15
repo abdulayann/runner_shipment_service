@@ -3395,7 +3395,8 @@ public class ShipmentService implements IShipmentService {
         ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
                 .guidsList(List.of(shipmentDetails.getGuid())).build();
         ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
-        if (shipmentBillingListResponse != null && shipmentBillingListResponse.getData() != null && shipmentBillingListResponse.getData().containsKey(shipmentDetails.getGuid().toString())) {
+        if (shipmentBillingListResponse != null && shipmentBillingListResponse.getData() != null && shipmentBillingListResponse.getData().containsKey(shipmentDetails.getGuid().toString())
+                && !IsStringNullOrEmpty(shipmentBillingListResponse.getData().get(shipmentDetails.getGuid().toString()).getBillStatus())) {
             shipmentDetails.setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.getGuid().toString()).getBillStatus());
             shipmentDetailsResponse.setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.getGuid().toString()).getBillStatus());
             shipmentDao.saveJobStatus(shipmentDetails.getId(), shipmentDetails.getJobStatus());
