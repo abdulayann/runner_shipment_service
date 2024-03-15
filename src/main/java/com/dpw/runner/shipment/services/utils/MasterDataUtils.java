@@ -1633,4 +1633,17 @@ public class MasterDataUtils{
         var resp = fetchInBulkCarriers(Arrays.asList(code));
         return resp.containsKey(code) ? resp.get(code).getItemDescription() : null;
     }
+
+    public List<UnlocationsResponse> fetchUnlocationByOneIdentifier(String onField, String value) {
+        if (StringUtility.isEmpty(value))
+            return null;
+        List<Object>  criteria = Arrays.asList(
+                Arrays.asList(onField),
+                "=",
+                value
+        );
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+        return jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+    }
 }
