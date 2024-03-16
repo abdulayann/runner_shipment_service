@@ -223,6 +223,8 @@ public class HblReport extends IReport{
             hblModel.blObject.setHblData(new HblDataDto());
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
+        populateShipmentFields(hblModel.shipment, dictionary);
+        populateConsolidationFields(hblModel.consolidation, dictionary);
         JsonDateFormat(dictionary);
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         if (hblModel.blObject != null) {
@@ -511,8 +513,8 @@ public class HblReport extends IReport{
         dictionary.put(CHARGEABLE_UNIT, hblModel.shipment.getChargeableUnit());
         dictionary.put(FREIGHT_OVERSEAS, hblModel.shipment.getFreightOverseas());
         dictionary.put(FREIGHT_OVERSEAS_CURRENCY, hblModel.shipment.getFreightOverseasCurrency());
-        dictionary.put(ORIGINALS, hblModel.shipment.getAdditionalDetails().getOriginal());
-        dictionary.put(ORIGINAL_WORDS, numberToWords(hblModel.shipment.getAdditionalDetails().getOriginal()));
+        dictionary.put(ORIGINALS, hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal());
+        dictionary.put(ORIGINAL_WORDS, numberToWords(hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal()));
         dictionary.put(ISSUE_PLACE_NAME, hblModel.placeOfIssue != null ? hblModel.placeOfIssue.getName() : "");
         dictionary.put(ISSUE_PLACE_COUNTRY, hblModel.placeOfIssue != null ? hblModel.placeOfIssue.getCountry() : "");
         dictionary.put(ISSUEPLACECOUNTRYNAME, hblModel.issuePlaceCountry); //MasterData
@@ -572,9 +574,9 @@ public class HblReport extends IReport{
         if (hblModel.shipment.getCarrierDetails().getEta() != null)
             dictionary.put(ETA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEta(), tsDateTimeFormat));
         if (hblModel.shipment.getAdditionalDetails().getDateOfIssue() != null) {
-            dictionary.put(DATE_OF_ISSUE_MDY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), tsDateTimeFormat));
-            dictionary.put(DATE_OF_ISSUE_DMY, DateTimeFormatter.ofPattern("dd/MM/yyyy").format(hblModel.shipment.getAdditionalDetails().getDateOfIssue()));
-            dictionary.put(DATE_OF_ISSUE_DMMY, DateTimeFormatter.ofPattern("dd-MMM-yyyy").format(hblModel.shipment.getAdditionalDetails().getDateOfIssue()));
+            dictionary.put(DATE_OF_ISSUE_MDY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), tsDateTimeFormat, true));
+            dictionary.put(DATE_OF_ISSUE_DMY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd/MM/yyyy", true));
+            dictionary.put(DATE_OF_ISSUE_DMMY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd-MMM-yyyy", true));
         }
         if (hblModel.shipment.getAdditionalDetails().getDateOfReceipt() != null)
             dictionary.put(DATE_OF_RECEIPT, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfReceipt(), tsDateTimeFormat));
@@ -876,8 +878,6 @@ public class HblReport extends IReport{
             dictionary.put(PRE_CARRIAGE_VESSEL_VOYAGE, String.join(",", bookingCarriageVesselVoyage));
 
         // ====================  END OF MIGRATION PLACEHOLDER ===================
-        populateShipmentFields(hblModel.shipment, dictionary);
-        populateConsolidationFields(hblModel.consolidation, dictionary);
 //        populateBlFields(hblModel.blObject, dictionary);
         dictionary.put(ReportConstants.PAID_PLACE_COUNTRY_NAME, hblModel.paidPlaceCountry);
         dictionary.put(ReportConstants.SERVICE_MODE_DESCRIPTION, hblModel.serviceMode);

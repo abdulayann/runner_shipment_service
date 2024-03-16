@@ -383,8 +383,8 @@ public abstract class IReport {
         String formatPattern = "dd/MMM/y";
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
-        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
+        dictionary.put(ReportConstants.DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
 
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
@@ -689,6 +689,20 @@ public abstract class IReport {
                 wareHouseResponseMap.containsKey(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId()))) {
             dictionary.put(BOUNDED_WAREHOUSE_NAME, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId())).getWarehouseDepotName());
             dictionary.put(BOUNDED_WAREHOUSE_CODE, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId())).getWarehouseDepotCode());
+        }
+        if(shipment.getPickupDetails() != null)
+            dictionary.put(PICKUP_SHIPPERS_REF, shipment.getPickupDetails().getShipperRef());
+        PartiesModel deliveryTransport = null;
+        if(shipment.getDeliveryDetails() != null)
+            deliveryTransport = shipment.getDeliveryDetails().getTransporterDetail();
+        if (deliveryTransport != null && deliveryTransport.getAddressData() != null)
+        {
+            Map<String, Object> addressMap = deliveryTransport.getAddressData();
+            populateAddress(addressMap, dictionary, DeliveryTransport);
+            var address = getOrgAddress(getValueFromMap(addressMap, ORG_FULL_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
+                    getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
+                    getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
+            dictionary.put(ReportConstants.DeliveryTransport, address);
         }
         SetContainerCount(shipment, dictionary);
         populateUserFields(UserContext.getUser(), dictionary);
@@ -1398,6 +1412,24 @@ public abstract class IReport {
             } else {
                 strDate = date.format(GetDPWDateFormatWithTime(tsDatetimeFormat));
             }
+        }
+        return strDate;
+    }
+
+    public String ConvertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone)
+    {
+        String strDate = "";
+        LocalDateTime formatedDate;
+        if (date != null)
+        {
+            formatedDate = date;
+            if(isTimeZone) {
+                formatedDate =  LocalTimeZoneHelper.getDateTime(date);
+            }
+            if(!IsStringNullOrEmpty(tsDatetimeFormat))
+                strDate = formatedDate.format(DateTimeFormatter.ofPattern(tsDatetimeFormat));
+            else
+                strDate = formatedDate.format(GetDPWDateFormatOrDefault());
         }
         return strDate;
     }

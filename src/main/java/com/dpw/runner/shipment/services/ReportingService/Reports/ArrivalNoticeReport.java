@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ArrivalNoticeMod
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -23,6 +24,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getCityCountry;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 
 @Component
 public class ArrivalNoticeReport extends IReport {
@@ -120,7 +123,18 @@ public class ArrivalNoticeReport extends IReport {
         else if(arrivalNoticeModel.shipmentDetails.getAdditionalDetails() != null) {
             dictionary.put(AGENT_REFERENCE, arrivalNoticeModel.shipmentDetails.getAdditionalDetails().getAgentReference());
         }
-
+        PartiesModel pickupFrom = null;
+        if(arrivalNoticeModel.shipmentDetails.getPickupDetails() != null)
+            pickupFrom = arrivalNoticeModel.shipmentDetails.getPickupDetails().getSourceDetail();
+        if (pickupFrom != null && pickupFrom.getAddressData() != null)
+        {
+            Map<String, Object> addressMap = pickupFrom.getAddressData();
+            populateAddress(addressMap, dictionary, ReportConstants.PICK_UP_FROM);
+            var address = getOrgAddress(getValueFromMap(addressMap, ORG_FULL_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
+                    getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
+                    getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
+            dictionary.put(ReportConstants.PICK_UP_FROM, address);
+        }
         return dictionary;
     }
 
