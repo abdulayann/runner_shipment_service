@@ -33,7 +33,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -127,6 +126,8 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setDocsList(convertToList(request.getFileRepoList(), FileRepoRequestV2.class));
         response.setRoutingsList(syncEntityConversionService.routingsV2ToV1(request.getRoutingsList()));
         response.setConsolidationAddresses(syncEntityConversionService.addressesV2ToV1(request.getConsolidationAddresses()));
+        if(response.getAutoUpdateGoodsDesc() == null)
+            response.setAutoUpdateGoodsDesc(false);
 
         mapShipmentGuids(response, request);
         if(request.getCreditor() != null && request.getCreditor().getIsAddressFreeText() != null && request.getCreditor().getIsAddressFreeText()){
