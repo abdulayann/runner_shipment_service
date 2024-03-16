@@ -749,7 +749,7 @@ public class HblReport extends IReport{
             }
             dictionary.put(ONBOARD_DATE, OnBoardValue);
             dictionary.put(ONBOARD_TYPE_DATE, hblModel.shipment.getAdditionalDetails().getOnBoardDate() != null ?
-                    ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getOnBoardDate(), tsDateTimeFormat) : null);
+                    ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getOnBoardDate(), tsDateTimeFormat, true) : null);
         }
 // TODO
 //        if(!String.IsNullOrEmpty(PrintType)) {
