@@ -4,10 +4,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -274,7 +271,7 @@ public class ContainerService implements IContainerService {
             }
             checkCalculatedVolumeAndActualVolume(request, row + 1, containersRow);
             applyContainerNumberValidation(transportMode, row + 1, containersRow);
-            applyConatinerCountValidation(request, transportMode, row + 1, containersRow);
+            applyConatinerCountValidation(transportMode, row + 1, containersRow);
             applyChargeableValidation(transportMode, row + 1, containersRow);
             checkForHandlingInfo(transportMode, row + 1, containersRow);
             applyCommodityTypeValidation(dicCommodityType, row + 1, containersRow);
@@ -287,9 +284,9 @@ public class ContainerService implements IContainerService {
 
     private void isPartValidation(BulkUploadRequest request, Containers containersRow) {
         Boolean isPartValue = containersRow.getIsPart() == null ? false : containersRow.getIsPart();
-        if (isPartValue) {
+        if (Boolean.TRUE.equals(isPartValue)) {
             var shipmentRecordOpt = shipmentDao.findById(request.getShipmentId());
-            if (shipmentRecordOpt.isPresent() && Constants.CARGO_TYPE_FCL.equals(shipmentRecordOpt.get().getShipmentType()) && isPartValue) {
+            if (shipmentRecordOpt.isPresent() && Constants.CARGO_TYPE_FCL.equals(shipmentRecordOpt.get().getShipmentType())) {
                 throw new ValidationException("Shipment cargo type is FCL, Part containers are not allowed to be attached with FCL Shipment");
             }
         }
@@ -310,8 +307,7 @@ public class ContainerService implements IContainerService {
 
     private static void applyHazardousValidation(Set<String> hazardousClassMasterData, int row, Containers containersRow) {
         Boolean isHazardous = containersRow.getHazardous();
-        if (isHazardous != null) {
-            if (isHazardous) {
+        if (isHazardous != null && (isHazardous)) {
                 // DG CLASS(HAZARDOUS CLASS)
                 String dgClass = containersRow.getDgClass();
                 if (!StringUtils.isEmpty(dgClass)) {
@@ -331,17 +327,16 @@ public class ContainerService implements IContainerService {
                 if (!StringUtils.isEmpty(hazardousUn)) {
                     containersRow.setHazardousUn(hazardousUn);
                 }
-            }
+
         }
     }
 
     private static void applyCommodityTypeValidation(Set<String> dicCommodityType, int row, Containers containersRow) {
         String commodityCode = containersRow.getCommodityCode();
         commodityCode = commodityCode == null ? StringUtils.EMPTY : commodityCode.trim();
-        if (!commodityCode.isEmpty()) {
-            if (dicCommodityType == null || !dicCommodityType.contains(commodityCode)) {
+        if (!commodityCode.isEmpty() && (dicCommodityType == null || !dicCommodityType.contains(commodityCode))) {
                 throw new ValidationException("Commodity Type " + commodityCode + " is not valid at row " + row);
-            }
+
         }
     }
 
@@ -407,7 +402,7 @@ public class ContainerService implements IContainerService {
         return packageLength.multiply(packageBreadth).multiply(packageHeight);
     }
 
-    private static void applyConatinerCountValidation(BulkUploadRequest request, String transportMode, int row, Containers containersRow) {
+    private static void applyConatinerCountValidation(String transportMode, int row, Containers containersRow) {
         if (transportMode != null && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
             try {
                 var containerCount = Integer.parseInt(String.valueOf(containersRow.getContainerCount()));
@@ -437,7 +432,6 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void uploadContainerEvents(BulkUploadRequest request) throws RunnerException, IOException {
-//        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
         }
@@ -464,12 +458,17 @@ public class ContainerService implements IContainerService {
             List<ShipmentsContainersMapping> mappings;
             List<Containers> result = new ArrayList<>();
             if (request.getShipmentId() != null) {
-                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId())).get();
+                var shipDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId()));
+                if(shipDetails.isEmpty()){
+                    log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getShipmentId(), LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                ShipmentDetails shipmentDetails = shipDetails.get();
                 request.setTransportMode(shipmentDetails.getTransportMode());
                 request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
                 List<Long> containerId = new ArrayList<>();
                 mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
-                containerId.addAll(mappings.stream().map(mapping -> mapping.getContainerId()).collect(Collectors.toList()));
+                containerId.addAll(mappings.stream().map(mapping -> mapping.getContainerId()).toList());
 
                 ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
                 Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
@@ -479,7 +478,12 @@ public class ContainerService implements IContainerService {
             }
 
             if (request.getConsolidationId() != null) {
-                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId())).get();
+                var consoleDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()));
+                if(consoleDetails.isEmpty()) {
+                    log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, request.getConsolidationId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                ConsolidationDetails consolidationDetails = consoleDetails.get();
                 request.setTransportMode(consolidationDetails.getTransportMode());
                 request.setExport(consolidationDetails.getShipmentType() != null && consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
                 ListCommonRequest req2 = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");

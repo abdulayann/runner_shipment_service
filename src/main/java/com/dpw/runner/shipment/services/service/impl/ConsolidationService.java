@@ -30,12 +30,10 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -1903,7 +1901,7 @@ public class ConsolidationService implements IConsolidationService {
             containers = map.get(id);
         else {
             Optional<Containers> containers1 = containerDao.findById(id);
-            if(containers1 != null && containers1.isPresent()) {
+            if(containers1.isPresent()) {
                 containers = containers1.get();
                 map.put(containers.getId(), containers);
             }
@@ -1921,11 +1919,10 @@ public class ConsolidationService implements IConsolidationService {
             if (request.getId() == null) {
                 log.error("Request Id is null for Consolidation complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
 
             CompletableFuture<ResponseEntity<IRunnerResponse>> consolidationsFuture = retrieveByIdAsync(commonRequestModel);
             RunnerResponse<ConsolidationDetailsResponse> res = (RunnerResponse<ConsolidationDetailsResponse>) consolidationsFuture.get().getBody();
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
+            if(request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildSuccessResponse(res.getData());
             else{
                 return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(res.getData(), request.getIncludeColumns()));
@@ -2064,7 +2061,7 @@ public class ConsolidationService implements IConsolidationService {
                 throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
             Long id = request.getId();
-            Optional<ConsolidationDetails> consolidationDetails = Optional.ofNullable(null);
+            Optional<ConsolidationDetails> consolidationDetails;
             if(id != null ){
                 consolidationDetails = consolidationDetailsDao.findById(id);
             } else {
@@ -2274,15 +2271,13 @@ public class ConsolidationService implements IConsolidationService {
         if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
             carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
 
-        if(masterDataResponse != null) {
-            if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList())) {
-                List<String> finalCarrierList = carrierList;
-                consolidationDetailsResponse.getRoutingsList().forEach(r -> finalCarrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId())));
-                carrierList = finalCarrierList;
-            }
+        if(masterDataResponse != null && (!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))) {
+            List<String> finalCarrierList = carrierList;
+            consolidationDetailsResponse.getRoutingsList().forEach(r -> finalCarrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId())));
+            carrierList = finalCarrierList;
         }
 
-        Map v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
+        Map<String, EntityTransferCarrier> v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
 
         if(masterDataResponse == null) {
@@ -2299,7 +2294,7 @@ public class ConsolidationService implements IConsolidationService {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> currencyList = new ArrayList<>(masterDataUtils.createInBulkCurrencyRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
-        Map v1Data = masterDataUtils.fetchInCurrencyList(currencyList);
+        Map<String, EntityTransferCurrency> v1Data = masterDataUtils.fetchInCurrencyList(currencyList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.CURRENCIES);
 
         if(masterDataResponse == null) {
@@ -2319,9 +2314,8 @@ public class ConsolidationService implements IConsolidationService {
         if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
             consolidationDetailsResponse.getContainersList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
 
-        if(masterDataResponse != null) {
-            if (!Objects.isNull(consolidationDetailsResponse.getPackingList()))
-                consolidationDetailsResponse.getPackingList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
+        if(masterDataResponse != null && (!Objects.isNull(consolidationDetailsResponse.getPackingList()))) {
+            consolidationDetailsResponse.getPackingList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
         }
 
         Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
@@ -2342,7 +2336,7 @@ public class ConsolidationService implements IConsolidationService {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
-        Map v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
+        Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS);
 
         if(masterDataResponse == null) {
@@ -2359,7 +2353,7 @@ public class ConsolidationService implements IConsolidationService {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> wareHouseTypes = new HashSet<>(masterDataUtils.createInBulkWareHouseRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
-        Map v1Data = masterDataUtils.fetchInWareHousesList(wareHouseTypes.stream().toList());
+        Map<String, WareHouseResponse> v1Data = masterDataUtils.fetchInWareHousesList(wareHouseTypes.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES);
 
         if(masterDataResponse == null) {
@@ -2380,7 +2374,7 @@ public class ConsolidationService implements IConsolidationService {
         if (!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
             consolidationDetailsResponse.getRoutingsList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
 
-        Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
+        Map<String, EntityTransferVessels> v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);
 
         if(masterDataResponse == null) {
@@ -2399,11 +2393,10 @@ public class ConsolidationService implements IConsolidationService {
         if (!Objects.isNull(consolidationDetailsResponse.getPackingList()))
             consolidationDetailsResponse.getPackingList().forEach(r -> dgSubstanceIdList.addAll(masterDataUtils.createInBulkDGSubstanceRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
 
-        Map v1Data = masterDataUtils.fetchInDGSubstanceList(dgSubstanceIdList.stream().toList());
+        Map<String, EntityTransferDGSubstance> v1Data = masterDataUtils.fetchInDGSubstanceList(dgSubstanceIdList.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.DG_SUBSTANCES);
 
-        if(masterDataResponse == null) { }
-        else {
+        if(masterDataResponse != null) {
             masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.DG_SUBSTANCES, masterDataResponse);
         }
 
@@ -2499,7 +2492,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(finalContainer.getNetWeightUnit().equals(container.getNetWeightUnit()))
                     finalContainer.setNetWeight(finalContainer.getNetWeight().add(container.getNetWeight()));
                 else {
-                    finalContainer.setNetWeight( new BigDecimal(convertUnit(Constants.MASS, finalContainer.getNetWeight(), finalContainer.getNetWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() +
+                    finalContainer.setNetWeight(BigDecimal.valueOf(convertUnit(Constants.MASS, finalContainer.getNetWeight(), finalContainer.getNetWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() +
                                     convertUnit(Constants.MASS, container.getNetWeight(), container.getNetWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() ));
                     finalContainer.setNetWeightUnit(shipmentSettingsDetails.getWeightChargeableUnit());
                 }
@@ -2513,7 +2506,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(finalContainer.getGrossWeightUnit().equals(container.getGrossWeightUnit()))
                     finalContainer.setGrossWeight(finalContainer.getGrossWeight().add(container.getGrossWeight()));
                 else {
-                    finalContainer.setGrossWeight( new BigDecimal(convertUnit(Constants.MASS, finalContainer.getGrossWeight(), finalContainer.getGrossWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() +
+                    finalContainer.setGrossWeight(BigDecimal.valueOf(convertUnit(Constants.MASS, finalContainer.getGrossWeight(), finalContainer.getGrossWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() +
                             convertUnit(Constants.MASS, container.getGrossWeight(), container.getGrossWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() ));
                     finalContainer.setGrossWeightUnit(shipmentSettingsDetails.getWeightChargeableUnit());
                 }
@@ -2527,7 +2520,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(finalContainer.getTareWeightUnit().equals(container.getTareWeightUnit()))
                     finalContainer.setTareWeight(finalContainer.getTareWeight().add(container.getTareWeight()));
                 else {
-                    finalContainer.setTareWeight( new BigDecimal(convertUnit(Constants.MASS, finalContainer.getTareWeight(), finalContainer.getTareWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() +
+                    finalContainer.setTareWeight(BigDecimal.valueOf(convertUnit(Constants.MASS, finalContainer.getTareWeight(), finalContainer.getTareWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() +
                             convertUnit(Constants.MASS, container.getTareWeight(), container.getTareWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() ));
                     finalContainer.setTareWeightUnit(shipmentSettingsDetails.getWeightChargeableUnit());
                 }
@@ -2541,7 +2534,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(finalContainer.getGrossVolumeUnit().equals(container.getGrossVolumeUnit()))
                     finalContainer.setGrossVolume(finalContainer.getGrossVolume().add(container.getGrossVolume()));
                 else {
-                    finalContainer.setGrossVolume( new BigDecimal(convertUnit(Constants.VOLUME, finalContainer.getGrossVolume(), finalContainer.getGrossVolumeUnit(), shipmentSettingsDetails.getVolumeChargeableUnit()).doubleValue() +
+                    finalContainer.setGrossVolume(BigDecimal.valueOf(convertUnit(Constants.VOLUME, finalContainer.getGrossVolume(), finalContainer.getGrossVolumeUnit(), shipmentSettingsDetails.getVolumeChargeableUnit()).doubleValue() +
                             convertUnit(Constants.VOLUME, container.getGrossVolume(), container.getGrossVolumeUnit(), shipmentSettingsDetails.getVolumeChargeableUnit()).doubleValue() ));
                     finalContainer.setGrossVolumeUnit(shipmentSettingsDetails.getVolumeChargeableUnit());
                 }
@@ -2555,7 +2548,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(finalContainer.getMeasurementUnit().equals(container.getMeasurementUnit()))
                     finalContainer.setMeasurement(finalContainer.getMeasurement().add(container.getMeasurement()));
                 else {
-                    finalContainer.setMeasurement( new BigDecimal(convertUnit(Constants.LENGTH, finalContainer.getMeasurement(), finalContainer.getMeasurementUnit(), shipmentSettingsDetails.getMeasurementChargeableUnit()).doubleValue() +
+                    finalContainer.setMeasurement(BigDecimal.valueOf(convertUnit(Constants.LENGTH, finalContainer.getMeasurement(), finalContainer.getMeasurementUnit(), shipmentSettingsDetails.getMeasurementChargeableUnit()).doubleValue() +
                             convertUnit(Constants.LENGTH, container.getMeasurement(), container.getMeasurementUnit(), shipmentSettingsDetails.getMeasurementChargeableUnit()).doubleValue() ));
                     finalContainer.setMeasurementUnit(shipmentSettingsDetails.getMeasurementChargeableUnit());
                 }
@@ -2571,7 +2564,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private String mergeTextField(String a, String b) {
-        if(!IsStringNullOrEmpty(b) && !IsStringNullOrEmpty(b))
+        if(!IsStringNullOrEmpty(a) && !IsStringNullOrEmpty(b))
             return a + "\n" + b;
         if(!IsStringNullOrEmpty(b))
             return b;
@@ -2583,9 +2576,14 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long id = commonGetRequest.getId();
+        var consoleDetails = consolidationDetailsDao.findById(id);
+        if(consoleDetails.isEmpty()) {
+            log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, id, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(id).get();
         String lockingUser = consolidationDetails.getLockedBy();
-        String currentUser = userContext.getUser().getUsername();
+        String currentUser = UserContext.getUser().getUsername();
 
         if (consolidationDetails.getIsLocked() != null && consolidationDetails.getIsLocked()) {
             if (lockingUser != null && lockingUser.equals(currentUser))
@@ -2632,10 +2630,6 @@ public class ConsolidationService implements IConsolidationService {
         List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
         List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = consolidationDetailsRequest.getTruckDriverDetails();
-        List<PartiesRequest> consolidationAddresses = consolidationDetailsRequest.getConsolidationAddresses();
-        CarrierDetailRequest carrierDetailRequest = consolidationDetailsRequest.getCarrierDetails();
-        AchievedQuantitiesRequest achievedQuantitiesRequest = consolidationDetailsRequest.getAchievedQuantities();
-        AllocationsRequest allocationsRequest = consolidationDetailsRequest.getAllocations();
 
 
         UUID guid = consolidationDetailsRequest.getGuid();
@@ -2644,6 +2638,7 @@ public class ConsolidationService implements IConsolidationService {
             oldEntity = consolidationDetailsDao.findByGuid(guid);
         }
         catch (Exception e){
+            log.debug(e.getMessage());
         }
 
         List<ShipmentDetails> tempShipIds = new ArrayList<>();
@@ -3252,7 +3247,7 @@ public class ConsolidationService implements IConsolidationService {
             ContainerPackSummaryDto response = new ContainerPackSummaryDto();
             response.setPacksList(new ArrayList<>());
             List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(id);
-            if(consoleShipmentMappingList != null && consoleShipmentMappingList.size() > 0) {
+            if(consoleShipmentMappingList != null && !consoleShipmentMappingList.isEmpty()) {
                 ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList(), "IN", null);
                 andCriteria(Constants.CONTAINER_ID, "", "ISNOTNULL", listCommonRequest);
                 Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
@@ -3263,15 +3258,22 @@ public class ConsolidationService implements IConsolidationService {
                     for (Packing packing : packings.getContent()) {
                         ContainerPackSummaryDto.PacksList packsList = jsonHelper.convertValue(packing, ContainerPackSummaryDto.PacksList.class);
                         ShipmentDetails shipmentDetails = getShipmentFromMap(shipMap, packing.getShipmentId());
-                        packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
-                        packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
-                        packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
-                        packsList.setShipmentNumber(shipmentDetails.getShipmentId());
+                        if(shipmentDetails != null) {
+                            packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
+                            packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
+                            packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
+                            packsList.setShipmentNumber(shipmentDetails.getShipmentId());
+                        }
                         try { packsList.setShipmentStatus(ShipmentStatus.fromValue(shipmentDetails.getStatus())); }
-                        catch (Exception e) { }
+                        catch (Exception e) {
+                            log.error(e.getMessage());
+                        }
                         try { Containers containers = getContainerFromMap(contMap, packing.getContainerId());
-                            packsList.setContainerNumber(containers.getContainerNumber()); }
-                        catch (Exception e) { }
+                            if(containers != null)
+                                packsList.setContainerNumber(containers.getContainerNumber()); }
+                        catch (Exception e) {
+                            log.error(e.getMessage());
+                        }
                         response.getPacksList().add(packsList);
                     }
                 }
@@ -3288,7 +3290,9 @@ public class ConsolidationService implements IConsolidationService {
                 masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
                 if(!Objects.isNull(response.getPacksList()))
                     response.getPacksList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ContainerPackSummaryDto.PacksList.class.getSimpleName()), CacheConstants.MASTER_LIST)));
-            } catch (Exception e) { }
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -3426,11 +3430,9 @@ public class ConsolidationService implements IConsolidationService {
         Events response = null;
         response = createAutomatedEvents(consolidationDetails, Constants.CONCRTD);
 
-        if(response != null) {
-            if (consolidationDetails.getEventsList() == null)
-                consolidationDetails.setEventsList(new ArrayList<>());
-            consolidationDetails.getEventsList().add(response);
-        }
+        if (consolidationDetails.getEventsList() == null)
+            consolidationDetails.setEventsList(new ArrayList<>());
+        consolidationDetails.getEventsList().add(response);
     }
 
     private Events createAutomatedEvents(ConsolidationDetails consolidationDetails, String eventCode) {
