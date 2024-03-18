@@ -32,17 +32,21 @@ public class DbAccessHelper {
         globalSearchCriteria(request, tableName);
         if (request.getSortRequest() != null && request.getFilterCriteria() != null &&
                 (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null && request.getFilterCriteria().get(0).getInnerFilter().size() == 0))) {
-            String _tableName = tableNames.get(request.getSortRequest().getFieldName()).getTableName();
+            String _tableName = !Objects.isNull(tableNames.get(request.getSortRequest().getFieldName())) ? tableNames.get(request.getSortRequest().getFieldName()).getTableName() : null;
             Sort sortRequest = null;
-            if (Objects.equals(_tableName, className.getSimpleName()))
-                sortRequest = Sort.by(getFieldName(request.getSortRequest().getFieldName()));
+            if (_tableName != null) {
+                if (Objects.equals(_tableName, className.getSimpleName()))
+                    sortRequest = Sort.by(getFieldName(request.getSortRequest().getFieldName()));
+                else
+                    sortRequest = Sort.by( _tableName + "." + getFieldName(request.getSortRequest().getFieldName()));
+                sortRequest = sortRequest.ascending();
+                if (Objects.equals(request.getSortRequest().getOrder(), "DESC"))
+                    sortRequest = sortRequest.descending();
+            }
+            if (!Objects.isNull(sortRequest))
+                pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
             else
-                sortRequest = Sort.by( _tableName + "." + getFieldName(request.getSortRequest().getFieldName()));
-            sortRequest = sortRequest.ascending();
-            if (Objects.equals(request.getSortRequest().getOrder(), "DESC"))
-                sortRequest = sortRequest.descending();
-
-            pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
+                pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize());
         } else {
             pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize());
         }
