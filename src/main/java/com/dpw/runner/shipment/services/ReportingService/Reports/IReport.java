@@ -293,8 +293,15 @@ public abstract class IReport {
         dictionary.put(ReportConstants.MASTER_BILL,shipment.getMasterBill());
         dictionary.put(ReportConstants.HOUSE_BILL,shipment.getHouseBill());
         VesselsResponse vesselsResponse = getVesselsData(shipment.getCarrierDetails().getVessel());
-        if(vesselsResponse != null)
+        if(Objects.equals(shipment.getTransportMode(), AIR))
+        {
+            dictionary.put(VesselsNameFlightName, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getShippingLine() : null);
+        }
+        if(vesselsResponse != null) {
             dictionary.put(VESSEL_NAME, vesselsResponse.getName());
+            if(!Objects.equals(shipment.getTransportMode(), AIR))
+                dictionary.put(VesselsNameFlightName, vesselsResponse.getName());
+        }
         dictionary.put(ReportConstants.VOYAGE,shipment.getCarrierDetails().getVoyage());
         if(!Objects.isNull(pol)) dictionary.put(ReportConstants.POL_CODE, pol.getLocCode());
         if(!Objects.isNull(pod)) dictionary.put(ReportConstants.POD_CODE, pod.getLocCode());
@@ -707,6 +714,10 @@ public abstract class IReport {
         SetContainerCount(shipment, dictionary);
         populateUserFields(UserContext.getUser(), dictionary);
         populateHasContainerFields(shipment, dictionary, v1TenantSettingsResponse);
+        if(Objects.equals(shipment.getTransportMode(), AIR))
+            dictionary.put(VoyageOrFlightNo, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getFlightNumber() : null);
+        else
+            dictionary.put(VoyageOrFlightNo, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getVoyage() : null);
     }
 
     public List<String> populateConsigneeData(Map<String, Object> dictionary, PartiesModel shipmentConsignee) {
