@@ -68,7 +68,10 @@ public class BaseEntity implements Serializable {
     void prePersist() {
         if (UserContext.getUser() != null) {
             String username = UserContext.getUser().getUsername();
-            this.createdBy = username;
+            if(this.createdBy == null || this.createdBy.isEmpty())
+            {
+                this.createdBy = username;
+            }
             this.updatedBy = username;
         }
 
