@@ -1100,12 +1100,12 @@ public class ShipmentService implements IShipmentService {
             response = updateShipmentDetails(response, containersList);
         response = calculateVW(request, response, true);
         if(shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer().booleanValue()
-                || request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) || isPacksPresent) {
+                || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) || isPacksPresent) {
             ShipmentMeasurementDetailsDto dto = new ShipmentMeasurementDetailsDto();
             response.setPackSummary(packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType(), dto));
-            if(request.getTransportMode() != null && ((request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
+            if(request.getTransportMode() != null && ((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA)
             && request.getShipmentType() != null && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
-            || request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))) {
+            || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR))) {
                 response.setInnerPacks(dto.getInnerPacks());
                 response.setInnerPackUnit(dto.getInnerPackUnit());
             }
@@ -1126,7 +1126,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
-        if(Boolean.TRUE.equals(v1TenantSettingsResponse.getP100Branch()) && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+        if(Boolean.TRUE.equals(v1TenantSettingsResponse.getP100Branch()) && Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA)) {
             response = calculatePacksAndPacksUnitFromContainer(response, containersList);
         }
         return response;

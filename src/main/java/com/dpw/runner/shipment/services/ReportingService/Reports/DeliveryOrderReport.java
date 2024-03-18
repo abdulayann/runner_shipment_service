@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -182,19 +183,18 @@ public class DeliveryOrderReport extends IReport{
             dictionary.put(ReportConstants.DeliveryTo, address);
         }
         Integer decimalPlaces = ShipmentSettingsDetailsContext.getCurrentTenantSettings().getDecimalPlaces() == null ? 2 : ShipmentSettingsDetailsContext.getCurrentTenantSettings().getDecimalPlaces();
-        MathContext precision = new MathContext(decimalPlaces);
         if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getWeight())) {
-            BigDecimal weight = deliveryOrderModel.shipmentDetails.getWeight().round(precision);
+            BigDecimal weight = deliveryOrderModel.shipmentDetails.getWeight().setScale(decimalPlaces, RoundingMode.HALF_UP);
             dictionary.put(WEIGHT, ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse));
             dictionary.put(WEIGHT_AND_UNIT, String.format(REGEX_S_S, weight, deliveryOrderModel.shipmentDetails.getWeightUnit()));
         }
         if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getVolume())) {
-            BigDecimal volume = deliveryOrderModel.shipmentDetails.getVolume().round(precision);
+            BigDecimal volume = deliveryOrderModel.shipmentDetails.getVolume().setScale(decimalPlaces, RoundingMode.HALF_UP);
             dictionary.put(VOLUME, volume);
             dictionary.put(VOLUME_AND_UNIT, String.format(REGEX_S_S, volume, deliveryOrderModel.shipmentDetails.getVolumeUnit()));
         }
         if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getChargable())) {
-            BigDecimal chargeable = deliveryOrderModel.shipmentDetails.getChargable().round(precision);
+            BigDecimal chargeable = deliveryOrderModel.shipmentDetails.getChargable().setScale(decimalPlaces, RoundingMode.HALF_UP);
             dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse));
             dictionary.put(CHARGEABLE_AND_UNIT, String.format(REGEX_S_S, chargeable, deliveryOrderModel.shipmentDetails.getChargeableUnit()));
             dictionary.put(CHARGEABLE_AND_UNIT_, dictionary.get(CHARGEABLE_AND_UNIT));
