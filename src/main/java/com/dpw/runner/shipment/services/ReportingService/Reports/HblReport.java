@@ -33,6 +33,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -612,19 +613,18 @@ public class HblReport extends IReport{
                 dictionary.put(ReportConstants.PICKUPTIME_TYPE, "Estimated Pickup");
             }
         }
-        MathContext precision = new MathContext(decimalPlaces);
         if (!Objects.isNull(hblModel.shipment.getWeight())) {
-            BigDecimal weight = hblModel.shipment.getWeight().round(precision);
+            BigDecimal weight = hblModel.shipment.getWeight().setScale(decimalPlaces, RoundingMode.HALF_UP);
             dictionary.put(WEIGHT, ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse));
             dictionary.put(WEIGHT_AND_UNIT, String.format(REGEX_S_S, weight, hblModel.shipment.getWeightUnit()));
         }
         if (!Objects.isNull(hblModel.shipment.getVolume())) {
-            BigDecimal volume = hblModel.shipment.getVolume().round(precision);
+            BigDecimal volume = hblModel.shipment.getVolume().setScale(decimalPlaces, RoundingMode.HALF_UP);
             dictionary.put(VOLUME, volume);
             dictionary.put(VOLUME_AND_UNIT, String.format(REGEX_S_S, volume, hblModel.shipment.getVolumeUnit()));
         }
         if (!Objects.isNull(hblModel.shipment.getChargable())) {
-            BigDecimal chargeable = hblModel.shipment.getChargable().round(precision);
+            BigDecimal chargeable = hblModel.shipment.getChargable().setScale(decimalPlaces, RoundingMode.HALF_UP);
             dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse));
             dictionary.put(CHARGEABLE_AND_UNIT, String.format(REGEX_S_S, chargeable, hblModel.shipment.getChargeableUnit()));
             dictionary.put(CHARGEABLE_AND_UNIT_, dictionary.get(CHARGEABLE_AND_UNIT));
