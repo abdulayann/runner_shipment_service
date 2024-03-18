@@ -65,6 +65,7 @@ sed -i "s/\$SCALE_UP_SEC/${SCALE_UP_SEC}/g" $app_hpa_yaml_path
 
 # replace secretproviderclass variables
 sed -i "s/\$USER_ASSIGNED_IDENTITY_ID/${USER_ASSIGNED_IDENTITY_ID}/g" $secretproviderclass_yaml_path
+sed -i "s/\$NAMESPACE_NAME/${namespace}/g" $secretproviderclass_yaml_path
 
 #Displaying file updates
 echo "*****App Deployment*****"
