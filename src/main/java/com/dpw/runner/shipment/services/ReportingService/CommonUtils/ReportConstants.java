@@ -1006,4 +1006,8 @@ public class ReportConstants {
     public static final String DeliveryTo = "DeliveryTo";
     public static final String DeliveryTransport = "DeliveryTransport";
 
+    //arrival notice report keys
+    public static final String VesselsNameFlightName = "VesselsNameFlightName";
+    public static final String VoyageOrFlightNo = "VoyageOrFlightNo";
+
 }

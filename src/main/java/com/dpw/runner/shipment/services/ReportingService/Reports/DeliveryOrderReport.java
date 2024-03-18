@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -24,6 +25,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -177,6 +180,35 @@ public class DeliveryOrderReport extends IReport{
                     getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
                     getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
             dictionary.put(ReportConstants.DeliveryTo, address);
+        }
+        Integer decimalPlaces = ShipmentSettingsDetailsContext.getCurrentTenantSettings().getDecimalPlaces() == null ? 2 : ShipmentSettingsDetailsContext.getCurrentTenantSettings().getDecimalPlaces();
+        MathContext precision = new MathContext(decimalPlaces);
+        if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getWeight())) {
+            BigDecimal weight = deliveryOrderModel.shipmentDetails.getWeight().round(precision);
+            dictionary.put(WEIGHT, ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse));
+            dictionary.put(WEIGHT_AND_UNIT, String.format(REGEX_S_S, weight, deliveryOrderModel.shipmentDetails.getWeightUnit()));
+        }
+        if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getVolume())) {
+            BigDecimal volume = deliveryOrderModel.shipmentDetails.getVolume().round(precision);
+            dictionary.put(VOLUME, volume);
+            dictionary.put(VOLUME_AND_UNIT, String.format(REGEX_S_S, volume, deliveryOrderModel.shipmentDetails.getVolumeUnit()));
+        }
+        if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getChargable())) {
+            BigDecimal chargeable = deliveryOrderModel.shipmentDetails.getChargable().round(precision);
+            dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse));
+            dictionary.put(CHARGEABLE_AND_UNIT, String.format(REGEX_S_S, chargeable, deliveryOrderModel.shipmentDetails.getChargeableUnit()));
+            dictionary.put(CHARGEABLE_AND_UNIT_, dictionary.get(CHARGEABLE_AND_UNIT));
+        }
+        PartiesModel client = deliveryOrderModel.shipmentDetails.getClient();
+        if(client != null && client.getAddressData() != null) {
+            Map<String, Object> addressMap = client.getAddressData();
+            List<String> clientAddress = getOrgAddress(getValueFromMap(addressMap, COMPANY_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
+                    getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
+                    null, null);
+            if(getValueFromMap(addressMap, FULL_NAME) != null) {
+                clientAddress.add(0, getValueFromMap(addressMap, FULL_NAME));
+            }
+            dictionary.put(CLIENT_ADRS, clientAddress);
         }
 
         return dictionary;
