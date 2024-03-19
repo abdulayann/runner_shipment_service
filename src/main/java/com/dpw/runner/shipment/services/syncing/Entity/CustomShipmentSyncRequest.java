@@ -539,4 +539,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String custom_DeclType;
     @JsonProperty("ContainsHazardous")
     private Boolean ContainsHazardous;
+    @JsonProperty("ChangeLogs")
+    private List<AuditLogRequestV2> ChangeLogs;
 }
