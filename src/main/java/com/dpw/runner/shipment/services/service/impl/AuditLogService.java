@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Triple;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -124,6 +125,9 @@ public class AuditLogService implements IAuditLogService {
     }
 
     public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException, RunnerException {
+        String skipAuditLog = MDC.get("skip-audit-log");
+        if(skipAuditLog != null && skipAuditLog.equals("true"))
+            return;
         validateRequest(auditLogMetaData);
         AuditLog auditLog = new AuditLog();
         auditLog.setOperation(auditLogMetaData.getOperation());

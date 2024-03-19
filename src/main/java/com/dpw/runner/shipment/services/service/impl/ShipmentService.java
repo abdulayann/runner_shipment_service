@@ -44,7 +44,6 @@ import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -52,8 +51,11 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
+import com.dpw.runner.shipment.services.syncing.Entity.AuditLogRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
+import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
@@ -66,6 +68,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -191,6 +194,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
@@ -2748,8 +2754,28 @@ public class ShipmentService implements IShipmentService {
         return !StringUtils.isEmpty(prefix) ? prefix + suffix : suffix;
     }
 
+    public ResponseEntity<IRunnerResponse> syncShipmentAuditLogsToService(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            AuditLogsSyncRequest request = (AuditLogsSyncRequest) commonRequestModel.getData();
+            if(request.getGuid() == null)
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            Optional<ShipmentDetails> oldEntity = shipmentDao.findByGuid(request.getGuid());
+            if(oldEntity.isPresent())
+                syncEntityConversionService.auditLogsV1ToV2(request.getChangeLogs(), oldEntity.get().getId());
+            else
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e){
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     @Transactional
-    public ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes, boolean dataMigration) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes, boolean dataMigration, List<AuditLogRequestV2> auditLogRequestV2) throws RunnerException {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
 
@@ -2772,6 +2798,10 @@ public class ShipmentService implements IShipmentService {
         // TODO- implement Validation logic
         UUID guid = shipmentRequest.getGuid();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findByGuid(guid);
+
+        if (dataMigration) {
+            MDC.put("skip-audit-log", "true");
+        }
 
         List<ConsolidationDetails> tempConsolidations = new ArrayList<>();
 
@@ -2837,7 +2867,9 @@ public class ShipmentService implements IShipmentService {
             }
 
             createAuditLog(entity, oldEntityJsonString, operation);
-
+            if (dataMigration) {
+                try { syncEntityConversionService.auditLogsV1ToV2(auditLogRequestV2, entity.getId()); } catch (Exception e) {}
+            }
 //            Not needed, added consolidations while saving shipment
 //            attachConsolidations(entity.getId(), tempConsolIds);
 

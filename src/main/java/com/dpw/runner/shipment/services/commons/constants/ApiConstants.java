@@ -56,6 +56,7 @@ public class ApiConstants {
     public static final String API_SYNC_EVENTS = "getEvents";
     public static final String API_SYNC_CONTAINERS = "getContainers";
     public static final String SYNC = "/sync";
+    public static final String AUDIT_LOG_SYNC = "/sync/auditLogs";
     public static final String LIST_TI = "/list/TI";
     public static final String LIST_CONTAINER_FOR_TI = "/list/TI/containers";
     public static final String API_DOWNLOAD_EVENTS = "/download-events";
