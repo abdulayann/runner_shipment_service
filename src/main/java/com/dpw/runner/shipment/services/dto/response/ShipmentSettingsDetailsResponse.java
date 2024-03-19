@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import lombok.Data;
 
 import javax.persistence.Column;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -153,4 +154,7 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Integer weightDecimalPlace;
     private Boolean restrictBLEdit;
     private Boolean restrictAWBEdit;
+    private Boolean regulatedAgent;
+    private String raNumber;
+    private LocalDateTime raExpiry;
 }

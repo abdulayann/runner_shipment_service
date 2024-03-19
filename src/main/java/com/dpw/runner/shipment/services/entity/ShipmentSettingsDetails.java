@@ -10,6 +10,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -97,6 +98,15 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "shipment_console_import_approver_role")
     private String shipmentConsoleImportApproverRole;
+
+    @Column(name = "regulated_agent")
+    private Boolean regulatedAgent;
+
+    @Column(name = "ra_number")
+    private String raNumber;
+
+    @Column(name = "ra_expiry")
+    private LocalDateTime raExpiry;
 
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "shipment_id_generation_type")

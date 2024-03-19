@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Getter
 public class TenantModel implements Serializable {
@@ -28,6 +29,8 @@ public class TenantModel implements Serializable {
     public String currencyCode;
     public String AgentIATACode;
     public String AgentCASSCode;
+    public LocalDateTime IATARegistrationStartDate;
+    public String PIMAAddress;
     public Long DefaultOrgId;
     public String AgentIATANumber;
 
