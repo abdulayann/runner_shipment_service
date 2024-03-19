@@ -22,7 +22,7 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> calculateUtilization(CommonRequestModel commonRequestModel);
 

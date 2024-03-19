@@ -62,6 +62,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -2564,7 +2565,7 @@ public class ConsolidationService implements IConsolidationService {
         return null;
     }
 
-    public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long id = commonGetRequest.getId();
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(id).get();
@@ -2572,8 +2573,11 @@ public class ConsolidationService implements IConsolidationService {
         String currentUser = userContext.getUser().getUsername();
 
         if (consolidationDetails.getIsLocked() != null && consolidationDetails.getIsLocked()) {
-            if (lockingUser != null && lockingUser.equals(currentUser))
+            if (lockingUser != null && (Objects.equals(lockingUser, currentUser) ||
+                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
                 consolidationDetails.setIsLocked(false);
+            else
+                throw new RunnerException(ErrorConstants.LOCK_UNLOCK_ERROR);
         } else {
             consolidationDetails.setIsLocked(true);
             consolidationDetails.setLockedBy(currentUser);
