@@ -60,6 +60,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -2630,7 +2631,7 @@ public class ShipmentService implements IShipmentService {
                     (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
                 shipmentDetails.setIsLocked(false);
             else
-                throw new RunnerException("You are not Authorized to Unlock this.");
+                throw new RunnerException(ErrorConstants.LOCK_UNLOCK_ERROR);
         } else {
             shipmentDetails.setIsLocked(true);
             shipmentDetails.setLockedBy(currentUser);

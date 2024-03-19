@@ -62,6 +62,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -2576,7 +2577,7 @@ public class ConsolidationService implements IConsolidationService {
                     (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
                 consolidationDetails.setIsLocked(false);
             else
-                throw new RunnerException("You are not Authorized to Unlock this.");
+                throw new RunnerException(ErrorConstants.LOCK_UNLOCK_ERROR);
         } else {
             consolidationDetails.setIsLocked(true);
             consolidationDetails.setLockedBy(currentUser);
