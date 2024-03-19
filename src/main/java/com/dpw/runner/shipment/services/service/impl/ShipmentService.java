@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
@@ -2625,8 +2626,11 @@ public class ShipmentService implements IShipmentService {
         String currentUser = userContext.getUser().getUsername();
 
         if (shipmentDetails.getIsLocked() != null && shipmentDetails.getIsLocked()) {
-            if (lockingUser != null && lockingUser.equals(currentUser))
+            if (lockingUser != null && (Objects.equals(lockingUser, currentUser) ||
+                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
                 shipmentDetails.setIsLocked(false);
+            else
+                throw new RunnerException("You are not Authorized to Unlock this.");
         } else {
             shipmentDetails.setIsLocked(true);
             shipmentDetails.setLockedBy(currentUser);

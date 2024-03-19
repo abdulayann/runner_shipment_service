@@ -2564,7 +2564,7 @@ public class ConsolidationService implements IConsolidationService {
         return null;
     }
 
-    public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long id = commonGetRequest.getId();
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(id).get();
@@ -2572,8 +2572,11 @@ public class ConsolidationService implements IConsolidationService {
         String currentUser = userContext.getUser().getUsername();
 
         if (consolidationDetails.getIsLocked() != null && consolidationDetails.getIsLocked()) {
-            if (lockingUser != null && lockingUser.equals(currentUser))
+            if (lockingUser != null && (Objects.equals(lockingUser, currentUser) ||
+                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
                 consolidationDetails.setIsLocked(false);
+            else
+                throw new RunnerException("You are not Authorized to Unlock this.");
         } else {
             consolidationDetails.setIsLocked(true);
             consolidationDetails.setLockedBy(currentUser);

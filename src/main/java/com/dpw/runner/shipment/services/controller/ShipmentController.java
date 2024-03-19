@@ -201,8 +201,16 @@ public class ShipmentController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LOCK_TOGGLE_SUCCESSFUL, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.TOGGLE_LOCK)
     public ResponseEntity<IRunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws RunnerException {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return shipmentService.toggleLock(CommonRequestModel.buildRequest(request));
+        String responseMsg;
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+            return shipmentService.toggleLock(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
