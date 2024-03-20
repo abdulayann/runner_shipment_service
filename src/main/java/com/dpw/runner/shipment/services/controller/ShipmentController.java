@@ -215,7 +215,7 @@ public class ShipmentController {
         String responseMsg;
         try {
             ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
-            return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>(), null, false, null);
+            return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>(), null, false, null, null);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

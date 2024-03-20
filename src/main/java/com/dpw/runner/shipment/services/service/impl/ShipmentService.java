@@ -2775,7 +2775,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes, boolean dataMigration, List<AuditLogRequestV2> auditLogRequestV2) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes, boolean dataMigration, List<AuditLogRequestV2> auditLogRequestV2, String createdBy) throws RunnerException {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
 
@@ -2865,6 +2865,8 @@ public class ShipmentService implements IShipmentService {
                 oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
                 entity = shipmentDao.update(entity, true);
             }
+
+            shipmentDao.saveCreatedDateAndUser(id, createdBy, entity.getShipmentCreatedOn());
 
             createAuditLog(entity, oldEntityJsonString, operation);
             if (dataMigration) {
