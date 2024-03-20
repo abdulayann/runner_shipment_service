@@ -2208,7 +2208,7 @@ public abstract class IReport {
                 dictionary.put(CLIENT_LL, address.getOrgName());
                 dictionary.put(CLIENT_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-//                throw new ValidationException("Translation not available for Client Organization");
+                throw new ValidationException("Translation not available for Client Organization");
             }
         }
         if(!Objects.isNull(shipmentDetails.getConsigner()) && !Strings.isNullOrEmpty(shipmentDetails.getConsigner().getOrgCode())){
@@ -2219,7 +2219,7 @@ public abstract class IReport {
                 dictionary.put(CONSIGNER_LL, address.getOrgName());
                 dictionary.put(CONSIGNER_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-//                throw new ValidationException("Translation not available for Consigner Organization");
+                throw new ValidationException("Translation not available for Consigner Organization");
             }
         }
         if(!Objects.isNull(shipmentDetails.getConsignee()) && !Strings.isNullOrEmpty(shipmentDetails.getConsignee().getOrgCode())){
@@ -2230,7 +2230,7 @@ public abstract class IReport {
                 dictionary.put(CONSIGNEE_LL, address.getOrgName());
                 dictionary.put(CONSIGNEE_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-//                throw new ValidationException("Translation not available for Consignee Organization");
+                throw new ValidationException("Translation not available for Consignee Organization");
             }
         }
         if(!Objects.isNull(shipmentDetails.getAdditionalDetails()) && !Objects.isNull(shipmentDetails.getAdditionalDetails().getNotifyParty()) && !Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgCode())){
@@ -2241,7 +2241,7 @@ public abstract class IReport {
                 dictionary.put(NOTIFY_PARTY_LL, address.getOrgName());
                 dictionary.put(NOTIFY_PARTY_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-//                throw new ValidationException("Translation not available for Notify Party Organization");
+                throw new ValidationException("Translation not available for Notify Party Organization");
             }
         }
         if(!Objects.isNull(shipmentDetails.getPickupDetails()) && !Objects.isNull(shipmentDetails.getPickupDetails().getSourceDetail()) && !Strings.isNullOrEmpty(shipmentDetails.getPickupDetails().getSourceDetail().getOrgCode())){
@@ -2252,7 +2252,7 @@ public abstract class IReport {
                 dictionary.put(PICKUP_FROM_LL, address.getOrgName());
                 dictionary.put(PICKUP_FROM_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-//                throw new ValidationException("Translation not available for PickupFrom Organization");
+                throw new ValidationException("Translation not available for PickupFrom Organization");
             }
         }
         if(!Objects.isNull(shipmentDetails.getDeliveryDetails()) && !Objects.isNull(shipmentDetails.getDeliveryDetails().getDestinationDetail()) && !Strings.isNullOrEmpty(shipmentDetails.getDeliveryDetails().getDestinationDetail().getOrgCode())){
@@ -2263,7 +2263,7 @@ public abstract class IReport {
                 dictionary.put(DELIVERY_TO_LL, address.getOrgName());
                 dictionary.put(DELIVERY_TO_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-//                throw new ValidationException("Translation not available for DeliveryTo Organization");
+                throw new ValidationException("Translation not available for DeliveryTo Organization");
             }
         }
     }
