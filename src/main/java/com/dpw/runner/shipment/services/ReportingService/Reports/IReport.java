@@ -1584,7 +1584,7 @@ public abstract class IReport {
     }
 
     public static String formatValue(BigDecimal value, char customDecimalSeparator, char customThousandsSeparator, int numberDecimalDigits, Integer digitGrouping) {
-        int[] dynamicGroupSizes = (digitGrouping == DigitGrouping.THREE.getValue()) ? new int[]{3, 3} : new int[]{3, 2};
+        int dynamicGroupSizes = (digitGrouping == DigitGrouping.THREE.getValue()) ? 3 : 2;
 
         NumberFormat customFormat = NumberFormat.getNumberInstance(Locale.US);
         DecimalFormat customDecimalFormat = (DecimalFormat) customFormat;
@@ -1600,7 +1600,7 @@ public abstract class IReport {
         customDecimalFormat.setDecimalFormatSymbols(symbols);
 
         customDecimalFormat.setGroupingUsed(true);
-        customDecimalFormat.setGroupingSize(dynamicGroupSizes[0]);
+        customDecimalFormat.setGroupingSize(dynamicGroupSizes);
 
         return value != null ? customDecimalFormat.format(value) : null;
     }

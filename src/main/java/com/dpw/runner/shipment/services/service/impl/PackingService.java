@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -19,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -720,7 +723,8 @@ public class PackingService implements IPackingService {
             Map<String, Long> map = new HashMap<>();
             String toWeightUnit = Constants.WEIGHT_UNIT_KG;
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
-            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
                 toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
@@ -766,14 +770,14 @@ public class PackingService implements IPackingService {
             Collections.sort(sortedKeys);
             for (int i=0; i<sortedKeys.size(); i++) {
                 Long value = map.get(sortedKeys.get(i));
-                packsCount.append(value.toString()).append(" ").append(sortedKeys.get(i));
+                packsCount.append(IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(value), v1TenantSettingsResponse)).append(" ").append(sortedKeys.get(i));
                 if (i + 1 < sortedKeys.size())
                     packsCount.append(", ");
             }
             response.setTotalPacks(packsCount.toString());
-            response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, totalWeight, toWeightUnit));
-            response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, volumeWeight, toVolumeUnit));
-            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, volumetricWeight, toWeightUnit));
+            response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
+            response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(volumeWeight), v1TenantSettingsResponse), toVolumeUnit));
+            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), toWeightUnit));
 
             dto.setWeight(new BigDecimal(totalWeight));
             dto.setWeightUnit(toWeightUnit);
@@ -797,7 +801,7 @@ public class PackingService implements IPackingService {
                 packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
             }
             chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
-            response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, chargeableWeight, packChargeableWeightUnit));
+            response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse), packChargeableWeightUnit));
             return response;
         } catch (Exception e) {
             throw new RunnerException(e.getMessage());
