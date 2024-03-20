@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.masterdata.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class CarrierResponse {
     @JsonProperty("Id")
     private int id;
