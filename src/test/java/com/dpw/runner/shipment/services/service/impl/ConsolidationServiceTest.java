@@ -1,26 +1,38 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
+import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
+import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
@@ -44,13 +56,18 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.CacheManager;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -200,6 +217,7 @@ class ConsolidationServiceTest {
     private static ObjectMapper objectMapperTest;
     private static ConsolidationDetails testConsol;
     private static ConsolidationDetailsResponse testConsolResponse;
+    private static ConsolidationDetailsRequest testConsolRequest;
 
     private static ModelMapper modelMapperTest = new ModelMapper();
 
@@ -218,6 +236,7 @@ class ConsolidationServiceTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
         testConsolResponse = modelMapperTest.map(testConsol , ConsolidationDetailsResponse.class);
+        testConsolRequest = modelMapperTest.map(testConsol , ConsolidationDetailsRequest.class);
     }
 
     @Test
@@ -244,7 +263,6 @@ class ConsolidationServiceTest {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         requestModel.setData(getRequest);
-
 
         CompletableFuture<ResponseEntity<IRunnerResponse>> future = consolidationService.retrieveByIdAsync(requestModel);
 
@@ -379,5 +397,192 @@ class ConsolidationServiceTest {
         assertNotNull(responseEntity);
         assertEquals(400, responseEntity.getStatusCodeValue());
     }
+
+    @Test
+    void testCompleteUpdate_Failure() throws Exception {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = testConsolRequest;
+        commonRequestModel.setData(copy);
+
+        var spyService = Mockito.spy(consolidationService);
+        Mockito.doReturn(Optional.empty()).when(spyService).retrieveByIdOrGuid(any());
+        assertThrows(DataRetrievalFailureException.class, () -> spyService.completeUpdate(commonRequestModel));
+        verify(auditLogService, times(0)).addAuditLog(any());
+    }
+
+    @Test
+    public void testGetGuidFromId_Success() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+        commonRequestModel.setData(getRequest);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        var guid = UUID.randomUUID();
+        consolidationDetails.setGuid(guid);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        ResponseEntity<IRunnerResponse> response = consolidationService.getGuidFromId(commonRequestModel);
+
+        assertEquals(200, response.getStatusCodeValue());
+    }
+
+    @Test
+    public void testGetGuidFromId_RequestIsNull() {
+        ResponseEntity<IRunnerResponse> response = consolidationService.getGuidFromId(null);
+        assertEquals(400, response.getStatusCodeValue());
+    }
+
+    @Test
+    public void testGetGuidFromId_ConsolidationDetailsNotFound() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+        commonRequestModel.setData(getRequest);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.getGuidFromId(commonRequestModel);
+
+        assertEquals(400, response.getStatusCodeValue());
+    }
+
+    @Test
+    public void testShowCreateBooking_CreatePermissionDenied() {
+        PermissionsContext.setPermissions(Collections.emptyList());
+        assertThrows(RunnerException.class, () -> consolidationService.showCreateBooking("CREATE"));
+    }
+
+    @Test
+    public void testShowCreateBooking_ViewPermissionDenied() {
+        PermissionsContext.setPermissions(Collections.emptyList());
+        assertThrows(RunnerException.class, () -> consolidationService.showCreateBooking("VIEW"));
+    }
+
+    @Test
+    public void testUpdateConsoleBookingFields_Success() {
+        ConsoleBookingRequest request = new ConsoleBookingRequest();
+        request.setGuid(UUID.randomUUID());
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        when(consolidationDetailsDao.updateConsoleBookingFields(request)).thenReturn(1);
+        ResponseEntity<IRunnerResponse> response = consolidationService.updateConsoleBookingFields(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    public void testUpdateConsoleBookingFields_Failure() {
+        ConsoleBookingRequest request = new ConsoleBookingRequest();
+        request.setGuid(UUID.randomUUID());
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        when(consolidationDetailsDao.updateConsoleBookingFields(request)).thenReturn(0);
+        assertThrows(com.dpw.runner.shipment.services.exception.exceptions.ValidationException.class, () -> consolidationService.updateConsoleBookingFields(commonRequestModel));
+    }
+
+    @Test
+    public void testCreateFromBooking_Success() {
+        // Setup
+        ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.createFromBooking(commonRequestModel);
+
+        assertEquals(expectedEntity, response);
+    }
+
+    @Test
+    public void testCreateFromBooking_ThrowsValidationException() {
+        ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        ConsolidationDetails consolidationDetails = testConsol;
+
+        when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenThrow(new ValidationException("TEST"));
+
+        assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
+    }
+
+    @Test
+    public void testValidateMawbNumber_Success() {
+        String mawb = "ABC123";
+        String type = "type";
+        ValidateMawbNumberRequest request = ValidateMawbNumberRequest.builder().mawb(mawb).type(type).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        ValidateMawbNumberResponse expectedResponse = ValidateMawbNumberResponse.builder().success(true).build();
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+
+        CarrierResponse carrierResponse = CarrierResponse.builder().build();
+        when(consolidationDetailsDao.isMAWBNumberValid(mawb)).thenReturn(true);
+        when(v1Service.fetchCarrierMasterData(any(CarrierListObject.class), anyBoolean())).thenReturn(V1DataResponse.builder().entities(carrierResponse).build());
+        when(jsonHelper.convertValueToList(any(), eq(CarrierResponse.class))).thenReturn(List.of(carrierResponse));
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.validateMawbNumber(commonRequestModel);
+
+        assertEquals(200, response.getStatusCodeValue());
+    }
+
+    @Test
+    public void testValidateMawbNumber_InvalidMawb() {
+        String mawb = "INVALID_MAWB";
+        ValidateMawbNumberRequest request = ValidateMawbNumberRequest.builder().mawb(mawb).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        when(consolidationDetailsDao.isMAWBNumberValid(any())).thenReturn(false);
+        assertThrows(ValidationException.class, () -> consolidationService.validateMawbNumber(commonRequestModel));
+    }
+
+    @Test
+    public void testGenerateCustomHouseBLNumber_Success() throws RunnerException {
+        String generatedNumber = "ABC123";
+        GenerateCustomHblResponse expectedResponse = GenerateCustomHblResponse.builder().hblNumber(generatedNumber).build();
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        ConsolidationService spyService = spy(consolidationService);
+        doReturn(generatedNumber).when(spyService).generateCustomBolNumber();
+
+        ResponseEntity<IRunnerResponse> response = spyService.generateCustomHouseBLNumber();
+
+        assertEquals(expectedEntity, response);
+    }
+
+    @Test
+    public void testGenerateCustomHouseBLNumber_Exception(){
+        ConsolidationService spyService = spy(consolidationService);
+        doThrow(new RuntimeException("Test exception")).when(spyService).generateCustomBolNumber();
+        assertThrows(RunnerException.class, ()->spyService.generateCustomHouseBLNumber());
+    }
+
+    @Test
+    public void testGetDefaultConsolidation_Success() {
+        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
+        tenantSettings.setDefaultTransportMode("Sea");
+        tenantSettings.setDefaultContainerType("ContainerType");
+        tenantSettings.setDefaultShipmentType("ShipmentType");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
+
+        TenantModel tenantModel = new TenantModel();
+        when(v1Service.retrieveTenant().getEntity()).thenReturn(tenantModel);
+
+        UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
+        LocalDateTime currentTime = LocalDateTime.now();
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.getDefaultConsolidation();
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse) response.getBody();
+        assertNotNull(responseBody);
+        assertEquals("ContainerType", responseBody.getContainerCategory());
+        assertEquals("ShipmentType", responseBody.getShipmentType());
+        assertEquals("BOL Number", responseBody.getBol());
+        assertEquals("Username", responseBody.getCreatedBy());
+        assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
+        assertEquals("1", responseBody.getSourceTenantId());
+        assertEquals("PlaceOfIssue", responseBody.getPlaceOfIssue());
+    }
+
 
 }
