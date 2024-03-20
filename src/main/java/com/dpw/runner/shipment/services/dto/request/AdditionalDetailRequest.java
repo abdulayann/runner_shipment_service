@@ -120,4 +120,6 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private String bLRemarksDescription;
     private String summary;
     private Boolean isSummaryUpdated;
+    private String exemptionCodes;
+    private String aomFreeText;
 }

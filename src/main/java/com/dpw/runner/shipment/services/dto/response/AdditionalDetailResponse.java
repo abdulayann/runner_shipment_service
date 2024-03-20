@@ -141,6 +141,8 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private String summary;
     private Boolean isSummaryUpdated;
     private Map<String, String> textData;
+    private String exemptionCodes;
+    private String aomFreeText;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {

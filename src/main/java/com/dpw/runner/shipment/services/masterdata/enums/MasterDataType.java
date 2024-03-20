@@ -148,7 +148,9 @@ public enum MasterDataType {
     VGM_EVENTS(150, "VGM Events"),
     HAWB_CARRIER_AGENT(151, "HAWBCarrier/Agent"),
     MAWB_CARRIER_AGENT(152, "MAWBCarrier/Agent"),
-    SALES_AGENT_MASTER(1014, "SalesAgentMaster");
+    SALES_AGENT_MASTER(1014, "SalesAgentMaster"),
+    SECURITY_STATUS(159, "SecurityStatus"),
+    EXEMPTION_CODES(160, "ExemptionCodes");
 
     private int id;
     private String description;
