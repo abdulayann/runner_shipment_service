@@ -3,10 +3,13 @@ package com.dpw.runner.shipment.services.helper;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.json.JsonParseException;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 
+@Slf4j
 public class JsonTestUtility {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private String path = "src/test/java/com/dpw/runner/shipment/services/helper/payload.json";
@@ -62,6 +66,22 @@ public class JsonTestUtility {
 
     public <T,F> List<F> convertValueToList(T object, Class<F> clazz) {
         return objectMapper.convertValue(object, objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
+    }
+
+    public <T> T getCopyObject(T t, Class<T> clazz) throws JsonProcessingException {
+        String json = convertToJson(t);
+        return objectMapper.readValue(json, clazz);
+    }
+
+    public <T> String convertToJson(T object) {
+        try {
+            return objectMapper.writeValueAsString(object);
+        } catch (JsonProcessingException e) {
+            log.error("Failed Parsed Object: {}", object.toString());
+            log.error("Failed to Parse given Json: " + e.getMessage());
+            log.info("Exception thrown while parsing json: {}", e.toString());
+            throw new JsonParseException(e);
+        }
     }
 
 }
