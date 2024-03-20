@@ -282,4 +282,18 @@ public class AwbController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.CHARGE_TYPE_DATA_RETRIEVE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.VALIDATE_IATA_AGENT)
+    public ResponseEntity<IRunnerResponse> validateIataAgent() {
+        String responseMsg = "";
+        try {
+            return awbService.validateIataAgent();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error getting data for Iata validations ";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }

@@ -392,4 +392,9 @@ public class ConsolidationDetails extends MultiTenancy {
     private String bookingStatus;
     @Column(name = "booking_number")
     private String bookingNumber;
+
+    @Size(max=3, message = "max size is 3 for efreight_status")
+    @Column(name = "efreight_status")
+    @MasterData(type = MasterDataType.EFREIGHT_STATUS)
+    private String efreightStatus;
 }

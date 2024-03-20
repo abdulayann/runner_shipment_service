@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -293,4 +294,10 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private Integer volumeDecimalPlace;
     @JsonProperty("CancelledBLSuffix")
     private String cancelledBLSuffix;
+    @JsonProperty("RegulatedAgent")
+    private Boolean regulatedAgent;
+    @JsonProperty("RANumber")
+    private String raNumber;
+    @JsonProperty("RAExpiry")
+    private LocalDateTime raExpiry;
 }

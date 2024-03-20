@@ -28,4 +28,5 @@ public class ReportRequest implements IRunnerRequest {
     String noOfCopies = null;
     boolean fromShipment;
     boolean fromConsolidation;
+    Boolean pushAwbEvent;
 }

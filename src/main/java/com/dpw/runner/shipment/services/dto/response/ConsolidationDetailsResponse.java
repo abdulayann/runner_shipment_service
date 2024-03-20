@@ -134,4 +134,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
     private UUID sourceGuid;
+    private String efreightStatus;
 }

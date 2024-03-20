@@ -49,6 +49,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -764,6 +765,18 @@ public class AwbService implements IAwbService {
         //var awbPackingInfo = generateMawbPackingInfo(consolidationDetails);
         // generate Awb Entity
 
+        List<AwbSpecialHandlingCodesMappingInfo> sph = null;
+        if(!Strings.isNullOrEmpty(consolidationDetails.getEfreightStatus())
+                && (consolidationDetails.getEfreightStatus().equalsIgnoreCase("EAW")
+         || consolidationDetails.getEfreightStatus().equalsIgnoreCase("EAP"))) {
+            sph = Arrays.asList(AwbSpecialHandlingCodesMappingInfo
+                    .builder()
+                    .shcId(consolidationDetails.getEfreightStatus())
+                    .entityId(consolidationDetails.getId())
+                    .entityType(request.getAwbType())
+                    .build());
+        }
+
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
         Awb awb = Awb.builder()
                 .awbNumber(consolidationDetails.getMawb())
@@ -774,6 +787,7 @@ public class AwbService implements IAwbService {
                 .awbOtherInfo(generateMawbOtherInfo(consolidationDetails, request))
                 //.awbPackingInfo(awbPackingInfo)
                 .consolidationId(consolidationDetails.getId())
+                .awbSpecialHandlingCodesMappings(sph)
                 .build();
         awb.setAwbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo()));
         return awb;
@@ -1079,6 +1093,16 @@ public class AwbService implements IAwbService {
                 log.error("Error performing sync on shipment entity, {}", e);
             }
         }
+        List<AwbSpecialHandlingCodesMappingInfo> sph = null;
+        if(!Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getEfreightStatus())
+            && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAW")) {
+            sph = Arrays.asList(AwbSpecialHandlingCodesMappingInfo
+                    .builder()
+                    .shcId(shipmentDetails.getAdditionalDetails().getEfreightStatus())
+                    .entityId(shipmentDetails.getId())
+                    .entityType(request.getAwbType())
+                    .build());
+        }
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
         // generate Awb Entity
@@ -1091,6 +1115,7 @@ public class AwbService implements IAwbService {
                 .awbOtherInfo(generateAwbOtherInfo(shipmentDetails, request))
                 .awbPackingInfo(awbPackingInfo)
                 .shipmentId(shipmentDetails.getId())
+                .awbSpecialHandlingCodesMappings(sph)
                 .build();
         awb.setAwbCargoInfo(generateAwbCargoInfo(shipmentDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo()));
         return awb;
@@ -3157,6 +3182,21 @@ public class AwbService implements IAwbService {
             chargeCode = Constants.PREPAID_COLLECT_DESC_CODE;
         }
         return chargeCode;
+    }
+
+    public ResponseEntity<IRunnerResponse> validateIataAgent() {
+        TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        IataAgentResponse res;
+        if(tenantModel.IATAAgent && !Strings.isNullOrEmpty(tenantModel.AgentIATACode)
+                && !Strings.isNullOrEmpty(tenantModel.AgentCASSCode) && !Strings.isNullOrEmpty(tenantModel.PIMAAddress)){
+            res = IataAgentResponse.builder().iataAgent(true).message("FWB & FZB  will be sent before printing, do you want to proceed?").build();
+        } else if (tenantModel.IATAAgent && !Strings.isNullOrEmpty(tenantModel.AgentIATACode)
+                && !Strings.isNullOrEmpty(tenantModel.AgentCASSCode) && Strings.isNullOrEmpty(tenantModel.PIMAAddress)) {
+            res = IataAgentResponse.builder().iataAgent(false).message("PIMA address is not added in the branch settings, FWB and FZB will not be sent").build();
+        } else {
+            res = IataAgentResponse.builder().iataAgent(false).build();
+        }
+        return ResponseHelper.buildSuccessResponse(res);
     }
 
 }

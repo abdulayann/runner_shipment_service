@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -162,4 +163,7 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Integer weightDecimalPlace;
     private Boolean restrictBLEdit;
     private Boolean restrictAWBEdit;
+    private Boolean regulatedAgent;
+    private String raNumber;
+    private LocalDateTime raExpiry;
 }
