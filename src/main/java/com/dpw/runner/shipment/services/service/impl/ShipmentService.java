@@ -2870,7 +2870,7 @@ public class ShipmentService implements IShipmentService {
 
             createAuditLog(entity, oldEntityJsonString, operation);
             if (dataMigration) {
-                try { syncEntityConversionService.auditLogsV1ToV2(auditLogRequestV2, entity.getId()); } catch (Exception e) {}
+                createV1AuditLogs(entity.getId(), auditLogRequestV2);
             }
 //            Not needed, added consolidations while saving shipment
 //            attachConsolidations(entity.getId(), tempConsolIds);
@@ -2984,6 +2984,10 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private void createV1AuditLogs(Long id, List<AuditLogRequestV2> auditLogRequestV2) {
+        try { syncEntityConversionService.auditLogsV1ToV2(auditLogRequestV2, id); } catch (Exception ignored) {}
     }
 
     private void createAuditLog(ShipmentDetails entity, String oldEntityJsonString, String operation)

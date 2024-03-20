@@ -330,7 +330,7 @@ public class SyncEntityConversionService {
 
     public List<AuditLog> auditLogsV1ToV2(List<AuditLogRequestV2> auditLogs, Long id) {
         if(auditLogs == null || auditLogs.isEmpty())
-            return null;
+            return new ArrayList<>();
         ListCommonRequest listCommonRequest = andCriteria("parentId", id, "=", null);
         listCommonRequest = andCriteria("parentType", Constants.SHIPMENT_DETAILS, "=", listCommonRequest);
         Pair<Specification<AuditLog>, Pageable> pair = fetchData(listCommonRequest, AuditLog.class);
@@ -388,8 +388,6 @@ public class SyncEntityConversionService {
                     case "ConsolidationAddressRow" -> auditLog.setEntity(Parties.class.getSimpleName());
                     case "ShipmentServicesRow" -> auditLog.setEntity(ServiceDetails.class.getSimpleName());
                     case "TruckDriverDetailsRow" -> auditLog.setEntity(TruckDriverDetails.class.getSimpleName());
-                    default -> {
-                    }
                 }
 
                 response.add(auditLog);
