@@ -1000,11 +1000,11 @@ public class ConsolidationService implements IConsolidationService {
         // TODO- implement Validation logic
 
         Optional<ConsolidationDetails> oldEntity = retrieveByIdOrGuid(consolidationDetailsRequest);
-        long id = oldEntity.get().getId();
         if (!oldEntity.isPresent()) {
             log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, consolidationDetailsRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        long id = oldEntity.get().getId();
 
         consolidationDetailsRequest.setShipmentsList(null);
 
