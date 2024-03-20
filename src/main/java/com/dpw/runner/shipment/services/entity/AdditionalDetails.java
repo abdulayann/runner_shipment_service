@@ -409,6 +409,14 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "is_summary_updated")
     private Boolean isSummaryUpdated;
 
+//    @Column(name = "security_status")
+//    @MasterData(type = MasterDataType.SECURITY_STATUS)
+//    private String securityStatus;
+
+    @Column(name = "exemption_codes")
+    @MasterData(type = MasterDataType.EXEMPTION_CODES)
+    private String exemptionCodes;
+
     public String getbLRemarks() {
         return bLRemarks;
     }

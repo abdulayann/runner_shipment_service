@@ -437,4 +437,10 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "booking_created_date")
     private LocalDateTime bookingCreatedDate;
+
+    @Column(name = "security_status")
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @MasterData(type = MasterDataType.SECURITY_STATUS)
+    @CollectionTable(name = "security_status", joinColumns = @JoinColumn(name = "shipment_id"))//    @OneToMany(fetch = FetchType.EAGER)
+    private List<String> securityStatus;
 }
