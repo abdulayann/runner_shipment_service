@@ -313,7 +313,7 @@ public class Constants {
     public static final String CONTENT_TYPE_FOR_EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     public static final String CONTENT_DISPOSITION = "Content-Disposition";
     public static final String ATTACHMENT_FILENAME = "attachment; filename=";
-    public static final String STRING_FORMAT = "%.2f %s";
+    public static final String STRING_FORMAT = "%s %s";
     public static final String ORG_CODE = "orgCode";
     public static final String ADDRESS_CODE = "addressCode";
     public static final String DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR = "View is null for Id {} with Request Id {}";
