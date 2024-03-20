@@ -39,7 +39,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     int updateConsoleBookingFields(UUID guid, String bookingId, String bookingStatus, String bookingNumber);
 
     @Modifying @Transactional
-    @Query(value = "Update consolidation_details set created_by = ?2, created_at = ?3 Where id = ?1")
+    @Query(value = "Update consolidation_details set created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 
 }
