@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -22,6 +23,7 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -566,7 +568,9 @@ class ConsolidationServiceTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
 
         TenantModel tenantModel = new TenantModel();
-        when(v1Service.retrieveTenant().getEntity()).thenReturn(tenantModel);
+
+        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
 
         UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
         LocalDateTime currentTime = LocalDateTime.now();
@@ -576,7 +580,7 @@ class ConsolidationServiceTest {
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
 
-        ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse) response.getBody();
+        ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse)((RunnerResponse) response.getBody()).getData();
         assertNotNull(responseBody);
         assertEquals("ContainerType", responseBody.getContainerCategory());
         assertEquals("ShipmentType", responseBody.getShipmentType());
