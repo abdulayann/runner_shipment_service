@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -1462,9 +1463,11 @@ public class MasterDataUtils{
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         return () -> {
             MDC.setContextMap(mdc);
             RequestAuthContext.setAuthToken(token);
+            TenantSettingsDetailsContext.setCurrentTenantSettings(v1TenantSettingsResponse);
             runnable.run();
         };
     }
