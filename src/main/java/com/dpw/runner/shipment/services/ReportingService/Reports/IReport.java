@@ -53,7 +53,6 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
 import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
-import com.dpw.runner.shipment.services.service.impl.AwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -1584,12 +1583,13 @@ public abstract class IReport {
     }
 
     public static String formatValue(BigDecimal value, char customDecimalSeparator, char customThousandsSeparator, int numberDecimalDigits, Integer digitGrouping) {
+        if(value == null)
+            return null;
         int dynamicGroupSizes = (digitGrouping == DigitGrouping.THREE.getValue()) ? 3 : 2;
 
         NumberFormat customFormat = NumberFormat.getNumberInstance(Locale.US);
         DecimalFormat customDecimalFormat = (DecimalFormat) customFormat;
 
-        customDecimalFormat.applyPattern("#,##0.0#");
         customDecimalFormat.setDecimalSeparatorAlwaysShown(true);
         customDecimalFormat.setMaximumFractionDigits(numberDecimalDigits);
         customDecimalFormat.setMinimumFractionDigits(numberDecimalDigits);
@@ -1600,9 +1600,39 @@ public abstract class IReport {
         customDecimalFormat.setDecimalFormatSymbols(symbols);
 
         customDecimalFormat.setGroupingUsed(true);
-        customDecimalFormat.setGroupingSize(dynamicGroupSizes);
+        customDecimalFormat.setGroupingSize(3);
 
-        return value != null ? customDecimalFormat.format(value) : null;
+        String result = customDecimalFormat.format(value);
+        if(numberDecimalDigits == 0)
+            result = result.substring(0, result.length() - 1);
+        if(dynamicGroupSizes == 3)
+            return result;
+        StringBuilder formattedResult = new StringBuilder();
+        int count = 0;
+        boolean threeDigitSeparatorAdded = false;
+        boolean decimalPassed = numberDecimalDigits == 0;
+        for (int i = result.length() - 1; i >= 0; i--) {
+            char c = result.charAt(i);
+            if(c != customThousandsSeparator && c != '-') {
+                if (c == customDecimalSeparator) {
+                    decimalPassed = true;
+                } else if (decimalPassed && count == 2 && threeDigitSeparatorAdded) {
+                    formattedResult.insert(0, customThousandsSeparator);
+                    count = 1;
+                } else if(decimalPassed && count == 3 && !threeDigitSeparatorAdded) {
+                    threeDigitSeparatorAdded = true;
+                    formattedResult.insert(0, customThousandsSeparator);
+                    count = 1;
+                }
+                else if(decimalPassed) {
+                    count++;
+                }
+                formattedResult.insert(0, c);
+            }
+            if(c == '-')
+                formattedResult.insert(0, c);
+        }
+        return formattedResult.toString();
     }
 
     public static BigDecimal getRoundedBigDecimal(BigDecimal value, int scale, RoundingMode roundingMode) {
