@@ -2605,7 +2605,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel, boolean dataMigration) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel, boolean dataMigration, String createdBy, LocalDateTime createdDate) throws RunnerException {
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
 
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
@@ -2670,6 +2670,8 @@ public class ConsolidationService implements IConsolidationService {
             }
             // Set id for linking child entitites
             id = entity.getId();
+
+            consolidationDetailsDao.saveCreatedDateAndUser(id, createdBy, createdDate);
 
             if(containerRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, entity.getId(), "=");

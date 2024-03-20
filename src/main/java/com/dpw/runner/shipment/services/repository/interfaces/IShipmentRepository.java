@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,4 +38,8 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Modifying @Transactional
     @Query(value = "Update shipment_details set job_status = ?2 Where id = ?1", nativeQuery = true)
     void saveJobStatus(Long id, String jobStatus);
+
+    @Modifying @Transactional
+    @Query(value = "Update shipment_details set created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
+    void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 }

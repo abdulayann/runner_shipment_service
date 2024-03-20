@@ -2,15 +2,21 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Component
@@ -31,6 +38,12 @@ public class SyncEntityConversionService {
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    private IAuditLogDao auditLogDao;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public List<PackingRequestV2> packingsV2ToV1(List<Packing> packingList, List<Containers> containers, UUID shipmentGuid, UUID consoleGuid) {
         Map<Long, String> map = new HashMap<>();
@@ -312,6 +325,75 @@ public class SyncEntityConversionService {
             response.setMawbStocksLinkRows(mawbStocksLinks);
         }
 
+        return response;
+    }
+
+    public List<AuditLog> auditLogsV1ToV2(List<AuditLogRequestV2> auditLogs, Long id) {
+        if(auditLogs == null || auditLogs.isEmpty())
+            return new ArrayList<>();
+        ListCommonRequest listCommonRequest = andCriteria("parentId", id, "=", null);
+        listCommonRequest = andCriteria("parentType", Constants.SHIPMENT_DETAILS, "=", listCommonRequest);
+        Pair<Specification<AuditLog>, Pageable> pair = fetchData(listCommonRequest, AuditLog.class);
+        Page<AuditLog> oldAuditLogs = auditLogDao.findAll(pair.getLeft(), pair.getRight());
+        Set<UUID> oldLogsGuids = new HashSet<>();
+        if(oldAuditLogs != null && !oldAuditLogs.isEmpty()) {
+            oldLogsGuids = oldAuditLogs.getContent().stream().map(BaseEntity::getGuid).collect(Collectors.toSet());
+        }
+        List<AuditLog> response = new ArrayList<>();
+        for (AuditLogRequestV2 request : auditLogs) {
+            if(!oldLogsGuids.contains(request.getGuid())) {
+                AuditLog auditLog = new AuditLog();
+
+                auditLog.setParentType(Constants.SHIPMENT_DETAILS);
+                auditLog.setParentId(id);
+                auditLog.setGuid(request.getGuid());
+
+                if(Objects.equals(request.getAction(), "INSERT"))
+                    auditLog.setOperation(DBOperationType.CREATE.name());
+                else auditLog.setOperation(request.getAction());
+
+                try {
+                    List<Map<String, String>> v1changes = objectMapper.readValue(request.getChanges(), objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+                    Map<String, AuditLogChanges> changes = new HashMap<>();
+                    if(v1changes != null && !v1changes.isEmpty()) {
+                        for (Map<String, String> map : v1changes) {
+                            AuditLogChanges auditLogChanges = new AuditLogChanges();
+                            if(map.containsKey("F"))
+                                auditLogChanges.setFieldName(map.get("F"));
+                            if(map.containsKey("O"))
+                                auditLogChanges.setOldValue(map.get("O"));
+                            if(map.containsKey("V"))
+                                auditLogChanges.setNewValue(map.get("V"));
+                            changes.put(auditLogChanges.getFieldName(), auditLogChanges);
+                        }
+                    }
+                    auditLog.setChanges(changes);
+                }
+                catch (Exception e) {
+                    continue;
+                }
+
+                switch (request.getModule()) {
+                    case "ShipmentsRow" -> {
+                        auditLog.setEntity(ShipmentDetails.class.getSimpleName());
+                        auditLog.setEntityId(id);
+                    }
+                    case "CommonContainersRow" -> auditLog.setEntity(Containers.class.getSimpleName());
+                    case "PackingRow" -> auditLog.setEntity(Packing.class.getSimpleName());
+                    case "RoutingsRow" -> auditLog.setEntity(Routings.class.getSimpleName());
+                    case "NoteRow" -> auditLog.setEntity(Notes.class.getSimpleName());
+                    case "BookingCarriageRow" -> auditLog.setEntity(BookingCarriage.class.getSimpleName());
+                    case "EventsRow" -> auditLog.setEntity(Events.class.getSimpleName());
+                    case "ReferenceNumbersRow" -> auditLog.setEntity(ReferenceNumbers.class.getSimpleName());
+                    case "ConsolidationAddressRow" -> auditLog.setEntity(Parties.class.getSimpleName());
+                    case "ShipmentServicesRow" -> auditLog.setEntity(ServiceDetails.class.getSimpleName());
+                    case "TruckDriverDetailsRow" -> auditLog.setEntity(TruckDriverDetails.class.getSimpleName());
+                }
+
+                response.add(auditLog);
+            }
+        }
+        auditLogDao.saveAll(response);
         return response;
     }
 

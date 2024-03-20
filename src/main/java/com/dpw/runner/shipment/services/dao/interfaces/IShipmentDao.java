@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,4 +23,5 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByBookingReference(String Hbl);
     Long findMaxId();
     void saveJobStatus(Long id, String jobStatus);
+    void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 }

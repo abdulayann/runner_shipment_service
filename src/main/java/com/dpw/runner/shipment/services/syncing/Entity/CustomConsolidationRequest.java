@@ -532,4 +532,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String ModeOfBooking;
     @JsonProperty("AutoUpdateGoodsDesc")
     private Boolean autoUpdateGoodsDesc;
+    @JsonProperty("CreatedBy")
+    private String CreatedBy;
+    @JsonProperty("CreatedDate")
+    private LocalDateTime CreatedDate;
 }
