@@ -2987,7 +2987,11 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void createV1AuditLogs(Long id, List<AuditLogRequestV2> auditLogRequestV2) {
-        try { syncEntityConversionService.auditLogsV1ToV2(auditLogRequestV2, id); } catch (Exception ignored) {}
+        try {
+            syncEntityConversionService.auditLogsV1ToV2(auditLogRequestV2, id);
+        } catch (Exception ignored) {
+            log.error("Error while migrating audit logs for id: " + id);
+        }
     }
 
     private void createAuditLog(ShipmentDetails entity, String oldEntityJsonString, String operation)
