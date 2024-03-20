@@ -28,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -437,5 +438,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public int updateConsoleBookingFields(ConsoleBookingRequest request){
         return consolidationRepository.updateConsoleBookingFields(request.getGuid(), request.getBookingId(), request.getBookingStatus(), request.getBookingNumber());
     }
+
+    @Transactional
+    public void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate) {consolidationRepository.saveCreatedDateAndUser(id, createdBy, createdDate);}
 
 }

@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
@@ -222,7 +223,7 @@ public class ShipmentController {
         String responseMsg;
         try {
             ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
-            return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>(), null, false);
+            return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>(), null, false, null, null);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -333,6 +334,23 @@ public class ShipmentController {
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Shipment";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.AUDIT_LOG_SYNC)
+    public ResponseEntity<?> syncShipmentAuditLogsToService(@RequestBody @Valid AuditLogsSyncRequest request){
+        String responseMsg = "failure executing :(";
+        try {
+            return shipmentService.syncShipmentAuditLogsToService(CommonRequestModel.buildRequest(request));
+        } catch (Exception e){
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided audit logs";
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);

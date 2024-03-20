@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,4 +26,5 @@ public interface IConsolidationDetailsDao {
     Long findMaxId();
     Boolean isMAWBNumberValid(String masterBill);
     int updateConsoleBookingFields(ConsoleBookingRequest request);
+    void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 }
