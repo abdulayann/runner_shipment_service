@@ -559,4 +559,7 @@ public class ShipmentDao implements IShipmentDao {
         shipmentRepository.saveJobStatus(id, jobStatus);
     }
 
+    @Transactional
+    public void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate) {shipmentRepository.saveCreatedDateAndUser(id, createdBy, createdDate);}
+
 }
