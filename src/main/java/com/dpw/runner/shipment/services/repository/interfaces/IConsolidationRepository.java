@@ -8,7 +8,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,5 +37,9 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Modifying
     @Query(value = "Update consolidation_details set booking_id = ?2, booking_status = ?3, booking_number = ?4 Where guid = ?1", nativeQuery = true)
     int updateConsoleBookingFields(UUID guid, String bookingId, String bookingStatus, String bookingNumber);
+
+    @Modifying @Transactional
+    @Query(value = "Update consolidation_details set created_by = ?2, created_at = ?3 Where id = ?1")
+    void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 
 }
