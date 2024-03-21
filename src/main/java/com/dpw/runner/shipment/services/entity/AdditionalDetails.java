@@ -271,7 +271,7 @@ public class AdditionalDetails extends MultiTenancy {
     private String BLExporterShipment;
 
     @Column(name = "screening_status")
-    @Size(max=3, message = "max size is 3 for screening_status")
+    @Size(max=50, message = "max size is 50 for screening_status")
     @MasterData(type = MasterDataType.SCREENING_STATUS)
     private String screeningStatus;
 
