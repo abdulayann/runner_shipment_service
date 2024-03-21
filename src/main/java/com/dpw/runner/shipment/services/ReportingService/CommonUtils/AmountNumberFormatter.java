@@ -21,12 +21,12 @@ public class AmountNumberFormatter {
             int numberDecimalDigits = 2;
 
             if (tenantSettings.getRoundoffLocalCurrencyAmount() != null
-                    && tenantSettings.getRoundoffLocalCurrencyAmount() && localCurrency.equals(user.CompanyCurrency)) {
+                    && tenantSettings.getRoundoffLocalCurrencyAmount() && Objects.equals(localCurrency, user.CompanyCurrency)) {
                 numberDecimalDigits = 0;
             }
 
             if (tenantSettings.getIsGroupingOverseas() != null && !tenantSettings.getIsGroupingOverseas()
-                    && !localCurrency.equals(user.CompanyCurrency)) {
+                    && !Objects.equals(localCurrency, user.CompanyCurrency)) {
                 formattedAmount = ReportHelper.addCommasWithPrecision(amount, numberDecimalDigits);
             } else {
                 formattedAmount = displayFormat(amount, numberDecimalDigits, tenantSettings);
