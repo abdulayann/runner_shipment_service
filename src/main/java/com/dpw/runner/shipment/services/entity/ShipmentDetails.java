@@ -440,7 +440,6 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "security_status")
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
-    @MasterData(type = MasterDataType.SECURITY_STATUS)
-    @CollectionTable(name = "security_status", joinColumns = @JoinColumn(name = "shipment_id"))//    @OneToMany(fetch = FetchType.EAGER)
+    @CollectionTable(name = "security_status", joinColumns = @JoinColumn(name = "shipment_id"))
     private List<String> securityStatus;
 }
