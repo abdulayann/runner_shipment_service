@@ -4,7 +4,10 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AwbGoodsDescriptionInfoModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
@@ -15,7 +18,6 @@ import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
 import com.dpw.runner.shipment.services.entity.enums.RateClass;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
@@ -30,7 +32,6 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -42,10 +43,6 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -543,7 +540,7 @@ public class HawbReport extends IReport{
                         totalFreight = totalFreight.add(paymentInfoRows.getValuationCharge());
                     }
 
-                    if (paymentCodeDetails.Identifier1.equalsIgnoreCase("true"))
+                    if (paymentCodeDetails.Identifier1 != null && paymentCodeDetails.Identifier1.equalsIgnoreCase("true"))
                     {
                         dictionary.put(ReportConstants.WTVALP, "X");
                         dictionary.put(ReportConstants.WT_CHARGE_P, IReport.addCommas(paymentInfoRows.getWeightCharges()));
@@ -552,7 +549,7 @@ public class HawbReport extends IReport{
                         dictionary.put(ReportConstants.TOTAL_FREIGHT_P, IReport.addCommas(totalFreight));
                         dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT_P, FreightAmountText);
                     }
-                    if (paymentCodeDetails.Identifier2.equalsIgnoreCase("true"))
+                    if (paymentCodeDetails.Identifier2 != null && paymentCodeDetails.Identifier2.equalsIgnoreCase("true"))
                     {
                         dictionary.put(ReportConstants.WTVALC, "X");
                         dictionary.put(ReportConstants.WT_CHARGE_C, IReport.addCommas(paymentInfoRows.getWeightCharges()));
@@ -561,7 +558,7 @@ public class HawbReport extends IReport{
                         dictionary.put(ReportConstants.TOTAL_FREIGHT_C, IReport.addCommas(totalFreight));
                         dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT_C, FreightAmountText);
                     }
-                    if (paymentCodeDetails.Identifier3.equalsIgnoreCase("true"))
+                    if (paymentCodeDetails.Identifier3 != null && paymentCodeDetails.Identifier3.equalsIgnoreCase("true"))
                     {
                         dictionary.put(ReportConstants.OTHERS_P, "X");
                         dictionary.put(ReportConstants.AGENT_DUE_P, IReport.addCommas(paymentInfoRows.getDueAgentCharges()));
@@ -569,7 +566,7 @@ public class HawbReport extends IReport{
                         dictionary.put(ReportConstants.TOTAL_OTHERS_P, IReport.addCommas(totalOthers));
                         dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT_P, OtherAmountText);
                     }
-                    if (paymentCodeDetails.Identifier4.equalsIgnoreCase("true"))
+                    if (paymentCodeDetails.Identifier4 != null && paymentCodeDetails.Identifier4.equalsIgnoreCase("true"))
                     {
                         dictionary.put(ReportConstants.OTHERS_C, "X");
                         dictionary.put(ReportConstants.AGENT_DUE_C, IReport.addCommas(paymentInfoRows.getDueAgentCharges()));
