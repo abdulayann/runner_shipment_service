@@ -21,7 +21,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -233,14 +232,6 @@ public class FreightCertificationReport extends IReport{
             dictionary.put(INVOICE_DATE, lastDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy")));
         else
             dictionary.put(INVOICE_DATE, null);
-        if(dictionary.containsKey(FREIGHT_OVERSEAS) && dictionary.get(FREIGHT_OVERSEAS) != null) {
-            BigDecimal tempVar = new BigDecimal(dictionary.get(FREIGHT_OVERSEAS).toString());
-            dictionary.put(FREIGHT_OVERSEAS, decimalFormat.format(tempVar));
-        }
-        else {
-            dictionary.put(FREIGHT_OVERSEAS, null);
-            dictionary.put(FREIGHT_OVERSEAS_CURRENCY, null);
-        }
         if(totalAmount != 0) {
             String strTotalAmount = decimalFormat.format(totalAmount);
             dictionary.put(TOTAL_AMOUNT, strTotalAmount);
