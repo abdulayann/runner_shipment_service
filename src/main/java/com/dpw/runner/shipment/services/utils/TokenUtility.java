@@ -48,9 +48,9 @@ public class TokenUtility {
             log.info("Token key for RequestId {} is {}", LoggerHelper.getRequestIdFromMDC(), key);
             return key;
         } catch (Exception ex) {
-            log.error("Error occurred during decrypting token: {} || Exception message: {}", token, ex.getMessage());
+            log.error("Request- {} || Error occurred during token decryption with exception: {} token: {}", LoggerHelper.getRequestIdFromMDC(), ex.getMessage(), token);
         }
-        return null;
+        return StringUtility.convertToString(Math.random());
     }
 
 }
