@@ -1489,6 +1489,16 @@ public abstract class IReport {
         return null;
     }
 
+    public static String ConvertToVolumetricWeightFormat(BigDecimal weight, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(weight != null) {
+            int numberDecimalDigits = 2;
+            if(v1TenantSettingsResponse.getDecimalValueForVolumetricWeight() != null)
+                numberDecimalDigits = v1TenantSettingsResponse.getDecimalValueForVolumetricWeight();
+            return GetDPWWeightVolumeFormat(weight, numberDecimalDigits, v1TenantSettingsResponse);
+        }
+        return null;
+    }
+
     public static String addCommasWithPrecision(BigDecimal number) {
         return addCommasWithPrecision(number, 2);
     }
