@@ -2278,17 +2278,15 @@ public abstract class IReport {
                 .lang(languageCode)
                 .key_type("charge_code_desc")
                 .build();
-        String translatedChargeTypeDescription = null;
         try {
             NPMFetchLangChargeCodeResponse response = npmServiceAdapter.fetchMultiLangChargeCode(CommonRequestModel.buildRequest(request));
-            translatedChargeTypeDescription = response.getTranslation();
-            if(Strings.isNullOrEmpty(translatedChargeTypeDescription)){
+            if(Objects.isNull(response) || StringUtility.isEmpty(response.getTranslation())) {
                 throw new ValidationException("Translation not available for Charge Type Description for Charge Code: " + chargeCode);
             }
-        } catch (Exception ex){
+            return response.getTranslation();
+        } catch (Exception ex) {
             throw new ValidationException("NPM service response failed for ChargeType translation due to: " + ex.getMessage());
         }
-        return translatedChargeTypeDescription;
     }
 
     public void SetContainerCount(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
