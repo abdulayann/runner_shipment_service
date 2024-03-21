@@ -60,7 +60,8 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private String state;
         private String number;
         private LocalDateTime expiry;
-
+        private String branchName;
+        private String branchCode;
     }
 
     @Data

@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 public class TenantModel implements Serializable {
     public String tenantName;
+    public String code;
     public String address1;
     public String address2;
     public String email;

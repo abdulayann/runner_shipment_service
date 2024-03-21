@@ -135,4 +135,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Boolean autoUpdateGoodsDesc;
     private UUID sourceGuid;
     private String efreightStatus;
+    private Boolean isAirMessagingSent;
 }

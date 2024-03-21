@@ -219,6 +219,8 @@ public class ShipmentService implements IShipmentService {
     private AzureServiceBusTopic azureServiceBusTopic;
     @Autowired
     private MasterDataUtils masterDataUtils;
+    @Autowired
+    private IAwbDao awbDao;
 
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
@@ -3127,6 +3129,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
             shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
             try {
+                shipmentDetailsResponse.setIsAirMessagingSent(awbDao.findIsAirMessagingSentByShipmentId(shipmentDetailsResponse.getId()));
                 if(!shipmentDetailsResponse.getAdditionalDetails().getIsSummaryUpdated())
                     shipmentDetailsResponse.getAdditionalDetails().setSummary(shipmentDetailsResponse.getContainerSummary().getSummary());
             } catch (Exception e) {}
