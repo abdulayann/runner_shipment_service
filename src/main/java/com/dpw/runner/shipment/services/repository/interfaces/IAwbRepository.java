@@ -8,11 +8,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-
+@Repository
 public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     Page<Awb> findAll(Specification<Awb> spec, Pageable pageable);
     List<Awb> findByShipmentId(Long shipmentId);
@@ -32,4 +33,10 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     @Modifying
     @Query(value = "Update Awb set is_air_messaging_sent = ?2 Where guid = ?1", nativeQuery = true)
     int updateIsAirMessagingSent(UUID guid, Boolean isAirMessagingSent);
+
+    @Query(value = "SELECT is_air_messaging_sent FROM Awb WHERE shipment_id = ?1 limit 1", nativeQuery = true)
+    Boolean findIsAirMessagingSentByShipmentId(Long shipmentId);
+
+    @Query(value = "SELECT is_air_messaging_sent FROM Awb WHERE consolidation_id = ?1 limit 1", nativeQuery = true)
+    Boolean findIsAirMessagingSentByConsolidationId(Long consolidationId);
 }

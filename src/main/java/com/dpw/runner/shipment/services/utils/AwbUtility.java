@@ -388,6 +388,8 @@ public class AwbUtility {
                 .city(tenantModel.city)
                 .country(StringUtility.isNotEmpty(tenantModel.country) ? CountryListHelper.ISO3166.fromAlpha3(tenantModel.country.toUpperCase()).getAlpha2() : null)
                 .state(tenantModel.state)
+                .branchCode(tenantModel.code)
+                .branchName(tenantModel.tenantName)
                 .build();
     }
 

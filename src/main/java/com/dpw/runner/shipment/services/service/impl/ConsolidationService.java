@@ -206,6 +206,8 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private MasterDataUtils masterDataUtils;
+    @Autowired
+    private IAwbDao awbDao;
 
     @Autowired
     CacheManager cacheManager;
@@ -2164,6 +2166,7 @@ public class ConsolidationService implements IConsolidationService {
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 consolidationDetailsResponse.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONSOLE_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+            consolidationDetailsResponse.setIsAirMessagingSent(awbDao.findIsAirMessagingSentByConsolidationId(consolidationDetailsResponse.getId()));
         }  catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONSOLIDATION_RETRIEVE, ex.getLocalizedMessage());
         }

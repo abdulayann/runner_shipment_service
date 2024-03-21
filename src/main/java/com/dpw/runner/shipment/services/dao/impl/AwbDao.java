@@ -244,4 +244,14 @@ public class AwbDao implements IAwbDao {
         return awbRepository.updateIsAirMessagingSent(guid, isAirMessagingSent);
     }
 
+    @Override
+    public Boolean findIsAirMessagingSentByShipmentId(Long shipmentId) {
+        return awbRepository.findIsAirMessagingSentByShipmentId(shipmentId);
+    }
+
+    @Override
+    public Boolean findIsAirMessagingSentByConsolidationId(Long consolidationId) {
+        return awbRepository.findIsAirMessagingSentByConsolidationId(consolidationId);
+    }
+
 }
