@@ -3,11 +3,14 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -15,6 +18,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +42,8 @@ public class AwbDao implements IAwbDao {
     private KafkaProducer producer;
     @Value("${awbKafka.queue}")
     private String senderQueue;
+    @Autowired
+    private AwbUtility awbUtility;
     @Autowired
     IShipmentDao shipmentDao;
     @Autowired
@@ -152,6 +158,90 @@ public class AwbDao implements IAwbDao {
 
         if(!errors.isEmpty())
             throw new RunnerException(errors.toString());
+    }
+
+    @Override
+    public void airMessagingIntegration(Long id, String reportType, Boolean fromShipment) {
+        try {
+            if (Objects.equals(reportType, ReportConstants.MAWB)) {
+                if (!Boolean.TRUE.equals(fromShipment)) {
+                    Awb awb = getMawb(id);
+                    if (awb.getConsolidationId() != null) {
+                        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
+                        if (consolidationDetails.isPresent()) {
+                            this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get());
+                            // isAirMessageSent flag set to true
+                            this.updateIsAirMessagingSent(awb.getGuid(), true);
+
+                            for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
+                                Awb shipAwb = getHawb(ship.getId());
+                                this.pushToKafkaForAirMessaging(shipAwb, ship, null);
+                                // isAirMessageSent flag set to true
+                                this.updateIsAirMessagingSent(shipAwb.getGuid(), true);
+                            }
+                        }
+                    }
+                } else {
+                    Awb awb = getHawb(id);
+                    if (awb.getShipmentId() != null) {
+                        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
+                        if (shipmentDetails.isPresent()) {
+                            this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null);
+                            // isAirMessageSent flag set to true
+                            this.updateIsAirMessagingSent(awb.getGuid(), true);
+                        }
+
+                    }
+                }
+            }
+        } catch (Exception e)
+        {
+            log.error("Error pushing awb to kafka");
+        }
+    }
+
+    public void pushToKafkaForAirMessaging(Awb awb, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+        if(awb.getTenantId() == null)
+            awb.setTenantId(TenantContext.getCurrentTenant());
+        AwbAirMessagingResponse awbResponse;
+        if(shipmentDetails != null) {
+            awbResponse = awbUtility.createAirMessagingRequestForShipment(awb, shipmentDetails);
+            awbResponse.setAwbKafkaEntity(jsonHelper.convertValue(shipmentDetails, AwbShipConsoleDto.class));
+        } else if (consolidationDetails != null) {
+            awbResponse = awbUtility.createAirMessagingRequestForConsole(awb, consolidationDetails);
+            awbResponse.setAwbKafkaEntity(jsonHelper.convertValue(consolidationDetails, AwbShipConsoleDto.class));
+        } else {
+            return;
+        }
+
+        KafkaResponse kafkaResponse = getKafkaResponseForAirMessaging(awbResponse);
+        producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+    }
+
+    public Awb getHawb(Long id) {
+        List<Awb> awb = awbRepository.findByShipmentId(id);
+        if (awb != null && !awb.isEmpty())
+            return awb.get(0);
+        return null;
+    }
+
+    public Awb getMawb(Long id) {
+        List<Awb> awb = awbRepository.findByConsolidationId(id);
+        if(awb != null && !awb.isEmpty()) {
+            return awb.get(0);
+        }
+        return null;
+    }
+    public KafkaResponse getKafkaResponseForAirMessaging(Object data) {
+        KafkaResponse kafkaResponse = new KafkaResponse();
+        kafkaResponse.setEvent(Constants.ORIGINAL_PRINT);
+        kafkaResponse.setData(data);
+        return kafkaResponse;
+    }
+
+    @Override
+    public int updateIsAirMessagingSent(UUID guid, Boolean isAirMessagingSent){
+        return awbRepository.updateIsAirMessagingSent(guid, isAirMessagingSent);
     }
 
 }

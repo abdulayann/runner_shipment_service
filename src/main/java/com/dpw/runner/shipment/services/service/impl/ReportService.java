@@ -118,6 +118,8 @@ public class ReportService implements IReportService {
     private MasterDataUtils masterDataUtils;
     @Autowired
     private ExecutorService executorService;
+    @Autowired
+    private IAwbDao awbDao;
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException, RunnerException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
@@ -150,6 +152,10 @@ public class ReportService implements IReportService {
             isOriginalPrint = reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL);
             isSurrenderPrint = reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.SURRENDER);
             isNeutralPrint = reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL);
+        }
+
+        if(Boolean.TRUE.equals(reportRequest.getPushAwbEvent()) && reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && Boolean.TRUE.equals(isOriginalPrint)) {
+            awbDao.airMessagingIntegration(Long.parseLong(reportRequest.getReportId()), reportRequest.getReportInfo(), reportRequest.isFromShipment());
         }
         boolean reportingNewFlow = false;
         Map<String, Object> dataRetrived = new HashMap<>();

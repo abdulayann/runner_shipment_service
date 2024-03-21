@@ -55,4 +55,6 @@ public class PartiesConstants {
     public static final String FAX = "Fax";
     public static final String SITE = "site";
     public static final String API = "API";
+    public static final String KC_RA_NUMBER = "KCRANumber";
+    public static final String KC_RA_EXPIRY = "KCRAExpiry";
 }

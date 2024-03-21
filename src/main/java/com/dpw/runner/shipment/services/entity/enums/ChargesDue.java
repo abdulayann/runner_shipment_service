@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum ChargesDue {
     AGENT(1, "Agent"),
     CARRIER(2, "Carrier");

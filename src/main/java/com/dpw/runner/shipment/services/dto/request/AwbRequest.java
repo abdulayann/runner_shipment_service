@@ -34,4 +34,5 @@ public class AwbRequest implements IRunnerRequest {
 
     //Used to provide special handling codes for UI
     private List<String> shcIdList;
+    private Boolean isAirMessagingSent;
 }
