@@ -1362,7 +1362,7 @@ public abstract class IReport {
 
         else
         {
-            return String.format("##.00", value);
+            return twoDecimalPlacesFormatDecimal(new BigDecimal(value));
         }
     }
 
@@ -1372,7 +1372,11 @@ public abstract class IReport {
         {
             return "0.00";
         }
-        return twoDecimalPlacesFormat(value.toString());
+        NumberFormat customFormat = NumberFormat.getNumberInstance(Locale.US);
+        DecimalFormat customDecimalFormat = (DecimalFormat) customFormat;
+        customDecimalFormat.setMaximumFractionDigits(2);
+        customDecimalFormat.setMinimumFractionDigits(2);
+        return customDecimalFormat.format(value);
     }
 
     public DateTimeFormatter GetDPWDateFormatOrDefault()
