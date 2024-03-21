@@ -2,11 +2,17 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
+import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.Locale;
 import java.util.Objects;
 
 import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.DisplayFormat;
+import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.formatValue;
 
 
 public class AmountNumberFormatter {
@@ -80,4 +86,30 @@ public class AmountNumberFormatter {
             return displayFormat(amount, 0, tenantSettings);
         }
     }
+
+    public static String FormatExchangeRate(BigDecimal amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
+        if (amount == null)
+            return null;
+        NumberFormat customFormat = NumberFormat.getNumberInstance(Locale.US);
+        DecimalFormat customDecimalFormat = (DecimalFormat) customFormat;
+        customDecimalFormat.setDecimalSeparatorAlwaysShown(true);
+        customDecimalFormat.setMaximumFractionDigits(29);
+        customDecimalFormat.setMinimumFractionDigits(29);
+        if (tenantSettings.getIsGroupingOverseas() != null && !tenantSettings.getIsGroupingOverseas()
+                && !Objects.equals(localCurrency, UserContext.getUser().CompanyCurrency)) {
+            return customFormat.format(amount);
+        }
+        if(tenantSettings.getCurrencyDigitGrouping() != null && tenantSettings.getCurrencyGroupingNumber() != null) {
+            char customThousandsSeparator = ',';
+            char customDecimalSeparator = '.';
+            if(tenantSettings.getCurrencyGroupingNumber() != null && tenantSettings.getCurrencyGroupingNumber() == GroupingNumber.DotAndComma.getValue()) {
+                customThousandsSeparator = '.';
+                customDecimalSeparator = ',';
+            }
+            int dynamicGroupSizes = (tenantSettings.getCurrencyDigitGrouping() == DigitGrouping.THREE.getValue()) ? 3 : 2;
+            return formatValue(amount, customDecimalSeparator, customThousandsSeparator, 29, dynamicGroupSizes);
+        }
+        return customFormat.format(amount);
+    }
+
 }

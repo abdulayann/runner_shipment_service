@@ -256,7 +256,7 @@ public class ShipmentCANReport extends IReport {
                 }
 
                 if(v.containsKey(SELL_EXCHANGE) && v.get(SELL_EXCHANGE) != null)
-                    v.put(SELL_EXCHANGE, twoDecimalPlacesFormat(v.get(SELL_EXCHANGE).toString()));
+                    v.put(SELL_EXCHANGE, AmountNumberFormatter.FormatExchangeRate(new BigDecimal(v.get(SELL_EXCHANGE).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
                 if(v.containsKey(CURRENT_SELL_RATE) && v.get(CURRENT_SELL_RATE) != null)
                     v.put(CURRENT_SELL_RATE, AmountNumberFormatter.Format(new BigDecimal(v.get(CURRENT_SELL_RATE).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
                 if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null)
