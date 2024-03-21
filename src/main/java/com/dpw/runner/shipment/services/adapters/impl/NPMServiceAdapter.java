@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -671,8 +672,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             NPMFetchMultiLangChargeCodeRequest request = (NPMFetchMultiLangChargeCodeRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmMultiLangChargeCode;
-            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE, jsonHelper.convertToJson(request));
+            log.info("{}" + PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, LoggerHelper.getRequestIdFromMDC(), IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE, jsonHelper.convertToJson(request));
             ResponseEntity<NPMFetchLangChargeCodeResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), NPMFetchLangChargeCodeResponse.class);
+            log.info("{}" + PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, LoggerHelper.getRequestIdFromMDC(), IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE, jsonHelper.convertToJson(response.getBody()));
             return response.getBody();
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
