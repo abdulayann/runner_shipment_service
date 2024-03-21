@@ -26,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -185,18 +184,21 @@ public class DeliveryOrderReport extends IReport{
         Integer decimalPlaces = ShipmentSettingsDetailsContext.getCurrentTenantSettings().getDecimalPlaces() == null ? 2 : ShipmentSettingsDetailsContext.getCurrentTenantSettings().getDecimalPlaces();
         if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getWeight())) {
             BigDecimal weight = deliveryOrderModel.shipmentDetails.getWeight().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            dictionary.put(WEIGHT, ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse));
-            dictionary.put(WEIGHT_AND_UNIT, String.format(REGEX_S_S, weight, deliveryOrderModel.shipmentDetails.getWeightUnit()));
+            String weightString = ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
+            dictionary.put(WEIGHT, weightString);
+            dictionary.put(WEIGHT_AND_UNIT, String.format(REGEX_S_S, weightString, deliveryOrderModel.shipmentDetails.getWeightUnit()));
         }
         if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getVolume())) {
             BigDecimal volume = deliveryOrderModel.shipmentDetails.getVolume().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            dictionary.put(VOLUME, volume);
-            dictionary.put(VOLUME_AND_UNIT, String.format(REGEX_S_S, volume, deliveryOrderModel.shipmentDetails.getVolumeUnit()));
+            String volumeString = ConvertToVolumeNumberFormat(volume, v1TenantSettingsResponse);
+            dictionary.put(VOLUME, volumeString);
+            dictionary.put(VOLUME_AND_UNIT, String.format(REGEX_S_S, volumeString, deliveryOrderModel.shipmentDetails.getVolumeUnit()));
         }
         if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getChargable())) {
             BigDecimal chargeable = deliveryOrderModel.shipmentDetails.getChargable().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse));
-            dictionary.put(CHARGEABLE_AND_UNIT, String.format(REGEX_S_S, chargeable, deliveryOrderModel.shipmentDetails.getChargeableUnit()));
+            String chargeableString = ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse);
+            dictionary.put(CHARGEABLE, chargeableString);
+            dictionary.put(CHARGEABLE_AND_UNIT, String.format(REGEX_S_S, chargeableString, deliveryOrderModel.shipmentDetails.getChargeableUnit()));
             dictionary.put(CHARGEABLE_AND_UNIT_, dictionary.get(CHARGEABLE_AND_UNIT));
         }
         PartiesModel client = deliveryOrderModel.shipmentDetails.getClient();

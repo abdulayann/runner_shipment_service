@@ -1890,7 +1890,7 @@ public abstract class IReport {
             if(shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
                 Long entityId = shipmentModel.getId();
                 List<Awb> awbList = awbDao.findByShipmentId(entityId);
-                String entityType = (shipmentModel.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) ? Constants.DMAWB : Constants.HAWB;
+                String entityType = (Objects.equals(shipmentModel.getJobType(), Constants.SHIPMENT_TYPE_DRT)) ? Constants.DMAWB : Constants.HAWB;
                 if (awbList != null && !awbList.isEmpty()) {
                     if(awbList.get(0).getAwbShipmentInfo().getEntityType().equalsIgnoreCase(entityType))
                         return false;
