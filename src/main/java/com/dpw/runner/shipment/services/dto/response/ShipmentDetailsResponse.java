@@ -181,4 +181,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long shipmentCount;
     private LocalDateTime bookingCreatedDate;
     private List<String> securityStatus;
+    private Boolean isAirMessagingSent;
 }

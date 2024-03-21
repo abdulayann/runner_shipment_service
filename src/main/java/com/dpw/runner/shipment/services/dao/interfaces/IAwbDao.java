@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IAwbDao {
     Awb save(Awb awbShipmentInfo) throws RunnerException;
@@ -21,4 +22,6 @@ public interface IAwbDao {
     List<Awb> findByAwbNumber(List<String> awbNumber);
     List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent);
     List<Awb> saveAll(List<Awb> req);
+    void airMessagingIntegration(Long id, String reportType, Boolean fromShipment);
+    int updateIsAirMessagingSent(UUID guid, Boolean isAirMessagingSent);
 }

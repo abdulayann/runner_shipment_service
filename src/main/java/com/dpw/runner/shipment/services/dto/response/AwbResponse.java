@@ -39,5 +39,6 @@ public class AwbResponse implements IRunnerResponse {
     private String errors;
     //Used to provide special handling codes for UI
     private List<String> shcIdList;
+    private Boolean isAirMessagingSent;
 
 }

@@ -374,7 +374,7 @@ public class V1ServiceUtil {
         return AddressTranslationRequest.OrgAddressCode.builder().OrgCode(parties.getOrgCode()).AddressCode(parties.getAddressCode()).build();
     }
 
-    private OrgAddressResponse fetchOrgInfoFromV1(List<Parties> parties) {
+    public OrgAddressResponse fetchOrgInfoFromV1(List<Parties> parties) {
         var orgRequest = new ArrayList<AddressTranslationRequest.OrgAddressCode>();
         parties.forEach(p -> {
             orgRequest.add(createV1OrgRequest(p));
