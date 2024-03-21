@@ -213,7 +213,7 @@ public class ShipmentCANReport extends IReport {
         dictionary.put(AIRLINE, shipmentCANModel.shipmentDetails.getCarrierDetails().getShippingLine());
         dictionary.put(CMS_REMARKS, shipmentCANModel.shipmentDetails.getGoodsDescription());
         if(shipmentCANModel.shipmentDetails.getVolumetricWeight() != null)
-            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format(REGEX_S_S_PATTERN, twoDecimalPlacesFormatDecimal(shipmentCANModel.shipmentDetails.getVolumetricWeight()), shipmentCANModel.shipmentDetails.getVolumetricWeightUnit()));
+            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format(REGEX_S_S_PATTERN, ConvertToVolumetricWeightFormat(shipmentCANModel.shipmentDetails.getVolumetricWeight(), v1TenantSettingsResponse), shipmentCANModel.shipmentDetails.getVolumetricWeightUnit()));
         if(shipmentCANModel.shipmentDetails.getWeight() != null)
             dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format(REGEX_S_S_PATTERN, ConvertToWeightNumberFormat(shipmentCANModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), shipmentCANModel.shipmentDetails.getWeightUnit()));
         if(shipmentCANModel.shipmentDetails.getVolume() != null)
@@ -258,24 +258,24 @@ public class ShipmentCANReport extends IReport {
                 if(v.containsKey(SELL_EXCHANGE) && v.get(SELL_EXCHANGE) != null)
                     v.put(SELL_EXCHANGE, twoDecimalPlacesFormat(v.get(SELL_EXCHANGE).toString()));
                 if(v.containsKey(CURRENT_SELL_RATE) && v.get(CURRENT_SELL_RATE) != null)
-                    v.put(CURRENT_SELL_RATE, twoDecimalPlacesFormat(v.get(CURRENT_SELL_RATE).toString()));
+                    v.put(CURRENT_SELL_RATE, AmountNumberFormatter.Format(new BigDecimal(v.get(CURRENT_SELL_RATE).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
                 if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null)
-                    v.put(OVERSEAS_SELL_AMOUNT, twoDecimalPlacesFormat(v.get(OVERSEAS_SELL_AMOUNT).toString()));
+                    v.put(OVERSEAS_SELL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(v.get(OVERSEAS_SELL_AMOUNT).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
                 if(v.containsKey(OVERSEAS_TAX) && v.get(OVERSEAS_TAX) != null)
-                    v.put(OVERSEAS_TAX, twoDecimalPlacesFormat(v.get(OVERSEAS_TAX).toString()));
+                    v.put(OVERSEAS_TAX, AmountNumberFormatter.Format(new BigDecimal(v.get(OVERSEAS_TAX).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
                 if(v.containsKey(TAX_PERCENTAGE) && v.get(TAX_PERCENTAGE) != null)
-                    v.put(TAX_PERCENTAGE, twoDecimalPlacesFormat(v.get(TAX_PERCENTAGE).toString()));
+                    v.put(TAX_PERCENTAGE, AmountNumberFormatter.Format(new BigDecimal(v.get(TAX_PERCENTAGE).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
                 if(v.containsKey(TOTAL_AMOUNT) && v.get(TOTAL_AMOUNT) != null)
-                    v.put(TOTAL_AMOUNT, twoDecimalPlacesFormat(v.get(TOTAL_AMOUNT).toString()));
+                    v.put(TOTAL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(v.get(TOTAL_AMOUNT).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
                     v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
                 }
             }
             dictionary.put(BILL_CHARGES, billChargesDict);
         }
-        dictionary.put(ReportConstants.TOTAL_BILL_AMOUNT, twoDecimalPlacesFormatDecimal(BigDecimal.valueOf(totalBillAmount)));
+        dictionary.put(ReportConstants.TOTAL_BILL_AMOUNT, AmountNumberFormatter.Format(BigDecimal.valueOf(totalBillAmount), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
         dictionary.put(TAXES, taxes);
-        dictionary.put(TOTAL_TAX_AMOUNT, twoDecimalPlacesFormatDecimal(BigDecimal.valueOf(totalTax)));
+        dictionary.put(TOTAL_TAX_AMOUNT, AmountNumberFormatter.Format(BigDecimal.valueOf(totalTax), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
         return dictionary;
     }
 }

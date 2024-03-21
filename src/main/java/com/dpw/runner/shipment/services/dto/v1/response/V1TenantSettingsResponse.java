@@ -35,4 +35,5 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean IsGroupingOverseas;
     private Integer CurrencyDigitGrouping;
     private Integer CurrencyGroupingNumber;
+    private Integer DecimalValueForVolumetricWeight;
 }
