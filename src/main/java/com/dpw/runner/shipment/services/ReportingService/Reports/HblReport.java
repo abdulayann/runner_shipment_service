@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
@@ -32,7 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -256,7 +256,7 @@ public class HblReport extends IReport{
         if (hblModel.shipment != null && hblModel.shipment.getFreightLocalCurrency() != null && !hblModel.shipment.getFreightLocalCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_LOCAL_CURRENCY, hblModel.shipment.getFreightLocalCurrency());
         if (hblModel.shipment != null && hblModel.shipment.getFreightOverseas() != null)
-            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, hblModel.shipment.getFreightOverseas());
+            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(hblModel.shipment.getFreightOverseas(), hblModel.shipment.getFreightOverseasCurrency(), hblModel.tenantSettingsResponse));
         if (hblModel.shipment != null && hblModel.shipment.getFreightOverseasCurrency() != null && !hblModel.shipment.getFreightOverseasCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, hblModel.shipment.getFreightOverseasCurrency());
         if (hblModel.shipment.getShipmentAddresses() != null && hblModel.shipment.getShipmentAddresses().size() > 0) {
@@ -512,7 +512,7 @@ public class HblReport extends IReport{
                 : hblModel.shipment.getGoodsDescription());
         dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(hblModel.shipment.getChargable(), v1TenantSettingsResponse));
         dictionary.put(CHARGEABLE_UNIT, hblModel.shipment.getChargeableUnit());
-        dictionary.put(FREIGHT_OVERSEAS, hblModel.shipment.getFreightOverseas());
+        dictionary.put(FREIGHT_OVERSEAS, AmountNumberFormatter.Format(hblModel.shipment.getFreightOverseas(), hblModel.shipment.getFreightOverseasCurrency(), hblModel.tenantSettingsResponse));
         dictionary.put(FREIGHT_OVERSEAS_CURRENCY, hblModel.shipment.getFreightOverseasCurrency());
         dictionary.put(ORIGINALS, hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal());
         dictionary.put(ORIGINAL_WORDS, numberToWords(hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal()));
@@ -615,18 +615,21 @@ public class HblReport extends IReport{
         }
         if (!Objects.isNull(hblModel.shipment.getWeight())) {
             BigDecimal weight = hblModel.shipment.getWeight().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            dictionary.put(WEIGHT, ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse));
-            dictionary.put(WEIGHT_AND_UNIT, String.format(REGEX_S_S, weight, hblModel.shipment.getWeightUnit()));
+            String weightString = ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
+            dictionary.put(WEIGHT, weightString);
+            dictionary.put(WEIGHT_AND_UNIT, String.format(REGEX_S_S, weightString, hblModel.shipment.getWeightUnit()));
         }
         if (!Objects.isNull(hblModel.shipment.getVolume())) {
             BigDecimal volume = hblModel.shipment.getVolume().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            dictionary.put(VOLUME, volume);
-            dictionary.put(VOLUME_AND_UNIT, String.format(REGEX_S_S, volume, hblModel.shipment.getVolumeUnit()));
+            String volumeString = ConvertToVolumeNumberFormat(volume, v1TenantSettingsResponse);
+            dictionary.put(VOLUME, volumeString);
+            dictionary.put(VOLUME_AND_UNIT, String.format(REGEX_S_S, volumeString, hblModel.shipment.getVolumeUnit()));
         }
         if (!Objects.isNull(hblModel.shipment.getChargable())) {
             BigDecimal chargeable = hblModel.shipment.getChargable().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse));
-            dictionary.put(CHARGEABLE_AND_UNIT, String.format(REGEX_S_S, chargeable, hblModel.shipment.getChargeableUnit()));
+            String chargeableString = ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse);
+            dictionary.put(CHARGEABLE, chargeableString);
+            dictionary.put(CHARGEABLE_AND_UNIT, String.format(REGEX_S_S, chargeableString, hblModel.shipment.getChargeableUnit()));
             dictionary.put(CHARGEABLE_AND_UNIT_, dictionary.get(CHARGEABLE_AND_UNIT));
         }
 //        dictionary.put(DELIVERY_TO_EMAIL_ADDRESS, DeliveryEmailAddress);

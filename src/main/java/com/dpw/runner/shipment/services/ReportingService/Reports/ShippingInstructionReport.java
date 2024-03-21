@@ -176,7 +176,7 @@ public class ShippingInstructionReport extends IReport{
                 if(v.get(NET_WEIGHT) != null)
                     v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
                 if(v.get(VOLUME_WEIGHT) != null)
-                    v.put(VOLUME_WEIGHT, twoDecimalPlacesFormat(v.get(VOLUME_WEIGHT).toString()));
+                    v.put(VOLUME_WEIGHT, ConvertToWeightNumberFormat(v.get(VOLUME_WEIGHT).toString(), v1TenantSettingsResponse));
             }
 
             dictionary.put(ITEMS ,values);
