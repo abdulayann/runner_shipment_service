@@ -13,8 +13,6 @@ import java.util.List;
 
 @Component
 public class PartialFetchUtils {
-    private PartialFetchUtils(){}
-
 
     private static JsonHelper jsonHelper;
 
