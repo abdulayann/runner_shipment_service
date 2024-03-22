@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
@@ -1925,6 +1926,51 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    public ResponseEntity<IRunnerResponse> fullConsolidationsList(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            // TODO- implement actual logic with filters
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error("Request is empty for Consolidation list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            checkBookingIdCriteria(request);
+            Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
+            Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildListSuccessResponse(
+                        convertEntityListToFullConsolidationList(consolidationDetailsPage.getContent()),
+                        consolidationDetailsPage.getTotalPages(),
+                        consolidationDetailsPage.getTotalElements());
+            else {
+                List<IRunnerResponse>filteredList=new ArrayList<>();
+                for( var curr: convertEntityListToFullConsolidationList(consolidationDetailsPage.getContent())){
+                    RunnerPartialListResponse res=new RunnerPartialListResponse();
+                    res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    filteredList.add( res);
+                }
+                return ResponseHelper.buildListSuccessResponse(
+                        filteredList,
+                        consolidationDetailsPage.getTotalPages(),
+                        consolidationDetailsPage.getTotalElements());
+            }
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<IRunnerResponse> convertEntityListToFullConsolidationList(List<ConsolidationDetails> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(consolidationDetails -> {
+            ConsolidationDetailsResponse response = modelMapper.map(consolidationDetails, ConsolidationDetailsResponse.class);
+            responseList.add(response);
+        });
+        return responseList;
+    }
+
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
@@ -1936,12 +1982,26 @@ public class ConsolidationService implements IConsolidationService {
             checkBookingIdCriteria(request);
             Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
             Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
-            List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
-            log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildListSuccessResponse(
-                    consoleResponse,
-                    consolidationDetailsPage.getTotalPages(),
-                    consolidationDetailsPage.getTotalElements());
+            if(request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
+                List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
+                log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildListSuccessResponse(
+                        consoleResponse,
+                        consolidationDetailsPage.getTotalPages(),
+                        consolidationDetailsPage.getTotalElements());
+            }
+            else {
+                List<IRunnerResponse>filteredList=new ArrayList<>();
+                for( var curr: convertEntityListToDtoList(consolidationDetailsPage.getContent())){
+                    RunnerPartialListResponse res=new RunnerPartialListResponse();
+                    res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    filteredList.add( res);
+                }
+                return ResponseHelper.buildListSuccessResponse(
+                        filteredList,
+                        consolidationDetailsPage.getTotalPages(),
+                        consolidationDetailsPage.getTotalElements());
+            }
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
