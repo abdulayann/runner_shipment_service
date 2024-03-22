@@ -63,6 +63,13 @@ public class EnumConstantService implements IEnumConstantService {
         }
         response.put(Constants.CARRIER_BOOKING_STATUS, enumList);
 
+        enumList = new ArrayList<>();
+        for (RAKCType rakcType : RAKCType.values()) {
+            enumList.add(EnumConstantResponse.builder().id(rakcType.getId()).description(rakcType.getDescription()).name(rakcType.name()).build());
+        }
+        response.put(Constants.RA_KC_TYPE, enumList);
+
+
         return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
 
     }

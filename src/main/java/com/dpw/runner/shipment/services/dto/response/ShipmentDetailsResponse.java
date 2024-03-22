@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -181,5 +182,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long shipmentCount;
     private LocalDateTime bookingCreatedDate;
     private List<String> securityStatus;
-    private Boolean isAirMessagingSent;
+    private AwbStatus awbStatus;
 }

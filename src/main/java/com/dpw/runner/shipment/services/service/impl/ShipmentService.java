@@ -3129,7 +3129,13 @@ public class ShipmentService implements IShipmentService {
             shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
             shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
             try {
-                shipmentDetailsResponse.setIsAirMessagingSent(awbDao.findIsAirMessagingSentByShipmentId(shipmentDetailsResponse.getId()));
+                var awb = awbDao.findByShipmentId(shipmentDetailsResponse.getId());
+                if(awb != null && !awb.isEmpty()){
+                    if(Boolean.TRUE.equals(awb.get(0).getIsAirMessagingSent()))
+                        shipmentDetailsResponse.setAwbStatus(AwbStatus.AIR_MESSAGE_SENT);
+                    else
+                        shipmentDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
+                }
                 if(!shipmentDetailsResponse.getAdditionalDetails().getIsSummaryUpdated())
                     shipmentDetailsResponse.getAdditionalDetails().setSummary(shipmentDetailsResponse.getContainerSummary().getSummary());
             } catch (Exception e) {}
