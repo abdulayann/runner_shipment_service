@@ -3448,6 +3448,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private CompletableFuture<ShipmentBillingListResponse> addBillData(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+        if (Objects.isNull(TenantSettingsDetailsContext.getCurrentTenantSettings()) || Boolean.TRUE.equals(TenantSettingsDetailsContext.getCurrentTenantSettings().getBillingServiceV2Enabled()))
+            return CompletableFuture.completedFuture(null);
         ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
                 .guidsList(List.of(shipmentDetails.getGuid())).build();
         ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
