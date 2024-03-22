@@ -79,7 +79,7 @@ public class PreAlertReport extends IReport {
         List<String> consignee = new ArrayList<>();
         if(preAlertModel.shipmentDetails.getConsignee() != null) {
             consignee = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getConsignee());
-            if(preAlertModel.shipmentDetails.getConsigner().getAddressData() != null) {
+            if(preAlertModel.shipmentDetails.getConsignee().getAddressData() != null) {
                 dictionary.put(ReportConstants.CONSIGNEE_PHONE, preAlertModel.shipmentDetails.getConsignee().getAddressData().get("ContactPhone"));
             }
         }

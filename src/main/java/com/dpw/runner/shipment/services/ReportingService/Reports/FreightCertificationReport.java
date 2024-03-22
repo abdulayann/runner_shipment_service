@@ -27,6 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
@@ -195,7 +196,7 @@ public class FreightCertificationReport extends IReport{
                 if(billChargesList != null && billChargesList.size() > 0) {
                     for (BillChargesResponse billCharge: billChargesList) {
                         ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge.getChargeTypeId());
-                        if(chargeTypesResponse != null && chargeTypesResponse.getServices().equals("Freight")) {
+                        if(chargeTypesResponse != null && Objects.equals(chargeTypesResponse.getServices(), "Freight")) {
                             if(billCharge.getOverseasSellAmount() != null) {
                                 if (currency == null) {
                                     currency = billCharge.getOverseasSellCurrency();
