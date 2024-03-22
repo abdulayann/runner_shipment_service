@@ -2615,7 +2615,7 @@ public class AwbService implements IAwbService {
             double prepaidDueCarrierCharges = 0.00;
             double collectDueCarrierCharges = 0.00;
 
-            if(req.getChargeDetails().getIdentifier1().equals(Constants.TRUE)) {
+            if(!Objects.isNull(req.getChargeDetails().getIdentifier1()) && req.getChargeDetails().getIdentifier1().equals(Constants.TRUE)) {
                 // Prepaid WeighCharges
                 prepaidWeightCharge = totalAmount;
                 prepaidValuationCharge = getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
@@ -2626,7 +2626,7 @@ public class AwbService implements IAwbService {
                 prepaidTax = 0.00;
             }
 
-            if(req.getChargeDetails().getIdentifier2().equals(Constants.TRUE)) {
+            if(!Objects.isNull(req.getChargeDetails().getIdentifier2()) && req.getChargeDetails().getIdentifier2().equals(Constants.TRUE)) {
                 // CollectWeightCharges
                 collectWeightCharge = totalAmount;
                 collectValuationCharge = getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
@@ -2637,7 +2637,7 @@ public class AwbService implements IAwbService {
                 collectTax = 0.00;
             }
 
-            if(req.getChargeDetails().getIdentifier3().equals(Constants.TRUE)) {
+            if(!Objects.isNull(req.getChargeDetails().getIdentifier3()) && req.getChargeDetails().getIdentifier3().equals(Constants.TRUE)) {
                 // PrepaidDueAgentCharges
                 // PrepaidDueCarrierCharges
                 prepaidDueAgentCharges = agentOtherCharges;
@@ -2647,7 +2647,7 @@ public class AwbService implements IAwbService {
                 prepaidDueCarrierCharges = 0.00;
             }
 
-            if(req.getChargeDetails().getIdentifier4().equals(Constants.TRUE)) {
+            if(!Objects.isNull(req.getChargeDetails().getIdentifier4()) && req.getChargeDetails().getIdentifier4().equals(Constants.TRUE)) {
                 // CollectDueAgentCharges
                 // CollectDueCarrierCharges
                 collectDueAgentCharges = agentOtherCharges;
