@@ -77,6 +77,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -1415,8 +1416,9 @@ public class ContainerService implements IContainerService {
                 }
             }
             ContainerSummaryResponse response = new ContainerSummaryResponse();
-            response.setTotalPackages(String.valueOf(packageCount));
-            response.setTotalContainers(String.valueOf(totalContainerCount));
+            DecimalFormat decimalFormat = new DecimalFormat("#");
+            response.setTotalPackages(decimalFormat.format(packageCount));
+            response.setTotalContainers(decimalFormat.format(totalContainerCount));
             response.setTotalWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
             response.setTotalTareWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(tareWeight), v1TenantSettingsResponse), toWeightUnit));
             if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
