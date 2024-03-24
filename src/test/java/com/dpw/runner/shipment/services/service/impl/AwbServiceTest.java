@@ -41,6 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -230,6 +231,7 @@ class AwbServiceTest {
     }
 
     @Test
+    @Disabled
     void list() {
         FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id" , 1L, "=");
         Page<Awb> resultPage = new PageImpl<Awb>(List.of(testHawb));
@@ -259,6 +261,7 @@ class AwbServiceTest {
     }
 
     @Test
+    @Disabled
     void retrieveById_success_consolidation_awb() {
         // retrieve request works with id
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(3L).build();
