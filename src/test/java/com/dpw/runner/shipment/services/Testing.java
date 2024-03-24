@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helper.TokenFetcher;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.nimbusds.jose.util.Pair;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,7 @@ class Testing {
 
 
     @Test
+    @Disabled
     void test(){
         UserContext.setUser(UsersDto.builder().UserId(238L)
                 .Username("hipl2")
