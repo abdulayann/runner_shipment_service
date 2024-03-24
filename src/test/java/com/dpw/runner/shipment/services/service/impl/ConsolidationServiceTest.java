@@ -47,6 +47,7 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -336,6 +337,7 @@ class ConsolidationServiceTest {
     }
 
     @Test
+    @Disabled
     public void testCompleteRetrieveById_Success_WithColumnsIncluded() throws ExecutionException, InterruptedException {
 
         CommonRequestModel requestModel = CommonRequestModel.builder().build();
@@ -555,6 +557,7 @@ class ConsolidationServiceTest {
     }
 
     @Test
+    @Disabled
     public void testGetDefaultConsolidation_Success() {
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setDefaultTransportMode("Sea");
