@@ -23,6 +23,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
     public static class Meta implements Serializable {
         private Map<String, String> chargeDue;
         private Map<String, String> chargeBasis;
+        private Map<String, String> rateClass;
         private OrgDetails shipper;
         private OrgDetails consignee;
         private OrgDetails issueingAgent;
@@ -31,6 +32,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private List<AwbRoutingInfoRes> awbRoutingInfo;
         private TenantInfo tenantInfo;
         private BigDecimal totalAmount;
+        private String customOriginCode;
     }
 
     @Data

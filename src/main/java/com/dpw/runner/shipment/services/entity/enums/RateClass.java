@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum RateClass {
     M (1,"M"),
     N (2,"N"),

@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ChargeBasis;
 import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
+import com.dpw.runner.shipment.services.entity.enums.RateClass;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -368,8 +369,10 @@ public class AwbUtility {
     private void populateEnums(AwbAirMessagingResponse awbResponse) {
         Map<String, String> chargeDue = Arrays.stream(ChargesDue.values()).collect(Collectors.toMap(e -> String.valueOf(e.getId()), ChargesDue::getDescription));
         Map<String, String> chargeBasis = Arrays.stream(ChargeBasis.values()).collect(Collectors.toMap(e -> String.valueOf(e.getId()), ChargeBasis::getDescription));
+        Map<String, String> rateClass = Arrays.stream(RateClass.values()).collect(Collectors.toMap(e -> String.valueOf(e.getId()), RateClass::getDescription));
         awbResponse.getMeta().setChargeDue(chargeDue);
         awbResponse.getMeta().setChargeBasis(chargeBasis);
+        awbResponse.getMeta().setRateClass(rateClass);
     }
     private AwbAirMessagingResponse.UnlocDetails populateUnlocFields(UnlocationsResponse unloc) {
         return AwbAirMessagingResponse.UnlocDetails.builder()
@@ -507,9 +510,17 @@ public class AwbUtility {
                 }
             }
         }
-        if(awbResponse.getAwbPaymentInfo() != null)
-            awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
+        if(awbResponse.getAwbPaymentInfo() != null) {
+            if (!Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalCollect()) && !Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalPrepaid()))
+                awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
+            else if (!Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalCollect()))
+                awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect());
+            else if (!Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalPrepaid()))
+                awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalPrepaid());
+        }
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
+        if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode()))
+            awbResponse.getMeta().setCustomOriginCode(CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2());
         return awbResponse;
     }
 }
