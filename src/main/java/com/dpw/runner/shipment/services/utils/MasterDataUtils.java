@@ -538,6 +538,37 @@ public class MasterDataUtils{
         }
     }
 
+    public void fetchVesselForList(List<IRunnerResponse> responseList) {
+        Set<String> locCodes = new HashSet<>();
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        for (IRunnerResponse response : responseList) {
+            if (response instanceof ShipmentListResponse shipmentListResponse) {
+                if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel())) {
+                    locCodes.addAll(createInBulkVesselsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
+                }
+            }
+            else if (response instanceof ConsolidationListResponse consolidationListResponse) {
+                if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel())) {
+                    locCodes.addAll(createInBulkVesselsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
+                }
+            }
+        }
+
+        Map<String, EntityTransferVessels> v1Data = fetchInBulkVessels(locCodes.stream().toList());
+        pushToCache(v1Data, CacheConstants.VESSELS);
+
+        for (IRunnerResponse response : responseList) {
+            if (response instanceof ShipmentListResponse shipmentListResponse) {
+                if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel()))
+                    shipmentListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
+            }
+            else if (response instanceof ConsolidationListResponse consolidationListResponse) {
+                if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel()))
+                    consolidationListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
+            }
+        }
+    }
+
     public void setContainerTeuData(List<ShipmentDetails> shipmentDetailsList, List<IRunnerResponse> responseList) {
         Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
         for (IRunnerResponse response : responseList)
