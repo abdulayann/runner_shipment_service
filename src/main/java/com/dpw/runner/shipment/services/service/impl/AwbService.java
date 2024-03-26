@@ -3115,11 +3115,11 @@ public class AwbService implements IAwbService {
                 V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
                 List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
                 if(orgList.size() > 0) {
-                    awbShipmentInfo.setIssuingAgentName(orgList.get(0).getFullName());
+                    awbShipmentInfo.setIssuingAgentName(StringUtility.toUpperCase(orgList.get(0).getFullName()));
                     awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
                     awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
                             orgList.get(0).getAgentCASSCode() : awbShipmentInfo.getAgentCASSCode());
-                    awbShipmentInfo.setIssuingAgentAddress(getFormattedAddress(orgList.get(0)));
+                    awbShipmentInfo.setIssuingAgentAddress(StringUtility.toUpperCase(getFormattedAddress(orgList.get(0))));
                     if(awbCargoInfo != null) {
                         String country = orgList.get(0) != null ?
                                 orgList.get(0).getCountry() : null;
