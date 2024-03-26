@@ -1604,7 +1604,7 @@ public class MasterDataUtils{
                     if (!Objects.isNull(billingData)) {
                         ShipmentListResponse shipmentListResponse = dataMap.get(details.getId());
 
-//                        shipmentListResponse.setBillStatus(billingData.getBillStatus());
+                        shipmentListResponse.setBillStatus(details.getJobStatus());
                         shipmentListResponse.setTotalEstimatedCost(billingData.getTotalEstimatedCost());
                         shipmentListResponse.setTotalEstimatedRevenue(billingData.getTotalEstimatedRevenue());
                         shipmentListResponse.setTotalEstimatedProfit(billingData.getTotalEstimatedProfit());
