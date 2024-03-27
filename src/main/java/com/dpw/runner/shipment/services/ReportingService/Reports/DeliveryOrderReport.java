@@ -213,6 +213,8 @@ public class DeliveryOrderReport extends IReport{
             dictionary.put(CLIENT_ADRS, clientAddress);
         }
 
+        populateRaKcData(dictionary, deliveryOrderModel.getShipmentDetails());
+
         return dictionary;
     }
 }

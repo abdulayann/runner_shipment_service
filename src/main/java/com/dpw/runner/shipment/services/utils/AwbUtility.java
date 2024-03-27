@@ -2,9 +2,11 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbPackingInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
@@ -364,6 +366,13 @@ public class AwbUtility {
         if(awbResponse.getAwbPaymentInfo() != null)
             awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
+
+        if(awbResponse.getMeta() != null) {
+            var user = UserContext.getUser();
+            awbResponse.getMeta().setUserName(populateUserInfoFields(user));
+            awbResponse.getMeta().setMasterAwbNumber(consolidationDetails.getBol());
+        }
+
         return awbResponse;
     }
     private void populateEnums(AwbAirMessagingResponse awbResponse) {
@@ -519,8 +528,21 @@ public class AwbUtility {
                 awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalPrepaid());
         }
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
+
+        if(awbResponse.getMeta() != null) {
+            var user = UserContext.getUser();
+
+            awbResponse.getMeta().setUserName(populateUserInfoFields(user));
+            awbResponse.getMeta().setMasterAwbNumber(shipmentDetails.getMasterBill());
+        }
         if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode()))
             awbResponse.getMeta().setCustomOriginCode(CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2());
         return awbResponse;
+    }
+
+    private AwbAirMessagingResponse.UserInfo populateUserInfoFields(UsersDto user) {
+        return AwbAirMessagingResponse.UserInfo.builder()
+                .userName(user.getUsername())
+                .build();
     }
 }

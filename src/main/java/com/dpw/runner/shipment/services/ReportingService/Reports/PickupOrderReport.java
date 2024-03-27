@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PickUpOrderReportModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,7 +82,8 @@ public class PickupOrderReport extends IReport {
             }
         }
 
-        dictionary.put(ReportConstants.PRINT_USER, UserContext.getUser().getUsername());
+        populateRaKcData(dictionary, pickUpOrderReportModel.hblModel.shipment);
+
         return dictionary;
     }
 }

@@ -41,6 +41,7 @@ public class ShipmentCANReport extends IReport {
     @Autowired
     private IHblDao hblDao;
 
+
     @Override
     public Map<String, Object> getData(Long id) throws RunnerException {
         ShipmentCANModel shipmentCANModel = (ShipmentCANModel) getDocumentModel(id);
@@ -276,6 +277,9 @@ public class ShipmentCANReport extends IReport {
         dictionary.put(ReportConstants.TOTAL_BILL_AMOUNT, AmountNumberFormatter.Format(BigDecimal.valueOf(totalBillAmount), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
         dictionary.put(TAXES, taxes);
         dictionary.put(TOTAL_TAX_AMOUNT, AmountNumberFormatter.Format(BigDecimal.valueOf(totalTax), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
+
+        populateRaKcData(dictionary, shipmentCANModel.shipmentDetails);
+
         return dictionary;
     }
 }

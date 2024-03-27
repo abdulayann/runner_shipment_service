@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import org.springframework.http.HttpHeaders;
@@ -163,4 +164,5 @@ public interface IV1Service {
     CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request);
     V1DataResponse fetchCreditLimit(Object request);
     OrgAddressResponse fetchOrgAddresses(Object request);
+    EntityTransferAddress fetchAddress(String entityId);
 }

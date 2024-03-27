@@ -33,6 +33,8 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private TenantInfo tenantInfo;
         private BigDecimal totalAmount;
         private String customOriginCode;
+        private UserInfo userName;
+        private String masterAwbNumber;
     }
 
     @Data
@@ -80,5 +82,11 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
     public static class AirlineInfo implements Serializable {
         private String iata;
         private String airlinePrefix;
+    }
+
+    @Data
+    @Builder
+    public static class UserInfo implements Serializable {
+        private String userName;
     }
 }
