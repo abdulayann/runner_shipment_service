@@ -84,6 +84,8 @@ public class PickupOrderReport extends IReport {
         }
 
         dictionary.put(ReportConstants.PRINT_USER, UserContext.getUser().getUsername());
+        populateRaKcData(dictionary, pickUpOrderReportModel.hblModel.shipment);
+
         return dictionary;
     }
 }

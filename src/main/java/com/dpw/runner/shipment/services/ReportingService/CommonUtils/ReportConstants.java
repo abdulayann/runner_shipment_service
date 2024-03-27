@@ -1010,4 +1010,27 @@ public class ReportConstants {
     public static final String VesselsNameFlightName = "VesselsNameFlightName";
     public static final String VoyageOrFlightNo = "VoyageOrFlightNo";
 
+    public static final String CONSIGNOR_TYPE = "ConsignorType";
+    public static final String CONSIGNMENT_STATUS = "ConsignmentStatus";
+    public static final String EXEMPTION_CARGO = "ExemptionCargo";
+    public static final String SCREENING_CODES = "ScreeningCodes";
+
+    public static final String ORIGIN_AGENT_TYPE = "OriginAgentType";
+    public static final String DESTINATION_AGENT_TYPE = "DestinationAgentType";
+
+    public static final String CONSIGNOR_KC_NUMBER = "ConsignorKCNumber";
+    public static final String CONSIGNOR_KC_EXPIRY = "ConsignorKCExpiry";
+
+    public static final String ORIGIN_AGENT_RN_NUMBER = "OriginAgentRANumber";
+    public static final String DESTINATION_AGENT_RN_NUMBER = "DestinationAgentRANumber";
+    public static final String ORIGIN_AGENT_RA_EXPIRY = "OriginAgentRAExpiry";
+    public static final String DESTINATION_AGENT_RA_EXPIRY = "DestinationAgentRAExpiry";
+
+    public static final String AGENT_TYPE = "AgentType";
+    public static final String KC_EXPIRY = "KCExpiry";
+    public static final String RA_EXPIRY = "RAExpiry";
+
+    public static final String RA = "RA";
+    public static final String KC = "KC";
+
 }

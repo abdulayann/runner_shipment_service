@@ -218,4 +218,6 @@ public class AdditionalDetailModel implements IDocumentModel {
     private String cargoTermsDescription;
     private String bLRemarks;
     private String bLRemarksDescription;
+    private String exemptionCodes;
+    private String aomFreeText;
 }

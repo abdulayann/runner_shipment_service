@@ -135,6 +135,9 @@ public class ArrivalNoticeReport extends IReport {
                     getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
             dictionary.put(ReportConstants.PICK_UP_FROM, address);
         }
+
+        populateRaKcData(dictionary, arrivalNoticeModel.shipmentDetails);
+
         return dictionary;
     }
 

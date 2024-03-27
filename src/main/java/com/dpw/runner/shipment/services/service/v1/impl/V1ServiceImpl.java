@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -19,6 +20,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -313,6 +315,8 @@ public class V1ServiceImpl implements IV1Service {
     private String CREDIT_LIMIT_LIST;
     @Value("${v1service.url.base}${v1service.url.org-address-list}")
     private String ORG_ADDRESS_LIST;
+    @Value("${v1service.url.base}${v1service.url.addressRetrieve}")
+    private String ADDRESS_RETRIEVE;
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -325,6 +329,8 @@ public class V1ServiceImpl implements IV1Service {
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     public ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers) {
@@ -2014,4 +2020,40 @@ public class V1ServiceImpl implements IV1Service {
         }
     }
 
+    @Override
+    public EntityTransferAddress fetchAddress(String addressId) {
+        try {
+            V1RetrieveRequest retrieveRequest = V1RetrieveRequest.builder().EntityId(addressId).build();
+            V1RetrieveResponse v1RetrieveResponse = this.retrieveAddress(retrieveRequest);
+            if(v1RetrieveResponse != null)
+            {
+                return modelMapper.map(v1RetrieveResponse.getEntity(), EntityTransferAddress.class);
+            }
+            return null;
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    private V1RetrieveResponse retrieveAddress(Object request) {
+        ResponseEntity responseEntity = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            responseEntity = this.restTemplate.postForEntity(this.ADDRESS_RETRIEVE, entity, V1RetrieveResponse.class, new Object[0]);
+            log.info("Total time taken in retrieveDpsAddress() function: {}", (System.currentTimeMillis() - time));
+            return (V1RetrieveResponse) responseEntity.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
 }

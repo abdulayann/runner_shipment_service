@@ -38,6 +38,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -2475,5 +2476,58 @@ public abstract class IReport {
         dictionary.put(prefix + CONTACT_PHONE, getValueFromMap(addressData, CONTACT_PHONE));
         dictionary.put(prefix + MOBILE, getValueFromMap(addressData, MOBILE));
         dictionary.put(prefix + ZIP_POST_CODE, getValueFromMap(addressData, ZIP_POST_CODE));
+    }
+
+    public void populateRaKcData(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        PartiesModel partiesModelSendingAgent = shipmentModel.getAdditionalDetails().getImportBroker();
+        PartiesModel partiesModelReceivingAgent = shipmentModel.getAdditionalDetails().getNotifyParty();
+
+        if(partiesModelSendingAgent != null && partiesModelSendingAgent.getAddressData() != null) {
+            Map<String, Object> addressMap = partiesModelSendingAgent.getAddressData();
+
+            String addressId = addressMap.get("Id").toString();
+            EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
+
+            if(entityTransferAddress.getRAKCType() == 1) {
+                dictionary.put(ORIGIN_AGENT_TYPE, RA);
+                dictionary.put(ORIGIN_AGENT_RN_NUMBER, entityTransferAddress.getKCRANumber());
+                dictionary.put(ORIGIN_AGENT_RA_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
+            }
+        }
+
+        if(partiesModelReceivingAgent != null && partiesModelReceivingAgent.getAddressData() != null) {
+            Map<String, Object> addressMap = partiesModelReceivingAgent.getAddressData();
+
+            String addressId = addressMap.get("Id").toString();
+            EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
+
+            if(entityTransferAddress.getRAKCType() == 1) {
+                dictionary.put(DESTINATION_AGENT_TYPE, RA);
+                dictionary.put(DESTINATION_AGENT_RN_NUMBER, entityTransferAddress.getKCRANumber());
+                dictionary.put(DESTINATION_AGENT_RA_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
+            }
+        }
+
+        if(shipmentModel.getConsigner() != null && shipmentModel.getConsigner().getAddressData() != null) {
+            Map<String, Object> addressMap = shipmentModel.getConsigner().getAddressData();
+
+            String addressId = addressMap.get("Id").toString();
+            EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
+
+            if(entityTransferAddress.getRAKCType() == 2) {
+                dictionary.put(CONSIGNOR_TYPE, KC);
+                dictionary.put(CONSIGNOR_KC_NUMBER, entityTransferAddress.getKCRANumber());
+                dictionary.put(CONSIGNOR_KC_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
+            }
+        }
+
+        if (shipmentModel.getAdditionalDetails() != null) {
+            AdditionalDetailModel additionalDetailModel = shipmentModel.getAdditionalDetails();
+            dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes() == null ? null : additionalDetailModel.getExemptionCodes());
+            dictionary.put(CONSIGNMENT_STATUS, additionalDetailModel.getScreeningStatus() == null ? null : additionalDetailModel.getScreeningStatus());
+        }
+
+        dictionary.put(SCREENING_CODES, shipmentModel.getSecurityStatus());
     }
 }
