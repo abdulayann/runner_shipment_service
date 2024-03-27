@@ -369,7 +369,7 @@ public class AwbUtility {
 
         if(awbResponse.getMeta() != null) {
             var user = UserContext.getUser();
-            awbResponse.getMeta().setUserName(populateUserInfoFields(user));
+            awbResponse.getMeta().setUserInfo(populateUserInfoFields(user));
             awbResponse.getMeta().setMasterAwbNumber(consolidationDetails.getBol());
         }
 
@@ -532,7 +532,7 @@ public class AwbUtility {
         if(awbResponse.getMeta() != null) {
             var user = UserContext.getUser();
 
-            awbResponse.getMeta().setUserName(populateUserInfoFields(user));
+            awbResponse.getMeta().setUserInfo(populateUserInfoFields(user));
             awbResponse.getMeta().setMasterAwbNumber(shipmentDetails.getMasterBill());
         }
         if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode()))

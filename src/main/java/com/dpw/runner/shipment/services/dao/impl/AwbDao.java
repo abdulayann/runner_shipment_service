@@ -15,8 +15,10 @@ import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -213,8 +215,8 @@ public class AwbDao implements IAwbDao {
         } else {
             return;
         }
-
         KafkaResponse kafkaResponse = getKafkaResponseForAirMessaging(awbResponse);
+        log.info("RequestId: {} || Event: {} || message: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.AIR_MESSAGING_EVENT_PUSH_TO_KAFKA, jsonHelper.convertToJson(kafkaResponse));
         producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
     }
 
