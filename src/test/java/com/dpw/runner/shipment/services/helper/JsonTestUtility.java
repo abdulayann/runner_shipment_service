@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.helper;
 
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,6 +14,8 @@ import org.springframework.boot.json.JsonParseException;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +28,8 @@ public class JsonTestUtility {
 
     static {
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        JavaTimeModule javaTimeModule = new JavaTimeModule();
+        javaTimeModule.addDeserializer(LocalDateTime.class, new CustomLocalDateTimeDeserializer());
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
