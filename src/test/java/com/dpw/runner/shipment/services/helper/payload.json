@@ -1191,6 +1191,41 @@
     "sourceGuid": "1d27fe99-0874-4587-9a83-460bb5ba31f0"
   },
   "MAWB": {},
+  "HBL": {
+    "isDeleted": false,
+    "shipmentId": 1,
+    "hblData": {
+      "shipmentId": 1,
+      "version": 1,
+      "status": "Pending",
+      "blType": "ORIGINAL_HBL",
+      "consignorName": "AKSHAY IMAX AKSHAY IMAXAK SHAY IMAX",
+      "consignorAddress": "AKSHAY IMAX AKSHAY IMAXAK SHAY IMAX\r\n101, SBS MARG\r\nAcharapakkam\r\nIND\r\n400001",
+      "consigneeName": "EMBRAPORT EMPRESA BRASILEIRA DE TERMINAIS PORTUARIOS S/A",
+      "consigneeAddress": "EMBRAPORT EMPRESA BRASILEIRA DE TERMINAIS PORTUARIOS S/A\r\nSantos SP\r\nBRA\r\n11095-710\r\n+9338888888",
+      "placeOfReceipt": "",
+      "portOfLoad": "",
+      "portOfDischarge": "",
+      "placeOfDelivery": "",
+      "noOfCopies": "",
+      "cargoGrossVolumeUnit": "M3",
+      "cargoGrossWeightUnit": "KG",
+      "reason": "",
+      "houseBill": "AIR-98383736",
+      "transportType": "SEA",
+      "shipmentType": "EXP",
+      "etd": "2024-02-12T00:00",
+      "shippingTime": "00:00",
+      "invoiceNumbers": "",
+      "elDate": "",
+      "lcNumber": "",
+      "elNumber": "",
+      "finalDestination": "515A000D-FBB1-477D-89FC-7D9EF68CA5FA"
+    },
+    "hblContainer": [],
+    "hblCargo": [],
+    "hblNotifyParty": []
+  },
   "AWB_GENERATE_PAYMENT_INFO_PAYLOAD": {
     "isFromShipment": true,
     "awbGoodsDescriptionInfo": [
