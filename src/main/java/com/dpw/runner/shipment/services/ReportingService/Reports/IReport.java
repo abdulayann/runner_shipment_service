@@ -2486,48 +2486,72 @@ public abstract class IReport {
         if(partiesModelSendingAgent != null && partiesModelSendingAgent.getAddressData() != null) {
             Map<String, Object> addressMap = partiesModelSendingAgent.getAddressData();
 
-            String addressId = addressMap.get("Id").toString();
-            EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
+            String addressId = StringUtility.convertToString(addressMap.get("Id"));
+            if(addressId != null && !addressId.equals("")) {
+                EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
 
-            if(entityTransferAddress.getRAKCType() == 1) {
-                dictionary.put(ORIGIN_AGENT_TYPE, RA);
-                dictionary.put(ORIGIN_AGENT_RN_NUMBER, entityTransferAddress.getKCRANumber());
-                dictionary.put(ORIGIN_AGENT_RA_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
+                if(entityTransferAddress.getRAKCType() == 1) {
+                    dictionary.put(ORIGIN_AGENT_TYPE, RA);
+                    if(entityTransferAddress.getKCRANumber() != null) {
+                        dictionary.put(ORIGIN_AGENT_RN_NUMBER, entityTransferAddress.getKCRANumber());
+                    }
+                    if(entityTransferAddress.getKCRAExpiry() != null) {
+                        dictionary.put(ORIGIN_AGENT_RA_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
+                    }
+                }
             }
         }
 
         if(partiesModelReceivingAgent != null && partiesModelReceivingAgent.getAddressData() != null) {
             Map<String, Object> addressMap = partiesModelReceivingAgent.getAddressData();
 
-            String addressId = addressMap.get("Id").toString();
-            EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
+            String addressId = StringUtility.convertToString(addressMap.get("Id"));
+            if(addressId != null && !addressId.equals("")) {
+                EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
 
-            if(entityTransferAddress.getRAKCType() == 1) {
-                dictionary.put(DESTINATION_AGENT_TYPE, RA);
-                dictionary.put(DESTINATION_AGENT_RN_NUMBER, entityTransferAddress.getKCRANumber());
-                dictionary.put(DESTINATION_AGENT_RA_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
+                if (entityTransferAddress.getRAKCType() == 1) {
+                    dictionary.put(DESTINATION_AGENT_TYPE, RA);
+                    if(entityTransferAddress.getKCRANumber() != null) {
+                        dictionary.put(DESTINATION_AGENT_RN_NUMBER, entityTransferAddress.getKCRANumber());
+                    }
+                    if(entityTransferAddress.getKCRAExpiry() != null) {
+                        dictionary.put(DESTINATION_AGENT_RA_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
+                    }
+                }
             }
         }
 
         if(shipmentModel.getConsigner() != null && shipmentModel.getConsigner().getAddressData() != null) {
             Map<String, Object> addressMap = shipmentModel.getConsigner().getAddressData();
 
-            String addressId = addressMap.get("Id").toString();
-            EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
+            String addressId = StringUtility.convertToString(addressMap.get("Id"));
+            if(addressId != null && !addressId.equals("")) {
+                EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
 
-            if(entityTransferAddress.getRAKCType() == 2) {
-                dictionary.put(CONSIGNOR_TYPE, KC);
-                dictionary.put(CONSIGNOR_KC_NUMBER, entityTransferAddress.getKCRANumber());
-                dictionary.put(CONSIGNOR_KC_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
+                if (entityTransferAddress.getRAKCType() == 2) {
+                    dictionary.put(CONSIGNOR_TYPE, KC);
+                    if(entityTransferAddress.getKCRANumber() != null) {
+                        dictionary.put(CONSIGNOR_KC_NUMBER, entityTransferAddress.getKCRANumber());
+                    }
+                    if(entityTransferAddress.getKCRAExpiry() != null) {
+                        dictionary.put(CONSIGNOR_KC_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
+                    }
+                }
             }
         }
 
         if (shipmentModel.getAdditionalDetails() != null) {
             AdditionalDetailModel additionalDetailModel = shipmentModel.getAdditionalDetails();
-            dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes() == null ? null : additionalDetailModel.getExemptionCodes());
-            dictionary.put(CONSIGNMENT_STATUS, additionalDetailModel.getScreeningStatus() == null ? null : additionalDetailModel.getScreeningStatus());
+            if(additionalDetailModel.getExemptionCodes() != null) {
+                dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes());
+            }
+            if(additionalDetailModel.getScreeningStatus() != null) {
+                dictionary.put(CONSIGNMENT_STATUS, additionalDetailModel.getScreeningStatus());
+            }
         }
 
-        dictionary.put(SCREENING_CODES, shipmentModel.getSecurityStatus());
+        if(shipmentModel.getSecurityStatus() != null && shipmentModel.getSecurityStatus().size() > 0) {
+            dictionary.put(SCREENING_CODES, shipmentModel.getSecurityStatus());
+        }
     }
 }
