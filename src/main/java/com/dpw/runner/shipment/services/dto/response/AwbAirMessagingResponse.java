@@ -33,7 +33,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private TenantInfo tenantInfo;
         private BigDecimal totalAmount;
         private String customOriginCode;
-        private UserInfo userName;
+        private UserInfo userInfo;
         private String masterAwbNumber;
     }
 
