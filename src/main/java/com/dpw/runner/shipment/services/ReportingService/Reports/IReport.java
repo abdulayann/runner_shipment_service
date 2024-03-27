@@ -145,18 +145,18 @@ public abstract class IReport {
         if(row.getPacks() != null && !row.getPacks().isEmpty())
             ship.ShipmentPacks = Long.valueOf(row.getPacks());
         ship.ShipmentPacksUnit = row.getPacksType();
-        ship.GrossWeight = getRoundedBigDecimal(row.getGrossWeight(),2, RoundingMode.HALF_UP);
+        ship.GrossWeight = ConvertToWeightNumberFormat(row.getGrossWeight(), TenantSettingsDetailsContext.getCurrentTenantSettings());
         ship.GrossWeightUnit = row.getGrossWeightUnit();
-        ship.TareWeight =  getRoundedBigDecimal(row.getTareWeight(),2, RoundingMode.HALF_UP);
+        ship.TareWeight =  ConvertToWeightNumberFormat(row.getTareWeight(), TenantSettingsDetailsContext.getCurrentTenantSettings());
         ship.TareWeightUnit = row.getTareWeightUnit();
         ship.Measurement = getRoundedBigDecimal(row.getMeasurement(),2, RoundingMode.HALF_UP);
         ship.MeasurementUnit = row.getMeasurementUnit();
-        ship.GrossVolume = getRoundedBigDecimal(row.getGrossVolume(),2, RoundingMode.HALF_UP);
+        ship.GrossVolume = ConvertToVolumeNumberFormat(row.getGrossVolume(), TenantSettingsDetailsContext.getCurrentTenantSettings());
         ship.GrossVolumeUnit = row.getGrossVolumeUnit();
         ship.ContainerTypeCode = row.getContainerCode();
         ship.ContainerCount = row.getContainerCount();
         ship.ShipmentMarksnNums = row.getMarksNums();
-        ship.NetWeight = getRoundedBigDecimal(row.getNetWeight(),2, RoundingMode.HALF_UP);
+        ship.NetWeight = ConvertToWeightNumberFormat(row.getNetWeight(), TenantSettingsDetailsContext.getCurrentTenantSettings());
         ship.NetWeightUnit = row.getNetWeightUnit();
         ship.MinTemp = getRoundedBigDecimal(row.getMinTemp(),2, RoundingMode.HALF_UP);
         ship.MinTempUnit = row.getMinTempUnit();
@@ -192,7 +192,8 @@ public abstract class IReport {
             ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit);
             ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit);
             ship.PacksUnitDescription = getMasterListItemDesc(ship.ShipmentPacksUnit);
-            ship.VGMWeight = ship.GrossWeight.add(ship.TareWeight);
+            if (row.getGrossWeight() != null && row.getTareWeight() != null)
+                ship.VGMWeight = ConvertToWeightNumberFormat(row.getGrossWeight().add(row.getTareWeight()), TenantSettingsDetailsContext.getCurrentTenantSettings());
         } catch (Exception ignored) { }
         CommodityResponse commodityResponse = getCommodity(row.getCommodityCode());
         if (commodityResponse != null)
@@ -233,20 +234,21 @@ public abstract class IReport {
 
     public void populateBLContainer(ShipmentContainers shipmentContainer, HblContainerDto blObjectContainer) {
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
         Integer decimalPlaces = shipmentSettingsDetails.getDecimalPlaces();
         if(decimalPlaces == null)
             decimalPlaces = 2;
         shipmentContainer.BL_ContainerType = blObjectContainer.getContainerType();
         shipmentContainer.BL_SealNumber = blObjectContainer.getSealNumber();
         if (blObjectContainer.getContainerGrossWeight() != null)
-            shipmentContainer.BL_GrossWeight = blObjectContainer.getContainerGrossWeight().setScale(decimalPlaces, RoundingMode.HALF_UP);
+            shipmentContainer.BL_GrossWeight = GetDPWWeightVolumeFormat(blObjectContainer.getContainerGrossWeight(), decimalPlaces, tenantSettings);
         else
-            shipmentContainer.BL_GrossWeight = BigDecimal.ZERO;
+            shipmentContainer.BL_GrossWeight = StringUtility.getEmptyString();
         shipmentContainer.BL_GrossWeightUnit = blObjectContainer.getContainerGrossWeightUnit();
         if (blObjectContainer.getContainerGrossVolume() != null)
-            shipmentContainer.BL_GrossVolume = blObjectContainer.getContainerGrossVolume().setScale(decimalPlaces, RoundingMode.HALF_UP);
+            shipmentContainer.BL_GrossVolume = GetDPWWeightVolumeFormat(blObjectContainer.getContainerGrossVolume(), decimalPlaces, tenantSettings);
         else
-            shipmentContainer.BL_GrossVolume = BigDecimal.ZERO;
+            shipmentContainer.BL_GrossVolume = StringUtility.getEmptyString();
         shipmentContainer.BL_GrossVolumeUnit = blObjectContainer.getContainerGrossVolumeUnit();
         shipmentContainer.BL_NoofPackages = blObjectContainer.getNoOfPackages();
         shipmentContainer.BL_CarrierSealNumber = blObjectContainer.getCarrierSealNumber();
