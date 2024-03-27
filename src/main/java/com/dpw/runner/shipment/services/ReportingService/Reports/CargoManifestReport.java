@@ -129,6 +129,10 @@ public class CargoManifestReport extends IReport{
             List<Map<String, Object>> packDictionary = new ArrayList<>();
             for (PackingModel pack : cargoManifestModel.shipmentDetails.getPackingList()) {
                 var map = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(pack));
+                map.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
+                map.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.NET_WEIGHT), v1TenantSettingsResponse));
+                map.put(ReportConstants.VOLUME_WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.VOLUME_WEIGHT), v1TenantSettingsResponse));
+                map.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(map.get(ReportConstants.VOLUME), v1TenantSettingsResponse));
                 if (v1DataMap.containsKey(pack.getCommodity()))
                     map.put(ReportConstants.COMMODITY_NAME, v1DataMap.get(pack.getCommodity()).getDescription());
                 packDictionary.add(map);
