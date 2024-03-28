@@ -109,6 +109,10 @@ public class CustomsInstructionsReport extends IReport{
                     v.put(ReportConstants.TareWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.TareWeight), v1TenantSettingsResponse));
                 if (v.containsKey(ReportConstants.VGMWeight) && v.get(ReportConstants.VGMWeight) != null)
                     v.put(ReportConstants.VGMWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.VGMWeight), v1TenantSettingsResponse));
+                if (v.containsKey(ReportConstants.MIN_TEMP) && v.get(ReportConstants.MIN_TEMP) != null)
+                    v.put(ReportConstants.MIN_TEMP, ConvertToWeightNumberFormat(v.get(ReportConstants.MIN_TEMP), v1TenantSettingsResponse));
+                if (v.containsKey(ReportConstants.MAX_TEMP) && v.get(ReportConstants.MAX_TEMP) != null)
+                    v.put(ReportConstants.MAX_TEMP, ConvertToWeightNumberFormat(v.get(ReportConstants.MAX_TEMP), v1TenantSettingsResponse));
             }
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
         }
