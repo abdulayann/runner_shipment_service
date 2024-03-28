@@ -2081,7 +2081,7 @@ public abstract class IReport {
                     dict.put(PACKS_COMMODITY_GROUP, commodity.getItemDescription());
             }
             if(pack.getPacks() != null) {
-                dict.put(PACKS, addCommas(pack.getPacks()));
+                dict.put(PACKS, addCommaWithoutDecimal(new BigDecimal(pack.getPacks())) );
             }
             if (pack.getPacksType() != null)
             {
