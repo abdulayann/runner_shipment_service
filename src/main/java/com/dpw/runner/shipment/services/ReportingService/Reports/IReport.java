@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ContainerCountByCode;
@@ -720,6 +721,10 @@ public abstract class IReport {
             dictionary.put(VoyageOrFlightNo, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getFlightNumber() : null);
         else
             dictionary.put(VoyageOrFlightNo, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getVoyage() : null);
+        if (!Objects.isNull(dictionary.get(GOODS_VALUE)))
+            dictionary.put(GOODS_VALUE, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(dictionary.get(GOODS_VALUE))), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
+        if (!Objects.isNull(dictionary.get(INSURANCE_VALUE)))
+            dictionary.put(INSURANCE_VALUE, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(dictionary.get(INSURANCE_VALUE))), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
     }
 
     public List<String> populateConsigneeData(Map<String, Object> dictionary, PartiesModel shipmentConsignee) {
@@ -2104,7 +2109,7 @@ public abstract class IReport {
             }
 
             if(pack.getIsTemperatureControlled() != null && pack.getIsTemperatureControlled().equals(true)) {
-                dict.put(MIN_TEMP, pack.getMinTemp());
+                dict.put(MIN_TEMP, ConvertToWeightNumberFormat(pack.getMinTemp(), TenantSettingsDetailsContext.getCurrentTenantSettings()));
                 dict.put(MAX_TEMP, pack.getMaxTemp());
                 dict.put(MIN_TEMP_UNIT, pack.getMinTempUnit());
                 dict.put(MAX_TEMP_UNIT, pack.getMaxTempUnit());
