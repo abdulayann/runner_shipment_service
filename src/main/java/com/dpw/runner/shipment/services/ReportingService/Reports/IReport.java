@@ -2032,6 +2032,10 @@ public abstract class IReport {
                     shipContJson.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(shipContJson.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
                 if (shipContJson.containsKey(ReportConstants.NET_WEIGHT) && shipContJson.get(ReportConstants.NET_WEIGHT) != null)
                     shipContJson.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(shipContJson.get(ReportConstants.NET_WEIGHT).toString())));
+                if (shipContJson.containsKey(MIN_TEMP) && shipContJson.get(MIN_TEMP) != null)
+                    shipContJson.put(MIN_TEMP, ConvertToWeightNumberFormat(new BigDecimal(String.valueOf(shipContJson.get(MIN_TEMP)))));
+                if (shipContJson.containsKey(MAX_TEMP) && shipContJson.get(MAX_TEMP) != null)
+                    shipContJson.put(MAX_TEMP, ConvertToWeightNumberFormat(new BigDecimal(String.valueOf(shipContJson.get(MAX_TEMP)))));
                 valuesContainer.add(shipContJson);
             }
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
