@@ -4,6 +4,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -31,6 +32,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
@@ -1390,6 +1392,7 @@ public class ConsolidationService implements IConsolidationService {
             return;
         }
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         String weightChargeableUnit = Constants.WEIGHT_UNIT_KG;
         if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
             weightChargeableUnit = shipmentSettingsDetails.getWeightChargeableUnit();
@@ -1410,8 +1413,8 @@ public class ConsolidationService implements IConsolidationService {
         }
         Double consoleTeu = 0.0;
         Double shipmentTeu = 0.0;
-        Double consoleCont = 0.0;
-        Double shipmentCont = 0.0;
+        long consoleCont = 0l;
+        long shipmentCont = 0l;
         if(consolidationDetails.getContainersList() != null && consolidationDetails.getContainersList().size() > 0) {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             List<String> containerTypes = new ArrayList<>();
@@ -1439,9 +1442,9 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         response.setSummaryConsoleTEU(consoleTeu.toString());
-        response.setSummaryConsolContainer(consoleCont.toString());
+        response.setSummaryConsolContainer(StringUtility.convertToString(consoleCont));
         response.setSummaryShipmentTEU(shipmentTeu.toString());
-        response.setSummaryShipmentContainer(shipmentCont.toString());
+        response.setSummaryShipmentContainer(StringUtility.convertToString(shipmentCont));
 
         if(consolidationDetails.getAchievedQuantities() == null)
             consolidationDetails.setAchievedQuantities(new AchievedQuantities());
@@ -1472,8 +1475,8 @@ public class ConsolidationService implements IConsolidationService {
 
         response.setAllocations(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class));
         response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
-        response.setSummaryWeight(sumWeight.toString() + " " + weightChargeableUnit);
-        response.setSummaryVolume(sumVolume.toString() + " " + volumeChargeableUnit);
+        response.setSummaryWeight(IReport.ConvertToWeightNumberFormat(sumWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
+        response.setSummaryVolume(IReport.ConvertToVolumeNumberFormat(sumVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
         if(!IsStringNullOrEmpty(consolidationDetails.getContainerCategory()) && consolidationDetails.getContainerCategory().equals(Constants.SHIPMENT_TYPE_LCL)
                 && !IsStringNullOrEmpty(consolidationDetails.getTransportMode()) && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
             double volInM3 = convertUnit(Constants.VOLUME, sumVolume, volumeChargeableUnit, Constants.VOLUME_UNIT_M3).doubleValue();

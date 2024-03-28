@@ -94,7 +94,7 @@ public class AuthFilter extends OncePerRequestFilter {
             user = userService.getUserByToken(tokenUtility.getUserIdAndBranchId(authToken), authToken);
         } catch (HttpStatusCodeException e)
         {
-            log.info("Error while validating token with exception: {}", e.getMessage());
+            log.error("Request: {} || Error while validating token with exception: {} for token: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), authToken);
             e.printStackTrace();
             res.setContentType(APPLICATION_JSON);
             res.setStatus(e.getRawStatusCode());
