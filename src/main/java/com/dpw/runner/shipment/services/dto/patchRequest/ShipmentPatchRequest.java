@@ -44,9 +44,9 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private List<FileRepoRequest> fileRepoList;
     private JsonNullable<String> financeClosedBy;
     private JsonNullable<LocalDateTime> financeClosedOn;
-    private JsonNullable<Integer> freightLocal;
+    private JsonNullable<BigDecimal> freightLocal;
     private JsonNullable<String> freightLocalCurrency;
-    private JsonNullable<Integer> freightOverseas;
+    private JsonNullable<BigDecimal> freightOverseas;
     private JsonNullable<String> freightOverseasCurrency;
     private JsonNullable<String> goodsDescription;
     private JsonNullable<String> houseBill;
