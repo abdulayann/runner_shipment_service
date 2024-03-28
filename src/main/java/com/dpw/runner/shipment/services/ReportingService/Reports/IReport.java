@@ -2109,7 +2109,7 @@ public abstract class IReport {
             }
 
             if(pack.getIsTemperatureControlled() != null && pack.getIsTemperatureControlled().equals(true)) {
-                dict.put(MIN_TEMP, ConvertToWeightNumberFormat(pack.getMinTemp(), TenantSettingsDetailsContext.getCurrentTenantSettings()));
+                dict.put(MIN_TEMP, pack.getMinTemp());
                 dict.put(MAX_TEMP, pack.getMaxTemp());
                 dict.put(MIN_TEMP_UNIT, pack.getMinTempUnit());
                 dict.put(MAX_TEMP_UNIT, pack.getMaxTempUnit());
