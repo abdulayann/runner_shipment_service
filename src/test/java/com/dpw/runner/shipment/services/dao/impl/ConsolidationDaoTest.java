@@ -128,7 +128,7 @@ class ConsolidationDaoTest {
         };
         var consolList = consolidationsDao.findAll(spec, PageRequest.of(0 , 10));
         assertFalse(consolList.isEmpty());
-        assertEquals(consolList.stream().toList().get(0).getGuid() , result.getGuid());
+        assertEquals(consolList.stream().toList().get(0).getContainerCategory() , result.getContainerCategory());
     }
 
     @Test
