@@ -2009,5 +2009,26 @@
         }
       }
     }
+  },
+  "NEW_CONTAINER_CREATE" : {
+    "consolidationId": 1,
+    "containerCode": "20DPW",
+    "hblDeliveryMode": "CY/CFS",
+    "containerNumber": "",
+    "containerCount": "3",
+    "noOfPackages": "4",
+    "grossWeightUnit": "KG",
+    "netWeightUnit": "KG",
+    "grossVolumeUnit": "M3",
+    "packs": 1,
+    "minTempUnit": "CEL",
+    "weightUnit": "KG",
+    "volumeUnit": "M3",
+    "maxTempUnit": "CEL",
+    "measurementUnit": "M",
+    "allocatedWeight": 0,
+    "allocatedWeightUnit": "KG",
+    "allocatedVolume": 0,
+    "allocatedVolumeUnit": "L"
   }
 }

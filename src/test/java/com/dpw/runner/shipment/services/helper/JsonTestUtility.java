@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.helper;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -46,8 +47,12 @@ public class JsonTestUtility {
     }
 
     public ShipmentDetails getTestShipment() {
-        ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("SHIPMENT"), ShipmentDetails.class);
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("NEW_SHIPMENT"), ShipmentDetails.class);
         return shipmentDetails;
+    }
+
+    public Containers getTestContainer() {
+        return objectMapper.convertValue(payload.get("NEW_CONTAINER_CREATE"), Containers.class);
     }
 
     public ConsolidationDetails getTestConsolidation(){
