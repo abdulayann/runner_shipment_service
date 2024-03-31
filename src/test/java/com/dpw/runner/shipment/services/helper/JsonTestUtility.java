@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.helper;
 
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,7 +15,6 @@ import org.springframework.boot.json.JsonParseException;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +48,15 @@ public class JsonTestUtility {
     public ShipmentDetails getTestShipment() {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("SHIPMENT"), ShipmentDetails.class);
         return shipmentDetails;
+    }
+
+    public ConsolidationDetails getTestConsolidation(){
+        ConsolidationDetails consolidationDetails = objectMapper.convertValue(payload.get("CONSOLIDATION"), ConsolidationDetails.class);
+        return consolidationDetails;
+    }
+
+    public ConsolidationDetails getTestNewConsolidation(){
+        return objectMapper.convertValue(payload.get("NEW_CONSOLIDATION_CREATE"), ConsolidationDetails.class);
     }
 
     public Awb getTestHawb() {

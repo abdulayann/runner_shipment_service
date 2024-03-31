@@ -1385,12 +1385,12 @@
     "tenantIdsData": {
       "sourceTenantId": "HIPL-FF : Hindustan Infralog Private Limited"
     },
-    "shipmentCreatedOn": "2024-03-20 11:08:53",
+    "shipmentCreatedOn": "2024-03-20T11:08:53",
     "createdBy": "hipl2",
     "textData": {},
     "customerCategory": "CATEGORY_5",
     "isShipmentReadOnly": false,
-    "bookingCreatedDate": "2024-03-20 11:08:53",
+    "bookingCreatedDate": "2024-03-20T11:08:53",
     "direction": "CTS",
     "shipmentType": "BCN",
     "paymentTerms": "CCX",
@@ -1696,5 +1696,318 @@
     "consigneeDpsAddressId": null,
     "destinationPortCountry": "NOR",
     "eventsList": []
+  },
+  "NEW_CONSOLIDATION_CREATE" : {
+    "transportMode": "SEA",
+    "containerCategory": "FCL",
+    "shipmentType": "STD",
+    "sourceTenantId": 66,
+    "intraBranch": false,
+    "carrierDetails": {
+      "masterData": {},
+      "unlocationData": {},
+      "carrierMasterData": {},
+      "origin": "AEJEA_POR",
+      "originPort": "AEJEA_POR",
+      "destinationPort": "EGDMA_POR",
+      "destination": "EGDMA_POR",
+      "shippingLine": "APL",
+      "vessel": "511011055",
+      "etd": "2024-03-31T00:00:00",
+      "ata": "2024-03-29T00:12:00"
+    },
+    "createdBy": "dpwcanuser",
+    "createdAt": "2024-03-30T05:50:59",
+    "masterData": {
+      "containerCategory": "FCL (Full Container Load)",
+      "transportMode": "SEA (Sea)"
+    },
+    "unlocationData": {},
+    "currenciesMasterData": {},
+    "tenantIdsData": {
+      "sourceTenantId": "DP WORLD LOGISTICS CANADA INC"
+    },
+    "textData": {},
+    "consolidationType": "CHT",
+    "payment": "PPD",
+    "deliveryMode": "CFS/CFS",
+    "declarationType": "FZ",
+    "creditor": {
+      "orgCode": "00001",
+      "addressCode": "Default1",
+      "orgData": {
+        "Id": 10516,
+        "OrganizationCode": "00001",
+        "FullName": "UNILEVER ANDINA PERU SA",
+        "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+        "Country": "IND",
+        "City": "Bairgania",
+        "State": "BR",
+        "ZipPostCode": "51",
+        "Unloco": 64854,
+        "Email": "unilever.epe@gmail.com",
+        "CompanyId": 66,
+        "InsertUserIdUsername": "dpwcanuser",
+        "UpdateUserIdUsername": "dpwcanuser",
+        "label": "UNILEVER ANDINA PERU SA",
+        "value": "00001"
+      },
+      "addressData": {
+        "Id": 25749,
+        "AddressShortCode": "Default1",
+        "CompanyName": "UNILEVER ANDINA PERU SA",
+        "AddressType": 1,
+        "AdditionalAddressInfo": "00001 Default Address",
+        "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+        "Country": "PER",
+        "City": "Carrick-on-Shannon",
+        "State": "LM",
+        "ZipPostCode": "51",
+        "Unloco": "83160",
+        "ContactPhone": "979788194",
+        "Email": "unilever.epe@gmail.com",
+        "OrgOrganizationCode": "00001",
+        "OrgFullName": "UNILEVER ANDINA PERU SA",
+        "OrgActiveClient": true,
+        "label": "UNILEVER ANDINA PERU SA\nAV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU, Carrick-on-Shannon, LM\nPER, 51\n979788194",
+        "value": "Default1"
+      }
+    },
+    "sendingAgent": {
+      "orgCode": "00004",
+      "addressCode": "Default",
+      "orgData": {
+        "Id": 10517,
+        "OrganizationCode": "00004",
+        "FullName": "Juanita Dolores SAC",
+        "Address1": "La esquina",
+        "Address2": "de tu casa",
+        "Country": "PER",
+        "City": "San Borja/Lima",
+        "State": "LM",
+        "Unloco": 83231,
+        "Email": "abc@dpworld.com",
+        "CompanyId": 66,
+        "InsertUserIdUsername": "dpwcanuser",
+        "UpdateUserIdUsername": "dpwcanuser",
+        "label": "Juanita Dolores SAC",
+        "value": "00004"
+      },
+      "addressData": {
+        "Id": 25750,
+        "AddressShortCode": "Default",
+        "CompanyName": "Juanita Dolores SAC",
+        "AddressType": 2,
+        "AdditionalAddressInfo": "00004 Default Address",
+        "Address1": "La esquina",
+        "Address2": "de tu casa",
+        "Country": "PER",
+        "City": "San Borja/Lima",
+        "State": "LM",
+        "Unloco": "83231",
+        "ContactPhone": "+5114410334",
+        "OrgOrganizationCode": "00004",
+        "OrgFullName": "Juanita Dolores SAC",
+        "OrgActiveClient": true,
+        "label": "Juanita Dolores SAC\nLa esquina, de tu casa, San Borja/Lima, LM\nPER\n+5114410334",
+        "value": "Default"
+      }
+    },
+    "receivingAgent": {
+      "orgCode": "14290",
+      "addressCode": "Default",
+      "orgData": {
+        "Id": 14290,
+        "OrganizationCode": "14290",
+        "FullName": "usa",
+        "Address1": "usa",
+        "Country": "IND",
+        "CompanyId": 66,
+        "InsertUserIdUsername": "dpwcanuser",
+        "UpdateUserIdUsername": "dpwcanuser",
+        "label": "usa",
+        "value": "14290"
+      },
+      "addressData": {
+        "Id": 31484,
+        "AddressShortCode": "Default",
+        "CompanyName": "usa",
+        "AddressType": 2,
+        "AdditionalAddressInfo": "Default Address",
+        "Address1": "usa",
+        "Country": "USA",
+        "OrgOrganizationCode": "14290",
+        "OrgFullName": "usa",
+        "OrgActiveClient": true
+      }
+    },
+    "receivingBranch": 66,
+    "documentationPartner": 484,
+    "triangulationPartner": 2312,
+    "departureDetails": {
+      "ctoid": {},
+      "cfsid": {},
+      "containerYardId": {},
+      "transportPortId": {}
+    },
+    "dropdownMetadata": {
+      "consolidationType": {
+        "label": "CHT (Charter)",
+        "value": "CHT"
+      },
+      "payment": {
+        "label": "PPD (Prepaid)",
+        "value": "PPD"
+      },
+      "deliveryMode": {
+        "label": "CFS/CFS (CFS/CFS)",
+        "value": "CFS/CFS"
+      },
+      "declarationType": {
+        "label": "FZ (FreeZone)",
+        "value": "FZ"
+      },
+      "creditor": {
+        "orgCode": {
+          "Id": 10516,
+          "OrganizationCode": "00001",
+          "FullName": "UNILEVER ANDINA PERU SA",
+          "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+          "Country": "IND",
+          "City": "Bairgania",
+          "State": "BR",
+          "ZipPostCode": "51",
+          "Unloco": 64854,
+          "Email": "unilever.epe@gmail.com",
+          "CompanyId": 66,
+          "InsertUserIdUsername": "dpwcanuser",
+          "UpdateUserIdUsername": "dpwcanuser",
+          "label": "UNILEVER ANDINA PERU SA",
+          "value": "00001"
+        },
+        "addressCode": {
+          "Id": 25749,
+          "AddressShortCode": "Default1",
+          "CompanyName": "UNILEVER ANDINA PERU SA",
+          "AddressType": 1,
+          "AdditionalAddressInfo": "00001 Default Address",
+          "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+          "Country": "PER",
+          "City": "Carrick-on-Shannon",
+          "State": "LM",
+          "ZipPostCode": "51",
+          "Unloco": "83160",
+          "ContactPhone": "979788194",
+          "Email": "unilever.epe@gmail.com",
+          "OrgOrganizationCode": "00001",
+          "OrgFullName": "UNILEVER ANDINA PERU SA",
+          "OrgActiveClient": true,
+          "label": "UNILEVER ANDINA PERU SA\nAV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU, Carrick-on-Shannon, LM\nPER, 51\n979788194",
+          "value": "Default1"
+        }
+      },
+      "sendingAgent": {
+        "orgCode": {
+          "Id": 10517,
+          "OrganizationCode": "00004",
+          "FullName": "Juanita Dolores SAC",
+          "Address1": "La esquina",
+          "Address2": "de tu casa",
+          "Country": "PER",
+          "City": "San Borja/Lima",
+          "State": "LM",
+          "Unloco": 83231,
+          "Email": "abc@dpworld.com",
+          "CompanyId": 66,
+          "InsertUserIdUsername": "dpwcanuser",
+          "UpdateUserIdUsername": "dpwcanuser",
+          "label": "Juanita Dolores SAC",
+          "value": "00004"
+        },
+        "addressCode": {
+          "Id": 25750,
+          "AddressShortCode": "Default",
+          "CompanyName": "Juanita Dolores SAC",
+          "AddressType": 2,
+          "AdditionalAddressInfo": "00004 Default Address",
+          "Address1": "La esquina",
+          "Address2": "de tu casa",
+          "Country": "PER",
+          "City": "San Borja/Lima",
+          "State": "LM",
+          "Unloco": "83231",
+          "ContactPhone": "+5114410334",
+          "OrgOrganizationCode": "00004",
+          "OrgFullName": "Juanita Dolores SAC",
+          "OrgActiveClient": true,
+          "label": "Juanita Dolores SAC\nLa esquina, de tu casa, San Borja/Lima, LM\nPER\n+5114410334",
+          "value": "Default"
+        }
+      },
+      "receivingAgent": {
+        "orgCode": {
+          "Id": 14290,
+          "OrganizationCode": "14290",
+          "FullName": "usa",
+          "Address1": "usa",
+          "Country": "IND",
+          "CompanyId": 66,
+          "InsertUserIdUsername": "dpwcanuser",
+          "UpdateUserIdUsername": "dpwcanuser",
+          "label": "usa",
+          "value": "14290"
+        }
+      },
+      "receivingBranch": {
+        "label": "DP WORLD LOGISTICS CANADA INC",
+        "value": 66,
+        "TenantId": 66
+      },
+      "documentationPartner": {
+        "label": "Canada Branch",
+        "value": 484,
+        "TenantId": 484
+      },
+      "triangulationPartner": {
+        "label": "DPWCANADA_SS",
+        "value": 2312,
+        "TenantId": 2312
+      },
+      "carrierDetails": {
+        "origin": {
+          "label": "AEJEA Jebel Ali DP World Port - AEJEA, AEJEA Jebel Ali DP World Port",
+          "value": "AEJEA_POR",
+          "Id": 113140,
+          "Country": "AE"
+        },
+        "originPort": {
+          "label": "AEJEA Jebel Ali DP World Port - AEJEA, AEJEA Jebel Ali DP World Port",
+          "value": "AEJEA_POR",
+          "Id": 113140,
+          "Country": "AE"
+        },
+        "destinationPort": {
+          "label": "Boston - USOWQ, boston sea port",
+          "value": "EGDMA_POR",
+          "Id": 72,
+          "Country": "USA"
+        },
+        "destination": {
+          "label": "Boston - USOWQ, boston sea port",
+          "value": "EGDMA_POR",
+          "Id": 72,
+          "Country": "USA"
+        },
+        "vessel": {
+          "label": "\" SVS FROBISHER \"",
+          "value": "511011055"
+        },
+        "shippingLine": {
+          "label": "APL (APL)",
+          "value": "APL",
+          "Id": 53488
+        }
+      }
+    }
   }
 }
