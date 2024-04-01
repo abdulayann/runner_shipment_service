@@ -1036,10 +1036,6 @@ public class ReportConstants {
     public static final String ORIGIN_AGENT_RA_EXPIRY = "OriginAgentRAExpiry";
     public static final String DESTINATION_AGENT_RA_EXPIRY = "DestinationAgentRAExpiry";
 
-    public static final String AGENT_TYPE = "AgentType";
-    public static final String KC_EXPIRY = "KCExpiry";
-    public static final String RA_EXPIRY = "RAExpiry";
-
     public static final String RA = "RA";
     public static final String KC = "KC";
     public static final String INSURANCE_VALUE = "InsuranceValue";
@@ -1052,5 +1048,23 @@ public class ReportConstants {
     public static final String CTO_FULL_NAME = "CtoFullName";
     public static final String SI_CUT_OFF_TIME = "SICutOffTime";
     public static final String TERMINAL = "Terminal";
+
+    public static final String RAKC_TYPE = "RAKCType";
+    public static final String KCRA_NUMBER = "KCRANumber";
+    public static final String KCRA_EXPIRY = "KCRAExpiry";
+
+    public static final String ONE = "1";
+    public static final String TWO = "2";
+
+    public static final String TYPE = "Type";
+    public static final String RA_NUMBER = "RANumber";
+    public static final String RA_EXPIRY = "RAExpiry";
+
+    public static final String KC_NUMBER = "KCNumber";
+    public static final String KC_EXPIRY = "KCExpiry";
+
+    public static final String ORIGIN_AGENT = "OriginAgent";
+    public static final String DESTINATION_AGENT = "DestinationAgent";
+    public static final String CONSIGNOR_AGENT = "Consignor";
 
 }
