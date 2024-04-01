@@ -1721,6 +1721,8 @@ public class ShipmentService implements IShipmentService {
         try {
             if(shipmentDetails.getTenantId() == null)
                 shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
+            if (IsStringNullOrEmpty(shipmentDetails.getUpdatedBy()))
+                shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
             KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentDetails, isCreate);
             log.info("Producing shipment data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
