@@ -94,10 +94,10 @@ public class ArrivalNoticeReport extends IReport {
         if(!Objects.isNull(arrivalNoticeModel.getArrivalNoticeBillCharges()) && !arrivalNoticeModel.getArrivalNoticeBillCharges().isEmpty()){
             var currency = arrivalNoticeModel.getArrivalNoticeBillCharges().stream().map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getOverseasCurrency).filter(overseasCurrency ->!Objects.isNull(overseasCurrency)).findFirst().orElse("");
             BigDecimal sumOfTaxAmount = arrivalNoticeModel.getArrivalNoticeBillCharges().stream()
-                    .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getTaxAmount)
+                    .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getTaxAmount).filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal sumOfBillAmount = arrivalNoticeModel.getArrivalNoticeBillCharges().stream()
-                    .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getBillAmount)
+                    .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getBillAmount).filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_FREVENUEBILLCHARGES, arrivalNoticeModel.getArrivalNoticeBillCharges());
             dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA, AmountNumberFormatter.Format(sumOfTaxAmount, currency, TenantSettingsDetailsContext.getCurrentTenantSettings()));
