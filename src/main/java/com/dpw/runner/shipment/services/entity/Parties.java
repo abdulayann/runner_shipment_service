@@ -45,7 +45,7 @@ public class Parties extends MultiTenancy {
     private String orgCode;
 
     @Column(name = "address_code")
-    @Size(max=100, message = "max limit is 100 for address_code")
+    @Size(max=170, message = "max limit is 170 for address_code")
     private String addressCode;
 
     @Type(type = "jsonb")
