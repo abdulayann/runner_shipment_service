@@ -131,6 +131,8 @@ public abstract class IReport {
     private IContainerService containerService;
     @Autowired
     private IAwbService awbService;
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
 
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
@@ -2586,8 +2588,8 @@ public abstract class IReport {
             }
         }
 
-        if(shipmentModel.getSecurityStatus() != null ) {
-            dictionary.put(CONSIGNMENT_STATUS, shipmentModel.getSecurityStatus());
+        if(shipmentModel.getSecurityStatus() != null && !shipmentModel.getSecurityStatus().isEmpty()) {
+            dictionary.put(SCREENING_CODES, shipmentModel.getSecurityStatus());
         }
     }
 
@@ -2610,6 +2612,39 @@ public abstract class IReport {
                 dictionary.put(ReportConstants.LOCAL_LINE_NUMBER, additionalDetails.getLocalLineNumber());
             }
         }
+    }
 
+    private String getDate(Map<String, Object> agent) {
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        return ConvertToDPWDateFormat(LocalDateTime.parse(StringUtility.convertToString(agent.get(KCRA_EXPIRY))), v1TenantSettingsResponse.getDPWDateFormat());
+    }
+
+    private void processAgent(Map<String, Object> agent, Map<String, Object> dictionary, String type, String agentType) {
+        if(agent != null) {
+            if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(RAKC_TYPE)))
+                    && StringUtility.convertToString(agent.get(RAKC_TYPE)).equals(type)) {
+                if(type.equals(ONE)) {
+                    dictionary.put(agentType + TYPE, RA);
+                } else if(type.equals(TWO)) {
+                    dictionary.put(agentType + TYPE, KC);
+                }
+
+                if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(KCRA_NUMBER)))) {
+                    if(type.equals(ONE)) {
+                        dictionary.put(agentType + RA_NUMBER, agent.get(KCRA_NUMBER));
+                    } else if(type.equals(TWO)) {
+                        dictionary.put(agentType + KC_NUMBER, agent.get(KCRA_NUMBER));
+                    }
+                }
+
+                if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(KCRA_EXPIRY)))) {
+                    if(type.equals(ONE)) {
+                        dictionary.put(agentType + RA_EXPIRY, getDate(agent));
+                    } else if(type.equals(TWO)) {
+                        dictionary.put(agentType + KC_EXPIRY, getDate(agent));
+                    }
+                }
+            }
+        }
     }
 }
