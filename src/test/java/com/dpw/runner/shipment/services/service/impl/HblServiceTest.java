@@ -28,13 +28,13 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -45,9 +45,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.testcontainers.shaded.org.checkerframework.common.reflection.qual.NewInstance;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -81,6 +81,8 @@ class HblServiceTest {
     private IHblSync hblSync;
     @Mock
     private IShipmentSettingsDao shipmentSettingsDao;
+    @Mock
+    private IShipmentService shipmentService;
 
     @BeforeAll
     static void init() throws IOException {
@@ -103,16 +105,18 @@ class HblServiceTest {
     }
 
     @Test
-    @Disabled
     void create() {
         HblRequest hblRequest = new HblRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequest);
 
         Hbl mockHbl = Hbl.builder().build();
+        HblDataDto hblData = objectMapper.convertValue(mockHbl, HblDataDto.class);
+        mockHbl.setHblData(hblData);
 
         // Mock
         when(hblDao.save(any())).thenReturn(mockHbl);
         HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
+        when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(hblData);
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
 
         // Test
@@ -163,7 +167,9 @@ class HblServiceTest {
     void checkAllContainerAssignedWhenHblIsAlreadyGeneratedSuccess() {
 
         // Shipment, Lis<Container>, List<Packing>
+        Long shipmentId = 1L;
         ShipmentDetails inputShipment = testShipment;
+        testShipment.setId(shipmentId);
         String containerNumber = "CONT12345";
         Containers container = new Containers();
         container.setId(1L);
@@ -178,7 +184,7 @@ class HblServiceTest {
         hblCargoDto.setBlContainerContainerNumber(containerNumber);
 
         // Mock
-        when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(mockHbl));
+        when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of(mockHbl));
         when(hblDao.save(any())).thenReturn(mockHbl.setHblCargo(List.of(hblCargoDto)));
 
         // Test
@@ -197,6 +203,7 @@ class HblServiceTest {
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
         Long shipmentId = 1L;
+        testShipment.setId(shipmentId);
         String containerNumber = "CONT12345";
         Containers container = new Containers();
         container.setId(1L);
@@ -212,6 +219,7 @@ class HblServiceTest {
 
         // Mock
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of());
+        when(shipmentService.generateCustomHouseBL(any())).thenReturn("custom-house-bl");
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(shipmentSettingsDetails));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
@@ -234,6 +242,7 @@ class HblServiceTest {
 
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
+        inputShipment.setId(1L);
         String containerNumber = "CONT12345";
         Containers container = new Containers();
         container.setId(1L);
@@ -263,6 +272,7 @@ class HblServiceTest {
         Long shipmentId = 1L;
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        testShipment.setHouseBill("custom-house-bl");
 
 
         // Mock
@@ -407,6 +417,7 @@ class HblServiceTest {
         HblResetRequest resetRequest = new HblResetRequest();
         resetRequest.setId(hblId);
         resetRequest.setResetType(HblReset.ALL);
+        testShipment.setHouseBill("houseBill");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
 
         // Mock

@@ -597,6 +597,9 @@ public class HblService implements IHblService {
                     build());
         }
         var containers = shipment.getContainersList();
+        if(Objects.equals(containers, null)) {
+            containers = new ArrayList<>();
+        }
         List<HblContainerDto> hblContainers = new ArrayList<>();
         containers.forEach(container -> {
             HblContainerDto hblContainer = HblContainerDto.builder().build();
@@ -627,6 +630,9 @@ public class HblService implements IHblService {
         if(containers != null && containers.size() > 0)
             map = containers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         Map<Long, String> finalMap = map;
+        if(Objects.equals(packings, null)) {
+            packings = new ArrayList<>();
+        }
         packings.forEach(pack -> {
             HblCargoDto cargo = HblCargoDto.builder().build();
             cargo.setGuid(pack.getGuid());
