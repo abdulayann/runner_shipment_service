@@ -18,7 +18,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -700,9 +699,9 @@ public class ContainerService implements IContainerService {
 
         if (containers != null) {
             for (Long packid : packsId) {
-                Packing packing = packingDao.findById(packid).get();
-                if (packing != null) {
-                    containers.getPacksList().add(packing);
+                Optional<Packing> packing = packingDao.findById(packid);
+                if (packing.isPresent() && packing.get() != null) {
+                    containers.getPacksList().add(packing.get());
                 }
             }
             Containers entity = containerDao.save(containers);
@@ -901,7 +900,7 @@ public class ContainerService implements IContainerService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Container detail fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            JobResponse response = (JobResponse) convertEntityToDto(container.get());
+            ContainerResponse response = (ContainerResponse) convertEntityToDto(container.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

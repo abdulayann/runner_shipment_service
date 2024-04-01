@@ -1,10 +1,7 @@
 package com.dpw.runner.shipment.services.helper;
 
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -44,6 +41,10 @@ public class JsonTestUtility {
 
     public JsonTestUtility() throws IOException {
         payload = objectMapper.readValue(new File(path), Map.class);
+    }
+
+    public Packing getTestPacking(){
+        return objectMapper.convertValue(payload.get("PACKING") , Packing.class);
     }
 
     public ShipmentDetails getTestShipment() {
