@@ -2030,5 +2030,42 @@
     "allocatedWeightUnit": "KG",
     "allocatedVolume": 0,
     "allocatedVolumeUnit": "L"
+  },
+  "PACKING" :   {
+    "isDimension": true,
+    "packs": 1,
+    "packsType": "AMM",
+    "origin": "980e0ec4-a4eb-41ac-afac-9b2a07abf060",
+    "commodity": "1212",
+    "hscode": "21",
+    "isDimensionRadiobutton": true,
+    "lengthUnit": "M",
+    "widthUnit": "M",
+    "heightUnit": "M",
+    "weightUnit": "KG",
+    "netWeightUnit": "KG",
+    "volumeUnit": "M3",
+    "volumeWeight": 0,
+    "volumeWeightUnit": "M3",
+    "chargeableUnit": "M3",
+    "goodsDescription": "SAMPLE_DESCRIPTION",
+    "maxTempUnit": "CEL",
+    "minTempUnit": "CEL",
+    "dropdownMetadata": {
+      "origin": {
+        "label": " bazar - INBOM,    bazar   - Door",
+        "value": "980e0ec4-a4eb-41ac-afac-9b2a07abf060",
+        "Id": 1178692
+      },
+      "commodity": {
+        "hsCode": "21",
+        "label": "12 - 21",
+        "value": "1212"
+      },
+      "packsType": {
+        "label": "AMM (Ammo Pack)",
+        "value": "AMM"
+      }
+    }
   }
 }
