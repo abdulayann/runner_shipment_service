@@ -31,14 +31,10 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -57,6 +53,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -132,6 +129,8 @@ public abstract class IReport {
     private IContainerService containerService;
     @Autowired
     private IAwbService awbService;
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
 
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
@@ -2479,66 +2478,36 @@ public abstract class IReport {
     }
 
     public void populateRaKcData(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
-        PartiesModel partiesModelSendingAgent = shipmentModel.getAdditionalDetails().getImportBroker();
-        PartiesModel partiesModelReceivingAgent = shipmentModel.getAdditionalDetails().getNotifyParty();
+        ShipmentDetails sd = modelMapper.map(shipmentModel, ShipmentDetails.class);
+        Parties partiesModelSendingAgent = sd.getAdditionalDetails().getExportBroker();
+        Parties partiesModelReceivingAgent = sd.getAdditionalDetails().getImportBroker();
+        Parties consignor = sd.getConsigner();
 
-        if(partiesModelSendingAgent != null && partiesModelSendingAgent.getAddressData() != null) {
-            Map<String, Object> addressMap = partiesModelSendingAgent.getAddressData();
+        List<Parties> parties = Arrays.asList(
+                partiesModelSendingAgent,
+                partiesModelReceivingAgent,
+                consignor
+        );
 
-            String addressId = StringUtility.convertToString(addressMap.get("Id"));
-            if(addressId != null && !addressId.equals("")) {
-                EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
+        OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(parties);
+        Map<String, Object> addressSendingAgent = null;
+        Map<String, Object> addressReceivingAgent = null;
+        Map<String, Object> addressConsignorAgent = null;
 
-                if(entityTransferAddress.getRAKCType() == 1) {
-                    dictionary.put(ORIGIN_AGENT_TYPE, RA);
-                    if(entityTransferAddress.getKCRANumber() != null) {
-                        dictionary.put(ORIGIN_AGENT_RN_NUMBER, entityTransferAddress.getKCRANumber());
-                    }
-                    if(entityTransferAddress.getKCRAExpiry() != null) {
-                        dictionary.put(ORIGIN_AGENT_RA_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
-                    }
-                }
-            }
+        Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+        if(partiesModelSendingAgent != null) {
+            addressSendingAgent = addressMap.get(partiesModelSendingAgent.getOrgCode() + "#" + partiesModelSendingAgent.getAddressCode());
+        }
+        if(partiesModelReceivingAgent != null) {
+            addressReceivingAgent = addressMap.get(partiesModelReceivingAgent.getOrgCode() + "#" + partiesModelReceivingAgent.getAddressCode());
+        }
+        if(consignor != null) {
+            addressConsignorAgent = addressMap.get(consignor.getOrgCode() + "#" + consignor.getAddressCode());
         }
 
-        if(partiesModelReceivingAgent != null && partiesModelReceivingAgent.getAddressData() != null) {
-            Map<String, Object> addressMap = partiesModelReceivingAgent.getAddressData();
-
-            String addressId = StringUtility.convertToString(addressMap.get("Id"));
-            if(addressId != null && !addressId.equals("")) {
-                EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
-
-                if (entityTransferAddress.getRAKCType() == 1) {
-                    dictionary.put(DESTINATION_AGENT_TYPE, RA);
-                    if(entityTransferAddress.getKCRANumber() != null) {
-                        dictionary.put(DESTINATION_AGENT_RN_NUMBER, entityTransferAddress.getKCRANumber());
-                    }
-                    if(entityTransferAddress.getKCRAExpiry() != null) {
-                        dictionary.put(DESTINATION_AGENT_RA_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
-                    }
-                }
-            }
-        }
-
-        if(shipmentModel.getConsigner() != null && shipmentModel.getConsigner().getAddressData() != null) {
-            Map<String, Object> addressMap = shipmentModel.getConsigner().getAddressData();
-
-            String addressId = StringUtility.convertToString(addressMap.get("Id"));
-            if(addressId != null && !addressId.equals("")) {
-                EntityTransferAddress entityTransferAddress = v1Service.fetchAddress(addressId);
-
-                if (entityTransferAddress.getRAKCType() == 2) {
-                    dictionary.put(CONSIGNOR_TYPE, KC);
-                    if(entityTransferAddress.getKCRANumber() != null) {
-                        dictionary.put(CONSIGNOR_KC_NUMBER, entityTransferAddress.getKCRANumber());
-                    }
-                    if(entityTransferAddress.getKCRAExpiry() != null) {
-                        dictionary.put(CONSIGNOR_KC_EXPIRY, ConvertToDPWDateFormat(LocalDateTime.parse(entityTransferAddress.getKCRAExpiry()), v1TenantSettingsResponse.getDPWDateFormat()));
-                    }
-                }
-            }
-        }
+        processAgent(addressSendingAgent, dictionary, ONE, ORIGIN_AGENT);
+        processAgent(addressReceivingAgent, dictionary, ONE, DESTINATION_AGENT);
+        processAgent(addressConsignorAgent, dictionary, TWO, CONSIGNOR_AGENT);
 
         if (shipmentModel.getAdditionalDetails() != null) {
             AdditionalDetailModel additionalDetailModel = shipmentModel.getAdditionalDetails();
@@ -2550,8 +2519,42 @@ public abstract class IReport {
             }
         }
 
-        if(shipmentModel.getSecurityStatus() != null && shipmentModel.getSecurityStatus().size() > 0) {
+        if(shipmentModel.getSecurityStatus() != null && !shipmentModel.getSecurityStatus().isEmpty()) {
             dictionary.put(SCREENING_CODES, shipmentModel.getSecurityStatus());
+        }
+    }
+
+    private String getDate(Map<String, Object> agent) {
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        return ConvertToDPWDateFormat(LocalDateTime.parse(StringUtility.convertToString(agent.get(KCRA_EXPIRY))), v1TenantSettingsResponse.getDPWDateFormat());
+    }
+
+    private void processAgent(Map<String, Object> agent, Map<String, Object> dictionary, String type, String agentType) {
+        if(agent != null) {
+            if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(RAKC_TYPE)))
+                    && StringUtility.convertToString(agent.get(RAKC_TYPE)).equals(type)) {
+                if(type.equals(ONE)) {
+                    dictionary.put(agentType + TYPE, RA);
+                } else if(type.equals(TWO)) {
+                    dictionary.put(agentType + TYPE, KC);
+                }
+
+                if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(KCRA_NUMBER)))) {
+                    if(type.equals(ONE)) {
+                        dictionary.put(agentType + RA_NUMBER, agent.get(KCRA_NUMBER));
+                    } else if(type.equals(TWO)) {
+                        dictionary.put(agentType + KC_NUMBER, agent.get(KCRA_NUMBER));
+                    }
+                }
+
+                if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(KCRA_EXPIRY)))) {
+                    if(type.equals(ONE)) {
+                        dictionary.put(agentType + RA_EXPIRY, getDate(agent));
+                    } else if(type.equals(TWO)) {
+                        dictionary.put(agentType + KC_EXPIRY, getDate(agent));
+                    }
+                }
+            }
         }
     }
 }
