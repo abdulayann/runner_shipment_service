@@ -2640,7 +2640,7 @@ public class ShipmentService implements IShipmentService {
                     (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
                 shipmentDetails.setIsLocked(false);
             else
-                throw new RunnerException(ErrorConstants.LOCK_UNLOCK_ERROR);
+                throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.Shipment, lockingUser));
         } else {
             shipmentDetails.setIsLocked(true);
             shipmentDetails.setLockedBy(currentUser);
