@@ -2653,7 +2653,7 @@ public class ConsolidationService implements IConsolidationService {
                     (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
                 consolidationDetails.setIsLocked(false);
             else
-                throw new RunnerException(ErrorConstants.LOCK_UNLOCK_ERROR);
+                throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.Consolidation, lockingUser));
         } else {
             consolidationDetails.setIsLocked(true);
             consolidationDetails.setLockedBy(currentUser);
