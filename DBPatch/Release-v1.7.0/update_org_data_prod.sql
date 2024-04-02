@@ -1,0 +1,2 @@
+update parties set org_data = '{"Id":53974,"City":"London","Phone":"9999999999","State":"GL","Unloco":101303,"Country":"GBR","Address1":"Unit 5 Logix Road R D Park Hinckley Leicestershire LE10 3BQ","FullName":"London","Payables":false,"TenantId":456,"UnlocoName":"Leicester","Receivables":false,"ZipPostCode":"56273","ActiveClient":true,"ForworderAgent":false,"OrganizationCode":"GBLCS"}'
+where org_code = 'GBLCS';
