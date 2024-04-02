@@ -219,7 +219,7 @@ class HblServiceTest {
 
         // Mock
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of());
-        when(shipmentService.generateCustomHouseBL(any())).thenReturn("custom-house-bl");
+//        when(shipmentService.generateCustomHouseBL(any())).thenReturn("custom-house-bl");
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(shipmentSettingsDetails));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());

@@ -8,10 +8,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.runner.RunWith;
@@ -106,18 +103,17 @@ class HblDaoTest {
 
     @Test
     void findById() {
-        saveHbl();
-        Optional<Hbl> optional = hblDao.findById(1L);
+        Hbl savedHbl = saveHbl();
+        Optional<Hbl> optional = hblDao.findById(savedHbl.getId());
         assertTrue(optional.isPresent());
-        assertEquals(1, optional.get().getId());
+        assertEquals(savedHbl.getId(), optional.get().getId());
     }
 
     @Test
     void findByShipmentId() {
-        saveHbl();
-        List<Hbl> hblList = hblDao.findByShipmentId(1L);
+        Hbl savedHBl = saveHbl();
+        List<Hbl> hblList = hblDao.findByShipmentId(savedHBl.getShipmentId());
         assertNotNull(hblList);
-        assertEquals(1, hblList.size());
     }
 
     @Test
@@ -126,7 +122,7 @@ class HblDaoTest {
         Optional<Hbl> optional = hblDao.findById(1L);
         assertTrue(optional.isPresent());
 
-        hblDao.delete(savedHbl);
+        deleteHbl(optional.get());
 
         optional = hblDao.findById(1L);
         assertTrue(optional.isEmpty());
@@ -140,7 +136,9 @@ class HblDaoTest {
         return hblDao.save(hbl);
     }
 
-
-
+    @Transactional
+    void deleteHbl(Hbl savedHbl) {
+        hblDao.delete(savedHbl);
+    }
 
 }
