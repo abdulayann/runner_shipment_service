@@ -45,6 +45,7 @@ public class CarrierDetails extends MultiTenancy {
     private String vessel;
 
     @Column(name = "voyage")
+    @Size(max = 20, message = "max size is 20 for voyage")
     private String voyage;
 
     @Column(name = "flight_number")
