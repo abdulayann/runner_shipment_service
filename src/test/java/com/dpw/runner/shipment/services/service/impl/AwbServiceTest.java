@@ -157,6 +157,8 @@ class AwbServiceTest {
         CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
 
+        testShipment.setHouseBill("custom-house-bill");
+
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
 //        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
 //        Mockito.when(shipmentDao.save(any(), anyBoolean())).thenReturn(testShipment);
@@ -366,6 +368,8 @@ class AwbServiceTest {
     void reset() throws RunnerException {
         ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder().id(2L).shipmentId(1L).awbType("DMAWB").resetType(AwbReset.ALL).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
+
+        testShipment.setHouseBill("custom-house-bill");
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testDmawb));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));

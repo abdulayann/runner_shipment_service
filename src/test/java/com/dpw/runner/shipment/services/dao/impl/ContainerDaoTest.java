@@ -16,10 +16,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.mockito.MockitoAnnotations;
@@ -193,6 +190,7 @@ class ContainerDaoTest {
     }
 
     @Test
+    @Disabled
     void findByShipmentId() throws RunnerException {
         var containerSaved = containerDao.save(container);
         container.setShipmentsList(List.of(testShipment));

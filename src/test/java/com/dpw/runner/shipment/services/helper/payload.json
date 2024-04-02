@@ -1307,7 +1307,6 @@
     "transportMode": "SEA",
     "status": 0,
     "guid": "1a53dcdc-19dc-4789-b4e3-6fc7e9b4d4a1",
-    "houseBill": "custom-house-bill",
     "source": "System",
     "weightUnit": "KG",
     "volumeUnit": "M3",
