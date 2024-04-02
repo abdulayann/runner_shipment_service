@@ -400,4 +400,5 @@ public class Constants {
     public static final String EVENT = "event";
     public static final String TYPE = "Type";
     public static final String DESCARTES = "Descartes";
+    public static final String XFNM = "XFNM";
 }
