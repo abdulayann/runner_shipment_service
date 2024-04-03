@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
+import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -34,7 +35,9 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -43,9 +46,14 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -477,6 +485,29 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             isAlteration = true;
         }
 
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        String xBrowserTimeZone = TimeZoneConstants.DEFAULT_TIME_ZONE_ID;
+        if (Objects.nonNull(requestAttributes)) {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) requestAttributes;
+            xBrowserTimeZone = attributes.getRequest().getHeader(TimeZoneConstants.BROWSER_TIME_ZONE_NAME);
+            if (StringUtils.isNotBlank(xBrowserTimeZone)) {
+                xBrowserTimeZone = xBrowserTimeZone.replaceAll("\\s", "").trim().strip();
+            }
+        }
+        String preferredDateInUTC = null;
+        if(request.getPreferredDate() != null)
+        {
+            try {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                LocalDateTime utcDate = DateUtils.convertDateFromUserTimeZone(LocalDateTime.parse(request.getPreferredDate(), formatter), xBrowserTimeZone, null, false);
+                preferredDateInUTC = String.valueOf(utcDate.toLocalDate());
+            }
+            catch(Exception e)
+            {
+                log.error("Error in converting preferred date: {} to UTC", request.getPreferredDate());
+                throw e;
+            }
+        }
         return NPMFetchOffersRequest.builder()
                 .origin(request.getOrigin())
                 .destination(request.getDestination())
@@ -484,7 +515,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .POL(request.getPol())
                 .exchange_rates(null)
                 .currency(getCurrencyCode())
-                .preferred_date(request.getPreferredDate())
+                .preferred_date(preferredDateInUTC)
                 .preferred_date_type(request.getPreferredDateType())
                 .carrier(NPMConstants.ANY) //hardcoded
                 .loads_information(createLoadsInfo(request, customerBooking.isPresent() ? customerBooking.get() : null, isAlteration, NPMConstants.OFFERS_V2))
