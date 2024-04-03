@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 
 public class ReportConstants {
@@ -250,6 +248,7 @@ public class ReportConstants {
     public static final String CMS_PICK_CY = "PickUpCy";
     public static final String PickupFrom = "PickupFrom";
     public static final String PICK_UP_FROM = "PickUpFrom";
+    public static final String PICK_UP_ADDRESS = "PickupAddress";
     public static final String PRE_CARRIAGE = "PreCarriage";
     public static final String INVNO = "INVNO";
     public static final String EXPORTER_TAX_ID = "ExporterTaxID";
@@ -420,6 +419,8 @@ public class ReportConstants {
     public static final String ContainerWeightGrouped = "ContainerWeightGrouped";
     public static final String ContainerVolumeGrouped = "ContainerVolumeGrouped";
     public static final String CONTAINER_AGGREGATION_STRING = "ContainerAggregation";
+    public static final String CONTAINER_NUM = "ContainerNumber";
+    public static final String CARRIER_SEAL_NUMBER = "CarrierSealNumber";
     public static final String SHIPMENT_COUNT = "ShipmentCount";
     public static final String PICKUP_TRANSPORT_COMPANY = "PickUpTransportCompany";
     public static final String PICKUP_TRANSPORT_CONTACT_PERSON = "PickUpTransportContactPerson";
@@ -668,6 +669,7 @@ public class ReportConstants {
     public static final String GENERATE_ISF_FILE = "GenerateISFFile";
     public static final String AWB_NEUTRAL = "AWBNeutral";
     public static final String CARGO_MANIFEST = "CargoManifest";
+    public static final String TRANSPORT_ORDER = "TransportOrder";
     public static final String CONSOLIDATED_PACKING_LIST = "ConsolidatedPackingList";
     public static final String COSTAL_DOC = "COSTALdoc";
     public static final String SHIPPING_INSTRUCTION = "ShippingInstruction";
@@ -741,6 +743,8 @@ public class ReportConstants {
     public static final String PICKUP_PORT_TRANSPORT_ADVISED = "PickupPortTransportAdvised";
     public static final String PICKUP_INSTRUCTION = "PickUpInstructions";
     public static final String PICKUP_COMPANY = "PickUpCompany";
+    public static final String PICKUP_CONTACT = "PickupContact";
+    public static final String DELIVERY_CONTACT = "DeliveryContact";
     public static final String LOADED_DATE = "LoadedDate";
     public static final String ACTUAL_DELIVERY = "ActualDelivery";
 
@@ -773,6 +777,8 @@ public class ReportConstants {
     public static final String PWEIGHT_UNIT = "PWeightUnit";
 
     public static final String CUSTOMS_ENTRY_NUMBER = "CustomsEntryNumber";
+    public static final String ENTRY_NUMBER = "EntryNumber";
+    public static final String CUSTOMER_REFERENCE = "Customer Reference";
 
     public static final String CONSOL_SHIPMENT_TOTAL_PACKAGES = "TotalPackages";
     public static final String CONTAINER_MANIFEST_PRINT = "ContainerManifestPrint";
@@ -1035,6 +1041,8 @@ public class ReportConstants {
     public static final String RA = "RA";
     public static final String KC = "KC";
     public static final String INSURANCE_VALUE = "InsuranceValue";
+    public static final String INSURANCE_VALUE_CURRENCY = "InsuranceValueCurrency";
     public static final String GOODS_VALUE = "GoodsValue";
+    public static final String GOODS_VALUE_CURRENCY = "GoodsValueCurrency";
 
 }

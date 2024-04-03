@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import lombok.Data;
 
-import javax.persistence.Column;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -157,4 +156,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean regulatedAgent;
     private String raNumber;
     private LocalDateTime raExpiry;
+    private String transportOrderRoad;
 }
