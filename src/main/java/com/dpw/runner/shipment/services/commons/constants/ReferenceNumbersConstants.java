@@ -20,4 +20,6 @@ public class ReferenceNumbersConstants {
 
     public static final String FEEDER_VESSEL = "Feeder Vessel";
     public static final String MOTHER_VESSEL = "Mother Vessel";
+    public static final String REF_NUM_TYPE_ETN = "ETN";
+    public static final String REF_NUM_TYPE_CRR = "CRR";
 }

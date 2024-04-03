@@ -166,4 +166,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean regulatedAgent;
     private String raNumber;
     private LocalDateTime raExpiry;
+    private String transportOrderRoad;
 }
