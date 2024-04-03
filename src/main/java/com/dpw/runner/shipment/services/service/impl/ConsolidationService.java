@@ -1051,6 +1051,18 @@ public class ConsolidationService implements IConsolidationService {
      * @param oldEntity
      */
     private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
+        if(Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
+            List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
+            ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
+            Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            List<ShipmentDetails> shipments = page.getContent();
+            var shipmentlist = shipments.stream().filter(x-> Objects.equals(x.getAdditionalDetails().getEfreightStatus(), Constants.NON)).toList();
+            if(shipmentlist != null && !shipmentlist.isEmpty()){
+                throw new RunnerException("EFreight status can only be EAP or NON as one of the Shipment has EFreight status as NON");
+            }
+        }
         if(console != null && (oldEntity == null ||  !Objects.equals(console.getBol(),oldEntity.getBol()) ||
                 !Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
