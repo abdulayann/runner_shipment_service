@@ -3132,12 +3132,14 @@ public class ShipmentService implements IShipmentService {
             shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
             shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
             try {
-                var awb = awbDao.findByShipmentId(shipmentDetailsResponse.getId());
-                if(awb != null && !awb.isEmpty()){
-                    if(Boolean.TRUE.equals(awb.get(0).getIsAirMessagingSent()))
-                        shipmentDetailsResponse.setAwbStatus(AwbStatus.AIR_MESSAGE_SENT);
-                    else
-                        shipmentDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
+                if(shipmentDetailsResponse.getId() != null) {
+                    var awb = awbDao.findByShipmentId(shipmentDetailsResponse.getId());
+                    if (awb != null && !awb.isEmpty()) {
+                        if (Boolean.TRUE.equals(awb.get(0).getIsAirMessagingSent()))
+                            shipmentDetailsResponse.setAwbStatus(AwbStatus.AIR_MESSAGE_SENT);
+                        else
+                            shipmentDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
+                    }
                 }
                 if(!shipmentDetailsResponse.getAdditionalDetails().getIsSummaryUpdated())
                     shipmentDetailsResponse.getAdditionalDetails().setSummary(shipmentDetailsResponse.getContainerSummary().getSummary());
@@ -4081,6 +4083,12 @@ public class ShipmentService implements IShipmentService {
         List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
         ConsolidationDetails consolidationDetails;
         var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
+        if(linkedConsol != null && Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(shipment.getAdditionalDetails().getEfreightStatus(), Constants.NON)){
+            consolidationDetails = consolidationDetailsDao.findById(linkedConsol.getId()).get();
+            if(consolidationDetails != null && Objects.equals(consolidationDetails.getEfreightStatus(), Constants.EAW)){
+                throw new RunnerException("EFreight status can only be EAW as Consolidation EFrieght Status is EAW");
+            }
+        }
         if(linkedConsol != null && (oldEntity == null || !Objects.equals(shipment.getMasterBill(),oldEntity.getMasterBill()) ||
                 !Objects.equals(shipment.getDirection(),oldEntity.getDirection()) ||
                 (shipment.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&

@@ -1047,6 +1047,18 @@ public class ConsolidationService implements IConsolidationService {
      * @param oldEntity
      */
     private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
+        if(Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
+            List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
+            ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
+            Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            List<ShipmentDetails> shipments = page.getContent();
+            var shipmentlist = shipments.stream().filter(x-> Objects.equals(x.getAdditionalDetails().getEfreightStatus(), Constants.NON)).toList();
+            if(shipmentlist != null && !shipmentlist.isEmpty()){
+                throw new RunnerException("EFreight status can only be EAP or NON as one of the Shipment has EFreight status as NON");
+            }
+        }
         if(console != null && (oldEntity == null ||  !Objects.equals(console.getBol(),oldEntity.getBol()) ||
                 !Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
@@ -2233,12 +2245,14 @@ public class ConsolidationService implements IConsolidationService {
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 consolidationDetailsResponse.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONSOLE_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
-            var awb = awbDao.findByConsolidationId(consolidationDetailsResponse.getId());
-            if(awb != null && !awb.isEmpty()){
-                if(Boolean.TRUE.equals(awb.get(0).getIsAirMessagingSent()))
-                    consolidationDetailsResponse.setAwbStatus(AwbStatus.AIR_MESSAGE_SENT);
-                else
-                    consolidationDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
+            if(consolidationDetailsResponse.getId() != null) {
+                var awb = awbDao.findByConsolidationId(consolidationDetailsResponse.getId());
+                if (awb != null && !awb.isEmpty()) {
+                    if (Boolean.TRUE.equals(awb.get(0).getIsAirMessagingSent()))
+                        consolidationDetailsResponse.setAwbStatus(AwbStatus.AIR_MESSAGE_SENT);
+                    else
+                        consolidationDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
+                }
             }
         }  catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONSOLIDATION_RETRIEVE, ex.getLocalizedMessage());
