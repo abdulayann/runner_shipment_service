@@ -502,4 +502,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "cancelled_bl_suffix")
     private String cancelledBLSuffix;
+
+    @Column(name = "transport_order_road")
+    private String transportOrderRoad;
 }
