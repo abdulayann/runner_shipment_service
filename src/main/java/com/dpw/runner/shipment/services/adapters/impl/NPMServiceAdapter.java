@@ -53,6 +53,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -497,7 +498,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if(request.getPreferredDate() != null)
         {
             try {
-                LocalDateTime utcDate = DateUtils.convertDateFromUserTimeZone(LocalDateTime.parse(request.getPreferredDate()), xBrowserTimeZone, null, false);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                LocalDateTime utcDate = DateUtils.convertDateFromUserTimeZone(LocalDateTime.parse(request.getPreferredDate(), formatter), xBrowserTimeZone, null, false);
                 preferredDateInUTC = String.valueOf(utcDate.toLocalDate());
             }
             catch(Exception e)
