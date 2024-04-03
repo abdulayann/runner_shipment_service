@@ -300,4 +300,6 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private String raNumber;
     @JsonProperty("RAExpiry")
     private LocalDateTime raExpiry;
+    @JsonProperty("TransportOrderRoad")
+    private String transportOrderRoad;
 }
