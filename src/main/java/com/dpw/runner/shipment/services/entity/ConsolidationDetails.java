@@ -341,9 +341,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Containers> containersList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
-    @BatchSize(size = 50)
-    private List<TruckDriverDetails> truckDriverDetails;
+//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
+//    @BatchSize(size = 50)
+//    private List<TruckDriverDetails> truckDriverDetails;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)
