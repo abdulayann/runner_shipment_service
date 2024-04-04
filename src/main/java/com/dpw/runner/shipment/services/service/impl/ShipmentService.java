@@ -1557,7 +1557,12 @@ public class ShipmentService implements IShipmentService {
 
     private void validateBeforeSave(ShipmentDetails shipmentDetails) {
         if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
-            shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
+            if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
+            }
+            else if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                shipmentDetails.setHouseBill(null);
+            }
         }
 //        Credit Limit check while shipment creation is removed for now
 //        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid(), false);
