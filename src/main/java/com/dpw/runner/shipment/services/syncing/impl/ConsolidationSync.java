@@ -119,7 +119,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setPlaceOfIssueString(request.getPlaceOfIssue());
 
         mapArrivalDepartureDetails(response, request);
-        mapTruckDriverDetail(response, request);
+//        mapTruckDriverDetail(response, request);
         mapPackings(response, request);
         mapJobs(response, request);
         response.setContainersList(syncEntityConversionService.containersV2ToV1(request.getContainersList()));
@@ -189,21 +189,21 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setPackingList(res);
     }
 
-    private void mapTruckDriverDetail(CustomConsolidationRequest response, ConsolidationDetails request) {
-        if(request == null || request.getTruckDriverDetails() == null)
-            return;
-        List<TruckDriverDetailsRequestV2> req = request.getTruckDriverDetails().stream()
-                .map(item -> {
-                    TruckDriverDetailsRequestV2 t;
-                    t = modelMapper.map(item, TruckDriverDetailsRequestV2.class);
-                    t.setTransporterNameOrg(item.getTransporterName());
-                    //ENUM
-                    t.setTransporterTypeString(item.getTransporterType().toString());
-                    return t;
-                })
-                .toList();
-        response.setTruckDriverDetail(req);
-    }
+//    private void mapTruckDriverDetail(CustomConsolidationRequest response, ConsolidationDetails request) {
+//        if(request == null || request.getTruckDriverDetails() == null)
+//            return;
+//        List<TruckDriverDetailsRequestV2> req = request.getTruckDriverDetails().stream()
+//                .map(item -> {
+//                    TruckDriverDetailsRequestV2 t;
+//                    t = modelMapper.map(item, TruckDriverDetailsRequestV2.class);
+//                    t.setTransporterNameOrg(item.getTransporterName());
+//                    //ENUM
+//                    t.setTransporterTypeString(item.getTransporterType().toString());
+//                    return t;
+//                })
+//                .toList();
+//        response.setTruckDriverDetail(req);
+//    }
 
     private void mapCarrierDetails(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getCarrierDetails() == null)
