@@ -27,9 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -213,6 +211,20 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Override
+    public AirMessagingLogs getRecentLogForEntityGuid(UUID guid) {
+        if(Objects.isNull(guid))
+            return null;
+
+        List<AirMessagingLogs> logs = airMessagingLogsDao.findByEntityGuid(guid);
+        if (logs.size() == 0) {
+            return null;
+        }
+        List<AirMessagingLogs> sortedList = logs.stream()
+                .sorted(Comparator.comparing(AirMessagingLogs :: getCreatedAt).reversed()).toList();
+        return sortedList.get(0);
     }
 
     private List<IRunnerResponse> convertListResponse(List<AirMessagingLogs> lst) {
