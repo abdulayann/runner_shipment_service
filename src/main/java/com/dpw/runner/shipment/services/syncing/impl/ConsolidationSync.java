@@ -43,6 +43,11 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+
 @Service
 @Slf4j
 public class ConsolidationSync implements IConsolidationSync {
