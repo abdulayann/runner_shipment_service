@@ -267,42 +267,6 @@ public class HblReport extends IReport{
             }
         }
 
-
-        if (hblModel.tenantSettingsResponse != null && hblModel.tenantSettingsResponse.isEnableIGMDetails()) {
-            if (hblModel.shipment.getDirection() != null && hblModel.shipment.getDirection().equals(Constants.IMP)) {
-                if (hblModel.shipment.getAdditionalDetails().getIGMFileDate() != null) {
-                    dictionary.put(ReportConstants.IGM_FILE_DATE, hblModel.shipment.getAdditionalDetails().getIGMFileDate());
-                }
-                if (hblModel.shipment.getAdditionalDetails().getIGMFileNo() != null) {
-                    dictionary.put(ReportConstants.IGM_FILE_NO, hblModel.shipment.getAdditionalDetails().getIGMFileNo());
-                }
-                if (hblModel.shipment.getAdditionalDetails().getIGMInwardDate() != null) {
-                    dictionary.put(ReportConstants.IGM_INWARD_DATE, hblModel.shipment.getAdditionalDetails().getIGMInwardDate());
-                }
-                if (hblModel.shipment.getAdditionalDetails().getInwardDateAndTime() != null) {
-                    dictionary.put(ReportConstants.INWARD_DATE_TIME, hblModel.shipment.getAdditionalDetails().getInwardDateAndTime());
-                }
-                if (hblModel.shipment.getAdditionalDetails().getLineNumber() != null) {
-                    dictionary.put(ReportConstants.LINE_NUMBER, hblModel.shipment.getAdditionalDetails().getLineNumber());
-                }
-                if (hblModel.shipment.getAdditionalDetails().getSubLineNumber() != null) {
-                    dictionary.put(ReportConstants.SUB_LINE_NUMBER, hblModel.shipment.getAdditionalDetails().getSubLineNumber());
-                }
-                if (hblModel.shipment.getAdditionalDetails().getIsInland()) {
-                    dictionary.put(ReportConstants.IS_INLAND, hblModel.shipment.getAdditionalDetails().getIsInland() ? "Yes" : "No");
-                    if (hblModel.shipment.getAdditionalDetails().getSMTPIGMDate() != null) {
-                        dictionary.put(ReportConstants.SMTPIGM_DATE, hblModel.shipment.getAdditionalDetails().getSMTPIGMDate());
-                    }
-                    if (hblModel.shipment.getAdditionalDetails().getSMTPIGMNumber() != null) {
-                        dictionary.put(ReportConstants.SMTPIGM_NUMBER, hblModel.shipment.getAdditionalDetails().getSMTPIGMNumber());
-                    }
-                    if (hblModel.shipment.getAdditionalDetails().getLocalLineNumber() != null) {
-                        dictionary.put(ReportConstants.LOCAL_LINE_NUMBER, hblModel.shipment.getAdditionalDetails().getLocalLineNumber());
-                    }
-                }
-            }
-        }
-
         if (hblModel.consolidation != null) {
             PartiesModel receivingAgentParty = hblModel.consolidation.getReceivingAgent();
             if (!Objects.isNull(receivingAgentParty)) {

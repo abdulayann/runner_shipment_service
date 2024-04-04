@@ -141,42 +141,7 @@ public class FreightCertificationReport extends IReport{
                 }
             }
         }
-
-        if(tenantSettingsRow != null && tenantSettingsRow.isEnableIGMDetails())
-        {
-            if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getDirection() != null && freightCertificationModel.shipmentDetails.getDirection().equalsIgnoreCase(Constants.IMP)) {
-                if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getIGMFileDate() != null) {
-                    dictionary.put(ReportConstants.IGM_FILE_DATE, freightCertificationModel.shipmentDetails.getAdditionalDetails().getIGMFileDate());
-                }
-                if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getIGMFileNo() != null) {
-                    dictionary.put(ReportConstants.IGM_FILE_NO, freightCertificationModel.shipmentDetails.getAdditionalDetails().getIGMFileNo());
-                }
-                if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getIGMInwardDate() != null) {
-                    dictionary.put(ReportConstants.IGM_INWARD_DATE, freightCertificationModel.shipmentDetails.getAdditionalDetails().getIGMInwardDate());
-                }
-                if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getInwardDateAndTime() != null) {
-                    dictionary.put(ReportConstants.INWARD_DATE_TIME, freightCertificationModel.shipmentDetails.getAdditionalDetails().getInwardDateAndTime());
-                }
-                if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getLineNumber() != null) {
-                    dictionary.put(ReportConstants.LINE_NUMBER, freightCertificationModel.shipmentDetails.getAdditionalDetails().getLineNumber());
-                }
-                if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getSubLineNumber() != null) {
-                    dictionary.put(ReportConstants.SUB_LINE_NUMBER, freightCertificationModel.shipmentDetails.getAdditionalDetails().getSubLineNumber());
-                }
-                if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getIsInland()) {
-                    dictionary.put(ReportConstants.IS_INLAND, freightCertificationModel.shipmentDetails.getAdditionalDetails().getIsInland()?"Yes":"No");
-                    if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate() != null) {
-                        dictionary.put(ReportConstants.SMTPIGM_DATE, freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate());
-                    }
-                    if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMNumber() != null) {
-                        dictionary.put(ReportConstants.SMTPIGM_NUMBER, freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMNumber());
-                    }
-                    if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getLocalLineNumber() != null) {
-                        dictionary.put(ReportConstants.LOCAL_LINE_NUMBER, freightCertificationModel.shipmentDetails.getAdditionalDetails().getLocalLineNumber());
-                    }
-                }
-            }
-        }
+        populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
 
         List<BillingResponse> billingsList = getBillingData(freightCertificationModel.shipmentDetails.getGuid());
         LocalDateTime lastDate = LocalDateTime.MIN;

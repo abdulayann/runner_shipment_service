@@ -133,6 +133,8 @@ public abstract class IReport {
     private IContainerService containerService;
     @Autowired
     private IAwbService awbService;
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
 
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
@@ -725,6 +727,7 @@ public abstract class IReport {
             dictionary.put(GOODS_VALUE, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(dictionary.get(GOODS_VALUE))), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         if (!Objects.isNull(dictionary.get(INSURANCE_VALUE)))
             dictionary.put(INSURANCE_VALUE, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(dictionary.get(INSURANCE_VALUE))), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
+        populateIGMInfo(shipment, dictionary);
     }
 
     public List<String> populateConsigneeData(Map<String, Object> dictionary, PartiesModel shipmentConsignee) {
@@ -2562,5 +2565,61 @@ public abstract class IReport {
         if(shipmentModel.getSecurityStatus() != null && shipmentModel.getSecurityStatus().size() > 0) {
             dictionary.put(SCREENING_CODES, shipmentModel.getSecurityStatus());
         }
+    }
+
+    private String getDate(Map<String, Object> agent) {
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        return ConvertToDPWDateFormat(LocalDateTime.parse(StringUtility.convertToString(agent.get(KCRA_EXPIRY))), v1TenantSettingsResponse.getDPWDateFormat());
+    }
+
+    private void processAgent(Map<String, Object> agent, Map<String, Object> dictionary, String type, String agentType) {
+        if(agent != null) {
+            if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(RAKC_TYPE)))
+                    && StringUtility.convertToString(agent.get(RAKC_TYPE)).equals(type)) {
+                if(type.equals(ONE)) {
+                    dictionary.put(agentType + TYPE, RA);
+                } else if(type.equals(TWO)) {
+                    dictionary.put(agentType + TYPE, KC);
+                }
+
+                if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(KCRA_NUMBER)))) {
+                    if(type.equals(ONE)) {
+                        dictionary.put(agentType + RA_NUMBER, agent.get(KCRA_NUMBER));
+                    } else if(type.equals(TWO)) {
+                        dictionary.put(agentType + KC_NUMBER, agent.get(KCRA_NUMBER));
+                    }
+                }
+
+                if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(KCRA_EXPIRY)))) {
+                    if(type.equals(ONE)) {
+                        dictionary.put(agentType + RA_EXPIRY, getDate(agent));
+                    } else if(type.equals(TWO)) {
+                        dictionary.put(agentType + KC_EXPIRY, getDate(agent));
+                    }
+                }
+            }
+        }
+    }
+
+    public void populateIGMInfo(ShipmentModel shipment, Map<String, Object> dictionary) {
+        if (Objects.isNull(shipment))
+            return;
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        var additionalDetails = shipment.getAdditionalDetails();
+        if (v1TenantSettingsResponse.isEnableIGMDetails() && Objects.equals(shipment.getDirection(), Constants.IMP) && !Objects.isNull(additionalDetails)) {
+            dictionary.put(ReportConstants.IGM_FILE_DATE, additionalDetails.getIGMFileDate());
+            dictionary.put(ReportConstants.IGM_FILE_NO, additionalDetails.getIGMFileNo());
+            dictionary.put(ReportConstants.IGM_INWARD_DATE, additionalDetails.getIGMInwardDate());
+            dictionary.put(ReportConstants.INWARD_DATE_TIME, additionalDetails.getInwardDateAndTime());
+            dictionary.put(ReportConstants.LINE_NUMBER, additionalDetails.getLineNumber());
+            dictionary.put(ReportConstants.SUB_LINE_NUMBER, additionalDetails.getSubLineNumber());
+            if (Boolean.TRUE.equals(additionalDetails.getIsInland())) {
+                dictionary.put(ReportConstants.IS_INLAND, Boolean.TRUE.equals(additionalDetails.getIsInland()) ? "Yes" : "No");
+                dictionary.put(ReportConstants.SMTPIGM_DATE, additionalDetails.getSMTPIGMDate());
+                dictionary.put(ReportConstants.SMTPIGM_NUMBER, additionalDetails.getSMTPIGMNumber());
+                dictionary.put(ReportConstants.LOCAL_LINE_NUMBER, additionalDetails.getLocalLineNumber());
+            }
+        }
+
     }
 }
