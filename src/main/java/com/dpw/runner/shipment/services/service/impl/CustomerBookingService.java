@@ -268,7 +268,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         // NPM update contract
         contractUtilisationForUpdate(customerBooking, oldEntity.get());
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
-        if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
+        if (!Objects.isNull(customerBooking.getBusinessCode()) && !Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_KYC)
                 && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform) {
             CustomerBooking finalCustomerBooking = customerBooking;
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(finalCustomerBooking)), executorService);
