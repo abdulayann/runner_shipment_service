@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -46,6 +47,7 @@ public class CargoManifestReport extends IReport{
         cargoManifestModel.shipmentDetails = getShipment(id);
         cargoManifestModel.tenantDetails = getTenant();
         cargoManifestModel.usersDto = UserContext.getUser();
+        cargoManifestModel.awb = getHawb(id);
         return cargoManifestModel;
     }
 
@@ -241,6 +243,10 @@ public class CargoManifestReport extends IReport{
             dictionary.put(ReportConstants.TotalCntrCount, addCommaWithoutDecimal(new BigDecimal(Total_ContainerCount)));
             dictionary.put(ReportConstants.TotalCntrPacks, addCommaWithoutDecimal(new BigDecimal(Total_Packs)));
         }
+
+        AwbCargoInfo cargoInfoRows = cargoManifestModel.awb.getAwbCargoInfo();
+        dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
+
         return dictionary;
     }
 
