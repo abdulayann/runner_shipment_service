@@ -1160,10 +1160,6 @@ public class PackingService implements IPackingService {
         return jsonHelper.convertValue(packing, PackingResponse.class);
     }
 
-    private IRunnerResponse convertEntityToDto(Containers packing) {
-        return jsonHelper.convertValue(packing, ContainerResponse.class);
-    }
-
     private Packing convertRequestToEntity(PackingRequest request) {
         return jsonHelper.convertValue(request, Packing.class);
     }
