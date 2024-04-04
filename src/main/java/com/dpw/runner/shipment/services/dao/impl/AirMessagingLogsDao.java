@@ -10,7 +10,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @Slf4j
@@ -39,4 +41,7 @@ public class AirMessagingLogsDao implements IAirMessagingLogsDao {
     public void delete(AirMessagingLogs airMessagingLogs) {
         airMessagingLogsRepository.delete(airMessagingLogs);
     }
+
+    @Override
+    public List<AirMessagingLogs> findByEntityGuid(UUID guid) { return airMessagingLogsRepository.findByEntityGuid(guid); }
 }

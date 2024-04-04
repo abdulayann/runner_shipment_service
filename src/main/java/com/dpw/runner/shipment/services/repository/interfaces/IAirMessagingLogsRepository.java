@@ -8,9 +8,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface IAirMessagingLogsRepository extends MultiTenancyRepository<AirMessagingLogs> {
     List<AirMessagingLogs> findAll();
     Page<AirMessagingLogs> findAll(Specification<AirMessagingLogs> spec, Pageable pageable);
+    List<AirMessagingLogs> findByEntityGuid(UUID guid);
 }

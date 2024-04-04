@@ -36,6 +36,6 @@ public class AwbConstants {
     public static final String GENERATE_HAWB_BEFORE_MAWB_EXCEPTION = "To Generate Mawb, Please create Hawb for all the shipments attached";
     public static final String DUPLICATE_PAIR_AWB_OCI_INFO_VALIDATION = "Combinations of Information Identifier and Trade identification code already exists. Please enter unique combinations";
     public static final String IATA_DESCRIPTION_FIELD_VALIDATION = "IATA description shouldn't be more than 3 in other charges";
-
+    public static final String FNM_STATUS_FETCH_SUCCESS = "Successfully fetch fnm status message";
 
 }

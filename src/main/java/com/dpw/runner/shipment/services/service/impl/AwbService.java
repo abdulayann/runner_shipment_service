@@ -37,10 +37,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.SaveStatus;
@@ -151,6 +148,8 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
+    @Autowired
+    private IAirMessagingLogsService airMessagingLogsService;
 
     ExecutorService executorService = Executors.newFixedThreadPool(10);
 
@@ -3200,5 +3199,114 @@ public class AwbService implements IAwbService {
         }
         return ResponseHelper.buildSuccessResponse(res);
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getFnmStatusMessage(Optional<Long> shipmentId, Optional<Long> consolidaitonId) {
+
+        Awb masterAwb = null;
+        String entityType = null;
+        List<Awb> awbList = null;
+        StringBuilder responseStatusMessage = new StringBuilder();
+
+        if(shipmentId.isPresent()) {
+            awbList = awbDao.findByShipmentId(shipmentId.get());
+        }
+        else if(consolidaitonId.isPresent()) {
+            awbList = awbDao.findByConsolidationId(consolidaitonId.get());
+        }
+        else {
+            // Throw some error both can't be null
+            // or send empty response object
+            return ResponseHelper.buildSuccessResponse();
+        }
+
+        if(!Objects.isNull(awbList) && !awbList.isEmpty()) {
+            masterAwb = awbList.get(0);
+            entityType = masterAwb.getAwbShipmentInfo().getEntityType();
+        }
+
+        // Fetch the logs for all Awb entities (master and its linked Hawb)
+        // Update the response as per AirMessagingLogs
+        switch(entityType) {
+            case Constants.HAWB -> fnmAcknowledgementHawb(masterAwb, responseStatusMessage);
+            case Constants.DMAWB -> fnmAcknowledgementMawb(masterAwb, responseStatusMessage);
+            case Constants.MAWB -> fnmAcknowledgementMawb(masterAwb, responseStatusMessage);
+        }
+
+        FnmStatusMessageResponse response = FnmStatusMessageResponse.builder()
+                .response(responseStatusMessage.toString()).build();
+
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private void fnmAcknowledgementHawb(Awb awb, StringBuilder responseStatusMessage) {
+        var statusLog = airMessagingLogsService.getRecentLogForEntityGuid(awb.getGuid());
+        if (statusLog == null)
+            return;
+        if(Objects.equals(statusLog.getStatus(), AirMessagingLogsConstants.FAILED_STATUS)) {
+            responseStatusMessage.append(String.format(AirMessagingLogsConstants.SHIPMENT_FNM_FAILURE_ERROR, statusLog.getErrorMessage()));
+        }
+    }
+    private void fnmAcknowledgementMawb(Awb mawb, StringBuilder responseStatusMessage) {
+        var mawbStatusLog = airMessagingLogsService.getRecentLogForEntityGuid(mawb.getGuid());
+        if (mawbStatusLog == null)
+            return;
+
+        // Stores shipment ID of failed Hawbs
+        List<Long> failedShipmentHawbs = new ArrayList<>();
+        List<Awb> linkedHawb = getLinkedAwbFromMawb(mawb.getId());
+
+        for(var hawb : linkedHawb) {
+            var statusLog = airMessagingLogsService.getRecentLogForEntityGuid(hawb.getGuid());
+
+            if(statusLog == null)
+                continue;
+
+            if(Objects.equals(statusLog.getStatus(), AirMessagingLogsConstants.FAILED_STATUS)) {
+                failedShipmentHawbs.add(hawb.getShipmentId());
+            }
+        }
+
+
+        boolean failedMawb = Objects.equals(mawbStatusLog.getStatus(), AirMessagingLogsConstants.FAILED_STATUS);
+        boolean failedHawb = !failedShipmentHawbs.isEmpty();
+
+
+        // Cases to generate the error Log
+        if(!failedMawb && !failedHawb) {
+            return;
+        }
+        if(failedHawb) {
+            // if failedShipmentHawb size > 0 fetch ShipmentID for those shipments
+            ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", failedShipmentHawbs, "IN");
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            String shipmentNumbersString = "";
+            if(shipmentDetailsPage.hasContent()) {
+                List<String> shipmentNumbers = shipmentDetailsPage.getContent().stream().map(ShipmentDetails::getShipmentId).toList();
+                shipmentNumbersString = String.join(" ", shipmentNumbers);
+            }
+
+            if(failedMawb) {
+                responseStatusMessage.append(String.format(
+                        AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_FAILURE_ERROR, shipmentNumbersString)
+                );
+            }
+            else {
+                responseStatusMessage.append(String.format(
+                        AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_SUCCESS_HAWB_FAILURE_ERROR, shipmentNumbersString)
+                );
+            }
+        }
+        // !failedHawb && failedMawb
+        else {
+            responseStatusMessage.append(String.format(
+                    AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_SUCCESS_ERROR, mawbStatusLog.getStatus())
+            );
+        }
+
+    }
+
+
 
 }
