@@ -4021,7 +4021,7 @@ public class ShipmentService implements IShipmentService {
             innerFilters.add(filterCriteria);
         }
         if(request.getScheduleMatch()){
-            if(consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)){
+            if(Objects.equals(consolidationDetails.getTransportMode(),Constants.TRANSPORT_MODE_AIR)){
                 innerFilers1 = new ArrayList<>();
                 if(!Objects.isNull(consolidationDetails.getCarrierDetails().getFlightNumber()))
                     criteria = Criteria.builder().fieldName(Constants.FLIGHT_NUMBER).operator("=").value(consolidationDetails.getCarrierDetails().getFlightNumber()).build();
@@ -4048,7 +4048,7 @@ public class ShipmentService implements IShipmentService {
                 filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
                 innerFilters.add(filterCriteria);
             }
-            else if(consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)){
+            else if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_SEA)){
                 innerFilers1 = new ArrayList<>();
                 if(!Objects.isNull(consolidationDetails.getCarrierDetails().getVessel()))
                     criteria = Criteria.builder().fieldName(Constants.VESSEL).operator("=").value(consolidationDetails.getCarrierDetails().getVessel()).build();
@@ -4421,7 +4421,7 @@ public class ShipmentService implements IShipmentService {
             }
             return ResponseHelper.buildFailedResponse("Shipment not exist for given id");
         } else {
-            return ResponseHelper.buildFailedResponse("Please Send a alid doc type for check credit limit.");
+            return ResponseHelper.buildFailedResponse("Please send a valid doc type for check credit limit.");
         }
     }
 }

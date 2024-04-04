@@ -3,9 +3,11 @@ package com.dpw.runner.shipment.services.dto.CalculationAPIsDto;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class PackContainerNumberChangeRequest implements IRunnerRequest {
     private ContainerRequest oldContainer;
     private ContainerRequest newContainer;

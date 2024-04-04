@@ -139,7 +139,7 @@ public class ShipmentDao implements IShipmentDao {
             long id = shipmentDetails.getId();
             Optional<ShipmentDetails> oldEntity = findById(id);
             if (!oldEntity.isPresent()) {
-                log.debug("Container is null for Id {}", shipmentDetails.getId());
+                log.debug("Shipment is null for Id {}", shipmentDetails.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             if(shipmentDetails.getContainersList() == null) {
