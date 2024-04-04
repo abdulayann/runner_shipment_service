@@ -4,7 +4,9 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
@@ -40,7 +42,8 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     private JsonHelper jsonHelper;
     @Autowired
     private IAuditLogService auditLogService;
-
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Override
     public TruckDriverDetails save(TruckDriverDetails truckDriverDetails) {
         return truckDriverDetailsRepository.save(truckDriverDetails);
@@ -77,9 +80,9 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
                                         .newData(null)
-                                        .prevData(jsonHelper.readFromJson(json, TruckDriverDetails.class))
+                                        .prevData(truckDriverDetails)
                                         .parent(entity)
-                                        .parentId(entityId)
+                                        .parentId(truckDriverDetails.getShipmentId())
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
                     } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
@@ -255,19 +258,17 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId) throws RunnerException {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
+        List<Long> shipmentIds = consoleShipmentMappingDao.findByConsolidationId(consolidationId).stream().map(ConsoleShipmentMapping::getShipmentId).collect(Collectors.toList());
         try {
-            // TODO- Handle Transactions here
             Map<Long, TruckDriverDetails> hashMap;
-//            if(!Objects.isNull(truckDriverDetailsIdList) && !truckDriverDetailsIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
-                Page<TruckDriverDetails> truckDriverDetailsPage = findAll(pair.getLeft(), pair.getRight());
-                hashMap = truckDriverDetailsPage.stream()
-                        .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
-//            }
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentIds, "IN");
+            Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
+            Page<TruckDriverDetails> truckDriverDetailsPage = findAll(pair.getLeft(), pair.getRight());
+            hashMap = truckDriverDetailsPage.stream()
+                    .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
             Map<Long, TruckDriverDetails> copyHashMap = new HashMap<>(hashMap);
             List<TruckDriverDetails> truckDriverDetailsRequests = new ArrayList<>();
-            if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {
+            if (truckDriverDetailsList != null && !truckDriverDetailsList.isEmpty()) {
                 for (TruckDriverDetails request : truckDriverDetailsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -277,7 +278,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 }
                 responseTruckDriverDetails = saveEntityFromConsole(truckDriverDetailsRequests, consolidationId, copyHashMap);
             }
-            deleteTruckDriverDetails(hashMap, ConsolidationDetails.class.getSimpleName(), consolidationId);
+            deleteTruckDriverDetails(hashMap, ShipmentDetails.class.getSimpleName(), consolidationId);
             return responseTruckDriverDetails;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -358,7 +359,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
                 req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
             }
-            req.setConsolidationId(consolidationId);
+//            req.setConsolidationId(consolidationId);
             res.add(req);
         }
         res = saveAll(res);
