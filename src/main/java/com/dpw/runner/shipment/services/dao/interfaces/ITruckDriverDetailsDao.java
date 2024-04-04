@@ -17,8 +17,6 @@ public interface ITruckDriverDetailsDao {
     Optional<TruckDriverDetails> findById(Long id);
     void delete(TruckDriverDetails truckDriverDetails);
     List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId) throws RunnerException;
-    List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId, List<TruckDriverDetails> oldEntityList) throws RunnerException;
-    List<TruckDriverDetails> saveEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsRequests, Long consolidationId);
     List<TruckDriverDetails> saveEntityFromConsole(List<TruckDriverDetails> truckDriverDetails, Long consolidationId, Map<Long, TruckDriverDetails> oldEntityMap);
     List<TruckDriverDetails> updateEntityFromShipment(List<TruckDriverDetails> truckDriverDetails, Long shipmentId) throws RunnerException;
     List<TruckDriverDetails> saveEntityFromShipment(List<TruckDriverDetails> truckDriverDetails, Long shipmentId);
