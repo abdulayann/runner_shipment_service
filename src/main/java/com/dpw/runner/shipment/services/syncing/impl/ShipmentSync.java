@@ -239,15 +239,18 @@ public class ShipmentSync implements IShipmentSync {
     private void mapTruckDriverDetail(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
         if(sd.getTruckDriverDetails() == null)
             return;
-
+        UUID consolGuid = null;
+        if(cs.getConsolidationGuids() != null && !cs.getConsolidationGuids().isEmpty())
+            consolGuid = cs.getConsolidationGuids().get(0);
+        UUID finalConsolGuid = consolGuid;
         List<TruckDriverDetailsRequestV2> req = sd.getTruckDriverDetails().stream()
                 .map(item -> {
                     TruckDriverDetailsRequestV2 t;
                     t = modelMapper.map(item, TruckDriverDetailsRequestV2.class);
-                    t.setTransporterNameOrg(item.getTransporterName());
-                    //ENUM
                     if(item.getTransporterType() != null)
                         t.setTransporterTypeString(item.getTransporterType().toString());
+                    t.setConsolidationGuid(finalConsolGuid);
+                    t.setShipmentGuid(sd.getGuid());
                     return t;
                 })
                 .toList();

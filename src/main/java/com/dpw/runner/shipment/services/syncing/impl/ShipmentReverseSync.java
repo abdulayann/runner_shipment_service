@@ -146,7 +146,6 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
                 .map(item -> {
                     TruckDriverDetails t;
                     t = modelMapper.map(item, TruckDriverDetails.class);
-                    t.setTransporterName(item.getTransporterNameOrg());
                     t.setTransporterType(Ownership.valueOf(item.getTransporterTypeString()));
                     return t;
                 })

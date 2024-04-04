@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -288,64 +287,6 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         }
     }
 
-    @Override
-    public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId, List<TruckDriverDetails> oldEntityList) throws RunnerException {
-        String responseMsg;
-        Map<UUID, TruckDriverDetails> truckDriverDetailsMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (TruckDriverDetails entity:
-                    oldEntityList) {
-                truckDriverDetailsMap.put(entity.getGuid(), entity);
-            }
-        }
-
-        List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
-        try {
-            TruckDriverDetails oldEntity;
-            List<TruckDriverDetails> truckDriverDetailsRequests = new ArrayList<>();
-            if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {
-                for (TruckDriverDetails request : truckDriverDetailsList) {
-                    oldEntity = truckDriverDetailsMap.get(request.getGuid());
-                    if(oldEntity != null) {
-                        truckDriverDetailsMap.remove(oldEntity.getGuid());
-                        request.setId(oldEntity.getId());
-                    }
-                    truckDriverDetailsRequests.add(request);
-                }
-                responseTruckDriverDetails = saveEntityFromConsole(truckDriverDetailsRequests, consolidationId);
-            }
-            Map<Long, TruckDriverDetails> hashMap = new HashMap<>();
-            truckDriverDetailsMap.forEach((s, truckDriverDetails) ->  hashMap.put(truckDriverDetails.getId(), truckDriverDetails));
-            deleteTruckDriverDetails(hashMap, ConsolidationDetails.class.getSimpleName(), consolidationId);
-            return responseTruckDriverDetails;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
-    }
-
-    @Override
-    public List<TruckDriverDetails> saveEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsRequests, Long consolidationId) {
-        List<TruckDriverDetails> res = new ArrayList<>();
-        for(TruckDriverDetails req : truckDriverDetailsRequests){
-            if(req.getId() != null){
-                long id = req.getId();
-                Optional<TruckDriverDetails> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                req.setCreatedAt(oldEntity.get().getCreatedAt());
-                req.setCreatedBy(oldEntity.get().getCreatedBy());
-            }
-            req.setConsolidationId(consolidationId);
-            req = save(req);
-            res.add(req);
-        }
-        return res;
-    }
     @Override
     public List<TruckDriverDetails> saveEntityFromConsole(List<TruckDriverDetails> truckDriverDetails, Long consolidationId, Map<Long, TruckDriverDetails> oldEntityMap) {
         List<TruckDriverDetails> res = new ArrayList<>();
