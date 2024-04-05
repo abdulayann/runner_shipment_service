@@ -137,4 +137,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private UUID sourceGuid;
     private String efreightStatus;
     private AwbStatus awbStatus;
+    private AwbStatus linkedHawbStatus;
 }

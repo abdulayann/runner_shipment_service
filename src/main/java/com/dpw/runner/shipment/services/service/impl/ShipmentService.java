@@ -3158,8 +3158,8 @@ public class ShipmentService implements IShipmentService {
                 if(shipmentDetailsResponse.getId() != null) {
                     var awb = awbDao.findByShipmentId(shipmentDetailsResponse.getId());
                     if (awb != null && !awb.isEmpty()) {
-                        if (Boolean.TRUE.equals(awb.get(0).getIsAirMessagingSent()))
-                            shipmentDetailsResponse.setAwbStatus(AwbStatus.AIR_MESSAGE_SENT);
+                        if (awb.get(0).getAirMessageStatus() != null)
+                            shipmentDetailsResponse.setAwbStatus(awb.get(0).getAirMessageStatus());
                         else
                             shipmentDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
                     }
