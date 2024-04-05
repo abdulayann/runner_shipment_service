@@ -103,6 +103,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
@@ -2276,9 +2278,17 @@ public class ConsolidationService implements IConsolidationService {
                 Pair<Specification<ShipmentDetails>, Pageable> pair1 = fetchData(listReq, ShipmentDetails.class);
                 Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair1.getLeft(), pair1.getRight());
                 var map = shipmentDetailsPage.getContent().stream().collect(toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
+                List<ContainerResponse> containers = consolidationDetailsResponse.getContainersList();
+                Map<Long, ContainerResponse> contMap = new HashMap<>();
+                if(containers != null)
+                    contMap = containers.stream().collect(Collectors.toMap(ContainerResponse::getId, Function.identity()));
+                Map<Long, ContainerResponse> finalContMap = contMap;
                 truckDriverDetails.forEach(truckDriverDetail -> {
                     var details = jsonHelper.convertValue(truckDriverDetail, TruckDriverDetailsResponse.class);
                     details.setShipmentNumber(map.get(truckDriverDetail.getShipmentId()));
+                    if(details.getContainerId() != null && finalContMap.containsKey(details.getContainerId())) {
+                        details.setContainerNumber(finalContMap.get(details.getContainerId()).getContainerNumber());
+                    }
                     truckingInfo.add(details);
                 });
             }
