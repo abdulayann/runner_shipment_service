@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.ChargeTypeCode;
 import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
@@ -1561,7 +1562,8 @@ public class AwbService implements IAwbService {
         Awb awb = awbOptional.get();
         UUID awbGuid = awb.getGuid();
         Long awbId = awb.getId();
-        var isAirMessagingSent = false; //awb.getIsAirMessagingSent();
+        AwbStatus airMessageStatus = awb.getAirMessageStatus();
+        AwbStatus linkedHawbAirMessageStatus = awb.getLinkedHawbAirMessageStatus();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
@@ -1608,7 +1610,8 @@ public class AwbService implements IAwbService {
                 }
                 else awb = generateAwb(createAwbRequest);
                 awb.setGuid(awbGuid);
-//                awb.setIsAirMessagingSent(isAirMessagingSent);
+                awb.setAirMessageStatus(airMessageStatus);
+                awb.setLinkedHawbAirMessageStatus(linkedHawbAirMessageStatus);
                 break;
             }
             case AWB_ROUTING: {
