@@ -185,6 +185,11 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             additionalDetails.setPassedBy(Ownership.valueOf(cs.getPassedByString()));
         additionalDetails.setBOEDate(cs.getBoedate());
         additionalDetails.setBOENumber(cs.getBoenumber());
+        additionalDetails.setIGMFileDate(cs.getIgmfileDate());
+        additionalDetails.setIGMFileNo(cs.getIgmfileNo());
+        additionalDetails.setIGMInwardDate(cs.getIgminwardDate());
+        additionalDetails.setSMTPIGMDate(cs.getSmtpigmdate());
+        additionalDetails.setSMTPIGMNumber(cs.getSmtpigmnumber());
         additionalDetails.setGuid(null);
         additionalDetails.setDeliveryMode(cs.getHblDeliveryMode());
         if(cs.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
