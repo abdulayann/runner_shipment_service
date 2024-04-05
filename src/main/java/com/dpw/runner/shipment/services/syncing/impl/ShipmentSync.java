@@ -297,6 +297,11 @@ public class ShipmentSync implements IShipmentSync {
             cs.setPassedByString(String.valueOf(sd.getAdditionalDetails().getPassedBy().getValue()));
         cs.setBoedate(sd.getAdditionalDetails().getBOEDate());
         cs.setBoenumber(sd.getAdditionalDetails().getBOENumber());
+        cs.setIgmfileDate(sd.getAdditionalDetails().getIGMFileDate());
+        cs.setIgmfileNo(sd.getAdditionalDetails().getIGMFileNo());
+        cs.setIgminwardDate(sd.getAdditionalDetails().getIGMInwardDate());
+        cs.setSmtpigmdate(sd.getAdditionalDetails().getSMTPIGMDate());
+        cs.setSmtpigmnumber(sd.getAdditionalDetails().getSMTPIGMNumber());
         cs.setHblDeliveryMode(sd.getAdditionalDetails().getDeliveryMode());
         cs.setChargesApply(sd.getAdditionalDetails().getBLChargesDisplay());
         cs.setExporterStmt(sd.getAdditionalDetails().getBLExporterShipment());
