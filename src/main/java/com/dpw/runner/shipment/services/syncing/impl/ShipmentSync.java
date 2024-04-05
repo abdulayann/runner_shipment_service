@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -29,6 +30,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -43,6 +45,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
+import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 
 @Component
 @Slf4j
@@ -295,12 +298,12 @@ public class ShipmentSync implements IShipmentSync {
         }
         if(sd.getAdditionalDetails().getPassedBy() != null)
             cs.setPassedByString(String.valueOf(sd.getAdditionalDetails().getPassedBy().getValue()));
-        cs.setBoedate(sd.getAdditionalDetails().getBOEDate());
+        cs.setBoedate(convertDateToUserTimeZone(sd.getAdditionalDetails().getBOEDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
         cs.setBoenumber(sd.getAdditionalDetails().getBOENumber());
-        cs.setIgmfileDate(sd.getAdditionalDetails().getIGMFileDate());
+        cs.setIgmfileDate(convertDateToUserTimeZone(sd.getAdditionalDetails().getIGMFileDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
         cs.setIgmfileNo(sd.getAdditionalDetails().getIGMFileNo());
-        cs.setIgminwardDate(sd.getAdditionalDetails().getIGMInwardDate());
-        cs.setSmtpigmdate(sd.getAdditionalDetails().getSMTPIGMDate());
+        cs.setIgminwardDate(convertDateToUserTimeZone(sd.getAdditionalDetails().getIGMInwardDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
+        cs.setSmtpigmdate(convertDateToUserTimeZone(sd.getAdditionalDetails().getSMTPIGMDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
         cs.setSmtpigmnumber(sd.getAdditionalDetails().getSMTPIGMNumber());
         cs.setHblDeliveryMode(sd.getAdditionalDetails().getDeliveryMode());
         cs.setChargesApply(sd.getAdditionalDetails().getBLChargesDisplay());
