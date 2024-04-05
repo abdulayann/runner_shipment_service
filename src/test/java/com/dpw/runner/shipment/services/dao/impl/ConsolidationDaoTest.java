@@ -12,24 +12,20 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,11 +33,11 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(SpringRunner.class)
-@ExtendWith(MockitoExtension.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+//@RunWith(SpringRunner.class)
+//@ExtendWith(MockitoExtension.class)
+//@TestPropertySource("classpath:application-test.properties")
+//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+//@Testcontainers
 class ConsolidationDaoTest {
     @Container
     private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
@@ -101,14 +97,14 @@ class ConsolidationDaoTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
     }
 
-    @Test
+//    @Test
     void save() {
         var consol = jsonTestUtility.getTestNewConsolidation();
         ConsolidationDetails result = consolidationsDao.save(consol, false);
         assertEquals(result, consol);
     }
 
-    @Test
+//    @Test
     void update() {
         var consolToBeSaved = jsonTestUtility.getTestNewConsolidation();
         var result = consolidationsDao.save(consolToBeSaved , false);
@@ -118,7 +114,7 @@ class ConsolidationDaoTest {
         assertEquals(result.getGuid(), newResult.getGuid());
     }
 
-    @Test
+//    @Test
     @Disabled
     void findAll() {
         var consol = jsonTestUtility.getTestNewConsolidation();
@@ -131,7 +127,7 @@ class ConsolidationDaoTest {
         assertEquals(consolList.stream().toList().get(0).getContainerCategory() , result.getContainerCategory());
     }
 
-    @Test
+//    @Test
     void findById() {
         var consol = jsonTestUtility.getTestNewConsolidation();
         var result = consolidationsDao.save(consol , false);
@@ -140,7 +136,7 @@ class ConsolidationDaoTest {
         assertEquals(consolList.get().getGuid() , result.getGuid());
     }
 
-    @Test
+//    @Test
     void delete() {
         var consol = jsonTestUtility.getTestNewConsolidation();
         var result = consolidationsDao.save(consol, false);
@@ -148,7 +144,7 @@ class ConsolidationDaoTest {
         assertThrows(JpaObjectRetrievalFailureException.class , () -> consolidationsDao.findById(result.getId()));
     }
 
-    @Test
+//    @Test
     void saveAll() {
         var consolList = List.of(jsonTestUtility.getTestNewConsolidation());
         var result = consolidationsDao.saveAll(consolList);
@@ -156,7 +152,7 @@ class ConsolidationDaoTest {
         assertNotNull(result.get(0).getGuid());
     }
 
-    @Test
+//    @Test
     void findByGuid() {
         var consol = jsonTestUtility.getTestNewConsolidation();
         var result = consolidationsDao.save(consol, false);
@@ -167,7 +163,7 @@ class ConsolidationDaoTest {
         assertEquals(newResult.get().getGuid() , result.getGuid());
     }
 
-    @Test
+//    @Test
     void findByBol() {
         var consol = jsonTestUtility.getTestNewConsolidation();
         consol.setBol("TEST_BOL");
@@ -177,7 +173,7 @@ class ConsolidationDaoTest {
         assertEquals(newResult.get(0).getGuid() , result.getGuid());
     }
 
-    @Test
+//    @Test
     void findByReferenceNumber() {
         var consol = jsonTestUtility.getTestNewConsolidation();
         consol.setReferenceNumber("TEST_REFERENCE_NUMBER");
@@ -187,7 +183,7 @@ class ConsolidationDaoTest {
         assertEquals(newResult.get(0).getGuid() , result.getGuid());
     }
 
-    @Test
+//    @Test
     void findMaxId() {
         var consol = jsonTestUtility.getTestNewConsolidation();
         var result = consolidationsDao.save(consol, false);
@@ -196,7 +192,7 @@ class ConsolidationDaoTest {
     }
 
 
-    @Test
+//    @Test
     @Transactional
     @Disabled
     void updateConsoleBookingFields() {

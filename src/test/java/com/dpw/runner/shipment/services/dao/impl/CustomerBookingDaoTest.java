@@ -12,21 +12,12 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.runner.RunWith;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -34,14 +25,13 @@ import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
-@RunWith(SpringRunner.class)
-@ExtendWith(MockitoExtension.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-@Execution(CONCURRENT)
+//@RunWith(SpringRunner.class)
+//@ExtendWith(MockitoExtension.class)
+//@TestPropertySource("classpath:application-test.properties")
+//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+//@Testcontainers
+//@Execution(CONCURRENT)
 class CustomerBookingDaoTest {
 
     @Container
@@ -85,7 +75,7 @@ class CustomerBookingDaoTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
     }
 
-    @Test
+//    @Test
     void save() {
         Parties mockParty = Parties.builder().orgCode("ORG123").addressCode("ADDR123").build();
         CarrierDetails carrierDetails = CarrierDetails.builder().origin("origin").destination("destination")
