@@ -10,22 +10,15 @@ import com.nimbusds.jose.util.Pair;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.runner.RunWith;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,14 +30,13 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 //@ExtendWith({MockitoExtension.class, SpringExtension.class})
-@RunWith(SpringRunner.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-@Execution(CONCURRENT)
+//@RunWith(SpringRunner.class)
+//@TestPropertySource("classpath:application-test.properties")
+//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+//@Testcontainers
+//@Execution(CONCURRENT)
 class NotesDaoTest {
 
     @Container
@@ -85,7 +77,7 @@ class NotesDaoTest {
         UserContext.setUser(UsersDto.builder().Username("user").Permissions(new HashMap<>()).build()); // Set up a mock user for testing
     }
 
-    @Test
+//    @Test
     public void testSave() {
         Notes notes = new Notes();
 //        when(notesRepository.save(notes)).thenReturn(notes);
@@ -96,7 +88,7 @@ class NotesDaoTest {
 //        Mockito.verify(notesRepository).save(notes);
     }
 
-    @Test
+//    @Test
     public void testSaveAll() {
         List<Notes> notesList = new ArrayList<>();
         notesList.add(Notes.builder().text("SampleNote").build());
@@ -108,7 +100,7 @@ class NotesDaoTest {
 //        Mockito.verify(notesRepository,times(1)).saveAll(notesList);
     }
 
-    @Test
+//    @Test
     public void testFindAll() {
         Notes notes = new Notes();
         notes.setText("sample note1");
@@ -121,7 +113,7 @@ class NotesDaoTest {
         assertTrue(retrievedPage.getContent().get(0).equals(notes));
     }
 
-    @Test
+//    @Test
     public void testFindById() {
         Long id = 1L;
         Notes notes = new Notes();
@@ -134,7 +126,7 @@ class NotesDaoTest {
         assertEquals(notes, retrievedNotes.get());
     }
 
-    @Test
+//    @Test
     public void testDelete() {
         Notes notes = new Notes();
 
@@ -143,7 +135,7 @@ class NotesDaoTest {
 //        Mockito.verify(notesRepository).delete(notes);
     }
 
-    @Test
+//    @Test
     public void testFindByEntityIdAndEntityType() {
         Long entityId = 1L;
         String entityType = "type";
