@@ -335,7 +335,7 @@ public class BookingIntegrationsUtility {
                     .destination_code(routingsList.get(counter).getPod())
                     .origin_code(routingsList.get(counter).getPol())
                     .order(String.valueOf(routingsList.get(counter).getLeg()))
-                    .transport_mode(routingsList.get(counter).getMode())
+                    .transport_mode(routingsList.get(counter).getMode() != null ? routingsList.get(counter).getMode() : customerBooking.getTransportType())
                     .build());
         }
 
