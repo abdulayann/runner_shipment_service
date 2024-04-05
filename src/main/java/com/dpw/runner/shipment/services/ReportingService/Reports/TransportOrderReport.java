@@ -57,7 +57,7 @@ public class TransportOrderReport extends IReport{
             if(truckDriverDetailsModel.getTransporterType().equals(Ownership.Self)) {
                 dictionary.put(ReportConstants.TRANSPORTER_NAME, truckDriverDetailsModel.getSelfTransporterName());
             } else {
-//                dictionary.put(ReportConstants.TRANSPORTER_NAME, truckDriverDetailsModel.getTransporterName()); TODO- fetch from org instead when org field is added
+                try { dictionary.put(ReportConstants.TRANSPORTER_NAME, truckDriverDetailsModel.getThirdPartyTransporter().getOrgData().get(ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
             }
         }
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipmentModel);

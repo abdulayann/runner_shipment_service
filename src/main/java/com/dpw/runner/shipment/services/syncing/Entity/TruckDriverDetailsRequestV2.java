@@ -10,6 +10,12 @@ import java.util.UUID;
 public class TruckDriverDetailsRequestV2 implements IRunnerRequest {
     @JsonProperty("Guid")
     private UUID Guid;
+    @JsonProperty("ShipmentGuid")
+    private UUID ShipmentGuid;
+    @JsonProperty("ConsolidationGuid")
+    private UUID ConsolidationGuid;
+    @JsonProperty("ThirdPartyTransporter")
+    private PartyRequestV2 ThirdPartyTransporter;
     @JsonProperty("ContainerTypeCode")
     private String ContainerTypeCode;
     @JsonProperty("DriverMobileNumber")
@@ -20,8 +26,6 @@ public class TruckDriverDetailsRequestV2 implements IRunnerRequest {
     private String SelfTransporterName;
     @JsonProperty("TrailerNumberPlate")
     private String TrailerNumberPlate;
-    @JsonProperty("TransporterNameOrg")
-    private String TransporterNameOrg;
     @JsonProperty("TransporterTypeString")
     private String TransporterTypeString;
     @JsonProperty("TruckNumberPlate")

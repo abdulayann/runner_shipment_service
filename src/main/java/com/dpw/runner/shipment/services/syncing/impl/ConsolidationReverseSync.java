@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
@@ -82,7 +81,6 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             response.setPlaceOfIssue(request.getPlaceOfIssueString());
 
             mapReverseArrivalDepartureDetails(response, request);
-            mapReverseTruckDriverDetail(response, request);
             response.setPackingList(jsonHelper.convertValueToList(syncEntityConversionService.packingsV1ToV2(request.getPackingList()), PackingRequest.class));
             response.setRoutingsList(jsonHelper.convertValueToList(syncEntityConversionService.routingsV1ToV2(request.getRoutingsList()), RoutingsRequest.class));
             mapReverseJobs(response, request);
@@ -129,22 +127,6 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                 })
                 .toList();
         response.setJobsList(req);
-    }
-
-    private void mapReverseTruckDriverDetail(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null || request.getTruckDriverDetail() == null)
-            return;
-        List<TruckDriverDetailsRequest> req = request.getTruckDriverDetail().stream()
-                .map(item -> {
-                    TruckDriverDetailsRequest t;
-                    t = modelMapper.map(item, TruckDriverDetailsRequest.class);
-                    t.setTransporterName(item.getTransporterNameOrg());
-                    //ENUM
-                    t.setTransporterType(Ownership.valueOf(item.getTransporterTypeString()));
-                    return t;
-                })
-                .toList();
-        response.setTruckDriverDetails(req);
     }
 
     private void mapReverseCarrierDetails(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
