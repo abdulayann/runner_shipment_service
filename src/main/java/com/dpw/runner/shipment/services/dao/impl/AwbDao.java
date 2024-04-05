@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
@@ -15,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -50,6 +52,8 @@ public class AwbDao implements IAwbDao {
     IShipmentDao shipmentDao;
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Override
     public Awb save(Awb awbShipmentInfo) throws RunnerException {
         boolean isCreate = false; // TODO- handle create/update here
@@ -102,6 +106,11 @@ public class AwbDao implements IAwbDao {
     @Override
     public Optional<Awb> findById(Long id) {
         return awbRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Awb> findByGuid(UUID guid) {
+        return awbRepository.findByGuid(guid);
     }
 
     @Override
@@ -172,14 +181,15 @@ public class AwbDao implements IAwbDao {
                         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
                         if (consolidationDetails.isPresent()) {
                             this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get());
-                            // isAirMessageSent flag set to true
-                            this.updateIsAirMessagingSent(awb.getGuid(), true);
+                            // AirMessageSent flag set to SENT
+                            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT);
+                            this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT);
 
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
                                 this.pushToKafkaForAirMessaging(shipAwb, ship, null);
-                                // isAirMessageSent flag set to true
-                                this.updateIsAirMessagingSent(shipAwb.getGuid(), true);
+                                // AirMessageSent flag set to SENT
+                                this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT);
                             }
                         }
                     }
@@ -189,8 +199,8 @@ public class AwbDao implements IAwbDao {
                         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
                         if (shipmentDetails.isPresent()) {
                             this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null);
-                            // isAirMessageSent flag set to true
-                            this.updateIsAirMessagingSent(awb.getGuid(), true);
+                            // AirMessageSent flag set to SENT
+                            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT);
                         }
 
                     }
@@ -240,20 +250,46 @@ public class AwbDao implements IAwbDao {
         kafkaResponse.setData(data);
         return kafkaResponse;
     }
-
     @Override
-    public int updateIsAirMessagingSent(UUID guid, Boolean isAirMessagingSent){
-        return awbRepository.updateIsAirMessagingSent(guid, isAirMessagingSent);
+    public int updateAirMessageStatus(UUID guid, AwbStatus airMessageStatus) {
+        return awbRepository.updateAirMessageStatus(guid, airMessageStatus);
     }
 
     @Override
-    public Boolean findIsAirMessagingSentByShipmentId(Long shipmentId) {
-        return awbRepository.findIsAirMessagingSentByShipmentId(shipmentId);
+    public int updateLinkedHawbAirMessageStatus(UUID guid, AwbStatus airMessageStatus) {
+        return awbRepository.updateLinkedHawbAirMessageStatus(guid, airMessageStatus);
     }
 
     @Override
-    public Boolean findIsAirMessagingSentByConsolidationId(Long consolidationId) {
-        return awbRepository.findIsAirMessagingSentByConsolidationId(consolidationId);
+    public List<Awb> findAllLinkedAwbs(UUID guid) {
+        var awb = this.findByGuid(guid);
+        if(awb.isPresent()){
+            if(awb.get().getShipmentId() != null) {
+                var consoleShipMapping = consoleShipmentMappingDao.findByShipmentId(awb.get().getShipmentId());
+                if(consoleShipMapping == null || consoleShipMapping.isEmpty()) {
+                    return Collections.emptyList();
+                } else {
+                    List<Awb> response = new ArrayList<>();
+                    var consoleId = consoleShipMapping.get(0).getConsolidationId();
+                    response.addAll(findByConsolidationId(consoleId));
+                    var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+                    if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
+                        consoleShipMappingList.forEach(x -> response.addAll(findByShipmentId(x.getShipmentId())));
+                    }
+                    return response;
+                }
+            } else if(awb.get().getConsolidationId() != null) {
+                List<Awb> response = new ArrayList<>();
+                var consoleId = awb.get().getConsolidationId();
+                response.addAll(findByConsolidationId(consoleId));
+                var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+                if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
+                    consoleShipMappingList.forEach(x -> response.addAll(findByShipmentId(x.getShipmentId())));
+                }
+                return response;
+            }
+        }
+        return Collections.emptyList();
     }
 
 }

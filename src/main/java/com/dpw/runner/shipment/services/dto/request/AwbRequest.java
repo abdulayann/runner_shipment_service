@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -34,5 +35,6 @@ public class AwbRequest implements IRunnerRequest {
 
     //Used to provide special handling codes for UI
     private List<String> shcIdList;
-    private Boolean isAirMessagingSent;
+    private AwbStatus airMessageStatus;
+    private AwbStatus linkedHawbAirMessageStatus;
 }

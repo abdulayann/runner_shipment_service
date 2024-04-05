@@ -392,7 +392,9 @@ public class Constants {
 
     public static final String WITH_REQUEST_ID_MSG = " with Request Id {}";
     public static final String UNUSED = "Unused";
-    public static final String XFNM = "XFNM";
     public static final String NON = "NON";
     public static final String EAW = "EAW";
+    public static final String EVENT = "event";
+    public static final String TYPE = "Type";
+    public static final String DESCARTES = "Descartes";
 }
