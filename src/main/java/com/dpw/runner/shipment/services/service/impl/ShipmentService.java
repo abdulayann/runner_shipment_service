@@ -1921,6 +1921,19 @@ public class ShipmentService implements IShipmentService {
             for (int i = 0; i < shipmentListResponseData.size(); i++) {
                 Row itemRow = sheet.createRow(i + 1);
                 ShipmentListResponse shipment = (ShipmentListResponse) shipmentListResponseData.get(i);
+                String origin = "", destination = "", destinationPort = "", originPort = "";
+                if(shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getUnlocationData() != null){
+                    origin = shipment.getCarrierDetails().getUnlocationData().get("origin");
+                    destination = shipment.getCarrierDetails().getUnlocationData().get("destination");
+                    destinationPort = shipment.getCarrierDetails().getUnlocationData().get("destinationPort");
+                    originPort = shipment.getCarrierDetails().getUnlocationData().get("originPort");
+                }
+                if(shipment.getCarrierDetails() != null){
+                    origin = StringUtility.isEmpty(origin) ? shipment.getCarrierDetails().getOrigin() : "";
+                    destination = StringUtility.isEmpty(destination) ? shipment.getCarrierDetails().getDestination() : "";
+                    destinationPort = StringUtility.isEmpty(destinationPort) ? shipment.getCarrierDetails().getDestinationPort() : "";
+                    originPort = StringUtility.isEmpty(originPort) ? shipment.getCarrierDetails().getOriginPort() : "";
+                }
                 LocalTimeZoneHelper.transformTimeZone(shipment);
                 itemRow.createCell(headerMap.get("Shipment Clone")).setCellValue("");
                 itemRow.createCell(headerMap.get("Shipment Number")).setCellValue(shipment.getShipmentId());
@@ -1949,8 +1962,8 @@ public class ShipmentService implements IShipmentService {
                 itemRow.createCell(headerMap.get("Country of Origin")).setCellValue(Objects.isNull(shipment.getCarrierDetails()) ? "" : shipment.getCarrierDetails().getOrigin());
                 itemRow.createCell(headerMap.get("Notify Party Name")).setCellValue("");
                 itemRow.createCell(headerMap.get("Cargo Type")).setCellValue(shipment.getShipmentType());
-                itemRow.createCell(headerMap.get("Origin")).setCellValue(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getOrigin() : "");
-                itemRow.createCell(headerMap.get("Destination")).setCellValue(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getDestination() : "");
+                itemRow.createCell(headerMap.get("Origin")).setCellValue(origin);
+                itemRow.createCell(headerMap.get("Destination")).setCellValue(destination);
                 itemRow.createCell(headerMap.get("Domestic")).setCellValue(String.valueOf(shipment.getIsDomestic()));
                 itemRow.createCell(headerMap.get("Route")).setCellValue(shipment.getRoute());
                 itemRow.createCell(headerMap.get("Client Name")).setCellValue(shipment.getClient() != null && shipment.getClient().getOrgData() != null ? shipment.getClient().getOrgData().getOrDefault(PartiesConstants.FULLNAME, "").toString() : "");
@@ -2007,8 +2020,8 @@ public class ShipmentService implements IShipmentService {
                 itemRow.createCell(headerMap.get("40s Count")).setCellValue(String.valueOf(shipment.getContainer40Count()));
                 itemRow.createCell(headerMap.get("TEU Count")).setCellValue(shipment.getTeuCount() != null ? shipment.getTeuCount().toString() : null);
                 itemRow.createCell(headerMap.get("CreatedBy")).setCellValue(shipment.getCreatedBy());
-                itemRow.createCell(headerMap.get("POL")).setCellValue(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getDestinationPort(): "");
-                itemRow.createCell(headerMap.get("POD")).setCellValue(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getOriginPort() : "");
+                itemRow.createCell(headerMap.get("POL")).setCellValue(originPort);
+                itemRow.createCell(headerMap.get("POD")).setCellValue(destinationPort);
                 itemRow.createCell(headerMap.get("Waybill Number")).setCellValue(String.valueOf(shipment.getWayBillNumber()));
                 itemRow.createCell(headerMap.get("Additional Terms")).setCellValue(String.valueOf(shipment.getAdditionalTerms()));
                 itemRow.createCell(headerMap.get("Reference Number")).setCellValue(String.valueOf(shipment.getBookingReference()));
