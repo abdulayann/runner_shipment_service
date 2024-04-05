@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,8 @@ public interface IAwbDao {
     Awb save(Awb awbShipmentInfo) throws RunnerException;
     Page<Awb> findAll(Specification<Awb> spec, Pageable pageable);
     Optional<Awb> findById(Long id);
+
+    Optional<Awb> findByGuid(UUID guid);
     List<Awb> findByShipmentId(Long shipmentId);
     List<Awb> findByConsolidationId(Long consolidationId);
 
@@ -22,8 +25,7 @@ public interface IAwbDao {
     List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent);
     List<Awb> saveAll(List<Awb> req);
     void airMessagingIntegration(Long id, String reportType, Boolean fromShipment);
-    int updateIsAirMessagingSent(UUID guid, Boolean isAirMessagingSent);
-
-    Boolean findIsAirMessagingSentByShipmentId(Long shipmentId);
-    Boolean findIsAirMessagingSentByConsolidationId(Long consolidationId);
+    int updateAirMessageStatus(UUID guid, AwbStatus airMessageStatus);
+    int updateLinkedHawbAirMessageStatus(UUID guid, AwbStatus airMessageStatus);
+    List<Awb> findAllLinkedAwbs(UUID guid);
 }

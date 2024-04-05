@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -33,4 +34,12 @@ public class EventsResponse implements IRunnerResponse {
     // Conditional response from TrackingEvents
     private String containerNumber;
     private String awbNumber;
+    private String status;
+    private Integer pieces;
+    private Integer totalPieces;
+    private BigDecimal weight;
+    private BigDecimal totalWeight;
+    private String partial;
+    private LocalDateTime receivedDate;
+    private LocalDateTime scheduledDate;
 }

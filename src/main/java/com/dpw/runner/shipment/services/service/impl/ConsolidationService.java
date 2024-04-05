@@ -2252,10 +2252,12 @@ public class ConsolidationService implements IConsolidationService {
             if(consolidationDetailsResponse.getId() != null) {
                 var awb = awbDao.findByConsolidationId(consolidationDetailsResponse.getId());
                 if (awb != null && !awb.isEmpty()) {
-                    if (Boolean.TRUE.equals(awb.get(0).getIsAirMessagingSent()))
-                        consolidationDetailsResponse.setAwbStatus(AwbStatus.AIR_MESSAGE_SENT);
+                    if (awb.get(0).getAirMessageStatus() != null)
+                        consolidationDetailsResponse.setAwbStatus(awb.get(0).getAirMessageStatus());
                     else
                         consolidationDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
+                    if(awb.get(0).getLinkedHawbAirMessageStatus() != null)
+                        consolidationDetailsResponse.setLinkedHawbStatus(awb.get(0).getLinkedHawbAirMessageStatus());
                 }
             }
             if (Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA))

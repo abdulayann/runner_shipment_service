@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
@@ -78,6 +79,9 @@ public class Awb extends MultiTenancy {
     @Column(name = "consolidation_id")
     private Long consolidationId;
 
-    @Column(name = "is_air_messaging_sent")
-    private Boolean isAirMessagingSent;
+    @Column(name = "air_message_status")
+    private AwbStatus airMessageStatus;
+
+    @Column(name = "linked_hawb_air_message_status")
+    private AwbStatus linkedHawbAirMessageStatus;
 }
