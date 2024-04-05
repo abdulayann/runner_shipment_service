@@ -10,9 +10,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.util.List;
 
 @Entity
@@ -79,9 +77,11 @@ public class Awb extends MultiTenancy {
     @Column(name = "consolidation_id")
     private Long consolidationId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "air_message_status")
     private AwbStatus airMessageStatus;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "linked_hawb_air_message_status")
     private AwbStatus linkedHawbAirMessageStatus;
 }

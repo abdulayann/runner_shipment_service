@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import lombok.Data;
 
@@ -39,6 +40,7 @@ public class AwbResponse implements IRunnerResponse {
     private String errors;
     //Used to provide special handling codes for UI
     private List<String> shcIdList;
-    private Boolean isAirMessagingSent;
+    private AwbStatus airMessageStatus;
+    private AwbStatus linkedHawbAirMessageStatus;
 
 }
