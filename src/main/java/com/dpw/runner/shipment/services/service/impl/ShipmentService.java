@@ -1917,7 +1917,7 @@ public class ShipmentService implements IShipmentService {
 
             //Filling the data
             List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoList(shipmentDetailsPage.getContent());
-
+            masterDataUtils.setLocationData(shipmentListResponseData, EntityTransferConstants.LOCATION_SERVICE_GUID);
             for (int i = 0; i < shipmentListResponseData.size(); i++) {
                 Row itemRow = sheet.createRow(i + 1);
                 ShipmentListResponse shipment = (ShipmentListResponse) shipmentListResponseData.get(i);
