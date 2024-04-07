@@ -14,6 +14,8 @@ public class TruckDriverDetailsRequestV2 implements IRunnerRequest {
     private UUID ShipmentGuid;
     @JsonProperty("ConsolidationGuid")
     private UUID ConsolidationGuid;
+    @JsonProperty("ContainerGuid")
+    private UUID ContainerGuid;
     @JsonProperty("ThirdPartyTransporter")
     private PartyRequestV2 ThirdPartyTransporter;
     @JsonProperty("ContainerTypeCode")
