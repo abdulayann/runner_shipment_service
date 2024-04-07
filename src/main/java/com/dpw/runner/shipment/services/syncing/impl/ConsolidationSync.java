@@ -8,16 +8,14 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
+import com.dpw.runner.shipment.services.syncing.Entity.ArrivalDepartureDetails;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -38,10 +36,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -213,6 +208,10 @@ public class ConsolidationSync implements IConsolidationSync {
         Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
         Page<TruckDriverDetails> truckDriverDetailsPage = truckDriverDetailsDao.findAll(pair.getLeft(), pair.getRight());
         truckDriverDetails = truckDriverDetailsPage.stream().toList();
+        Map<Long, UUID> contMap = new HashMap<>();
+        if(request.getContainersList() != null && !request.getContainersList().isEmpty())
+            contMap = request.getContainersList().stream().collect(toMap(Containers::getId, Containers::getGuid));
+        Map<Long, UUID> finalContMap = contMap;
         List<TruckDriverDetailsRequestV2> req = truckDriverDetails.stream()
                 .map(item -> {
                     TruckDriverDetailsRequestV2 t;
@@ -221,6 +220,8 @@ public class ConsolidationSync implements IConsolidationSync {
                     t.setConsolidationGuid(request.getGuid());
                     if(item.getShipmentId() != null && map.containsKey(item.getShipmentId()))
                         t.setShipmentGuid(map.get(item.getShipmentId()));
+                    if(item.getContainerId() != null && finalContMap.containsKey(item.getContainerId()))
+                        t.setContainerGuid(finalContMap.get(item.getContainerId()));
                     return t;
                 })
                 .toList();

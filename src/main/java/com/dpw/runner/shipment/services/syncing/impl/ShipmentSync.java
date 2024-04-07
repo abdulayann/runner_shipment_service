@@ -10,10 +10,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -39,13 +36,11 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
+import static java.util.stream.Collectors.toMap;
 
 @Component
 @Slf4j
@@ -243,9 +238,13 @@ public class ShipmentSync implements IShipmentSync {
         if(sd.getTruckDriverDetails() == null)
             return;
         UUID consolGuid = null;
+        Map<Long, UUID> map = new HashMap<>();
+        if(sd.getContainersList() != null && !sd.getContainersList().isEmpty())
+            map = sd.getContainersList().stream().collect(toMap(Containers::getId, Containers::getGuid));
         if(cs.getConsolidationGuids() != null && !cs.getConsolidationGuids().isEmpty())
             consolGuid = cs.getConsolidationGuids().get(0);
         UUID finalConsolGuid = consolGuid;
+        Map<Long, UUID> finalMap = map;
         List<TruckDriverDetailsRequestV2> req = sd.getTruckDriverDetails().stream()
                 .map(item -> {
                     TruckDriverDetailsRequestV2 t;
@@ -254,6 +253,8 @@ public class ShipmentSync implements IShipmentSync {
                         t.setTransporterTypeString(item.getTransporterType().toString());
                     t.setConsolidationGuid(finalConsolGuid);
                     t.setShipmentGuid(sd.getGuid());
+                    if(item.getContainerId() != null && finalMap.containsKey(item.getContainerId()))
+                        t.setContainerGuid(finalMap.get(item.getContainerId()));
                     return t;
                 })
                 .toList();
