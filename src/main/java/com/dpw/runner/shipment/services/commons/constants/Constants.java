@@ -148,6 +148,7 @@ public class Constants {
     public static final String MBL = "MBL";
 
     public static final String FORWARDING_AGENT = "Forwarding Agent";
+    public static final String FAG = "FAG";
 
     public static final String DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB = "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED";
     public static final double FACTOR_VOL_WT = 166.667;
