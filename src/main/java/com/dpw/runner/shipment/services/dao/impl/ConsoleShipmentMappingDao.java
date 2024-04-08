@@ -36,6 +36,16 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
         return consoleShipmentsMappingRepository.findByShipmentId(shipmentId);
     }
 
+    @Override
+    public List<ConsoleShipmentMapping> findByConsolidationIdByQuery(Long consolidationId) {
+        return consoleShipmentsMappingRepository.findByConsolidationIdByQuery(consolidationId);
+    }
+
+    @Override
+    public List<ConsoleShipmentMapping> findByShipmentIdByQuery(Long shipmentId) {
+        return consoleShipmentsMappingRepository.findByShipmentIdByQuery(shipmentId);
+    }
+
     private ConsoleShipmentMapping save(ConsoleShipmentMapping consoleShipmentMapping) {
         return consoleShipmentsMappingRepository.save(consoleShipmentMapping);
     }

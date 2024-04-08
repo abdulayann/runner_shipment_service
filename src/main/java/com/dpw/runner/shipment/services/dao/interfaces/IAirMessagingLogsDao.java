@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,4 +17,5 @@ public interface IAirMessagingLogsDao {
     Optional<AirMessagingLogs> findById(Long id);
     void delete(AirMessagingLogs airMessagingLogs);
     List<AirMessagingLogs> findByEntityGuid(UUID guid);
+    void createAirMessagingLogs(UUID guid, UUID entityGuid, String errorMessage, String messageType, String xmlPayload, String status, Integer tenantId, LocalDateTime createdAt);
 }

@@ -1,32 +1,40 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingEventDto;
+import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IAirMessagingLogsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbPackingInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.ChargeBasis;
-import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
-import com.dpw.runner.shipment.services.entity.enums.RateClass;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.repository.interfaces.IGenericQueryRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -45,6 +53,16 @@ public class AwbUtility {
     public MasterDataUtils masterDataUtils;
     @Autowired
     private ModelMapper modelMapper;
+    @Autowired
+    private IGenericQueryRepository genericQueryRepository;
+    @Autowired
+    private IAwbDao awbDao;
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Autowired
+    private IAirMessagingLogsDao airMessagingLogsDao;
+    @Autowired
+    private IEventDao eventDao;
 
     private AwbUtility(){}
     public static String getFormattedAddress(AwbAddressParam addressParam)
@@ -544,5 +562,122 @@ public class AwbUtility {
         return AwbAirMessagingResponse.UserInfo.builder()
                 .userName(user.getUsername())
                 .build();
+    }
+
+    public void createStatusUpdateForAirMessaging(AirMessagingStatusDto airMessageStatus) throws RunnerException {
+        var guid = airMessageStatus.getGuid();
+        Optional<Awb> awb = Optional.ofNullable(awbDao.findAwbByGuidByQuery(guid));
+        if(awb.isEmpty()){
+            throw new RunnerException("No Awb exist for given Guid: " + guid);
+        }
+        var tenantId = awb.get().getTenantId();
+
+        AirMessagingStatus status;
+        if(Objects.equals(airMessageStatus.getStatus(), "INTERNAL_VALIDATION_ERROR") || Objects.equals(airMessageStatus.getStatus(), "EXTERNAL_VALIDATION_ERROR")
+        || Objects.equals(airMessageStatus.getStatus(), "INTERNAL_ERROR") || Objects.equals(airMessageStatus.getStatus(), "REJECTED")) {
+            status = AirMessagingStatus.FAILED;
+        } else if (Objects.equals(airMessageStatus.getStatus(), "INITIATED") || Objects.equals(airMessageStatus.getStatus(), "SUBMITTED")) {
+            status = AirMessagingStatus.SUBMITTED;
+        } else if (Objects.equals(airMessageStatus.getStatus(), "RECEIVED")){
+            status = AirMessagingStatus.SUCCESS;
+        } else {
+            throw new RunnerException("This status is not accepted by runner");
+        }
+
+        String xmlPayload = airMessageStatus.getXmlPayload() != null ? new String(Base64.decodeBase64(airMessageStatus.getXmlPayload()), StandardCharsets.UTF_8) : null;
+        airMessagingLogsDao.createAirMessagingLogs(UUID.randomUUID(), guid, airMessageStatus.getErrorMessage(),
+                airMessageStatus.getMessageType(), xmlPayload,
+                status.name(), tenantId, LocalDateTime.now());
+
+        switch (status) {
+            case FAILED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_FAILED.name());
+            case SUBMITTED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SENT.name());
+            case SUCCESS -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SUCCESS.name());
+        }
+        if(awb.get().getConsolidationId() != null) {
+            eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), awb.get().getConsolidationId(),
+                    Constants.CONSOLIDATION, "FNM", "FNM received", LocalDateTime.now(), LocalDateTime.now(),
+                    Constants.DESCARTES, tenantId, status.name(), LocalDateTime.now(), LocalDateTime.now());
+
+            List<Awb> awbsList = awbDao.findAllLinkedAwbs(guid);
+
+            AwbStatus hawbsStatus = null;
+            if(awbsList != null && !awbsList.isEmpty()){
+                for (var x: awbsList) {
+                    if(x.getShipmentId() != null){
+                        if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
+                            hawbsStatus = AwbStatus.AIR_MESSAGE_SENT;
+                        } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT)) {
+                            hawbsStatus = AwbStatus.AIR_MESSAGE_FAILED;
+                        } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED)) {
+                            hawbsStatus = AwbStatus.AIR_MESSAGE_SUCCESS;
+                        }
+                    }
+                }
+            }
+            if(hawbsStatus != null)
+                awbDao.updateLinkedHawbAirMessageStatus(guid, hawbsStatus.name());
+
+
+        } else if (awb.get().getShipmentId() != null) {
+            eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), awb.get().getShipmentId(),
+                    Constants.SHIPMENT, "FNM", "FNM received", LocalDateTime.now(), LocalDateTime.now(),
+                    Constants.DESCARTES, tenantId, status.name(), LocalDateTime.now(), LocalDateTime.now());
+
+            List<Awb> awbsList = awbDao.findAllLinkedAwbs(guid);
+
+            AwbStatus hawbsStatus = null;
+            UUID consoleGuid = null;
+            if(awbsList != null && !awbsList.isEmpty()){
+                for (var x: awbsList) {
+                    if(x.getShipmentId() != null){
+                        if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
+                            hawbsStatus = AwbStatus.AIR_MESSAGE_SENT;
+                        } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT)) {
+                            hawbsStatus = AwbStatus.AIR_MESSAGE_FAILED;
+                        } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED)) {
+                            hawbsStatus = AwbStatus.AIR_MESSAGE_SUCCESS;
+                        }
+                    } else if (x.getConsolidationId() != null) {
+                        consoleGuid = x.getGuid();
+                    }
+                }
+            }
+            if(hawbsStatus != null && consoleGuid != null)
+                awbDao.updateLinkedHawbAirMessageStatus(consoleGuid, hawbsStatus.name());
+
+        }
+    }
+
+    public void createEventUpdateForAirMessaging(AirMessagingEventDto airMessageEvent) throws RunnerException {
+        var guid = airMessageEvent.getGuid();
+        var awb = awbDao.findByGuid(guid);
+        if(awb.isEmpty()){
+            throw new RunnerException("No Awb exist for given Guid: " + guid);
+        }
+        var tenantId = awb.get().getTenantId();
+        if(awb.get().getConsolidationId() != null) {
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationIdByQuery(awb.get().getConsolidationId());
+            eventDao.createEventForAirMessagingEvent(UUID.randomUUID(), awb.get().getConsolidationId(),
+                    Constants.CONSOLIDATION, airMessageEvent.getEventCode(), airMessageEvent.getEventCode(), Constants.DESCARTES,
+                    tenantId, airMessageEvent.getPieces(), airMessageEvent.getTotalPieces(), airMessageEvent.getWeight(),
+                    airMessageEvent.getTotalWeight(), airMessageEvent.getIsPartial(), airMessageEvent.getActualTimeOfEvent(),
+                    airMessageEvent.getScheduledTimeOfEvent(), LocalDateTime.now(), LocalDateTime.now());
+            if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()){
+                consoleShipmentMappings.forEach(x -> eventDao.createEventForAirMessagingEvent(UUID.randomUUID(), x.getShipmentId(),
+                        Constants.SHIPMENT, airMessageEvent.getEventCode(), airMessageEvent.getEventCode(), Constants.DESCARTES,
+                        tenantId, airMessageEvent.getPieces(), airMessageEvent.getTotalPieces(), airMessageEvent.getWeight(),
+                        airMessageEvent.getTotalWeight(), airMessageEvent.getIsPartial(), airMessageEvent.getActualTimeOfEvent(),
+                        airMessageEvent.getScheduledTimeOfEvent(), LocalDateTime.now(), LocalDateTime.now()));
+            }
+        } else if (awb.get().getShipmentId() != null) {
+            eventDao.createEventForAirMessagingEvent(UUID.randomUUID(), awb.get().getShipmentId(),
+                    Constants.SHIPMENT, airMessageEvent.getEventCode(), airMessageEvent.getEventCode(), Constants.DESCARTES,
+                    tenantId, airMessageEvent.getPieces(), airMessageEvent.getTotalPieces(), airMessageEvent.getWeight(),
+                    airMessageEvent.getTotalWeight(), airMessageEvent.getIsPartial(), airMessageEvent.getActualTimeOfEvent(),
+                    airMessageEvent.getScheduledTimeOfEvent(), LocalDateTime.now(), LocalDateTime.now());
+        }
+
+
     }
 }
