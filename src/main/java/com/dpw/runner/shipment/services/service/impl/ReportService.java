@@ -5,9 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -166,6 +164,25 @@ public class ReportService implements IReportService {
             } else {
                 ((MawbReport)report).isDMawb = false;
             }
+        }
+        // user story 135668
+        if(report instanceof ArrivalNoticeReport) {
+            ((ArrivalNoticeReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof BookingConfirmationReport) {
+            ((BookingConfirmationReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof PickupOrderReport) {
+            ((PickupOrderReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof DeliveryOrderReport) {
+            ((DeliveryOrderReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof PreAlertReport) {
+            ((PreAlertReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof ShipmentCANReport) {
+            ((ShipmentCANReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
         }
 
         if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {

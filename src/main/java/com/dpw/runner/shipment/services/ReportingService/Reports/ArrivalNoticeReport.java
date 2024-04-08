@@ -33,6 +33,8 @@ public class ArrivalNoticeReport extends IReport {
     @Autowired
     private JsonHelper jsonHelper;
 
+    public Boolean printWithoutTranslation;
+
     @Override
     public Map<String, Object> getData(Long id) {
         ArrivalNoticeModel arrivalNoticeModel = (ArrivalNoticeModel) getDocumentModel(id);
@@ -61,12 +63,13 @@ public class ArrivalNoticeReport extends IReport {
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ArrivalNoticeModel arrivalNoticeModel = (ArrivalNoticeModel) documentModel;
+        List<String> orgWithoutTranslation = new ArrayList<>();
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(arrivalNoticeModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(arrivalNoticeModel.shipmentDetails, dictionary);
         populateUserFields(arrivalNoticeModel.usersDto, dictionary);
         populateBlFields(arrivalNoticeModel.hbl, dictionary);
-        populateShipmentOrganizationsLL(arrivalNoticeModel.shipmentDetails, dictionary);
+        populateShipmentOrganizationsLL(arrivalNoticeModel.shipmentDetails, dictionary, orgWithoutTranslation);
         List<String> consignee = populateConsigneeData(dictionary, arrivalNoticeModel.shipmentDetails.getConsignee());
         dictionary.put(ReportConstants.CONSIGNEE,consignee);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(arrivalNoticeModel.getContainers()));
@@ -137,6 +140,7 @@ public class ArrivalNoticeReport extends IReport {
         }
 
         populateRaKcData(dictionary, arrivalNoticeModel.shipmentDetails);
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, new ArrayList<>());
 
         return dictionary;
     }
@@ -161,10 +165,11 @@ public class ArrivalNoticeReport extends IReport {
 
         arrivalNoticeModel.setArrivalNoticeBillCharges(new ArrayList<>());
         if(!charges.isEmpty()) {
+            List<String> chargeTypesWithoutTranslation = new ArrayList<>();
             for (var charge : charges){
                  var arrivalNoticeCharge = new ArrivalNoticeModel.ArrivalNoticeBillCharges();
                  arrivalNoticeCharge.setChargeTypeDescription(charge.getChargeTypeDescription());
-                 arrivalNoticeCharge.setChargeTypeDescriptionLL(GetChargeTypeDescriptionLL(charge.getChargeTypeCode()));
+                 arrivalNoticeCharge.setChargeTypeDescriptionLL(GetChargeTypeDescriptionLL(charge.getChargeTypeCode(), chargeTypesWithoutTranslation));
                  if(!Objects.isNull(charge.getOverseasSellAmount())){
                      arrivalNoticeCharge.setSellAmount(AmountNumberFormatter.Format(charge.getOverseasSellAmount(), charge.getLocalSellCurrency(), TenantSettingsDetailsContext.getCurrentTenantSettings()));
                  }
