@@ -29,4 +29,5 @@ public class ReportRequest implements IRunnerRequest {
     boolean fromShipment;
     boolean fromConsolidation;
     Boolean pushAwbEvent;
+    Boolean printWithoutTranslation;
 }
