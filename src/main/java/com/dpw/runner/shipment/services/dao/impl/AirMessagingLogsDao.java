@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,4 +45,10 @@ public class AirMessagingLogsDao implements IAirMessagingLogsDao {
 
     @Override
     public List<AirMessagingLogs> findByEntityGuid(UUID guid) { return airMessagingLogsRepository.findByEntityGuid(guid); }
+
+    @Override
+    public void createAirMessagingLogs(UUID guid, UUID entityGuid, String errorMessage, String messageType, String xmlPayload, String status, Integer tenantId, LocalDateTime createdAt) {
+        airMessagingLogsRepository.createAirMessagingLogs(guid, entityGuid, errorMessage, messageType, xmlPayload, status, tenantId, createdAt);
+    }
+
 }

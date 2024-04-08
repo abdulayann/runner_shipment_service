@@ -20,12 +20,16 @@ public interface IAwbDao {
     List<Awb> findByShipmentId(Long shipmentId);
     List<Awb> findByConsolidationId(Long consolidationId);
 
+    List<Awb> findByShipmentIdByQuery(Long shipmentId);
+    List<Awb> findByConsolidationIdByQuery(Long consolidationId);
+
     List<Awb> findByIssuingAgent(String issuingAgent);
     List<Awb> findByAwbNumber(List<String> awbNumber);
     List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent);
     List<Awb> saveAll(List<Awb> req);
     void airMessagingIntegration(Long id, String reportType, Boolean fromShipment);
-    int updateAirMessageStatus(UUID guid, AwbStatus airMessageStatus);
-    int updateLinkedHawbAirMessageStatus(UUID guid, AwbStatus airMessageStatus);
+    int updateAirMessageStatus(UUID guid, String airMessageStatus);
+    int updateLinkedHawbAirMessageStatus(UUID guid, String airMessageStatus);
     List<Awb> findAllLinkedAwbs(UUID guid);
+    Awb findAwbByGuidByQuery(UUID guid);
 }

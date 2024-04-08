@@ -18,4 +18,12 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
     void deleteByConsolidationIdAndShipmentIdIn(Long consolidationId, List<Long> shipmentIds);
     Page<ConsoleShipmentMapping> findAll(Specification<ConsoleShipmentMapping> spec, Pageable pageable);
 
+    @Modifying
+    @Query(value = "SELECT csm FROM console_shipment_mapping csm WHERE consolidation_id = ?1", nativeQuery = true)
+    List<ConsoleShipmentMapping> findByConsolidationIdByQuery(Long consolidationId);
+
+    @Modifying
+    @Query(value = "SELECT csm FROM console_shipment_mapping csm WHERE shipment_id = ?1", nativeQuery = true)
+    List<ConsoleShipmentMapping> findByShipmentIdByQuery(Long shipmentId);
+
 }

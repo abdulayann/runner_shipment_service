@@ -29,7 +29,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -364,5 +366,16 @@ public class EventDao implements IEventDao {
         } catch (Exception e) {
             log.error("Error occured while trying to create runner event, Exception raised is: " + e);
         }
+    }
+
+
+    @Override
+    public void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        eventRepository.createEventForAirMessagingStatus(guid, entityId, entityType, eventCode, description, estimated, actual, source, tenantId, status, createdAt, updatedAt);
+    }
+
+    @Override
+    public void createEventForAirMessagingEvent(UUID guid, Long entityId, String entityType, String eventCode, String description, String source, Integer tenantId, Integer pieces, Integer totalPieces, BigDecimal weight, BigDecimal totalWeight, String partial, LocalDateTime receivedDate, LocalDateTime scheduledDate, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        eventRepository.createEventForAirMessagingEvent(guid, entityId, entityType, eventCode, description, source, tenantId, pieces, totalPieces, weight, totalWeight, partial, receivedDate, scheduledDate, createdAt, updatedAt);
     }
 }

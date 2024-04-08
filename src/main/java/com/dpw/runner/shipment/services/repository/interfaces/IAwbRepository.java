@@ -20,6 +20,11 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     Page<Awb> findAll(Specification<Awb> spec, Pageable pageable);
     List<Awb> findByShipmentId(Long shipmentId);
     List<Awb> findByConsolidationId(Long shipmentId);
+
+    @Query(value = "SELECT e FROM awb e WHERE shipment_id = ?1", nativeQuery = true)
+    List<Awb> findByShipmentIdByQuery(Long shipmentId);
+    @Query(value = "SELECT e FROM awb e WHERE consolidation_id = ?1", nativeQuery = true)
+    List<Awb> findByConsolidationIdByQuery(Long consolidationId);
     Optional<Awb> findByGuid(UUID guid);
 
     @Query(value = "SELECT e FROM Awb e WHERE FUNCTION('jsonb_extract_path_text', e.awbShipmentInfo, 'issuingAgentName') = :issuingAgent")
@@ -34,12 +39,15 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set airMessageStatus = ?2 Where guid = ?1", nativeQuery = true)
-    int updateAirMessageStatus(UUID guid, AwbStatus airMessageStatus);
+    @Query(value = "Update Awb set air_message_status = ?2 Where guid = ?1", nativeQuery = true)
+    int updateAirMessageStatus(UUID guid, String airMessageStatus);
 
     @Transactional
     @Modifying
     @Query(value = "Update Awb set linked_hawb_air_message_status = ?2 Where guid = ?1", nativeQuery = true)
-    int updateLinkedHawbAirMessageStatus(UUID guid, AwbStatus airMessageStatus);
+    int updateLinkedHawbAirMessageStatus(UUID guid, String airMessageStatus);
+
+    @Query(value = "SELECT * FROM awb WHERE guid = ?1 limit 1", nativeQuery = true)
+    Awb findAwbByGuidByQuery(UUID guid);
 
 }
