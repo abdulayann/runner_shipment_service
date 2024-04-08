@@ -1,0 +1,48 @@
+trigger:
+
+- Release-v*
+- development
+pool:
+  name: Runner-self-hosted-agent
+steps:
+- task: Cache@2
+  inputs:
+    key: maven | "$(Agent.OS)" | **/pom.xml
+    restoreKeys: maven | "$(Agent.OS)"
+    path: $(MAVEN_CACHE_FOLDER)
+  displayName: Cache Maven Dependencies
+- task: MavenAuthenticate@0
+  inputs:
+    artifactsFeeds: runner-artifactory
+
+- task: SonarQubePrepare@5
+  inputs:
+    SonarQube: SonarQube Connection
+    scannerMode: Other
+    configMode: file
+    extraProperties: |
+      sonar.exclusions=**/*.bin,Devops_Scripts/**
+      sonar.projectVersion=$(Build.BuildNumber)
+      sonar.projectKey=runner_shipment_service
+      sonar.projectName=runner_shipment_service
+
+- task: Maven@3
+  inputs:
+    goals: clean package -DskipTests
+    publishJUnitResults: false
+    javaHomeOption: JDKVersion
+    jdkVersionOption: '1.17'
+    mavenVersionOption: Default
+    mavenAuthenticateFeed: true
+    mavenOptions: '-Xmx3072m $(MAVEN_OPTS)'
+    effectivePomSkip: false
+    sonarQubeRunAnalysis: true
+    sqMavenPluginVersionChoice: latest
+
+- task: SonarQubePublish@5
+  displayName: Publishing Sonar Cloud Quality Gate Result
+  inputs:
+    pollingTimeoutSec: '300'
+variables:
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  MAVEN_OPTS: -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)
