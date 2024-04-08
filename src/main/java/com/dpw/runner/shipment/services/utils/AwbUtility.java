@@ -367,10 +367,12 @@ public class AwbUtility {
                 if(unlocationsMap.containsKey(awbRoute.getOriginPortName())) {
                     var unloc = unlocationsMap.get(awbRoute.getOriginPortName());
                     awbRoute.setOriginIATACode(unloc.getIataCode());
+                    awbRoute.setOriginPortUnlocName(unloc.getName());
                 }
                 if(unlocationsMap.containsKey(awbRoute.getDestinationPortName())) {
                     var unloc = unlocationsMap.get(awbRoute.getDestinationPortName());
                     awbRoute.setDestinationIATACode(unloc.getIataCode());
+                    awbRoute.setDestinationPortUnlocName(unloc.getName());
                 }
                 if(carriersMap.containsKey(awbRoute.getByCarrier())) {
                     var carrier = carriersMap.get(awbRoute.getByCarrier());
@@ -523,10 +525,12 @@ public class AwbUtility {
                 if(unlocationsMap.containsKey(awbRoute.getOriginPortName())) {
                     var unloc = unlocationsMap.get(awbRoute.getOriginPortName());
                     awbRoute.setOriginIATACode(unloc.getIataCode());
+                    awbRoute.setOriginPortUnlocName(unloc.getName());
                 }
                 if(unlocationsMap.containsKey(awbRoute.getDestinationPortName())) {
                     var unloc = unlocationsMap.get(awbRoute.getDestinationPortName());
                     awbRoute.setDestinationIATACode(unloc.getIataCode());
+                    awbRoute.setDestinationPortUnlocName(unloc.getName());
                 }
                 if(carriersMap.containsKey(awbRoute.getByCarrier())) {
                     var carrier = carriersMap.get(awbRoute.getByCarrier());
