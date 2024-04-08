@@ -122,6 +122,16 @@ public class AwbDao implements IAwbDao {
     public List<Awb> findByConsolidationId(Long consolidationId) {return awbRepository.findByConsolidationId(consolidationId);}
 
     @Override
+    public List<Awb> findByShipmentIdByQuery(Long shipmentId) {
+        return awbRepository.findByShipmentIdByQuery(shipmentId);
+    }
+
+    @Override
+    public List<Awb> findByConsolidationIdByQuery(Long consolidationId) {
+        return awbRepository.findByConsolidationIdByQuery(consolidationId);
+    }
+
+    @Override
     public List<Awb> findByIssuingAgent(String issuingAgent) { return awbRepository.findByIssuingAgent(issuingAgent);}
 
     @Override
@@ -182,14 +192,14 @@ public class AwbDao implements IAwbDao {
                         if (consolidationDetails.isPresent()) {
                             this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get());
                             // AirMessageSent flag set to SENT
-                            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT);
-                            this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT);
+                            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                            this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
 
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
                                 this.pushToKafkaForAirMessaging(shipAwb, ship, null);
                                 // AirMessageSent flag set to SENT
-                                this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT);
+                                this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             }
                         }
                     }
@@ -200,7 +210,7 @@ public class AwbDao implements IAwbDao {
                         if (shipmentDetails.isPresent()) {
                             this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null);
                             // AirMessageSent flag set to SENT
-                            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT);
+                            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                         }
 
                     }
@@ -251,45 +261,50 @@ public class AwbDao implements IAwbDao {
         return kafkaResponse;
     }
     @Override
-    public int updateAirMessageStatus(UUID guid, AwbStatus airMessageStatus) {
+    public int updateAirMessageStatus(UUID guid, String airMessageStatus) {
         return awbRepository.updateAirMessageStatus(guid, airMessageStatus);
     }
 
     @Override
-    public int updateLinkedHawbAirMessageStatus(UUID guid, AwbStatus airMessageStatus) {
+    public int updateLinkedHawbAirMessageStatus(UUID guid, String airMessageStatus) {
         return awbRepository.updateLinkedHawbAirMessageStatus(guid, airMessageStatus);
     }
 
     @Override
     public List<Awb> findAllLinkedAwbs(UUID guid) {
-        var awb = this.findByGuid(guid);
+        Optional<Awb> awb = Optional.ofNullable(this.findAwbByGuidByQuery(guid));
         if(awb.isPresent()){
             if(awb.get().getShipmentId() != null) {
-                var consoleShipMapping = consoleShipmentMappingDao.findByShipmentId(awb.get().getShipmentId());
+                var consoleShipMapping = consoleShipmentMappingDao.findByShipmentIdByQuery(awb.get().getShipmentId());
                 if(consoleShipMapping == null || consoleShipMapping.isEmpty()) {
                     return Collections.emptyList();
                 } else {
                     List<Awb> response = new ArrayList<>();
                     var consoleId = consoleShipMapping.get(0).getConsolidationId();
-                    response.addAll(findByConsolidationId(consoleId));
-                    var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+                    response.addAll(findByConsolidationIdByQuery(consoleId));
+                    var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
                     if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
-                        consoleShipMappingList.forEach(x -> response.addAll(findByShipmentId(x.getShipmentId())));
+                        consoleShipMappingList.forEach(x -> response.addAll(findByShipmentIdByQuery(x.getShipmentId())));
                     }
                     return response;
                 }
             } else if(awb.get().getConsolidationId() != null) {
                 List<Awb> response = new ArrayList<>();
                 var consoleId = awb.get().getConsolidationId();
-                response.addAll(findByConsolidationId(consoleId));
-                var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+                response.addAll(findByConsolidationIdByQuery(consoleId));
+                var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
                 if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
-                    consoleShipMappingList.forEach(x -> response.addAll(findByShipmentId(x.getShipmentId())));
+                    consoleShipMappingList.forEach(x -> response.addAll(findByShipmentIdByQuery(x.getShipmentId())));
                 }
                 return response;
             }
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public Awb findAwbByGuidByQuery(UUID guid) {
+        return awbRepository.findAwbByGuidByQuery(guid);
     }
 
 }
