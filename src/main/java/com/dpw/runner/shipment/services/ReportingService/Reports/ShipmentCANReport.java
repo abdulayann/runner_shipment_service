@@ -41,6 +41,8 @@ public class ShipmentCANReport extends IReport {
     @Autowired
     private IHblDao hblDao;
 
+    public Boolean printWithoutTranslation;
+
 
     @Override
     public Map<String, Object> getData(Long id) throws RunnerException {
@@ -66,8 +68,10 @@ public class ShipmentCANReport extends IReport {
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ShipmentCANModel shipmentCANModel = (ShipmentCANModel) documentModel;
+        List<String> orgWithoutTranslation = new ArrayList<>();
+        List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         Map<String, Object> dictionary = hblReport.getData(shipmentCANModel.shipmentDetails.getId());
-        populateShipmentOrganizationsLL(shipmentCANModel.shipmentDetails, dictionary);
+        populateShipmentOrganizationsLL(shipmentCANModel.shipmentDetails, dictionary, orgWithoutTranslation);
         List<BillChargesResponse> allBillCharges = new ArrayList<>();
         TaxPair<String, String> tax1 = new TaxPair<>("TaxType1", "0");
         TaxPair<String, String> tax2 = new TaxPair<>("TaxType2", "0");
@@ -234,7 +238,7 @@ public class ShipmentCANReport extends IReport {
                 if(v.containsKey(TOTAL_AMOUNT) && v.get(TOTAL_AMOUNT) != null)
                     v.put(TOTAL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(v.get(TOTAL_AMOUNT).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
             dictionary.put(BILL_CHARGES, billChargesDict);
@@ -245,6 +249,7 @@ public class ShipmentCANReport extends IReport {
 
         populateRaKcData(dictionary, shipmentCANModel.shipmentDetails);
         populateIGMInfo(shipmentCANModel.shipmentDetails, dictionary);
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
         return dictionary;
     }

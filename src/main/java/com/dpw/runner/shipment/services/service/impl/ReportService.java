@@ -188,6 +188,25 @@ public class ReportService implements IReportService {
                 ((MawbReport)report).isDMawb = false;
             }
         }
+        // user story 135668
+        if(report instanceof ArrivalNoticeReport) {
+            ((ArrivalNoticeReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof BookingConfirmationReport) {
+            ((BookingConfirmationReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof PickupOrderReport) {
+            ((PickupOrderReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof DeliveryOrderReport) {
+            ((DeliveryOrderReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof PreAlertReport) {
+            ((PreAlertReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof ShipmentCANReport) {
+            ((ShipmentCANReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
 
         if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {
             try {
