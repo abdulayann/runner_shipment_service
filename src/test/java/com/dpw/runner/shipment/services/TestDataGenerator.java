@@ -439,7 +439,7 @@ public class TestDataGenerator {
         int random = new Random().nextInt(100);
 
         return AdditionalDetailRequest.builder().releaseType(generateString(3)).houseBillType(generateString(3))
-                .deliveryMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).screeningStatus(generateString(3)).original(1).printedOriginal(true)
+                .deliveryMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).screeningStatus(Arrays.asList(generateString(3))).original(1).printedOriginal(true)
                 .hsnNumber(Integer.toUnsignedLong(random))
                 .BOENumber(generateString(10)).build();
 

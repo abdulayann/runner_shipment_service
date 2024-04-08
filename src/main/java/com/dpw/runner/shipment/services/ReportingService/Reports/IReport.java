@@ -2524,13 +2524,13 @@ public abstract class IReport {
             if(additionalDetailModel.getExemptionCodes() != null) {
                 dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes());
             }
-            if(additionalDetailModel.getScreeningStatus() != null) {
-                dictionary.put(CONSIGNMENT_STATUS, additionalDetailModel.getScreeningStatus());
+            if(additionalDetailModel.getScreeningStatus() != null && !additionalDetailModel.getScreeningStatus().isEmpty()) {
+                dictionary.put(SCREENING_CODES, additionalDetailModel.getScreeningStatus());
             }
         }
 
-        if(shipmentModel.getSecurityStatus() != null && !shipmentModel.getSecurityStatus().isEmpty()) {
-            dictionary.put(SCREENING_CODES, shipmentModel.getSecurityStatus());
+        if(shipmentModel.getSecurityStatus() != null ) {
+            dictionary.put(CONSIGNMENT_STATUS, shipmentModel.getSecurityStatus());
         }
     }
 
