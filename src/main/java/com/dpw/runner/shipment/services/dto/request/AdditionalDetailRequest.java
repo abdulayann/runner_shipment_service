@@ -10,6 +10,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @ApiModel("Shipment Additional Details Request Model")
@@ -87,7 +88,7 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Integer copy;
     private String BLChargesDisplay;
     private String BLExporterShipment;
-    private String screeningStatus;
+    private List<String> screeningStatus;
     private String paidPlace;
     private String placeOfIssue;
     private String placeOfSupply;
