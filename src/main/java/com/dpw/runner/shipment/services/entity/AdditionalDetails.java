@@ -17,6 +17,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "shipment_additional_details")
@@ -275,8 +276,10 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "screening_status")
     @Size(max=50, message = "max size is 50 for screening_status")
-    @MasterData(type = MasterDataType.SCREENING_STATUS)
-    private String screeningStatus;
+    //@MasterData(type = MasterDataType.SCREENING_STATUS)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "screening_status", joinColumns = @JoinColumn(name = "shipment_additional_details_id"))
+    private List<String> screeningStatus;
 
     @Column(name = "paid_place")
     @UnlocationData
