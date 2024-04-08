@@ -47,6 +47,8 @@ public class DeliveryOrderReport extends IReport{
     @Autowired
     private JsonHelper jsonHelper;
 
+    public Boolean printWithoutTranslation;
+
     @Override
     public Map<String, Object> getData(Long id) {
         DeliveryOrderModel deliveryOrderModel = (DeliveryOrderModel) getDocumentModel(id);
@@ -95,6 +97,8 @@ public class DeliveryOrderReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         DeliveryOrderModel deliveryOrderModel = (DeliveryOrderModel) documentModel;
+        List<String> orgWithoutTranslation = new ArrayList<>();
+        List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(deliveryOrderModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(deliveryOrderModel.shipmentDetails, dictionary);
@@ -102,7 +106,7 @@ public class DeliveryOrderReport extends IReport{
         populateUserFields(deliveryOrderModel.usersDto, dictionary);
         populateBlFields(deliveryOrderModel.hbl, dictionary);
         populateBillChargesFields(deliveryOrderModel.shipmentDetails, dictionary);
-        populateShipmentOrganizationsLL(deliveryOrderModel.shipmentDetails, dictionary);
+        populateShipmentOrganizationsLL(deliveryOrderModel.shipmentDetails, dictionary, orgWithoutTranslation);
         dictionary.put(ReportConstants.MASTER_BILL_ISSUE_PLACE, deliveryOrderModel.placeOfIssueName);
         dictionary.put(ReportConstants.PPCC, deliveryOrderModel.paymentTerms);
 
@@ -163,7 +167,7 @@ public class DeliveryOrderReport extends IReport{
             List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
             for (Map<String, Object> v: values) {
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }
@@ -214,6 +218,7 @@ public class DeliveryOrderReport extends IReport{
         }
 
         populateRaKcData(dictionary, deliveryOrderModel.getShipmentDetails());
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
         return dictionary;
     }
