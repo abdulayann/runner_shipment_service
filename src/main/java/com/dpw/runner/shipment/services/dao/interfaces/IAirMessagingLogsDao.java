@@ -6,11 +6,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IAirMessagingLogsDao {
     AirMessagingLogs save(AirMessagingLogs airMessagingLogs) throws RunnerException;
     Page<AirMessagingLogs> findAll(Specification<AirMessagingLogs> spec, Pageable pageable);
     Optional<AirMessagingLogs> findById(Long id);
     void delete(AirMessagingLogs airMessagingLogs);
+    List<AirMessagingLogs> findByEntityGuid(UUID guid);
 }
