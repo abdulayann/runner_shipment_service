@@ -17,12 +17,15 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbPackingInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IGenericQueryRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -289,7 +292,7 @@ public class AwbUtility {
         List<Parties> orgLists = new ArrayList<>();
         Parties issuingAgent = null;
         for (var orgRow : consolidationDetails.getConsolidationAddresses()) {
-            if (orgRow.getType().equals(Constants.FORWARDING_AGENT)) {
+            if (orgRow.getType().equals(Constants.FAG)) {
                 issuingAgent = orgRow;
             }
         }
@@ -306,12 +309,30 @@ public class AwbUtility {
         if(issuingAgent == null){
             var orgs = masterDataUtils.fetchOrganizations("Id", tenantModel.getDefaultOrgId());
             if(!orgs.isEmpty()) {
+
+                CommonV1ListRequest addressRequest = new CommonV1ListRequest();
+                List<Object> addressField = new ArrayList<>(List.of("OrgId"));
+                List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", orgs.get(0).getId()));
+                addressRequest.setCriteriaRequests(addressCriteria);
+                V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+                List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+
+                String number = null;
+                String expiry = null;
+                if(addressList != null && !addressList.isEmpty()){
+                    EntityTransferAddress address = addressList.stream().filter(x -> Objects.equals(x.getAddressShortCode(), "Default")).findFirst().orElse(addressList.get(0));
+                    if(address != null) {
+                        number = address.getKCRANumber();
+                        expiry = address.getKCRAExpiry();
+                    }
+                }
+
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
                         .city(orgs.get(0).getCity())
                         .country(StringUtility.isNotEmpty(orgs.get(0).getCountry()) ? CountryListHelper.ISO3166.fromAlpha3(orgs.get(0).getCountry().toUpperCase()).getAlpha2() : null)
                         .currency(orgs.get(0).getCurrencyCode())
-                        .expiry(null)
-                        .number(null)
+                        .expiry(expiry != null ? LocalDateTime.parse(expiry) : null)
+                        .number(number)
                         .build());
             }
         } else {
@@ -447,7 +468,7 @@ public class AwbUtility {
         List<Parties> orgLists = new ArrayList<>();
         Parties issuingAgent = null;
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
-            if (orgRow.getType().equals(Constants.FORWARDING_AGENT)) {
+            if (orgRow.getType().equals(Constants.FAG)) {
                 issuingAgent = orgRow;
             }
         }
@@ -464,12 +485,30 @@ public class AwbUtility {
         if(issuingAgent == null){
             var orgs = masterDataUtils.fetchOrganizations("Id", tenantModel.getDefaultOrgId());
             if(!orgs.isEmpty()) {
+
+                CommonV1ListRequest addressRequest = new CommonV1ListRequest();
+                List<Object> addressField = new ArrayList<>(List.of("OrgId"));
+                List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", orgs.get(0).getId()));
+                addressRequest.setCriteriaRequests(addressCriteria);
+                V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+                List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+
+                String number = null;
+                String expiry = null;
+                if(addressList != null && !addressList.isEmpty()){
+                    EntityTransferAddress address = addressList.stream().filter(x -> Objects.equals(x.getAddressShortCode(), "Default")).findFirst().orElse(addressList.get(0));
+                    if(address != null) {
+                        number = address.getKCRANumber();
+                        expiry = address.getKCRAExpiry();
+                    }
+                }
+
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
                         .city(orgs.get(0).getCity())
                         .country(StringUtility.isNotEmpty(orgs.get(0).getCountry()) ? CountryListHelper.ISO3166.fromAlpha3(orgs.get(0).getCountry().toUpperCase()).getAlpha2() : null)
                         .currency(orgs.get(0).getCurrencyCode())
-                        .expiry(null)
-                        .number(null)
+                        .expiry(expiry != null ? LocalDateTime.parse(expiry): null)
+                        .number(number)
                         .build());
             }
         } else {
