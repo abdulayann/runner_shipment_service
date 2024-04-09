@@ -1584,6 +1584,11 @@ public class EntityTransferService implements IEntityTransferService {
                     missingField.add("Origin Port");
                 if(Strings.isNullOrEmpty(podId))
                     missingField.add("Destination Port");
+                if(Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.get().getTransportMode())) {
+                    if(!Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.get().getJobType())) {
+                        missingField.add("HAWB Number");
+                    }
+                }
                 if(Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
                     missingField.add("MAWB Number");
                 if(Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
