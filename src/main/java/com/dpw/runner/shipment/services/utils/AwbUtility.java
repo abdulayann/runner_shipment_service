@@ -797,7 +797,7 @@ public class AwbUtility {
             if(Objects.equals(masterAirMessagingLogs.getStatus(), AirMessagingStatus.SUCCESS.name())) {
                 body = body + "FWB for \""+ mawbNumber + "\"/\"" + entityNumber +"\" : Success\n";
             } else if (Objects.equals(masterAirMessagingLogs.getStatus(), AirMessagingStatus.FAILED.name())) {
-                body = body + "FWB for \""+ mawbNumber + "\"/\"" + entityNumber +"\" : Failed. Failure reason is \""+ masterAirMessagingLogs.getErrorMessage() +"\"\n";
+                body = body + "FWB for \""+ mawbNumber + "\"/\"" + entityNumber +"\" : Failed. Failure reason is \""+ masterAirMessagingLogs.getErrorMessage() +"\"\n\n";
             }
         }
         if(!awbsList.isEmpty() && awbsList.size() > 1) {
@@ -813,7 +813,7 @@ public class AwbUtility {
                             if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.SUCCESS.name())) {
                                 body = body + "FZB for \"" + shipNumber + "\" : Success\n";
                             } else if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.FAILED.name())) {
-                                body = body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n";
+                                body = body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n";
                             }
                         }
                     }
