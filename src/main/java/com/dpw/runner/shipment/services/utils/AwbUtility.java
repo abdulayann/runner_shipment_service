@@ -242,7 +242,9 @@ public class AwbUtility {
             throw new ValidationException("MAWB Number is required in shipment to generate the document.");
         }
         if (shipmentDetails.getHouseBill() == null || shipmentDetails.getHouseBill().isBlank()) {
-            throw new ValidationException("HAWB Number is required in shipment to generate the document.");
+            if(!(Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()) && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()))) {
+                throw new ValidationException("HAWB Number is required in shipment to generate the document.");
+            }
         }
     }
 
