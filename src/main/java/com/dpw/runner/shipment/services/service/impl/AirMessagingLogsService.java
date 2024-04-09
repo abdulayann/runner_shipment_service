@@ -223,7 +223,7 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
             return null;
         }
         List<AirMessagingLogs> sortedList = logs.stream()
-                .sorted(Comparator.comparing(AirMessagingLogs :: getCreatedAt).reversed()).toList();
+                .sorted(Comparator.comparing(AirMessagingLogs :: getId).reversed()).toList();
         return sortedList.get(0);
     }
 
