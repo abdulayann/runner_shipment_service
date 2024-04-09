@@ -166,6 +166,7 @@ public abstract class IReport {
         ship.CarrierSealNumber = row.getCarrierSealNumber();
         ship.CustomsSealNumber = row.getCustomsSealNumber();
         ship.ShipperSealNumber = row.getShipperSealNumber();
+        ship.HazardousUn = row.getHazardousUn();
 
         try {
             List<MasterListRequest> requests = new ArrayList<>();
@@ -183,12 +184,18 @@ public abstract class IReport {
             if(Objects.isNull(value3))
                 requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKS_UNIT.getDescription()).ItemValue(ship.ShipmentPacksUnit).Cascade(null).build());
 
+            requests.add(MasterListRequest.builder().ItemType(MasterDataType.DG_CLASS.getDescription()).ItemValue(row.getDgClass()).Cascade(null).build());
+
             if(requests.size() > 0) {
                 MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
                 masterListRequestV2.setMasterListRequests(requests);
                 masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
                 Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
                 masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+
+                // Populate DgClassDescription field from master data fetched
+                String key = row.getDgClass() + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name();
+                ship.DgClassDescription = Optional.of(keyMasterDataMap.get(key)).map(i -> i.getValuenDesc()).orElse(null);
             }
             ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit);
             ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit);
@@ -197,8 +204,10 @@ public abstract class IReport {
                 ship.VGMWeight = row.getGrossWeight().add(row.getTareWeight());
         } catch (Exception ignored) { }
         CommodityResponse commodityResponse = getCommodity(row.getCommodityCode());
-        if (commodityResponse != null)
+        if (commodityResponse != null) {
             ship.CommodityDescription = commodityResponse.getDescription();
+            ship.CommodityDescriptionWithHSCode = commodityResponse.getCommodityDescriptionWithHSCode();
+        }
         if(row.getCommodityGroup() != null) {
             MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, row.getCommodityGroup());
             if (commodity != null)
@@ -630,6 +639,14 @@ public abstract class IReport {
                     }
                     dictionary.put(ReportConstants.PICKUPTIME_TYPE, "Estimated Pickup");
                 }
+
+                if(shipment.getPickupDetails().getDestinationDetail() != null) {
+                    dictionary.put(CY_NAME_ADDRESS, List.of(
+                            getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME),
+                            getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getAddressData(), ADDRESS1)
+                    ));
+                }
+
             }
             if(shipment.getReferenceNumbersList() != null)
             {
@@ -900,6 +917,7 @@ public abstract class IReport {
         PartiesModel receivingAgent = consolidation.getReceivingAgent();
         PartiesModel creditor = consolidation.getCreditor();
         ArrivalDepartureDetailsModel arrivalDetails = consolidation.getArrivalDetails();
+        ArrivalDepartureDetailsModel departureDetails = consolidation.getDepartureDetails();
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromConsole(consolidation);
         Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
         UnlocationsResponse lastForeignPort = null;
@@ -1109,6 +1127,17 @@ public abstract class IReport {
                 dictionary.put(CONSOLE_WEIGHT_DESCRIPTION, StringUtility.toUpperCase(masterListsMap.get(MasterDataType.WEIGHT_UNIT.getId()).get(consolidation.getAllocations().getWeightUnit()).getItemDescription()));
             if (masterListsMap.containsKey(MasterDataType.VOLUME_UNIT.getId()) && masterListsMap.get(MasterDataType.VOLUME_UNIT.getId()).containsKey(consolidation.getAllocations().getVolumeUnit()))
                 dictionary.put(CONSOLE_VOLUME_DESCRIPTION, StringUtility.toUpperCase(masterListsMap.get(MasterDataType.VOLUME_UNIT.getId()).get(consolidation.getAllocations().getVolumeUnit()).getItemDescription()));
+        }
+        dictionary.put(SI_CUT_OFF_TIME, consolidation.getShipInstructionCutoff());
+        if(departureDetails != null) {
+            if(departureDetails.getCTOId() != null)
+                dictionary.put(CTO_FULL_NAME, getValueFromMap(departureDetails.getCTOId().getOrgData(), FULL_NAME));
+            if(departureDetails.getContainerYardId() != null) {
+                dictionary.put(CY_NAME_ADDRESS, List.of(
+                        getValueFromMap(departureDetails.getCTOId().getOrgData(), FULL_NAME),
+                        getValueFromMap(departureDetails.getCTOId().getAddressData(), ADDRESS1)
+                ));
+            }
         }
         populateUserFields(UserContext.getUser(), dictionary);
     }
