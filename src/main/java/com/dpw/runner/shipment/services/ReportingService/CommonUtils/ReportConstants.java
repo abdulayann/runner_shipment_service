@@ -1062,4 +1062,11 @@ public class ReportConstants {
     public static final String DESTINATION_AGENT = "DestinationAgent";
     public static final String CONSIGNOR_AGENT = "Consignor";
 
+    public static final String HAZARDOUS_UN = "HazardousUn";
+    public static final String COMMODITY_DESCRIPTION = "CommodityDescription";
+    public static final String DG_CLASS_DESCRIPTION = "DgClassDescription";
+    public static final String CY_NAME_ADDRESS = "CyNameAddress";
+    public static final String CTO_FULL_NAME = "CtoFullName";
+    public static final String SI_CUT_OFF_TIME = "SICutOffTime";
+
 }
