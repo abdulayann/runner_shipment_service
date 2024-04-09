@@ -30,6 +30,8 @@ public interface IAwbDao {
     void airMessagingIntegration(Long id, String reportType, Boolean fromShipment);
     int updateAirMessageStatus(UUID guid, String airMessageStatus);
     int updateLinkedHawbAirMessageStatus(UUID guid, String airMessageStatus);
+
+    int updateUserDetails(UUID guid, String userDisplayName, String userMailId);
     List<Awb> findAllLinkedAwbs(UUID guid);
     Awb findAwbByGuidByQuery(UUID guid);
 }

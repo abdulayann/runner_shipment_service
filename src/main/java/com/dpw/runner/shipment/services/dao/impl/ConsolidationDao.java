@@ -442,4 +442,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Transactional
     public void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate) {consolidationRepository.saveCreatedDateAndUser(id, createdBy, createdDate);}
 
+    public String getConsolidationNumberFromId(Long id) {
+        return consolidationRepository.getConsolidationNumberFromId(id);
+    }
+
 }

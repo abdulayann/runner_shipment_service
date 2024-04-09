@@ -47,6 +47,11 @@ public class AirMessagingLogsDao implements IAirMessagingLogsDao {
     public List<AirMessagingLogs> findByEntityGuid(UUID guid) { return airMessagingLogsRepository.findByEntityGuid(guid); }
 
     @Override
+    public List<AirMessagingLogs> findByEntityGuidByQuery(UUID guid) {
+        return airMessagingLogsRepository.findByEntityGuidByQuery(guid);
+    }
+
+    @Override
     public void createAirMessagingLogs(UUID guid, UUID entityGuid, String errorMessage, String messageType, String xmlPayload, String status, Integer tenantId, LocalDateTime createdAt) {
         airMessagingLogsRepository.createAirMessagingLogs(guid, entityGuid, errorMessage, messageType, xmlPayload, status, tenantId, createdAt);
     }

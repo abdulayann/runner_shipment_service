@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import javax.mail.MessagingException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -44,7 +46,7 @@ public class AirMessagingConsumer {
                         try {
                             AirMessagingStatusDto obj = objectMapper.readValue(message.value(), AirMessagingStatusDto.class);
                             awbUtility.createStatusUpdateForAirMessaging(obj);
-                        } catch (JsonProcessingException | RunnerException e) {
+                        } catch (RunnerException | MessagingException | IOException e) {
                             throw new RuntimeException(e);
                         }
 
