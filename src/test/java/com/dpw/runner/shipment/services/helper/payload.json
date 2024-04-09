@@ -2118,5 +2118,16 @@
     "consolidatedVolumeUnit": "M3",
     "consolidationChargeQuantity": 0.00,
     "consolidationChargeQuantityUnit": "M3"
+  },
+  "NEW_ARRIVAL_DEPART_DETAIL" : {
+    "firstForeignPort": "1OONymJZKV0tRGAcqNmY",
+    "lastForeignPort": "1OONymJZKV0tRGAcqNmY",
+    "type": "Arrival",
+    "containerYardId": {
+      "tenantId": 908
+    },
+    "transportPortId": {
+      "tenantId": 908
+    }
   }
 }

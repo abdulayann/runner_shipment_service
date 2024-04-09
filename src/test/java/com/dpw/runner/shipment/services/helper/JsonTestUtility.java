@@ -115,4 +115,8 @@ public class JsonTestUtility {
     public AchievedQuantities getTestAchievedQuantity() {
         return objectMapper.convertValue(payload.get("NEW_ACHIEVED_QUANTITY") , AchievedQuantities.class);
     }
+
+    public ArrivalDepartureDetails getTestArrivalDepartureDetails() {
+        return objectMapper.convertValue(payload.get("NEW_ARRIVAL_DEPART_DETAIL") , ArrivalDepartureDetails.class);
+    }
 }
