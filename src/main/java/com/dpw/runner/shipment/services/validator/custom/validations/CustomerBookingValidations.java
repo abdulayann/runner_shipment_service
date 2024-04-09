@@ -19,6 +19,10 @@ public class CustomerBookingValidations {
             log.error("Updating Booking number from {} to {} is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber());
             throw new ValidationException(String.format("Updating Booking number from: %s to: %s is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber()));
         }
+        if(!Objects.isNull(newEntity.getConsignee()) && !Objects.isNull(newEntity.getConsignor())){
+            if(newEntity.getConsignee().getOrgCode() != null && newEntity.getConsignor().getOrgCode() != null && newEntity.getConsignor().getOrgCode().equals(newEntity.getConsignee().getOrgCode()))
+                throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
+        }
         // FCL
         switch (newEntity.getBookingStatus()) {
             case PENDING_FOR_KYC:
