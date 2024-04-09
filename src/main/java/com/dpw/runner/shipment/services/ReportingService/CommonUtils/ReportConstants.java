@@ -1037,6 +1037,7 @@ public class ReportConstants {
     public static final String RA = "RA";
     public static final String KC = "KC";
     public static final String INSURANCE_VALUE = "InsuranceValue";
+    public static final String INSURANCE_VALUE_TRANSPORT = "Insurance Value";
     public static final String INSURANCE_VALUE_CURRENCY = "InsuranceValueCurrency";
     public static final String GOODS_VALUE = "GoodsValue";
     public static final String GOODS_VALUE_CURRENCY = "GoodsValueCurrency";
