@@ -42,7 +42,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "Update consolidation_details set created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 
-    @Query(value = "SELECT * FROM consolidation_details WHERE id = ?1", nativeQuery = true)
+    @Query(value = "SELECT consolidation_number FROM consolidation_details WHERE id = ?1", nativeQuery = true)
     String getConsolidationNumberFromId(Long id);
 
 }
