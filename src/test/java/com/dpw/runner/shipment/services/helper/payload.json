@@ -2075,5 +2075,48 @@
       }
     }
   },
-  "ELDETAILS"  : {}
+  "ELDETAILS"  : {},
+  "NEW_ALLOCATION_CREATE": {
+    "chargable": 1232.92,
+    "chargeableUnit": "M3",
+    "cutoffDate": "2024-04-09T06:43:56.573Z",
+    "hazardous": true,
+    "isTemperatureControlled": true,
+    "maxTemp": 123,
+    "maxTempUnit": "CEL",
+    "minTemp": 12,
+    "minTempUnit": "CEL",
+    "shipmentsCount": 3,
+    "volume": 1231,
+    "volumeUnit": "M3",
+    "weight": 321,
+    "weightUnit": "KG"
+  },
+  "NEW_ADDITIONAL_DETAIL": {
+    "efreightStatus": "EAW",
+    "screeningStatus": "ASDE",
+    "importBroker": {
+      "tenantId": 908
+    },
+    "exportBroker": {
+      "tenantId": 908
+    },
+    "masterData": {
+      "efreightStatus": "EAW (e-freight Consignment with No Accompanying Paper Documents)"
+    },
+    "unlocationData": {},
+    "tenantIdsData": {},
+    "textData": {},
+    "aomFreeText": "11"
+  },
+  "NEW_ACHIEVED_QUANTITY" : {
+    "weightVolume": 0.00,
+    "weightVolumeUnit": "M3",
+    "consolidatedWeight": 0.00,
+    "consolidatedWeightUnit": "KG",
+    "consolidatedVolume": 0.00000,
+    "consolidatedVolumeUnit": "M3",
+    "consolidationChargeQuantity": 0.00,
+    "consolidationChargeQuantityUnit": "M3"
+  }
 }
