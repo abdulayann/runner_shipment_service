@@ -8,10 +8,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.dao.interfaces.IAirMessagingLogsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbPackingInfo;
@@ -28,14 +25,18 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IGenericQueryRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.mail.MessagingException;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
 
 @SuppressWarnings("rawtypes")
 @Component
+@Slf4j
 public class AwbUtility {
     @Autowired
     private JsonHelper jsonHelper;
@@ -66,6 +68,14 @@ public class AwbUtility {
     private IAirMessagingLogsDao airMessagingLogsDao;
     @Autowired
     private IEventDao eventDao;
+    @Autowired
+    private EmailServiceUtility emailServiceUtility;
+    @Autowired
+    private IAirMessagingLogsService airMessagingLogsService;
+    @Autowired
+    private IShipmentDao shipmentDao;
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
 
     private AwbUtility(){}
     public static String getFormattedAddress(AwbAddressParam addressParam)
@@ -607,7 +617,7 @@ public class AwbUtility {
                 .build();
     }
 
-    public void createStatusUpdateForAirMessaging(AirMessagingStatusDto airMessageStatus) throws RunnerException {
+    public void createStatusUpdateForAirMessaging(AirMessagingStatusDto airMessageStatus) throws RunnerException, MessagingException, IOException {
         var guid = airMessageStatus.getGuid();
         Optional<Awb> awb = Optional.ofNullable(awbDao.findAwbByGuidByQuery(guid));
         if(awb.isEmpty()){
@@ -637,7 +647,9 @@ public class AwbUtility {
             case SUBMITTED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SENT.name());
             case SUCCESS -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SUCCESS.name());
         }
+        Awb masterAwb = null;
         if(awb.get().getConsolidationId() != null) {
+            masterAwb = awb.get();
             eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), awb.get().getConsolidationId(),
                     Constants.CONSOLIDATION, "FNM", "FNM received", LocalDateTime.now(), LocalDateTime.now(),
                     Constants.DESCARTES, tenantId, status.name(), LocalDateTime.now(), LocalDateTime.now());
@@ -645,6 +657,7 @@ public class AwbUtility {
             List<Awb> awbsList = awbDao.findAllLinkedAwbs(guid);
 
             AwbStatus hawbsStatus = null;
+            Boolean allStatusReceived = true;
             if(awbsList != null && !awbsList.isEmpty()){
                 for (var x: awbsList) {
                     if(x.getShipmentId() != null){
@@ -656,10 +669,21 @@ public class AwbUtility {
                             hawbsStatus = AwbStatus.AIR_MESSAGE_SUCCESS;
                         }
                     }
+                    if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
+                        allStatusReceived = false;
+                    }
                 }
             }
             if(hawbsStatus != null)
                 awbDao.updateLinkedHawbAirMessageStatus(guid, hawbsStatus.name());
+
+            if(Boolean.TRUE.equals(allStatusReceived) && (Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(status, AwbStatus.AIR_MESSAGE_FAILED))) {
+                try {
+                    this.sendAirMessagingFailureEmail(masterAwb, awbsList);
+                } catch (IOException e) {
+                    log.error("Send Email for Air Messaging Failure : " + e.getMessage());
+                }
+            }
 
 
         } else if (awb.get().getShipmentId() != null) {
@@ -671,6 +695,9 @@ public class AwbUtility {
 
             AwbStatus hawbsStatus = null;
             UUID consoleGuid = null;
+            Boolean allStatusReceived = true;
+            AwbStatus consoleStatus = null;
+
             if(awbsList != null && !awbsList.isEmpty()){
                 for (var x: awbsList) {
                     if(x.getShipmentId() != null){
@@ -683,11 +710,31 @@ public class AwbUtility {
                         }
                     } else if (x.getConsolidationId() != null) {
                         consoleGuid = x.getGuid();
+                        consoleStatus = x.getAirMessageStatus();
+                        masterAwb = x;
+                    }
+                    if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
+                        allStatusReceived = false;
                     }
                 }
+                if(awbsList.size() == 1){
+                    masterAwb = awbsList.get(0);
+                }
+            }
+            if(masterAwb == null) {
+                consoleStatus = awb.get().getAirMessageStatus();
+                masterAwb = awb.get();
             }
             if(hawbsStatus != null && consoleGuid != null)
                 awbDao.updateLinkedHawbAirMessageStatus(consoleGuid, hawbsStatus.name());
+
+            if(Boolean.TRUE.equals(allStatusReceived) && (Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(consoleStatus, AwbStatus.AIR_MESSAGE_FAILED))) {
+                try {
+                    this.sendAirMessagingFailureEmail(masterAwb, awbsList);
+                } catch (IOException e) {
+                    log.error("Send Email for Air Messaging Failure : " + e.getMessage());
+                }
+            }
 
         }
     }
@@ -722,5 +769,59 @@ public class AwbUtility {
         }
 
 
+    }
+
+    public void sendAirMessagingFailureEmail(Awb awb, List<Awb> awbsList) throws MessagingException, IOException {
+        if(awb == null)
+            return;
+        String mawbNumber = awb.getAwbNumber();
+        String userName = awb.getUserDisplayName();
+        String entityName = awb.getConsolidationId() != null ? "consolidation" : "shipment";
+        String entityNumber = "";
+        if(awb.getShipmentId() != null) {
+            var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(List.of(awb.getShipmentId()));
+            if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty())
+                entityNumber = shipmentDetailsList.get(0).getShipmentId();
+        }
+        if(awb.getConsolidationId() != null) {
+            entityNumber = consolidationDetailsDao.getConsolidationNumberFromId(awb.getConsolidationId());
+        }
+
+        List<String> emailIds = List.of(awb.getUserMailId());
+        AirMessagingLogs masterAirMessagingLogs = airMessagingLogsService.getRecentLogForEntityGuid(awb.getGuid());
+        String subject = "Air message failure notification for "+ mawbNumber;
+        String body = "Dear " + userName +",\n \n \n" +
+                "Please find below the status of air messages for \""+ mawbNumber + "\" associated with " + entityName + " \""+ entityNumber + "\". \n\n";
+
+        if(masterAirMessagingLogs != null) {
+            if(Objects.equals(masterAirMessagingLogs.getStatus(), AirMessagingStatus.SUCCESS.name())) {
+                body = body + "FWB for \""+ mawbNumber + "\"/\"" + entityNumber +"\" : Success\n";
+            } else if (Objects.equals(masterAirMessagingLogs.getStatus(), AirMessagingStatus.FAILED.name())) {
+                body = body + "FWB for \""+ mawbNumber + "\"/\"" + entityNumber +"\" : Failed. Failure reason is \""+ masterAirMessagingLogs.getErrorMessage() +"\"\n";
+            }
+        }
+        if(!awbsList.isEmpty() && awbsList.size() > 1) {
+            var shipmentIds = awbsList.stream().filter(x -> x.getShipmentId() != null).map(Awb::getShipmentId).toList();
+            if(shipmentIds != null) {
+                var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(shipmentIds);
+                Map<Long, String> map = shipmentDetailsList.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
+                for (var x : awbsList) {
+                    if (x.getShipmentId() != null) {
+                        String shipNumber = map.get(x.getShipmentId());
+                        AirMessagingLogs shipAirMessagingLogs = airMessagingLogsService.getRecentLogForEntityGuid(x.getGuid());
+                        if (shipAirMessagingLogs != null) {
+                            if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.SUCCESS.name())) {
+                                body = body + "FZB for \"" + shipNumber + "\" : Success\n";
+                            } else if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.FAILED.name())) {
+                                body = body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        body = body + "\n \n Please rectify the data as per the failure comment and resend the messages by clicking on the \"Print\" button in the MAWB. \n \n" +
+                        "Thank you!\n" + "Cargoes Runner";
+        emailServiceUtility.sendEmail(body, subject, emailIds, null, null);
     }
 }
