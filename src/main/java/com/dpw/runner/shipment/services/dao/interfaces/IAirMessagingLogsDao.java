@@ -17,5 +17,6 @@ public interface IAirMessagingLogsDao {
     Optional<AirMessagingLogs> findById(Long id);
     void delete(AirMessagingLogs airMessagingLogs);
     List<AirMessagingLogs> findByEntityGuid(UUID guid);
+    List<AirMessagingLogs> findByEntityGuidByQuery(UUID guid);
     void createAirMessagingLogs(UUID guid, UUID entityGuid, String errorMessage, String messageType, String xmlPayload, String status, Integer tenantId, LocalDateTime createdAt);
 }

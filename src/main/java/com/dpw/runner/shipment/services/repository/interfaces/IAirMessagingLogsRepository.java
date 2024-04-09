@@ -21,6 +21,10 @@ public interface IAirMessagingLogsRepository extends MultiTenancyRepository<AirM
     List<AirMessagingLogs> findByEntityGuid(UUID guid);
 
     @Modifying
+    @Query(value = "SELECT * FROM air_messaging_logs WHERE entity_guid = ?1", nativeQuery = true)
+    List<AirMessagingLogs> findByEntityGuidByQuery(UUID guid);
+
+    @Modifying
     @Transactional
     @Query(value = "insert into air_messaging_logs (guid, entity_guid, error_message, message_type, xml_payload, status, tenant_id, created_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)", nativeQuery = true)
     void createAirMessagingLogs(UUID guid, UUID entityGuid, String errorMessage, String messageType, String xmlPayload, String status, Integer tenantId, LocalDateTime createdAt);

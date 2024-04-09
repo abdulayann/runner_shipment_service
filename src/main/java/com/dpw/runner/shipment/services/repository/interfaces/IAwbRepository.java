@@ -47,6 +47,11 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     @Query(value = "Update Awb set linked_hawb_air_message_status = ?2 Where guid = ?1", nativeQuery = true)
     int updateLinkedHawbAirMessageStatus(UUID guid, String airMessageStatus);
 
+    @Transactional
+    @Modifying
+    @Query(value = "Update Awb set user_mail_id = ?3, user_display_name = ?2 Where guid = ?1", nativeQuery = true)
+    int updateUserDetails(UUID guid, String userDisplayName, String userMailId);
+
     @Query(value = "SELECT * FROM awb WHERE guid = ?1 limit 1", nativeQuery = true)
     Awb findAwbByGuidByQuery(UUID guid);
 

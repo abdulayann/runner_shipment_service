@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
@@ -194,12 +195,14 @@ public class AwbDao implements IAwbDao {
                             // AirMessageSent flag set to SENT
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                            this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
 
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
                                 this.pushToKafkaForAirMessaging(shipAwb, ship, null);
                                 // AirMessageSent flag set to SENT
                                 this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                                this.updateUserDetails(shipAwb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                             }
                         }
                     }
@@ -211,6 +214,7 @@ public class AwbDao implements IAwbDao {
                             this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null);
                             // AirMessageSent flag set to SENT
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                            this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                         }
 
                     }
@@ -268,6 +272,11 @@ public class AwbDao implements IAwbDao {
     @Override
     public int updateLinkedHawbAirMessageStatus(UUID guid, String airMessageStatus) {
         return awbRepository.updateLinkedHawbAirMessageStatus(guid, airMessageStatus);
+    }
+
+    @Override
+    public int updateUserDetails(UUID guid, String userDisplayName, String userMailId) {
+        return awbRepository.updateUserDetails(guid, userDisplayName, userMailId);
     }
 
     @Override
