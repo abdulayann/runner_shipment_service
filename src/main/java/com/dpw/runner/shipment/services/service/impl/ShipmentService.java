@@ -1929,10 +1929,10 @@ public class ShipmentService implements IShipmentService {
                     originPort = shipment.getCarrierDetails().getUnlocationData().get("originPort");
                 }
                 if(shipment.getCarrierDetails() != null){
-                    origin = StringUtility.isEmpty(origin) ? shipment.getCarrierDetails().getOrigin() : "";
-                    destination = StringUtility.isEmpty(destination) ? shipment.getCarrierDetails().getDestination() : "";
-                    destinationPort = StringUtility.isEmpty(destinationPort) ? shipment.getCarrierDetails().getDestinationPort() : "";
-                    originPort = StringUtility.isEmpty(originPort) ? shipment.getCarrierDetails().getOriginPort() : "";
+                    origin = StringUtility.isEmpty(origin) ? shipment.getCarrierDetails().getOrigin() : origin;
+                    destination = StringUtility.isEmpty(destination) ? shipment.getCarrierDetails().getDestination() : destination;
+                    destinationPort = StringUtility.isEmpty(destinationPort) ? shipment.getCarrierDetails().getDestinationPort() : destinationPort;
+                    originPort = StringUtility.isEmpty(originPort) ? shipment.getCarrierDetails().getOriginPort() : originPort;
                 }
                 LocalTimeZoneHelper.transformTimeZone(shipment);
                 itemRow.createCell(headerMap.get("Shipment Clone")).setCellValue("");
