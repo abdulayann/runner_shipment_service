@@ -164,10 +164,7 @@ class PackingDaoTest {
     @Test
     void getAllPackings() {
         testPacking.setConsolidationId(19L);
-        var result = packingDao.save(testPacking);
-        Specification<Packing> spec = (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.equal(root.get("consolidationId"), testPacking.getContainerId());
-        };
+        packingDao.save(testPacking);
         var packingList = packingDao.getAllPackings();
         assertFalse(packingList.isEmpty());
         assertEquals(packingList.stream().toList().stream().anyMatch(c -> c.getContainerId() == testPacking.getContainerId()), true);

@@ -4,13 +4,12 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.dao.interfaces.IAllocationsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IAchievedQuantitiesDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,32 +42,39 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestPropertySource("classpath:application-test.properties")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-class AllocationsDaoTest {
+class AchievedQuantitiesDaoTest {
+
+    private static JsonTestUtility jsonTestUtility;
+    private static AchievedQuantities testQuantity;
+
+    @Autowired
+    private IAchievedQuantitiesDao achievedQuantitiesDao;
 
     @Container
-    private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
+    private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
 
     static {
-        postgresContainer = new PostgreSQLContainer("postgres:15-alpine")
-                .withDatabaseName("integration-tests-db")
+        postgresContainer.withDatabaseName("integration-tests-db")
                 .withUsername("sa")
                 .withPassword("sa");
         postgresContainer.start();
     }
 
-    @Autowired
-    private IAllocationsDao dao;
-
-    private static ObjectMapper objectMapperTest;
-    private static Allocations testAllocation;
-    private static JsonTestUtility jsonTestUtility;
-
-
     @BeforeAll
     static void beforeAll() throws IOException {
         postgresContainer.start();
-        objectMapperTest = JsonTestUtility.getMapper();
         jsonTestUtility = new JsonTestUtility();
+    }
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        TenantContext.setCurrentTenant(1);
+        testQuantity = jsonTestUtility.getTestAchievedQuantity();
+        var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
+        PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
+        UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
     }
 
     @AfterAll
@@ -77,68 +83,48 @@ class AllocationsDaoTest {
     }
 
     @DynamicPropertySource
-    static void dynamicConfiguration(DynamicPropertyRegistry registry) {
+    static void dynamicConfiguration(DynamicPropertyRegistry registry){
         registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
         registry.add("spring.datasource.username", postgresContainer::getUsername);
         registry.add("spring.datasource.password", postgresContainer::getPassword);
     }
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        TenantContext.setCurrentTenant(1);
-        testAllocation = jsonTestUtility.getTestAllocation();
-        var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
-        PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
-        UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-
-    }
-
     @Test
     void save() {
-        var result = dao.save(testAllocation);
-        assertNotNull(result);
-        assertNotNull(result.getId());
+        var result = achievedQuantitiesDao.save(testQuantity);
+        assertTrue(result.getId() != null);
     }
 
     @Test
     void findAll() {
-        testAllocation.setChargable(BigDecimal.TEN);
-        var result = dao.save(testAllocation);
-        Specification<Allocations> spec =  (root, query, criteriaBuilder) ->
-             criteriaBuilder.equal(root.get("weight"), 321);
-        var allocationList = dao.findAll(spec, PageRequest.of(0 , 10));
-        assertFalse(allocationList.isEmpty());
-        assertEquals(allocationList.stream().toList().get(0).getChargable(), result.getChargable());
-
+        testQuantity.setWeightVolume(BigDecimal.TEN);
+        var result = achievedQuantitiesDao.save(testQuantity);
+        Specification<AchievedQuantities> spec =  (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("weightVolumeUnit"), "M3");
+        var containerList = achievedQuantitiesDao.findAll(spec, PageRequest.of(0 , 10));
+        assertFalse(containerList.isEmpty());
+        assertEquals(containerList.stream().toList().get(0).getWeightVolume(), result.getWeightVolume());
     }
 
     @Test
     void findById() {
-        var savedAllocation = dao.save(testAllocation);
-        var result = dao.findById(savedAllocation.getId());
-        assertNotNull(result);
-        assertTrue(result.isPresent());
-        assertEquals(result.get().getId(), savedAllocation.getId());
+        var savedQuantity = achievedQuantitiesDao.save(testQuantity);
+        var result = achievedQuantitiesDao.findById(savedQuantity.getId());
+        assertFalse(result.isEmpty());
+        assertEquals(savedQuantity.getId() , result.get().getId());
     }
 
     @Test
     void delete() {
-        var savedAllocation = dao.save(testAllocation);
-        dao.delete(savedAllocation);
-        var result = dao.findById(savedAllocation.getId());
+        var savedQuantity = achievedQuantitiesDao.save(testQuantity);
+        achievedQuantitiesDao.delete(savedQuantity);
+        var result = achievedQuantitiesDao.findById(savedQuantity.getId());
         assertTrue(result.isEmpty());
     }
 
     @Test
     void updateEntityFromShipmentConsole() throws RunnerException {
-        dao.save(testAllocation);
-        testAllocation.setUpdatedBy("user");
-        var result = dao.updateEntityFromShipmentConsole(testAllocation);
+        var result = achievedQuantitiesDao.updateEntityFromShipmentConsole(testQuantity);
         assertNotNull(result);
-        assertNotNull(result.getId());
-        assertEquals(result.getUpdatedBy(), testAllocation.getUpdatedBy());
     }
-
 }
