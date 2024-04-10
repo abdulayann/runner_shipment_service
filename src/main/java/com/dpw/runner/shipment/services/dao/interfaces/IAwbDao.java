@@ -34,4 +34,7 @@ public interface IAwbDao {
     int updateUserDetails(UUID guid, String userDisplayName, String userMailId);
     List<Awb> findAllLinkedAwbs(UUID guid);
     Awb findAwbByGuidByQuery(UUID guid);
+    int updateAirMessageStatusFromShipmentId(Long id, String airMessageStatus);
+    int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus);
+
 }

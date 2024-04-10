@@ -275,6 +275,15 @@ public class AwbDao implements IAwbDao {
     }
 
     @Override
+    public int updateAirMessageStatusFromShipmentId(Long id, String airMessageStatus) {
+        return awbRepository.updateAirMessageStatusFromShipmentId(id, airMessageStatus);
+    }
+    @Override
+    public int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus) {
+        return awbRepository.updateAirMessageStatusFromConsolidationId(id, airMessageStatus);
+    }
+
+    @Override
     public int updateUserDetails(UUID guid, String userDisplayName, String userMailId) {
         return awbRepository.updateUserDetails(guid, userDisplayName, userMailId);
     }
