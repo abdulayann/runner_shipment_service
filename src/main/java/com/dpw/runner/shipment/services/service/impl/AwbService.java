@@ -23,10 +23,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.AwbReset;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.ChargeTypeCode;
-import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -3230,6 +3227,7 @@ public class AwbService implements IAwbService {
         String entityType = null;
         List<Awb> awbList = null;
         StringBuilder responseStatusMessage = new StringBuilder();
+        Boolean fnMstatus = false;
 
         if(shipmentId.isPresent()) {
             awbList = awbDao.findByShipmentId(shipmentId.get());
@@ -3247,37 +3245,50 @@ public class AwbService implements IAwbService {
             masterAwb = awbList.get(0);
             entityType = masterAwb.getAwbShipmentInfo().getEntityType();
         }
+        FnmStatusMessageResponse fnmStatusMessageResponse = new FnmStatusMessageResponse();
 
         // Fetch the logs for all Awb entities (master and its linked Hawb)
         // Update the response as per AirMessagingLogs
         switch(entityType) {
-            case Constants.HAWB -> fnmAcknowledgementHawb(masterAwb, responseStatusMessage);
-            case Constants.DMAWB -> fnmAcknowledgementMawb(masterAwb, responseStatusMessage);
-            case Constants.MAWB -> fnmAcknowledgementMawb(masterAwb, responseStatusMessage);
+            case Constants.HAWB -> fnmAcknowledgementHawb(masterAwb, fnmStatusMessageResponse);
+            case Constants.DMAWB -> fnmAcknowledgementMawb(masterAwb, fnmStatusMessageResponse);
+            case Constants.MAWB -> fnmAcknowledgementMawb(masterAwb, fnmStatusMessageResponse);
         }
 
-        FnmStatusMessageResponse response = FnmStatusMessageResponse.builder()
-                .response(responseStatusMessage.toString()).build();
-
-        return ResponseHelper.buildSuccessResponse(response);
+        return ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse);
     }
 
-    private void fnmAcknowledgementHawb(Awb awb, StringBuilder responseStatusMessage) {
+    private void fnmAcknowledgementHawb(Awb awb, FnmStatusMessageResponse fnmStatusMessageResponse) {
+        Boolean fnmStatus = false;
+        StringBuilder responseStatusMessage = new StringBuilder();
+
         var statusLog = airMessagingLogsService.getRecentLogForEntityGuid(awb.getGuid());
         if (statusLog == null)
             return;
-        if(Objects.equals(statusLog.getStatus(), AirMessagingLogsConstants.FAILED_STATUS)) {
+        if(Objects.equals(statusLog.getStatus(), AirMessagingStatus.FAILED.name())) {
             responseStatusMessage.append(String.format(AirMessagingLogsConstants.SHIPMENT_FNM_FAILURE_ERROR, statusLog.getErrorMessage()));
         }
+        if(Objects.equals(statusLog.getStatus(), AirMessagingStatus.SUCCESS.name())) {
+            fnmStatus = true;
+            responseStatusMessage.append("FZB submission is accepted");
+        }
+
+        fnmStatusMessageResponse.setFnmStatus(fnmStatus);
+        fnmStatusMessageResponse.setResponse(responseStatusMessage.toString());
     }
-    private void fnmAcknowledgementMawb(Awb mawb, StringBuilder responseStatusMessage) {
+    private void fnmAcknowledgementMawb(Awb mawb, FnmStatusMessageResponse fnmStatusMessageResponse) {
         var mawbStatusLog = airMessagingLogsService.getRecentLogForEntityGuid(mawb.getGuid());
+        String awbType = mawb.getAwbShipmentInfo().getEntityType();
+        Boolean fnmStatus = false;
+        StringBuilder responseStatusMessage = new StringBuilder();
+
         if (mawbStatusLog == null)
             return;
 
         // Stores shipment ID of failed Hawbs
         List<Long> failedShipmentHawbs = new ArrayList<>();
         List<Awb> linkedHawb = getLinkedAwbFromMawb(mawb.getId());
+        int successHawbCount = 0;
 
         for(var hawb : linkedHawb) {
             var statusLog = airMessagingLogsService.getRecentLogForEntityGuid(hawb.getGuid());
@@ -3285,19 +3296,28 @@ public class AwbService implements IAwbService {
             if(statusLog == null)
                 continue;
 
-            if(Objects.equals(statusLog.getStatus(), AirMessagingLogsConstants.FAILED_STATUS)) {
+            if(Objects.equals(statusLog.getStatus(), AirMessagingStatus.FAILED.name())) {
                 failedShipmentHawbs.add(hawb.getShipmentId());
+            }
+            if(Objects.equals(statusLog.getStatus(), AirMessagingStatus.SUCCESS.name())) {
+                successHawbCount += 1;
             }
         }
 
 
-        boolean failedMawb = Objects.equals(mawbStatusLog.getStatus(), AirMessagingLogsConstants.FAILED_STATUS);
+        boolean failedMawb = Objects.equals(mawbStatusLog.getStatus(), AirMessagingStatus.FAILED.name());
         boolean failedHawb = !failedShipmentHawbs.isEmpty();
 
+        if(Objects.equals(mawbStatusLog.getStatus(), AirMessagingStatus.SUCCESS.name())) {
+            fnmStatus = true;
+            if(awbType.equals(Constants.DMAWB))
+                responseStatusMessage.append("FZB submission is accepted");
+            else if(successHawbCount == linkedHawb.size())
+                responseStatusMessage.append("FWB and FZB submissions are accepted");
+        }
 
         // Cases to generate the error Log
         if(!failedMawb && !failedHawb) {
-            return;
         }
         if(failedHawb) {
             // if failedShipmentHawb size > 0 fetch ShipmentID for those shipments
@@ -3328,8 +3348,8 @@ public class AwbService implements IAwbService {
             );
         }
 
+        fnmStatusMessageResponse.setFnmStatus(fnmStatus);
+        fnmStatusMessageResponse.setResponse(responseStatusMessage.toString());
     }
-
-
 
 }

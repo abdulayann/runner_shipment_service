@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import lombok.Builder;
-import lombok.Setter;
+import lombok.*;
 
-@Setter
 @Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class FnmStatusMessageResponse implements IRunnerResponse {
-    String response;
+    private boolean fnmStatus;
+    private String response;
 }

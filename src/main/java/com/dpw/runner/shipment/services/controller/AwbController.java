@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest
 import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
 import com.dpw.runner.shipment.services.dto.response.AwbCalculationResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
+import com.dpw.runner.shipment.services.dto.response.FnmStatusMessageResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
@@ -44,6 +45,7 @@ public class AwbController {
     private class MyResponseClass extends RunnerResponse<AwbResponse>{}
     private class MyListResponseClass extends RunnerListResponse<AwbResponse>{}
     private class AwbCalculationResponseClass extends RunnerResponse<AwbCalculationResponse>{}
+    private class FnmStatusMessageResponseClass extends RunnerResponse<FnmStatusMessageResponse>{}
 
 
     @Autowired
@@ -297,12 +299,13 @@ public class AwbController {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.FNM_STATUS_FETCH_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(response = FnmStatusMessageResponseClass.class, code = 200, message = AwbConstants.FNM_STATUS_FETCH_SUCCESS)})
     @GetMapping(ApiConstants.FNM_STATUS_MESSAGE)
     public ResponseEntity<IRunnerResponse> getFnmStatusMessage(@ApiParam(name = "Shipment Id") @RequestParam Optional<Long> shipmentId, @ApiParam(name = "Consolidation Id") @RequestParam Optional<Long> consolidationId) {
         String responseMsg = "";
         try {
-            return awbService.getFnmStatusMessage(shipmentId, consolidationId);
+            var res = awbService.getFnmStatusMessage(shipmentId, consolidationId);
+            return res;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error getting air messaging logs";
