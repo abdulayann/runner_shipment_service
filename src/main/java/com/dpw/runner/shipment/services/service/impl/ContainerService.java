@@ -1416,8 +1416,8 @@ public class ContainerService implements IContainerService {
             }
             ContainerSummaryResponse response = new ContainerSummaryResponse();
             DecimalFormat decimalFormat = new DecimalFormat("#");
-            response.setTotalPackages(decimalFormat.format(packageCount));
-            response.setTotalContainers(decimalFormat.format(totalContainerCount));
+            response.setTotalPackages(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse));
+            response.setTotalContainers(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(totalContainerCount), 0, v1TenantSettingsResponse));
             response.setTotalWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
             response.setTotalTareWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(tareWeight), v1TenantSettingsResponse), toWeightUnit));
             if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
