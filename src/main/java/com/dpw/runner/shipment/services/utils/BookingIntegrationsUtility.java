@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
+import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
@@ -203,10 +204,10 @@ public class BookingIntegrationsUtility {
                 .business_code(customerBooking.getBusinessCode())
                 .bill_to_party(Arrays.asList(createOrgRequest(customerBooking.getCustomer())))
                 .parent_contract_id(customerBooking.getParentContractId())
-//                .branch_info(ListContractResponse.BranchInfo.builder().
-//                        id(customerBooking.getSalesBranch()).
-//                        opportunity_owner_email_ids(createEmailIds(customerBooking.getPrimarySalesAgentEmail(), customerBooking.getSecondarySalesAgentEmail())).
-//                        build())
+                .branch_info(ListContractResponse.BranchInfo.builder().
+                        id(customerBooking.getSalesBranch()).
+                        opportunity_owner_email_ids(createEmailIds(customerBooking.getPrimarySalesAgentEmail(), customerBooking.getSecondarySalesAgentEmail())).
+                        build())
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
