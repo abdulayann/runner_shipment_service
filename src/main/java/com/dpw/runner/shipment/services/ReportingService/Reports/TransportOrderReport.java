@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOODS_VALUE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Component
@@ -102,12 +102,12 @@ public class TransportOrderReport extends IReport{
         dictionary.put(ReportConstants.INSURANCE_VALUE_CURRENCY, shipmentModel.getInsuranceValueCurrency());
         if(shipmentModel.getPickupDetails() != null && shipmentModel.getPickupDetails().getSourceDetail() != null) {
             PartiesModel pickup = shipmentModel.getPickupDetails().getSourceDetail();
-            dictionary.put(ReportConstants.PICK_UP_ADDRESS, getOrgAddress(pickup));
+            dictionary.put(ReportConstants.PICK_UP_ADDRESS, getFormattedAddress(pickup));
             dictionary.put(ReportConstants.PICKUP_CONTACT, getValueFromMap(pickup.getAddressData(), ReportConstants.CONTACT_PHONE));
         }
         if(shipmentModel.getDeliveryDetails() != null && shipmentModel.getDeliveryDetails().getDestinationDetail() != null) {
             PartiesModel delivery = shipmentModel.getDeliveryDetails().getDestinationDetail();
-            dictionary.put(ReportConstants.DELIVERY_ADDRESS, getOrgAddress(delivery));
+            dictionary.put(ReportConstants.DELIVERY_ADDRESS, getFormattedAddress(delivery));
             dictionary.put(ReportConstants.DELIVERY_CONTACT, getValueFromMap(delivery.getAddressData(), ReportConstants.CONTACT_PHONE));
         }
         try { dictionary.put(ReportConstants.EXPORT_BROKER, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}

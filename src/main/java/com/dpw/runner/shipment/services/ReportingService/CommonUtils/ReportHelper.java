@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -29,6 +30,47 @@ public class ReportHelper {
             else
                 return city + " " + country;
         }
+    }
+
+    public static String getFormattedAddress(PartiesModel partiesModel) {
+        if(partiesModel == null || partiesModel.getAddressData() == null)
+            return null;
+        String response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.COMPANY_NAME, null);
+        response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.ADDRESS1, response);
+        response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.ADDRESS2, response);
+        String temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.CITY, null);
+        temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.STATE, temp);
+        temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.COUNTRY, temp);
+        temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIPCODE, temp);
+        if(!CommonUtils.IsStringNullOrEmpty(temp)) {
+            if(response == null)
+                response = temp;
+            else
+                response = response + "\n" + temp;
+        }
+        return response;
+    }
+
+    public static String getNextLineAddress(Map<String, Object> map, String key, String response) {
+        String x = getValueFromMap(map, key);
+        if(!CommonUtils.IsStringNullOrEmpty(x)){
+            if(response == null)
+                response = x;
+            else
+                response = response + "\n" + x;
+        }
+        return response;
+    }
+
+    public static String getCommaSeparatedAddress(Map<String, Object> map, String key, String response) {
+        String x = getValueFromMap(map, key);
+        if(!CommonUtils.IsStringNullOrEmpty(x)){
+            if(response == null)
+                response = x;
+            else
+                response = response + ", " + x;
+        }
+        return response;
     }
 
     public static List<String> getOrgAddressWithPhoneEmail(String name, String address1, String address2, String city_country, String email, String phone, String pincode)
