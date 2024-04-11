@@ -185,7 +185,7 @@ public class ShipmentCANReport extends IReport {
         if(shipmentCANModel.shipmentDetails.getVolume() != null)
             dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format(REGEX_S_S_PATTERN, ConvertToVolumeNumberFormat(shipmentCANModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), shipmentCANModel.shipmentDetails.getVolumeUnit()));
         dictionary.put(ReportConstants.MARKS_AND_NUMBER, shipmentCANModel.shipmentDetails.getMarksNum());
-        dictionary.put(ReportConstants.NO_OF_PACKAGES, ReportHelper.addCommaWithoutDecimal(shipmentCANModel.shipmentDetails.getNoOfPacks() == null ? BigDecimal.ZERO : BigDecimal.valueOf(shipmentCANModel.shipmentDetails.getNoOfPacks())));
+        dictionary.put(ReportConstants.NO_OF_PACKAGES, GetDPWWeightVolumeFormat(shipmentCANModel.shipmentDetails.getNoOfPacks() == null ? BigDecimal.ZERO : BigDecimal.valueOf(shipmentCANModel.shipmentDetails.getNoOfPacks()), 0, v1TenantSettingsResponse));
         if(shipmentCANModel.consolidationModel != null && shipmentCANModel.consolidationModel.getPayment() != null) {
             dictionary.put(FREIGHT, shipmentCANModel.consolidationModel.getPayment());
         }
@@ -217,7 +217,8 @@ public class ShipmentCANReport extends IReport {
                         BigDecimal count = BigDecimal.ONE;
                         if (split != null && !split[0].equals("null"))
                             count = new BigDecimal(split[0]);
-                        v.put(TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
+//                        v.put(TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
+                        v.put(TOTAL_UNIT_COUNT, GetDPWWeightVolumeFormat(count, 0, v1TenantSettingsResponse));
                     }
                 }
 

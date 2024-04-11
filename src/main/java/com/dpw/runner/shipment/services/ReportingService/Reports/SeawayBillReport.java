@@ -92,7 +92,7 @@ public class SeawayBillReport extends IReport {
                 if (v.get(NET_WEIGHT) != null && v.get(NET_WEIGHT).toString() != null)
                     v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
                 if (v.get(NOOF_PACKAGES) != null && v.get(NOOF_PACKAGES).toString() != null)
-                    v.put(NOOF_PACKAGES, addCommaWithoutDecimal((BigDecimal) v.get(NOOF_PACKAGES)));
+                    v.put(NOOF_PACKAGES, GetDPWWeightVolumeFormat((BigDecimal) v.get(NOOF_PACKAGES), 0, v1TenantSettingsResponse));
                 if (v.get(GROSS_VOLUME_ALIAS) != null && v.get(GROSS_VOLUME_ALIAS).toString() != null)
                     v.put(GROSS_VOLUME_ALIAS, addCommas(v.get(GROSS_VOLUME_ALIAS).toString()));
                 if (v.get(BL_GROSS_VOLUME_ALIAS) != null && v.get(BL_GROSS_VOLUME_ALIAS).toString() != null)
