@@ -77,7 +77,6 @@ public class Awb extends MultiTenancy {
     @Column(name = "consolidation_id")
     private Long consolidationId;
 
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "is_air_messaging_status")
-//    private AwbStatus isAirMessagingSent;
+//    @Column(name = "is_air_messaging_sent")
+//    private Boolean isAirMessagingSent;
 }
