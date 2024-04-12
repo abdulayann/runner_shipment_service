@@ -1560,7 +1560,7 @@ public class AwbService implements IAwbService {
         Awb awb = awbOptional.get();
         UUID awbGuid = awb.getGuid();
         Long awbId = awb.getId();
-        var isAirMessagingSent = awb.getIsAirMessagingSent();
+        var isAirMessagingSent = false; //awb.getIsAirMessagingSent();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
@@ -1607,7 +1607,7 @@ public class AwbService implements IAwbService {
                 }
                 else awb = generateAwb(createAwbRequest);
                 awb.setGuid(awbGuid);
-                awb.setIsAirMessagingSent(isAirMessagingSent);
+//                awb.setIsAirMessagingSent(isAirMessagingSent);
                 break;
             }
             case AWB_ROUTING: {
