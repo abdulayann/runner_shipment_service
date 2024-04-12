@@ -1562,7 +1562,7 @@ public class ShipmentService implements IShipmentService {
         return syncConsole;
     }
 
-    private void validateBeforeSave(ShipmentDetails shipmentDetails) {
+    private void validateBeforeSave(ShipmentDetails shipmentDetails) throws RunnerException {
         if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
             if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
                 shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
@@ -1583,6 +1583,25 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(console)));
             }
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
+        }
+
+        Parties consignor = shipmentDetails.getConsigner();
+        if(consignor != null && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
+            OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(new ArrayList<>(Arrays.asList(shipmentDetails.getConsigner())));
+            if(orgAddressResponse != null) {
+                Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+                if (addressMap.containsKey(consignor.getOrgCode() + "#" + consignor.getAddressCode())) {
+                    Map<String, Object> addressConsignorAgent = addressMap.get(consignor.getOrgCode() + "#" + consignor.getAddressCode());
+                    if(addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
+                        var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
+                        if(rakcType != null && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
+                                shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
+                                shipmentDetails.getSecurityStatus() == null)) {
+                            throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
+                        }
+                    }
+                }
+            }
         }
     }
     public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole) throws RunnerException {
