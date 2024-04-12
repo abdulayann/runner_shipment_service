@@ -111,7 +111,8 @@ import static com.dpw.runner.shipment.services.commons.constants.ConsolidationCo
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @SuppressWarnings("ALL")
 @Service
@@ -2263,9 +2264,17 @@ public class ConsolidationService implements IConsolidationService {
                 Pair<Specification<ShipmentDetails>, Pageable> pair1 = fetchData(listReq, ShipmentDetails.class);
                 Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair1.getLeft(), pair1.getRight());
                 var map = shipmentDetailsPage.getContent().stream().collect(toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
+                List<ContainerResponse> containers = consolidationDetailsResponse.getContainersList();
+                Map<Long, ContainerResponse> contMap = new HashMap<>();
+                if(containers != null)
+                    contMap = containers.stream().collect(Collectors.toMap(ContainerResponse::getId, Function.identity()));
+                Map<Long, ContainerResponse> finalContMap = contMap;
                 truckDriverDetails.forEach(truckDriverDetail -> {
                     var details = jsonHelper.convertValue(truckDriverDetail, TruckDriverDetailsResponse.class);
                     details.setShipmentNumber(map.get(truckDriverDetail.getShipmentId()));
+                    if(details.getContainerId() != null && finalContMap.containsKey(details.getContainerId())) {
+                        details.setContainerNumber(finalContMap.get(details.getContainerId()).getContainerNumber());
+                    }
                     truckingInfo.add(details);
                 });
             }
@@ -2831,13 +2840,6 @@ public class ConsolidationService implements IConsolidationService {
                 Page<ReferenceNumbers> oldReferenceNumbers = referenceNumbersDao.findAll(pair.getLeft(), pair.getRight());
                 List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id, oldReferenceNumbers.stream().toList());
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
-            }
-            if (truckDriverDetailsRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, entity.getId(), "=");
-                Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
-                Page<TruckDriverDetails> oldTruckDriverDetails = truckDriverDetailsDao.findAll(pair.getLeft(), pair.getRight());
-                List<TruckDriverDetails> updatedReferenceNumbers = truckDriverDetailsDao.updateEntityFromConsole(convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class), id, oldTruckDriverDetails.stream().toList());
-//                entity.setTruckDriverDetails(updatedReferenceNumbers);
             }
             if (routingsRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, entity.getId(), "=");
