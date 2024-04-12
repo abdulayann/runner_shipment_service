@@ -41,7 +41,7 @@ public class ReportHelper {
         String temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.CITY, null);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.STATE, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.COUNTRY, temp);
-        temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIPCODE, temp);
+        temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIP_POST_CODE, temp);
         if(!CommonUtils.IsStringNullOrEmpty(temp)) {
             if(response == null)
                 response = temp;
