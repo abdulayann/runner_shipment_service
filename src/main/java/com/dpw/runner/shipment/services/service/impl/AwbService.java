@@ -1071,6 +1071,7 @@ public class AwbService implements IAwbService {
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
         boolean syncShipment = false;
         if(StringUtility.isEmpty(shipmentDetails.getHouseBill())) {
+            if(!(Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()) && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode())))
             shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
             shipmentDao.save(shipmentDetails, false);
             syncShipment = true;
@@ -1107,7 +1108,7 @@ public class AwbService implements IAwbService {
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
         // generate Awb Entity
         Awb awb = Awb.builder()
-                .awbNumber(shipmentDetails.getHouseBill())
+                .awbNumber(request.getAwbType().equals(Constants.DMAWB) ? shipmentDetails.getMasterBill() : shipmentDetails.getHouseBill())
                 .awbShipmentInfo(generateAwbShipmentInfo(shipmentDetails, request, awbCargoInfo))
                 .awbNotifyPartyInfo(generateAwbNotifyPartyinfo(shipmentDetails, request))
                 .awbRoutingInfo(generateAwbRoutingInfo(shipmentDetails, request))
@@ -1125,7 +1126,7 @@ public class AwbService implements IAwbService {
         AwbShipmentInfo awbShipmentInfo = new AwbShipmentInfo();
         awbShipmentInfo.setEntityId(shipmentDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
-        awbShipmentInfo.setAwbNumber(shipmentDetails.getHouseBill());
+        awbShipmentInfo.setAwbNumber(request.getAwbType().equals(Constants.DMAWB) ? shipmentDetails.getMasterBill() : shipmentDetails.getHouseBill());
         var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getOrgData() != null ? shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME): "");
         awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
         var shipperAddress = AwbUtility.constructAddress(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null);
