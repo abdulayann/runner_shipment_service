@@ -2238,10 +2238,10 @@ public class ConsolidationService implements IConsolidationService {
             log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONSOLE_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
             var awb = awbDao.findByConsolidationId(consolidationDetailsResponse.getId());
             if(awb != null && !awb.isEmpty()){
-                if(Boolean.TRUE.equals(awb.get(0).getIsAirMessagingSent()))
-                    consolidationDetailsResponse.setAwbStatus(AwbStatus.AIR_MESSAGE_SENT);
-                else
-                    consolidationDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
+//                if(Boolean.TRUE.equals(awb.get(0).getIsAirMessagingSent()))
+//                    consolidationDetailsResponse.setAwbStatus(AwbStatus.AIR_MESSAGE_SENT);
+//                else
+//                    consolidationDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
             }
             if (Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA))
                 fetchTruckerInfo(consolidationDetails.getId(), consolidationDetailsResponse);
