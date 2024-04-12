@@ -2129,5 +2129,108 @@
     "transportPortId": {
       "tenantId": 908
     }
+  },
+  "NEW_JOB" : {
+    "additionalTerms": "string",
+    "buyerDetail": {
+      "addressCode": "string",
+      "addressData": {},
+      "entityId": 0,
+      "entityType": "string",
+      "isAddressFreeText": true,
+      "orgCode": "string",
+      "orgData": {},
+      "tenantId": 0,
+      "type": "string"
+    },
+    "buyerId": 0,
+    "confirmDate": "2024-04-10T09:15:50.448Z",
+    "confirmNumber": "string",
+    "consolidationId": 0,
+    "description": "string",
+    "eventsList": [
+      {
+        "actual": "2024-04-10T09:15:50.448Z",
+        "description": "string",
+        "entityId": 0,
+        "entityType": "string",
+        "estimated": "2024-04-10T09:15:50.448Z",
+        "eventCode": "string",
+        "event_estimate_update_reasons": "string",
+        "isPublicTrackingEvent": true,
+        "latitude": "string",
+        "longitude": "string",
+        "partial": "string",
+        "pieces": 0,
+        "placeDescription": "string",
+        "placeName": "string",
+        "receivedDate": "2024-04-10T09:15:50.448Z",
+        "scheduledDate": "2024-04-10T09:15:50.448Z",
+        "source": "string",
+        "status": "string",
+        "tenantId": 0,
+        "totalPieces": 0,
+        "totalWeight": 0,
+        "weight": 0
+      }
+    ],
+    "followUpDate": "2024-04-10T09:15:50.448Z",
+    "incoTerm": "string",
+    "invoiceDate": "2024-04-10T09:15:50.448Z",
+    "invoiceNumber": "string",
+    "orderDate": "2024-04-10T09:15:50.448Z",
+    "orderNumber": "string",
+    "serviceMode": "string",
+    "shipmentId": 1,
+    "supplierDetail": {
+      "addressCode": "string",
+      "addressData": {},
+      "entityId": 0,
+      "entityType": "string",
+      "isAddressFreeText": true,
+      "orgCode": "string",
+      "orgData": {},
+      "tenantId": 0,
+      "type": "string"
+    },
+    "transportMode": "SEA"
+  },
+  "MAWB_STOCK_LINK" : {
+    "parentId": 123456,
+    "mawbNumber": "ABC123456789",
+    "status": "Unused",
+    "seqNumber": "001",
+    "entityType": "Cargo",
+    "entityId": 987654321,
+    "shipConsNumber": "XYZ987654321"
+  },
+  "STOCK_DATA" : {
+    "consolidationId": 123456,
+    "mawbNumber": "ABC123",
+    "nextMawbNumber": "DEF456",
+    "availableCount": "10",
+    "status": "available",
+    "homePort": "XYZ",
+    "airLinePrefix": "ABC",
+    "prefix": "123",
+    "seqNumber": "456",
+    "count": "20",
+    "startNumber": 1000,
+    "from": "Origin",
+    "to": "Destination",
+    "borrowedFrom": "Borrower",
+    "borrowedFromFullName": "Borrower Name",
+    "mawbStocksLinkRows": [
+      {
+        "id": 1,
+        "parentId": 123456,
+        "details": "Details 1"
+      },
+      {
+        "id": 2,
+        "parentId": 123456,
+        "details": "Details 2"
+      }
+    ]
   }
 }

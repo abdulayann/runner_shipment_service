@@ -119,4 +119,16 @@ public class JsonTestUtility {
     public ArrivalDepartureDetails getTestArrivalDepartureDetails() {
         return objectMapper.convertValue(payload.get("NEW_ARRIVAL_DEPART_DETAIL") , ArrivalDepartureDetails.class);
     }
+
+    public Jobs getTestJob() {
+        return objectMapper.convertValue(payload.get("NEW_JOB") , Jobs.class);
+    }
+
+    public MawbStocksLink getTestMawbStocksLink() {
+        return objectMapper.convertValue(payload.get("MAWB_STOCK_LINK") , MawbStocksLink.class);
+    }
+
+    public MawbStocks getTestStockData() {
+        return objectMapper.convertValue(payload.get("STOCK_DATA"), MawbStocks.class);
+    }
 }
