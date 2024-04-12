@@ -86,6 +86,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -1923,7 +1924,6 @@ public class ShipmentService implements IShipmentService {
 
             //Filling the data
             List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoList(shipmentDetailsPage.getContent());
-            masterDataUtils.setLocationData(shipmentListResponseData, EntityTransferConstants.LOCATION_SERVICE_GUID);
             for (int i = 0; i < shipmentListResponseData.size(); i++) {
                 Row itemRow = sheet.createRow(i + 1);
                 ShipmentListResponse shipment = (ShipmentListResponse) shipmentListResponseData.get(i);
@@ -2041,8 +2041,10 @@ public class ShipmentService implements IShipmentService {
             response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
             response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
-            try (OutputStream outputStream = response.getOutputStream()) {
+            try (OutputStream outputStream = new BufferedOutputStream(response.getOutputStream(), 8192 * 10)) {
                 workbook.write(outputStream);
+            } catch (IOException e) {
+                log.error("Time out " + e.getMessage());
             }
         }
 
