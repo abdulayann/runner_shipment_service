@@ -1094,7 +1094,8 @@ public class AwbService implements IAwbService {
         }
         List<AwbSpecialHandlingCodesMappingInfo> sph = null;
         if(!Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getEfreightStatus())
-            && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAW")) {
+            && (shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAW") ||
+                (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAP")))) {
             sph = Arrays.asList(AwbSpecialHandlingCodesMappingInfo
                     .builder()
                     .shcId(shipmentDetails.getAdditionalDetails().getEfreightStatus())
