@@ -46,7 +46,7 @@ public class ReportHelper {
             if(response == null)
                 response = temp;
             else
-                response = response + ",\n" + temp;
+                response = response + "\n" + temp;
         }
         return response;
     }
@@ -57,7 +57,7 @@ public class ReportHelper {
             if(response == null)
                 response = x;
             else
-                response = response + ",\n" + x;
+                response = response + "\n" + x;
         }
         return response;
     }
