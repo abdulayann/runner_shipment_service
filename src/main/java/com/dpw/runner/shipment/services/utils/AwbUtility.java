@@ -248,7 +248,7 @@ public class AwbUtility {
         if (shipmentDetails.getCarrierDetails().getId() == null) {
             throw new ValidationException("Carrier is required in shipment to generate the document.");
         }
-        if (Objects.equals(shipmentDetails.getShipmentType(), ShipmentConstants.SHIPMENT_TYPE_DRT) && (shipmentDetails.getMasterBill() == null || shipmentDetails.getMasterBill().isBlank())) {
+        if (Objects.equals(shipmentDetails.getJobType(), ShipmentConstants.SHIPMENT_TYPE_DRT) && (shipmentDetails.getMasterBill() == null || shipmentDetails.getMasterBill().isBlank())) {
             throw new ValidationException("MAWB Number is required in shipment to generate the document.");
         }
         if (shipmentDetails.getHouseBill() == null || shipmentDetails.getHouseBill().isBlank()) {
