@@ -1536,6 +1536,12 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.getCarrierDetails().setShippingLine(consolidationDetails1.getCarrierDetails().getShippingLine());
                 shipmentDetails.getCarrierDetails().setAircraftType(consolidationDetails1.getCarrierDetails().getAircraftType());
             }
+            var console = shipmentDetails.getConsolidationList().get(0);
+            List<Awb> awb = awbDao.findByConsolidationId(console.getId());
+            if(awb != null && !awb.isEmpty() && awb.get(0).getAirMessageStatus() != null && (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT) ||
+                    Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS))) {
+                throw new RunnerException("FWB & FZB are already submitted and further modifications are prohibited for given console.");
+            }
         }
 
         if(!isCreate){
