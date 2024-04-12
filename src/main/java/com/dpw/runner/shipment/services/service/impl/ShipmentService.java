@@ -3152,8 +3152,10 @@ public class ShipmentService implements IShipmentService {
                 map = containers.stream().collect(Collectors.toMap(ContainerResponse::getId, Function.identity()));
             setContainersPacksAutoUpdateData(shipmentDetailsResponse, map);
             setTruckDriverDetailsData(shipmentDetailsResponse, map);
-            shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
-            shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
+            if(!Objects.isNull(shipmentDetails)) {
+                shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
+                shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
+            }
             try {
                 if(shipmentDetailsResponse.getId() != null) {
                     var awb = awbDao.findByShipmentId(shipmentDetailsResponse.getId());
@@ -3167,13 +3169,17 @@ public class ShipmentService implements IShipmentService {
                 if(!shipmentDetailsResponse.getAdditionalDetails().getIsSummaryUpdated())
                     shipmentDetailsResponse.getAdditionalDetails().setSummary(shipmentDetailsResponse.getContainerSummary().getSummary());
             } catch (Exception e) {}
-            List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
-            if(!Objects.isNull(consolidationList) && !consolidationList.isEmpty()){
-                List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationList.get(0).getId());
-                if(!Objects.isNull(consoleShipmentMappings) && !consoleShipmentMappings.isEmpty())
-                    shipmentDetailsResponse.setShipmentCount((long) consoleShipmentMappings.size());
-                else
+            if(!Objects.isNull(shipmentDetails)) {
+                List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+                if(!Objects.isNull(consolidationList) && !consolidationList.isEmpty()){
+                    List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationList.get(0).getId());
+                    if(!Objects.isNull(consoleShipmentMappings) && !consoleShipmentMappings.isEmpty())
+                        shipmentDetailsResponse.setShipmentCount((long) consoleShipmentMappings.size());
+                    else
+                        shipmentDetailsResponse.setShipmentCount(0L);
+                } else {
                     shipmentDetailsResponse.setShipmentCount(0L);
+                }
             } else {
                 shipmentDetailsResponse.setShipmentCount(0L);
             }
@@ -3476,7 +3482,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private CompletableFuture<ShipmentBillingListResponse> addBillData(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        if (Objects.isNull(TenantSettingsDetailsContext.getCurrentTenantSettings()) || Boolean.TRUE.equals(TenantSettingsDetailsContext.getCurrentTenantSettings().getBillingServiceV2Enabled()))
+        if (Objects.isNull(shipmentDetails) || Objects.isNull(TenantSettingsDetailsContext.getCurrentTenantSettings()) || Boolean.TRUE.equals(TenantSettingsDetailsContext.getCurrentTenantSettings().getBillingServiceV2Enabled()))
             return CompletableFuture.completedFuture(null);
         ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
                 .guidsList(List.of(shipmentDetails.getGuid())).build();
