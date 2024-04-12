@@ -614,7 +614,9 @@ public class HawbReport extends IReport{
             }
         }
 
-        populateRaKcData(dictionary, hawbModel.shipmentDetails);
+        if(!Objects.equals(hawbModel.shipmentDetails, null)) {
+            populateRaKcData(dictionary, hawbModel.shipmentDetails);
+        }
 
         return dictionary;
     }
