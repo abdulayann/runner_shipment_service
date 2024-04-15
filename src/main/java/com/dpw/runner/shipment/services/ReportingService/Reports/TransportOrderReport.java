@@ -111,7 +111,9 @@ public class TransportOrderReport extends IReport{
             dictionary.put(ReportConstants.DELIVERY_CONTACT, getValueFromMap(delivery.getAddressData(), ReportConstants.CONTACT_PHONE));
         }
         try { dictionary.put(ReportConstants.EXPORT_BROKER, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
+        try { dictionary.put(ReportConstants.EXPORT_BROKER_CONTACT, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getAddressData(), ReportConstants.CONTACT_PHONE)); } catch (Exception ignored) {}
         try { dictionary.put(ReportConstants.IMPORT_BROKER, getValueFromMap(shipmentModel.getDeliveryDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
+        try { dictionary.put(ReportConstants.IMPORT_BROKER_CONTACT, getValueFromMap(shipmentModel.getDeliveryDetails().getBrokerDetail().getAddressData(), ReportConstants.CONTACT_PHONE)); } catch (Exception ignored) {}
         return dictionary;
     }
 }
