@@ -128,7 +128,14 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("MAWB_STOCK_LINK") , MawbStocksLink.class);
     }
 
+    public MawbStocks getTestMawbStocks(){
+        return objectMapper.convertValue(payload.get("MAWB_STOCK"), MawbStocks.class);
+    }
     public MawbStocks getTestStockData() {
         return objectMapper.convertValue(payload.get("STOCK_DATA"), MawbStocks.class);
+    }
+
+    public IntegrationResponse getTestIntegrationResponse() {
+        return objectMapper.convertValue(payload.get("INTEGRATION_PAYLOAD"), IntegrationResponse.class);
     }
 }

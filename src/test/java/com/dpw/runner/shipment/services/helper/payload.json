@@ -2232,5 +2232,12 @@
         "details": "Details 2"
       }
     ]
+  },
+  "INTEGRATION_PAYLOAD" : {
+    "entityId": 12345,
+    "entityType": "Product",
+    "integrationType": "PLATFORM_CREATE_BOOKING",
+    "status": "SUCCESS",
+    "response_message": "{\n      \"message\": \"Integration successful\",\n      \"data\": {\n        \"productId\": \"P123\",\n        \"productName\": \"Sample Product\"\n      }\n    }"
   }
 }

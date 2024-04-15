@@ -5,13 +5,14 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
-import com.dpw.runner.shipment.services.entity.MawbStocksLink;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.mockito.MockitoAnnotations;
@@ -39,17 +40,13 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestPropertySource("classpath:application-test.properties")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-class MawbStocksLinkDaoTest {
-
-    @Autowired
-    private IMawbStocksLinkDao dao;
-
-    @Autowired
-    private IMawbStocksDao mawbStocksDao;
+class MawbStocksDaoTest {
 
     private static JsonTestUtility jsonTestUtility;
-    private static MawbStocksLink testData;
-    private static MawbStocks testSockData;
+    private static MawbStocks testData;
+
+    @Autowired
+    private IMawbStocksDao dao;
     @Container
     private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
 
@@ -78,8 +75,7 @@ class MawbStocksLinkDaoTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         TenantContext.setCurrentTenant(1);
-        testData = jsonTestUtility.getTestMawbStocksLink();
-        testSockData = jsonTestUtility.getTestStockData();
+        testData = jsonTestUtility.getTestStockData();
         var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
         PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
         UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
@@ -94,8 +90,6 @@ class MawbStocksLinkDaoTest {
 
     @Test
     void save() {
-        var r = mawbStocksDao.save(testSockData);
-        testData.setParentId(r.getId());
         var result = dao.save(testData);
         assertNotNull(result);
         assertNotNull(result.getId());
@@ -103,55 +97,39 @@ class MawbStocksLinkDaoTest {
 
     @Test
     void findAll() {
-        var r = mawbStocksDao.save(testSockData);
-        testData.setParentId(r.getId());
-        testData.setStatus("test");
-        var result = dao.save(testData);
-        Specification<MawbStocksLink> spec = (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.equal(root.get("status"), "test");
+        testData.setStatus("TEST_STATUS");
+        dao.save(testData);
+        Specification<MawbStocks> spec = (root, query, criteriaBuilder) -> {
+            return criteriaBuilder.equal(root.get("status"), "TEST_STATUS");
         };
-        var jobs = dao.findAll(spec, PageRequest.of(0 , 10));
-        assertFalse(jobs.isEmpty());
-        assertEquals(jobs.stream().toList().get(0).getStatus(), result.getStatus());
-    }
-
-    @Test
-    void findByMawbNumber() {
-        final String MAWB_NUM = "TEST";
-        var r = mawbStocksDao.save(testSockData);
-        testData.setMawbNumber(MAWB_NUM);
-        testData.setParentId(r.getId());
-        dao.save(testData);
-        var result = dao.findByMawbNumber(MAWB_NUM);
-        assertNotNull(result);
+        var result = dao.findAll(spec, PageRequest.of(0 , 10));
         assertFalse(result.isEmpty());
-        assertTrue(result.get(0).getMawbNumber().equals(MAWB_NUM));
+        assertEquals("TEST_STATUS", result.stream().toList().get(0).getStatus());
     }
 
     @Test
-    void deleteByParentId() {
-        final String MAWB_NUM = "TEST";
-        var r = mawbStocksDao.save(testSockData);
-        testData.setMawbNumber(MAWB_NUM);
-        testData.setParentId(r.getId());
-        dao.save(testData);
-        dao.deleteByParentId(testData.getParentId());
-        var result = dao.findByMawbNumber(testData.getMawbNumber());
+    void findById() {
+        var savedMawbStock = dao.save(testData);
+        var result = dao.findById(savedMawbStock.getId());
+        assertNotNull(result);
+        assertEquals(savedMawbStock.getId(), result.get().getId());
+    }
+
+    @Test
+    void delete() {
+        testData.setMawbStocksLinkRows(null);
+        var savedMawbStock = dao.save(testData);
+        dao.delete(savedMawbStock);
+        var result = dao.findById(savedMawbStock.getId());
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
 
     @Test
-    void deLinkExistingMawbStockLink() {
-        var r = mawbStocksDao.save(testSockData);
-        testData.setParentId(r.getId());
-        String mawbNumber = "ABC123456789";
-        dao.save(testData);
-        dao.deLinkExistingMawbStockLink(mawbNumber);
-        var result = dao.findByMawbNumber(mawbNumber);
+    void findByGuid() {
+        var savedStockData = dao.save(testData);
+        var result = dao.findByGuid(savedStockData.getGuid());
         assertNotNull(result);
-        assertNull(result.get(0).getEntityId());
-        assertNull(result.get(0).getEntityType());
+        assertTrue(result.isPresent());
     }
-
 }
