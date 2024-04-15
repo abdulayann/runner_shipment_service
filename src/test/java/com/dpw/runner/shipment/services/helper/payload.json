@@ -2239,5 +2239,18 @@
     "integrationType": "PLATFORM_CREATE_BOOKING",
     "status": "SUCCESS",
     "response_message": "{\n      \"message\": \"Integration successful\",\n      \"data\": {\n        \"productId\": \"P123\",\n        \"productName\": \"Sample Product\"\n      }\n    }"
+  },
+  "ELDETAILS" : {
+    "shipmentId": 987654,
+    "elNumber": "EL123456789",
+    "packages": 3,
+    "unit": "box",
+    "weight": 25.5,
+    "weightUnit": "kg",
+    "mergePackages": 2,
+    "mergePackageUnit": "box",
+    "partition": false,
+    "partitionSeqNumber": null
   }
+
 }

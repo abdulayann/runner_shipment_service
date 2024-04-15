@@ -138,4 +138,8 @@ public class JsonTestUtility {
     public IntegrationResponse getTestIntegrationResponse() {
         return objectMapper.convertValue(payload.get("INTEGRATION_PAYLOAD"), IntegrationResponse.class);
     }
+
+    public ELDetails getTestELDetails() {
+        return objectMapper.convertValue(payload.get("ELDETAILS") , ELDetails.class);
+    }
 }
