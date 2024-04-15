@@ -263,6 +263,15 @@ public class ShipmentDao implements IShipmentDao {
             }
         }
 
+        // Origin and Destinations are mandatory
+        if(request.getCarrierDetails() == null || IsStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || IsStringNullOrEmpty(request.getCarrierDetails().getDestination()))
+            errors.add("Origin and Destination fields are mandatory.");
+
+        // POL and POD are mandatory for Sea and Air
+        if( ( Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) ) &&
+                (request.getCarrierDetails() == null || IsStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) || IsStringNullOrEmpty(request.getCarrierDetails().getDestinationPort()) ))
+            errors.add("POL and POD fields are mandatory.");
+
         // Container Number can not be repeated
         if (request.getContainersList() != null && request.getContainersList().size() > 0) {
             HashSet<String> hashSet = new HashSet<>();
