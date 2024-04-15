@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -164,9 +165,11 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Size(max=10, message = "max size is 10 for smtp_igm_number")
     @Column(name = "smtp_igm_number")
+    @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
 
     @Column(name = "smtp_igm_date")
+    @JsonProperty("SMTPIGMDate")
     private LocalDateTime SMTPIGMDate;
 
     @Column(name = "is_inland")
