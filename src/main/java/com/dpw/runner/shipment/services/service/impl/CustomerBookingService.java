@@ -952,7 +952,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .originPort(request.getOriginPort())
                 .destinationPort(request.getDestinationPort())
                 .shippingLine(request.getShippingLine())
-                .vessel(request.getVessel())
+                .vessel(request.getVessel()) // convert vessel name to vessel guid
                 .voyage(request.getVoyage())
                 .build();
 

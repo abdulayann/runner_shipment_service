@@ -167,7 +167,7 @@ public class HblReport extends IReport{
         {
             String vessel = bookingCarriage.getVessel();
             List<Object> vesselCriteria = Arrays.asList(
-                    Arrays.asList("Mmsi"),
+                    Arrays.asList(Constants.VESSEL_GUID_V1),
                     "=",
                     vessel
             );

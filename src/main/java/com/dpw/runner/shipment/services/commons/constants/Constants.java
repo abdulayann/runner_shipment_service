@@ -335,6 +335,7 @@ public class Constants {
     public static final String FLIGHT_NUMBER = "flightNumber";
     public static final String SHIPPING_LINE = "shippingLine";
     public static final String VESSEL = "vessel";
+    public static final String VESSEL_GUID_V1 = "Guid";
     public static final String VOYAGE = "voyage";
     public static final String ORIGIN_PORT = "originPort";
     public static final String DESTINATION_PORT = "destinationPort";
