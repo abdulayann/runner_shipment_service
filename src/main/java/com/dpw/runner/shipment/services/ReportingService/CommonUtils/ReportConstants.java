@@ -191,8 +191,10 @@ public class ReportConstants {
     public static final String CLIENT = "Client";
     public static final String CLIENT_NAME = "ClientName";
     public static final String EXPORT_BROKER = "ExportBroker";
+    public static final String EXPORT_BROKER_CONTACT = "ExportBrokerContact";
     public static final String EXPORT_REFERENCE_NUMBER = "ExportReferenceNumber";
     public static final String IMPORT_BROKER = "ImportBroker";
+    public static final String IMPORT_BROKER_CONTACT = "ImportBrokerContact";
     public static final String CONSIGNEE_LOCAL_NAME = "ConsigneeLocalName";
     public static final String CONSIGNER_LOCAL_NAME = "ConsignerLocalName";
     public static final String NOTIFY_PARTY_NAME = "NotifyPartyName";
