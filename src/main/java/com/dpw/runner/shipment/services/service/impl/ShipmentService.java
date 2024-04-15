@@ -3629,7 +3629,7 @@ public class ShipmentService implements IShipmentService {
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 
-            if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()))
+            if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()) && !Constants.SHIPMENT_TYPE_DRT.equals(cloneShipmentDetails.getJobType()))
                 cloneShipmentDetails.setHouseBill(generateCustomHouseBL(null));
 
             CommonRequestModel requestModel = CommonRequestModel.buildRequest(cloneShipmentDetails);
