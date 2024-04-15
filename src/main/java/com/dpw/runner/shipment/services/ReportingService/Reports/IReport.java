@@ -2393,7 +2393,7 @@ public abstract class IReport {
                 String failedChargeType = String.join(" ,", chargeTypesWithoutTranslation);
                 errorMessage.append(String.format("Translation not available for Charge codes : %s", failedChargeType));
             }
-            if(errorMessage.length() == 0) {
+            if(errorMessage.length() != 0) {
                 throw new ValidationException(errorMessage.toString());
             }
         }
