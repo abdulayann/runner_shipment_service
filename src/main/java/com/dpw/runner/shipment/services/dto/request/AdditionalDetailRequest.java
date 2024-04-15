@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -57,7 +58,9 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Long lineNumber;
     private Long subLineNumber;
     private Long localLineNumber;
+    @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
+    @JsonProperty("SMTPIGMDate")
     private LocalDateTime SMTPIGMDate;
     private Boolean isInland;
     private Ownership ownership;
