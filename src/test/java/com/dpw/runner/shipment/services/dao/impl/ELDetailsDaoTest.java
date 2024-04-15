@@ -4,14 +4,16 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IELDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.MawbStocks;
-import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.mockito.MockitoAnnotations;
@@ -39,17 +41,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestPropertySource("classpath:application-test.properties")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-class MawbStocksLinkDaoTest {
+class ELDetailsDaoTest {
 
     @Autowired
-    private IMawbStocksLinkDao dao;
-
-    @Autowired
-    private IMawbStocksDao mawbStocksDao;
+    private IELDetailsDao dao;
 
     private static JsonTestUtility jsonTestUtility;
-    private static MawbStocksLink testData;
-    private static MawbStocks testSockData;
+    private static ELDetails testData;
+
     @Container
     private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
 
@@ -78,8 +77,7 @@ class MawbStocksLinkDaoTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         TenantContext.setCurrentTenant(1);
-        testData = jsonTestUtility.getTestMawbStocksLink();
-        testSockData = jsonTestUtility.getTestStockData();
+        testData = jsonTestUtility.getTestELDetails();
         var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
         PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
         UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
@@ -94,65 +92,85 @@ class MawbStocksLinkDaoTest {
 
     @Test
     void save() {
-        var r = mawbStocksDao.save(testSockData);
-        testData.setParentId(r.getId());
         var result = dao.save(testData);
         assertNotNull(result);
         assertNotNull(result.getId());
     }
 
     @Test
+    void saveAll() {
+        var result = dao.saveAll(List.of(testData));
+        assertNotNull(result);
+        assertNotNull(result.get(0).getId());
+    }
+
+    @Test
+    void findByGuid() {
+        var savedDetails = dao.save(testData);
+        assertNotNull(savedDetails);
+        var result = dao.findByGuid(savedDetails.getGuid());
+        assertNotNull(result);
+        assertTrue(result.isPresent());
+        assertEquals(result.get().getId(), savedDetails.getId());
+    }
+
+    @Test
     void findAll() {
-        var r = mawbStocksDao.save(testSockData);
-        testData.setParentId(r.getId());
-        testData.setStatus("test");
+        testData.setShipmentId(1L);
         var result = dao.save(testData);
-        Specification<MawbStocksLink> spec = (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.equal(root.get("status"), "test");
+        Specification<ELDetails> spec = (root, query, criteriaBuilder) -> {
+            return criteriaBuilder.equal(root.get("shipmentId"), 1L);
         };
-        var jobs = dao.findAll(spec, PageRequest.of(0 , 10));
-        assertFalse(jobs.isEmpty());
-        assertEquals(jobs.stream().toList().get(0).getStatus(), result.getStatus());
+        var details = dao.findAll(spec, PageRequest.of(0 , 10));
+        assertFalse(details.isEmpty());
+        assertEquals(details.stream().toList().get(0).getShipmentId(), result.getShipmentId());
+
     }
 
     @Test
-    void findByMawbNumber() {
-        final String MAWB_NUM = "TEST";
-        var r = mawbStocksDao.save(testSockData);
-        testData.setMawbNumber(MAWB_NUM);
-        testData.setParentId(r.getId());
-        dao.save(testData);
-        var result = dao.findByMawbNumber(MAWB_NUM);
+    void findById() {
+        var savedDetails = dao.save(testData);
+        assertNotNull(savedDetails);
+        var result = dao.findById(savedDetails.getId());
         assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.get(0).getMawbNumber().equals(MAWB_NUM));
+        assertTrue(result.isPresent());
+        assertEquals(result.get().getId(), savedDetails.getId());
     }
 
     @Test
-    void deleteByParentId() {
-        final String MAWB_NUM = "TEST";
-        var r = mawbStocksDao.save(testSockData);
-        testData.setMawbNumber(MAWB_NUM);
-        testData.setParentId(r.getId());
-        dao.save(testData);
-        dao.deleteByParentId(testData.getParentId());
-        var result = dao.findByMawbNumber(testData.getMawbNumber());
-        assertNotNull(result);
+    void delete() {
+        var savedDetails = dao.save(testData);
+        dao.delete(savedDetails);
+        var result = dao.findById(savedDetails.getId());
         assertTrue(result.isEmpty());
     }
 
     @Test
-    void deLinkExistingMawbStockLink() {
-        testData.setMawbNumber("TEST_NUM");
-        var r = mawbStocksDao.save(testSockData);
-        testData.setParentId(r.getId());
-        String mawbNumber = "TEST_NUM";
-        dao.save(testData);
-        dao.deLinkExistingMawbStockLink(mawbNumber);
-        var result = dao.findByMawbNumber(mawbNumber);
+    void findByElNumber() {
+        testData.setElNumber("TEST");
+        var savedDetails = dao.save(testData);
+        assertNotNull(savedDetails);
+        var result = dao.findByElNumber(savedDetails.getElNumber());
         assertNotNull(result);
-        assertNull(result.get(0).getEntityId());
-        assertNull(result.get(0).getEntityType());
+        assertTrue(result.isPresent());
+        assertEquals(result.get(), savedDetails);
     }
 
+    @Test
+    void updateEntityFromShipment() throws RunnerException {
+        testData.setShipmentId(5L);
+        var details = List.of(testData);
+        var result = dao.updateEntityFromShipment(details, testData.getShipmentId());
+        assertFalse(result.isEmpty());
+        assertNotNull(result.get(0).getShipmentId());
+    }
+
+    @Test
+    void saveEntityFromShipment() {
+        testData.setShipmentId(4L);
+        var details = List.of(testData);
+        var result = dao.saveEntityFromShipment(details, testData.getShipmentId());
+        assertFalse(result.isEmpty());
+        assertNotNull(result.get(0).getShipmentId());
+    }
 }
