@@ -1044,27 +1044,6 @@ public class ReportConstants {
     public static final String GOODS_VALUE = "GoodsValue";
     public static final String GOODS_VALUE_CURRENCY = "GoodsValueCurrency";
 
-    public static final String RAKC_TYPE = "RAKCType";
-    public static final String KCRA_NUMBER = "KCRANumber";
-    public static final String KCRA_EXPIRY = "KCRAExpiry";
-
-    public static final String ONE = "1";
-    public static final String TWO = "2";
-
-    public static final String TYPE = "Type";
-    public static final String RA_NUMBER = "RANumber";
-    public static final String RA_EXPIRY = "RAExpiry";
-
-    public static final String KC_NUMBER = "KCNumber";
-    public static final String KC_EXPIRY = "KCExpiry";
-
-    public static final String ORIGIN_AGENT = "OriginAgent";
-    public static final String DESTINATION_AGENT = "DestinationAgent";
-    public static final String CONSIGNOR_AGENT = "Consignor";
-
-    public static final String HAZARDOUS_UN = "HazardousUn";
-    public static final String COMMODITY_DESCRIPTION = "CommodityDescription";
-    public static final String DG_CLASS_DESCRIPTION = "DgClassDescription";
     public static final String CY_NAME_ADDRESS = "CyNameAddress";
     public static final String CTO_FULL_NAME = "CtoFullName";
     public static final String SI_CUT_OFF_TIME = "SICutOffTime";
