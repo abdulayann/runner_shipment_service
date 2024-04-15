@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -69,8 +70,10 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Long lineNumber;
     private Long subLineNumber;
     private Long localLineNumber;
+    @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonProperty("SMTPIGMDate")
     private LocalDateTime SMTPIGMDate;
     private Boolean isInland;
     private Ownership ownership;
