@@ -639,7 +639,7 @@ public abstract class IReport {
                 }
 
                 if(shipment.getPickupDetails().getDestinationDetail() != null) {
-                    dictionary.put(CY_NAME_ADDRESS, List.of(
+                    dictionary.put(CY_NAME_ADDRESS, Arrays.asList(
                             getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME),
                             getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getAddressData(), ADDRESS1)
                     ));
@@ -1131,7 +1131,7 @@ public abstract class IReport {
             if(departureDetails.getCTOId() != null)
                 dictionary.put(CTO_FULL_NAME, getValueFromMap(departureDetails.getCTOId().getOrgData(), FULL_NAME));
             if(departureDetails.getContainerYardId() != null) {
-                dictionary.put(CY_NAME_ADDRESS, List.of(
+                dictionary.put(CY_NAME_ADDRESS, Arrays.asList(
                         getValueFromMap(departureDetails.getCTOId().getOrgData(), FULL_NAME),
                         getValueFromMap(departureDetails.getCTOId().getAddressData(), ADDRESS1)
                 ));
