@@ -2225,7 +2225,7 @@ public abstract class IReport {
 
         }
     }
-    public void populateShipmentOrganizationsLL(ShipmentModel shipmentDetails, Map<String, Object> dictionary) {
+    public void populateShipmentOrganizationsLL(ShipmentModel shipmentDetails, Map<String, Object> dictionary, List<String> orgWithoutTranslation) {
         var languageCode = UserContext.getUser().getLanguageCode();
         List<AddressTranslationRequest.OrgAddressCode> orgAddressCodeList = new ArrayList<>();
         if(!Objects.isNull(shipmentDetails.getClient()) && !Strings.isNullOrEmpty(shipmentDetails.getClient().getOrgCode()))
@@ -2265,7 +2265,8 @@ public abstract class IReport {
                 dictionary.put(CLIENT_LL, address.getOrgName());
                 dictionary.put(CLIENT_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for Client Organization");
+//                throw new ValidationException("Translation not available for Client Organization");
+                orgWithoutTranslation.add("Client");
             }
         }
         if(!Objects.isNull(shipmentDetails.getConsigner()) && !Strings.isNullOrEmpty(shipmentDetails.getConsigner().getOrgCode())){
@@ -2276,7 +2277,8 @@ public abstract class IReport {
                 dictionary.put(CONSIGNER_LL, address.getOrgName());
                 dictionary.put(CONSIGNER_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for Consigner Organization");
+//                throw new ValidationException("Translation not available for Consigner Organization");
+                orgWithoutTranslation.add("Consigner");
             }
         }
         if(!Objects.isNull(shipmentDetails.getConsignee()) && !Strings.isNullOrEmpty(shipmentDetails.getConsignee().getOrgCode())){
@@ -2287,7 +2289,8 @@ public abstract class IReport {
                 dictionary.put(CONSIGNEE_LL, address.getOrgName());
                 dictionary.put(CONSIGNEE_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for Consignee Organization");
+//                throw new ValidationException("Translation not available for Consignee Organization");
+                orgWithoutTranslation.add("Consignee");
             }
         }
         if(!Objects.isNull(shipmentDetails.getAdditionalDetails()) && !Objects.isNull(shipmentDetails.getAdditionalDetails().getNotifyParty()) && !Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgCode())){
@@ -2298,7 +2301,8 @@ public abstract class IReport {
                 dictionary.put(NOTIFY_PARTY_LL, address.getOrgName());
                 dictionary.put(NOTIFY_PARTY_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for Notify Party Organization");
+//                throw new ValidationException("Translation not available for Notify Party Organization");
+                orgWithoutTranslation.add("Notify Party");
             }
         }
         if(!Objects.isNull(shipmentDetails.getPickupDetails()) && !Objects.isNull(shipmentDetails.getPickupDetails().getSourceDetail()) && !Strings.isNullOrEmpty(shipmentDetails.getPickupDetails().getSourceDetail().getOrgCode())){
@@ -2309,7 +2313,8 @@ public abstract class IReport {
                 dictionary.put(PICKUP_FROM_LL, address.getOrgName());
                 dictionary.put(PICKUP_FROM_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for PickupFrom Organization");
+//                throw new ValidationException("Translation not available for PickupFrom Organization");
+                orgWithoutTranslation.add("PickupFrom");
             }
         }
         if(!Objects.isNull(shipmentDetails.getDeliveryDetails()) && !Objects.isNull(shipmentDetails.getDeliveryDetails().getDestinationDetail()) && !Strings.isNullOrEmpty(shipmentDetails.getDeliveryDetails().getDestinationDetail().getOrgCode())){
@@ -2320,12 +2325,13 @@ public abstract class IReport {
                 dictionary.put(DELIVERY_TO_LL, address.getOrgName());
                 dictionary.put(DELIVERY_TO_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for DeliveryTo Organization");
+//                throw new ValidationException("Translation not available for DeliveryTo Organization");
+                orgWithoutTranslation.add("DeliveryTo");
             }
         }
     }
 
-    public String GetChargeTypeDescriptionLL(String chargeCode) {
+    public String GetChargeTypeDescriptionLL(String chargeCode, List<String> chargeTypesWithoutTranslation) {
         var languageCode = UserContext.getUser().getLanguageCode();
         if(Strings.isNullOrEmpty(languageCode) || Strings.isNullOrEmpty(chargeCode)){
             return null;
@@ -2338,11 +2344,32 @@ public abstract class IReport {
         try {
             NPMFetchLangChargeCodeResponse response = npmServiceAdapter.fetchMultiLangChargeCode(CommonRequestModel.buildRequest(request));
             if(Objects.isNull(response) || StringUtility.isEmpty(response.getTranslation())) {
-                throw new ValidationException("Translation not available for Charge Type Description for Charge Code: " + chargeCode);
+//                throw new ValidationException("Translation not available for Charge Type Description for Charge Code: " + chargeCode);
+                chargeTypesWithoutTranslation.add(chargeCode);
+                return null;
             }
             return response.getTranslation();
         } catch (Exception ex) {
             throw new ValidationException("NPM service response failed for ChargeType translation due to: " + ex.getMessage());
+        }
+    }
+
+    public void HandleTranslationErrors(Boolean printWithoutTranslation, List<String> orgWithoutTranslation, List<String> chargeTypesWithoutTranslation) {
+        if(! Boolean.TRUE.equals(printWithoutTranslation)) {
+            // Throw validation exception
+            StringBuilder errorMessage = new StringBuilder();
+            if(! orgWithoutTranslation.isEmpty()) {
+                String failedOrgs = String.join(" ,", orgWithoutTranslation);
+                errorMessage.append(String.format("Translation not available for orgs : %s", failedOrgs));
+                errorMessage.append("\n");
+            }
+            if(! chargeTypesWithoutTranslation.isEmpty()) {
+                String failedChargeType = String.join(" ,", chargeTypesWithoutTranslation);
+                errorMessage.append(String.format("Translation not available for Charge codes : %s", failedChargeType));
+            }
+            if(errorMessage.length() == 0) {
+                throw new ValidationException(errorMessage.toString());
+            }
         }
     }
 
