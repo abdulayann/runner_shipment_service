@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -66,6 +67,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
 
 @Service
@@ -944,15 +946,37 @@ public class CustomerBookingService implements ICustomerBookingService {
         return jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class);
     }
 
+    public VesselsResponse getVesselsData(String name) {
+        if(IsStringNullOrEmpty(name))
+            return null;
+        List<Object> vesselCriteria = Arrays.asList(
+                List.of("Name"),
+                "=",
+                name
+        );
+        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
+        V1DataResponse vesselResponse = v1Service.fetchVesselData(vesselRequest);
+        List<VesselsResponse> vesselsResponse = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
+        if(vesselsResponse != null && !vesselsResponse.isEmpty())
+            return vesselsResponse.get(0);
+        return null;
+    }
+
     private void assignCarrierDetailsToRequest(CustomerBookingRequest customerBookingRequest, PlatformToRunnerCustomerBookingRequest request) {
 
+        String vessel = null;
+        if(!IsStringNullOrEmpty(request.getVessel())) {
+            VesselsResponse vesselsResponse = getVesselsData(request.getVessel());
+            if(vesselsResponse != null)
+                vessel = vesselsResponse.getGuid().toString();
+        }
         CarrierDetailRequest carrierDetailRequest = CarrierDetailRequest.builder()
                 .origin(request.getOrigin())
                 .destination(request.getDestination())
                 .originPort(request.getOriginPort())
                 .destinationPort(request.getDestinationPort())
                 .shippingLine(request.getShippingLine())
-                .vessel(request.getVessel()) // convert vessel name to vessel guid
+                .vessel(vessel)
                 .voyage(request.getVoyage())
                 .build();
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 @Data
 public class VesselsResponse implements Serializable {
@@ -11,4 +12,6 @@ public class VesselsResponse implements Serializable {
     private int id;
     @JsonProperty("Name")
     private String name;
+    @JsonProperty("Guid")
+    private UUID guid;
 }
