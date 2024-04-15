@@ -1562,10 +1562,11 @@ public class ShipmentService implements IShipmentService {
                 throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
         }
         if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
-            if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
                 shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
             }
-            else if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            else if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ||
+                    shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))) {
                 shipmentDetails.setHouseBill(null);
             }
         }
