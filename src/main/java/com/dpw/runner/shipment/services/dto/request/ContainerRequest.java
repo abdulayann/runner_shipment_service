@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import javax.persistence.Column;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -105,7 +104,7 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String handlingInfo;
     private Boolean isPart;
     private Boolean isAttached;
-    private List<TruckDriverDetailsRequest> truckingDetails;
+//    private List<TruckDriverDetailsRequest> truckingDetails;
     private String invoiceNumber;
     private String invoiceCurrency;
     private BigDecimal invoiceValue;
