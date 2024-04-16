@@ -2447,11 +2447,21 @@ public class ShipmentService implements IShipmentService {
             if (request == null) {
                 log.error("Request is empty for Shipment async retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if (request.getId() == null) {
+            if (request.getId() == null && request.getGuid() == null) {
                 log.error("Request Id is null for Shipment async retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+            Long id = request.getId();
+            Optional<ShipmentDetails> shipmentDetails = Optional.ofNullable(null);
+            if(request.getId() != null ){
+                shipmentDetails = shipmentDao.findById(id);
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                shipmentDetails = shipmentDao.findByGuid(guid);
+            }
+            if (!shipmentDetails.isPresent()) {
+                log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
             if (!shipmentDetails.isPresent()) {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -2474,14 +2484,10 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error("Request is empty for Shipment complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
-            if (request.getId() == null) {
-                log.error("Request Id is null for Shipment complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            long id = request.getId();
-
             CompletableFuture<ResponseEntity<IRunnerResponse>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
             RunnerResponse<ShipmentDetailsResponse> res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
             if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
