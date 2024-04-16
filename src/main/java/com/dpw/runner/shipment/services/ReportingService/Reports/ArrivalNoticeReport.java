@@ -64,6 +64,7 @@ public class ArrivalNoticeReport extends IReport {
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ArrivalNoticeModel arrivalNoticeModel = (ArrivalNoticeModel) documentModel;
         List<String> orgWithoutTranslation = new ArrayList<>();
+        List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(arrivalNoticeModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(arrivalNoticeModel.shipmentDetails, dictionary);
@@ -93,7 +94,7 @@ public class ArrivalNoticeReport extends IReport {
         if(StringUtility.isNotEmpty(arrivalNoticeModel.shipmentDetails.getHouseBill())) {
             dictionary.put(ReportConstants.SHIPMENT_DETAILS_CARGOCONTROLNO, "80C2" + arrivalNoticeModel.shipmentDetails.getHouseBill());
         }
-        getBillChargesDetails(arrivalNoticeModel);
+        getBillChargesDetails(arrivalNoticeModel, chargeTypesWithoutTranslation);
         if(!Objects.isNull(arrivalNoticeModel.getArrivalNoticeBillCharges()) && !arrivalNoticeModel.getArrivalNoticeBillCharges().isEmpty()){
             var currency = arrivalNoticeModel.getArrivalNoticeBillCharges().stream().map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getOverseasCurrency).filter(overseasCurrency ->!Objects.isNull(overseasCurrency)).findFirst().orElse("");
             BigDecimal sumOfTaxAmount = arrivalNoticeModel.getArrivalNoticeBillCharges().stream()
@@ -140,12 +141,12 @@ public class ArrivalNoticeReport extends IReport {
         }
 
         populateRaKcData(dictionary, arrivalNoticeModel.shipmentDetails);
-        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, new ArrayList<>());
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
         return dictionary;
     }
 
-    private void getBillChargesDetails(ArrivalNoticeModel arrivalNoticeModel){
+    private void getBillChargesDetails(ArrivalNoticeModel arrivalNoticeModel, List<String> chargeTypesWithoutTranslation){
         List<BillingResponse> billingsList = null;
         try {
             billingsList = getBillingData(arrivalNoticeModel.shipmentDetails.getGuid());
@@ -165,7 +166,6 @@ public class ArrivalNoticeReport extends IReport {
 
         arrivalNoticeModel.setArrivalNoticeBillCharges(new ArrayList<>());
         if(!charges.isEmpty()) {
-            List<String> chargeTypesWithoutTranslation = new ArrayList<>();
             for (var charge : charges){
                  var arrivalNoticeCharge = new ArrivalNoticeModel.ArrivalNoticeBillCharges();
                  arrivalNoticeCharge.setChargeTypeDescription(charge.getChargeTypeDescription());
