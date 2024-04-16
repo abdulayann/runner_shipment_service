@@ -159,14 +159,14 @@ public class ShippingInstructionReport extends IReport{
                 {
                     if(unitOfTotalWeight == null) {
                         unitOfTotalWeight = v.get(WEIGHT_UNIT).toString();
-                        totalWeight = totalWeight.add(BigDecimal.valueOf((double) v.get(WEIGHT)));
+                        totalWeight = totalWeight.add(BigDecimal.valueOf(Double.valueOf(v.get(WEIGHT).toString())));
                     }
                     else if(!unitOfTotalWeight.equals(v.get(WEIGHT_UNIT).toString())) {
                         totalWeight = BigDecimal.ZERO;
                         breakFlagForWeight = true;
                     }
                     else
-                        totalWeight = totalWeight.add(BigDecimal.valueOf((double) v.get(WEIGHT)));
+                        totalWeight = totalWeight.add(BigDecimal.valueOf(Double.valueOf(v.get(WEIGHT).toString())));
                 }
 
                 if(v.get(VOLUME) != null)
