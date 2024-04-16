@@ -1840,12 +1840,12 @@ public class ShipmentService implements IShipmentService {
             ConsolidationDetails consolidationDetails = new ConsolidationDetails();
             consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_DRT);
             consolidationDetails.setTransportMode(shipmentDetails.getTransportMode());
-            if((shipmentSettings.getConsolidationLite() == null || !shipmentSettings.getConsolidationLite()) &&
-                    (shipmentDetails.getCarrierDetails().getOriginPort() == null || shipmentDetails.getCarrierDetails().getOriginPort().isEmpty()
-                    || shipmentDetails.getCarrierDetails().getDestinationPort() == null || shipmentDetails.getCarrierDetails().getDestinationPort().isEmpty())) {
+            if((shipmentSettings.getConsolidationLite() == null || !shipmentSettings.getConsolidationLite())
+                    && !Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
+                    && (StringUtility.isEmpty(shipmentDetails.getCarrierDetails().getOriginPort()) || StringUtility.isEmpty(shipmentDetails.getCarrierDetails().getDestinationPort()))) {
                 throw new ValidationException("Not able to create consolidation, before adding 'New Containers' , pleasenprovide ‘Origin’ and ‘Destination’ values.");
             }
-            if(shipmentDetails.getCarrierDetails().getOriginPort() == shipmentDetails.getCarrierDetails().getDestinationPort()) {
+            if(StringUtility.isNotEmpty(shipmentDetails.getCarrierDetails().getOriginPort()) && Objects.equals(shipmentDetails.getCarrierDetails().getOriginPort(), shipmentDetails.getCarrierDetails().getDestinationPort())) {
                 throw new ValidationException("‘Origin’ and ‘Destination’ can't be same");
             }
             consolidationDetails.setCarrierDetails(jsonHelper.convertValue(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
@@ -1854,8 +1854,10 @@ public class ShipmentService implements IShipmentService {
             if(shipmentSettings.getShipmentLite() != null && shipmentSettings.getShipmentLite() && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)) {
                 consolidationDetails.setPayment(shipmentDetails.getPaymentTerms());
             }
-            consolidationDetails.getCarrierDetails().setOrigin(consolidationDetails.getCarrierDetails().getOriginPort());
-            consolidationDetails.getCarrierDetails().setDestination(consolidationDetails.getCarrierDetails().getDestinationPort());
+            consolidationDetails.getCarrierDetails().setOrigin(shipmentDetails.getCarrierDetails().getOrigin());
+            consolidationDetails.getCarrierDetails().setDestination(shipmentDetails.getCarrierDetails().getDestination());
+            consolidationDetails.getCarrierDetails().setOriginPort(shipmentDetails.getCarrierDetails().getOriginPort());
+            consolidationDetails.getCarrierDetails().setDestinationPort(shipmentDetails.getCarrierDetails().getDestinationPort());
             consolidationDetails.setShipmentType(shipmentDetails.getDirection());
             consolidationDetails.setContainerCategory(shipmentDetails.getShipmentType());
             consolidationDetails.setIsReceivingAgentFreeTextAddress(false);
