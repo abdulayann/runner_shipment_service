@@ -39,6 +39,7 @@ import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -2394,7 +2395,7 @@ public abstract class IReport {
                 errorMessage.append(String.format("Translation not available for Charge codes : %s", failedChargeType));
             }
             if(errorMessage.length() != 0) {
-                throw new ValidationException(errorMessage.toString());
+                throw new TranslationException(errorMessage.toString());
             }
         }
     }
