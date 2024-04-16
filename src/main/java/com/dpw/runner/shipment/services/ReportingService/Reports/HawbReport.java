@@ -614,7 +614,9 @@ public class HawbReport extends IReport{
             }
         }
 
-        populateRaKcData(dictionary, hawbModel.shipmentDetails);
+        if(!Objects.equals(hawbModel.shipmentDetails, null)) {
+            populateRaKcData(dictionary, hawbModel.shipmentDetails);
+        }
 
         return dictionary;
     }
@@ -933,7 +935,7 @@ public class HawbReport extends IReport{
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
             List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
             if(orgList != null && orgList.size() > 0) {
-                return orgList.get(0).City;
+                return Objects.equals(null, orgList.get(0).City) ? "" : orgList.get(0).City;
             }
         }
         return "";
