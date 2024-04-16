@@ -9,12 +9,14 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,13 +41,17 @@ public class ReportController {
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createReport(@RequestBody @Valid ReportRequest request) {
         String responseMsg;
+        HttpStatus httpStatus = null;
         try {
             return ResponseHelper.buildFileResponse(reportService.getDocumentData(CommonRequestModel.buildRequest(request)), MediaType.APPLICATION_OCTET_STREAM, request.getReportInfo() + ".pdf");
+        } catch (TranslationException e) {
+            responseMsg = e.getMessage();
+            httpStatus = HttpStatus.PRECONDITION_REQUIRED;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg, httpStatus);
     }
 }
