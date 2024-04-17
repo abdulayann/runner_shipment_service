@@ -2488,10 +2488,9 @@ public abstract class IReport {
     }
 
     public void populateRaKcData(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
-        ShipmentDetails sd = modelMapper.map(shipmentModel, ShipmentDetails.class);
-        Parties partiesModelSendingAgent = sd.getAdditionalDetails().getExportBroker();
-        Parties partiesModelReceivingAgent = sd.getAdditionalDetails().getImportBroker();
-        Parties consignor = sd.getConsigner();
+        Parties partiesModelSendingAgent = shipmentModel.getAdditionalDetails().getExportBroker() != null ? modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class) : null;
+        Parties partiesModelReceivingAgent = shipmentModel.getAdditionalDetails().getImportBroker() != null ? modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class) : null;
+        Parties consignor = shipmentModel.getConsigner() != null ? modelMapper.map(shipmentModel.getConsigner(), Parties.class) : null;
 
         List<Parties> parties = Arrays.asList(
                 partiesModelSendingAgent,
