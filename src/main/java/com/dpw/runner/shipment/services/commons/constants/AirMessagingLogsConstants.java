@@ -21,6 +21,6 @@ public class AirMessagingLogsConstants {
     public static final String SHIPMENT_FNM_FAILURE_ERROR = "FZB is not accepted due to %s, please rectify the data and resend using print button in MAWB";
     public static final String CONSOLIDATION_FNM_MAWB_SUCCESS_HAWB_FAILURE_ERROR = "FZB of the shipment/s %s is not accepted, please rectify the data as per the failure comments and resend using print button in MAWB";
     public static final String CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_SUCCESS_ERROR = "FWB is not accepted due to %s, please rectify the data and resend using print button in MAWB";
-    public static final String CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_FAILURE_ERROR = "FWB and FZB of the shipment/s “shipment number” “shipment number” is not accepted, please rectify the data as per the failure comments and resend using print button in MAWB ";
+    public static final String CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_FAILURE_ERROR = "FWB and FZB of the shipment/s %s is not accepted, please rectify the data as per the failure comments and resend using print button in MAWB ";
 
 }
