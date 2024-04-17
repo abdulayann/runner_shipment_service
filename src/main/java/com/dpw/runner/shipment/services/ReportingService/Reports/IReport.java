@@ -166,6 +166,7 @@ public abstract class IReport {
         ship.CustomsSealNumber = row.getCustomsSealNumber();
         ship.ShipperSealNumber = row.getShipperSealNumber();
         ship.HazardousUn = row.getHazardousUn();
+        ship.CargoGrossWeightUnit = String.format("%s %s", ConvertToWeightNumberFormat(row.getGrossWeight(), TenantSettingsDetailsContext.getCurrentTenantSettings()), row.getGrossWeightUnit());
 
         try {
             List<MasterListRequest> requests = new ArrayList<>();
@@ -1129,8 +1130,10 @@ public abstract class IReport {
         }
         dictionary.put(SI_CUT_OFF_TIME, consolidation.getShipInstructionCutoff());
         if(departureDetails != null) {
-            if(departureDetails.getCTOId() != null)
+            if(departureDetails.getCTOId() != null){
                 dictionary.put(CTO_FULL_NAME, getValueFromMap(departureDetails.getCTOId().getOrgData(), FULL_NAME));
+                dictionary.put(TERMINAL, dictionary.get(CTO_FULL_NAME));
+            }
             if(departureDetails.getContainerYardId() != null) {
                 dictionary.put(CY_NAME_ADDRESS, Arrays.asList(
                         getValueFromMap(departureDetails.getCTOId().getOrgData(), FULL_NAME),
