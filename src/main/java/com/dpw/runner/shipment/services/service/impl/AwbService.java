@@ -3343,7 +3343,7 @@ public class AwbService implements IAwbService {
             }
         }
         // !failedHawb && failedMawb
-        else {
+        else if(!failedHawb && failedMawb){
             responseStatusMessage.append(String.format(
                     AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_SUCCESS_ERROR, mawbStatusLog.getStatus())
             );
