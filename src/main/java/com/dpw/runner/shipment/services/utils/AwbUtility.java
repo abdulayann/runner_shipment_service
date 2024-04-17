@@ -640,9 +640,7 @@ public class AwbUtility {
         }
 
         String xmlPayload = airMessageStatus.getXmlPayload() != null ? new String(Base64.decodeBase64(airMessageStatus.getXmlPayload()), StandardCharsets.UTF_8) : null;
-        airMessagingLogsDao.createAirMessagingLogs(UUID.randomUUID(), guid, airMessageStatus.getErrorMessage(),
-                airMessageStatus.getMessageType(), xmlPayload,
-                status.name(), tenantId, LocalDateTime.now());
+
 
         switch (status) {
             case FAILED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_FAILED.name());
@@ -651,6 +649,9 @@ public class AwbUtility {
         }
         Awb masterAwb = null;
         if(awb.get().getConsolidationId() != null) {
+            airMessagingLogsDao.createAirMessagingLogs(UUID.randomUUID(), guid, airMessageStatus.getErrorMessage(),
+                    airMessageStatus.getMessageType() != null ? airMessageStatus.getMessageType() : "FWB", xmlPayload,
+                    status.name(), tenantId, LocalDateTime.now());
             masterAwb = awb.get();
             eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), awb.get().getConsolidationId(),
                     Constants.CONSOLIDATION, "FNM", "FNM received", LocalDateTime.now(), LocalDateTime.now(),
@@ -689,6 +690,18 @@ public class AwbUtility {
 
 
         } else if (awb.get().getShipmentId() != null) {
+            var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(List.of(awb.get().getShipmentId()));
+            String msgType = airMessageStatus.getMessageType();
+            if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
+                if(msgType == null){
+                    if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
+                        msgType = "FWB";
+                    else
+                        msgType = "FZB";
+                }
+            }
+            airMessagingLogsDao.createAirMessagingLogs(UUID.randomUUID(), guid, airMessageStatus.getErrorMessage(),
+                    msgType, xmlPayload, status.name(), tenantId, LocalDateTime.now());
             eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), awb.get().getShipmentId(),
                     Constants.SHIPMENT, "FNM", "FNM received", LocalDateTime.now(), LocalDateTime.now(),
                     Constants.DESCARTES, tenantId, status.name(), LocalDateTime.now(), LocalDateTime.now());
