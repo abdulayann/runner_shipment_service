@@ -124,8 +124,12 @@ public class DeliveryOrderReport extends IReport{
             for (Map<String, Object> v : valuesContainer) {
                 if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
                     v.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
-                if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
-                    v.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
+                if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null) {
+                    String grossWeight = ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse);
+                    v.put(ReportConstants.GROSS_WEIGHT, grossWeight);
+                    v.put(CARGO_GROSS_WEIGHT_UNIT, grossWeight + " " + v.get(GROSS_WEIGHT_UNIT));
+                }
+
                 if (v.containsKey(ReportConstants.NetWeight) && v.get(ReportConstants.NetWeight) != null)
                     v.put(ReportConstants.NetWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.NetWeight), v1TenantSettingsResponse));
             }

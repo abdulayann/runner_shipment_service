@@ -54,4 +54,5 @@ public class ShipmentContainers implements IRunnerResponse {
     public String CommodityDescriptionWithHSCode;
     public String DgClassDescription;
     public String HazardousUn;
+    public String CargoGrossWeightUnit;
 }
