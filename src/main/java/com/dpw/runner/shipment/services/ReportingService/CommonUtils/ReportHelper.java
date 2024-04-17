@@ -12,6 +12,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ZIP_POST_CODE;
+
 @Component
 public class ReportHelper {
     public static String getCityCountry(String city, String country)
@@ -149,6 +151,8 @@ public class ReportHelper {
             list.add(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)));
         if(getValueFromMap(partyAddress,ReportConstants.EMAIL) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.EMAIL));
+        if(getValueFromMap(party.getAddressData(),ZIP_POST_CODE) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ZIP_POST_CODE));
         if(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE));
         return list;

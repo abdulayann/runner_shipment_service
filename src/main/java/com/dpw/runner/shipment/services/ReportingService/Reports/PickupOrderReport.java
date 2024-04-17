@@ -12,13 +12,11 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 
 @Component
 public class PickupOrderReport extends IReport {
@@ -54,7 +52,7 @@ public class PickupOrderReport extends IReport {
 
         if (pickUpOrderReportModel.hblModel.shipment != null && pickUpOrderReportModel.hblModel.shipment.getPickupDetails() != null) {
             PickupDeliveryDetailsModel pickupDetails = pickUpOrderReportModel.hblModel.shipment.getPickupDetails();
-            List<String> pickUpFrom = ReportHelper.getOrgAddress(pickupDetails.getSourceDetail());
+            List<String> pickUpFrom = getOrgAddress(pickupDetails.getSourceDetail());
             dictionary.put(ReportConstants.PickupFrom, pickUpFrom);
 
             // P0 tags pickup order doc
@@ -64,6 +62,13 @@ public class PickupOrderReport extends IReport {
             }
             if(pickupDetails.getSourceDetail() != null) {
                 dictionary.put(ReportConstants.PICKUP_COMPANY, getValueFromMap(pickupDetails.getSourceDetail().getOrgData(), ReportConstants.FULL_NAME));
+            }
+
+            if(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail() != null) {
+                List<String> cyNameAddress = new ArrayList<>();
+                cyNameAddress.add(getValueFromMap(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
+                cyNameAddress.addAll(getOrgAddress(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail()));
+                dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
             }
         }
         if(!Objects.isNull(pickUpOrderReportModel.hblModel.shipment)) {
