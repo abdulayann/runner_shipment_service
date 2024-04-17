@@ -644,10 +644,10 @@ public abstract class IReport {
                 }
 
                 if(shipment.getPickupDetails().getDestinationDetail() != null) {
-                    dictionary.put(CY_NAME_ADDRESS, Arrays.asList(
-                            getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME),
-                            getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getAddressData(), ADDRESS1)
-                    ));
+                    List<String> cyNameAddress = new ArrayList<>();
+                    cyNameAddress.add(getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
+                    cyNameAddress.addAll(getOrgAddress(shipment.getPickupDetails().getDestinationDetail()));
+                    dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
                 }
 
             }
@@ -1138,10 +1138,10 @@ public abstract class IReport {
                 dictionary.put(TERMINAL, dictionary.get(CTO_FULL_NAME));
             }
             if(departureDetails.getContainerYardId() != null) {
-                dictionary.put(CY_NAME_ADDRESS, Arrays.asList(
-                        getValueFromMap(departureDetails.getContainerYardId().getOrgData(), FULL_NAME),
-                        getValueFromMap(departureDetails.getContainerYardId().getAddressData(), ADDRESS1)
-                ));
+                List<String> cyNameAddress = new ArrayList<>();
+                cyNameAddress.add(getValueFromMap(departureDetails.getContainerYardId().getOrgData(), FULL_NAME));
+                cyNameAddress.addAll(getOrgAddress(departureDetails.getContainerYardId()));
+                dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
             }
         }
         populateUserFields(UserContext.getUser(), dictionary);
