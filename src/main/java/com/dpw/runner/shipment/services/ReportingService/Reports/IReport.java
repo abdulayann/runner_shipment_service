@@ -1139,8 +1139,8 @@ public abstract class IReport {
             }
             if(departureDetails.getContainerYardId() != null) {
                 dictionary.put(CY_NAME_ADDRESS, Arrays.asList(
-                        getValueFromMap(departureDetails.getCTOId().getOrgData(), FULL_NAME),
-                        getValueFromMap(departureDetails.getCTOId().getAddressData(), ADDRESS1)
+                        getValueFromMap(departureDetails.getContainerYardId().getOrgData(), FULL_NAME),
+                        getValueFromMap(departureDetails.getContainerYardId().getAddressData(), ADDRESS1)
                 ));
             }
         }
