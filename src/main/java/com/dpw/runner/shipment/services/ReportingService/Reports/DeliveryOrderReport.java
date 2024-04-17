@@ -223,7 +223,7 @@ public class DeliveryOrderReport extends IReport{
 
         if(!Objects.isNull(deliveryOrderModel.consolidationDetails) && !Objects.isNull(deliveryOrderModel.consolidationDetails.getArrivalDetails())) {
             if(deliveryOrderModel.consolidationDetails.getArrivalDetails().getCTOId() != null)
-                dictionary.put(TERMINAL, getValueFromMap(deliveryOrderModel.consolidationDetails.getArrivalDetails().getCTOId().getOrgData(), FULL_NAME));
+                dictionary.put(CTO_FULL_NAME, getValueFromMap(deliveryOrderModel.consolidationDetails.getArrivalDetails().getCTOId().getOrgData(), FULL_NAME));
         }
 
         populateRaKcData(dictionary, deliveryOrderModel.getShipmentDetails());
