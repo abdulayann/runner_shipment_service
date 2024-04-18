@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -48,6 +49,7 @@ public class AwbDao implements IAwbDao {
     @Value("${awbKafka.queue}")
     private String senderQueue;
     @Autowired
+    @Lazy
     private AwbUtility awbUtility;
     @Autowired
     IShipmentDao shipmentDao;
