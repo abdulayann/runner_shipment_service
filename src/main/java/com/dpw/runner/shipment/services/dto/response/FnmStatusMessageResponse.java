@@ -8,6 +8,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FnmStatusMessageResponse implements IRunnerResponse {
-    private boolean fnmStatus;
+    private Boolean fnmStatus;
     private String response;
 }
