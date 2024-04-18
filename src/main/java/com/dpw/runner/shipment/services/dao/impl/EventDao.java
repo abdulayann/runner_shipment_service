@@ -400,10 +400,19 @@ public class EventDao implements IEventDao {
                 .setParameter(10, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, weight))
                 .setParameter(11, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, totalWeight))
                 .setParameter(12, partial)
-                .setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(receivedDate)))
-                .setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(scheduledDate)))
                 .setParameter(15, createdAt)
                 .setParameter(16, updatedAt);
+
+        if(receivedDate != null) {
+            query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(receivedDate)));
+        } else {
+            query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+        }
+        if(scheduledDate != null) {
+            query.setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(scheduledDate)));
+        } else {
+            query.setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+        }
         query.executeUpdate();
 
 //        eventRepository.createEventForAirMessagingEvent(guid, entityId, entityType, eventCode, description, source, tenantId, pieces, totalPieces, weight, totalWeight, partial, receivedDate, scheduledDate, createdAt, updatedAt);
