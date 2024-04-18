@@ -12,12 +12,11 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 
 @Component
 public class PickupOrderReport extends IReport {
@@ -25,6 +24,7 @@ public class PickupOrderReport extends IReport {
     @Autowired
     private HblReport hblReport;
 
+    public Boolean printWithoutTranslation;
     @Override
     public Map<String, Object> getData(Long id) {
         PickUpOrderReportModel pickUpOrderReportModel = (PickUpOrderReportModel) getDocumentModel(id);
@@ -44,13 +44,15 @@ public class PickupOrderReport extends IReport {
     @Override
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         PickUpOrderReportModel pickUpOrderReportModel = (PickUpOrderReportModel) documentModel;
+        List<String> orgWithoutTranslation = new ArrayList<>();
+        List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         Map<String, Object> dictionary = hblReport.populateDictionary(pickUpOrderReportModel.hblModel);
         if(pickUpOrderReportModel.pickUpTransportAddress != null && pickUpOrderReportModel.pickUpTransportAddress.getAddressData() != null)
             dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, pickUpOrderReportModel.pickUpTransportAddress.getAddressData().get("ContactPerson"));
 
         if (pickUpOrderReportModel.hblModel.shipment != null && pickUpOrderReportModel.hblModel.shipment.getPickupDetails() != null) {
             PickupDeliveryDetailsModel pickupDetails = pickUpOrderReportModel.hblModel.shipment.getPickupDetails();
-            List<String> pickUpFrom = ReportHelper.getOrgAddress(pickupDetails.getSourceDetail());
+            List<String> pickUpFrom = getOrgAddress(pickupDetails.getSourceDetail());
             dictionary.put(ReportConstants.PickupFrom, pickUpFrom);
 
             // P0 tags pickup order doc
@@ -61,9 +63,16 @@ public class PickupOrderReport extends IReport {
             if(pickupDetails.getSourceDetail() != null) {
                 dictionary.put(ReportConstants.PICKUP_COMPANY, getValueFromMap(pickupDetails.getSourceDetail().getOrgData(), ReportConstants.FULL_NAME));
             }
+
+            if(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail() != null) {
+                List<String> cyNameAddress = new ArrayList<>();
+                cyNameAddress.add(getValueFromMap(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
+                cyNameAddress.addAll(getOrgAddress(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail()));
+                dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
+            }
         }
         if(!Objects.isNull(pickUpOrderReportModel.hblModel.shipment)) {
-            populateShipmentOrganizationsLL(pickUpOrderReportModel.hblModel.shipment, dictionary);
+            populateShipmentOrganizationsLL(pickUpOrderReportModel.hblModel.shipment, dictionary, orgWithoutTranslation);
             var shipmentConsigner = pickUpOrderReportModel.hblModel.shipment.getConsigner();
             if(shipmentConsigner != null && shipmentConsigner.getAddressData() != null){
                 Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
@@ -78,13 +87,14 @@ public class PickupOrderReport extends IReport {
             List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
             for (Map<String, Object> v: values) {
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }
 
         dictionary.put(ReportConstants.PRINT_USER, UserContext.getUser().getUsername());
         populateRaKcData(dictionary, pickUpOrderReportModel.hblModel.shipment);
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
         return dictionary;
     }
