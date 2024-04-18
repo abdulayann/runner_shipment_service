@@ -33,6 +33,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.mail.MessagingException;
@@ -61,6 +62,7 @@ public class AwbUtility {
     @Autowired
     private IGenericQueryRepository genericQueryRepository;
     @Autowired
+    @Lazy
     private IAwbDao awbDao;
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
