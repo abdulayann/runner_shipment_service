@@ -3226,7 +3226,7 @@ public class AwbService implements IAwbService {
     public ResponseEntity<IRunnerResponse> getFnmStatusMessage(Optional<Long> shipmentId, Optional<Long> consolidaitonId) {
 
         Awb masterAwb = null;
-        String entityType = null;
+        String entityType = "";
         List<Awb> awbList = null;
         StringBuilder responseStatusMessage = new StringBuilder();
         Boolean fnMstatus = false;
