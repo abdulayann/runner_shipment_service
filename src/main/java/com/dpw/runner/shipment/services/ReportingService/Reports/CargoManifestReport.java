@@ -248,6 +248,7 @@ public class CargoManifestReport extends IReport{
             AwbCargoInfo cargoInfoRows = cargoManifestModel.awb.getAwbCargoInfo();
             dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
         }
+        populateRaKcData(dictionary, cargoManifestModel.shipmentDetails);
 
         return dictionary;
     }
