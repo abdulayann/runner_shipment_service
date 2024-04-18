@@ -79,7 +79,6 @@ public class AwbUtility {
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
-    private AwbUtility(){}
     public static String getFormattedAddress(AwbAddressParam addressParam)
     {
         String forMattedAddress = "";
