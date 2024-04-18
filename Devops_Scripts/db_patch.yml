@@ -1,6 +1,9 @@
 trigger: none
 pool:
   name: Cargoes Runner
+  demands:
+    - Agent.Name -equals Vm-selfhostedagent
+
 name: $(Build.SourceBranchName)_$(Rev:r)
 
 variables:

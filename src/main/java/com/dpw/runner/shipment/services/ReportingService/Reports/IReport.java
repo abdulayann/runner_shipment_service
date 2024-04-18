@@ -39,6 +39,7 @@ import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -166,6 +167,8 @@ public abstract class IReport {
         ship.CarrierSealNumber = row.getCarrierSealNumber();
         ship.CustomsSealNumber = row.getCustomsSealNumber();
         ship.ShipperSealNumber = row.getShipperSealNumber();
+        ship.HazardousUn = row.getHazardousUn();
+        ship.CargoGrossWeightUnit = String.format("%s %s", ConvertToWeightNumberFormat(row.getGrossWeight(), TenantSettingsDetailsContext.getCurrentTenantSettings()), row.getGrossWeightUnit());
 
         try {
             List<MasterListRequest> requests = new ArrayList<>();
@@ -183,12 +186,18 @@ public abstract class IReport {
             if(Objects.isNull(value3))
                 requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKS_UNIT.getDescription()).ItemValue(ship.ShipmentPacksUnit).Cascade(null).build());
 
+            requests.add(MasterListRequest.builder().ItemType(MasterDataType.DG_CLASS.getDescription()).ItemValue(row.getDgClass()).Cascade(null).build());
+
             if(requests.size() > 0) {
                 MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
                 masterListRequestV2.setMasterListRequests(requests);
                 masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
                 Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
                 masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+
+                // Populate DgClassDescription field from master data fetched
+                String key = row.getDgClass() + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name();
+                ship.DgClassDescription = Optional.of(keyMasterDataMap.get(key)).map(i -> i.getValuenDesc()).orElse(null);
             }
             ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit);
             ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit);
@@ -197,8 +206,10 @@ public abstract class IReport {
                 ship.VGMWeight = row.getGrossWeight().add(row.getTareWeight());
         } catch (Exception ignored) { }
         CommodityResponse commodityResponse = getCommodity(row.getCommodityCode());
-        if (commodityResponse != null)
+        if (commodityResponse != null) {
             ship.CommodityDescription = commodityResponse.getDescription();
+            ship.CommodityDescriptionWithHSCode = commodityResponse.getCommodityDescriptionWithHSCode();
+        }
         if(row.getCommodityGroup() != null) {
             MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, row.getCommodityGroup());
             if (commodity != null)
@@ -630,6 +641,14 @@ public abstract class IReport {
                     }
                     dictionary.put(ReportConstants.PICKUPTIME_TYPE, "Estimated Pickup");
                 }
+
+                if(shipment.getPickupDetails().getDestinationDetail() != null) {
+                    List<String> cyNameAddress = new ArrayList<>();
+                    cyNameAddress.add(getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
+                    cyNameAddress.addAll(getOrgAddress(shipment.getPickupDetails().getDestinationDetail()));
+                    dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
+                }
+
             }
             if(shipment.getReferenceNumbersList() != null)
             {
@@ -900,6 +919,7 @@ public abstract class IReport {
         PartiesModel receivingAgent = consolidation.getReceivingAgent();
         PartiesModel creditor = consolidation.getCreditor();
         ArrivalDepartureDetailsModel arrivalDetails = consolidation.getArrivalDetails();
+        ArrivalDepartureDetailsModel departureDetails = consolidation.getDepartureDetails();
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromConsole(consolidation);
         Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
         UnlocationsResponse lastForeignPort = null;
@@ -1109,6 +1129,19 @@ public abstract class IReport {
                 dictionary.put(CONSOLE_WEIGHT_DESCRIPTION, StringUtility.toUpperCase(masterListsMap.get(MasterDataType.WEIGHT_UNIT.getId()).get(consolidation.getAllocations().getWeightUnit()).getItemDescription()));
             if (masterListsMap.containsKey(MasterDataType.VOLUME_UNIT.getId()) && masterListsMap.get(MasterDataType.VOLUME_UNIT.getId()).containsKey(consolidation.getAllocations().getVolumeUnit()))
                 dictionary.put(CONSOLE_VOLUME_DESCRIPTION, StringUtility.toUpperCase(masterListsMap.get(MasterDataType.VOLUME_UNIT.getId()).get(consolidation.getAllocations().getVolumeUnit()).getItemDescription()));
+        }
+        dictionary.put(SI_CUT_OFF_TIME, consolidation.getShipInstructionCutoff());
+        if(departureDetails != null) {
+            if(departureDetails.getCTOId() != null){
+                dictionary.put(CTO_FULL_NAME, getValueFromMap(departureDetails.getCTOId().getOrgData(), FULL_NAME));
+                dictionary.put(TERMINAL, dictionary.get(CTO_FULL_NAME));
+            }
+            if(departureDetails.getContainerYardId() != null) {
+                List<String> cyNameAddress = new ArrayList<>();
+                cyNameAddress.add(getValueFromMap(departureDetails.getContainerYardId().getOrgData(), FULL_NAME));
+                cyNameAddress.addAll(getOrgAddress(departureDetails.getContainerYardId()));
+                dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
+            }
         }
         populateUserFields(UserContext.getUser(), dictionary);
     }
@@ -2224,7 +2257,7 @@ public abstract class IReport {
 
         }
     }
-    public void populateShipmentOrganizationsLL(ShipmentModel shipmentDetails, Map<String, Object> dictionary) {
+    public void populateShipmentOrganizationsLL(ShipmentModel shipmentDetails, Map<String, Object> dictionary, List<String> orgWithoutTranslation) {
         var languageCode = UserContext.getUser().getLanguageCode();
         List<AddressTranslationRequest.OrgAddressCode> orgAddressCodeList = new ArrayList<>();
         if(!Objects.isNull(shipmentDetails.getClient()) && !Strings.isNullOrEmpty(shipmentDetails.getClient().getOrgCode()))
@@ -2264,7 +2297,8 @@ public abstract class IReport {
                 dictionary.put(CLIENT_LL, address.getOrgName());
                 dictionary.put(CLIENT_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for Client Organization");
+//                throw new ValidationException("Translation not available for Client Organization");
+                orgWithoutTranslation.add("Client");
             }
         }
         if(!Objects.isNull(shipmentDetails.getConsigner()) && !Strings.isNullOrEmpty(shipmentDetails.getConsigner().getOrgCode())){
@@ -2275,7 +2309,8 @@ public abstract class IReport {
                 dictionary.put(CONSIGNER_LL, address.getOrgName());
                 dictionary.put(CONSIGNER_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for Consigner Organization");
+//                throw new ValidationException("Translation not available for Consigner Organization");
+                orgWithoutTranslation.add("Consigner");
             }
         }
         if(!Objects.isNull(shipmentDetails.getConsignee()) && !Strings.isNullOrEmpty(shipmentDetails.getConsignee().getOrgCode())){
@@ -2286,7 +2321,8 @@ public abstract class IReport {
                 dictionary.put(CONSIGNEE_LL, address.getOrgName());
                 dictionary.put(CONSIGNEE_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for Consignee Organization");
+//                throw new ValidationException("Translation not available for Consignee Organization");
+                orgWithoutTranslation.add("Consignee");
             }
         }
         if(!Objects.isNull(shipmentDetails.getAdditionalDetails()) && !Objects.isNull(shipmentDetails.getAdditionalDetails().getNotifyParty()) && !Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgCode())){
@@ -2297,7 +2333,8 @@ public abstract class IReport {
                 dictionary.put(NOTIFY_PARTY_LL, address.getOrgName());
                 dictionary.put(NOTIFY_PARTY_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for Notify Party Organization");
+//                throw new ValidationException("Translation not available for Notify Party Organization");
+                orgWithoutTranslation.add("Notify Party");
             }
         }
         if(!Objects.isNull(shipmentDetails.getPickupDetails()) && !Objects.isNull(shipmentDetails.getPickupDetails().getSourceDetail()) && !Strings.isNullOrEmpty(shipmentDetails.getPickupDetails().getSourceDetail().getOrgCode())){
@@ -2308,7 +2345,8 @@ public abstract class IReport {
                 dictionary.put(PICKUP_FROM_LL, address.getOrgName());
                 dictionary.put(PICKUP_FROM_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for PickupFrom Organization");
+//                throw new ValidationException("Translation not available for PickupFrom Organization");
+                orgWithoutTranslation.add("PickupFrom");
             }
         }
         if(!Objects.isNull(shipmentDetails.getDeliveryDetails()) && !Objects.isNull(shipmentDetails.getDeliveryDetails().getDestinationDetail()) && !Strings.isNullOrEmpty(shipmentDetails.getDeliveryDetails().getDestinationDetail().getOrgCode())){
@@ -2319,12 +2357,13 @@ public abstract class IReport {
                 dictionary.put(DELIVERY_TO_LL, address.getOrgName());
                 dictionary.put(DELIVERY_TO_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-                throw new ValidationException("Translation not available for DeliveryTo Organization");
+//                throw new ValidationException("Translation not available for DeliveryTo Organization");
+                orgWithoutTranslation.add("DeliveryTo");
             }
         }
     }
 
-    public String GetChargeTypeDescriptionLL(String chargeCode) {
+    public String GetChargeTypeDescriptionLL(String chargeCode, List<String> chargeTypesWithoutTranslation) {
         var languageCode = UserContext.getUser().getLanguageCode();
         if(Strings.isNullOrEmpty(languageCode) || Strings.isNullOrEmpty(chargeCode)){
             return null;
@@ -2337,11 +2376,32 @@ public abstract class IReport {
         try {
             NPMFetchLangChargeCodeResponse response = npmServiceAdapter.fetchMultiLangChargeCode(CommonRequestModel.buildRequest(request));
             if(Objects.isNull(response) || StringUtility.isEmpty(response.getTranslation())) {
-                throw new ValidationException("Translation not available for Charge Type Description for Charge Code: " + chargeCode);
+//                throw new ValidationException("Translation not available for Charge Type Description for Charge Code: " + chargeCode);
+                chargeTypesWithoutTranslation.add(chargeCode);
+                return null;
             }
             return response.getTranslation();
         } catch (Exception ex) {
             throw new ValidationException("NPM service response failed for ChargeType translation due to: " + ex.getMessage());
+        }
+    }
+
+    public void HandleTranslationErrors(Boolean printWithoutTranslation, List<String> orgWithoutTranslation, List<String> chargeTypesWithoutTranslation) {
+        if(! Boolean.TRUE.equals(printWithoutTranslation)) {
+            // Throw validation exception
+            StringBuilder errorMessage = new StringBuilder();
+            if(! orgWithoutTranslation.isEmpty()) {
+                String failedOrgs = String.join(" ,", orgWithoutTranslation);
+                errorMessage.append(String.format("Translation not available for orgs : %s", failedOrgs));
+                errorMessage.append("\n");
+            }
+            if(! chargeTypesWithoutTranslation.isEmpty()) {
+                String failedChargeType = String.join(" ,", chargeTypesWithoutTranslation);
+                errorMessage.append(String.format("Translation not available for Charge codes : %s", failedChargeType));
+            }
+            if(errorMessage.length() != 0) {
+                throw new TranslationException(errorMessage.toString());
+            }
         }
     }
 

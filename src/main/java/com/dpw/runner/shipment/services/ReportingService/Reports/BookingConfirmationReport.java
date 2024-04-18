@@ -28,6 +28,7 @@ public class BookingConfirmationReport extends IReport{
     private HblReport hblReport;
 
     private Long id;
+    public Boolean printWithoutTranslation;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -51,13 +52,15 @@ public class BookingConfirmationReport extends IReport{
 
         BookingConfirmationModel bookingConfirmationModel = (BookingConfirmationModel) documentModel;
         Map<String, Object> dictionary = hblReport.populateDictionary(bookingConfirmationModel.hblModel);
+        List<String> orgWithoutTranslation = new ArrayList<>();
+        List<String> chargeTypesWithoutTranslation = new ArrayList<>();
 
-        populateShipmentOrganizationsLL(bookingConfirmationModel.hblModel.shipment, dictionary);
+        populateShipmentOrganizationsLL(bookingConfirmationModel.hblModel.shipment, dictionary, orgWithoutTranslation);
         if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
             List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
             for (Map<String, Object> v: values) {
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }
@@ -110,6 +113,7 @@ public class BookingConfirmationReport extends IReport{
         }
 
         dictionary.put(ReportConstants.PAYMENT, bookingConfirmationModel.hblModel.shipment.getPaymentTerms());
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
         return dictionary;
     }
