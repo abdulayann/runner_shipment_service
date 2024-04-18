@@ -36,6 +36,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -399,8 +400,8 @@ public class EventDao implements IEventDao {
                 .setParameter(10, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, weight))
                 .setParameter(11, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, totalWeight))
                 .setParameter(12, partial)
-                .setParameter(13, new TypedParameterValue(StandardBasicTypes.DATE, receivedDate))
-                .setParameter(14, new TypedParameterValue(StandardBasicTypes.DATE, scheduledDate))
+                .setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(receivedDate)))
+                .setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(scheduledDate)))
                 .setParameter(15, createdAt)
                 .setParameter(16, updatedAt);
         query.executeUpdate();
