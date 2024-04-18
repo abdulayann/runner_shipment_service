@@ -1594,7 +1594,7 @@ public class ShipmentService implements IShipmentService {
                     Map<String, Object> addressConsignorAgent = addressMap.get(consignor.getOrgCode() + "#" + consignor.getAddressCode());
                     if(addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
                         var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
-                        if(rakcType != null && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
+                        if(rakcType != null && (Integer)rakcType == RAKCType.KNOWN_CONSIGNOR.getId() &&(shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
                                 shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
                                 shipmentDetails.getSecurityStatus() == null)) {
                             throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
