@@ -55,6 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -131,6 +132,7 @@ public class ReportService implements IReportService {
     private IAwbDao awbDao;
 
     @Autowired
+    @Lazy
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException, RunnerException {
