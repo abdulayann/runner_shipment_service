@@ -2593,27 +2593,6 @@ public abstract class IReport {
         }
     }
 
-    public void populateIGMInfo(ShipmentModel shipment, Map<String, Object> dictionary) {
-        if (Objects.isNull(shipment))
-            return;
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
-        var additionalDetails = shipment.getAdditionalDetails();
-        if (v1TenantSettingsResponse.isEnableIGMDetails() && Objects.equals(shipment.getDirection(), Constants.IMP) && !Objects.isNull(additionalDetails)) {
-            dictionary.put(ReportConstants.IGM_FILE_DATE, additionalDetails.getIGMFileDate());
-            dictionary.put(ReportConstants.IGM_FILE_NO, additionalDetails.getIGMFileNo());
-            dictionary.put(ReportConstants.IGM_INWARD_DATE, additionalDetails.getIGMInwardDate());
-            dictionary.put(ReportConstants.INWARD_DATE_TIME, additionalDetails.getInwardDateAndTime());
-            dictionary.put(ReportConstants.LINE_NUMBER, additionalDetails.getLineNumber());
-            dictionary.put(ReportConstants.SUB_LINE_NUMBER, additionalDetails.getSubLineNumber());
-            if (Boolean.TRUE.equals(additionalDetails.getIsInland())) {
-                dictionary.put(ReportConstants.IS_INLAND, Boolean.TRUE.equals(additionalDetails.getIsInland()) ? "Yes" : "No");
-                dictionary.put(ReportConstants.SMTPIGM_DATE, additionalDetails.getSMTPIGMDate());
-                dictionary.put(ReportConstants.SMTPIGM_NUMBER, additionalDetails.getSMTPIGMNumber());
-                dictionary.put(ReportConstants.LOCAL_LINE_NUMBER, additionalDetails.getLocalLineNumber());
-            }
-        }
-    }
-
     private String getDate(Map<String, Object> agent) {
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         return ConvertToDPWDateFormat(LocalDateTime.parse(StringUtility.convertToString(agent.get(KCRA_EXPIRY))), v1TenantSettingsResponse.getDPWDateFormat());

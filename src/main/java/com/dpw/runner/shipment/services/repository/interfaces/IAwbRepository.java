@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,7 +25,6 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     List<Awb> findByShipmentIdByQuery(Long shipmentId);
     @Query(value = "SELECT * FROM awb WHERE consolidation_id = ?1", nativeQuery = true)
     List<Awb> findByConsolidationIdByQuery(Long consolidationId);
-    Optional<Awb> findByGuid(UUID guid);
 
     @Query(value = "SELECT e FROM Awb e WHERE FUNCTION('jsonb_extract_path_text', e.awbShipmentInfo, 'issuingAgentName') = :issuingAgent")
     List<Awb> findByIssuingAgent(@Param("issuingAgent") String issuingAgent);
