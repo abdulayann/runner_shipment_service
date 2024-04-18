@@ -3349,7 +3349,7 @@ public class AwbService implements IAwbService {
         else if(!failedHawb && failedMawb){
             fnmStatus = false;
             responseStatusMessage.append(String.format(
-                    AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_SUCCESS_ERROR, mawbStatusLog.getStatus())
+                    AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_SUCCESS_ERROR, mawbStatusLog.getErrorMessage())
             );
         }
 
