@@ -1561,6 +1561,7 @@ public class AwbService implements IAwbService {
         Long awbId = awb.getId();
         AwbStatus airMessageStatus = awb.getAirMessageStatus();
         AwbStatus linkedHawbAirMessageStatus = awb.getLinkedHawbAirMessageStatus();
+        var isAirMessagingSent = false; //awb.getIsAirMessagingSent();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
@@ -3225,7 +3226,7 @@ public class AwbService implements IAwbService {
     public ResponseEntity<IRunnerResponse> getFnmStatusMessage(Optional<Long> shipmentId, Optional<Long> consolidaitonId) {
 
         Awb masterAwb = null;
-        String entityType = null;
+        String entityType = "";
         List<Awb> awbList = null;
         StringBuilder responseStatusMessage = new StringBuilder();
         Boolean fnMstatus = false;
@@ -3260,13 +3261,14 @@ public class AwbService implements IAwbService {
     }
 
     private void fnmAcknowledgementHawb(Awb awb, FnmStatusMessageResponse fnmStatusMessageResponse) {
-        Boolean fnmStatus = false;
+        Boolean fnmStatus = null;
         StringBuilder responseStatusMessage = new StringBuilder();
 
         var statusLog = airMessagingLogsService.getRecentLogForEntityGuid(awb.getGuid());
         if (statusLog == null)
             return;
         if(Objects.equals(statusLog.getStatus(), AirMessagingStatus.FAILED.name())) {
+            fnmStatus = false;
             responseStatusMessage.append(String.format(AirMessagingLogsConstants.SHIPMENT_FNM_FAILURE_ERROR, statusLog.getErrorMessage()));
         }
         if(Objects.equals(statusLog.getStatus(), AirMessagingStatus.SUCCESS.name())) {
@@ -3280,7 +3282,7 @@ public class AwbService implements IAwbService {
     private void fnmAcknowledgementMawb(Awb mawb, FnmStatusMessageResponse fnmStatusMessageResponse) {
         var mawbStatusLog = airMessagingLogsService.getRecentLogForEntityGuid(mawb.getGuid());
         String awbType = mawb.getAwbShipmentInfo().getEntityType();
-        Boolean fnmStatus = false;
+        Boolean fnmStatus = null;
         StringBuilder responseStatusMessage = new StringBuilder();
 
         if (mawbStatusLog == null)
@@ -3321,6 +3323,7 @@ public class AwbService implements IAwbService {
         if(!failedMawb && !failedHawb) {
         }
         if(failedHawb) {
+            fnmStatus = false;
             // if failedShipmentHawb size > 0 fetch ShipmentID for those shipments
             ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", failedShipmentHawbs, "IN");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
@@ -3344,8 +3347,9 @@ public class AwbService implements IAwbService {
         }
         // !failedHawb && failedMawb
         else if(!failedHawb && failedMawb){
+            fnmStatus = false;
             responseStatusMessage.append(String.format(
-                    AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_SUCCESS_ERROR, mawbStatusLog.getStatus())
+                    AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_SUCCESS_ERROR, mawbStatusLog.getErrorMessage())
             );
         }
 

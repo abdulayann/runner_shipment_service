@@ -33,6 +33,8 @@ public class PreAlertReport extends IReport {
     @Autowired
     private JsonHelper jsonHelper;
 
+    public Boolean printWithoutTranslation;
+
     @Override
     public Map<String, Object> getData(Long id) {
         PreAlertModel preAlertModel = (PreAlertModel) getDocumentModel(id);
@@ -63,12 +65,14 @@ public class PreAlertReport extends IReport {
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         PreAlertModel preAlertModel = (PreAlertModel) documentModel;
+        List<String> orgWithoutTranslation = new ArrayList<>();
+        List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(preAlertModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         JsonDateFormat(dictionary);
         addTenantDetails(dictionary, preAlertModel.tenantDetails);
         populateShipmentFields(preAlertModel.shipmentDetails, dictionary);
-        populateShipmentOrganizationsLL(preAlertModel.shipmentDetails, dictionary);
+        populateShipmentOrganizationsLL(preAlertModel.shipmentDetails, dictionary, orgWithoutTranslation);
         List<String> consigner = new ArrayList<>();
         if(preAlertModel.shipmentDetails.getConsigner() != null) {
             consigner = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getConsigner());
@@ -237,6 +241,8 @@ public class PreAlertReport extends IReport {
             dictionary.put(ReportConstants.PACKS_DETAILS, packDictionary);
         }
         populateHasContainerFields(preAlertModel.shipmentDetails, dictionary, v1TenantSettingsResponse);
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+
         return dictionary;
     }
 }
