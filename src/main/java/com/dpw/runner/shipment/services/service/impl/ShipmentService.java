@@ -1586,24 +1586,71 @@ public class ShipmentService implements IShipmentService {
         }
 
         Parties consignor = shipmentDetails.getConsigner();
-        if(consignor != null && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
-            OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(new ArrayList<>(Arrays.asList(shipmentDetails.getConsigner())));
-            if(orgAddressResponse != null) {
-                Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
-                if (addressMap.containsKey(consignor.getOrgCode() + "#" + consignor.getAddressCode())) {
-                    Map<String, Object> addressConsignorAgent = addressMap.get(consignor.getOrgCode() + "#" + consignor.getAddressCode());
-                    if(addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
-                        var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
-                        if(rakcType != null && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
-                                shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
-                                shipmentDetails.getSecurityStatus() == null)) {
-                            throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
+        if(Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
+            if(consignor != null) {
+                OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(new ArrayList<>(Arrays.asList(shipmentDetails.getConsigner())));
+                if (orgAddressResponse != null) {
+                    Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+                    if (addressMap.containsKey(consignor.getOrgCode() + "#" + consignor.getAddressCode())) {
+                        Map<String, Object> addressConsignorAgent = addressMap.get(consignor.getOrgCode() + "#" + consignor.getAddressCode());
+                        if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
+                            var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
+                            if (rakcType != null && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
+                                    shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
+                                    shipmentDetails.getSecurityStatus() == null)) {
+                                throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(shipmentDetails.getId() == null && shipmentDetails.getAdditionalDetails() != null) {
+                if(shipmentDetails.getAdditionalDetails().getImportBroker() != null || shipmentDetails.getAdditionalDetails().getExportBroker() != null) {
+                    List<Parties> orgList = new ArrayList<>();
+                    if(shipmentDetails.getAdditionalDetails().getImportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getImportBroker().getAddressCode())) {
+                        orgList.add(shipmentDetails.getAdditionalDetails().getImportBroker());
+                    }
+                    if(shipmentDetails.getAdditionalDetails().getExportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getExportBroker().getAddressCode())) {
+                        orgList.add(shipmentDetails.getAdditionalDetails().getExportBroker());
+                    }
+                    if(orgList.size() > 0) {
+                        OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(orgList);
+                        if (orgAddressResponse != null) {
+                            if (shipmentDetails.getAdditionalDetails().getImportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getImportBroker().getAddressCode())) {
+                                if(!checkRaStatusFields(shipmentDetails, orgAddressResponse, shipmentDetails.getAdditionalDetails().getImportBroker())) {
+                                    throw new RunnerException("Screening Status and Security Status is mandatory for RA Origin Agent.");
+                                }
+                            }
+
+                            if (shipmentDetails.getAdditionalDetails().getExportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getExportBroker().getAddressCode())) {
+                                if(!checkRaStatusFields(shipmentDetails, orgAddressResponse, shipmentDetails.getAdditionalDetails().getExportBroker())) {
+                                    throw new RunnerException("Screening Status and Security Status is mandatory for RA Destination Agent.");
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     }
+
+    public boolean checkRaStatusFields(ShipmentDetails shipmentDetails, OrgAddressResponse orgAddressResponse, Parties parties) {
+        Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+        if (addressMap.containsKey(parties.getOrgCode() + "#" + parties.getAddressCode())) {
+            Map<String, Object> addressConsignorAgent = addressMap.get(parties.getOrgCode() + "#" + parties.getAddressCode());
+            if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
+                var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
+                if (rakcType != null && (Integer)rakcType == RAKCType.REGULATED_AGENT.getId() && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
+                        shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
+                        shipmentDetails.getSecurityStatus() == null)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole) throws RunnerException {
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
