@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTra
 import lombok.*;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 @Data
 @ToString
@@ -12,6 +13,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferVessels implements IEntityTranferBaseEntity, Serializable {
+    public UUID Guid;
     public String Imo;
     public String Mmsi;
     public String Name;

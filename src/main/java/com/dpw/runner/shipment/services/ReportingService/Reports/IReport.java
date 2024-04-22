@@ -887,13 +887,13 @@ public abstract class IReport {
         return null;
     }
 
-    public VesselsResponse getVesselsData(String mmsi) {
-        if(IsStringNullOrEmpty(mmsi))
+    public VesselsResponse getVesselsData(String guid) {
+        if(IsStringNullOrEmpty(guid))
             return null;
         List<Object> vesselCriteria = Arrays.asList(
-                List.of("Mmsi"),
+                List.of(Constants.VESSEL_GUID_V1),
                 "=",
-                mmsi
+                guid
         );
         CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
         V1DataResponse vesselResponse = v1Service.fetchVesselData(vesselRequest);
