@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import javax.persistence.Column;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -42,4 +41,5 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private String originPort;
     private String destinationPort;
     private LocalDateTime vesselBerthingDate;
+    private String carrierCountry;
 }
