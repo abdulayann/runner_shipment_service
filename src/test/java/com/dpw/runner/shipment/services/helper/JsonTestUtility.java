@@ -146,4 +146,8 @@ public class JsonTestUtility {
     public Events getTestEventData() {
         return objectMapper.convertValue(payload.get("EVENT"), Events.class);
     }
+
+    public FileRepo getTestFileRepoData() {
+        return objectMapper.convertValue(payload.get("FILE_REPO"), FileRepo.class);
+    }
 }
