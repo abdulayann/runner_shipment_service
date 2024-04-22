@@ -262,7 +262,6 @@ class ConsolidationServiceTest {
 
     @Test
     public void testRetrieveByIdAsync_NullId_Failure() {
-
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         requestModel.setData(getRequest);
@@ -277,7 +276,6 @@ class ConsolidationServiceTest {
 
     @Test
     public void testRetrieveByIdAsync_DetailsNotFound_Failure() {
-
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
@@ -293,8 +291,6 @@ class ConsolidationServiceTest {
 
     @Test
     public void testRetrieveByIdAsync_ExceptionThrown_Failure() {
-
-
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         when(consolidationDetailsDao.findById(1L)).thenThrow(new RuntimeException("Test Exception"));
