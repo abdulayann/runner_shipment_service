@@ -150,4 +150,16 @@ public class JsonTestUtility {
     public FileRepo getTestFileRepoData() {
         return objectMapper.convertValue(payload.get("FILE_REPO"), FileRepo.class);
     }
+
+    public AuditLog getTestAuditLog() {
+        return objectMapper.convertValue(payload.get("AUDIT_LOG"), AuditLog.class);
+    }
+
+    public BookingCarriage getTestBookingCarriage() {
+        return objectMapper.convertValue(payload.get("BOOKING_CARRIAGE") , BookingCarriage.class);
+    }
+
+    public CarrierDetails getTestCarrierDetails() {
+        return objectMapper.convertValue(payload.get("CARRIER_DETAILS"), CarrierDetails.class);
+    }
 }

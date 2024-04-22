@@ -2276,5 +2276,53 @@
     "clientEnabled": true,
     "isPosted": false,
     "eventCode": "UPLOAD_COMPLETE"
+  },
+  "AUDIT_LOG": {
+    "operation": "update",
+    "entity": "user",
+    "entity_id": 12345,
+    "changes": {
+      "name": {
+        "oldValue": "John",
+        "newValue": "Johnny"
+      },
+      "age": {
+        "oldValue": 30,
+        "newValue": 31
+      }
+    },
+    "parentType": "organization",
+    "parentId": 9876
+  },
+  "BOOKING_CARRIAGE" : {
+    "portOfLoading": "Shanghai",
+    "portOfDischarge": "Los Angeles",
+    "eta": "2024-05-10T12:00:00",
+    "etd": "2024-04-25T08:00:00",
+    "vessel": "Ocean Queen",
+    "voyage": "V123",
+    "carriageType": "Container",
+    "carriageMode": "Sea",
+    "shipmentId": 987654321
+  },
+  "CARRIER_DETAILS" : {
+    "shippingLine": "Maersk Line",
+    "vessel": "Ocean Voyager",
+    "voyage": "VOY123",
+    "flightNumber": "FLIGHT456",
+    "aircraftType": "Boeing 747",
+    "aircraftRegistration": "ABC123",
+    "truckRefNumber": "TRUCK789",
+    "journeyNumber": "JOURNEY001",
+    "journeyRefNumber": "JURNEYREF1",
+    "origin": "New York",
+    "destination": "London",
+    "originPort": "NY Port",
+    "destinationPort": "London Port",
+    "eta": "2024-05-10T12:00:00",
+    "etd": "2024-04-25T08:00:00",
+    "ata": "2024-05-12T10:00:00",
+    "atd": "2024-04-27T12:00:00",
+    "vesselBerthingDate": "2024-05-11T14:00:00"
   }
 }
