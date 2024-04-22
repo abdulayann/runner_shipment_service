@@ -2266,5 +2266,15 @@
     "longitude": "122.4194° W",
     "source": "Online Store",
     "event_estimate_update_reasons": "Updated based on customer demand"
+  },
+  "FILE_REPO" : {
+    "entityId": 12,
+    "entityType": "sample_entity",
+    "fileName": "sample_file.txt",
+    "path": "/path/to/sample_file.txt",
+    "docType": "pdf",
+    "clientEnabled": true,
+    "isPosted": false,
+    "eventCode": "UPLOAD_COMPLETE"
   }
 }
