@@ -22,7 +22,7 @@ public class ShipmentConstants {
             "Captured Cost", "Captured Revenue", "Captured Profit", "Captured Profit %",
             "Invoiced Payable Cost", "Invoiced Receivable Revenue", "Invoiced Profit",
             "Invoiced Profit %", "20s Count", "40s Count", "TEU Count", "CreatedBy", "POL",
-            "POD", "Waybill Number", "Additional Terms", "Reference Number"
+            "POD", "Waybill Number", "Additional Terms", "Reference Number","POL Code", "POD Code" , "Origin Code", "Destination Code"
     );
 
     private ShipmentConstants(){}

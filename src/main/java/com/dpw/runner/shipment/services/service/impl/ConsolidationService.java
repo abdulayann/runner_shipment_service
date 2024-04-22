@@ -2947,9 +2947,15 @@ public class ConsolidationService implements IConsolidationService {
                 itemRow.createCell(headerMap.get("Carrier Booking Status")).setCellValue(consol.getBookingStatus() != null ? consol.getBookingStatus() : "");
                 itemRow.createCell(headerMap.get("Carrier Booking Number")).setCellValue(consol.getBookingNumber() != null ? consol.getBookingNumber() : "");
                 itemRow.createCell(headerMap.get("Container Count")).setCellValue(consol.getContainerCount() != null ? consol.getContainerCount().toString() : "");
-                itemRow.createCell(headerMap.get("POL")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getOriginPort() != null ? consol.getCarrierDetails().getOriginPort() : "");
-                itemRow.createCell(headerMap.get("POD")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getDestinationPort() != null ? consol.getCarrierDetails().getDestinationPort() : "");
+                itemRow.createCell(headerMap.get("POL")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? consol.getCarrierDetails().getUnlocationData().get("originPort") : "");
+                itemRow.createCell(headerMap.get("POD")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? consol.getCarrierDetails().getUnlocationData().get("destinationPort") : "");
                 itemRow.createCell(headerMap.get("MBL / MAWB")).setCellValue(consol.getMawb() != null ? consol.getMawb() : "");
+                itemRow.createCell(headerMap.get("POL Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("originPort_code")) : "");
+                itemRow.createCell(headerMap.get("POD Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("destinationPort_code")) : "");
+                itemRow.createCell(headerMap.get("Origin Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("origin_code")) : "");
+                itemRow.createCell(headerMap.get("Destination Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("destination_code")) : "");
+                itemRow.createCell(headerMap.get("Origin")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("origin")) : "");
+                itemRow.createCell(headerMap.get("Destination")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("destination")) : "");
             }
 
             LocalDateTime currentTime = LocalDateTime.now();
