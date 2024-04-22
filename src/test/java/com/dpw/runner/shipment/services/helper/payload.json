@@ -1704,7 +1704,7 @@
     "eventsList": [],
     "shipmentAddresses": []
   },
-  "NEW_CONSOLIDATION_CREATE" : {
+  "NEW_CONSOLIDATION_CREATE": {
     "transportMode": "SEA",
     "containerCategory": "FCL",
     "shipmentType": "STD",
@@ -2017,7 +2017,7 @@
       }
     }
   },
-  "NEW_CONTAINER_CREATE" : {
+  "NEW_CONTAINER_CREATE": {
     "consolidationId": 1,
     "containerCode": "20DPW",
     "hblDeliveryMode": "CY/CFS",
@@ -2038,7 +2038,7 @@
     "allocatedVolume": 0,
     "allocatedVolumeUnit": "L"
   },
-  "PACKING" :   {
+  "PACKING": {
     "isDimension": true,
     "packs": 1,
     "packsType": "AMM",
@@ -2075,7 +2075,7 @@
       }
     }
   },
-  "ELDETAILS"  : {},
+  "ELDETAILS": {},
   "NEW_ALLOCATION_CREATE": {
     "chargable": 1232.92,
     "chargeableUnit": "M3",
@@ -2109,7 +2109,7 @@
     "textData": {},
     "aomFreeText": "11"
   },
-  "NEW_ACHIEVED_QUANTITY" : {
+  "NEW_ACHIEVED_QUANTITY": {
     "weightVolume": 0.00,
     "weightVolumeUnit": "M3",
     "consolidatedWeight": 0.00,
@@ -2119,7 +2119,7 @@
     "consolidationChargeQuantity": 0.00,
     "consolidationChargeQuantityUnit": "M3"
   },
-  "NEW_ARRIVAL_DEPART_DETAIL" : {
+  "NEW_ARRIVAL_DEPART_DETAIL": {
     "firstForeignPort": "1OONymJZKV0tRGAcqNmY",
     "lastForeignPort": "1OONymJZKV0tRGAcqNmY",
     "type": "Arrival",
@@ -2130,7 +2130,7 @@
       "tenantId": 908
     }
   },
-  "NEW_JOB" : {
+  "NEW_JOB": {
     "additionalTerms": "string",
     "buyerDetail": {
       "addressCode": "string",
@@ -2195,7 +2195,7 @@
     },
     "transportMode": "SEA"
   },
-  "MAWB_STOCK_LINK" : {
+  "MAWB_STOCK_LINK": {
     "parentId": 123456,
     "mawbNumber": "ABC123456789",
     "status": "Unused",
@@ -2204,7 +2204,7 @@
     "entityId": 987654321,
     "shipConsNumber": "XYZ987654321"
   },
-  "STOCK_DATA" : {
+  "STOCK_DATA": {
     "consolidationId": 123456,
     "mawbNumber": "ABC123",
     "nextMawbNumber": "DEF456",
@@ -2233,14 +2233,14 @@
       }
     ]
   },
-  "INTEGRATION_PAYLOAD" : {
+  "INTEGRATION_PAYLOAD": {
     "entityId": 12345,
     "entityType": "Product",
     "integrationType": "PLATFORM_CREATE_BOOKING",
     "status": "SUCCESS",
     "response_message": "{\n      \"message\": \"Integration successful\",\n      \"data\": {\n        \"productId\": \"P123\",\n        \"productName\": \"Sample Product\"\n      }\n    }"
   },
-  "ELDETAILS" : {
+  "ELDETAILS": {
     "shipmentId": 987654,
     "elNumber": "EL123456789",
     "packages": 3,
@@ -2251,6 +2251,20 @@
     "mergePackageUnit": "box",
     "partition": false,
     "partitionSeqNumber": null
+  },
+  "EVENT" : {
+    "entityId": 123456789,
+    "entityType": "Order",
+    "eventCode": "ORDER_CREATED",
+    "description": "Order created successfully",
+    "estimated": "2024-04-18T12:00:00",
+    "actual": "2024-04-18T12:05:00",
+    "isPublicTrackingEvent": true,
+    "placeName": "Warehouse A",
+    "placeDescription": "Main warehouse",
+    "latitude": "37.7749° N",
+    "longitude": "122.4194° W",
+    "source": "Online Store",
+    "event_estimate_update_reasons": "Updated based on customer demand"
   }
-
 }

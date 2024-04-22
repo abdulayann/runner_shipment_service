@@ -142,4 +142,8 @@ public class JsonTestUtility {
     public ELDetails getTestELDetails() {
         return objectMapper.convertValue(payload.get("ELDETAILS") , ELDetails.class);
     }
+
+    public Events getTestEventData() {
+        return objectMapper.convertValue(payload.get("EVENT"), Events.class);
+    }
 }
