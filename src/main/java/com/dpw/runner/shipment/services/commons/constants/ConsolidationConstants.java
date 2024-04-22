@@ -11,7 +11,8 @@ public class ConsolidationConstants {
             "Payment Terms", "Carrier", "Cutoff Date", "HBL / HAWB", "Estimated Terminal Cutoff",
             "Terminal Cutoff", "Booking Cutoff", "Shipping Instruction Cutoff", "Hazardous Booking Cutoff",
             "VGM Cutoff", "Reefer Cutoff", "Booking Type", "Reference Number", "Carrier Booking Status",
-            "Carrier Booking Number", "Container Count", "POL", "POD", "MBL / MAWB"
+            "Carrier Booking Number", "Container Count", "POL", "POD", "MBL / MAWB", "POL Code", "POD Code" , "Origin Code", "Destination Code",
+            "Origin", "Destination"
     );
 
     public static final String CONSOLIDATION_API_HANDLE = "/api/v2/consolidation";
