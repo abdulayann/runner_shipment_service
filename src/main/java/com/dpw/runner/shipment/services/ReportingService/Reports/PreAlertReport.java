@@ -236,9 +236,11 @@ public class PreAlertReport extends IReport {
                         if(commodityResponse != null)
                             dictionary.put(ReportConstants.COMMODITY_DESC, commodityResponse.getDescription());
                     }
+                    //
                 }
             }
             dictionary.put(ReportConstants.PACKS_DETAILS, packDictionary);
+            getPackingDetails(preAlertModel.shipmentDetails, dictionary);
         }
         populateHasContainerFields(preAlertModel.shipmentDetails, dictionary, v1TenantSettingsResponse);
         HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);

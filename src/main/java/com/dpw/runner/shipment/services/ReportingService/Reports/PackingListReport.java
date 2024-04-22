@@ -203,7 +203,7 @@ public class PackingListReport extends IReport {
                 }
 
                 v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(stringValueOf(v.get(ReportConstants.WEIGHT)))));
-                v.put(ReportConstants.PACKS, ReportHelper.addCommaWithoutDecimal(new BigDecimal(stringValueOf(v.get(PACKS)))));
+                v.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(new BigDecimal(stringValueOf(v.get(PACKS))), 0, v1TenantSettingsResponse));
 
                 if(v.get(ReportConstants.SHIPMENT_PACKING_PACKS_PACKSTYPE) != null) {
                     var packsMasterData = getMasterListData(MasterDataType.PACKS_UNIT, stringValueOf(v.get(ReportConstants.SHIPMENT_PACKING_PACKS_PACKSTYPE)).toUpperCase());

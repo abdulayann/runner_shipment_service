@@ -500,8 +500,9 @@ public class HblReport extends IReport{
                     shipContJson.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(shipContJson.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
                 if (shipContJson.containsKey(ReportConstants.NET_WEIGHT) && shipContJson.get(ReportConstants.NET_WEIGHT) != null)
                     shipContJson.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(shipContJson.get(ReportConstants.NET_WEIGHT).toString())));
-                if (shipContJson.containsKey(NO_OF_PACKAGES) && shipContJson.get(NO_OF_PACKAGES) != null)
-                    shipContJson.put(NO_OF_PACKAGES, FormatWithoutDecimal(shipContJson.get(NO_OF_PACKAGES), hblModel.shipment.getFreightOverseasCurrency(), v1TenantSettingsResponse));
+                if (shipContJson.containsKey(NO_OF_PACKAGES) && shipContJson.get(NO_OF_PACKAGES) != null) {
+                    shipContJson.put(NO_OF_PACKAGES, FormatWithoutDecimal(shipContJson.get(NO_OF_PACKAGES), 0, v1TenantSettingsResponse));
+                }
                 valuesContainer.add(shipContJson);
             }
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
@@ -872,12 +873,12 @@ public class HblReport extends IReport{
         }
 
         if(hblModel.isHbl) {
-            dictionary.put(PACKS, hblModel.blObject.getHblData().getPackageCount());
+            dictionary.put(PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.blObject.getHblData().getPackageCount()), 0, v1TenantSettingsResponse));
             dictionary.put(PACKS_UNIT, hblModel.blObject.getHblData().getPackageType());
             dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType()));
             dictionary.put(ReportConstants.DESCRIPTION, hblModel.blObject.getHblData().getCargoDescription());
         } else {
-            dictionary.put(PACKS, hblModel.shipment.getNoOfPacks());
+            dictionary.put(PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
             dictionary.put(PACKS_UNIT, hblModel.shipment.getPacksUnit());
             dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.shipment.getPacksUnit()));
             dictionary.put(DESCRIPTION, hblModel.shipment.getGoodsDescription());

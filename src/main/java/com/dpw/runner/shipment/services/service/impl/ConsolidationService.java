@@ -1457,10 +1457,10 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
-        response.setSummaryConsoleTEU(consoleTeu.toString());
-        response.setSummaryConsolContainer(StringUtility.convertToString(consoleCont));
-        response.setSummaryShipmentTEU(shipmentTeu.toString());
-        response.setSummaryShipmentContainer(StringUtility.convertToString(shipmentCont));
+        response.setSummaryConsoleTEU(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(consoleTeu), 0, v1TenantSettingsResponse));
+        response.setSummaryConsolContainer(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(consoleCont), 0, v1TenantSettingsResponse));
+        response.setSummaryShipmentTEU(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentTeu), 0, v1TenantSettingsResponse));
+        response.setSummaryShipmentContainer(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentCont), 0, v1TenantSettingsResponse));
 
         if(consolidationDetails.getAchievedQuantities() == null)
             consolidationDetails.setAchievedQuantities(new AchievedQuantities());
