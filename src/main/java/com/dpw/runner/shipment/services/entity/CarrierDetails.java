@@ -107,4 +107,9 @@ public class CarrierDetails extends MultiTenancy {
     @ExcludeAuditLog
     @Formula( "CONCAT_WS( ' ', voyage, flight_number ) " )
     private String voyageOrFlightNumber;
+
+    @Column(name = "carrier_country")
+    @Size(max = 32, message = "max size is 32 for carrier_country")
+    @MasterData(type = MasterDataType.COUNTRIES)
+    private String carrierCountry;
 }
