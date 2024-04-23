@@ -168,8 +168,8 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private Boolean IsPart;
     @JsonProperty("IsAttached")
     private Boolean IsAttached;
-    @JsonProperty("TruckingDetails")
-    private List<TruckDriverDetailsRequestV2> TruckingDetails;
+//    @JsonProperty("TruckingDetails") // removing truck from container sync for now
+//    private List<TruckDriverDetailsRequestV2> TruckingDetails;
     @JsonProperty("CommodityGroup")
     private String CommodityGroup;
     @JsonProperty("InvoiceNumber")
