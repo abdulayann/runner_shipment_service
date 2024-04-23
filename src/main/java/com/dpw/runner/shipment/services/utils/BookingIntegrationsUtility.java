@@ -206,7 +206,8 @@ public class BookingIntegrationsUtility {
                 .parent_contract_id(customerBooking.getParentContractId())
                 .branch_info(ListContractResponse.BranchInfo.builder().
                         id(customerBooking.getSalesBranch()).
-                        opportunity_owner_email_ids(createEmailIds(customerBooking.getPrimarySalesAgentEmail(), customerBooking.getSecondarySalesAgentEmail())).
+                        sales_agent_primary_email(customerBooking.getPrimarySalesAgentEmail()).
+                        sales_agent_secondary_email(customerBooking.getSecondarySalesAgentEmail()).
                         build())
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
