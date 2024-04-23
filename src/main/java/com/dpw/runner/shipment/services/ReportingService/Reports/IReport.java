@@ -432,7 +432,8 @@ public abstract class IReport {
             masterData = masterListsMap.get(MasterDataType.PACKS_UNIT.getId()).get(shipment.getPacksUnit());
         dictionary.put(ReportConstants.PACKS_UNIT_DESC, masterData != null && StringUtility.isNotEmpty(masterData.getItemDescription()) ? masterData.getItemDescription() : shipment.getPacksUnit());
 
-        dictionary.put(ReportConstants.INNERS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getInnerPacks()), 0, v1TenantSettingsResponse));
+        if(shipment.getInnerPacks() != null)
+            dictionary.put(ReportConstants.INNERS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getInnerPacks()), 0, v1TenantSettingsResponse));
 
         dictionary.put(ReportConstants.PAYMENT_TERMS , shipment.getPaymentTerms() == null ?"" :shipment.getPaymentTerms());
 
@@ -709,7 +710,8 @@ public abstract class IReport {
                     pickup.getTransporterDetail().getOrgData().containsKey(FULL_NAME1) ?
                     pickup.getTransporterDetail().getOrgData().get(FULL_NAME1) : "");
         }
-        dictionary.put(ReportConstants.NO_OF_PACKAGES, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
+        if(shipment.getNoOfPacks() != null)
+            dictionary.put(ReportConstants.NO_OF_PACKAGES, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
         if (!Objects.isNull(shipment.getAdditionalDetails().getWarehouseId()) &&
                 wareHouseResponseMap.containsKey(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId()))) {
             dictionary.put(WAREHOUSE_NAME, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId())).getWarehouseDepotName());
