@@ -159,6 +159,7 @@ public class ReportConstants {
     public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
+    public static final String HS_CODE = "HSCode";
     public static final String ESTIMATED_READY_FOR_PICKUP = "EstimatedReadyForPickup";
     public static final String PICKUP_TIME = "PickUpTime";
     public static final String PICKUPTIME_TYPE = "PickupTimeType";
@@ -643,6 +644,7 @@ public class ReportConstants {
     public static final String CUSTOMS_INSTRUCTIONS = "CustomsInstructions";
     public static final String CUSTOM_HOUSE_AGENT = "Customs House Agent";
     public static final String AIRWAY_BILL = "AirwayBill";
+    public static final String AIRCRAFT_TYPE = "AircraftType";
     public static final String SHIPMENT_HOUSE_BILL = "HouseBill";
     public static final String FREIGHT_CERTIFICATION = "FreightCertification";
     public static final String PRE_ALERT = "PreAlert";
@@ -671,6 +673,11 @@ public class ReportConstants {
     public static final String GENERATE_ISF_FILE = "GenerateISFFile";
     public static final String AWB_NEUTRAL = "AWBNeutral";
     public static final String CARGO_MANIFEST = "CargoManifest";
+    public static final String SHIPMENT = "Shipment";
+    public static final String CARGO_MANIFEST_AIR_IMPORT_SHIPMENT = "CargoManifestAirImportShipment";
+    public static final String CARGO_MANIFEST_AIR_EXPORT_SHIPMENT = "CargoManifestAirExportShipment";
+    public static final String CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION = "CargoManifestAirImportConsolidation";
+    public static final String CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION = "CargoManifestAirExportConsolidation";
     public static final String TRANSPORT_ORDER = "TransportOrder";
     public static final String CONSOLIDATED_PACKING_LIST = "ConsolidatedPackingList";
     public static final String COSTAL_DOC = "COSTALdoc";
@@ -860,6 +867,8 @@ public class ReportConstants {
     public static final String WEIGHTS = "weights";
     public static final String CARRIER_IATACODE = "IATACode";
     public static final String FLIGHTNO = "FlightNo";
+    public static final String ORIGIN_PORT = "OriginPort";
+    public static final String DESTINATION_PORT = "DestinationPort";
     public static final String ORIGIN_PORT_NAME_INCAPS = "OriginPortNameInCaps";
     public static final String DESTINATION_PORT_NAME_INCAPS = "DestinationPortNameInCaps";
     public static final String SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE = "ShipmentFlightNoWithIATACode";

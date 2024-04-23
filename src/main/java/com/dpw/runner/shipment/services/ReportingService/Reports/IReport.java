@@ -327,7 +327,10 @@ public abstract class IReport {
             if(pol.getPortName() != null) {
                 dictionary.put(ReportConstants.POL_PORT_NAME_WITH_COUNTRY_IN_CAPS, (pol.getPortName().toUpperCase() + ", " + (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pol.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pol.getCountry()).getItemDescription().toUpperCase() : "")));
                 dictionary.put(ReportConstants.POL_IN_CAPS, pol.getPortName().toUpperCase());
+                dictionary.put(ORIGIN_PORT, dictionary.get(POL_IN_CAPS));
             }
+            else
+                dictionary.put(ORIGIN_PORT, pol.getName());
             dictionary.put(POL_COUNTRY_NAME_IN_CAPS , (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pol.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pol.getCountry()).getItemDescription().toUpperCase() : ""));
             dictionary.put(ReportConstants.POL_AIRPORT_CODE, pol.getIataCode());
             if(pol.getIataCode() != null) {
@@ -348,8 +351,13 @@ public abstract class IReport {
         if (pod != null) {
             String podCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pod.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pod.getCountry()).getItemDescription() : "";
             dictionary.put(ReportConstants.DESTINATION_AIRPORT_COUNTRY, podCountry.toUpperCase());
-            if (pod.getPortName() != null)
-                dictionary.put(ReportConstants.POL_PORT_NAME_WITH_COUNTRY_IN_CAPS, pod.getPortName().toUpperCase() + ", " + podCountry.toUpperCase());
+            if (pod.getPortName() != null) {
+                dictionary.put(ReportConstants.POD_PORT_NAME_WITH_COUNTRY_IN_CAPS, pod.getPortName().toUpperCase() + ", " + podCountry.toUpperCase());
+                dictionary.put(ReportConstants.POD_IN_CAPS, pod.getPortName().toUpperCase());
+                dictionary.put(DESTINATION_PORT, dictionary.get(POD_IN_CAPS));
+            }
+            else
+                dictionary.put(DESTINATION_PORT, pod.getName());
             dictionary.put(ReportConstants.POD_COUNTRY_NAME_IN_CAPS, podCountry.toUpperCase());
             dictionary.put(ReportConstants.POD_AIRPORT_CODE, pod.getIataCode());
             if (pod.getIataCode() != null) {
@@ -746,6 +754,17 @@ public abstract class IReport {
         populateIGMInfo(shipment, dictionary);
     }
 
+    public void populateHAWBAndSecurityData(Map<ShipmentModel, Awb> map, Map<String, Object> dictionary) {
+        List<Object> shipAwbDataList = new ArrayList<>();
+        for (ShipmentModel shipmentModel: map.keySet()) {
+            Awb awb = map.get(shipmentModel);
+            Map<String, Object> dict = new HashMap<>(dictionary);
+            getPackingDetails(shipmentModel, dict);
+            shipAwbDataList.add(dict);
+        }
+        dictionary.put(SHIPMENT, shipAwbDataList);
+    }
+
     public List<String> populateConsigneeData(Map<String, Object> dictionary, PartiesModel shipmentConsignee) {
         List<String> consignee = null;
         if(shipmentConsignee != null)
@@ -843,6 +862,10 @@ public abstract class IReport {
     public ConsolidationModel getConsolidation(Long Id)
     {
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Id).get();
+        return getConsolidation(consolidationDetails);
+    }
+
+    public ConsolidationModel getConsolidation(ConsolidationDetails consolidationDetails) {
         return modelMapper.map(consolidationDetails, ConsolidationModel.class);
     }
 
@@ -2129,6 +2152,8 @@ public abstract class IReport {
             dict.put(SHIPMENT_PACKING_HEIGHT_UNIT, pack.getHeightUnit());
             dict.put(CHARGEABLE, ConvertToWeightNumberFormat(pack.getChargeable(), v1TenantSettingsResponse));
             dict.put(ChargeableUnit, pack.getChargeableUnit());
+            dict.put(HS_CODE, pack.getHSCode());
+            dict.put(DESCRIPTION, pack.getGoodsDescription());
 
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
                 var dgSubstanceRow = masterDataUtils.fetchDgSubstanceRow(pack.getDGSubstanceId());

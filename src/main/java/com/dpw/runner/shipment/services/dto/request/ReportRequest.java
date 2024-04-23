@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Map;
+
 @Getter
 @Setter
 public class ReportRequest implements IRunnerRequest {
@@ -30,4 +32,5 @@ public class ReportRequest implements IRunnerRequest {
     boolean fromConsolidation;
     Boolean pushAwbEvent;
     Boolean printWithoutTranslation;
+    Map<String, Object> consoleDataMap = null; // used for CARGO_MANIFEST_AIR_CONSOLIDATION Doc
 }
