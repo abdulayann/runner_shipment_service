@@ -32,5 +32,5 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     private List<ChargesRequest> charges;
     private List<OrgRequest> bill_to_party;
     private String parent_contract_id;
-    //private ListContractResponse.BranchInfo branch_info;
+    private ListContractResponse.BranchInfo branch_info;
 }
