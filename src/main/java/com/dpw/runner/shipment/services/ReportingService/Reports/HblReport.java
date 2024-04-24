@@ -881,7 +881,8 @@ public class HblReport extends IReport{
         }
 
         if(hblModel.isHbl) {
-            dictionary.put(PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.blObject.getHblData().getPackageCount()), 0, v1TenantSettingsResponse));
+            if(hblModel.blObject.getHblData().getPackageCount() != null)
+                dictionary.put(PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.blObject.getHblData().getPackageCount()), 0, v1TenantSettingsResponse));
             dictionary.put(PACKS_UNIT, hblModel.blObject.getHblData().getPackageType());
             dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType()));
             dictionary.put(ReportConstants.DESCRIPTION, hblModel.blObject.getHblData().getCargoDescription());
