@@ -62,6 +62,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
@@ -625,7 +626,7 @@ public class HblService implements IHblService {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
         if(containers != null && containers.size() > 0)
-            map = containers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+            map = containers.stream().filter(e -> !IsStringNullOrEmpty(e.getContainerNumber())).collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         Map<Long, String> finalMap = map;
         packings.forEach(pack -> {
             HblCargoDto cargo = HblCargoDto.builder().build();
