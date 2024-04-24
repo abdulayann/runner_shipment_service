@@ -157,4 +157,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private String raNumber;
     private LocalDateTime raExpiry;
     private String transportOrderRoad;
+    private Boolean disableBlPartiesName;
 }

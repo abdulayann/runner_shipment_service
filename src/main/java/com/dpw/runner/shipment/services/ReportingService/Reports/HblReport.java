@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -383,15 +384,22 @@ public class HblReport extends IReport{
         List<String> consigner = null;
         List<String> consignee = null;
         if (hblModel.blObject != null && !hblModel.shipment.getTransportMode().equals(AIR)) {
-            List<String> notify = getNotifyOrgAddress(hblModel.blObject);
+            List<String> notify = getNotifyOrgAddress(hblModel.blObject, hblModel.shipmentSettingsDetails);
             if (!Objects.isNull(notify)) {
                 dictionary.put(BL_NOTIFY_PARTY, notify);
                 dictionary.put(BL_NOTIFY_PARTY_CAPS, notify.stream().map(String::toUpperCase).toList());
             }
-            consigner = getOrgAddress(hblModel.blObject.getHblData().getConsignorName(), hblModel.blObject.getHblData().getConsignorAddress(),
-                    null, null, null, null);
-            consignee = getOrgAddress(hblModel.blObject.getHblData().getConsigneeName(), hblModel.blObject.getHblData().getConsigneeAddress(),
-                    null, null, null, null);
+            if(Boolean.TRUE.equals(hblModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
+                consigner = getOrgAddress(null, hblModel.blObject.getHblData().getConsignorAddress(),
+                        null, null, null, null);
+                consignee = getOrgAddress(null, hblModel.blObject.getHblData().getConsigneeAddress(),
+                        null, null, null, null);
+            } else {
+                consigner = getOrgAddress(hblModel.blObject.getHblData().getConsignorName(), hblModel.blObject.getHblData().getConsignorAddress(),
+                        null, null, null, null);
+                consignee = getOrgAddress(hblModel.blObject.getHblData().getConsigneeName(), hblModel.blObject.getHblData().getConsigneeAddress(),
+                        null, null, null, null);
+            }
         } else {
             PartiesModel shipmentConsigner = hblModel.shipment.getConsigner();
             PartiesModel shipmentConsignee = hblModel.shipment.getConsignee();
@@ -873,7 +881,8 @@ public class HblReport extends IReport{
         }
 
         if(hblModel.isHbl) {
-            dictionary.put(PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.blObject.getHblData().getPackageCount()), 0, v1TenantSettingsResponse));
+            if(hblModel.blObject.getHblData().getPackageCount() != null)
+                dictionary.put(PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.blObject.getHblData().getPackageCount()), 0, v1TenantSettingsResponse));
             dictionary.put(PACKS_UNIT, hblModel.blObject.getHblData().getPackageType());
             dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType()));
             dictionary.put(ReportConstants.DESCRIPTION, hblModel.blObject.getHblData().getCargoDescription());
@@ -934,11 +943,14 @@ public class HblReport extends IReport{
         return null;
     }
 
-    private List<String> getNotifyOrgAddress(Hbl hbl)
+    private List<String> getNotifyOrgAddress(Hbl hbl, ShipmentSettingsDetails shipmentSettingsDetails)
     {
         if(hbl != null && hbl.getHblNotifyParty() != null && !hbl.getHblNotifyParty().isEmpty()) {
             HblPartyDto row = hbl.getHblNotifyParty().get(0);
-            return getOrgAddress(row.getName(), row.getAddress(), null, null, row.getEmail(), null);
+            if(Boolean.TRUE.equals(shipmentSettingsDetails.getDisableBlPartiesName()))
+                return getOrgAddress(null, row.getAddress(), null, null, row.getEmail(), null);
+            else
+                return getOrgAddress(row.getName(), row.getAddress(), null, null, row.getEmail(), null);
         }
         return null;
     }
