@@ -162,4 +162,12 @@ public class JsonTestUtility {
     public CarrierDetails getTestCarrierDetails() {
         return objectMapper.convertValue(payload.get("CARRIER_DETAILS"), CarrierDetails.class);
     }
+
+    public DefaultViews getTestDefaultView() {
+        return objectMapper.convertValue(payload.get("DEFAULT_VIEWS"), DefaultViews.class);
+    }
+
+    public OrderNumber getTestOrderNumberDao() {
+        return objectMapper.convertValue(payload.get("ORDER_NUMBER"), OrderNumber.class);
+    }
 }

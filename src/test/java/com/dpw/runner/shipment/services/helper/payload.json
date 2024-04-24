@@ -2324,5 +2324,13 @@
     "ata": "2024-05-12T10:00:00",
     "atd": "2024-04-27T12:00:00",
     "vesselBerthingDate": "2024-05-11T14:00:00"
+  },
+  "DEFAULT_VIEWS" : {
+    "defaultViewId": 12345,
+    "username": "john_doe",
+    "entity": "example_entity"
+  },
+  "ORDER_NUMBER" : {
+    "orderNumber": 123456789
   }
 }
