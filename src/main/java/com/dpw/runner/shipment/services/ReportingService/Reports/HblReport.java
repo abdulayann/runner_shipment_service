@@ -509,7 +509,7 @@ public class HblReport extends IReport{
                 if (shipContJson.containsKey(ReportConstants.NET_WEIGHT) && shipContJson.get(ReportConstants.NET_WEIGHT) != null)
                     shipContJson.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(shipContJson.get(ReportConstants.NET_WEIGHT).toString())));
                 if (shipContJson.containsKey(NO_OF_PACKAGES) && shipContJson.get(NO_OF_PACKAGES) != null) {
-                    shipContJson.put(NO_OF_PACKAGES, FormatWithoutDecimal(shipContJson.get(NO_OF_PACKAGES), 0, v1TenantSettingsResponse));
+                    shipContJson.put(NO_OF_PACKAGES, GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(shipContJson.get(NO_OF_PACKAGES))), 0, v1TenantSettingsResponse));
                 }
                 valuesContainer.add(shipContJson);
             }
