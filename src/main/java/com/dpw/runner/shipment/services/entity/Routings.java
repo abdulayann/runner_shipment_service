@@ -106,6 +106,11 @@ public class Routings extends MultiTenancy {
     @Column(name = "truck_reference_number")
     private String truckReferenceNumber;
 
+    @Column(name = "carrier_country")
+    @Size(max = 32, message = "max size is 32 for carrier_country")
+    @MasterData(type = MasterDataType.COUNTRIES)
+    private String carrierCountry;
+
     public boolean getIsDomestic() {
         return isDomestic;
     }
