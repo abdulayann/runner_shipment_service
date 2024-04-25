@@ -307,7 +307,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode, String agentType) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
-        criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
+        criteria.add(Arrays.asList(List.of("AirlineCode"), "=", mawbAirlineCode));
+        criteria.add("and");
+        criteria.add(Arrays.asList(List.of("HasAirPort"), "=", 1));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
