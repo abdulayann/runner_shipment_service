@@ -770,7 +770,7 @@ public class PackingService implements IPackingService {
             Collections.sort(sortedKeys);
             for (int i=0; i<sortedKeys.size(); i++) {
                 Long value = map.get(sortedKeys.get(i));
-                packsCount.append(value.toString()).append(" ").append(sortedKeys.get(i));
+                packsCount.append(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(value), 0, v1TenantSettingsResponse)).append(" ").append(sortedKeys.get(i));
                 if (i + 1 < sortedKeys.size())
                     packsCount.append(", ");
             }
