@@ -134,7 +134,6 @@ public class PreAlertReport extends IReport {
                 preAlertModel.tenantDetails.email, preAlertModel.tenantDetails.websiteUrl, preAlertModel.tenantDetails.phone);
         if (tenantsDataList != null)
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
-        dictionary.put(ReportConstants.NO_OF_PACKAGES_ALIAS, preAlertModel.shipmentDetails.getNoOfPacks());
         dictionary.put(ReportConstants.NO_OF_PACKAGES_WORD, preAlertModel.noofpackages_word);
         dictionary.put(ReportConstants.USER_DISPLAY_NAME, preAlertModel.userdisplayname);
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();

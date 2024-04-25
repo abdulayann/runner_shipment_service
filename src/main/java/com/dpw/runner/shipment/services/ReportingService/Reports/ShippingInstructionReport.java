@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -147,19 +148,19 @@ public class ShippingInstructionReport extends IReport{
                 if (!breakFlagForVolume && v.get(VOLUME) != null && v.get(VOLUME_UNIT) != null) {
                     if (unitOfTotalVolume == null) {
                         unitOfTotalVolume = v.get(VOLUME_UNIT).toString();
-                        totalVolume = totalVolume.add(BigDecimal.valueOf((double) v.get(VOLUME)));
+                        totalVolume = totalVolume.add(BigDecimal.valueOf(Double.parseDouble(StringUtility.convertToString(v.get(VOLUME)))));
                     } else if (!unitOfTotalVolume.equals(v.get(VOLUME_UNIT).toString())) {
                         totalVolume = BigDecimal.ZERO;
                         breakFlagForVolume = true;
                     } else
-                        totalVolume = totalVolume.add(BigDecimal.valueOf((double) v.get(VOLUME)));
+                        totalVolume = totalVolume.add(BigDecimal.valueOf(Double.parseDouble(StringUtility.convertToString(v.get(VOLUME)))));
                 }
 
                 if (!breakFlagForWeight && v.get(WEIGHT) != null && v.get(WEIGHT_UNIT) != null)
                 {
                     if(unitOfTotalWeight == null) {
                         unitOfTotalWeight = v.get(WEIGHT_UNIT).toString();
-                        totalWeight = totalWeight.add(BigDecimal.valueOf(Double.valueOf(v.get(WEIGHT).toString())));
+                        totalWeight = totalWeight.add(BigDecimal.valueOf(Double.parseDouble(v.get(WEIGHT).toString())));
                     }
                     else if(!unitOfTotalWeight.equals(v.get(WEIGHT_UNIT).toString())) {
                         totalWeight = BigDecimal.ZERO;

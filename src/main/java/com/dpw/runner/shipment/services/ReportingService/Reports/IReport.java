@@ -747,6 +747,8 @@ public abstract class IReport {
             dictionary.put(GOODS_VALUE, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(dictionary.get(GOODS_VALUE))), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         if (!Objects.isNull(dictionary.get(INSURANCE_VALUE)))
             dictionary.put(INSURANCE_VALUE, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(dictionary.get(INSURANCE_VALUE))), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
+        if (!Objects.isNull(shipment.getNoOfPacks()))
+            dictionary.put(ReportConstants.NO_OF_PACKAGES_ALIAS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
         populateIGMInfo(shipment, dictionary);
     }
 
@@ -1264,6 +1266,7 @@ public abstract class IReport {
 
     public List<ContainerCountByCode> getCountByContainerTypeCode(List<ShipmentContainers> commonContainers) {
         Map<String, Long> containerTypeCountMap = new HashMap<>();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         if (commonContainers != null) {
             for(ShipmentContainers container : commonContainers) {
                 if (container.ContainerTypeCode != null) {
@@ -1283,7 +1286,7 @@ public abstract class IReport {
         for (var entry : containerTypeCountMap.entrySet()) {
             ContainerCountByCode countByCode = new ContainerCountByCode();
             countByCode.ContainerTypeCode = entry.getKey();
-            countByCode.ContainerCount = entry.getValue();
+            countByCode.ContainerCount = GetDPWWeightVolumeFormat(BigDecimal.valueOf(entry.getValue()), 0, v1TenantSettingsResponse);
             containerCountByCode.add(countByCode);
         }
         return containerCountByCode;
@@ -1291,6 +1294,7 @@ public abstract class IReport {
 
     public List<ContainerCountByCode> getCountByCommonContainerTypeCode(List<ContainerModel> commonContainers) {
         Map<String, Long> containerTypeCountMap = new HashMap<>();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         if (commonContainers != null) {
             for (var container : commonContainers) {
                 if (container.getContainerCode() != null) {
@@ -1310,7 +1314,7 @@ public abstract class IReport {
         for (var entry : containerTypeCountMap.entrySet()) {
             ContainerCountByCode countByCode = new ContainerCountByCode();
             countByCode.ContainerTypeCode = entry.getKey();
-            countByCode.ContainerCount = entry.getValue();
+            countByCode.ContainerCount = GetDPWWeightVolumeFormat(BigDecimal.valueOf(entry.getValue()), 0, v1TenantSettingsResponse);
             containerCountByCode.add(countByCode);
         }
         return containerCountByCode;

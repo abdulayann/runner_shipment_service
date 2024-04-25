@@ -4,5 +4,5 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 
 public class ContainerCountByCode implements IRunnerResponse {
     public String ContainerTypeCode;
-    public Long ContainerCount;
+    public String ContainerCount;
 }
