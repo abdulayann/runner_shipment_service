@@ -160,6 +160,7 @@ public class ReportConstants {
     public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
+    public static final String HS_CODE = "HSCode";
     public static final String ESTIMATED_READY_FOR_PICKUP = "EstimatedReadyForPickup";
     public static final String PICKUP_TIME = "PickUpTime";
     public static final String PICKUPTIME_TYPE = "PickupTimeType";
@@ -272,6 +273,7 @@ public class ReportConstants {
     public static final String VOLUME_AND_UNIT = "VolumeAndUnit";
     public static final String VOLUME_AND_UNIT_PACKS = "VolumeAndUnitPacks";
     public static final String TOTAL_PACKS = "TotalPacks";
+    public static final String TOTAL_PACKS_UNIT = "TotalPacksAndUnit";
     public static final String TOTAL_PACKS_TYPE = "TotalPacksType";
     public static final String HAS_PACK_DETAILS = "HasPackDetails";
     public static final String HAS_DANGEROUS_GOODS = "HasDangerousGoods";
@@ -370,6 +372,8 @@ public class ReportConstants {
     public static final String MASTER_BILL_ISSUE_PLACE = "MasterBillIssuePlace";
     public static final String CONSOL_ADDITIONAL_TERMS = "ConsolAdditionalTerms";
     public static final String CONSOL_FLIGHT_NUMBER = "ConsolFlightNo";
+    public static final String CONSOL_AIRCRAFT_TYPE = "ConsolAircraftType";
+    public static final String CONSOL_FLIGHT_CARRIER = "ConsolFlightCarrier";
     public static final String CONSOL_NOTIFY_ADDRESS = "ConsolNotifyAddress";
 
 
@@ -588,6 +592,7 @@ public class ReportConstants {
     public static final String SUM_OF_TOTAL_AMOUNT = "SumOfTotalAmount";
     public static final String TGW = "TGW";
     public static final String TOTAL_GROSS_WEIGHT = "TotalGrossWeight";
+    public static final String TOTAL_GROSS_WEIGHT_UNIT = "TotalGrossWeightAndUnit";
     public static final String TOtAl_PIECES = "TotalPieces";
     public static final String PACKING_LIST_FAT = "PackingListFAT";
     public static final String TOTAL_AMOUNT = "TotalAmount";
@@ -644,6 +649,7 @@ public class ReportConstants {
     public static final String CUSTOMS_INSTRUCTIONS = "CustomsInstructions";
     public static final String CUSTOM_HOUSE_AGENT = "Customs House Agent";
     public static final String AIRWAY_BILL = "AirwayBill";
+    public static final String AIRCRAFT_TYPE = "AircraftType";
     public static final String SHIPMENT_HOUSE_BILL = "HouseBill";
     public static final String FREIGHT_CERTIFICATION = "FreightCertification";
     public static final String PRE_ALERT = "PreAlert";
@@ -672,6 +678,11 @@ public class ReportConstants {
     public static final String GENERATE_ISF_FILE = "GenerateISFFile";
     public static final String AWB_NEUTRAL = "AWBNeutral";
     public static final String CARGO_MANIFEST = "CargoManifest";
+    public static final String SHIPMENT = "Shipment";
+    public static final String CARGO_MANIFEST_AIR_IMPORT_SHIPMENT = "CargoManifestAirImportShipment";
+    public static final String CARGO_MANIFEST_AIR_EXPORT_SHIPMENT = "CargoManifestAirExportShipment";
+    public static final String CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION = "CargoManifestAirImportConsolidation";
+    public static final String CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION = "CargoManifestAirExportConsolidation";
     public static final String TRANSPORT_ORDER = "TransportOrder";
     public static final String CONSOLIDATED_PACKING_LIST = "ConsolidatedPackingList";
     public static final String COSTAL_DOC = "COSTALdoc";
@@ -861,6 +872,8 @@ public class ReportConstants {
     public static final String WEIGHTS = "weights";
     public static final String CARRIER_IATACODE = "IATACode";
     public static final String FLIGHTNO = "FlightNo";
+    public static final String ORIGIN_PORT = "OriginPort";
+    public static final String DESTINATION_PORT = "DestinationPort";
     public static final String ORIGIN_PORT_NAME_INCAPS = "OriginPortNameInCaps";
     public static final String DESTINATION_PORT_NAME_INCAPS = "DestinationPortNameInCaps";
     public static final String SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE = "ShipmentFlightNoWithIATACode";
@@ -1027,6 +1040,10 @@ public class ReportConstants {
     public static final String SCREENING_CODES = "ScreeningCodes";
 
     public static final String ORIGIN_AGENT_TYPE = "OriginAgentType";
+    public static final String ORIGIN_AGENT_NAME = "OriginAgentName";
+    public static final String ORIGIN_AGENT_ADDRESS = "OriginAgentAddress";
+    public static final String DESTINATION_AGENT_NAME = "DestinationAgentName";
+    public static final String DESTINATION_AGENT_ADDRESS = "DestinationAgentAddress";
     public static final String DESTINATION_AGENT_TYPE = "DestinationAgentType";
 
     public static final String CONSIGNOR_KC_NUMBER = "ConsignorKCNumber";
@@ -1067,5 +1084,8 @@ public class ReportConstants {
     public static final String CTO_FULL_NAME = "CtoFullName";
     public static final String SI_CUT_OFF_TIME = "SICutOffTime";
     public static final String TERMINAL = "Terminal";
+    public static final String IS_SECURITY = "IsSecurity";
+    public static final String AUM = "AUM";
+    public static final String SPH = "SPH";
 
 }
