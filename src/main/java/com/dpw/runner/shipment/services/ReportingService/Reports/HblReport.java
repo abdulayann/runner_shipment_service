@@ -800,6 +800,20 @@ public class HblReport extends IReport{
             else
                 dictionary.put(HAS_TEMPERATURE_DETAILS, false);
 
+            List<Map<String, Object>> valuesContainer = new ArrayList<>();
+            for (PackingModel packingModel : hblModel.shipment.getPackingList()) {
+                Map<String, Object> packContJson = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(packingModel));
+                if (packContJson.containsKey(PACKS) && packContJson.get(PACKS) != null)
+                    packContJson.put(PACKS, GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(PACKS))), 0, v1TenantSettingsResponse));
+                if (packContJson.containsKey(LENGTH) && packContJson.get(LENGTH) != null)
+                    packContJson.put(LENGTH, GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(LENGTH))), 0, v1TenantSettingsResponse));
+                if (packContJson.containsKey(WIDTH) && packContJson.get(WIDTH) != null)
+                    packContJson.put(WIDTH, GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(WIDTH))), 0, v1TenantSettingsResponse));
+                if (packContJson.containsKey(HEIGHT) && packContJson.get(HEIGHT) != null)
+                    packContJson.put(HEIGHT, GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(HEIGHT))), 0, v1TenantSettingsResponse));
+                valuesContainer.add(packContJson);
+            }
+            dictionary.put(PACKING_LIST, valuesContainer);
         } else {
             dictionary.put(HAS_PACK_DETAILS, false);
         }
