@@ -591,6 +591,7 @@ public class ReportConstants {
     public static final String TOtAl_PIECES = "TotalPieces";
     public static final String PACKING_LIST_FAT = "PackingListFAT";
     public static final String TOTAL_AMOUNT = "TotalAmount";
+    public static final String PIECES_NO = "PiecesNo";
     public static final String TOTAL_AMOUNT_CURRENCY = "TotalAmountCurrency";
     public static final String RATE_CHARGE = "RateCharge";
     public static final String CHARGEABLE_WT = "ChargeableWt";

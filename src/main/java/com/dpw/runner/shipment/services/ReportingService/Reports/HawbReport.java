@@ -360,6 +360,8 @@ public class HawbReport extends IReport{
                     } else {
                         value.put(ReportConstants.TOTAL_AMOUNT, IReport.addCommas(0));
                     }
+                    if(value.get(PIECES_NO) != null)
+                        value.put(PIECES_NO, GetDPWWeightVolumeFormat(new BigDecimal(value.get(PIECES_NO).toString()), 0, v1TenantSettingsResponse));
                 });
                 dictionary.put(ReportConstants.PACKING_LIST, values);
                 String finalFreightAmountText = FreightAmountText;
