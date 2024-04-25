@@ -177,13 +177,15 @@ public class ShippingInstructionReport extends IReport{
                     v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
                 if(v.get(VOLUME_WEIGHT) != null)
                     v.put(VOLUME_WEIGHT, ConvertToWeightNumberFormat(v.get(VOLUME_WEIGHT).toString(), v1TenantSettingsResponse));
+                if(v.get(PACKS) != null)
+                    v.put(PACKS, GetDPWWeightVolumeFormat(new BigDecimal(v.get(PACKS).toString()), 0, v1TenantSettingsResponse));
             }
 
             dictionary.put(ITEMS ,values);
         }
 
         if(totalPacks != 0)
-            dictionary.put(TOTAL_PACKS, totalPacks);
+            dictionary.put(TOTAL_PACKS, GetDPWWeightVolumeFormat(new BigDecimal(totalPacks), 0, v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_PACKS, null);
 
