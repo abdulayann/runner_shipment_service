@@ -43,7 +43,9 @@ public class ReportsFactory {
                           ConsTruckwayBillReport consTruckwayBillReport,
                           ShipTruckDriverProof shipTruckDriverProof,
                           ConsTruckDriverProof consTruckDriverProof,
-                          TransportOrderReport transportOrderReport) {
+                          TransportOrderReport transportOrderReport,
+                          CargoManifestAirShipmentReport cargoManifestAirShipmentReport,
+                          CargoManifestAirConsolidationReport cargoManifestAirConsolidationReport) {
         reportsMap = new HashMap<>();
         reportsMap.put(ReportConstants.ARRIVAL_NOTICE, arrivalNoticeReport);
         reportsMap.put(ReportConstants.SHIPPING_INSTRUCTION, shippingInstructionReport);
@@ -77,6 +79,10 @@ public class ReportsFactory {
         reportsMap.put(ReportConstants.SHIP_TRUCK_DRIVER_PROOF, shipTruckDriverProof);
         reportsMap.put(ReportConstants.CONS_TRUCK_DRIVER_PROOF, consTruckDriverProof);
         reportsMap.put(ReportConstants.TRANSPORT_ORDER, transportOrderReport);
+        reportsMap.put(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT, cargoManifestAirShipmentReport);
+        reportsMap.put(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT, cargoManifestAirShipmentReport);
+        reportsMap.put(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION, cargoManifestAirConsolidationReport);
+        reportsMap.put(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION, cargoManifestAirConsolidationReport);
     }
 
     public IReport getReport(String key) {
