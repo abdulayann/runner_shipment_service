@@ -60,6 +60,7 @@ public class DeliveryOrderReport extends IReport{
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.shipmentDetails = getShipment(id);
         deliveryOrderModel.usersDto = UserContext.getUser();
+        deliveryOrderModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         if(deliveryOrderModel.shipmentDetails.getConsolidationList() != null && deliveryOrderModel.shipmentDetails.getConsolidationList().size() > 0)
         {
             deliveryOrderModel.consolidationDetails = deliveryOrderModel.shipmentDetails.getConsolidationList().get(0);
@@ -215,7 +216,7 @@ public class DeliveryOrderReport extends IReport{
             List<String> clientAddress = getOrgAddress(getValueFromMap(addressMap, COMPANY_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
                     getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
                     null, null);
-            if(getValueFromMap(addressMap, FULL_NAME) != null) {
+            if(!Boolean.TRUE.equals(deliveryOrderModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(addressMap, FULL_NAME) != null) {
                 clientAddress.add(0, getValueFromMap(addressMap, FULL_NAME));
             }
             dictionary.put(CLIENT_ADRS, clientAddress);

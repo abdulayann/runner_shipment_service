@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -48,6 +50,7 @@ public class SeawayBillReport extends IReport {
                 .id(id)
                 .shipment(shipment)
                 .blObject(hbl)
+                .shipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings())
                 .build();
     }
 
@@ -73,8 +76,15 @@ public class SeawayBillReport extends IReport {
 
         if(model.blObject != null && model.blObject.getHblData() != null){
             dict.put(CONSIGNER_ADDRESS, model.blObject.getHblData().getConsignorAddress());
-            var consignerWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsignorName(), model.blObject.getHblData().getConsignorAddress(), null, null, null, null, null);
-            var consigneeWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsigneeName(), model.blObject.getHblData().getConsigneeAddress(), null, null, null, null, null);
+            List<String> consignerWithNameAndAddress;
+            List<String> consigneeWithNameAndAddress;
+            if(Boolean.TRUE.equals(model.shipmentSettingsDetails.getDisableBlPartiesName())) {
+                consignerWithNameAndAddress = getOrgAddressWithPhoneEmail(null, model.blObject.getHblData().getConsignorAddress(), null, null, null, null, null);
+                consigneeWithNameAndAddress = getOrgAddressWithPhoneEmail(null, model.blObject.getHblData().getConsigneeAddress(), null, null, null, null, null);
+            } else {
+                consignerWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsignorName(), model.blObject.getHblData().getConsignorAddress(), null, null, null, null, null);
+                consigneeWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsigneeName(), model.blObject.getHblData().getConsigneeAddress(), null, null, null, null, null);
+            }
             dict.put("BLCustomConsigner", consignerWithNameAndAddress);
             dict.put("BLCustomConsignee", consigneeWithNameAndAddress);
             dict.put("PortOfLoad", model.blObject.getHblData().getPortOfLoad());
