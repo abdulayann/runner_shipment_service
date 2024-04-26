@@ -5,4 +5,5 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 public class PickUpOrderReportModel implements IDocumentModel{
     public PartiesModel pickUpTransportAddress;
     public HblModel hblModel;
+
 }

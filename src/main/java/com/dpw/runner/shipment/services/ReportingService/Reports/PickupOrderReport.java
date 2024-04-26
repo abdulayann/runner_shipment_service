@@ -66,7 +66,8 @@ public class PickupOrderReport extends IReport {
 
             if(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail() != null) {
                 List<String> cyNameAddress = new ArrayList<>();
-                cyNameAddress.add(getValueFromMap(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
+                if(!Boolean.TRUE.equals(pickUpOrderReportModel.hblModel.shipmentSettingsDetails.getDisableBlPartiesName()))
+                    cyNameAddress.add(getValueFromMap(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
                 cyNameAddress.addAll(getOrgAddress(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail()));
                 dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
             }

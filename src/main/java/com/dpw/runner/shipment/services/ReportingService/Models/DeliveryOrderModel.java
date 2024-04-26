@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Co
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import lombok.Data;
 
 import java.util.List;
@@ -18,4 +19,5 @@ public class DeliveryOrderModel implements IDocumentModel{
     public String paymentTerms;
     public String placeOfIssueName;
     public Hbl hbl;
+    public ShipmentSettingsDetails shipmentSettingsDetails;
 }
