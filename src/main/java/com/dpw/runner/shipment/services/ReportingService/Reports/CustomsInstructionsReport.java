@@ -81,7 +81,7 @@ public class CustomsInstructionsReport extends IReport{
         // TODO- Logo Path
         if (customsInstructionsModel.shipmentDetails.getPackingList() != null && customsInstructionsModel.shipmentDetails.getPackingList().size() > 0) {
             dictionary.put(ReportConstants.HAS_PACKAGES, true);
-            dictionary.put(ReportConstants.HAS_PACKAGES, getPackingDetails(customsInstructionsModel.shipmentDetails, dictionary));
+            dictionary.put(ReportConstants.PACKING_LIST, getPackingDetails(customsInstructionsModel.shipmentDetails, dictionary));
         }
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
