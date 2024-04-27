@@ -358,6 +358,7 @@ public class ConsolidationService implements IConsolidationService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst) {
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        double start = System.currentTimeMillis();
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         lst.forEach(consolidationDetails -> {
@@ -371,10 +372,13 @@ public class ConsolidationService implements IConsolidationService {
         consolidationListResponses.forEach(consolidationDetails -> {
             responseList.add(consolidationDetails);
         });
+        log.info("Time taken for consolidation list response conversion: {} ms", (System.currentTimeMillis() - start));
         try {
+            start = System.currentTimeMillis();
             var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
             var containerTeuData = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setConsolidationContainerTeuData(lst, responseList)), executorService);
             CompletableFuture.allOf(locationDataFuture, containerTeuData).join();
+            log.info("Time taken for master data fetch for consolidation list: {} ms", (System.currentTimeMillis() - start));
         }
         catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
