@@ -486,6 +486,7 @@ public class MasterDataUtils{
      * Master-data methods for list calls*
      */
     public void setLocationData(List<IRunnerResponse> responseList, String onField) {
+        double start = System.currentTimeMillis();
         Set<String> locCodes = new HashSet<>();
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         for (IRunnerResponse response : responseList) {
@@ -536,9 +537,11 @@ public class MasterDataUtils{
                 }
             }
         }
+        log.info("setLocationData complete -processing: {} ms", (System.currentTimeMillis() - start));
     }
 
     public void fetchVesselForList(List<IRunnerResponse> responseList) {
+        double start = System.currentTimeMillis();
         Set<String> locCodes = new HashSet<>();
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         for (IRunnerResponse response : responseList) {
@@ -567,9 +570,11 @@ public class MasterDataUtils{
                     consolidationListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
             }
         }
+        log.info("fetchVesselForList complete -processing: {} ms", (System.currentTimeMillis() - start));
     }
 
     public void setContainerTeuData(List<ShipmentDetails> shipmentDetailsList, List<IRunnerResponse> responseList) {
+        double start = System.currentTimeMillis();
         Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
         for (IRunnerResponse response : responseList)
             dataMap.put(((ShipmentListResponse) response).getId(), (ShipmentListResponse) response);
@@ -602,9 +607,11 @@ public class MasterDataUtils{
             }
             dataMap.get(shipment.getId()).setTeuCount(teu);
         }
+        log.info("setContainerTeuData complete -processing: {} ms", (System.currentTimeMillis() - start));
     }
 
     public void setConsolidationContainerTeuData(List<ConsolidationDetails> consolidationDetailsList, List<IRunnerResponse> responseList) {
+        double start = System.currentTimeMillis();
         Map<Long, ConsolidationListResponse> dataMap = new HashMap<>();
         for (IRunnerResponse response : responseList)
             dataMap.put(((ConsolidationListResponse) response).getId(), (ConsolidationListResponse) response);
@@ -637,6 +644,7 @@ public class MasterDataUtils{
             }
             dataMap.get(consolidationDetails.getId()).setTeuCount(teu);
         }
+        log.info("setConsolidationContainerTeuData complete -processing: {} ms", (System.currentTimeMillis() - start));
     }
 
     public List<MasterListRequest> createInBulkMasterListRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
@@ -1059,11 +1067,13 @@ public class MasterDataUtils{
     }
 
     public void pushToCache (Map<String, ?> v1Data, String type) {
+        double start = System.currentTimeMillis();
         if (Objects.isNull(v1Data) || v1Data.isEmpty())
             return;
         for (var key : v1Data.keySet()) {
             cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).put(keyGenerator.customCacheKeyForMasterData(type, key), v1Data.get(key));
         }
+        log.info("Push to Cache time taken: {} ms for: {} ", System.currentTimeMillis() - start, type);
     }
 
     public Map<String, String> setMasterData (Map<String, String> fieldNameKeyMap, String masterDataType, boolean isBooking) {
@@ -1071,7 +1081,10 @@ public class MasterDataUtils{
     }
 
     public Map<String, String> setMasterData (Map<String, String> fieldNameKeyMap, String masterDataType) {
-        return setMasterDataImpl(fieldNameKeyMap, masterDataType, false);
+        double start = System.currentTimeMillis();
+        var map = setMasterDataImpl(fieldNameKeyMap, masterDataType, false);
+        log.info("setMasterData time taken: {} ms for: {} ", System.currentTimeMillis() - start, masterDataType);
+        return map;
     }
 
     public Map<String, String> setMasterDataImpl (Map<String, String> fieldNameKeyMap, String masterDataType, boolean isBooking) {
@@ -1584,6 +1597,7 @@ public class MasterDataUtils{
      * @param responseList
      */
     public void fetchBillDataForShipments(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
+        double start = System.currentTimeMillis();
         Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
         for (IRunnerResponse response : responseList)
             dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
@@ -1625,6 +1639,7 @@ public class MasterDataUtils{
                 }
             }
         }
+        log.info("fetchBillDataForShipments complete -processing: {} ms", (System.currentTimeMillis() - start));
     }
 
     private List<UUID> createBillRequest(List<ShipmentDetails> shipmentDetails) {

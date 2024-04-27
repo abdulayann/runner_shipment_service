@@ -424,6 +424,7 @@ public class ShipmentService implements IShipmentService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
+        double start = System.currentTimeMillis();
         lst.forEach(shipmentDetail -> {
             ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
             containerCountUpdate(shipmentDetail, response);
@@ -432,12 +433,15 @@ public class ShipmentService implements IShipmentService {
                 response.setShipmentStatus(ShipmentStatus.values()[shipmentDetail.getStatus()].toString());
             responseList.add(response);
         });
+        log.info("Time taken for shipment list response conversion: {} ms", (System.currentTimeMillis() - start));
         try {
+            start = System.currentTimeMillis();
             var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
             var containerDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setContainerTeuData(lst, responseList)), executorService);
             var billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchBillDataForShipments(lst, responseList)), executorService);
             var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
             CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture, vesselDataFuture).join();
+            log.info("Time taken for master data fetch for shipment list: {} ms", (System.currentTimeMillis() - start));
         }
         catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
