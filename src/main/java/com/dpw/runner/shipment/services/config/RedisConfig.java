@@ -37,8 +37,8 @@ public class RedisConfig {
         redisStandaloneConfiguration.setPassword(REDIS_PASSWORD);
 
         JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisStandaloneConfiguration);
-        jedisConnectionFactory.getPoolConfig().setMaxIdle(60);
-        jedisConnectionFactory.getPoolConfig().setMinIdle(30);
+//        jedisConnectionFactory.getPoolConfig().setMaxIdle(60);
+//        jedisConnectionFactory.getPoolConfig().setMinIdle(30);
         return  jedisConnectionFactory;
     }
 
