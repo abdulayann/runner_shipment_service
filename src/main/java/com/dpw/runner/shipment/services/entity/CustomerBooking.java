@@ -238,4 +238,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "is_bill_created")
     private Boolean isBillCreated;
+
+    @Column(name = "current_party_for_quote")
+    private String currentPartyForQuote;
 }
