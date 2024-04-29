@@ -107,11 +107,11 @@ class EventDaoTest {
         var r = eventDao.save(testData);
         assertNotNull(r.getId());
         Specification<Events> spec = (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.equal(root.get("id"), 1);
+            return criteriaBuilder.equal(root.get("id"), r.getId());
         };
         var result = eventDao.findAll(spec, PageRequest.of(0 , 10));
         assertNotNull(result);
-        assertEquals(result.stream().toList().get(0).getId(), 1L);
+        assertEquals(result.stream().toList().get(0).getId(), r.getId());
     }
 
     @Test
