@@ -3652,6 +3652,9 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setStatus(ShipmentStatus.Created.getValue());
             cloneShipmentDetails.setConsolRef(null);
             cloneShipmentDetails.setEventsList(null);
+            cloneShipmentDetails.setBookingReference(null);
+            cloneShipmentDetails.setSourceGuid(null);
+            cloneShipmentDetails.setClonedGuid(shipmentDetails.get().getGuid());
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 
