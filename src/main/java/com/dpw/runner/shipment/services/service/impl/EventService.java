@@ -137,10 +137,12 @@ public class EventService implements IEventService {
         EventsRequest request = (EventsRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for Event update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(EventConstants.EMPTY_REQUEST_ERROR);
         }
 
         if (request.getId() == null) {
             log.debug("Request Id is null for Event update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(EventConstants.EMPTY_REQUEST_ID_ERROR);
         }
         long id = request.getId();
         Optional<Events> oldEntity = eventDao.findById(id);
@@ -183,6 +185,7 @@ public class EventService implements IEventService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Event list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException(EventConstants.EMPTY_REQUEST_ERROR);
             }
             // construct specifications for filter request
             Pair<Specification<Events>, Pageable> tuple = fetchData(request, Events.class);
@@ -209,6 +212,7 @@ public class EventService implements IEventService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Event async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException(EventConstants.EMPTY_REQUEST_ERROR);
             }
             // construct specifications for filter request
             Pair<Specification<Events>, Pageable> tuple = fetchData(request, Events.class);
