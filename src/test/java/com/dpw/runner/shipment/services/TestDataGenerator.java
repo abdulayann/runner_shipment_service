@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services;
 
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -20,7 +19,6 @@ import java.util.*;
 @Component
 public class TestDataGenerator {
     public IShipmentDao shipmentDao;
-    private ICarrierDao carrierDao;
     private IPartiesDao partiesDao;
     private BookingCarriageMapper bookingCarriageMapper;
     private ShipmentDetailsMapper shipmentDetailsMapper;
@@ -55,10 +53,8 @@ public class TestDataGenerator {
 
     @Autowired
     public TestDataGenerator(IShipmentDao shipmentDao,
-                             ICarrierDao carrierDao,
                              IPartiesDao partiesDao, BookingCarriageMapper bookingCarriageMapper, ShipmentDetailsMapper shipmentDetailsMapper) {
         this.shipmentDao = shipmentDao;
-        this.carrierDao = carrierDao;
         this.partiesDao = partiesDao;
         this.bookingCarriageMapper = bookingCarriageMapper;
         this.shipmentDetailsMapper = shipmentDetailsMapper;

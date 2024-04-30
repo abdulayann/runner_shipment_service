@@ -109,8 +109,6 @@ class ShipmentServiceTest {
     @Mock
     private IFileRepoDao fileRepoDao;
     @Mock
-    private IJobDao jobDao;
-    @Mock
     private INotesDao notesDao;
     @Mock
     private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;

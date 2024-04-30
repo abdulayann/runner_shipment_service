@@ -128,8 +128,6 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private IShipmentDao shipmentDao;
     @Autowired
-    private ICarrierDao carrierDao;
-    @Autowired
     private IPartiesDao partiesDao;
 
     @Autowired
@@ -163,9 +161,6 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IFileRepoDao fileRepoDao;
-
-    @Autowired
-    private IJobDao jobDao;
 
     @Autowired
     private INotesDao notesDao;
@@ -399,8 +394,6 @@ public class ShipmentService implements IShipmentService {
             /**
              * Carrier Details*
              */
-            CarrierDetails carrierDetail = createCarrier();
-            shipmentDetail.setCarrierDetails(carrierDetail);
 
             shipmentDetail = shipmentDao.save(shipmentDetail, false);
             pushShipmentDataToDependentService(shipmentDetail, true);
@@ -520,17 +513,6 @@ public class ShipmentService implements IShipmentService {
         }
         parties = partiesDao.saveAll(parties);
         return parties;
-    }
-
-    private CarrierDetails createCarrier() {
-        int random = rnd.nextInt(100);
-        CarrierDetails carrier = CarrierDetails.builder()
-                .shippingLine(SHIPPING_LINE.get(random % SHIPPING_LINE.size()))
-                .vessel(generateString(5)).voyage(generateString(5)).origin(LOCATIONS.get(random % LOCATIONS.size())).destination(LOCATIONS.get(random % LOCATIONS.size()))
-                .eta(LocalDateTime.now()).etd(LocalDateTime.now()).ata(LocalDateTime.now()).atd(LocalDateTime.now())
-                .build();
-        carrier.setTenantId(1);
-        return carrierDao.save(carrier);
     }
 
 
@@ -723,12 +705,6 @@ public class ShipmentService implements IShipmentService {
         });
     }
 
-    private void createJobsAsync(ShipmentDetails shipmentDetails, List<JobRequest> jobRequest) {
-        jobRequest.forEach(jobs -> {
-            createJob(shipmentDetails, jobs);
-        });
-    }
-
     private void createFileRepoAsync(ShipmentDetails shipmentDetails, List<FileRepoRequest> fileRepoRequest) {
         fileRepoRequest.forEach(fileRepo -> {
             createFileRepo(shipmentDetails, fileRepo);
@@ -787,12 +763,6 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public void createJob(ShipmentDetails shipmentDetails, JobRequest jobRequest) {
-        jobRequest.setShipmentId(shipmentDetails.getId());
-        jobDao.save(objectMapper.convertValue(jobRequest, Jobs.class));
-    }
-
-    @Transactional
     public void createNote(ShipmentDetails shipmentDetails, NotesRequest notesRequest) {
         notesRequest.setEntityId(shipmentDetails.getId());
         notesRequest.setEntityType(Constants.SHIPMENT);
@@ -833,11 +803,6 @@ public class ShipmentService implements IShipmentService {
     @Transactional
     public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetails additionalDetails) {
         additionalDetailDao.save(additionalDetails);
-    }
-
-    @Transactional
-    public void createCarrier(ShipmentDetails shipmentDetails, CarrierDetails carrierDetails) {
-        carrierDao.save(carrierDetails);
     }
 
 
@@ -1667,10 +1632,7 @@ public class ShipmentService implements IShipmentService {
         }
         // Create events on basis of shipment status Confirmed/Created
         autoGenerateEvents(shipmentDetails, previousStatus);
-        if (jobRequestList != null) {
-            List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(commonUtils.convertToEntityList(jobRequestList, Jobs.class, isCreate), id);
-            shipmentDetails.setJobsList(updatedJobs);
-        }
+
         if (referenceNumbersRequestList != null) {
             List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isCreate), id);
             shipmentDetails.setReferenceNumbersList(updatedReferenceNumbers);
@@ -2611,10 +2573,7 @@ public class ShipmentService implements IShipmentService {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
                 entity.setFileRepoList(updatedFileRepos);
             }
-            if (jobRequestList != null) {
-                List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id);
-                entity.setJobsList(updatedJobs);
-            }
+
             if (notesRequestList != null) {
                 List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT);
                 entity.setNotesList(updatedNotes);
@@ -2942,13 +2901,6 @@ public class ShipmentService implements IShipmentService {
                 Page<Events> oldEvents = eventDao.findAll(pair.getLeft(), pair.getRight());
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT, oldEvents.stream().toList());
                 entity.setEventsList(updatedEvents);
-            }
-            if (jobRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
-                Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
-                Page<Jobs> oldJobs = jobDao.findAll(pair.getLeft(), pair.getRight());
-                List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id, oldJobs.stream().toList());
-                entity.setJobsList(updatedJobs);
             }
             if (referenceNumbersRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");

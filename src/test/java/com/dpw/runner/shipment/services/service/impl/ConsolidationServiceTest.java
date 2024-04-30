@@ -91,12 +91,6 @@ class ConsolidationServiceTest {
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Mock
-    private ICarrierDao carrierDao;
-    @Mock
-    private IAllocationsDao allocationsDao;
-    @Mock
-    private IAchievedQuantitiesDao achievedQuantitiesDao;
-    @Mock
     private IPartiesDao partiesDao;
 
     @Mock
@@ -115,9 +109,6 @@ class ConsolidationServiceTest {
 
     @Mock
     private IFileRepoDao fileRepoDao;
-
-    @Mock
-    private IJobDao jobDao;
 
     @Mock
     private INotesDao notesDao;

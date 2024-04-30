@@ -65,9 +65,6 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private IMawbStocksLinkDao mawbStocksLinkDao;
 
     @Autowired
-    private ICarrierDao carrierDao;
-
-    @Autowired
     private IV1Service v1Service;
 
     @Override

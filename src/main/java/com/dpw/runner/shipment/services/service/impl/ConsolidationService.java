@@ -124,12 +124,6 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
-    private ICarrierDao carrierDao;
-    @Autowired
-    private IAllocationsDao allocationsDao;
-    @Autowired
-    private IAchievedQuantitiesDao achievedQuantitiesDao;
-    @Autowired
     private IPartiesDao partiesDao;
 
     @Autowired
@@ -148,9 +142,6 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IFileRepoDao fileRepoDao;
-
-    @Autowired
-    private IJobDao jobDao;
 
     @Autowired
     private INotesDao notesDao;
@@ -332,8 +323,6 @@ public class ConsolidationService implements IConsolidationService {
             /**
              * Carrier Details*
              */
-            CarrierDetails carrierDetail = createCarrier();
-            consolidationDetails.setCarrierDetails(carrierDetail);
 
             consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
             pushShipmentDataToDependentService(consolidationDetails, true);
@@ -462,17 +451,6 @@ public class ConsolidationService implements IConsolidationService {
         }
         parties = partiesDao.saveAll(parties);
         return parties;
-    }
-
-    private CarrierDetails createCarrier() {
-        int random = rnd.nextInt(100);
-        CarrierDetails carrier = CarrierDetails.builder()
-                .shippingLine(SHIPPING_LINE.get(random % SHIPPING_LINE.size()))
-                .vessel(generateString(5)).voyage(generateString(5)).origin(LOCATIONS.get(random % LOCATIONS.size())).destination(LOCATIONS.get(random % LOCATIONS.size()))
-                .eta(LocalDateTime.now()).etd(LocalDateTime.now()).ata(LocalDateTime.now()).atd(LocalDateTime.now())
-                .build();
-        carrier.setTenantId(1);
-        return carrierDao.save(carrier);
     }
 
     //TODO - Fill more data in the consolidation
@@ -651,12 +629,6 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public void createJob(ConsolidationDetails consolidationDetails, JobRequest jobRequest) {
-        jobRequest.setConsolidationId(consolidationDetails.getId());
-        jobDao.save(jsonHelper.convertValue(jobRequest, Jobs.class));
-    }
-
-    @Transactional
     public void createNote(ConsolidationDetails consolidationDetails, NotesRequest notesRequest) {
         notesRequest.setEntityId(consolidationDetails.getId());
         notesRequest.setEntityType(Constants.CONSOLIDATION);
@@ -692,21 +664,6 @@ public class ConsolidationService implements IConsolidationService {
     public void createRouting(ConsolidationDetails consolidationDetails, RoutingsRequest routingsRequest) {
         routingsRequest.setConsolidationId(consolidationDetails.getId());
         routingsDao.save(jsonHelper.convertValue(routingsRequest, Routings.class));
-    }
-
-    @Transactional
-    public void createCarrier(CarrierDetails carrierDetails) {
-        carrierDao.save(carrierDetails);
-    }
-
-    @Transactional
-    public void createAllocations(Allocations allocations) {
-        allocationsDao.save(allocations);
-    }
-
-    @Transactional
-    public void createAchievedQuantities(AchievedQuantities achievedQuantities) {
-        achievedQuantitiesDao.save(achievedQuantities);
     }
 
     public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request) throws RunnerException {
@@ -951,10 +908,6 @@ public class ConsolidationService implements IConsolidationService {
             if (fileRepoRequestList != null) {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.CONSOLIDATION);
                 entity.setFileRepoList(updatedFileRepos);
-            }
-            if (jobRequestList != null) {
-                List<Jobs> updatedJobs = jobDao.updateEntityFromConsole(convertToEntityList(jobRequestList, Jobs.class), id);
-                entity.setJobsList(updatedJobs);
             }
             if (referenceNumbersRequestList != null) {
                 List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
@@ -2831,13 +2784,6 @@ public class ConsolidationService implements IConsolidationService {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.CONSOLIDATION, oldFileRepoList.stream().toList());
                 entity.setFileRepoList(updatedFileRepos);
             }
-            if (jobRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, entity.getId(), "=");
-                Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
-                Page<Jobs> oldJobs = jobDao.findAll(pair.getLeft(), pair.getRight());
-                List<Jobs> updatedJobs = jobDao.updateEntityFromConsole(convertToEntityList(jobRequestList, Jobs.class), id, oldJobs.stream().toList());
-                entity.setJobsList(updatedJobs);
-            }
             if (referenceNumbersRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, entity.getId(), "=");
                 Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
@@ -3035,10 +2981,6 @@ public class ConsolidationService implements IConsolidationService {
         if (fileRepoRequestList != null) {
             List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(fileRepoRequestList, FileRepo.class, isFromBooking ? false : isCreate), id, Constants.CONSOLIDATION);
             consolidationDetails.setFileRepoList(updatedFileRepos);
-        }
-        if (jobRequestList != null) {
-            List<Jobs> updatedJobs = jobDao.updateEntityFromConsole(commonUtils.convertToEntityList(jobRequestList, Jobs.class, isFromBooking ? false : isCreate), id);
-            consolidationDetails.setJobsList(updatedJobs);
         }
         if (referenceNumbersRequestList != null) {
             List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isFromBooking ? false : isCreate), id);
