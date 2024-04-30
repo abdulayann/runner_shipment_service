@@ -20,4 +20,7 @@ public class EventConstants {
     public static final String TRACK_EVENTS_FETCH_SUCCESSFUL = "Track Events fetched Successfully";
     public static final String TRACK_EVENT_DETAILS = "/trackEvents";
     public static final String EVENT_RETRIEVE_BY_ID_ERROR = "Event is null for Id {} with Request Id {}";
+
+    public static final String EMPTY_REQUEST_ERROR = "Request can't be empty!";
+    public static final String EMPTY_REQUEST_ID_ERROR = "Id can't be null in request";
 }
