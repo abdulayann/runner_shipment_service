@@ -75,6 +75,8 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
     public static class AwbRoutingInfoRes extends AwbRoutingInfoResponse {
         private String originIATACode;
         private String destinationIATACode;
+        private String originPortUnlocName;
+        private String destinationPortUnlocName;
         private AirlineInfo airlineInfo;
     }
     @Data

@@ -304,7 +304,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode, String agentType) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
-        criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
+        criteria.add(Arrays.asList(List.of("AirlineCode"), "=", mawbAirlineCode));
+        criteria.add("and");
+        criteria.add(Arrays.asList(List.of("HasAirPort"), "=", 1));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
@@ -438,5 +440,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Transactional
     public void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate) {consolidationRepository.saveCreatedDateAndUser(id, createdBy, createdDate);}
+
+    public String getConsolidationNumberFromId(Long id) {
+        return consolidationRepository.getConsolidationNumberFromId(id);
+    }
 
 }

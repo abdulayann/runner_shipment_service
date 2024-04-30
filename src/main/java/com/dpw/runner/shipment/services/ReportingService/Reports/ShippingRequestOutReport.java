@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Co
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingRequestOutModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -146,7 +147,7 @@ public class ShippingRequestOutReport extends IReport {
         if (bookingCarriage != null) {
             String vessel = bookingCarriage.getVessel();
             List<Object> vesselCriteria = Arrays.asList(
-                    Arrays.asList("Mmsi"),
+                    Arrays.asList(Constants.VESSEL_GUID_V1),
                     "=",
                     vessel
             );

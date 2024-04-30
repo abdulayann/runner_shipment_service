@@ -23,9 +23,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.AwbReset;
-import com.dpw.runner.shipment.services.entity.enums.ChargeTypeCode;
-import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -37,10 +35,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.SaveStatus;
@@ -151,6 +146,8 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
+    @Autowired
+    private IAirMessagingLogsService airMessagingLogsService;
 
     ExecutorService executorService = Executors.newFixedThreadPool(10);
 
@@ -824,7 +821,7 @@ public class AwbService implements IAwbService {
         setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
 
          for (var orgRow : consolidationDetails.getConsolidationAddresses()) {
-            if (orgRow.getType().equals(Constants.FORWARDING_AGENT)) {
+            if (orgRow.getType().equals(Constants.FAG)) {
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
                 awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
                 var issuingAgentAddress = AwbUtility.constructAddress(orgRow.getAddressData());
@@ -1072,6 +1069,7 @@ public class AwbService implements IAwbService {
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
         boolean syncShipment = false;
         if(StringUtility.isEmpty(shipmentDetails.getHouseBill())) {
+            if(!(Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()) && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode())))
             shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
             shipmentDao.save(shipmentDetails, false);
             syncShipment = true;
@@ -1096,7 +1094,8 @@ public class AwbService implements IAwbService {
         }
         List<AwbSpecialHandlingCodesMappingInfo> sph = null;
         if(!Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getEfreightStatus())
-            && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAW")) {
+            && (shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAW") ||
+                (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAP")))) {
             sph = Arrays.asList(AwbSpecialHandlingCodesMappingInfo
                     .builder()
                     .shcId(shipmentDetails.getAdditionalDetails().getEfreightStatus())
@@ -1108,7 +1107,7 @@ public class AwbService implements IAwbService {
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
         // generate Awb Entity
         Awb awb = Awb.builder()
-                .awbNumber(shipmentDetails.getHouseBill())
+                .awbNumber(request.getAwbType().equals(Constants.DMAWB) ? shipmentDetails.getMasterBill() : shipmentDetails.getHouseBill())
                 .awbShipmentInfo(generateAwbShipmentInfo(shipmentDetails, request, awbCargoInfo))
                 .awbNotifyPartyInfo(generateAwbNotifyPartyinfo(shipmentDetails, request))
                 .awbRoutingInfo(generateAwbRoutingInfo(shipmentDetails, request))
@@ -1126,7 +1125,7 @@ public class AwbService implements IAwbService {
         AwbShipmentInfo awbShipmentInfo = new AwbShipmentInfo();
         awbShipmentInfo.setEntityId(shipmentDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
-        awbShipmentInfo.setAwbNumber(shipmentDetails.getHouseBill());
+        awbShipmentInfo.setAwbNumber(request.getAwbType().equals(Constants.DMAWB) ? shipmentDetails.getMasterBill() : shipmentDetails.getHouseBill());
         var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getOrgData() != null ? shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME): "");
         awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
         var shipperAddress = AwbUtility.constructAddress(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null);
@@ -1142,7 +1141,7 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getShippingLine() : null);
 
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
-            if (orgRow.getType().equals(Constants.FORWARDING_AGENT)) {
+            if (orgRow.getType().equals(Constants.FAG)) {
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
                 awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
                 var issuingAgentAddress = AwbUtility.constructAddress(orgRow.getAddressData());
@@ -1560,7 +1559,9 @@ public class AwbService implements IAwbService {
         Awb awb = awbOptional.get();
         UUID awbGuid = awb.getGuid();
         Long awbId = awb.getId();
-        var isAirMessagingSent = awb.getIsAirMessagingSent();
+        AwbStatus airMessageStatus = awb.getAirMessageStatus();
+        AwbStatus linkedHawbAirMessageStatus = awb.getLinkedHawbAirMessageStatus();
+        var isAirMessagingSent = false; //awb.getIsAirMessagingSent();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
@@ -1607,7 +1608,8 @@ public class AwbService implements IAwbService {
                 }
                 else awb = generateAwb(createAwbRequest);
                 awb.setGuid(awbGuid);
-                awb.setIsAirMessagingSent(isAirMessagingSent);
+                awb.setAirMessageStatus(airMessageStatus);
+                awb.setLinkedHawbAirMessageStatus(linkedHawbAirMessageStatus);
                 break;
             }
             case AWB_ROUTING: {
@@ -1929,7 +1931,7 @@ public class AwbService implements IAwbService {
 
 
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
-            if (orgRow.getType() == Constants.FORWARDING_AGENT) {
+            if (orgRow.getType().equals(Constants.FAG)) {
                 if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getIssuingAgentNameLock()) ||
                         (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getIssuingAgentNameLock())) {
                     var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
@@ -3116,11 +3118,29 @@ public class AwbService implements IAwbService {
                 V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
                 List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
                 if(orgList.size() > 0) {
+
+                    // fetch all address for default org
+                    CommonV1ListRequest addressRequest = new CommonV1ListRequest();
+                    List<Object> addressField = new ArrayList<>(List.of("OrgId"));
+                    List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", orgList.get(0).getId()));
+                    addressRequest.setCriteriaRequests(addressCriteria);
+                    V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+                    List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+
                     awbShipmentInfo.setIssuingAgentName(StringUtility.toUpperCase(orgList.get(0).getFullName()));
                     awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
                     awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
                             orgList.get(0).getAgentCASSCode() : awbShipmentInfo.getAgentCASSCode());
-                    awbShipmentInfo.setIssuingAgentAddress(StringUtility.toUpperCase(getFormattedAddress(orgList.get(0))));
+
+                    if(addressList == null || addressList.isEmpty()) {
+                        awbShipmentInfo.setIssuingAgentAddress(StringUtility.toUpperCase(getFormattedAddress(orgList.get(0))));
+                    } else {
+                        EntityTransferAddress address = addressList.stream().filter(x -> Objects.equals(x.getAddressShortCode(), "Default")).findFirst().orElse(addressList.get(0));
+                        if(address != null) {
+                            var addressMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(address));
+                            awbShipmentInfo.setIssuingAgentAddress(AwbUtility.constructAddress(addressMap));
+                        }
+                    }
                     if(awbCargoInfo != null) {
                         String country = orgList.get(0) != null ?
                                 orgList.get(0).getCountry() : null;
@@ -3200,6 +3220,141 @@ public class AwbService implements IAwbService {
             res = IataAgentResponse.builder().iataAgent(false).build();
         }
         return ResponseHelper.buildSuccessResponse(res);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getFnmStatusMessage(Optional<Long> shipmentId, Optional<Long> consolidaitonId) {
+
+        Awb masterAwb = null;
+        String entityType = "";
+        List<Awb> awbList = null;
+        StringBuilder responseStatusMessage = new StringBuilder();
+        Boolean fnMstatus = false;
+
+        if(shipmentId.isPresent()) {
+            awbList = awbDao.findByShipmentId(shipmentId.get());
+        }
+        else if(consolidaitonId.isPresent()) {
+            awbList = awbDao.findByConsolidationId(consolidaitonId.get());
+        }
+        else {
+            // Throw some error both can't be null
+            // or send empty response object
+            return ResponseHelper.buildSuccessResponse();
+        }
+
+        if(!Objects.isNull(awbList) && !awbList.isEmpty()) {
+            masterAwb = awbList.get(0);
+            entityType = masterAwb.getAwbShipmentInfo().getEntityType();
+        }
+        FnmStatusMessageResponse fnmStatusMessageResponse = new FnmStatusMessageResponse();
+
+        // Fetch the logs for all Awb entities (master and its linked Hawb)
+        // Update the response as per AirMessagingLogs
+        switch(entityType) {
+            case Constants.HAWB -> fnmAcknowledgementHawb(masterAwb, fnmStatusMessageResponse);
+            case Constants.DMAWB -> fnmAcknowledgementMawb(masterAwb, fnmStatusMessageResponse);
+            case Constants.MAWB -> fnmAcknowledgementMawb(masterAwb, fnmStatusMessageResponse);
+        }
+
+        return ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse);
+    }
+
+    private void fnmAcknowledgementHawb(Awb awb, FnmStatusMessageResponse fnmStatusMessageResponse) {
+        Boolean fnmStatus = null;
+        StringBuilder responseStatusMessage = new StringBuilder();
+
+        var statusLog = airMessagingLogsService.getRecentLogForEntityGuid(awb.getGuid());
+        if (statusLog == null)
+            return;
+        if(Objects.equals(statusLog.getStatus(), AirMessagingStatus.FAILED.name())) {
+            fnmStatus = false;
+            responseStatusMessage.append(String.format(AirMessagingLogsConstants.SHIPMENT_FNM_FAILURE_ERROR, statusLog.getErrorMessage()));
+        }
+        if(Objects.equals(statusLog.getStatus(), AirMessagingStatus.SUCCESS.name())) {
+            fnmStatus = true;
+            responseStatusMessage.append("FZB submission is accepted");
+        }
+
+        fnmStatusMessageResponse.setFnmStatus(fnmStatus);
+        fnmStatusMessageResponse.setResponse(responseStatusMessage.toString());
+    }
+    private void fnmAcknowledgementMawb(Awb mawb, FnmStatusMessageResponse fnmStatusMessageResponse) {
+        var mawbStatusLog = airMessagingLogsService.getRecentLogForEntityGuid(mawb.getGuid());
+        String awbType = mawb.getAwbShipmentInfo().getEntityType();
+        Boolean fnmStatus = null;
+        StringBuilder responseStatusMessage = new StringBuilder();
+
+        if (mawbStatusLog == null)
+            return;
+
+        // Stores shipment ID of failed Hawbs
+        List<Long> failedShipmentHawbs = new ArrayList<>();
+        List<Awb> linkedHawb = getLinkedAwbFromMawb(mawb.getId());
+        int successHawbCount = 0;
+
+        for(var hawb : linkedHawb) {
+            var statusLog = airMessagingLogsService.getRecentLogForEntityGuid(hawb.getGuid());
+
+            if(statusLog == null)
+                continue;
+
+            if(Objects.equals(statusLog.getStatus(), AirMessagingStatus.FAILED.name())) {
+                failedShipmentHawbs.add(hawb.getShipmentId());
+            }
+            if(Objects.equals(statusLog.getStatus(), AirMessagingStatus.SUCCESS.name())) {
+                successHawbCount += 1;
+            }
+        }
+
+
+        boolean failedMawb = Objects.equals(mawbStatusLog.getStatus(), AirMessagingStatus.FAILED.name());
+        boolean failedHawb = !failedShipmentHawbs.isEmpty();
+
+        if(Objects.equals(mawbStatusLog.getStatus(), AirMessagingStatus.SUCCESS.name())) {
+            fnmStatus = true;
+            if(awbType.equals(Constants.DMAWB))
+                responseStatusMessage.append("FZB submission is accepted");
+            else if(successHawbCount == linkedHawb.size())
+                responseStatusMessage.append("FWB and FZB submissions are accepted");
+        }
+
+        // Cases to generate the error Log
+        if(!failedMawb && !failedHawb) {
+        }
+        if(failedHawb) {
+            fnmStatus = false;
+            // if failedShipmentHawb size > 0 fetch ShipmentID for those shipments
+            ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", failedShipmentHawbs, "IN");
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            String shipmentNumbersString = "";
+            if(shipmentDetailsPage.hasContent()) {
+                List<String> shipmentNumbers = shipmentDetailsPage.getContent().stream().map(ShipmentDetails::getShipmentId).toList();
+                shipmentNumbersString = String.join(" ", shipmentNumbers);
+            }
+
+            if(failedMawb) {
+                responseStatusMessage.append(String.format(
+                        AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_FAILURE_ERROR, shipmentNumbersString)
+                );
+            }
+            else {
+                responseStatusMessage.append(String.format(
+                        AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_SUCCESS_HAWB_FAILURE_ERROR, shipmentNumbersString)
+                );
+            }
+        }
+        // !failedHawb && failedMawb
+        else if(!failedHawb && failedMawb){
+            fnmStatus = false;
+            responseStatusMessage.append(String.format(
+                    AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_SUCCESS_ERROR, mawbStatusLog.getErrorMessage())
+            );
+        }
+
+        fnmStatusMessageResponse.setFnmStatus(fnmStatus);
+        fnmStatusMessageResponse.setResponse(responseStatusMessage.toString());
     }
 
 }

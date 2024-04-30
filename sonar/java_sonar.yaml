@@ -11,7 +11,7 @@ resources:
     ref: main
 
 pool:
-  name: Runner-self-hosted-agent
+  vmImage: ubuntu-latest
 
 steps:
 - checkout: self   #my_current_repo 

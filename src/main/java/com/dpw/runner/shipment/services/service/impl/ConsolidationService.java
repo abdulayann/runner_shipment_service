@@ -1408,10 +1408,10 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
-        response.setSummaryConsoleTEU(consoleTeu.toString());
-        response.setSummaryConsolContainer(StringUtility.convertToString(consoleCont));
-        response.setSummaryShipmentTEU(shipmentTeu.toString());
-        response.setSummaryShipmentContainer(StringUtility.convertToString(shipmentCont));
+        response.setSummaryConsoleTEU(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(consoleTeu), 0, v1TenantSettingsResponse));
+        response.setSummaryConsolContainer(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(consoleCont), 0, v1TenantSettingsResponse));
+        response.setSummaryShipmentTEU(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentTeu), 0, v1TenantSettingsResponse));
+        response.setSummaryShipmentContainer(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentCont), 0, v1TenantSettingsResponse));
 
         if(consolidationDetails.getAchievedQuantities() == null)
             consolidationDetails.setAchievedQuantities(new AchievedQuantities());
@@ -2203,10 +2203,12 @@ public class ConsolidationService implements IConsolidationService {
             if(consolidationDetailsResponse.getId() != null) {
                 var awb = awbDao.findByConsolidationId(consolidationDetailsResponse.getId());
                 if (awb != null && !awb.isEmpty()) {
-                    if (Boolean.TRUE.equals(awb.get(0).getIsAirMessagingSent()))
-                        consolidationDetailsResponse.setAwbStatus(AwbStatus.AIR_MESSAGE_SENT);
+                    if (awb.get(0).getAirMessageStatus() != null)
+                        consolidationDetailsResponse.setAwbStatus(awb.get(0).getAirMessageStatus());
                     else
                         consolidationDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
+                    if(awb.get(0).getLinkedHawbAirMessageStatus() != null)
+                        consolidationDetailsResponse.setLinkedHawbStatus(awb.get(0).getLinkedHawbAirMessageStatus());
                 }
             }
             if (Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA))
@@ -2229,9 +2231,17 @@ public class ConsolidationService implements IConsolidationService {
                 Pair<Specification<ShipmentDetails>, Pageable> pair1 = fetchData(listReq, ShipmentDetails.class);
                 Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair1.getLeft(), pair1.getRight());
                 var map = shipmentDetailsPage.getContent().stream().collect(toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
+                List<ContainerResponse> containers = consolidationDetailsResponse.getContainersList();
+                Map<Long, ContainerResponse> contMap = new HashMap<>();
+                if(containers != null)
+                    contMap = containers.stream().collect(Collectors.toMap(ContainerResponse::getId, Function.identity()));
+                Map<Long, ContainerResponse> finalContMap = contMap;
                 truckDriverDetails.forEach(truckDriverDetail -> {
                     var details = jsonHelper.convertValue(truckDriverDetail, TruckDriverDetailsResponse.class);
                     details.setShipmentNumber(map.get(truckDriverDetail.getShipmentId()));
+                    if(details.getContainerId() != null && finalContMap.containsKey(details.getContainerId())) {
+                        details.setContainerNumber(finalContMap.get(details.getContainerId()).getContainerNumber());
+                    }
                     truckingInfo.add(details);
                 });
             }
@@ -2791,13 +2801,6 @@ public class ConsolidationService implements IConsolidationService {
                 List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id, oldReferenceNumbers.stream().toList());
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
             }
-            if (truckDriverDetailsRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, entity.getId(), "=");
-                Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
-                Page<TruckDriverDetails> oldTruckDriverDetails = truckDriverDetailsDao.findAll(pair.getLeft(), pair.getRight());
-                List<TruckDriverDetails> updatedReferenceNumbers = truckDriverDetailsDao.updateEntityFromConsole(convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class), id, oldTruckDriverDetails.stream().toList());
-//                entity.setTruckDriverDetails(updatedReferenceNumbers);
-            }
             if (routingsRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, entity.getId(), "=");
                 Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
@@ -2893,15 +2896,15 @@ public class ConsolidationService implements IConsolidationService {
                 itemRow.createCell(headerMap.get("Carrier Booking Status")).setCellValue(consol.getBookingStatus() != null ? consol.getBookingStatus() : "");
                 itemRow.createCell(headerMap.get("Carrier Booking Number")).setCellValue(consol.getBookingNumber() != null ? consol.getBookingNumber() : "");
                 itemRow.createCell(headerMap.get("Container Count")).setCellValue(consol.getContainerCount() != null ? consol.getContainerCount().toString() : "");
-                itemRow.createCell(headerMap.get("POL")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? consol.getCarrierDetails().getUnlocationData().get("originPort") : "");
-                itemRow.createCell(headerMap.get("POD")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? consol.getCarrierDetails().getUnlocationData().get("destinationPort") : "");
+                itemRow.createCell(headerMap.get("POL")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? consol.getCarrierDetails().getUnlocationData().get("originPort_name") : "");
+                itemRow.createCell(headerMap.get("POD")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? consol.getCarrierDetails().getUnlocationData().get("destinationPort_name") : "");
                 itemRow.createCell(headerMap.get("MBL / MAWB")).setCellValue(consol.getMawb() != null ? consol.getMawb() : "");
                 itemRow.createCell(headerMap.get("POL Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("originPort_code")) : "");
                 itemRow.createCell(headerMap.get("POD Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("destinationPort_code")) : "");
                 itemRow.createCell(headerMap.get("Origin Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("origin_code")) : "");
                 itemRow.createCell(headerMap.get("Destination Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("destination_code")) : "");
-                itemRow.createCell(headerMap.get("Origin")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("origin")) : "");
-                itemRow.createCell(headerMap.get("Destination")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("destination")) : "");
+                itemRow.createCell(headerMap.get("Origin")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("origin_name")) : "");
+                itemRow.createCell(headerMap.get("Destination")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("destination_name")) : "");
             }
 
             LocalDateTime currentTime = LocalDateTime.now();
@@ -3537,7 +3540,9 @@ public class ConsolidationService implements IConsolidationService {
     private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode, String type) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
-        criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
+        criteria.add(Arrays.asList(List.of("AirlineCode"), "=", mawbAirlineCode));
+        criteria.add("and");
+        criteria.add(Arrays.asList(List.of("HasAirPort"), "=", 1));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);

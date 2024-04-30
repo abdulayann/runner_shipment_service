@@ -3,36 +3,45 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
+import com.dpw.runner.shipment.services.syncing.Entity.ArrivalDepartureDetails;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @Service
 @Slf4j
@@ -64,6 +73,8 @@ public class ConsolidationSync implements IConsolidationSync {
     private CommonUtils commonUtils;
     @Autowired
     private ISyncService syncService;
+    @Autowired
+    private ITruckDriverDetailsDao truckDriverDetailsDao;
     @Autowired
     private V1AuthHelper v1AuthHelper;
 
@@ -119,7 +130,6 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setPlaceOfIssueString(request.getPlaceOfIssue());
 
         mapArrivalDepartureDetails(response, request);
-//        mapTruckDriverDetail(response, request);
         mapPackings(response, request);
         mapJobs(response, request);
         response.setContainersList(syncEntityConversionService.containersV2ToV1(request.getContainersList()));
@@ -129,7 +139,19 @@ public class ConsolidationSync implements IConsolidationSync {
         if(response.getAutoUpdateGoodsDesc() == null)
             response.setAutoUpdateGoodsDesc(false);
 
-        mapShipmentGuids(response, request);
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getId());
+        if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()) {
+            List<Long> shipmentIds = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).collect(toList());
+            ListCommonRequest listReq = constructListCommonRequest("id", shipmentIds, "IN");
+            Pair<Specification<ShipmentDetails>, Pageable> pair1 = fetchData(listReq, ShipmentDetails.class);
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair1.getLeft(), pair1.getRight());
+            if(shipmentDetailsPage != null && !shipmentDetailsPage.isEmpty()) {
+                var map = shipmentDetailsPage.getContent().stream().collect(toMap(ShipmentDetails::getId, ShipmentDetails::getGuid));
+                response.setShipmentGuids(map.values().stream().toList());
+                mapTruckDriverDetail(response, request, shipmentIds, map);
+            }
+        }
+
         if(request.getCreditor() != null && request.getCreditor().getIsAddressFreeText() != null && request.getCreditor().getIsAddressFreeText()){
             response.setIsCreditorFreeTextAddress(true);
             var rawData = request.getCreditor().getAddressData() != null ? request.getCreditor().getAddressData().get(PartiesConstants.RAW_DATA): null;
@@ -157,15 +179,6 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setGuid(request.getGuid());
         return response;
     }
-    private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetails request) {
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getId());
-        List<UUID> req = consoleShipmentMappings.stream()
-                .map(item -> {
-                    return shipmentDao.findById(item.getShipmentId()).get().getGuid();
-                })
-                .toList();
-        response.setShipmentGuids(req);
-    }
 
     private void mapJobs(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getJobsList() == null)
@@ -189,21 +202,31 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setPackingList(res);
     }
 
-//    private void mapTruckDriverDetail(CustomConsolidationRequest response, ConsolidationDetails request) {
-//        if(request == null || request.getTruckDriverDetails() == null)
-//            return;
-//        List<TruckDriverDetailsRequestV2> req = request.getTruckDriverDetails().stream()
-//                .map(item -> {
-//                    TruckDriverDetailsRequestV2 t;
-//                    t = modelMapper.map(item, TruckDriverDetailsRequestV2.class);
-//                    t.setTransporterNameOrg(item.getTransporterName());
-//                    //ENUM
-//                    t.setTransporterTypeString(item.getTransporterType().toString());
-//                    return t;
-//                })
-//                .toList();
-//        response.setTruckDriverDetail(req);
-//    }
+    private void mapTruckDriverDetail(CustomConsolidationRequest response, ConsolidationDetails request, List<Long> shipmentIds, Map<Long, UUID> map) {
+        List<TruckDriverDetails> truckDriverDetails = null;
+        ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentIds, "IN");
+        Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
+        Page<TruckDriverDetails> truckDriverDetailsPage = truckDriverDetailsDao.findAll(pair.getLeft(), pair.getRight());
+        truckDriverDetails = truckDriverDetailsPage.stream().toList();
+        Map<Long, UUID> contMap = new HashMap<>();
+        if(request.getContainersList() != null && !request.getContainersList().isEmpty())
+            contMap = request.getContainersList().stream().collect(toMap(Containers::getId, Containers::getGuid));
+        Map<Long, UUID> finalContMap = contMap;
+        List<TruckDriverDetailsRequestV2> req = truckDriverDetails.stream()
+                .map(item -> {
+                    TruckDriverDetailsRequestV2 t;
+                    t = modelMapper.map(item, TruckDriverDetailsRequestV2.class);
+                    t.setTransporterTypeString(item.getTransporterType().toString());
+                    t.setConsolidationGuid(request.getGuid());
+                    if(item.getShipmentId() != null && map.containsKey(item.getShipmentId()))
+                        t.setShipmentGuid(map.get(item.getShipmentId()));
+                    if(item.getContainerId() != null && finalContMap.containsKey(item.getContainerId()))
+                        t.setContainerGuid(finalContMap.get(item.getContainerId()));
+                    return t;
+                })
+                .toList();
+        response.setTruckDriverDetail(req);
+    }
 
     private void mapCarrierDetails(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getCarrierDetails() == null)

@@ -398,7 +398,7 @@ public class MasterDataUtils{
             log.info("Vessel: "+itemValueList);
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> criteria = new ArrayList<>();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.MMSI));
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
             String operator = Operators.IN.getValue();
             criteria.addAll(List.of(field, operator, List.of(itemValueList)));
             request.setCriteriaRequests(criteria);
@@ -406,7 +406,7 @@ public class MasterDataUtils{
 
             List<EntityTransferVessels> vesselsList = jsonHelper.convertValueToList(response.entities, EntityTransferVessels.class);
             vesselsList.forEach(vessel -> {
-                keyVesselDataMap.put(vessel.getMmsi(), vessel.getName());
+                keyVesselDataMap.put(vessel.getGuid().toString(), vessel.getName());
             });
             fieldNameKeyMap.forEach((key, value) -> {
                 if(keyVesselDataMap.containsKey(value))
@@ -991,7 +991,7 @@ public class MasterDataUtils{
             log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> criteria = new ArrayList<>();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.MMSI));
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
             String operator = Operators.IN.getValue();
             criteria.addAll(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
@@ -999,7 +999,7 @@ public class MasterDataUtils{
 
             List<EntityTransferVessels> vesselsList = jsonHelper.convertValueToList(response.entities, EntityTransferVessels.class);
             vesselsList.forEach(vessel -> {
-                keyMasterDataMap.put(vessel.getMmsi(), vessel);
+                keyMasterDataMap.put(vessel.getGuid().toString(), vessel);
             });
         }
         return keyMasterDataMap;
@@ -1087,6 +1087,8 @@ public class MasterDataUtils{
                         EntityTransferUnLocations object = (EntityTransferUnLocations) cache.get();
                         fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
                         fieldNameMasterDataMap.put(key + Constants.COUNTRY, object.Country);
+                        fieldNameMasterDataMap.put(key + Constants.NAME, object.NameWoDiacritics);
+                        fieldNameMasterDataMap.put(key + Constants.CODE, object.LocCode);
                         break;
                     case CacheConstants.UNLOCATIONS_AWB:
                         EntityTransferUnLocations obj = (EntityTransferUnLocations) cache.get();

@@ -148,6 +148,7 @@ public class Constants {
     public static final String MBL = "MBL";
 
     public static final String FORWARDING_AGENT = "Forwarding Agent";
+    public static final String FAG = "FAG";
 
     public static final String DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB = "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED";
     public static final double FACTOR_VOL_WT = 166.667;
@@ -334,6 +335,7 @@ public class Constants {
     public static final String FLIGHT_NUMBER = "flightNumber";
     public static final String SHIPPING_LINE = "shippingLine";
     public static final String VESSEL = "vessel";
+    public static final String VESSEL_GUID_V1 = "Guid";
     public static final String VOYAGE = "voyage";
     public static final String ORIGIN_PORT = "originPort";
     public static final String DESTINATION_PORT = "destinationPort";
@@ -354,6 +356,8 @@ public class Constants {
     public static final String BRANCH = "branch";
     public static final String PRODUCT_PROCESS_TYPES = "productProcessTypes";
     public static final String COUNTRY = "_country";
+    public static final String NAME = "_name";
+    public static final String CODE = "_code";
     public static final String FAILURE_EXECUTING = "failure executing :(";
     public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
 
@@ -392,7 +396,9 @@ public class Constants {
 
     public static final String WITH_REQUEST_ID_MSG = " with Request Id {}";
     public static final String UNUSED = "Unused";
-    public static final String XFNM = "XFNM";
     public static final String NON = "NON";
     public static final String EAW = "EAW";
+    public static final String EVENT = "event";
+    public static final String TYPE = "Type";
+    public static final String DESCARTES = "Descartes";
 }

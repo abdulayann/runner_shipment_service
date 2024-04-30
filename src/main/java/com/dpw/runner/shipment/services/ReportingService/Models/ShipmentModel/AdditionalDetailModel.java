@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -166,7 +167,7 @@ public class AdditionalDetailModel implements IDocumentModel {
     @JsonProperty("BLExporterShipment")
     private String BLExporterShipment;
     @JsonProperty("ScreeningStatus")
-    private String screeningStatus;
+    private List<String> screeningStatus;
     @JsonProperty("PaidPlace")
     private String paidPlace;
     @JsonProperty("PlaceOfIssue")

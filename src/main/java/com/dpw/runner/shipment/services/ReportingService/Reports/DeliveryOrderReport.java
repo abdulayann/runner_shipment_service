@@ -47,6 +47,8 @@ public class DeliveryOrderReport extends IReport{
     @Autowired
     private JsonHelper jsonHelper;
 
+    public Boolean printWithoutTranslation;
+
     @Override
     public Map<String, Object> getData(Long id) {
         DeliveryOrderModel deliveryOrderModel = (DeliveryOrderModel) getDocumentModel(id);
@@ -95,6 +97,8 @@ public class DeliveryOrderReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         DeliveryOrderModel deliveryOrderModel = (DeliveryOrderModel) documentModel;
+        List<String> orgWithoutTranslation = new ArrayList<>();
+        List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(deliveryOrderModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(deliveryOrderModel.shipmentDetails, dictionary);
@@ -102,7 +106,7 @@ public class DeliveryOrderReport extends IReport{
         populateUserFields(deliveryOrderModel.usersDto, dictionary);
         populateBlFields(deliveryOrderModel.hbl, dictionary);
         populateBillChargesFields(deliveryOrderModel.shipmentDetails, dictionary);
-        populateShipmentOrganizationsLL(deliveryOrderModel.shipmentDetails, dictionary);
+        populateShipmentOrganizationsLL(deliveryOrderModel.shipmentDetails, dictionary, orgWithoutTranslation);
         dictionary.put(ReportConstants.MASTER_BILL_ISSUE_PLACE, deliveryOrderModel.placeOfIssueName);
         dictionary.put(ReportConstants.PPCC, deliveryOrderModel.paymentTerms);
 
@@ -120,8 +124,12 @@ public class DeliveryOrderReport extends IReport{
             for (Map<String, Object> v : valuesContainer) {
                 if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
                     v.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
-                if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
-                    v.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
+                if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null) {
+                    String grossWeight = ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse);
+                    v.put(ReportConstants.GROSS_WEIGHT, grossWeight);
+                    v.put(CARGO_GROSS_WEIGHT_UNIT, grossWeight + " " + v.get(GROSS_WEIGHT_UNIT));
+                }
+
                 if (v.containsKey(ReportConstants.NetWeight) && v.get(ReportConstants.NetWeight) != null)
                     v.put(ReportConstants.NetWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.NetWeight), v1TenantSettingsResponse));
             }
@@ -163,7 +171,7 @@ public class DeliveryOrderReport extends IReport{
             List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
             for (Map<String, Object> v: values) {
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }
@@ -213,7 +221,13 @@ public class DeliveryOrderReport extends IReport{
             dictionary.put(CLIENT_ADRS, clientAddress);
         }
 
+        if(!Objects.isNull(deliveryOrderModel.consolidationDetails) && !Objects.isNull(deliveryOrderModel.consolidationDetails.getArrivalDetails())) {
+            if(deliveryOrderModel.consolidationDetails.getArrivalDetails().getCTOId() != null)
+                dictionary.put(CTO_FULL_NAME, getValueFromMap(deliveryOrderModel.consolidationDetails.getArrivalDetails().getCTOId().getOrgData(), FULL_NAME));
+        }
+
         populateRaKcData(dictionary, deliveryOrderModel.getShipmentDetails());
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
         return dictionary;
     }

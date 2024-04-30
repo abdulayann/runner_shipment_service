@@ -128,8 +128,10 @@ public class ListContractResponse implements IRunnerResponse {
         private String id;
         @JsonProperty("country")
         private String country;
-        @JsonProperty("opportunity_owner_email_ids")
-        private List<String> opportunity_owner_email_ids;
+        @JsonProperty("sales_agent_primary_email")
+        private String sales_agent_primary_email;
+        @JsonProperty("sales_agent_secondary_email")
+        private String sales_agent_secondary_email;
     }
 
     @Data

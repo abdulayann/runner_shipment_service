@@ -19,4 +19,8 @@ public interface IConsoleShipmentMappingDao {
     void updateShipmentsMappings(Long consolidationId, List<Long> shipIds);
 
     Page<ConsoleShipmentMapping> findAll(Specification<ConsoleShipmentMapping> spec, Pageable pageable);
+
+    List<ConsoleShipmentMapping> findByConsolidationIdByQuery(Long consolidationId);
+
+    List<ConsoleShipmentMapping> findByShipmentIdByQuery(Long shipmentId);
 }

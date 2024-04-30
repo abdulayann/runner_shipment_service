@@ -27,4 +27,5 @@ public interface IConsolidationDetailsDao {
     Boolean isMAWBNumberValid(String masterBill);
     int updateConsoleBookingFields(ConsoleBookingRequest request);
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
+    String getConsolidationNumberFromId(Long id);
 }

@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -16,6 +17,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "shipment_additional_details")
@@ -164,9 +166,11 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Size(max=10, message = "max size is 10 for smtp_igm_number")
     @Column(name = "smtp_igm_number")
+    @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
 
     @Column(name = "smtp_igm_date")
+    @JsonProperty("SMTPIGMDate")
     private LocalDateTime SMTPIGMDate;
 
     @Column(name = "is_inland")
@@ -272,8 +276,10 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "screening_status")
     @Size(max=50, message = "max size is 50 for screening_status")
-    @MasterData(type = MasterDataType.SCREENING_STATUS)
-    private String screeningStatus;
+    //@MasterData(type = MasterDataType.SCREENING_STATUS)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "screening_status", joinColumns = @JoinColumn(name = "shipment_additional_details_id"))
+    private List<String> screeningStatus;
 
     @Column(name = "paid_place")
     @UnlocationData

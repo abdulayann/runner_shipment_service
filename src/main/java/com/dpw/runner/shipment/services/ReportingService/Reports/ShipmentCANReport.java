@@ -41,6 +41,8 @@ public class ShipmentCANReport extends IReport {
     @Autowired
     private IHblDao hblDao;
 
+    public Boolean printWithoutTranslation;
+
 
     @Override
     public Map<String, Object> getData(Long id) throws RunnerException {
@@ -66,8 +68,10 @@ public class ShipmentCANReport extends IReport {
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ShipmentCANModel shipmentCANModel = (ShipmentCANModel) documentModel;
+        List<String> orgWithoutTranslation = new ArrayList<>();
+        List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         Map<String, Object> dictionary = hblReport.getData(shipmentCANModel.shipmentDetails.getId());
-        populateShipmentOrganizationsLL(shipmentCANModel.shipmentDetails, dictionary);
+        populateShipmentOrganizationsLL(shipmentCANModel.shipmentDetails, dictionary, orgWithoutTranslation);
         List<BillChargesResponse> allBillCharges = new ArrayList<>();
         TaxPair<String, String> tax1 = new TaxPair<>("TaxType1", "0");
         TaxPair<String, String> tax2 = new TaxPair<>("TaxType2", "0");
@@ -145,41 +149,6 @@ public class ShipmentCANReport extends IReport {
                 }
             }
         }
-        if(shipmentCANModel.tenantSettingsResponse != null && shipmentCANModel.tenantSettingsResponse.isEnableIGMDetails())
-        {
-            if(shipmentCANModel.shipmentDetails.getDirection() != null && shipmentCANModel.shipmentDetails.getDirection().equals(Constants.IMP)) {
-                if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getIGMFileDate() != null) {
-                    dictionary.put(ReportConstants.IGM_FILE_DATE, shipmentCANModel.shipmentDetails.getAdditionalDetails().getIGMFileDate());
-                }
-                if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getIGMFileNo() != null) {
-                    dictionary.put(ReportConstants.IGM_FILE_NO, shipmentCANModel.shipmentDetails.getAdditionalDetails().getIGMFileNo());
-                }
-                if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getIGMInwardDate() != null) {
-                    dictionary.put(ReportConstants.IGM_INWARD_DATE, shipmentCANModel.shipmentDetails.getAdditionalDetails().getIGMInwardDate());
-                }
-                if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getInwardDateAndTime() != null) {
-                    dictionary.put(ReportConstants.INWARD_DATE_TIME, shipmentCANModel.shipmentDetails.getAdditionalDetails().getInwardDateAndTime());
-                }
-                if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getLineNumber() != null) {
-                    dictionary.put(ReportConstants.LINE_NUMBER, shipmentCANModel.shipmentDetails.getAdditionalDetails().getLineNumber());
-                }
-                if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getSubLineNumber() != null) {
-                    dictionary.put(ReportConstants.SUB_LINE_NUMBER, shipmentCANModel.shipmentDetails.getAdditionalDetails().getSubLineNumber());
-                }
-                if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getIsInland()) {
-                    dictionary.put(ReportConstants.IS_INLAND, shipmentCANModel.shipmentDetails.getAdditionalDetails().getIsInland()?"Yes":"No");
-                    if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate() != null) {
-                        dictionary.put(ReportConstants.SMTPIGM_DATE, shipmentCANModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate());
-                    }
-                    if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getSMTPIGMNumber() != null) {
-                        dictionary.put(ReportConstants.SMTPIGM_NUMBER, shipmentCANModel.shipmentDetails.getAdditionalDetails().getSMTPIGMNumber());
-                    }
-                    if(shipmentCANModel.shipmentDetails.getAdditionalDetails().getLocalLineNumber() != null) {
-                        dictionary.put(ReportConstants.LOCAL_LINE_NUMBER, shipmentCANModel.shipmentDetails.getAdditionalDetails().getLocalLineNumber());
-                    }
-                }
-            }
-        }
         if(shipmentCANModel.shipmentDetails.getCarrierDetails().getOriginPort() != null) {
             UnlocationsResponse pol = getUNLocRow(shipmentCANModel.shipmentDetails.getCarrierDetails().getOriginPort());
             if(pol != null) {
@@ -220,7 +189,7 @@ public class ShipmentCANReport extends IReport {
         if(shipmentCANModel.shipmentDetails.getVolume() != null)
             dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format(REGEX_S_S_PATTERN, ConvertToVolumeNumberFormat(shipmentCANModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), shipmentCANModel.shipmentDetails.getVolumeUnit()));
         dictionary.put(ReportConstants.MARKS_AND_NUMBER, shipmentCANModel.shipmentDetails.getMarksNum());
-        dictionary.put(ReportConstants.NO_OF_PACKAGES, ReportHelper.addCommaWithoutDecimal(shipmentCANModel.shipmentDetails.getNoOfPacks() == null ? BigDecimal.ZERO : BigDecimal.valueOf(shipmentCANModel.shipmentDetails.getNoOfPacks())));
+        dictionary.put(ReportConstants.NO_OF_PACKAGES, GetDPWWeightVolumeFormat(shipmentCANModel.shipmentDetails.getNoOfPacks() == null ? BigDecimal.ZERO : BigDecimal.valueOf(shipmentCANModel.shipmentDetails.getNoOfPacks()), 0, v1TenantSettingsResponse));
         if(shipmentCANModel.consolidationModel != null && shipmentCANModel.consolidationModel.getPayment() != null) {
             dictionary.put(FREIGHT, shipmentCANModel.consolidationModel.getPayment());
         }
@@ -252,7 +221,8 @@ public class ShipmentCANReport extends IReport {
                         BigDecimal count = BigDecimal.ONE;
                         if (split != null && !split[0].equals("null"))
                             count = new BigDecimal(split[0]);
-                        v.put(TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
+//                        v.put(TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
+                        v.put(TOTAL_UNIT_COUNT, GetDPWWeightVolumeFormat(count, 0, v1TenantSettingsResponse));
                     }
                 }
 
@@ -269,7 +239,7 @@ public class ShipmentCANReport extends IReport {
                 if(v.containsKey(TOTAL_AMOUNT) && v.get(TOTAL_AMOUNT) != null)
                     v.put(TOTAL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(v.get(TOTAL_AMOUNT).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
             dictionary.put(BILL_CHARGES, billChargesDict);
@@ -279,6 +249,8 @@ public class ShipmentCANReport extends IReport {
         dictionary.put(TOTAL_TAX_AMOUNT, AmountNumberFormatter.Format(BigDecimal.valueOf(totalTax), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
 
         populateRaKcData(dictionary, shipmentCANModel.shipmentDetails);
+        populateIGMInfo(shipmentCANModel.shipmentDetails, dictionary);
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
         return dictionary;
     }

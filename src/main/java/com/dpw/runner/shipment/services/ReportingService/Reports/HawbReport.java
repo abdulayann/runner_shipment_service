@@ -360,6 +360,8 @@ public class HawbReport extends IReport{
                     } else {
                         value.put(ReportConstants.TOTAL_AMOUNT, IReport.addCommas(0));
                     }
+                    if(value.get(PIECES_NO) != null)
+                        value.put(PIECES_NO, GetDPWWeightVolumeFormat(new BigDecimal(value.get(PIECES_NO).toString()), 0, v1TenantSettingsResponse));
                 });
                 dictionary.put(ReportConstants.PACKING_LIST, values);
                 String finalFreightAmountText = FreightAmountText;
@@ -390,7 +392,7 @@ public class HawbReport extends IReport{
                     SumOfTotalAmount[0] = SumOfTotalAmount[0].add(row.getTotalAmount() != null ? row.getTotalAmount() : BigDecimal.ZERO);
                     SumOfChargeableWt[0] = SumOfChargeableWt[0].add(row.getChargeableWt() != null ? row.getChargeableWt() : BigDecimal.ZERO);
                 });
-                dictionary.put(ReportConstants.TOtAl_PIECES, TotalPieces);
+                dictionary.put(ReportConstants.TOtAl_PIECES, GetDPWWeightVolumeFormat(BigDecimal.valueOf(TotalPieces.get()), 0, v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.TOTAL_GROSS_WEIGHT, ConvertToWeightNumberFormat(TotalGrossWeight[0], v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.TGW, ConvertToWeightNumberFormat(TotalGrossWeight[0], v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, AmountNumberFormatter.Format(SumOfTotalAmount[0], cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
@@ -614,7 +616,9 @@ public class HawbReport extends IReport{
             }
         }
 
-        populateRaKcData(dictionary, hawbModel.shipmentDetails);
+        if(!Objects.equals(hawbModel.shipmentDetails, null)) {
+            populateRaKcData(dictionary, hawbModel.shipmentDetails);
+        }
 
         return dictionary;
     }
@@ -933,7 +937,7 @@ public class HawbReport extends IReport{
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
             List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
             if(orgList != null && orgList.size() > 0) {
-                return orgList.get(0).City;
+                return Objects.equals(null, orgList.get(0).City) ? "" : orgList.get(0).City;
             }
         }
         return "";

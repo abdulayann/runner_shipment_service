@@ -244,8 +244,11 @@ public class CargoManifestReport extends IReport{
             dictionary.put(ReportConstants.TotalCntrPacks, addCommaWithoutDecimal(new BigDecimal(Total_Packs)));
         }
 
-        AwbCargoInfo cargoInfoRows = cargoManifestModel.awb.getAwbCargoInfo();
-        dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
+        if(cargoManifestModel.awb != null) {
+            AwbCargoInfo cargoInfoRows = cargoManifestModel.awb.getAwbCargoInfo();
+            dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
+        }
+        populateRaKcData(dictionary, cargoManifestModel.shipmentDetails);
 
         return dictionary;
     }

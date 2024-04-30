@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 public class ApiConstants {
     private ApiConstants(){}
     public static final String API_CREATE = "/create";
+    public static final String API_CREATE_TAGS_SHIPMENT = "/tags/shipment";
     public static final String API_UPLOAD = "/upload";
     public static final String API_UPLOAD_EVENTS = "/upload-events";
 
@@ -94,6 +95,7 @@ public class ApiConstants {
     public static final String POPULATE_CHARGE_TYPE_DETAILS = "/get/chargeType";
     public static final String VALIDATE_IATA_AGENT = "/validate-iata-agent";
     public static final String GET_GUID_BY_ID= "/get/guid";
+    public static final String FNM_STATUS_MESSAGE = "/get/fnmStatus";
 
 
     public static final String X_API_KEY = "x-api-key";

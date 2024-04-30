@@ -7,6 +7,8 @@ import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
+import java.util.Optional;
+
 public interface IAwbService {
     ResponseEntity<IRunnerResponse> createAwb(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> updateAwb(CommonRequestModel commonRequestModel);
@@ -28,4 +30,5 @@ public interface IAwbService {
     ResponseEntity<IRunnerResponse> getChargeTypeMasterData(CommonGetRequest commonGetRequest) throws RunnerException;
     ResponseEntity<IRunnerResponse> validateIataAgent();
     Awb getMawnLinkPacks(Awb awb);
+    ResponseEntity<IRunnerResponse> getFnmStatusMessage(Optional<Long> shipmentId, Optional<Long> consolidaitonId);
 }

@@ -4,8 +4,10 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.AWbLabelModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -13,6 +15,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 @Component
@@ -42,6 +45,7 @@ public class AWBLabelReport extends IReport{
         AWbLabelModel awbLabelModel = (AWbLabelModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         String mawb = awbLabelModel.shipment.getMasterBill();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         if(mawb != null){
             mawb = mawb.replace("-","");
             if(mawb.length() < 11) mawb = appendZero(mawb, 11);
@@ -62,7 +66,7 @@ public class AWBLabelReport extends IReport{
                     inners = "0" + inners;
                 }
             }
-            dictionary.put(ReportConstants.INNERS, inners);
+            dictionary.put(ReportConstants.INNERS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(inners)), 0, v1TenantSettingsResponse));
         }
         if(awbLabelModel.shipment.getNoOfPacks() != null){
             var packs = awbLabelModel.shipment.getNoOfPacks().toString();
@@ -72,7 +76,7 @@ public class AWBLabelReport extends IReport{
                     packs = "0" + packs;
                 }
             }
-            dictionary.put(ReportConstants.PACKS, packs);
+            dictionary.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(packs)), 0, v1TenantSettingsResponse));
         }
         if(awbLabelModel.tenant != null) {
             ReportHelper.addTenantDetails(dictionary, awbLabelModel.tenant);

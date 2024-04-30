@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
@@ -9,9 +10,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.util.List;
 
 @Entity
@@ -78,6 +77,17 @@ public class Awb extends MultiTenancy {
     @Column(name = "consolidation_id")
     private Long consolidationId;
 
-    @Column(name = "is_air_messaging_sent")
-    private Boolean isAirMessagingSent;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "air_message_status")
+    private AwbStatus airMessageStatus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "linked_hawb_air_message_status")
+    private AwbStatus linkedHawbAirMessageStatus;
+
+    @Column(name = "user_mail_id")
+    private String userMailId;
+
+    @Column(name = "user_display_name")
+    private String userDisplayName;
 }

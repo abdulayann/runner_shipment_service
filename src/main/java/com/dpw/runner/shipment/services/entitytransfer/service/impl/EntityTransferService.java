@@ -457,7 +457,7 @@ public class EntityTransferService implements IEntityTransferService {
         Map<String, EntityTransferVessels> fieldNameVesselDataMap = new HashMap<>();
         Map<String, EntityTransferVessels> keyVesselDataMap = new HashMap<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
-        List<String> MMSIList = new ArrayList<>();
+        List<String> GuidList = new ArrayList<>();
         log.info("VesselMasterData");
         Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
         for(Field field  : baseClass.getDeclaredFields())
@@ -468,29 +468,29 @@ public class EntityTransferService implements IEntityTransferService {
                     log.info("VesselField: "+field.getName());
                     Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
                     field1.setAccessible(true);
-                    String MMSI = (String) field1.get(entityPayload);
-                    if(MMSI != null && !MMSI.equals("")) {
-                        MMSIList.add(MMSI);
-                        fieldNameKeyMap.put(field.getName(), MMSI);
+                    String Guid = (String) field1.get(entityPayload);
+                    if(Guid != null && !Guid.equals("")) {
+                        GuidList.add(Guid);
+                        fieldNameKeyMap.put(field.getName(), Guid);
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
         }
-        if(MMSIList.size() > 0){
-            log.info("VesselList: "+MMSIList);
+        if(GuidList.size() > 0){
+            log.info("VesselList: "+GuidList);
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> criteria = new ArrayList<>();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.MMSI));
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(MMSIList)));
+            criteria.addAll(List.of(field, operator, List.of(GuidList)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchVesselData(request);
 
             List<EntityTransferVessels> vesselList = jsonHelper.convertValueToList(response.entities, EntityTransferVessels.class);
             vesselList.forEach(vessel -> {
-                keyVesselDataMap.put(vessel.getMmsi(), vessel);
+                keyVesselDataMap.put(vessel.getGuid().toString(), vessel);
             });
             fieldNameKeyMap.forEach((key, value) -> {
                 if(keyVesselDataMap.containsKey(value))
@@ -1191,22 +1191,22 @@ public class EntityTransferService implements IEntityTransferService {
         });
     }
     private void createVesselMasterData (List<EntityTransferVessels> vesselData) {
-        Set<String> MmsiList = new HashSet<>();
-        MmsiList.addAll(vesselData.stream().map(x->x.getMmsi()).collect(Collectors.toSet()));
-        if (MmsiList.size() > 0) {
+        Set<String> GuidList = new HashSet<>();
+        GuidList.addAll(vesselData.stream().map(x->x.getGuid().toString()).collect(Collectors.toSet()));
+        if (GuidList.size() > 0) {
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> criteria = new ArrayList<>();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.MMSI));
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(MmsiList)));
+            criteria.addAll(List.of(field, operator, List.of(GuidList)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchVesselData(request);
             List<EntityTransferVessels> vesselList = jsonHelper.convertValueToList(response.entities, EntityTransferVessels.class);
-            MmsiList.removeAll(vesselList.stream().map(x->x.getMmsi()).collect(Collectors.toSet()));
+            GuidList.removeAll(vesselList.stream().map(x->x.getGuid().toString()).collect(Collectors.toSet()));
         }
 
         vesselData.forEach(vessel -> {
-            if(MmsiList.contains(vessel.getMmsi())){
+            if(GuidList.contains(vessel.getGuid().toString())){
                 V1SaveRequest save = V1SaveRequest.builder().Entity(vessel).build();
                 V1DataResponse response = v1Service.createVesselData(save);
             }
@@ -1584,6 +1584,11 @@ public class EntityTransferService implements IEntityTransferService {
                     missingField.add("Origin Port");
                 if(Strings.isNullOrEmpty(podId))
                     missingField.add("Destination Port");
+                if(Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.get().getTransportMode())) {
+                    if(!Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.get().getJobType())) {
+                        missingField.add("HAWB Number");
+                    }
+                }
                 if(Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
                     missingField.add("MAWB Number");
                 if(Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))

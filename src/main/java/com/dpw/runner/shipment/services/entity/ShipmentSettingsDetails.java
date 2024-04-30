@@ -505,4 +505,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "transport_order_road")
     private String transportOrderRoad;
+
+    @Column(name = "disable_bl_parties_name")
+    private Boolean disableBlPartiesName;
 }

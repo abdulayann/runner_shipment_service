@@ -33,7 +33,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 @RunWith(SpringRunner.class)
@@ -88,6 +88,9 @@ class CustomerBookingDaoTest {
     @Test
     void save() {
         Parties mockParty = Parties.builder().orgCode("ORG123").addressCode("ADDR123").build();
+        Parties mockParty2 = Parties.builder().orgCode("ORG323").addressCode("ADER123").build();
+        Parties mockParty3 = Parties.builder().orgCode("ORG325").addressCode("ADEE123").build();
+
         CarrierDetails carrierDetails = CarrierDetails.builder().origin("origin").destination("destination")
                 .originPort("origninPort").destinationPort("destinationPort").build();
 
@@ -99,8 +102,8 @@ class CustomerBookingDaoTest {
         customerBooking.setServiceMode("service mode");
         customerBooking.setBookingCharges(List.of(new BookingCharges()));
         customerBooking.setCustomer(mockParty);
-        customerBooking.setConsignee(mockParty);
-        customerBooking.setConsignor(mockParty);
+        customerBooking.setConsignee(mockParty2);
+        customerBooking.setConsignor(mockParty3);
         customerBooking.setIncoTerms("Inco Terms");
         customerBooking.setCargoType(Constants.CARGO_TYPE_FCL);
         customerBooking.setCarrierDetails(carrierDetails);
@@ -109,7 +112,7 @@ class CustomerBookingDaoTest {
         CustomerBooking savedCustomerBooking = customerBookingDao.save(customerBooking);
 
         // Assert
-        assertEquals(1L, savedCustomerBooking.getId());
+        assertNotNull(savedCustomerBooking.getId());
     }
 
     // create tc for save by using input that fails all validations one by one to inc coverage

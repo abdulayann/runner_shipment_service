@@ -21,15 +21,24 @@ import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.jpa.TypedParameterValue;
+import org.hibernate.type.StandardBasicTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -54,6 +63,9 @@ public class EventDao implements IEventDao {
 
     @Autowired
     private IAuditLogService auditLogService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public Events save(Events events) {
@@ -364,5 +376,45 @@ public class EventDao implements IEventDao {
         } catch (Exception e) {
             log.error("Error occured while trying to create runner event, Exception raised is: " + e);
         }
+    }
+
+
+    @Override
+    public void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        eventRepository.createEventForAirMessagingStatus(guid, entityId, entityType, eventCode, description, estimated, actual, source, tenantId, status, createdAt, updatedAt);
+    }
+
+    @Override
+    @Transactional
+    public void createEventForAirMessagingEvent(UUID guid, Long entityId, String entityType, String eventCode, String description, String source, Integer tenantId, Integer pieces, Integer totalPieces, BigDecimal weight, BigDecimal totalWeight, String partial, LocalDateTime receivedDate, LocalDateTime scheduledDate, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        Query query = entityManager.createNativeQuery("insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, partial, received_date, scheduled_date, created_at, updated_at) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                .setParameter(1, guid)
+                .setParameter(2, entityId)
+                .setParameter(3, entityType)
+                .setParameter(4, eventCode)
+                .setParameter(5, description)
+                .setParameter(6, source)
+                .setParameter(7, tenantId)
+                .setParameter(8, new TypedParameterValue(StandardBasicTypes.INTEGER, pieces))
+                .setParameter(9, new TypedParameterValue(StandardBasicTypes.INTEGER, totalPieces))
+                .setParameter(10, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, weight))
+                .setParameter(11, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, totalWeight))
+                .setParameter(12, partial)
+                .setParameter(15, createdAt)
+                .setParameter(16, updatedAt);
+
+        if(receivedDate != null) {
+            query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(receivedDate)));
+        } else {
+            query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+        }
+        if(scheduledDate != null) {
+            query.setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(scheduledDate)));
+        } else {
+            query.setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+        }
+        query.executeUpdate();
+
+//        eventRepository.createEventForAirMessagingEvent(guid, entityId, entityType, eventCode, description, source, tenantId, pieces, totalPieces, weight, totalWeight, partial, receivedDate, scheduledDate, createdAt, updatedAt);
     }
 }

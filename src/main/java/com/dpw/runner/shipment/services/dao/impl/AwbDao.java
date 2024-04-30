@@ -5,9 +5,11 @@ import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
@@ -15,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -25,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -45,11 +49,14 @@ public class AwbDao implements IAwbDao {
     @Value("${awbKafka.queue}")
     private String senderQueue;
     @Autowired
+    @Lazy
     private AwbUtility awbUtility;
     @Autowired
     IShipmentDao shipmentDao;
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Override
     public Awb save(Awb awbShipmentInfo) throws RunnerException {
         boolean isCreate = false; // TODO- handle create/update here
@@ -105,12 +112,27 @@ public class AwbDao implements IAwbDao {
     }
 
     @Override
+    public Optional<Awb> findByGuid(UUID guid) {
+        return awbRepository.findByGuid(guid);
+    }
+
+    @Override
     public List<Awb> findByShipmentId(Long shipmentId) {
         return awbRepository.findByShipmentId(shipmentId);
     }
 
     @Override
     public List<Awb> findByConsolidationId(Long consolidationId) {return awbRepository.findByConsolidationId(consolidationId);}
+
+    @Override
+    public List<Awb> findByShipmentIdByQuery(Long shipmentId) {
+        return awbRepository.findByShipmentIdByQuery(shipmentId);
+    }
+
+    @Override
+    public List<Awb> findByConsolidationIdByQuery(Long consolidationId) {
+        return awbRepository.findByConsolidationIdByQuery(consolidationId);
+    }
 
     @Override
     public List<Awb> findByIssuingAgent(String issuingAgent) { return awbRepository.findByIssuingAgent(issuingAgent);}
@@ -172,14 +194,17 @@ public class AwbDao implements IAwbDao {
                         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
                         if (consolidationDetails.isPresent()) {
                             this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get());
-                            // isAirMessageSent flag set to true
-                            this.updateIsAirMessagingSent(awb.getGuid(), true);
+                            // AirMessageSent flag set to SENT
+                            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                            this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                            this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
 
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
                                 this.pushToKafkaForAirMessaging(shipAwb, ship, null);
-                                // isAirMessageSent flag set to true
-                                this.updateIsAirMessagingSent(shipAwb.getGuid(), true);
+                                // AirMessageSent flag set to SENT
+                                this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                                this.updateUserDetails(shipAwb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                             }
                         }
                     }
@@ -189,8 +214,9 @@ public class AwbDao implements IAwbDao {
                         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
                         if (shipmentDetails.isPresent()) {
                             this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null);
-                            // isAirMessageSent flag set to true
-                            this.updateIsAirMessagingSent(awb.getGuid(), true);
+                            // AirMessageSent flag set to SENT
+                            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                            this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                         }
 
                     }
@@ -240,20 +266,65 @@ public class AwbDao implements IAwbDao {
         kafkaResponse.setData(data);
         return kafkaResponse;
     }
-
     @Override
-    public int updateIsAirMessagingSent(UUID guid, Boolean isAirMessagingSent){
-        return awbRepository.updateIsAirMessagingSent(guid, isAirMessagingSent);
+    public int updateAirMessageStatus(UUID guid, String airMessageStatus) {
+        return awbRepository.updateAirMessageStatus(guid, airMessageStatus);
     }
 
     @Override
-    public Boolean findIsAirMessagingSentByShipmentId(Long shipmentId) {
-        return awbRepository.findIsAirMessagingSentByShipmentId(shipmentId);
+    public int updateLinkedHawbAirMessageStatus(UUID guid, String airMessageStatus) {
+        return awbRepository.updateLinkedHawbAirMessageStatus(guid, airMessageStatus);
     }
 
     @Override
-    public Boolean findIsAirMessagingSentByConsolidationId(Long consolidationId) {
-        return awbRepository.findIsAirMessagingSentByConsolidationId(consolidationId);
+    public int updateAirMessageStatusFromShipmentId(Long id, String airMessageStatus) {
+        return awbRepository.updateAirMessageStatusFromShipmentId(id, airMessageStatus);
+    }
+    @Override
+    public int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus) {
+        return awbRepository.updateAirMessageStatusFromConsolidationId(id, airMessageStatus);
+    }
+
+    @Override
+    public int updateUserDetails(UUID guid, String userDisplayName, String userMailId) {
+        return awbRepository.updateUserDetails(guid, userDisplayName, userMailId);
+    }
+
+    @Override
+    public List<Awb> findAllLinkedAwbs(UUID guid) {
+        Optional<Awb> awb = Optional.ofNullable(this.findAwbByGuidByQuery(guid));
+        if(awb.isPresent()){
+            if(awb.get().getShipmentId() != null) {
+                var consoleShipMapping = consoleShipmentMappingDao.findByShipmentIdByQuery(awb.get().getShipmentId());
+                if(consoleShipMapping == null || consoleShipMapping.isEmpty()) {
+                    return Collections.emptyList();
+                } else {
+                    List<Awb> response = new ArrayList<>();
+                    var consoleId = consoleShipMapping.get(0).getConsolidationId();
+                    response.addAll(findByConsolidationIdByQuery(consoleId));
+                    var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
+                    if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
+                        consoleShipMappingList.forEach(x -> response.addAll(findByShipmentIdByQuery(x.getShipmentId())));
+                    }
+                    return response;
+                }
+            } else if(awb.get().getConsolidationId() != null) {
+                List<Awb> response = new ArrayList<>();
+                var consoleId = awb.get().getConsolidationId();
+                response.addAll(findByConsolidationIdByQuery(consoleId));
+                var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
+                if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
+                    consoleShipMappingList.forEach(x -> response.addAll(findByShipmentIdByQuery(x.getShipmentId())));
+                }
+                return response;
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Awb findAwbByGuidByQuery(UUID guid) {
+        return awbRepository.findAwbByGuidByQuery(guid);
     }
 
 }

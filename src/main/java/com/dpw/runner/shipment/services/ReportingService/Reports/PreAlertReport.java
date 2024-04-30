@@ -33,6 +33,8 @@ public class PreAlertReport extends IReport {
     @Autowired
     private JsonHelper jsonHelper;
 
+    public Boolean printWithoutTranslation;
+
     @Override
     public Map<String, Object> getData(Long id) {
         PreAlertModel preAlertModel = (PreAlertModel) getDocumentModel(id);
@@ -63,12 +65,14 @@ public class PreAlertReport extends IReport {
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         PreAlertModel preAlertModel = (PreAlertModel) documentModel;
+        List<String> orgWithoutTranslation = new ArrayList<>();
+        List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(preAlertModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         JsonDateFormat(dictionary);
         addTenantDetails(dictionary, preAlertModel.tenantDetails);
         populateShipmentFields(preAlertModel.shipmentDetails, dictionary);
-        populateShipmentOrganizationsLL(preAlertModel.shipmentDetails, dictionary);
+        populateShipmentOrganizationsLL(preAlertModel.shipmentDetails, dictionary, orgWithoutTranslation);
         List<String> consigner = new ArrayList<>();
         if(preAlertModel.shipmentDetails.getConsigner() != null) {
             consigner = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getConsigner());
@@ -130,7 +134,6 @@ public class PreAlertReport extends IReport {
                 preAlertModel.tenantDetails.email, preAlertModel.tenantDetails.websiteUrl, preAlertModel.tenantDetails.phone);
         if (tenantsDataList != null)
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
-        dictionary.put(ReportConstants.NO_OF_PACKAGES_ALIAS, preAlertModel.shipmentDetails.getNoOfPacks());
         dictionary.put(ReportConstants.NO_OF_PACKAGES_WORD, preAlertModel.noofpackages_word);
         dictionary.put(ReportConstants.USER_DISPLAY_NAME, preAlertModel.userdisplayname);
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
@@ -232,11 +235,15 @@ public class PreAlertReport extends IReport {
                         if(commodityResponse != null)
                             dictionary.put(ReportConstants.COMMODITY_DESC, commodityResponse.getDescription());
                     }
+                    //
                 }
             }
             dictionary.put(ReportConstants.PACKS_DETAILS, packDictionary);
+            getPackingDetails(preAlertModel.shipmentDetails, dictionary);
         }
         populateHasContainerFields(preAlertModel.shipmentDetails, dictionary, v1TenantSettingsResponse);
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+
         return dictionary;
     }
 }

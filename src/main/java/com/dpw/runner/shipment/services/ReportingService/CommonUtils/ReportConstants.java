@@ -134,6 +134,7 @@ public class ReportConstants {
     public static final String ORIGINAL_WORDS = "OriginalsInWords";
     public static final String COPY_BILLS = "CopyBills";
     public static final String NO_OF_PACKAGES = "NoofPackages";
+    public static final String NO_OF_PACKAGES_WV_FORMATTED = "NoofPackagesFormatted";
     public static final String NO_OF_PACKAGES_ALIAS = "noofpackages";
     public static final String NoOfPackages = "NoOfPackages";
     public static final String NO_OF_PACKAGES_WORD = "noofpackages_word";
@@ -191,8 +192,10 @@ public class ReportConstants {
     public static final String CLIENT = "Client";
     public static final String CLIENT_NAME = "ClientName";
     public static final String EXPORT_BROKER = "ExportBroker";
+    public static final String EXPORT_BROKER_CONTACT = "ExportBrokerContact";
     public static final String EXPORT_REFERENCE_NUMBER = "ExportReferenceNumber";
     public static final String IMPORT_BROKER = "ImportBroker";
+    public static final String IMPORT_BROKER_CONTACT = "ImportBrokerContact";
     public static final String CONSIGNEE_LOCAL_NAME = "ConsigneeLocalName";
     public static final String CONSIGNER_LOCAL_NAME = "ConsignerLocalName";
     public static final String NOTIFY_PARTY_NAME = "NotifyPartyName";
@@ -588,6 +591,7 @@ public class ReportConstants {
     public static final String TOtAl_PIECES = "TotalPieces";
     public static final String PACKING_LIST_FAT = "PackingListFAT";
     public static final String TOTAL_AMOUNT = "TotalAmount";
+    public static final String PIECES_NO = "PiecesNo";
     public static final String TOTAL_AMOUNT_CURRENCY = "TotalAmountCurrency";
     public static final String RATE_CHARGE = "RateCharge";
     public static final String CHARGEABLE_WT = "ChargeableWt";
@@ -1037,6 +1041,7 @@ public class ReportConstants {
     public static final String RA = "RA";
     public static final String KC = "KC";
     public static final String INSURANCE_VALUE = "InsuranceValue";
+    public static final String INSURANCE_VALUE_TRANSPORT = "Insurance Value";
     public static final String INSURANCE_VALUE_CURRENCY = "InsuranceValueCurrency";
     public static final String GOODS_VALUE = "GoodsValue";
     public static final String GOODS_VALUE_CURRENCY = "GoodsValueCurrency";
@@ -1058,5 +1063,10 @@ public class ReportConstants {
     public static final String ORIGIN_AGENT = "OriginAgent";
     public static final String DESTINATION_AGENT = "DestinationAgent";
     public static final String CONSIGNOR_AGENT = "Consignor";
+
+    public static final String CY_NAME_ADDRESS = "CyNameAddress";
+    public static final String CTO_FULL_NAME = "CtoFullName";
+    public static final String SI_CUT_OFF_TIME = "SICutOffTime";
+    public static final String TERMINAL = "Terminal";
 
 }
