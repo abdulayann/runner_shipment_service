@@ -62,6 +62,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
@@ -273,7 +274,7 @@ public class HblService implements IHblService {
         return hbl;
     }
     private void validateBeforeGeneration(ShipmentDetails shipmentDetails){
-        if(!Objects.isNull(shipmentDetails.getContainersList())) {
+        if(!Objects.isNull(shipmentDetails.getContainersList()) && !Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
             List<Containers> containers = shipmentDetails.getContainersList().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
             if (!containers.isEmpty())
                 throw new ValidationException("Please assign container number to all the containers before generating the HBL.");
@@ -284,7 +285,7 @@ public class HblService implements IHblService {
                 || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && Objects.equals(shipmentDetails.getJobType(), Constants.JOB_TYPE_CLB))){
             return;
         }
-        if(!Objects.isNull(shipmentDetails.getPackingList())) {
+        if(!Objects.isNull(shipmentDetails.getPackingList()) && !Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
             var packsList = shipmentDetails.getPackingList().stream().filter(x -> Objects.isNull(x.getContainerId())).toList();
             if(!packsList.isEmpty()){
                 throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the packages in the shipment.");
@@ -628,7 +629,7 @@ public class HblService implements IHblService {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
         if(containers != null && containers.size() > 0)
-            map = containers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+            map = containers.stream().filter(e -> !IsStringNullOrEmpty(e.getContainerNumber())).collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         Map<Long, String> finalMap = map;
         if(Objects.equals(packings, null)) {
             packings = new ArrayList<>();
