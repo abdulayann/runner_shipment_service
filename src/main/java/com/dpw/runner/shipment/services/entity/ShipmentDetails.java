@@ -440,4 +440,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "security_status")
     private String securityStatus;
+
+    @Column(name = "current_party_for_quote")
+    private String currentPartyForQuote;
 }
