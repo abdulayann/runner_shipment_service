@@ -195,7 +195,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         return res;
     }
 
-    private void deleteBookingCarriage(Map<Long, BookingCarriage> hashMap, String entityType, Long entityId) {
+    void deleteBookingCarriage(Map<Long, BookingCarriage> hashMap, String entityType, Long entityId) {
         String responseMsg;
         try {
             hashMap.values().forEach(bookingCarriage -> {
