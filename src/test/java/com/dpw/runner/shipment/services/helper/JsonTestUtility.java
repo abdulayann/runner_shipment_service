@@ -51,6 +51,10 @@ public class JsonTestUtility {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("NEW_SHIPMENT"), ShipmentDetails.class);
         return shipmentDetails;
     }
+    public ShipmentDetails getCompleteShipment() {
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("COMPLETE_SHIPMENT"), ShipmentDetails.class);
+        return shipmentDetails;
+    }
 
     public Containers getTestContainer() {
         return objectMapper.convertValue(payload.get("NEW_CONTAINER_CREATE"), Containers.class);
