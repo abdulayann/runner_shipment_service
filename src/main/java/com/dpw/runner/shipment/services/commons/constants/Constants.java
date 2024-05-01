@@ -45,6 +45,7 @@ public class Constants {
     public static final String CARRIAGE = "CARRIAGE";
     public static final String PreCarriage = "PreCarriage";
     public static final String SERVICE_DETAILS = "SERVICE_DETAILS";
+    public static final String NOTES = "NOTES";
     public static final String Main = "Main";
     public static final String EVENTS = "EVENTS";
     public static final String JOBS = "JOBS";
