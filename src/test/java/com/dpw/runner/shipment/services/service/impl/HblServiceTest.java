@@ -338,6 +338,7 @@ class HblServiceTest {
 
         List<Containers> containersList = List.of(new Containers());
         testShipment.setContainersList(containersList);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
 
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
@@ -359,6 +360,7 @@ class HblServiceTest {
 
         List<Packing> packingList = List.of(new Packing());
         testShipment.setPackingList(packingList);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
 
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
