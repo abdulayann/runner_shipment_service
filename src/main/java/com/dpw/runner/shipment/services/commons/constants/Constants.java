@@ -399,6 +399,7 @@ public class Constants {
     public static final String UNUSED = "Unused";
     public static final String NON = "NON";
     public static final String EAW = "EAW";
+    public static final String EAP = "EAP";
     public static final String EVENT = "event";
     public static final String TYPE = "Type";
     public static final String DESCARTES = "Descartes";

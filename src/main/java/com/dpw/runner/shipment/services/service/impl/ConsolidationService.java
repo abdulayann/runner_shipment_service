@@ -943,7 +943,8 @@ public class ConsolidationService implements IConsolidationService {
      * @param oldEntity
      */
     private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
-        if(Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
             ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
