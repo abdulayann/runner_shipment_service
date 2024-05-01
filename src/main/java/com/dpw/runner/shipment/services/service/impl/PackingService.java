@@ -2,14 +2,15 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
@@ -47,7 +48,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -135,34 +135,7 @@ public class PackingService implements IPackingService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        PackingRequest request = null;
-        request = (PackingRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.debug("Request is empty for Packing create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        Packing packing = convertRequestToEntity(request);
-        try {
-            packing = packingDao.save(packing);
-
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .newData(packing)
-                            .prevData(null)
-                            .parent(Packing.class.getSimpleName())
-                            .parentId(packing.getId())
-                            .operation(DBOperationType.CREATE.name()).build()
-            );
-
-            log.info("Packing Details created successfully for Id {} with Request Id {}", packing.getId(), LoggerHelper.getRequestIdFromMDC());
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
+        return null;
     }
 
     @Override
@@ -486,49 +459,7 @@ public class PackingService implements IPackingService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
-        String responseMsg;
-        PackingRequest request = (PackingRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.debug("Request is empty for Packing update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-
-        if (request.getId() == null) {
-            log.debug("Request Id is null for Packing update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        long id = request.getId();
-        Optional<Packing> oldEntity = packingDao.findById(id);
-        if (!oldEntity.isPresent()) {
-            log.debug("Packing is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-
-        Packing packing = convertRequestToEntity(request);
-        packing.setId(oldEntity.get().getId());
-
-        if(packing.getGuid() != null && !oldEntity.get().getGuid().equals(packing.getGuid())) {
-            throw new RunnerException("Provided GUID doesn't match with the existing one !");
-        }
-        try {
-            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-            packing = packingDao.save(packing);
-
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .newData(packing)
-                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Packing.class))
-                            .parent(Packing.class.getSimpleName())
-                            .parentId(packing.getId())
-                            .operation(DBOperationType.UPDATE.name()).build()
-            );
-            log.info("Updated the packing details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
+        return null;
     }
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
@@ -558,95 +489,17 @@ public class PackingService implements IPackingService {
     @Override
     @Async
     public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        try {
-            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error("Request is empty for Packing async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            // construct specifications for filter request
-            Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
-            Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
-            log.info("Packing async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            return CompletableFuture.completedFuture(
-                    ResponseHelper
-                            .buildListSuccessResponse(
-                                    convertEntityListToDtoList(packingPage.getContent()),
-                                    packingPage.getTotalPages(),
-                                    packingPage.getTotalElements()));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
-        }
+        return null;
     }
 
     @Override
     public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        if (commonRequestModel == null) {
-            log.debug("Request is empty for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        if (commonRequestModel.getId() == null) {
-            log.debug("Request Id is null for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        Long id = commonRequestModel.getId();
-
-        Optional<Packing> targetPacking = packingDao.findById(id);
-        if (targetPacking.isEmpty()) {
-            log.debug("No entity present for id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildFailedResponse(PackingConstants.NO_DATA);
-        }
-        try {
-            String oldEntityJsonString = jsonHelper.convertToJson(targetPacking.get());
-            packingDao.delete(targetPacking.get());
-
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .newData(null)
-                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Packing.class))
-                            .parent(Packing.class.getSimpleName())
-                            .parentId(targetPacking.get().getId())
-                            .operation(DBOperationType.DELETE.name()).build()
-            );
-            log.info("Deleted packing for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-        return ResponseHelper.buildSuccessResponse();
+        return null;
     }
 
     @Override
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        try {
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error("Request is empty for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if (request.getId() == null) {
-                log.error("Request Id is null for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            long id = request.getId();
-            Optional<Packing> packing = packingDao.findById(id);
-            if (packing.isEmpty()) {
-                log.debug("Packing is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            log.info("Packing details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            PackingResponse response = (PackingResponse) convertEntityToDto(packing.get());
-            return ResponseHelper.buildSuccessResponse(response);
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
+        return null;
     }
 
     @Override

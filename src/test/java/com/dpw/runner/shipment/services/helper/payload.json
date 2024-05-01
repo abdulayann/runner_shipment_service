@@ -2049,6 +2049,7 @@
     "lengthUnit": "M",
     "widthUnit": "M",
     "heightUnit": "M",
+    "weight": 98656,
     "weightUnit": "KG",
     "netWeightUnit": "KG",
     "volumeUnit": "M3",
@@ -2074,5 +2075,85 @@
         "value": "AMM"
       }
     }
+  },
+  "PACKING_LIST": [
+    {
+      "packs": "1",
+      "packsType": "CNA",
+      "weight": 98656,
+      "weightUnit": "KG",
+      "volume": 66240,
+      "volumeUnit": "M3",
+      "commodity": "291890",
+      "length": 45,
+      "lengthUnit": "M",
+      "width": 64,
+      "widthUnit": "M",
+      "height": 23,
+      "heightUnit": "M",
+      "minTempUnit": "CEL",
+      "maxTempUnit": "CEL",
+      "netWeight": 65454,
+      "netWeightUnit": "KG",
+      "volumeWeight": 98.7,
+      "volumeWeightUnit": "M3",
+      "chargeable": 66240,
+      "chargeableUnit": "M3",
+      "commodityGroup": "Footwear",
+      "isDimension": true,
+      "hscode": "291890",
+      "innerPackageType": "MPK",
+      "innerPackageNumber": "23"
+    },
+    {
+      "packs": "1",
+      "packsType": "BAG",
+      "weight": 53422,
+      "weightUnit": "KG",
+      "volume": 53406,
+      "volumeUnit": "M3",
+      "commodity": "680530",
+      "length": 23,
+      "lengthUnit": "M",
+      "width": 43,
+      "widthUnit": "M",
+      "height": 54,
+      "heightUnit": "M",
+      "minTempUnit": "CEL",
+      "maxTempUnit": "CEL",
+      "goodsDescription": "goods desc",
+      "netWeight": 33224,
+      "netWeightUnit": "KG",
+      "volumeWeight": 53.5,
+      "volumeWeightUnit": "M3",
+      "chargeable": 53406,
+      "chargeableUnit": "M3",
+      "commodityGroup": "Metals",
+      "isDimension": true,
+      "handlingInfo": "handling info",
+      "hscode": "680530",
+      "innerPackageType": "MPK",
+      "innerPackageNumber": "23"
+    }
+  ],
+  "PACK_SUMMARY_RESPONSE": {
+    "totalPacks": "1 BAG, 1 CNA",
+    "totalPacksWeight": "152,078 KG",
+    "totalPacksVolume": "119,646 M3",
+    "packsVolumetricWeight": "19,941,040 KG",
+    "packsChargeableWeight": "119,646 M3"
+  },
+  "PACK_SUMMARY_RESPONSE_AIR": {
+    "totalPacks": "1 BAG, 1 CNA",
+    "totalPacksWeight": "152,078 KG",
+    "totalPacksVolume": "119,646 M3",
+    "packsVolumetricWeight": "19,941,040 KG",
+    "packsChargeableWeight": "19,941,040 KG"
+  },
+  "VOL_WT_CHARGEABLE": {
+    "chargeable": "166.67",
+    "chargeableUnit": "KG",
+    "volumeWeight": "166.667",
+    "volumeWeightUnit": "KG"
   }
 }

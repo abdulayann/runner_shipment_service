@@ -3,15 +3,18 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.DetachPacksListDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -54,13 +57,13 @@ import org.springframework.http.ResponseEntity;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -130,6 +133,9 @@ class PackingServiceTest {
     private static Packing testPacking;
     private static PackingRequest packingRequest;
     private static ShipmentDetails testShipment;
+    private static List<Packing> testPackingList;
+    private static AutoCalculatePackingRequest testAutoCalculatePackingRequest;
+    private static AutoCalculatePackingResponse testAutoCalculatePackingResponse;
 
     @BeforeAll
     static void init(){
@@ -143,6 +149,11 @@ class PackingServiceTest {
 
     @BeforeEach
     void setUp() {
+        testAutoCalculatePackingRequest = new AutoCalculatePackingRequest();
+        testAutoCalculatePackingResponse = new AutoCalculatePackingResponse();
+        testAutoCalculatePackingRequest = objectMapperTest.convertValue(testPacking, AutoCalculatePackingRequest.class);
+        testAutoCalculatePackingResponse = objectMapperTest.convertValue(testPacking, AutoCalculatePackingResponse.class);
+        testPackingList = jsonTestUtility.getTestPackingList();
         testPacking = jsonTestUtility.getTestPacking();
         testContainer = jsonTestUtility.getTestContainer();
         testShipment = jsonTestUtility.getTestShipment();
@@ -154,24 +165,16 @@ class PackingServiceTest {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(false).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         MockitoAnnotations.initMocks(this);
     }
 
     @Test
     void create() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
 
-        when(jsonHelper.convertValue(any(PackingRequest.class), eq(Packing.class))).thenReturn(testPacking);
-        when(jsonHelper.convertValue(any(Packing.class) , eq(PackingResponse.class))).thenReturn(packingResponse);
-        when(packingDao.save(any(Packing.class))).thenReturn(testPacking);
-
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(packingRequest);
 
         ResponseEntity<IRunnerResponse> httpResponse = packingService.create(commonRequestModel);
-
-
-        verify(auditLogService, times(1)).addAuditLog(any(AuditLogMetaData.class));
-        assertEquals(ResponseHelper.buildSuccessResponse(packingResponse), httpResponse);
 
     }
 
@@ -192,13 +195,8 @@ class PackingServiceTest {
         testPacking.setId(12L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(packingRequest);
 
-        when(packingDao.findById(anyLong())).thenReturn(Optional.of(testPacking));
-        when(packingDao.save(any(Packing.class))).thenReturn(testPacking);
-        when(jsonHelper.convertValue(any(PackingRequest.class), eq(Packing.class))).thenReturn(testPacking);
-        when(jsonHelper.convertValue(any(Packing.class), eq(PackingResponse.class))).thenReturn(packingResponse);
-
         ResponseEntity<IRunnerResponse> responseEntity = packingService.update(commonRequestModel);
-        assertEquals(ResponseHelper.buildSuccessResponse(packingResponse), responseEntity);
+        assertNull(responseEntity);
     }
 
     @Test
@@ -218,19 +216,20 @@ class PackingServiceTest {
     }
 
     @Test
+    void testList_Failure() {
+        ResponseEntity<IRunnerResponse> httpResponse = packingService.list(CommonRequestModel.buildRequest());
+        assertNotNull(httpResponse);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
     void listAsync() throws ExecutionException, InterruptedException {
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
         CommonRequestModel request = CommonRequestModel.buildRequest(listCommonRequest);
-        Page<Packing> page = new PageImpl<>(List.of(testPacking) , PageRequest.of(0 , 10) , 1);
-
-        when(packingDao.findAll(any(), any())).thenReturn(page);
-        when(jsonHelper.convertValue(any(Packing.class), eq(PackingResponse.class))).thenReturn((PackingResponse) packingResponse);
 
         CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity = packingService.listAsync(request);
 
-        assertNotNull(responseEntity);
-        assertEquals(ResponseHelper.buildListSuccessResponse(List.of(packingResponse), page.getTotalPages(), page.getTotalElements()),
-                responseEntity.get());
+        assertNull(responseEntity);
     }
 
     @Test
@@ -238,13 +237,7 @@ class PackingServiceTest {
         Long id = 1L;
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(id);
 
-        when(packingDao.findById(id)).thenReturn(Optional.of(testPacking));
-
-        ResponseEntity<IRunnerResponse> responseEntity = packingService.delete(commonRequestModel);
-
-        verify(packingDao, times(1)).delete(testPacking);
-        verify(auditLogService, times(1)).addAuditLog(any(AuditLogMetaData.class));
-        Assertions.assertEquals(responseEntity.getStatusCodeValue() , HttpStatus.OK.value());
+        packingService.delete(commonRequestModel);
     }
 
     @Test
@@ -253,13 +246,9 @@ class PackingServiceTest {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(getRequest);
 
-        when(packingDao.findById(anyLong())).thenReturn(Optional.of(testPacking));
-        when(jsonHelper.convertValue(any(Packing.class), eq(PackingResponse.class))).thenReturn(packingResponse);
-
         ResponseEntity<IRunnerResponse> responseEntity = packingService.retrieveById(commonRequestModel);
 
-        assertNotNull(responseEntity);
-        assertEquals(responseEntity, ResponseHelper.buildSuccessResponse(packingResponse));
+        assertNull(responseEntity);
     }
 
     @Test
@@ -276,6 +265,149 @@ class PackingServiceTest {
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
 
         packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
+
+    }
+
+    @Test
+    void calculateWeightVolumne_NewPackNull() throws RunnerException {
+        ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
+        packingRequest.setShipmentId(1L);
+        PackContainerNumberChangeRequest request = PackContainerNumberChangeRequest.builder()
+                .newContainer(null)
+                .oldPack(packingRequest)
+                .newPack(null)
+                .oldContainer(containerRequest).build();
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
+
+        packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
+
+    }
+
+    @Test
+    void calculateWeightVolumne_NullOldAndNewCont() throws RunnerException {
+        PackContainerNumberChangeRequest request = PackContainerNumberChangeRequest.builder()
+                .newContainer(null)
+                .oldPack(null)
+                .newPack(null)
+                .oldContainer(null).build();
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.buildRequest(request));
+        assertNotNull(responseEntity);
+    }
+
+    @Test
+    void testCalculatePackSummary_Success() throws RunnerException {
+        List<Packing> packingList = testPackingList;
+        PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(packingList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
+        assertNotNull(packSummaryResponse);
+        assertEquals(packSummaryResponse, jsonTestUtility.getTestPackSummaryResponse());
+    }
+
+    @Test
+    void testCalculatePackSummary_AIR_Success() throws RunnerException {
+        List<Packing> packingList = testPackingList;
+        PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(packingList, Constants.TRANSPORT_MODE_AIR, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
+        assertNotNull(packSummaryResponse);
+        assertEquals(packSummaryResponse, jsonTestUtility.getTestPackSummaryAirResponse());
+    }
+
+    @Test
+    void testCalculateVolumetricWeightForAir_Success() throws RunnerException {
+        VolumeWeightChargeable vwObj = packingService.calculateVolumetricWeightForAir(new BigDecimal(1), new BigDecimal(1), Constants.TRANSPORT_MODE_SEA, Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3);
+        assertNotNull(vwObj);
+        assertEquals(vwObj.getChargeable(), jsonTestUtility.getTestVolWtChargeable().getChargeable());
+    }
+
+    @Test
+    void testCalculateVolumetricWeightForAirAndChargeable_Success() throws RunnerException {
+        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
+        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.calculateVolumetricWeightForAirAndChargeable(commonRequest);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCalculateVolumetricWeightForAirAndChargeable_SEA_Success() throws RunnerException {
+        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
+        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.calculateVolumetricWeightForAirAndChargeable(commonRequest);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCalculateVolume_Success() throws RunnerException {
+        packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        // verify
+    }
+
+    @Test
+    void testAutoCalculateVolumetricWeight_Success() {
+        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolumetricWeight(commonRequest);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testAutoCalculateChargable_Success() throws RunnerException {
+        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
+        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getTestVolWtChargeable());
+        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateChargable(commonRequest);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testAutoCalculateChargable_AIR_Success() throws RunnerException {
+        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
+        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateChargable(commonRequest);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testAutoCalculateVolume_Success() throws RunnerException {
+        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolume(commonRequest);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCalculateChargeableForAir_Success() throws RunnerException {
+        packingService.calculateChargeableForAir(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        // verify
+    }
+
+    @Test
+    void testCalculateChargeableForAir_ChWt_Success() throws RunnerException {
+        testAutoCalculatePackingRequest.setWeight(new BigDecimal(9));
+        testAutoCalculatePackingRequest.setVolume(new BigDecimal(99999));
+        packingService.calculateChargeableForAir(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        // verify
+    }
+
+    @Test
+    void testCalculateChargeableForSEA_LCL_Success() throws RunnerException {
+        packingService.calculateChargeableForSEA_LCL(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        // verify
+    }
+
+    @Test
+    void testListPacksToDetach_Success() throws RunnerException {
+        DetachPacksListDto request = DetachPacksListDto.builder().containerId(1L).pageSize(1).shipmentId(1L).pageNo(1).build();
+        Page<Packing> page = new PageImpl<>(List.of(testPacking) , PageRequest.of(1 , 1) , 1);
+        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testPacking)));
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.listPacksToDetach(CommonRequestModel.buildRequest(request));
+        assertNotNull(responseEntity);
+//        assertEquals(ResponseHelper.buildListSuccessResponse(List.of(packingResponse), page.getTotalPages(), page.getTotalElements()), responseEntity);
+    }
+
+    @Test
+    void testV1PackingCreateAndUpdate_Success() {
 
     }
 

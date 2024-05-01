@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.helper;
 
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.entity.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -45,6 +47,22 @@ public class JsonTestUtility {
 
     public Packing getTestPacking(){
         return objectMapper.convertValue(payload.get("PACKING") , Packing.class);
+    }
+
+    public List<Packing> getTestPackingList(){
+        return convertValueToList(payload.get("PACKING_LIST"), Packing.class);
+    }
+
+    public PackSummaryResponse getTestPackSummaryResponse(){
+        return objectMapper.convertValue(payload.get("PACK_SUMMARY_RESPONSE"), PackSummaryResponse.class);
+    }
+
+    public PackSummaryResponse getTestPackSummaryAirResponse(){
+        return objectMapper.convertValue(payload.get("PACK_SUMMARY_RESPONSE_AIR"), PackSummaryResponse.class);
+    }
+
+    public VolumeWeightChargeable getTestVolWtChargeable(){
+        return objectMapper.convertValue(payload.get("VOL_WT_CHARGEABLE"), VolumeWeightChargeable.class);
     }
 
     public ShipmentDetails getTestShipment() {
