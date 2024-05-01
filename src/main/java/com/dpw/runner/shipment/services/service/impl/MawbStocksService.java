@@ -90,11 +90,7 @@ public class MawbStocksService implements IMawbStocksService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        try {
-            callV1Sync(mawbStocks);
-        } catch (Exception error) {
-            log.error("error while performing syncing MAWB_STOCKS : ",  error.getMessage());
-        }
+        callV1Sync(mawbStocks);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
 
@@ -126,11 +122,7 @@ public class MawbStocksService implements IMawbStocksService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        try {
-            callV1Sync(mawbStocks);
-        } catch (Exception error) {
-            log.error("error while performing syncing MAWB_STOCKS : ",  error.getMessage());
-        }
+        callV1Sync(mawbStocks);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
 
@@ -312,7 +304,12 @@ public class MawbStocksService implements IMawbStocksService {
     }
 
     private void callV1Sync(MawbStocks mawbStocks) {
-        mawbStockSync.sync(mawbStocks);
+        try {
+            mawbStockSync.sync(mawbStocks);
+        }
+        catch (Exception error) {
+            log.error("error while performing syncing MAWB_STOCKS : ",  error.getMessage());
+        }
     }
 
     @Override
