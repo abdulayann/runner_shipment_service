@@ -667,7 +667,7 @@ class HblServiceTest {
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         // Test
         ResponseEntity httpResponse = hblService.create(commonRequestModel);
-        assertEquals(httpResponse.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
@@ -677,7 +677,7 @@ class HblServiceTest {
         when(hblDao.save(any())).thenThrow(new RuntimeException("22323"));
         // Test
         ResponseEntity httpResponse = hblService.create(commonRequestModel);
-        assertEquals(httpResponse.getStatusCode(), HttpStatus.BAD_REQUEST);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 
     @Test
@@ -695,7 +695,7 @@ class HblServiceTest {
 
         ResponseEntity httpResponse = hblService.update(commonRequestModel);
         // Test
-        assertEquals(httpResponse.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
@@ -714,7 +714,7 @@ class HblServiceTest {
 
         ResponseEntity httpResponse = hblService.update(commonRequestModel);
         // Test
-        assertEquals(httpResponse.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
@@ -785,7 +785,7 @@ class HblServiceTest {
         when(PartialFetchUtils.fetchPartialListData(any(), any())).thenReturn(any());
         var responseEntity = hblService.retrieveById(commonRequestModel);
         // Assert
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -799,7 +799,7 @@ class HblServiceTest {
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         var responseEntity = hblService.retrieveById(commonRequestModel);
         // Assert
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
