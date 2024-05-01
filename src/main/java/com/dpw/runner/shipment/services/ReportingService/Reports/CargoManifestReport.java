@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -48,6 +49,7 @@ public class CargoManifestReport extends IReport{
         cargoManifestModel.tenantDetails = getTenant();
         cargoManifestModel.usersDto = UserContext.getUser();
         cargoManifestModel.awb = getHawb(id);
+        cargoManifestModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         return cargoManifestModel;
     }
 
@@ -62,7 +64,7 @@ public class CargoManifestReport extends IReport{
             consigner = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getConsigner());
             if(cargoManifestModel.shipmentDetails.getConsigner().getOrgData() != null) {
                 Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getConsigner().getOrgData();
-                if(getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
+                if(!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
                     consigner.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
                 }
             }
@@ -73,7 +75,7 @@ public class CargoManifestReport extends IReport{
             consignee = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getConsignee());
             if(cargoManifestModel.shipmentDetails.getConsignee().getOrgData() != null) {
                 Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getConsignee().getOrgData();
-                if(getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
+                if(!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
                     consignee.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
                 }
             }
@@ -84,7 +86,7 @@ public class CargoManifestReport extends IReport{
             notify = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
             if(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null) {
                 Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData();
-                if(getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
+                if(!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
                     notify.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
                 }
             }

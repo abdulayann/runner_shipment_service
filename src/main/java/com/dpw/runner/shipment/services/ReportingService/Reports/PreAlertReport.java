@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PreAlertModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -46,6 +47,7 @@ public class PreAlertReport extends IReport {
         PreAlertModel preAlertModel = new PreAlertModel();
         preAlertModel.shipmentDetails = getShipment(id);
         preAlertModel.tenantDetails = getTenant();
+        preAlertModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         preAlertModel.consolidationDetails = getFirstConsolidationFromShipmentId(id);
         if(preAlertModel.shipmentDetails.getContainersList() != null && preAlertModel.shipmentDetails.getContainersList().size() > 0) {
             List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
@@ -99,7 +101,11 @@ public class PreAlertReport extends IReport {
                 getValueFromMap(preAlertModel.shipmentDetails.getConsigner().getOrgData(), ReportConstants.FULL_NAME) != null) {
             String consignerFullName = getValueFromMap(preAlertModel.shipmentDetails.getConsigner().getOrgData(), ReportConstants.FULL_NAME);
             dictionary.put(ReportConstants.CONSIGNER, consignerFullName);
-            dictionary.put(ReportConstants.CONSIGNER_AIR, getCompleteNameAndAddress(consignerFullName, consigner));
+            if(Boolean.TRUE.equals(preAlertModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
+                dictionary.put(ReportConstants.CONSIGNER_AIR, consigner);
+            } else {
+                dictionary.put(ReportConstants.CONSIGNER_AIR, getCompleteNameAndAddress(consignerFullName, consigner));
+            }
             try {
                 dictionary.put(ReportConstants.ConsignerFullName, consignerFullName);
             } catch (Exception ignored) { }
@@ -109,7 +115,11 @@ public class PreAlertReport extends IReport {
                 getValueFromMap(preAlertModel.shipmentDetails.getConsignee().getOrgData(), ReportConstants.FULL_NAME) != null) {
             String consigneeFullName = getValueFromMap(preAlertModel.shipmentDetails.getConsignee().getOrgData(), ReportConstants.FULL_NAME);
             dictionary.put(ReportConstants.CONSIGNEE, consigneeFullName);
-            dictionary.put(ReportConstants.CONSIGNEE_AIR, getCompleteNameAndAddress(consigneeFullName, consignee));
+            if(Boolean.TRUE.equals(preAlertModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
+                dictionary.put(ReportConstants.CONSIGNEE_AIR, consignee);
+            } else {
+                dictionary.put(ReportConstants.CONSIGNEE_AIR, getCompleteNameAndAddress(consigneeFullName, consignee));
+            }
             try {
                 dictionary.put(ReportConstants.CONSIGNEE_FULL_NAME, consigneeFullName);
             } catch (Exception ignored) { }
@@ -119,7 +129,11 @@ public class PreAlertReport extends IReport {
                 preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null &&
                 getValueFromMap(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData(), ReportConstants.FULL_NAME) != null) {
             String notifyFullName = getValueFromMap(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData(), ReportConstants.FULL_NAME);
-            dictionary.put(ReportConstants.NOTIFY_PARTY_AIR, getCompleteNameAndAddress(notifyFullName, notify));
+            if(Boolean.TRUE.equals(preAlertModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
+                dictionary.put(ReportConstants.NOTIFY_PARTY_AIR, notify);
+            } else {
+                dictionary.put(ReportConstants.NOTIFY_PARTY_AIR, getCompleteNameAndAddress(notifyFullName, notify));
+            }
         }
         dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
         dictionary.put(ReportConstants.CONSIGNER_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getConsigner() != null ?
@@ -148,7 +162,7 @@ public class PreAlertReport extends IReport {
             deliveryAgent = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail());
             if (preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgData() != null) {
                 Map<String, Object> partyOrg = preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgData();
-                if (getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
+                if (!Boolean.TRUE.equals(preAlertModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
                     deliveryAgent.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
                 }
             }
