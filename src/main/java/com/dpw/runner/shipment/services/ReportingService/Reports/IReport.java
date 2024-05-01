@@ -2637,9 +2637,9 @@ public abstract class IReport {
             }
             if(additionalDetailModel.getScreeningStatus() != null && !additionalDetailModel.getScreeningStatus().isEmpty()) {
                 Set<String> screeningCodes = additionalDetailModel.getScreeningStatus().stream().collect(Collectors.toSet());
-                if(screeningCodes.contains("AOM")){
-                    screeningCodes.remove("AOM");
-                    String aomString = "AOM";
+                if(screeningCodes.contains(Constants.AOM)){
+                    screeningCodes.remove(Constants.AOM);
+                    String aomString = Constants.AOM;
                     if(additionalDetailModel.getAomFreeText() != null) {
                         aomString =  aomString + " (" + additionalDetailModel.getAomFreeText() + ")";
                     }
