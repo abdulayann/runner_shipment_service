@@ -994,6 +994,7 @@ public class ShipmentService implements IShipmentService {
                 consolRef(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getReferenceNumber() : "").
                 masterBill(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getBol() : null).
                 freightLocalCurrency(UserContext.getUser().CompanyCurrency).
+                currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
                 build();
 
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));

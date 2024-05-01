@@ -87,4 +87,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
     private Boolean isBillCreated;
+    private String currentPartyForQuote;
 }
