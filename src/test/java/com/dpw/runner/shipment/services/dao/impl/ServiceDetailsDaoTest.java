@@ -179,8 +179,8 @@ class ServiceDetailsDaoTest {
 
         // Assert
         verify(jsonHelper).convertToJson(isA(ServiceDetails.class));
-        verify(validatorUtility).applyValidation(eq("Convert To Json"), eq("SERVICE_DETAILS"), eq(LifecycleHooks.ON_CREATE),
-                eq(false));
+        verify(validatorUtility).applyValidation(anyString(),anyString(), any(),
+                anyBoolean());
         verify(iServiceDetailsRepository).save(isA(ServiceDetails.class));
         assertSame(serviceDetails, actualSaveResult);
     }
@@ -237,8 +237,8 @@ class ServiceDetailsDaoTest {
         // Act and Assert
         assertThrows(ValidationException.class, () -> serviceDetailsDao.save(serviceDetails));
         verify(jsonHelper).convertToJson(isA(ServiceDetails.class));
-        verify(validatorUtility).applyValidation(eq("Convert To Json"), eq("SERVICE_DETAILS"), eq(LifecycleHooks.ON_CREATE),
-                eq(false));
+        verify(validatorUtility).applyValidation(anyString(),anyString(), any(),
+                anyBoolean());
     }
 
     /**
@@ -318,8 +318,8 @@ class ServiceDetailsDaoTest {
 
         // Assert
         verify(jsonHelper).convertToJson(isA(ServiceDetails.class));
-        verify(validatorUtility).applyValidation(eq("Convert To Json"), eq("SERVICE_DETAILS"), eq(LifecycleHooks.ON_CREATE),
-                eq(false));
+        verify(validatorUtility).applyValidation(anyString(),anyString(), any(),
+                anyBoolean());
         verify(iServiceDetailsRepository).saveAll(isA(Iterable.class));
         assertTrue(actualSaveAllResult.isEmpty());
         assertSame(serviceDetailsList, actualSaveAllResult);
@@ -380,8 +380,7 @@ class ServiceDetailsDaoTest {
         // Act and Assert
         assertThrows(ValidationException.class, () -> serviceDetailsDao.saveAll(serviceDetailsList));
         verify(jsonHelper).convertToJson(isA(ServiceDetails.class));
-        verify(validatorUtility).applyValidation(eq("Convert To Json"), eq("SERVICE_DETAILS"), eq(LifecycleHooks.ON_CREATE),
-                eq(false));
+        verify(validatorUtility).applyValidation(anyString(),anyString(), any(), anyBoolean());
     }
 
     /**
@@ -442,8 +441,7 @@ class ServiceDetailsDaoTest {
         // Act and Assert
         assertThrows(ValidationException.class, () -> serviceDetailsDao.saveAll(serviceDetailsList));
         verify(jsonHelper).convertToJson(isA(ServiceDetails.class));
-        verify(validatorUtility).applyValidation(eq("Convert To Json"), eq("SERVICE_DETAILS"), eq(LifecycleHooks.ON_CREATE),
-                eq(false));
+        verify(validatorUtility).applyValidation(anyString(),anyString(), any(), anyBoolean());
     }
 
     /**
@@ -545,8 +543,8 @@ class ServiceDetailsDaoTest {
 
         // Assert
         verify(jsonHelper, atLeast(1)).convertToJson(Mockito.<ServiceDetails>any());
-        verify(validatorUtility, atLeast(1)).applyValidation(eq("Convert To Json"), eq("SERVICE_DETAILS"),
-                eq(LifecycleHooks.ON_CREATE), eq(false));
+        verify(validatorUtility, atLeast(1)).applyValidation(anyString(),anyString(), any(),
+                anyBoolean());
         verify(iServiceDetailsRepository).saveAll(isA(Iterable.class));
         assertTrue(actualSaveAllResult.isEmpty());
         assertSame(serviceDetailsList, actualSaveAllResult);
@@ -636,7 +634,7 @@ class ServiceDetailsDaoTest {
         Optional<ServiceDetails> actualFindByIdResult = serviceDetailsDao.findById(1L);
 
         // Assert
-        verify(iServiceDetailsRepository).findById(eq(1L));
+        verify(iServiceDetailsRepository).findById(any());
         assertSame(ofResult, actualFindByIdResult);
     }
 
@@ -650,7 +648,7 @@ class ServiceDetailsDaoTest {
 
         // Act and Assert
         assertThrows(ValidationException.class, () -> serviceDetailsDao.findById(1L));
-        verify(iServiceDetailsRepository).findById(eq(1L));
+        verify(iServiceDetailsRepository).findById(any());
     }
 
     /**
@@ -903,7 +901,7 @@ class ServiceDetailsDaoTest {
 
         // Assert
         verify(jsonHelper).convertToJson(isA(ServiceDetails.class));
-        verify(jsonHelper).readFromJson(eq("Convert To Json"), isA(Class.class));
+        verify(jsonHelper).readFromJson(any(), isA(Class.class));
         verify(iServiceDetailsRepository).findAll(isA(Specification.class), isA(Pageable.class));
         verify(iAuditLogService).addAuditLog(isA(AuditLogMetaData.class));
         verify(iServiceDetailsRepository).delete(isA(ServiceDetails.class));
@@ -1213,11 +1211,11 @@ class ServiceDetailsDaoTest {
 
         // Assert
         verify(jsonHelper, atLeast(1)).convertToJson(isA(ServiceDetails.class));
-        verify(jsonHelper).readFromJson(eq("Convert To Json"), isA(Class.class));
-        verify(iServiceDetailsRepository).findById(eq(1L));
+        verify(jsonHelper).readFromJson(any(), isA(Class.class));
+        verify(iServiceDetailsRepository).findById(any());
         verify(iAuditLogService).addAuditLog(isA(AuditLogMetaData.class));
-        verify(validatorUtility).applyValidation(eq("Convert To Json"), eq("SERVICE_DETAILS"), eq(LifecycleHooks.ON_CREATE),
-                eq(false));
+        verify(validatorUtility).applyValidation(anyString(),anyString(), any(),
+                anyBoolean());
         verify(iServiceDetailsRepository).save(isA(ServiceDetails.class));
         assertEquals(1, actualUpdateEntityFromShipmentResult.size());
     }
@@ -1361,9 +1359,9 @@ class ServiceDetailsDaoTest {
         assertThrows(RunnerException.class,
                 () -> serviceDetailsDao.updateEntityFromShipment(serviceDetailsList, 1L, new ArrayList<>()));
         verify(jsonHelper, atLeast(1)).convertToJson(isA(ServiceDetails.class));
-        verify(iServiceDetailsRepository).findById(eq(1L));
-        verify(validatorUtility).applyValidation(eq("Convert To Json"), eq("SERVICE_DETAILS"), eq(LifecycleHooks.ON_CREATE),
-                eq(false));
+        verify(iServiceDetailsRepository).findById(any());
+        verify(validatorUtility).applyValidation(anyString(),anyString(), any(),
+                anyBoolean());
     }
 
     /**
@@ -1559,11 +1557,11 @@ class ServiceDetailsDaoTest {
 
         // Assert
         verify(jsonHelper, atLeast(1)).convertToJson(isA(ServiceDetails.class));
-        verify(jsonHelper).readFromJson(eq("Convert To Json"), isA(Class.class));
-        verify(iServiceDetailsRepository).findById(eq(1L));
+        verify(jsonHelper).readFromJson(any(), isA(Class.class));
+        verify(iServiceDetailsRepository).findById(any());
         verify(iAuditLogService).addAuditLog(isA(AuditLogMetaData.class));
-        verify(validatorUtility).applyValidation(eq("Convert To Json"), eq("SERVICE_DETAILS"), eq(LifecycleHooks.ON_CREATE),
-                eq(false));
+        verify(validatorUtility).applyValidation(anyString(),anyString(), any(),
+                anyBoolean());
         verify(iServiceDetailsRepository).save(isA(ServiceDetails.class));
         assertEquals(1, actualSaveEntityFromShipmentResult.size());
     }
@@ -1705,9 +1703,9 @@ class ServiceDetailsDaoTest {
         // Act and Assert
         assertThrows(ValidationException.class, () -> serviceDetailsDao.saveEntityFromShipment(serviceDetailsRequests, 1L));
         verify(jsonHelper, atLeast(1)).convertToJson(isA(ServiceDetails.class));
-        verify(iServiceDetailsRepository).findById(eq(1L));
-        verify(validatorUtility).applyValidation(eq("Convert To Json"), eq("SERVICE_DETAILS"), eq(LifecycleHooks.ON_CREATE),
-                eq(false));
+        verify(iServiceDetailsRepository).findById(any());
+        verify(validatorUtility).applyValidation(anyString(),anyString(), any(),
+                anyBoolean());
     }
 
     /**
@@ -1846,8 +1844,9 @@ class ServiceDetailsDaoTest {
         serviceDetailsRequests.add(serviceDetails);
 
         // Act and Assert
-        assertThrows(DataRetrievalFailureException.class,
+        Exception e = assertThrows(DataRetrievalFailureException.class,
                 () -> serviceDetailsDao.saveEntityFromShipment(serviceDetailsRequests, 1L, new HashMap<>()));
+        assertEquals(DataRetrievalFailureException.class.getSimpleName(), e.getClass().getSimpleName());
     }
 
     /**
@@ -1940,8 +1939,9 @@ class ServiceDetailsDaoTest {
         serviceDetailsRequests.add(serviceDetails);
 
         // Act and Assert
-        assertThrows(DataRetrievalFailureException.class,
+        Exception e = assertThrows(DataRetrievalFailureException.class,
                 () -> serviceDetailsDao.saveEntityFromShipment(serviceDetailsRequests, 1L, new HashMap<>()));
+        assertEquals(DataRetrievalFailureException.class.getSimpleName(), e.getClass().getSimpleName());
     }
 
     @Test

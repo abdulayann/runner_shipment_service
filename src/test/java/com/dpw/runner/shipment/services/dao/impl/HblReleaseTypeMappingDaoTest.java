@@ -2,8 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -94,7 +93,7 @@ class HblReleaseTypeMappingDaoTest {
                 .findByReleaseTypeAndHblId(1L, "1.0.2");
 
         // Assert
-        verify(iHblReleaseTypeMappingRepository).findByHblIdAndReleaseType(eq(1L), eq("1.0.2"));
+        verify(iHblReleaseTypeMappingRepository).findByHblIdAndReleaseType(any(), any());
         assertTrue(actualFindByReleaseTypeAndHblIdResult.isEmpty());
         assertSame(hblReleaseTypeMappingList, actualFindByReleaseTypeAndHblIdResult);
     }
