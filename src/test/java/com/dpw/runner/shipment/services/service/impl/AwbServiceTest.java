@@ -1,8 +1,11 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.Runner;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AirMessagingLogsConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -10,27 +13,30 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.AwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
 import com.dpw.runner.shipment.services.dto.response.AwbCalculationResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbChargeTypeMasterDataResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
+import com.dpw.runner.shipment.services.dto.response.FnmStatusMessageResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.MawbHawbLink;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.AirMessagingStatus;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
 import com.dpw.runner.shipment.services.entity.enums.ChargeTypeCode;
 import com.dpw.runner.shipment.services.entitytransfer.dto.ChargeTypeIntegrations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
+import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -48,6 +54,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
@@ -56,9 +63,7 @@ import org.springframework.http.ResponseEntity;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -89,11 +94,14 @@ class AwbServiceTest {
     private IAuditLogService auditLogService;
     @Mock
     private JsonHelper jsonHelper;
+    @Mock
+    private IAirMessagingLogsService airMessagingLogsService;
     @InjectMocks
     private AwbService awbService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails testShipment;
+    private static ConsolidationDetails testConsol;
     private static ObjectMapper objectMapper;
     private static Awb testHawb;
     private static Awb testDmawb;
@@ -114,6 +122,7 @@ class AwbServiceTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
 
         testShipment = jsonTestUtility.getTestShipment();
+        testConsol = jsonTestUtility.getJson("MAWB_CONSOLIDATION", ConsolidationDetails.class);
 
         testHawb = jsonTestUtility.getTestHawb();
         testDmawb = jsonTestUtility.getTestDmawb();
@@ -158,12 +167,13 @@ class AwbServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
 
         testShipment.setHouseBill("custom-house-bill");
+        addShipmentDataForAwbGeneration(testShipment);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
 //        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
 //        Mockito.when(shipmentDao.save(any(), anyBoolean())).thenReturn(testShipment);
 
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+//        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
         when(awbDao.save(any())).thenReturn(testDmawb);
 
         // UnLocation response mocking
@@ -172,6 +182,55 @@ class AwbServiceTest {
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
             ));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
+                objectMapper.convertValue(testDmawb, AwbResponse.class)
+        );
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void createAwbSuccessGeneratesRoutingInfoFromCarrierDetails() throws RunnerException {
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+
+        testShipment.setHouseBill("custom-house-bill");
+        testShipment.setRoutingsList(null);
+        addShipmentDataForAwbGeneration(testShipment);
+
+        Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+//        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
+//        Mockito.when(shipmentDao.save(any(), anyBoolean())).thenReturn(testShipment);
+
+//        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+        when(awbDao.save(any())).thenReturn(testDmawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
 
         // TenantModel Response mocking
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity("").build());
@@ -233,11 +292,24 @@ class AwbServiceTest {
     }
 
     @Test
-    @Disabled
-    void list() {
+    void listShipmentAwb() {
+        // adding special handiling codes in awb
+        List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
+        sph.add(AwbSpecialHandlingCodesMappingInfo.builder().shcId("testShcId").build());
+        testHawb.setAwbSpecialHandlingCodesMappings(sph);
+
+        AwbResponse mockAwbResponse = objectMapper.convertValue(testHawb, AwbResponse.class);
+
         FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id" , 1L, "=");
         Page<Awb> resultPage = new PageImpl<Awb>(List.of(testHawb));
         Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
+
+        // convertEntityListToDtoList
+        List<MasterData> chargeMasterData = List.of(new MasterData());
+        V1DataResponse mockChargeCodeMasterData = V1DataResponse.builder().entities(chargeMasterData).build();
+        when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(chargeMasterData);
+        when(v1Service.fetchMasterData(any())).thenReturn(mockChargeCodeMasterData);
+        when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
@@ -263,15 +335,28 @@ class AwbServiceTest {
     }
 
     @Test
-    @Disabled
     void retrieveById_success_consolidation_awb() {
+        Long id = 3L;
         // retrieve request works with id
-        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(3L).build();
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(id).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
-        // Mock
-        Mockito.when(awbDao.findById(1L)).thenReturn(Optional.of(testMawb));
+
+        List<ShipmentSettingsDetails> mockTenantSettingsList = List.of(new ShipmentSettingsDetails());
         AwbResponse awbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+
+        // get Linked Hawb
+        List<MawbHawbLink> mockMawbHawbLink = List.of(MawbHawbLink.builder().hawbId(1L).mawbId(3L).build());
+        Page<Awb> mockLinkedHawbPage = new PageImpl(List.of(testHawb));
+
+        // Mock
+        Mockito.when(awbDao.findById(id)).thenReturn(Optional.of(testMawb));
         Mockito.when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(awbResponse);
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(mockTenantSettingsList);
+
+        when(mawbHawbLinkDao.findByMawbId(id)).thenReturn(mockMawbHawbLink);
+        when(awbDao.findAll(any(), any())).thenReturn(mockLinkedHawbPage);
+
+
         //Make service call
         ResponseEntity<IRunnerResponse> response = awbService.retrieveById(commonRequestModel);
         // Assert
@@ -324,12 +409,181 @@ class AwbServiceTest {
 
 
     @Test
-    void createMawb() {
-      }
+    void createMawb_success() throws RunnerException {
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ConsolidationId(1L).AwbType(Constants.MAWB).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+        Long shipmentId = 1L;
+        addConsolDataForMawbGeneration(testConsol);
+        testShipment.setId(shipmentId);
+        testConsol.setShipmentsList(List.of(testShipment));
+
+        AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+
+        Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
+        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+
+        when(awbDao.save(any())).thenReturn(testMawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
 
     @Test
-    void updateGoodsAndPacksForMawb() {
-      }
+    void createMawbGeneratesRoutingInfoFromCarrierDetails() throws RunnerException {
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ConsolidationId(1L).AwbType(Constants.MAWB).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+        Long shipmentId = 1L;
+        addConsolDataForMawbGeneration(testConsol);
+        testShipment.setId(shipmentId);
+        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setRoutingsList(null);
+
+        AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+
+        Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
+        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+
+        when(awbDao.save(any())).thenReturn(testMawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testUpdateGoodsAndPacksForMawbUpdateGoodsDescInMawb() throws RunnerException {
+        Long id = 1L;
+        CreateAwbRequest createAwbRequest = new CreateAwbRequest();
+        createAwbRequest.setShipmentId(id);
+        createAwbRequest.setConsolidationId(id);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
+
+        AwbResponse mockAwbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetails.builder().consolidationLite(false).build();
+
+        MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
+        Page<Awb> resultPage = new PageImpl<Awb>(Collections.emptyList());
+        when(awbDao.findByConsolidationId(id)).thenReturn(List.of(testMawb));
+        when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
+        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
+
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(mockShipmentSettingDetails));
+        when(awbDao.save(testMawb)).thenReturn(testMawb);
+
+        when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+
+        var httpResponse = awbService.updateGoodsAndPacksForMawb(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
+    }
+
+    @Test
+    void testUpdateGoodsAndPacksForMawb() throws RunnerException {
+        Long id = 1L;
+        CreateAwbRequest createAwbRequest = new CreateAwbRequest();
+        createAwbRequest.setShipmentId(id);
+        createAwbRequest.setConsolidationId(id);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
+
+        AwbResponse mockAwbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+
+        MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
+        Page<Awb> resultPage = new PageImpl<Awb>(List.of(testHawb));
+        when(awbDao.findByConsolidationId(id)).thenReturn(List.of(testMawb));
+        when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
+        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
+
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(mockShipmentSettingDetails));
+        when(awbDao.save(testMawb)).thenReturn(testMawb);
+
+        when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+
+        var httpResponse = awbService.updateGoodsAndPacksForMawb(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
+    }
+
+    @Test
+    void testUpdateGoodsAndPacksForMawbForEmptyRequest() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        String errorMessage =  "Request is empty for Update Goods And Packs For Mawb";
+
+        var httpResponse = awbService.updateGoodsAndPacksForMawb(commonRequestModel);
+
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        assertEquals(errorMessage, runnerResponse.getError().getMessage());
+    }
+
+    @Test
+    void testUpdateGoodsAndPacksForMawbForEmptyShipmentId() {
+        CreateAwbRequest createAwbRequest = new CreateAwbRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
+
+        String errorMessage = "Shipment Id can't be null or empty in Update Goods And Packs For Mawb";
+
+        var httpResponse = awbService.updateGoodsAndPacksForMawb(commonRequestModel);
+
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        assertEquals(errorMessage, runnerResponse.getError().getMessage());
+    }
 
     @Test
     void customAwbRetrieve_return_empty_when_params_are_null() {
@@ -365,7 +619,7 @@ class AwbServiceTest {
 
 
     @Test
-    void reset() throws RunnerException {
+    void resetAllHawb() throws RunnerException {
         ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder().id(2L).shipmentId(1L).awbType("DMAWB").resetType(AwbReset.ALL).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
 
@@ -397,6 +651,56 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void resetAllMawb() throws RunnerException {
+        ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder().id(3L).consolidationId(1L).awbType("MAWB").resetType(AwbReset.ALL).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
+        Long shipmentId = 1L;
+        addConsolDataForMawbGeneration(testConsol);
+        testShipment.setId(shipmentId);
+        testConsol.setShipmentsList(List.of(testShipment));
+
+        AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+
+        when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
+        Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
+        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+
+        when(awbDao.save(any())).thenReturn(testMawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
+
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -491,6 +795,214 @@ class AwbServiceTest {
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
     }
 
+    @Test
+    void testGetAllMasterDataForHawb() {
+        Long id = 1L;
+        boolean isShipment = true;
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(id);
+
+        AwbResponse mockAwbResponse = objectMapper.convertValue(testHawb, AwbResponse.class);
+
+        when(awbDao.findByShipmentId(id)).thenReturn(List.of(testHawb));
+        when(shipmentDao.findById(testHawb.getShipmentId())).thenReturn(Optional.of(testShipment));
+
+        awbService.getAllMasterData(commonRequestModel, isShipment);
+    }
+
+    @Test
+    void testFnmStatusMessageForHawbFailure() {
+        Long shipmentId = 1L;
+
+        AirMessagingLogs statusLog = new AirMessagingLogs();
+        statusLog.setStatus(AirMessagingStatus.FAILED.name());
+        String responseMessage = String.format(AirMessagingLogsConstants.SHIPMENT_FNM_FAILURE_ERROR, statusLog.getErrorMessage());
+        FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(false).response(responseMessage).build();
+
+
+        // Mock
+        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testHawb.getGuid())).thenReturn(statusLog);
+
+        // Test
+        var httpResponse = awbService.getFnmStatusMessage(Optional.of(shipmentId), Optional.empty());
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse), httpResponse);
+    }
+
+    @Test
+    void testFnmStatusMessageForHawbSuccess() {
+        Long shipmentId = 1L;
+
+        AirMessagingLogs statusLog = new AirMessagingLogs();
+        statusLog.setStatus(AirMessagingStatus.SUCCESS.name());
+        String responseMessage = "FZB submission is accepted";
+        FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(true).response(responseMessage).build();
+
+
+        // Mock
+        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testHawb.getGuid())).thenReturn(statusLog);
+
+        // Test
+        var httpResponse = awbService.getFnmStatusMessage(Optional.of(shipmentId), Optional.empty());
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse), httpResponse);
+    }
+
+    @Test
+    void testFnmStatusMessageForDmawb() {
+        Long shipmentId = 1L;
+
+        AirMessagingLogs statusLog = new AirMessagingLogs();
+        statusLog.setStatus(AirMessagingStatus.SUCCESS.name());
+        String responseMessage = "FZB submission is accepted";
+        FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(true).response(responseMessage).build();
+
+
+        // Mock
+        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testDmawb));
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testDmawb.getGuid())).thenReturn(statusLog);
+        when(awbDao.findAll(any(), any())).thenReturn(Page.empty());
+
+        // Test
+        var httpResponse = awbService.getFnmStatusMessage(Optional.of(shipmentId), Optional.empty());
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse), httpResponse);
+    }
+
+    @Test
+    void testFnmStatusMessageForMawbAndHawbSuccess() {
+        Long consolidationId = 1L;
+
+        AirMessagingLogs statusLog = new AirMessagingLogs();
+        statusLog.setStatus(AirMessagingStatus.SUCCESS.name());
+        String responseMessage = "FWB and FZB submissions are accepted";
+        FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(true).response(responseMessage).build();
+
+        Page<Awb> linkedAwbPage = new PageImpl(List.of(testHawb));
+
+
+        // Mock
+        when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testMawb.getGuid())).thenReturn(statusLog);
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testHawb.getGuid())).thenReturn(statusLog);
+        when(awbDao.findAll(any(), any())).thenReturn(linkedAwbPage);
+
+        // Test
+        var httpResponse = awbService.getFnmStatusMessage(Optional.empty(),Optional.of(consolidationId));
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse), httpResponse);
+
+    }
+
+    @Test
+    void testFnmStatusMessageForMawbFailureHawbSuccess() {
+        Long consolidationId = 1L;
+
+        AirMessagingLogs successLog = new AirMessagingLogs();
+        successLog.setStatus(AirMessagingStatus.SUCCESS.name());
+        AirMessagingLogs failureLog = new AirMessagingLogs();
+        failureLog.setStatus(AirMessagingStatus.FAILED.name());
+
+        String responseMessage = String.format(
+                AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_SUCCESS_ERROR, failureLog.getErrorMessage());
+        FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(false).response(responseMessage).build();
+
+        Page<Awb> linkedAwbPage = new PageImpl(List.of(testHawb));
+
+
+        // Mock
+        when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testMawb.getGuid())).thenReturn(failureLog);
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testHawb.getGuid())).thenReturn(successLog);
+        when(awbDao.findAll(any(), any())).thenReturn(linkedAwbPage);
+
+        // Test
+        var httpResponse = awbService.getFnmStatusMessage(Optional.empty(),Optional.of(consolidationId));
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse), httpResponse);
+
+    }
+
+    @Test
+    void testFnmStatusMessageForMawbFailureHawbFailure() {
+        Long consolidationId = 1L;
+
+        AirMessagingLogs successLog = new AirMessagingLogs();
+        successLog.setStatus(AirMessagingStatus.SUCCESS.name());
+        AirMessagingLogs failureLog = new AirMessagingLogs();
+        failureLog.setStatus(AirMessagingStatus.FAILED.name());
+
+        Page<ShipmentDetails> shipmentDetailsPage = new PageImpl(List.of(testShipment));
+        List<String> shipmentNumbers = shipmentDetailsPage.getContent().stream().map(i -> i.getShipmentId()).toList();
+        String shipmentNumbersString = String.join(" ", shipmentNumbers);
+
+        String responseMessage = String.format(
+                AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_FAILURE_ERROR, shipmentNumbersString);
+        FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(false).response(responseMessage).build();
+
+        Page<Awb> linkedAwbPage = new PageImpl(List.of(testHawb));
+
+
+
+
+        // Mock
+        when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testMawb.getGuid())).thenReturn(failureLog);
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testHawb.getGuid())).thenReturn(failureLog);
+        when(awbDao.findAll(any(), any())).thenReturn(linkedAwbPage);
+        when(shipmentDao.findAll(any(), any())).thenReturn(shipmentDetailsPage);
+
+        // Test
+        var httpResponse = awbService.getFnmStatusMessage(Optional.empty(),Optional.of(consolidationId));
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse), httpResponse);
+
+    }
+
+    @Test
+    void testFnmStatusMessageForMawbSuccessHawbFailure() {
+        Long consolidationId = 1L;
+
+        AirMessagingLogs successLog = new AirMessagingLogs();
+        successLog.setStatus(AirMessagingStatus.SUCCESS.name());
+        AirMessagingLogs failureLog = new AirMessagingLogs();
+        failureLog.setStatus(AirMessagingStatus.FAILED.name());
+
+        Page<ShipmentDetails> shipmentDetailsPage = new PageImpl(List.of(testShipment));
+        List<String> shipmentNumbers = shipmentDetailsPage.getContent().stream().map(i -> i.getShipmentId()).toList();
+        String shipmentNumbersString = String.join(" ", shipmentNumbers);
+
+        String responseMessage = String.format(
+                AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_SUCCESS_HAWB_FAILURE_ERROR, shipmentNumbersString);
+        FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(false).response(responseMessage).build();
+
+        Page<Awb> linkedAwbPage = new PageImpl(List.of(testHawb));
+
+
+
+
+        // Mock
+        when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testMawb.getGuid())).thenReturn(successLog);
+        when(airMessagingLogsService.getRecentLogForEntityGuid(testHawb.getGuid())).thenReturn(failureLog);
+        when(awbDao.findAll(any(), any())).thenReturn(linkedAwbPage);
+        when(shipmentDao.findAll(any(), any())).thenReturn(shipmentDetailsPage);
+
+        // Test
+        var httpResponse = awbService.getFnmStatusMessage(Optional.empty(),Optional.of(consolidationId));
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse), httpResponse);
+
+    }
+
     private ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator) {
         ListCommonRequest request = new ListCommonRequest();
         request.setPageNo(1);
@@ -519,5 +1031,34 @@ class AwbServiceTest {
         criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
         request.setFilterCriteria(criterias);
         return request;
+    }
+
+
+    private void addShipmentDataForAwbGeneration(ShipmentDetails shipment) {
+        Parties shipmentAddress = Parties.builder().type(Constants.FAG).build();
+        shipmentAddress.setOrgData(Map.ofEntries(Map.entry(ReportConstants.COUNTRY, "test")));
+
+        Routings routing = new Routings();
+        routing.setLeg(1L);
+
+        shipment.setShipmentAddresses(List.of(shipmentAddress));
+//        shipment.setRoutingsList(List.of(routing));
+    }
+
+    private void addConsolDataForMawbGeneration(ConsolidationDetails consolidationDetails) {
+        Parties consolidationAddress1 = Parties.builder().type("Notify Part 1").build();
+        consolidationAddress1.setOrgData(Map.ofEntries(Map.entry("Id", 1)));
+        Parties consolidationAddress2 = Parties.builder().type("Notify Part 2").build();
+        consolidationAddress2.setOrgData(Map.ofEntries(Map.entry("Id", 2)));
+        Parties consolidationAddress3 = Parties.builder().type("Notify Part 3").build();
+        consolidationAddress3.setOrgData(Map.ofEntries(Map.entry("Id", 3)));
+        Parties consolidationAddress4 = Parties.builder().type(Constants.FAG).build();
+        consolidationAddress4.setOrgData(Map.ofEntries(Map.entry(ReportConstants.COUNTRY, "test-country")));
+
+
+        consolidationDetails.setConsolidationAddresses(List.of(
+                consolidationAddress1, consolidationAddress2, consolidationAddress3,
+                consolidationAddress4
+        ));
     }
 }
