@@ -475,6 +475,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if(request == null) {
                 log.error("Request is empty for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             if(request.getId() == null || request.getGuid() == null) {
                 log.error("Request Id or Guid is null for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());

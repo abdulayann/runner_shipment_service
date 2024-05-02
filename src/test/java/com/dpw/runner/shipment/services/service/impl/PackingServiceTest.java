@@ -348,7 +348,7 @@ class PackingServiceTest {
     @Test
     void testCalculateVolume_Success() throws RunnerException {
         packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        // verify
+        assertNotNull(testAutoCalculatePackingResponse);
     }
 
     @Test
@@ -387,7 +387,7 @@ class PackingServiceTest {
     @Test
     void testCalculateChargeableForAir_Success() throws RunnerException {
         packingService.calculateChargeableForAir(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        // verify
+        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
     }
 
     @Test
@@ -395,13 +395,13 @@ class PackingServiceTest {
         testAutoCalculatePackingRequest.setWeight(new BigDecimal(9));
         testAutoCalculatePackingRequest.setVolume(new BigDecimal(99999));
         packingService.calculateChargeableForAir(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        // verify
+        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
     }
 
     @Test
     void testCalculateChargeableForSEA_LCL_Success() throws RunnerException {
         packingService.calculateChargeableForSEA_LCL(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        // verify
+        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
     }
 
     @Test
@@ -420,7 +420,7 @@ class PackingServiceTest {
         when(modelMapper.map(any(), any())).thenReturn(testPacking);
 
         ResponseEntity<IRunnerResponse> responseEntity = packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), false);
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -431,7 +431,7 @@ class PackingServiceTest {
         ResponseEntity<IRunnerResponse> responseEntity = new ResponseEntity<>(HttpStatus.OK);
         when(syncQueueService.saveSyncRequest(any(), any(), any())).thenReturn(responseEntity);
         ResponseEntity<IRunnerResponse> response = packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), true);
-        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
@@ -443,7 +443,7 @@ class PackingServiceTest {
         when(packingDao.save(any())).thenReturn(testPacking);
         when(objectMapper.convertValue(any(), eq(PackingResponse.class))).thenReturn(packingResponse);
         ResponseEntity<IRunnerResponse> responseEntity = packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), false);
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -465,7 +465,7 @@ class PackingServiceTest {
                 .ShipmentId(1L)
                 .build();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.V1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(bulkPackingRequestV2));
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test

@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class AdditionalDetailDaoTest {
+class AdditionalDetailDaoTest {
 
     @Mock
     private IAdditionalDetailRepository additionalDetailRepository;
