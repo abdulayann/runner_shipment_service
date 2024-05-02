@@ -49,9 +49,7 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         ViewsRequest request = null;
         request = (ViewsRequest) commonRequestModel.getData();
-        if(request == null) {
-            log.debug("Request is empty for Views create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
+
         Views views = convertRequestToEntity(request);
         try {
             views = viewsDao.save(views);
@@ -78,14 +76,11 @@ public class ViewsService implements IViewsService {
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ViewsRequest request = (ViewsRequest) commonRequestModel.getData();
-        if(request == null) {
-            log.error("Request is empty for Views create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
 
         if(request.getId() == null) {
             log.error("Request Id is null for Views create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        long id = request.getId();
+        Long id = request.getId();
         Optional<Views> oldEntity = viewsDao.findById(id);
         if(!oldEntity.isPresent()) {
             log.debug(ViewsConstants.VIEWS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -104,7 +99,6 @@ public class ViewsService implements IViewsService {
                 {
                     oldDefaultView.get().setDefaultViewId(view.getId());
                     defaultViewsDao.save(oldDefaultView.get());
-                    log.info("Updated the Default View details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
                 }
             }
             else
@@ -129,9 +123,7 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.error("Request is empty for Views Details list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
+
             List<Views> viewsList = viewsDao.findAll();
             log.info("Views Details list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(viewsList), request.getPageNo(), viewsList.size());
@@ -149,9 +141,6 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.error("Request is empty for Views Details async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
             List<Views> viewsList = viewsDao.findAll();
             log.info("Views Details async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(
@@ -168,13 +157,10 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.debug("Request is empty for Views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
             if(request.getId() == null) {
                 log.debug("Request Id is null for Views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
+            Long id = request.getId();
             Optional<Views> view = viewsDao.findById(id);
             if(!view.isPresent()) {
                 log.debug(ViewsConstants.VIEWS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -199,9 +185,6 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.error("Request is empty for Views retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Views retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
