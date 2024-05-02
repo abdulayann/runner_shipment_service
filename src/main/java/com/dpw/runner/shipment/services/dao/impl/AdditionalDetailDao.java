@@ -8,9 +8,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.IAdditionalDetailR
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -28,18 +25,8 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
     }
 
     @Override
-    public Page<AdditionalDetails> findAll(Specification<AdditionalDetails> spec, Pageable pageable) {
-        return additionalDetailRepository.findAll(spec, pageable);
-    }
-
-    @Override
     public Optional<AdditionalDetails> findById(Long id) {
         return additionalDetailRepository.findById(id);
-    }
-
-    @Override
-    public void delete(AdditionalDetails additionalDetails) {
-        additionalDetailRepository.delete(additionalDetails);
     }
 
     public AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws RunnerException {
