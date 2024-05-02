@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -79,6 +80,10 @@ public class JsonTestUtility {
 
     public ShipmentSettingsDetails getTestShipmentSettingsDetails_CreatePayload() {
         return objectMapper.convertValue(payload.get("SHIPMENT_SETTINGS_CREATE"), ShipmentSettingsDetails.class);
+    }
+
+    public ShipmentSettingsSyncRequest getTestShipmentSettingsSyncRequest() {
+        return objectMapper.convertValue(payload.get("SHIPMENT_SETTINGS_SYNC"), ShipmentSettingsSyncRequest.class);
     }
 
     public ShipmentDetails getTestShipment() {

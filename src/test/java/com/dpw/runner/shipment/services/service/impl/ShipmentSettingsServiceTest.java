@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplateDao;
@@ -10,13 +12,16 @@ import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
+import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
@@ -35,7 +40,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -62,6 +69,9 @@ public class ShipmentSettingsServiceTest {
     @Mock
     JsonHelper jsonHelper;
 
+    @Mock
+    private DocumentService documentService;
+
     @InjectMocks
     private ShipmentSettingsService shipmentSettingsService;
 
@@ -72,6 +82,7 @@ public class ShipmentSettingsServiceTest {
     private static ShipmentSettingsDetails testShipmentSettingsDetails_New;
     private static ShipmentSettingRequest shipmentSettingRequest;
     private static ShipmentSettingsDetailsResponse shipmentSettingsDetailsResponse;
+    private static ShipmentSettingsSyncRequest testShipmentSettingsSyncRequest;
 
     @BeforeAll
     static void init(){
@@ -87,6 +98,7 @@ public class ShipmentSettingsServiceTest {
     void setUp() {
         testShipmentSettingsDetails = jsonTestUtility.getTestShipmentSettingsDetails();
         testShipmentSettingsDetails_New = jsonTestUtility.getTestShipmentSettingsDetails_CreatePayload();
+        shipmentSettingsDetailsResponse = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
@@ -129,6 +141,21 @@ public class ShipmentSettingsServiceTest {
     }
 
     @Test
+    void list() {
+        shipmentSettingsService.list(CommonRequestModel.buildRequest()); // test case not required since function is empty
+    }
+
+    @Test
+    void listAsync() {
+        shipmentSettingsService.listAsync(CommonRequestModel.buildRequest()); // test case not required since function is empty
+    }
+
+    @Test
+    void delete() {
+        shipmentSettingsService.delete(CommonRequestModel.buildRequest()); // test case not required since function is empty
+    }
+
+    @Test
     void completeUpdate() throws RunnerException {
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
@@ -144,6 +171,133 @@ public class ShipmentSettingsServiceTest {
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(CommonRequestModel.buildRequest(shipmentSettingRequest));
         Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+    }
+
+    @Test
+    void completeSettingsUpdateCreateV1_Create() throws RunnerException{
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(shipmentSettingsDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetails.class))).thenReturn(testShipmentSettingsDetails);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(shipmentSettingRequest));
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+    }
+
+    @Test
+    void completeSettingsUpdateCreateV1_Update() throws RunnerException{
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(shipmentSettingsDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetails.class))).thenReturn(testShipmentSettingsDetails);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(shipmentSettingRequest));
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+    }
+
+    @Test
+    void uploadTemplate_Create() {
+        TemplateUploadRequest templateUploadRequest = new TemplateUploadRequest();
+        ResponseEntity<TemplateUploadResponse> docServiceResponse = new ResponseEntity<>(HttpStatus.CREATED);
+        when(documentService.createDocumentTemplate(any())).thenReturn(docServiceResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+    }
+
+    @Test
+    void uploadTemplate_CreateFailure() {
+        TemplateUploadRequest templateUploadRequest = new TemplateUploadRequest();
+        ResponseEntity<TemplateUploadResponse> docServiceResponse = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        when(documentService.createDocumentTemplate(any())).thenReturn(docServiceResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void uploadTemplate_CreateFailureError() {
+        TemplateUploadRequest templateUploadRequest = new TemplateUploadRequest();
+        ResponseEntity<TemplateUploadResponse> docServiceResponse = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        when(documentService.createDocumentTemplate(any())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void uploadTemplate_Update() {
+        TemplateUploadRequest templateUploadRequest = new TemplateUploadRequest();
+        templateUploadRequest.setPreviousFileId("prv field");
+        ResponseEntity<String> docServiceResponse = new ResponseEntity<>(HttpStatus.OK);
+        when(documentService.updateDocumentTemplate(any())).thenReturn(docServiceResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+    }
+
+    @Test
+    void uploadTemplate_UpdateFailure() {
+        TemplateUploadRequest templateUploadRequest = new TemplateUploadRequest();
+        templateUploadRequest.setPreviousFileId("prv field");
+        ResponseEntity<String> docServiceResponse = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        when(documentService.updateDocumentTemplate(any())).thenReturn(docServiceResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void uploadTemplate_UpdateFailureError() {
+        TemplateUploadRequest templateUploadRequest = new TemplateUploadRequest();
+        templateUploadRequest.setPreviousFileId("prv field");
+        ResponseEntity<String> docServiceResponse = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        when(documentService.updateDocumentTemplate(any())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void downloadTemplate() throws RunnerException{
+        byte[] response = new byte[0];
+        when(documentService.downloadTemplate(any())).thenReturn(response);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.downloadTemplate("tempId");
+        Assertions.assertNotNull(responseEntity);
+    }
+
+    @Test
+    void downloadTemplate_Failure() throws RunnerException{
+        byte[] response = new byte[0];
+        when(documentService.downloadTemplate(any())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.downloadTemplate("tempId");
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void retrieveByTenantId() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(testShipmentSettingsDetails));
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveByTenantId(CommonRequestModel.buildRequest(commonGetRequest));
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+    }
+
+    @Test
+    void retrieveByTenantId_RequestNull() {
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveByTenantId(CommonRequestModel.buildRequest());
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void retrieveByTenantId_SettingsNull() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveByTenantId(CommonRequestModel.buildRequest(commonGetRequest));
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void retrieveByTenantId_Error() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        when(shipmentSettingsDao.findByTenantId(any())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveByTenantId(CommonRequestModel.buildRequest(commonGetRequest));
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
     }
 
 }
