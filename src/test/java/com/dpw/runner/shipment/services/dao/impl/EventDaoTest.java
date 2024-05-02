@@ -47,8 +47,13 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import javax.persistence.EntityManager;
+import javax.persistence.Parameter;
+import javax.persistence.Query;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -83,6 +88,9 @@ class EventDaoTest {
 
     @Mock
     private IAuditLogService auditLogService;
+
+    @Mock
+    private EntityManager entityManager;
 
     private static ObjectMapper objectMapper;
 
@@ -412,6 +420,33 @@ class EventDaoTest {
         eventDao.autoGenerateEvents(request);
 
         verify(eventRepository, times(0)).save(any());
+    }
+
+    @Test
+    void createEventForAirMessagingEvent() {
+        UUID guid = null;
+        Long entityId = null;
+        String entityType = null;
+        String eventCode = null;
+        String description = null;
+        String source = null;
+        Integer tenantId = null;
+        Integer pieces = null;
+        Integer totalPieces = null;
+        BigDecimal weight = null;
+        BigDecimal totalWeight = null;
+        String partial = null;
+        LocalDateTime receivedDate = null;
+        LocalDateTime scheduledDate = null;
+        LocalDateTime createdAt = null;
+        LocalDateTime updatedAt = null;
+
+        Query queryMock = mock(Query.class);
+
+        when(entityManager.createNativeQuery(anyString())).thenReturn(queryMock);
+        when(queryMock.setParameter(anyInt(), any())).thenReturn(queryMock);
+
+        eventDao.createEventForAirMessagingEvent(guid,entityId,entityType,eventCode,description,source,tenantId,pieces,totalPieces,weight,totalWeight,partial,receivedDate,scheduledDate,createdAt,updatedAt);
     }
 
 

@@ -434,6 +434,21 @@ class EventServiceTest {
     }
 
     @Test
+    void deleteEntityNotPresent() {
+        Long id = 1L;
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(id).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(getRequest);
+
+        when(eventDao.findById(id)).thenReturn(Optional.empty());
+
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.delete(commonRequestModel);
+
+        assertNotNull(responseEntity);
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, runnerResponse.getError().getMessage());
+    }
+
+    @Test
     void retrieveById() {
         testData.setId(1L);
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
@@ -447,6 +462,23 @@ class EventServiceTest {
 
         assertNotNull(responseEntity);
         assertEquals(responseEntity, ResponseHelper.buildSuccessResponse(response));
+    }
+
+    @Test
+    void retrieveByIdEntityNotPresent() {
+        testData.setId(1L);
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(getRequest);
+        EventsResponse response = objectMapperTest.convertValue(testData, EventsResponse.class);
+
+        when(eventDao.findById(anyLong())).thenReturn(Optional.empty());
+//        when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(response);
+
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.retrieveById(commonRequestModel);
+
+        assertNotNull(responseEntity);
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, runnerResponse.getError().getMessage());
     }
 
     @Test
@@ -545,5 +577,12 @@ class EventServiceTest {
         assertNotNull(shipmentDetails.getCarrierDetails());
         assertEquals(shipmentDetails.getCarrierDetails().getAtd(), upstreamEvent.getActual());
     }
+
+    @Test
+    void V1EventsCreateAndUpdate() throws RunnerException {
+        ResponseEntity<IRunnerResponse> runnerResponseResponseEntity= eventService.V1EventsCreateAndUpdate(null, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), runnerResponseResponseEntity);
+    }
+
 
 }
