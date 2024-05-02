@@ -81,13 +81,14 @@ class NotesDaoTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        TenantContext.setCurrentTenant(2);
-        UserContext.setUser(UsersDto.builder().Username("user").Permissions(new HashMap<>()).build()); // Set up a mock user for testing
+        TenantContext.setCurrentTenant(1);
+        UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(new HashMap<>()).build()); // Set up a mock user for testing
     }
 
     @Test
     public void testSave() {
         Notes notes = new Notes();
+        notes.setText("Text note");
 //        when(notesRepository.save(notes)).thenReturn(notes);
 
         Notes savedNotes = dao.save(notes);
