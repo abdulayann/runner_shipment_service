@@ -8,11 +8,7 @@ import java.util.Optional;
 public interface IAdditionalDetailDao {
     AdditionalDetails save(AdditionalDetails additionalDetails);
 
-//    Page<AdditionalDetails> findAll(Specification<AdditionalDetails> spec, Pageable pageable);
-
     Optional<AdditionalDetails> findById(Long id);
-
-//    void delete(AdditionalDetails additionalDetails);
 
     AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws RunnerException;
 }

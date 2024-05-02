@@ -24,20 +24,10 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
         return additionalDetailRepository.save(additionalDetails);
     }
 
-//    @Override
-//    public Page<AdditionalDetails> findAll(Specification<AdditionalDetails> spec, Pageable pageable) {
-//        return additionalDetailRepository.findAll(spec, pageable);
-//    }
-
     @Override
     public Optional<AdditionalDetails> findById(Long id) {
         return additionalDetailRepository.findById(id);
     }
-
-//    @Override
-//    public void delete(AdditionalDetails additionalDetails) {
-//        additionalDetailRepository.delete(additionalDetails);
-//    }
 
     public AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws RunnerException {
         String responseMsg;
