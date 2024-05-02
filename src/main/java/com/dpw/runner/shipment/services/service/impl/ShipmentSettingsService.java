@@ -428,7 +428,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                     oldTenantProductsList = tenantProductsPage.getContent();
                 else
                     oldTenantProductsList = null;
-                List<TenantProducts> tenantProducts = tenantProductsDao.updateEntityFromV1Settings(convertToEntityList(tenantProductsList, TenantProducts.class), shipmentSettingsDetails.getId(), oldTenantProductsList);
+                List<TenantProducts> tenantProducts = tenantProductsDao.updateEntityFromV1Settings(jsonHelper.convertValueToList(tenantProductsList, TenantProducts.class), shipmentSettingsDetails.getId(), oldTenantProductsList);
                 response.setTenantProducts(convertToDtoList(tenantProducts, TenantProductsResponse.class));
             }
             if(productSequenceConfigList != null) {
@@ -476,14 +476,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request == null) {
                 log.error("Request is empty for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null && request.getGuid() == null) {
-                log.error("Request Id and Guid is null for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if(request.getId() == null) {
-                log.error("Request Id is null for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if(request.getGuid() == null) {
-                log.error("GUID is null for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null || request.getGuid() == null) {
+                log.error("Request Id or Guid is null for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             ShipmentSettingsDetailsResponse response;
             Optional<ShipmentSettingsDetails> shipmentSettingsDetails;
@@ -517,94 +511,17 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel){
-        String responseMsg;
-        try {
-            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.error("Request is empty for Shipment Settings list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(request, ShipmentSettingsDetails.class);
-            Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
-            log.info("Shipment Settings list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(shipmentSettingsPage.getContent()),
-                    shipmentSettingsPage.getTotalPages(),
-                    shipmentSettingsPage.getTotalElements());
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-
+        return null;
     }
     @Override
     @Async
     public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel){
-        String responseMsg;
-        try {
-            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.error("Request is empty for Shipment Settings async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(request, ShipmentSettingsDetails.class);
-            Page<ShipmentSettingsDetails> shipmentSettingsPage  = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
-            log.info("Shipment Settings list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(shipmentSettingsPage.getContent()),
-                    shipmentSettingsPage.getTotalPages(),
-                    shipmentSettingsPage.getTotalElements()));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
-        }
+        return null;
     }
 
     @Override
     public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        try {
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.debug("Request is empty for Shipment Settings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if(request.getId() == null && request.getGuid() == null) {
-                log.error("Request Id and Guid is null for Shipment Settings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if(request.getId() == null) {
-                log.error("Request Id is null for Shipment Settings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if(request.getGuid() == null) {
-                log.error("GUID is null for Shipment Settings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if(request.getId() != null) {
-                long id = request.getId();
-                Optional<ShipmentSettingsDetails> note = shipmentSettingsDao.findById(id);
-                if (note.isEmpty()) {
-                    log.debug("ShipmentSettingsDetails is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                shipmentSettingsDao.delete(note.get());
-                log.info("Deleted Shipment Settings for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            } else {
-                UUID guid = UUID.fromString(request.getGuid());
-                Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.findByGuid(guid);
-                if (shipmentSettingsDetails.isEmpty()) {
-                    log.debug("ShipmentSettingsDetails is null for Guid {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                shipmentSettingsDao.delete(shipmentSettingsDetails.get());
-                log.info("Deleted Shipment Settings for Guid {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
-            }
-            return ResponseHelper.buildSuccessResponse();
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
+        return null;
     }
     public ShipmentSettingsDetails convertRequestToEntity(ShipmentSettingRequest request) {
         return jsonHelper.convertValue(request, ShipmentSettingsDetails.class);
@@ -612,14 +529,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     private ShipmentSettingsDetailsResponse convertEntityToDto(ShipmentSettingsDetails shipmentSettingsDetails) {
         return jsonHelper.convertValue(shipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);
-    }
-
-    private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentSettingsDetails> list) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        list.forEach(shipmentSettingsDetail -> {
-            responseList.add(convertEntityToDto(shipmentSettingsDetail));
-        });
-        return responseList;
     }
 
     @Override
