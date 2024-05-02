@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -398,7 +399,7 @@ class ConsolidationServiceTest {
         var spyService = Mockito.spy(consolidationService);
         Mockito.doReturn(Optional.empty()).when(spyService).retrieveByIdOrGuid(any());
         assertThrows(DataRetrievalFailureException.class, () -> spyService.completeUpdate(commonRequestModel));
-        verify(auditLogService, times(0)).addAuditLog(any());
+        verify(auditLogService, times(0)).addAuditLog(any(AuditLogMetaData.class));
     }
 
     @Test

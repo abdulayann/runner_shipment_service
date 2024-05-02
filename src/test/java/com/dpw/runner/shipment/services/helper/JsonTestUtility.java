@@ -170,4 +170,8 @@ public class JsonTestUtility {
     public OrderNumber getTestOrderNumberDao() {
         return objectMapper.convertValue(payload.get("ORDER_NUMBER"), OrderNumber.class);
     }
+
+    public TruckDriverDetails getTestTruckDriverDetails() {
+        return objectMapper.convertValue(payload.get("TRUCK_DRIVER_DETAILS"), TruckDriverDetails.class);
+    }
 }

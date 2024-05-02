@@ -1,137 +1,269 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-@RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@Execution(ExecutionMode.CONCURRENT)
 class BookingCarriageDaoTest {
 
+    @Mock
+    private IBookingCarriageRepository bookingCarriageRepository;
 
-    @Autowired
-    private IBookingCarriageDao dao;
-    private static JsonTestUtility jsonTestUtility;
-    private static BookingCarriage testData;
+    @Mock
+    private ValidatorUtility validatorUtility;
 
-    @Container
-    private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
+    @Mock
+    private JsonHelper jsonHelper;
 
-    static {
-        postgresContainer = new PostgreSQLContainer("postgres:15-alpine")
-                .withDatabaseName("integration-tests-db")
-                .withUsername("sa")
-                .withPassword("sa");
-        postgresContainer.start();
-    }
+    @Mock
+    private IAuditLogService auditLogService;
 
-    @BeforeAll
-    static void beforeAll() throws IOException {
-        postgresContainer.start();
-        jsonTestUtility = new JsonTestUtility();
-    }
+    @InjectMocks
+    private BookingCarriageDao bookingCarriageDao;
 
-    @AfterAll
-    static void afterAll() {
-        postgresContainer.stop();
-    }
+    private BookingCarriage testData;
+    private JsonTestUtility jsonTestUtility;
 
-    @DynamicPropertySource
-    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
-    }
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        TenantContext.setCurrentTenant(1);
+    void setUp() throws IOException {
+        jsonTestUtility = new JsonTestUtility();
         testData = jsonTestUtility.getTestBookingCarriage();
-        var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
-        PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
-        UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-    }
-
-
-
-    @Test
-    void save() {
-        var r = dao.save(testData);
-        assertNotNull(r);
-        assertNotNull(r.getId());
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void saveAll() {
-        var r = dao.saveAll(List.of(testData));
-        assertNotNull(r);
-        assertNotNull(r.get(0).getId());
+    void save_ValidBookingCarriage_ReturnsSavedBookingCarriage() {
+        BookingCarriage bookingCarriage = new BookingCarriage();
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        Set<String> set = Set.of("abcd", "defg");
+        when(validatorUtility.applyValidation(anyString(), anyString(), any(), anyBoolean())).thenReturn(Collections.emptySet());
+        when(bookingCarriageRepository.save(any(BookingCarriage.class))).thenReturn(bookingCarriage);
+
+        BookingCarriage savedBookingCarriage = bookingCarriageDao.save(bookingCarriage);
+
+        assertEquals(bookingCarriage, savedBookingCarriage);
+        verify(validatorUtility).applyValidation(anyString(), anyString(), any(), anyBoolean());
+        verify(bookingCarriageRepository).save(any(BookingCarriage.class));
     }
 
     @Test
-    void findAll() {
-        var r = dao.save(testData);
-        assertNotNull(r.getId());
-        Specification<BookingCarriage> spec = (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.equal(root.get("id"), r.getId());
-        };
-        var result = dao.findAll(spec, PageRequest.of(0 , 10));
-        assertNotNull(result);
-        assertEquals(result.stream().toList().get(0).getId(), r.getId());
+    void save_ValidBookingCarriage_ThrowsValidationException() {
+        BookingCarriage bookingCarriage = new BookingCarriage();
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        Set<String> set = Set.of("abcd", "defg");
+        when(validatorUtility.applyValidation(anyString(), anyString(), any(), anyBoolean())).thenReturn(set);
+        assertThrows(ValidationException.class, () -> bookingCarriageDao.save(bookingCarriage));
+    }
+
+
+    @Test
+    void saveAll_ValidBookingCarriages_ReturnsSavedBookingCarriages() {
+        List<BookingCarriage> bookingCarriageList = Arrays.asList(new BookingCarriage(), new BookingCarriage());
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(validatorUtility.applyValidation(anyString(), anyString(), any(), anyBoolean())).thenReturn(Collections.emptySet());
+        when(bookingCarriageRepository.saveAll(anyList())).thenReturn(bookingCarriageList);
+
+        List<BookingCarriage> savedBookingCarriages = bookingCarriageDao.saveAll(bookingCarriageList);
+
+        assertEquals(bookingCarriageList, savedBookingCarriages);
+        verify(validatorUtility, times(2)).applyValidation(anyString(), anyString(), any(), anyBoolean());
+        verify(bookingCarriageRepository).saveAll(bookingCarriageList);
     }
 
     @Test
-    void findById() {
-        var r = dao.save(testData);
-        assertNotNull(r.getId());
-        var result = dao.findById(r.getId());
-        assertNotNull(result);
-        assertEquals(result.get(), r);
+    void saveAll_ValidBookingCarriages_ThrowsValidationException() {
+        List<BookingCarriage> bookingCarriageList = Arrays.asList(new BookingCarriage(), new BookingCarriage());
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(validatorUtility.applyValidation(anyString(), anyString(), any(), anyBoolean())).thenReturn(Set.of("test"));
+        assertThrows(ValidationException.class, () -> bookingCarriageDao.saveAll(bookingCarriageList));
     }
 
     @Test
-    void delete() {
-        var r = dao.save(testData);
-        assertNotNull(r.getId());
-        dao.delete(r);
-        var result = dao.findById(r.getId());
+    void findAll_ValidSpecificationAndPageable_ReturnsPageOfBookingCarriages() {
+        Page<BookingCarriage> expectedPage = mock(Page.class);
+        Specification<BookingCarriage> spec = mock(Specification.class);
+        Pageable pageable = mock(Pageable.class);
+        when(bookingCarriageRepository.findAll(spec, pageable)).thenReturn(expectedPage);
+
+        Page<BookingCarriage> resultPage = bookingCarriageDao.findAll(spec, pageable);
+
+        assertEquals(expectedPage, resultPage);
+        verify(bookingCarriageRepository).findAll(spec, pageable);
+    }
+
+    @Test
+    void findById_ValidId_ReturnsOptionalOfBookingCarriage() {
+        Long id = 1L;
+        BookingCarriage bookingCarriage = new BookingCarriage();
+        when(bookingCarriageRepository.findById(id)).thenReturn(Optional.of(bookingCarriage));
+
+        Optional<BookingCarriage> result = bookingCarriageDao.findById(id);
+
+        assertTrue(result.isPresent());
+        assertEquals(bookingCarriage, result.get());
+        verify(bookingCarriageRepository).findById(id);
+    }
+
+    @Test
+    void delete_ValidBookingCarriage_CallsRepositoryDelete() {
+        BookingCarriage bookingCarriage = new BookingCarriage();
+        bookingCarriageDao.delete(bookingCarriage);
+        verify(bookingCarriageRepository).delete(bookingCarriage);
+    }
+
+
+    @Test
+    void updateEntityFromShipment_ExceptionThrown_ReturnsEmptyList() {
+        Long shipmentId = 1L;
+        var bookingCarriageDaoSpy = Mockito.spy(bookingCarriageDao);
+        doThrow(new RuntimeException("Test")).when(bookingCarriageDaoSpy).findAll(any(),any());
+        assertThrows(RunnerException.class, () -> bookingCarriageDaoSpy.updateEntityFromShipment(Collections.emptyList(), shipmentId));
+    }
+
+    @Test
+    void updateEntityFromShipment_BookingCarriageListHasElements_ReturnsResponseBookingCarriage() throws RunnerException {
+        Long shipmentId = 1L;
+        List<BookingCarriage> bookingCarriageList = Arrays.asList(new BookingCarriage(), new BookingCarriage());
+        var bookingCarriageDaoSpy = Mockito.spy(bookingCarriageDao);
+        doReturn(mock(Page.class)).when(bookingCarriageDaoSpy).findAll(any(), any());
+        doReturn(bookingCarriageList).when(bookingCarriageDaoSpy).saveEntityFromShipment(anyList(), eq(shipmentId), anyMap());
+        List<BookingCarriage> result = bookingCarriageDaoSpy.updateEntityFromShipment(bookingCarriageList, shipmentId);
+        assertEquals(bookingCarriageList, result);
+    }
+
+    @Test
+    void updateEntityFromShipment_BookingCarriageListIsEmpty_ReturnsEmptyList() throws RunnerException {
+        Long shipmentId = 1L;
+        testData.setId(1L);
+        when(bookingCarriageRepository.findAll((Specification<BookingCarriage>) any(), (Pageable) any())).thenReturn(new PageImpl<BookingCarriage>(List.of(testData)));
+        List<BookingCarriage> result = bookingCarriageDao.updateEntityFromShipment(Collections.singletonList(testData), shipmentId);
         assertNotNull(result);
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void saveEntityFromShipment_ValidDataWithExistingIds_ReturnsList() {
+        List<BookingCarriage> bookingCarriages = Arrays.asList(new BookingCarriage(), new BookingCarriage());
+        Long shipmentId = 1L;
+        Map<Long, BookingCarriage> oldEntityMap = new HashMap<>();
+        oldEntityMap.put(1L, new BookingCarriage());
+        oldEntityMap.put(2L, new BookingCarriage());
+        when(bookingCarriageDao.saveAll(anyList())).thenReturn(bookingCarriages);
+
+        List<BookingCarriage> result = bookingCarriageDao.saveEntityFromShipment(bookingCarriages, shipmentId, oldEntityMap);
+
+        assertNotNull(result);
+        assertEquals(bookingCarriages.size(), result.size());
+    }
+
+    @Test
+    void deleteBookingCarriage_ValidData_CallsDeleteAndAuditLogService() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        Map<Long, BookingCarriage> hashMap = new HashMap<>();
+        BookingCarriage bookingCarriage1 = new BookingCarriage();
+        BookingCarriage bookingCarriage2 = new BookingCarriage();
+        hashMap.put(1L, bookingCarriage1);
+        hashMap.put(2L, bookingCarriage2);
+        when(jsonHelper.convertToJson(any(BookingCarriage.class))).thenReturn("{}");
+
+        bookingCarriageDao.deleteBookingCarriage(hashMap, "entityType", 1L);
+
+        verify(bookingCarriageRepository, times(2)).delete(any(BookingCarriage.class));
+        verify(auditLogService, times(2)).addAuditLog(any());
+    }
+
+    @Test
+    void updateEntityFromShipment_OldEntityListIsNull_ReturnsEmptyList() throws RunnerException {
+        Long shipmentId = 1L;
+
+        List<BookingCarriage> result = bookingCarriageDao.updateEntityFromShipment(Collections.emptyList(), shipmentId, null);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void updateEntityFromShipment_OldEntityListIsEmpty_ReturnsEmptyList() throws RunnerException {
+        Long shipmentId = 1L;
+        List<BookingCarriage> result = bookingCarriageDao.updateEntityFromShipment(Collections.emptyList(), shipmentId, Collections.emptyList());
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void updateEntityFromShipment_BookingCarriageListIsNull_ReturnsEmptyList() throws RunnerException {
+        Long shipmentId = 1L;
+        List<BookingCarriage> oldEntityList = Arrays.asList(new BookingCarriage(), new BookingCarriage());
+        List<BookingCarriage> result = bookingCarriageDao.updateEntityFromShipment(null, shipmentId, oldEntityList);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void updateEntityFromShipment_ExceptionThrown_ReturnsEmptyList_() {
+        Long shipmentId = 1L;
+        List<BookingCarriage> oldEntityList = Arrays.asList(new BookingCarriage(), new BookingCarriage());
+        var bookingCarriageDaospy = Mockito.spy(bookingCarriageDao);
+        doThrow(new RuntimeException()).when(bookingCarriageDaospy).saveEntityFromShipment(any() , any());
+        assertThrows(RunnerException.class, () -> bookingCarriageDaospy.updateEntityFromShipment(List.of(testData), shipmentId, oldEntityList));
+    }
+
+    @Test
+    void saveEntityFromShipment_ExceptionThrown_ReturnsEmptyList() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Long shipmentId = 1L;
+        testData.setId(1L);
+        List<BookingCarriage> bookingCarriages = Arrays.asList(testData);
+        when(bookingCarriageDao.findById(anyLong())).thenReturn(Optional.of(testData));
+        doThrow(IllegalArgumentException.class).when(auditLogService).addAuditLog(any());
+        assertThrows(Exception.class, () -> bookingCarriageDao.saveEntityFromShipment(bookingCarriages, shipmentId));
+    }
+
+    @Test
+    void saveEntityFromShipment_BookingCarriagesListHasElements_ReturnsPopulatedList() {
+        Long shipmentId = 1L;
+        List<BookingCarriage> bookingCarriages = Arrays.asList(new BookingCarriage(), new BookingCarriage());
+        when(bookingCarriageDao.findById(anyLong())).thenReturn(Optional.of(new BookingCarriage()));
+        when(bookingCarriageDao.save(any())).thenReturn(new BookingCarriage());
+        List<BookingCarriage> result = bookingCarriageDao.saveEntityFromShipment(bookingCarriages, shipmentId);
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertEquals(bookingCarriages.size(), result.size());
+    }
+
+    @Test
+    void delete_ValidBookingCarriage_ThrowsException() {
+        doThrow(new RuntimeException("test")).when(jsonHelper).convertToJson(any(BookingCarriage.class));
+        bookingCarriageDao.deleteBookingCarriage(Map.of(1L , testData),"bookingCarriage", 1L);
     }
 }

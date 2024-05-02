@@ -2332,5 +2332,22 @@
   },
   "ORDER_NUMBER" : {
     "orderNumber": 123456789
+  },
+  "TRUCK_DRIVER_DETAILS" : {
+    "id": 2,
+    "shipmentId": 123456789,
+    "transporterType": "Self",
+    "transporterName": "Transporter Name",
+    "driverName": "John Doe",
+    "driverMobileNumber": "+1234567890",
+    "truckNumberPlate": "ABC123",
+    "trailerNumberPlate": "XYZ456",
+    "truckOrTrailerType": "Flatbed",
+    "containerTypeCode": "Standard",
+    "containerId": 987654321,
+    "consolidationId": 123456789,
+    "selfTransporterName": "Self Transporter",
+    "remarks": "Some remarks about the truck",
+    "truckStatus": "Available"
   }
 }
