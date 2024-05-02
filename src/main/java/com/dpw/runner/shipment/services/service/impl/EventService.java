@@ -137,10 +137,12 @@ public class EventService implements IEventService {
         EventsRequest request = (EventsRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for Event update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(EventConstants.EMPTY_REQUEST_ERROR);
         }
 
         if (request.getId() == null) {
             log.debug("Request Id is null for Event update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(EventConstants.EMPTY_REQUEST_ID_ERROR);
         }
         long id = request.getId();
         Optional<Events> oldEntity = eventDao.findById(id);
@@ -183,6 +185,7 @@ public class EventService implements IEventService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Event list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException(EventConstants.EMPTY_REQUEST_ERROR);
             }
             // construct specifications for filter request
             Pair<Specification<Events>, Pageable> tuple = fetchData(request, Events.class);
@@ -209,6 +212,7 @@ public class EventService implements IEventService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Event async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException(EventConstants.EMPTY_REQUEST_ERROR);
             }
             // construct specifications for filter request
             Pair<Specification<Events>, Pageable> tuple = fetchData(request, Events.class);
@@ -319,40 +323,41 @@ public class EventService implements IEventService {
 
     @Override
     public ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
-        EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
-        try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.EVENTS, StringUtility.convertToString(eventsRequestV2.getGuid()), eventsRequestV2);
-            }
-            Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
-            Events events = modelMapper.map(eventsRequestV2, Events.class);
-            if (existingEvent != null && existingEvent.isPresent()) {
-                events.setId(existingEvent.get().getId());
-            }
-            if (eventsRequestV2.getShipmentGuid() != null) {
-                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(eventsRequestV2.getShipmentGuid());
-                if (shipmentDetails.isPresent()) {
-                    events.setEntityId(shipmentDetails.get().getId());
-                    events.setEntityType(Constants.SHIPMENT);
-                }
-            }
-            if (eventsRequestV2.getConsolidationGuid() != null) {
-                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(eventsRequestV2.getConsolidationGuid());
-                if (consolidationDetails.isPresent()) {
-                    events.setEntityId(consolidationDetails.get().getId());
-                    events.setEntityType(Constants.CONSOLIDATION);
-                }
-            }
-            events = eventDao.save(events);
-            EventsResponse response = objectMapper.convertValue(events, EventsResponse.class);
-            return ResponseHelper.buildSuccessResponse(response);
-        } catch (Exception e) {
-            String responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
-        }
+        return ResponseHelper.buildSuccessResponse();
+//        EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
+//        try {
+//            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+//                return syncQueueService.saveSyncRequest(SyncingConstants.EVENTS, StringUtility.convertToString(eventsRequestV2.getGuid()), eventsRequestV2);
+//            }
+//            Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
+//            Events events = modelMapper.map(eventsRequestV2, Events.class);
+//            if (existingEvent != null && existingEvent.isPresent()) {
+//                events.setId(existingEvent.get().getId());
+//            }
+//            if (eventsRequestV2.getShipmentGuid() != null) {
+//                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(eventsRequestV2.getShipmentGuid());
+//                if (shipmentDetails.isPresent()) {
+//                    events.setEntityId(shipmentDetails.get().getId());
+//                    events.setEntityType(Constants.SHIPMENT);
+//                }
+//            }
+//            if (eventsRequestV2.getConsolidationGuid() != null) {
+//                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(eventsRequestV2.getConsolidationGuid());
+//                if (consolidationDetails.isPresent()) {
+//                    events.setEntityId(consolidationDetails.get().getId());
+//                    events.setEntityType(Constants.CONSOLIDATION);
+//                }
+//            }
+//            events = eventDao.save(events);
+//            EventsResponse response = objectMapper.convertValue(events, EventsResponse.class);
+//            return ResponseHelper.buildSuccessResponse(response);
+//        } catch (Exception e) {
+//            String responseMsg = e.getMessage() != null ? e.getMessage()
+//                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+//            log.error(responseMsg, e);
+//            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+//            throw new RuntimeException(e);
+//        }
     }
 
   public ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) throws RunnerException {
