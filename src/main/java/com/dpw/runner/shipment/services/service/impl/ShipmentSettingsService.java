@@ -131,7 +131,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
@@ -139,35 +138,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
-        if(request == null) {
-            log.error(ShipmentSettingsConstants.UPDATE_REQUEST_EMPTY, LoggerHelper.getRequestIdFromMDC());
-        }
-
-        if(request.getId() == null) {
-            log.error("Request Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        long id = request.getId();
-        Optional<ShipmentSettingsDetails> oldEntity = shipmentSettingsDao.findById(id);
-        if(!oldEntity.isPresent()) {
-            log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-
-        ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
-        shipmentSettingsDetails.setId(oldEntity.get().getId());
-        try {
-            shipmentSettingsDetails = shipmentSettingsDao.save(shipmentSettingsDetails);
-            log.info("Updated the Shipment Setting details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
-        }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
+        return null;
     }
 
     @Transactional
@@ -248,16 +219,16 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             }
 
             if(hblTermsConditionTemplateList != null) {
-                List<HblTermsConditionTemplate> hblTermsConditionTemplates = hblTermsConditionTemplateDao.updateEntityFromSettings(convertToEntityList(hblTermsConditionTemplateList, HblTermsConditionTemplate.class), shipmentSettingsDetails.getId(), true);
-                response.setHblTermsConditionTemplate(convertToDtoList(hblTermsConditionTemplates, HblTermsConditionTemplateResponse.class));
+                List<HblTermsConditionTemplate> hblTermsConditionTemplates = hblTermsConditionTemplateDao.updateEntityFromSettings(jsonHelper.convertValueToList(hblTermsConditionTemplateList, HblTermsConditionTemplate.class), shipmentSettingsDetails.getId(), true);
+                response.setHblTermsConditionTemplate(jsonHelper.convertValueToList(hblTermsConditionTemplates, HblTermsConditionTemplateResponse.class));
             }
             if(hblHawbBackPrintTemplateList != null) {
-                List<HblTermsConditionTemplate> hblHawbBackPrintTemplates = hblTermsConditionTemplateDao.updateEntityFromSettings(convertToEntityList(hblHawbBackPrintTemplateList, HblTermsConditionTemplate.class), shipmentSettingsDetails.getId(), false);
-                response.setHblHawbBackPrintTemplate(convertToDtoList(hblHawbBackPrintTemplates, HblTermsConditionTemplateResponse.class));
+                List<HblTermsConditionTemplate> hblHawbBackPrintTemplates = hblTermsConditionTemplateDao.updateEntityFromSettings(jsonHelper.convertValueToList(hblHawbBackPrintTemplateList, HblTermsConditionTemplate.class), shipmentSettingsDetails.getId(), false);
+                response.setHblHawbBackPrintTemplate(jsonHelper.convertValueToList(hblHawbBackPrintTemplates, HblTermsConditionTemplateResponse.class));
             }
             if(tenantProductsList != null) {
-                List<TenantProducts> tenantProducts = tenantProductsDao.updateEntityFromSettings(convertToEntityList(tenantProductsList, TenantProducts.class), shipmentSettingsDetails.getId());
-                response.setTenantProducts(convertToDtoList(tenantProducts, TenantProductsResponse.class));
+                List<TenantProducts> tenantProducts = tenantProductsDao.updateEntityFromSettings(jsonHelper.convertValueToList(tenantProductsList, TenantProducts.class), shipmentSettingsDetails.getId());
+                response.setTenantProducts(jsonHelper.convertValueToList(tenantProducts, TenantProductsResponse.class));
             }
             if(productSequenceConfigList != null) {
                 if(productSequenceConfigList.size() > 0) {
@@ -266,14 +237,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                             ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
                             Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
                             Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
-                            productSequenceConfig.setTenantProducts(convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
+                            productSequenceConfig.setTenantProducts(jsonHelper.convertValue(tenantProducts.getContent().get(0), TenantProductsRequest.class));
                         }
                         else
                             productSequenceConfig.setTenantProducts(null);
                     }
                 }
-                List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromSettings(convertToEntityList(productSequenceConfigList, ProductSequenceConfig.class), shipmentSettingsDetails.getId());
-                response.setProductSequenceConfig(convertToDtoList(productSequenceConfigs, ProductSequenceConfigResponse.class));
+                List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromSettings(jsonHelper.convertValueToList(productSequenceConfigList, ProductSequenceConfig.class), shipmentSettingsDetails.getId());
+                response.setProductSequenceConfig(jsonHelper.convertValueToList(productSequenceConfigs, ProductSequenceConfigResponse.class));
             }
 
             try{
