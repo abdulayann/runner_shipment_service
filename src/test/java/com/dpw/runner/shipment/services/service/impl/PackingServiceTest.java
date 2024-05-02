@@ -272,8 +272,8 @@ class PackingServiceTest {
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Packing.class))).thenReturn(testPacking);
 
-        packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
-
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -289,8 +289,8 @@ class PackingServiceTest {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
 
-        packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
-
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -453,7 +453,8 @@ class PackingServiceTest {
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(testShipment));
         when(consolidationDao.findByGuid(any())).thenReturn(Optional.of(testConsolidation));
         when(packingDao.save(any())).thenThrow(new RuntimeException());
-        var e  = assertThrows(RuntimeException.class, () -> packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), false));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(testPackingRequestV2);
+        var e  = assertThrows(RuntimeException.class, () -> packingService.V1PackingCreateAndUpdate(commonRequestModel, false));
         assertNotNull(e);
     }
 
@@ -477,7 +478,8 @@ class PackingServiceTest {
                 .build();
         PackingService spyService = spy(packingService);
         doThrow(new RuntimeException()).when(spyService).V1PackingCreateAndUpdate(any(), anyBoolean());
-        var e = assertThrows(RuntimeException.class, () -> spyService.V1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(bulkPackingRequestV2)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(bulkPackingRequestV2);
+        var e = assertThrows(RuntimeException.class, () -> spyService.V1BulkPackingCreateAndUpdate(commonRequestModel));
         assertNotNull(e);
     }
 
