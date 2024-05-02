@@ -2580,7 +2580,13 @@
     },
     "notesList": [],
     "truckDriverDetails": [],
-    "servicesList": [],
+    "servicesList": [
+      {
+        "id": 105225,
+        "guid": "47f6a6aa-81cd-4f64-8486-6a4929cefe85",
+        "serviceType": "TTT"
+      }
+    ],
     "routingsList": [
       {
         "id": 105225,
