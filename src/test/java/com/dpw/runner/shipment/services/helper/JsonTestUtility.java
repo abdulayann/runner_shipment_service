@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.helper;
 
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
+import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -177,5 +178,10 @@ public class JsonTestUtility {
 
     public ReferenceNumbers getTestReferenceNumbers() {
         return objectMapper.convertValue(payload.get("REFERENCE_NUMBERS"), ReferenceNumbers.class);
+    }
+
+    public ReportRequest getTestReportRequest() {
+        ReportRequest reportRequest = objectMapper.convertValue(payload.get("REPORT_REQUEST"), ReportRequest.class);
+        return reportRequest;
     }
 }

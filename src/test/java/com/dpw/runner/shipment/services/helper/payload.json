@@ -2358,6 +2358,10 @@
     "referenceNumber": "ABC123XYZ",
     "shipmentId": 987654321,
     "isPortalEnable": true
+  },
+  "REPORT_REQUEST" : {
+    "reportId": "4415",
+    "reportInfo": "SeawayBill",
+    "reportKey": "ShipmentId"
   }
-
 }
