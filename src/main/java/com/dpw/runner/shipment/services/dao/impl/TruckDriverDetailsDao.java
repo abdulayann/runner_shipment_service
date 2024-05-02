@@ -67,7 +67,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         truckDriverDetailsRepository.delete(truckDriverDetails);
     }
 
-    private void deleteTruckDriverDetails(Map<Long, TruckDriverDetails> hashMap, String entity, Long entityId) {
+    void deleteTruckDriverDetails(Map<Long, TruckDriverDetails> hashMap, String entity, Long entityId) {
         String responseMsg;
         try {
             hashMap.values().forEach(truckDriverDetails -> {
