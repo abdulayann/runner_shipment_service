@@ -1467,13 +1467,16 @@ public class ShipmentService implements IShipmentService {
                 isNewConsolAttached = true;
             }
         }
-        else
+        else {
+            shipmentDetails.setConsolRef(null);
             tempConsolIds = Objects.isNull(oldEntity) ? new ArrayList<>() : oldEntity.getConsolidationList().stream().map(e -> e.getId()).toList();
+        }
 
         List<PackingRequest> packingRequest = shipmentRequest.getPackingList();
         List<ContainerRequest> containerRequest = shipmentRequest.getContainersList();
 
         if(removedConsolIds != null && removedConsolIds.size() > 0) {
+            shipmentDetails.setConsolRef(null);
             List<Containers> allConsolConts = new ArrayList<>();
             for(Long consolidationId: removedConsolIds) {
                 List<Containers> containersList = containerDao.findByConsolidationId(consolidationId);
