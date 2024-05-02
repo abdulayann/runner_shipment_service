@@ -337,7 +337,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         return res;
     }
 
-    private void deleteReferenceNumbers(Map<Long, ReferenceNumbers> hashMap, String entityType, Long entityId) {
+    void deleteReferenceNumbers(Map<Long, ReferenceNumbers> hashMap, String entityType, Long entityId) {
         String responseMsg;
         try {
             hashMap.values().forEach(referenceNumber -> {

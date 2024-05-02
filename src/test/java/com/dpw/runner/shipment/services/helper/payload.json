@@ -2094,7 +2094,7 @@
   },
   "NEW_ADDITIONAL_DETAIL": {
     "efreightStatus": "EAW",
-    "screeningStatus": "ASDE",
+    "screeningStatus": ["ASDE"],
     "importBroker": {
       "tenantId": 908
     },
@@ -2349,5 +2349,15 @@
     "selfTransporterName": "Self Transporter",
     "remarks": "Some remarks about the truck",
     "truckStatus": "Available"
+  },
+  "REFERENCE_NUMBERS" : {
+    "id": 12,
+    "consolidationId": 123456789,
+    "countryOfIssue": "USA",
+    "type": "Order",
+    "referenceNumber": "ABC123XYZ",
+    "shipmentId": 987654321,
+    "isPortalEnable": true
   }
+
 }

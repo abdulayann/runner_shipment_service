@@ -174,4 +174,8 @@ public class JsonTestUtility {
     public TruckDriverDetails getTestTruckDriverDetails() {
         return objectMapper.convertValue(payload.get("TRUCK_DRIVER_DETAILS"), TruckDriverDetails.class);
     }
+
+    public ReferenceNumbers getTestReferenceNumbers() {
+        return objectMapper.convertValue(payload.get("REFERENCE_NUMBERS"), ReferenceNumbers.class);
+    }
 }
