@@ -118,9 +118,9 @@ class ContainerDaoTest {
     @Test
     void findAll() {
         var result = containerDao.save(container);
-        Specification<Containers> spec =  (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.equal(root.get("consolidationId"), 1);
-        };
+        Specification<Containers> spec =  (root, query, criteriaBuilder) ->
+            criteriaBuilder.equal(root.get("consolidationId"), 1);
+
         var containerList = containerDao.findAll(spec, PageRequest.of(0 , 10));
         assertFalse(containerList.isEmpty());
         assertEquals(containerList.stream().toList().get(0).getContainerCode(), result.getContainerCode());

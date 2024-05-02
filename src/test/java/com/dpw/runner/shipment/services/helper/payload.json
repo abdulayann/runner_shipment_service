@@ -1704,7 +1704,7 @@
     "eventsList": [],
     "shipmentAddresses": []
   },
-  "NEW_CONSOLIDATION_CREATE" : {
+  "NEW_CONSOLIDATION_CREATE": {
     "transportMode": "SEA",
     "containerCategory": "FCL",
     "shipmentType": "STD",
@@ -2017,7 +2017,7 @@
       }
     }
   },
-  "NEW_CONTAINER_CREATE" : {
+  "NEW_CONTAINER_CREATE": {
     "consolidationId": 1,
     "containerCode": "20DPW",
     "hblDeliveryMode": "CY/CFS",
@@ -2038,7 +2038,7 @@
     "allocatedVolume": 0,
     "allocatedVolumeUnit": "L"
   },
-  "PACKING" :   {
+  "PACKING": {
     "isDimension": true,
     "packs": 1,
     "packsType": "AMM",
@@ -2074,5 +2074,290 @@
         "value": "AMM"
       }
     }
+  },
+  "ELDETAILS": {},
+  "NEW_ALLOCATION_CREATE": {
+    "chargable": 1232.92,
+    "chargeableUnit": "M3",
+    "cutoffDate": "2024-04-09T06:43:56.573Z",
+    "hazardous": true,
+    "isTemperatureControlled": true,
+    "maxTemp": 123,
+    "maxTempUnit": "CEL",
+    "minTemp": 12,
+    "minTempUnit": "CEL",
+    "shipmentsCount": 3,
+    "volume": 1231,
+    "volumeUnit": "M3",
+    "weight": 321,
+    "weightUnit": "KG"
+  },
+  "NEW_ADDITIONAL_DETAIL": {
+    "efreightStatus": "EAW",
+    "screeningStatus": ["ASDE"],
+    "importBroker": {
+      "tenantId": 908
+    },
+    "exportBroker": {
+      "tenantId": 908
+    },
+    "masterData": {
+      "efreightStatus": "EAW (e-freight Consignment with No Accompanying Paper Documents)"
+    },
+    "unlocationData": {},
+    "tenantIdsData": {},
+    "textData": {},
+    "aomFreeText": "11"
+  },
+  "NEW_ACHIEVED_QUANTITY": {
+    "weightVolume": 0.00,
+    "weightVolumeUnit": "M3",
+    "consolidatedWeight": 0.00,
+    "consolidatedWeightUnit": "KG",
+    "consolidatedVolume": 0.00000,
+    "consolidatedVolumeUnit": "M3",
+    "consolidationChargeQuantity": 0.00,
+    "consolidationChargeQuantityUnit": "M3"
+  },
+  "NEW_ARRIVAL_DEPART_DETAIL": {
+    "firstForeignPort": "1OONymJZKV0tRGAcqNmY",
+    "lastForeignPort": "1OONymJZKV0tRGAcqNmY",
+    "type": "Arrival",
+    "containerYardId": {
+      "tenantId": 908
+    },
+    "transportPortId": {
+      "tenantId": 908
+    }
+  },
+  "NEW_JOB": {
+    "additionalTerms": "string",
+    "buyerDetail": {
+      "addressCode": "string",
+      "addressData": {},
+      "entityId": 0,
+      "entityType": "string",
+      "isAddressFreeText": true,
+      "orgCode": "string",
+      "orgData": {},
+      "tenantId": 0,
+      "type": "string"
+    },
+    "buyerId": 0,
+    "confirmDate": "2024-04-10T09:15:50.448Z",
+    "confirmNumber": "string",
+    "consolidationId": 0,
+    "description": "string",
+    "eventsList": [
+      {
+        "actual": "2024-04-10T09:15:50.448Z",
+        "description": "string",
+        "entityId": 0,
+        "entityType": "string",
+        "estimated": "2024-04-10T09:15:50.448Z",
+        "eventCode": "string",
+        "event_estimate_update_reasons": "string",
+        "isPublicTrackingEvent": true,
+        "latitude": "string",
+        "longitude": "string",
+        "partial": "string",
+        "pieces": 0,
+        "placeDescription": "string",
+        "placeName": "string",
+        "receivedDate": "2024-04-10T09:15:50.448Z",
+        "scheduledDate": "2024-04-10T09:15:50.448Z",
+        "source": "string",
+        "status": "string",
+        "tenantId": 0,
+        "totalPieces": 0,
+        "totalWeight": 0,
+        "weight": 0
+      }
+    ],
+    "followUpDate": "2024-04-10T09:15:50.448Z",
+    "incoTerm": "string",
+    "invoiceDate": "2024-04-10T09:15:50.448Z",
+    "invoiceNumber": "string",
+    "orderDate": "2024-04-10T09:15:50.448Z",
+    "orderNumber": "string",
+    "serviceMode": "string",
+    "shipmentId": 1,
+    "supplierDetail": {
+      "addressCode": "string",
+      "addressData": {},
+      "entityId": 0,
+      "entityType": "string",
+      "isAddressFreeText": true,
+      "orgCode": "string",
+      "orgData": {},
+      "tenantId": 0,
+      "type": "string"
+    },
+    "transportMode": "SEA"
+  },
+  "MAWB_STOCK_LINK": {
+    "parentId": 123456,
+    "mawbNumber": "ABC123456789",
+    "status": "Unused",
+    "seqNumber": "001",
+    "entityType": "Cargo",
+    "entityId": 987654321,
+    "shipConsNumber": "XYZ987654321"
+  },
+  "STOCK_DATA": {
+    "consolidationId": 123456,
+    "mawbNumber": "ABC123",
+    "nextMawbNumber": "DEF456",
+    "availableCount": "10",
+    "status": "available",
+    "homePort": "XYZ",
+    "airLinePrefix": "ABC",
+    "prefix": "123",
+    "seqNumber": "456",
+    "count": "20",
+    "startNumber": 1000,
+    "from": "Origin",
+    "to": "Destination",
+    "borrowedFrom": "Borrower",
+    "borrowedFromFullName": "Borrower Name",
+    "mawbStocksLinkRows": [
+      {
+        "id": 1,
+        "parentId": 123456,
+        "details": "Details 1"
+      },
+      {
+        "id": 2,
+        "parentId": 123456,
+        "details": "Details 2"
+      }
+    ]
+  },
+  "INTEGRATION_PAYLOAD": {
+    "entityId": 12345,
+    "entityType": "Product",
+    "integrationType": "PLATFORM_CREATE_BOOKING",
+    "status": "SUCCESS",
+    "response_message": "{\n      \"message\": \"Integration successful\",\n      \"data\": {\n        \"productId\": \"P123\",\n        \"productName\": \"Sample Product\"\n      }\n    }"
+  },
+  "ELDETAILS": {
+    "shipmentId": 987654,
+    "elNumber": "EL123456789",
+    "packages": 3,
+    "unit": "box",
+    "weight": 25.5,
+    "weightUnit": "kg",
+    "mergePackages": 2,
+    "mergePackageUnit": "box",
+    "partition": false,
+    "partitionSeqNumber": null
+  },
+  "EVENT" : {
+    "entityId": 123456789,
+    "entityType": "Order",
+    "eventCode": "ORDER_CREATED",
+    "description": "Order created successfully",
+    "estimated": "2024-04-18T12:00:00",
+    "actual": "2024-04-18T12:05:00",
+    "isPublicTrackingEvent": true,
+    "placeName": "Warehouse A",
+    "placeDescription": "Main warehouse",
+    "latitude": "37.7749° N",
+    "longitude": "122.4194° W",
+    "source": "Online Store",
+    "event_estimate_update_reasons": "Updated based on customer demand"
+  },
+  "FILE_REPO" : {
+    "entityId": 12,
+    "entityType": "sample_entity",
+    "fileName": "sample_file.txt",
+    "path": "/path/to/sample_file.txt",
+    "docType": "pdf",
+    "clientEnabled": true,
+    "isPosted": false,
+    "eventCode": "UPLOAD_COMPLETE"
+  },
+  "AUDIT_LOG": {
+    "operation": "update",
+    "entity": "user",
+    "entity_id": 12345,
+    "changes": {
+      "name": {
+        "oldValue": "John",
+        "newValue": "Johnny"
+      },
+      "age": {
+        "oldValue": 30,
+        "newValue": 31
+      }
+    },
+    "parentType": "organization",
+    "parentId": 9876
+  },
+  "BOOKING_CARRIAGE" : {
+    "portOfLoading": "Shanghai",
+    "portOfDischarge": "Los Angeles",
+    "eta": "2024-05-10T12:00:00",
+    "etd": "2024-04-25T08:00:00",
+    "vessel": "Ocean Queen",
+    "voyage": "V123",
+    "carriageType": "Container",
+    "carriageMode": "Sea",
+    "shipmentId": 987654321
+  },
+  "CARRIER_DETAILS" : {
+    "shippingLine": "Maersk Line",
+    "vessel": "Ocean Voyager",
+    "voyage": "VOY123",
+    "flightNumber": "FLIGHT456",
+    "aircraftType": "Boeing 747",
+    "aircraftRegistration": "ABC123",
+    "truckRefNumber": "TRUCK789",
+    "journeyNumber": "JOURNEY001",
+    "journeyRefNumber": "JURNEYREF1",
+    "origin": "New York",
+    "destination": "London",
+    "originPort": "NY Port",
+    "destinationPort": "London Port",
+    "eta": "2024-05-10T12:00:00",
+    "etd": "2024-04-25T08:00:00",
+    "ata": "2024-05-12T10:00:00",
+    "atd": "2024-04-27T12:00:00",
+    "vesselBerthingDate": "2024-05-11T14:00:00"
+  },
+  "DEFAULT_VIEWS" : {
+    "defaultViewId": 12345,
+    "username": "john_doe",
+    "entity": "example_entity"
+  },
+  "ORDER_NUMBER" : {
+    "orderNumber": 123456789
+  },
+  "TRUCK_DRIVER_DETAILS" : {
+    "id": 2,
+    "shipmentId": 123456789,
+    "transporterType": "Self",
+    "transporterName": "Transporter Name",
+    "driverName": "John Doe",
+    "driverMobileNumber": "+1234567890",
+    "truckNumberPlate": "ABC123",
+    "trailerNumberPlate": "XYZ456",
+    "truckOrTrailerType": "Flatbed",
+    "containerTypeCode": "Standard",
+    "containerId": 987654321,
+    "consolidationId": 123456789,
+    "selfTransporterName": "Self Transporter",
+    "remarks": "Some remarks about the truck",
+    "truckStatus": "Available"
+  },
+  "REFERENCE_NUMBERS" : {
+    "id": 12,
+    "consolidationId": 123456789,
+    "countryOfIssue": "USA",
+    "type": "Order",
+    "referenceNumber": "ABC123XYZ",
+    "shipmentId": 987654321,
+    "isPortalEnable": true
   }
+
 }
