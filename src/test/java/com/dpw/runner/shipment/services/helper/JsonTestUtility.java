@@ -151,10 +151,6 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("NEW_ALLOCATION_CREATE"), Allocations.class);
     }
 
-    public AdditionalDetails getTestAdditionalDetails() {
-        return objectMapper.convertValue(payload.get("NEW_ADDITIONAL_DETAIL") , AdditionalDetails.class);
-    }
-
     public AchievedQuantities getTestAchievedQuantity() {
         return objectMapper.convertValue(payload.get("NEW_ACHIEVED_QUANTITY") , AchievedQuantities.class);
     }
