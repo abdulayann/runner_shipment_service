@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -91,12 +92,6 @@ class ConsolidationServiceTest {
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Mock
-    private ICarrierDao carrierDao;
-    @Mock
-    private IAllocationsDao allocationsDao;
-    @Mock
-    private IAchievedQuantitiesDao achievedQuantitiesDao;
-    @Mock
     private IPartiesDao partiesDao;
 
     @Mock
@@ -115,9 +110,6 @@ class ConsolidationServiceTest {
 
     @Mock
     private IFileRepoDao fileRepoDao;
-
-    @Mock
-    private IJobDao jobDao;
 
     @Mock
     private INotesDao notesDao;
@@ -262,7 +254,6 @@ class ConsolidationServiceTest {
 
     @Test
     public void testRetrieveByIdAsync_NullId_Failure() {
-
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         requestModel.setData(getRequest);
@@ -277,7 +268,6 @@ class ConsolidationServiceTest {
 
     @Test
     public void testRetrieveByIdAsync_DetailsNotFound_Failure() {
-
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
@@ -293,8 +283,6 @@ class ConsolidationServiceTest {
 
     @Test
     public void testRetrieveByIdAsync_ExceptionThrown_Failure() {
-
-
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         when(consolidationDetailsDao.findById(1L)).thenThrow(new RuntimeException("Test Exception"));
@@ -411,7 +399,7 @@ class ConsolidationServiceTest {
         var spyService = Mockito.spy(consolidationService);
         Mockito.doReturn(Optional.empty()).when(spyService).retrieveByIdOrGuid(any());
         assertThrows(DataRetrievalFailureException.class, () -> spyService.completeUpdate(commonRequestModel));
-        verify(auditLogService, times(0)).addAuditLog(any());
+        verify(auditLogService, times(0)).addAuditLog(any(AuditLogMetaData.class));
     }
 
     @Test

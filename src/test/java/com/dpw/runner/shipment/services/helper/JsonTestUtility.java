@@ -104,4 +104,78 @@ public class JsonTestUtility {
         }
     }
 
+    public Allocations getTestAllocation() {
+        return objectMapper.convertValue(payload.get("NEW_ALLOCATION_CREATE"), Allocations.class);
+    }
+
+    public AdditionalDetails getTestAdditionalDetails() {
+        return objectMapper.convertValue(payload.get("NEW_ADDITIONAL_DETAIL") , AdditionalDetails.class);
+    }
+
+    public AchievedQuantities getTestAchievedQuantity() {
+        return objectMapper.convertValue(payload.get("NEW_ACHIEVED_QUANTITY") , AchievedQuantities.class);
+    }
+
+    public ArrivalDepartureDetails getTestArrivalDepartureDetails() {
+        return objectMapper.convertValue(payload.get("NEW_ARRIVAL_DEPART_DETAIL") , ArrivalDepartureDetails.class);
+    }
+
+    public Jobs getTestJob() {
+        return objectMapper.convertValue(payload.get("NEW_JOB") , Jobs.class);
+    }
+
+    public MawbStocksLink getTestMawbStocksLink() {
+        return objectMapper.convertValue(payload.get("MAWB_STOCK_LINK") , MawbStocksLink.class);
+    }
+
+    public MawbStocks getTestMawbStocks(){
+        return objectMapper.convertValue(payload.get("MAWB_STOCK"), MawbStocks.class);
+    }
+    public MawbStocks getTestStockData() {
+        return objectMapper.convertValue(payload.get("STOCK_DATA"), MawbStocks.class);
+    }
+
+    public IntegrationResponse getTestIntegrationResponse() {
+        return objectMapper.convertValue(payload.get("INTEGRATION_PAYLOAD"), IntegrationResponse.class);
+    }
+
+    public ELDetails getTestELDetails() {
+        return objectMapper.convertValue(payload.get("ELDETAILS") , ELDetails.class);
+    }
+
+    public Events getTestEventData() {
+        return objectMapper.convertValue(payload.get("EVENT"), Events.class);
+    }
+
+    public FileRepo getTestFileRepoData() {
+        return objectMapper.convertValue(payload.get("FILE_REPO"), FileRepo.class);
+    }
+
+    public AuditLog getTestAuditLog() {
+        return objectMapper.convertValue(payload.get("AUDIT_LOG"), AuditLog.class);
+    }
+
+    public BookingCarriage getTestBookingCarriage() {
+        return objectMapper.convertValue(payload.get("BOOKING_CARRIAGE") , BookingCarriage.class);
+    }
+
+    public CarrierDetails getTestCarrierDetails() {
+        return objectMapper.convertValue(payload.get("CARRIER_DETAILS"), CarrierDetails.class);
+    }
+
+    public DefaultViews getTestDefaultView() {
+        return objectMapper.convertValue(payload.get("DEFAULT_VIEWS"), DefaultViews.class);
+    }
+
+    public OrderNumber getTestOrderNumberDao() {
+        return objectMapper.convertValue(payload.get("ORDER_NUMBER"), OrderNumber.class);
+    }
+
+    public TruckDriverDetails getTestTruckDriverDetails() {
+        return objectMapper.convertValue(payload.get("TRUCK_DRIVER_DETAILS"), TruckDriverDetails.class);
+    }
+
+    public ReferenceNumbers getTestReferenceNumbers() {
+        return objectMapper.convertValue(payload.get("REFERENCE_NUMBERS"), ReferenceNumbers.class);
+    }
 }
