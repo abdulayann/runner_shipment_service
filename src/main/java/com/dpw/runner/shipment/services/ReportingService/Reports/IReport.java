@@ -14,10 +14,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -803,6 +800,12 @@ public abstract class IReport {
             else {
                 try {dict.put(ORIGIN_AGENT_RN_NUMBER, shipmentModel.getAdditionalDetails().getExportBroker().getAddressData().get(KCRA_NUMBER));} catch (Exception ignored) {}
                 try {dict.put(DESTINATION_AGENT_RN_NUMBER, shipmentModel.getAdditionalDetails().getImportBroker().getAddressData().get(KCRA_NUMBER));} catch (Exception ignored) {}
+            }
+            if(shipmentModel.getReferenceNumbersList() != null && !shipmentModel.getReferenceNumbersList().isEmpty()) {
+                for (ReferenceNumbersModel referenceNumbersModel: shipmentModel.getReferenceNumbersList()) {
+                    if(Objects.equals(referenceNumbersModel.getType(), ReportConstants.MORN) && !dict.containsKey(ReportConstants.MORN))
+                        dict.put(ReportConstants.MORN, referenceNumbersModel.getReferenceNumber());
+                }
             }
             shipAwbDataList.add(dict);
         }
