@@ -2636,7 +2636,19 @@ public abstract class IReport {
                 dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes());
             }
             if(additionalDetailModel.getScreeningStatus() != null && !additionalDetailModel.getScreeningStatus().isEmpty()) {
-                dictionary.put(SCREENING_CODES, additionalDetailModel.getScreeningStatus());
+                Set<String> screeningCodes = additionalDetailModel.getScreeningStatus().stream().collect(Collectors.toSet());
+                if(screeningCodes.contains(Constants.AOM)){
+                    screeningCodes.remove(Constants.AOM);
+                    String aomString = Constants.AOM;
+                    if(additionalDetailModel.getAomFreeText() != null) {
+                        aomString =  aomString + " (" + additionalDetailModel.getAomFreeText() + ")";
+                    }
+                    screeningCodes.add(aomString);
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                } else {
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                }
+
             }
         }
 

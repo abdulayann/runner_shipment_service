@@ -1594,7 +1594,8 @@ public class ShipmentService implements IShipmentService {
         }
 
         Parties consignor = shipmentDetails.getConsigner();
-        if(Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             List<Parties> orgList = new ArrayList<>();
             if(consignor != null) {
                 if(consignor != null && StringUtility.isNotEmpty(consignor.getAddressCode())) {
@@ -4222,8 +4223,9 @@ public class ShipmentService implements IShipmentService {
     private ConsolidationDetails updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) throws RunnerException {
         List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
         ConsolidationDetails consolidationDetails;
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
-        if(linkedConsol != null && Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(shipment.getAdditionalDetails().getEfreightStatus(), Constants.NON)){
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && linkedConsol != null && Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(shipment.getAdditionalDetails().getEfreightStatus(), Constants.NON)){
             consolidationDetails = consolidationDetailsDao.findById(linkedConsol.getId()).get();
             if(consolidationDetails != null && Objects.equals(consolidationDetails.getEfreightStatus(), Constants.EAW)){
                 throw new RunnerException("EFreight status can only be EAW as Consolidation EFrieght Status is EAW");
