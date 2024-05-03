@@ -71,8 +71,6 @@ class CustomerBookingServiceTest {
     @Mock
     private IPackingDao packingDao;
     @Mock
-    private IFileRepoDao fileRepoDao;
-    @Mock
     private IRoutingsDao routingsDao;
     @Mock
     private IContainerDao containerDao;

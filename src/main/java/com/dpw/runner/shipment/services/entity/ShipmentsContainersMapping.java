@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
 import javax.persistence.*;
 
 @Entity
@@ -13,6 +11,7 @@ import javax.persistence.*;
 @Table(name = "shipments_containers_mapping")
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class ShipmentsContainersMapping extends BaseEntity {
         @Column(name = "container_id")
         private Long containerId;

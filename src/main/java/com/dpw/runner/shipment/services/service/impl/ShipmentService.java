@@ -161,9 +161,6 @@ public class ShipmentService implements IShipmentService {
     private IEventDao eventDao;
 
     @Autowired
-    private IFileRepoDao fileRepoDao;
-
-    @Autowired
     private INotesDao notesDao;
 
     @Autowired
@@ -706,12 +703,6 @@ public class ShipmentService implements IShipmentService {
         });
     }
 
-    private void createFileRepoAsync(ShipmentDetails shipmentDetails, List<FileRepoRequest> fileRepoRequest) {
-        fileRepoRequest.forEach(fileRepo -> {
-            createFileRepo(shipmentDetails, fileRepo);
-        });
-    }
-
     private void createEventsAsync(ShipmentDetails shipmentDetails, List<EventsRequest> eventsRequest) {
         eventsRequest.forEach(event -> {
             createEvent(shipmentDetails, event);
@@ -754,13 +745,6 @@ public class ShipmentService implements IShipmentService {
         eventsRequest.setEntityId(shipmentDetails.getId());
         eventsRequest.setEntityType(Constants.SHIPMENT);
         eventDao.save(objectMapper.convertValue(eventsRequest, Events.class));
-    }
-
-    @Transactional
-    public void createFileRepo(ShipmentDetails shipmentDetails, FileRepoRequest fileRepoRequest) {
-        fileRepoRequest.setEntityId(shipmentDetails.getId());
-        fileRepoRequest.setEntityType(Constants.SHIPMENT);
-        fileRepoDao.save(objectMapper.convertValue(fileRepoRequest, FileRepo.class));
     }
 
     @Transactional
@@ -1734,10 +1718,6 @@ public class ShipmentService implements IShipmentService {
             List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(commonUtils.convertToEntityList(serviceDetailsRequestList, ServiceDetails.class, isCreate), id);
             shipmentDetails.setServicesList(updatedServiceDetails);
         }
-        if (fileRepoRequestList != null) {
-            List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(fileRepoRequestList, FileRepo.class, isCreate), id, Constants.SHIPMENT);
-            shipmentDetails.setFileRepoList(updatedFileRepos);
-        }
         if (notesRequestList != null) {
             List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequestList, Notes.class, isCreate), id, Constants.SHIPMENT);
             shipmentDetails.setNotesList(updatedNotes);
@@ -2514,7 +2494,6 @@ public class ShipmentService implements IShipmentService {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            shipmentDetails.get().setFileRepoList(fileRepoDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
             shipmentDetails.get().setNotesList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
@@ -2670,10 +2649,6 @@ public class ShipmentService implements IShipmentService {
             }
             // Create events on basis of shipment status Confirmed/Created
             autoGenerateEvents(entity, previousStatus);
-            if (fileRepoRequestList != null) {
-                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
-                entity.setFileRepoList(updatedFileRepos);
-            }
 
             if (notesRequestList != null) {
                 List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT);
@@ -3030,13 +3005,6 @@ public class ShipmentService implements IShipmentService {
                 Page<Parties> oldParties = partiesDao.findAll(pair.getLeft(), pair.getRight());
                 List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(convertToEntityList(shipmentAddressesRequestList, Parties.class), id, Constants.SHIPMENT_ADDRESSES, oldParties.stream().toList());
                 entity.setShipmentAddresses(updatedParties);
-            }
-            if (fileRepoRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT);
-                Pair<Specification<FileRepo>, Pageable> pair = fetchData(listCommonRequest, FileRepo.class);
-                Page<FileRepo> oldFileRepoList = fileRepoDao.findAll(pair.getLeft(), pair.getRight());
-                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT, oldFileRepoList.stream().toList());
-                entity.setFileRepoList(updatedFileRepos);
             }
             if (notesRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT);
