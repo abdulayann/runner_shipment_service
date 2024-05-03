@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ import java.util.Map;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
+@Data
 public class CargoManifestAirConsolidationReport extends IReport{
 
     @Autowired
@@ -30,13 +32,13 @@ public class CargoManifestAirConsolidationReport extends IReport{
     @Autowired
     private IPackingService packingService;
 
-    public List<Awb> awbList;
+    private List<Awb> awbList;
 
-    public List<Long> shipIds;
+    private List<Long> shipIds;
 
-    public boolean isShipperAndConsignee;
+    private boolean isShipperAndConsignee;
 
-    public boolean isSecurityData;
+    private boolean isSecurityData;
 
     @Override
     public Map<String, Object> getData(Long id) throws RunnerException {
@@ -47,27 +49,27 @@ public class CargoManifestAirConsolidationReport extends IReport{
     @Override
     IDocumentModel getDocumentModel(Long id) throws RunnerException {
         CargoManifestAirConsolidationModel cargoManifestAirConsolidationModel = new CargoManifestAirConsolidationModel();
-        cargoManifestAirConsolidationModel.consolidationModel = getConsolidation(id);
-        cargoManifestAirConsolidationModel.tenantModel = getTenant();
-        cargoManifestAirConsolidationModel.shipmentModelList = new ArrayList<>();
-        cargoManifestAirConsolidationModel.awbList = new ArrayList<>();
-        cargoManifestAirConsolidationModel.packSummaryResponse = packingService.calculatePackSummary(jsonHelper.convertValueToList(cargoManifestAirConsolidationModel.consolidationModel.getPackingList(), Packing.class),
-                cargoManifestAirConsolidationModel.consolidationModel.getTransportMode(),
-                cargoManifestAirConsolidationModel.consolidationModel.getContainerCategory(), new ShipmentMeasurementDetailsDto());
+        cargoManifestAirConsolidationModel.setConsolidationModel(getConsolidation(id));
+        cargoManifestAirConsolidationModel.setTenantModel(getTenant());
+        cargoManifestAirConsolidationModel.setShipmentModelList(new ArrayList<>());
+        cargoManifestAirConsolidationModel.setAwbList(new ArrayList<>());
+        cargoManifestAirConsolidationModel.setPackSummaryResponse(packingService.calculatePackSummary(jsonHelper.convertValueToList(cargoManifestAirConsolidationModel.getConsolidationModel().getPackingList(), Packing.class),
+                cargoManifestAirConsolidationModel.getConsolidationModel().getTransportMode(),
+                cargoManifestAirConsolidationModel.getConsolidationModel().getContainerCategory(), new ShipmentMeasurementDetailsDto()));
         if(awbList != null && !awbList.isEmpty()) {
             Map<Long, ShipmentModel> shipmentModelMap = getShipments(shipIds);
             for(Awb awb: awbList) {
                 if(shipmentModelMap.containsKey(awb.getShipmentId())) {
-                    cargoManifestAirConsolidationModel.shipmentModelList.add(shipmentModelMap.get(awb.getShipmentId()));
-                    cargoManifestAirConsolidationModel.awbList.add(awb);
+                    cargoManifestAirConsolidationModel.getShipmentModelList().add(shipmentModelMap.get(awb.getShipmentId()));
+                    cargoManifestAirConsolidationModel.getAwbList().add(awb);
                 }
             }
         }
         else if(shipIds != null && !shipIds.isEmpty()) {
             Map<Long, ShipmentModel> shipmentModelMap = getShipments(shipIds);
-            for(Long shipId: shipmentModelMap.keySet()) {
-                cargoManifestAirConsolidationModel.shipmentModelList.add(shipmentModelMap.get(shipId));
-                cargoManifestAirConsolidationModel.awbList.add(null);
+            for(Map.Entry<Long, ShipmentModel> entry: shipmentModelMap.entrySet()) {
+                cargoManifestAirConsolidationModel.getShipmentModelList().add(shipmentModelMap.get(entry.getKey()));
+                cargoManifestAirConsolidationModel.getAwbList().add(null);
             }
         }
         return cargoManifestAirConsolidationModel;
@@ -77,14 +79,14 @@ public class CargoManifestAirConsolidationReport extends IReport{
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         CargoManifestAirConsolidationModel cargoManifestAirConsolidationModel = (CargoManifestAirConsolidationModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
-        populateConsolidationFields(cargoManifestAirConsolidationModel.consolidationModel, dictionary);
-        dictionary = populateHAWBAndSecurityData(cargoManifestAirConsolidationModel.shipmentModelList, cargoManifestAirConsolidationModel.awbList, dictionary, isSecurityData, isShipperAndConsignee, true);
-        dictionary.put(TOTAL_GROSS_WEIGHT_UNIT, cargoManifestAirConsolidationModel.packSummaryResponse.getTotalPacksWeight());
-        dictionary.put(TOTAL_PACKS_UNIT, cargoManifestAirConsolidationModel.packSummaryResponse.getTotalPacks());
-        dictionary.put(CONSOL_FLIGHT_CARRIER, cargoManifestAirConsolidationModel.consolidationModel.getCarrierDetails().getShippingLine());
-        dictionary.put(CONSOL_AIRCRAFT_TYPE, cargoManifestAirConsolidationModel.consolidationModel.getCarrierDetails().getAircraftType());
+        populateConsolidationFields(cargoManifestAirConsolidationModel.getConsolidationModel(), dictionary);
+        dictionary = populateHAWBAndSecurityData(cargoManifestAirConsolidationModel.getShipmentModelList(), cargoManifestAirConsolidationModel.getAwbList(), dictionary, isSecurityData, isShipperAndConsignee, true);
+        dictionary.put(TOTAL_GROSS_WEIGHT_UNIT, cargoManifestAirConsolidationModel.getPackSummaryResponse().getTotalPacksWeight());
+        dictionary.put(TOTAL_PACKS_UNIT, cargoManifestAirConsolidationModel.getPackSummaryResponse().getTotalPacks());
+        dictionary.put(CONSOL_FLIGHT_CARRIER, cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails().getShippingLine());
+        dictionary.put(CONSOL_AIRCRAFT_TYPE, cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails().getAircraftType());
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
-        ReportHelper.addTenantDetails(dictionary, cargoManifestAirConsolidationModel.tenantModel);
+        ReportHelper.addTenantDetails(dictionary, cargoManifestAirConsolidationModel.getTenantModel());
         return dictionary;
     }
 }

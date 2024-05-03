@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.*;
-import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -267,15 +266,15 @@ public class ReportService implements IReportService {
         if(report instanceof ShipmentCANReport) {
             ((ShipmentCANReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
         }
-        if(report instanceof CargoManifestAirConsolidationReport) {
-            ((CargoManifestAirConsolidationReport) report).awbList = reportRequest.getAwbList();
-            ((CargoManifestAirConsolidationReport) report).shipIds = reportRequest.getShipmentIds();
-            ((CargoManifestAirConsolidationReport) report).isShipperAndConsignee = reportRequest.isShipperAndConsignee();
-            ((CargoManifestAirConsolidationReport) report).isSecurityData = reportRequest.isSecurityData();
+        if(report instanceof CargoManifestAirConsolidationReport cargoManifestAirConsolidationReport) {
+            cargoManifestAirConsolidationReport.setAwbList(reportRequest.getAwbList());
+            cargoManifestAirConsolidationReport.setShipIds(reportRequest.getShipmentIds());
+            cargoManifestAirConsolidationReport.setShipperAndConsignee(reportRequest.isShipperAndConsignee());
+            cargoManifestAirConsolidationReport.setSecurityData(reportRequest.isSecurityData());
         }
-        if(report instanceof CargoManifestAirShipmentReport) {
-            ((CargoManifestAirShipmentReport) report).isShipperAndConsignee = reportRequest.isShipperAndConsignee();
-            ((CargoManifestAirShipmentReport) report).isSecurityData = reportRequest.isSecurityData();
+        if(report instanceof CargoManifestAirShipmentReport cargoManifestAirShipmentReport) {
+            cargoManifestAirShipmentReport.setShipperAndConsignee(reportRequest.isShipperAndConsignee());
+            cargoManifestAirShipmentReport.setSecurityData(reportRequest.isSecurityData());
         }
 
         if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {
