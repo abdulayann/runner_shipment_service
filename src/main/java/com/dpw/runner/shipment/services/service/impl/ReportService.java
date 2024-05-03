@@ -40,7 +40,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -104,12 +103,6 @@ public class ReportService implements IReportService {
 
     @Autowired
     private IHblDao hblDao;
-
-    @Autowired
-    private IFileRepoDao fileRepoDao;
-
-    @Autowired
-    private IFileRepoService fileRepoService;
 
     @Autowired
     private IDocumentManagerService documentManagerService;
@@ -1244,13 +1237,6 @@ public class ReportService implements IReportService {
             hblDao.save(blObject);
         }
         String filename = uploadRequest.getType() + "_" + printType + "_" + uploadRequest.getId() + "_" + fileVersion + ".pdf";
-        ListCommonRequest listCommonRequest = CommonUtils.andCriteria("entityType", uploadRequest.getEntityType(), "=", null);
-        CommonUtils.andCriteria("entityId", uploadRequest.getId(), "=", listCommonRequest);
-        CommonUtils.andCriteria("fileName", filename, "=", listCommonRequest);
-        List<FileRepo> fileRepos = fileRepoDao.findByList(listCommonRequest);
-        if (fileRepos != null && fileRepos.size() > 0) {
-            return;
-        }
 
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromReport(new BASE64DecodedMultipartFile(document), filename, uploadRequest, shipmentGuid)), executorService);
 

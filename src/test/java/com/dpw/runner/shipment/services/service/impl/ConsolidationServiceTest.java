@@ -4,9 +4,11 @@ import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -14,20 +16,16 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
-import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
+import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -47,11 +45,9 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
@@ -59,19 +55,20 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -79,6 +76,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
@@ -107,9 +105,6 @@ class ConsolidationServiceTest {
 
     @Mock
     private IEventDao eventDao;
-
-    @Mock
-    private IFileRepoDao fileRepoDao;
 
     @Mock
     private INotesDao notesDao;
@@ -233,6 +228,10 @@ class ConsolidationServiceTest {
         testConsolResponse = modelMapperTest.map(testConsol , ConsolidationDetailsResponse.class);
         testConsolRequest = modelMapperTest.map(testConsol , ConsolidationDetailsRequest.class);
     }
+//    @AfterEach
+//    void tearDown() {
+//        reset(CommonUtils.class);
+//    }
 
     @Test
     public void testRetrieveByIdAsync_ValidId_Success() {
@@ -485,6 +484,29 @@ class ConsolidationServiceTest {
     }
 
     @Test
+    void testCreateFromBooking_AuditLogException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Setup
+        ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
+
+        assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
+    }
+
+    @Test
+    void testCreateFromBooking_RequestIsNull() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
+    }
+
+
+    @Test
     public void testCreateFromBooking_ThrowsValidationException() {
         ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
@@ -577,6 +599,842 @@ class ConsolidationServiceTest {
         assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
         assertEquals("1", responseBody.getSourceTenantId());
         assertEquals("PlaceOfIssue", responseBody.getPlaceOfIssue());
+    }
+
+    @Test
+    void testCreate_Success() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(commonUtils.convertToEntityList(anyList(), any(), eq(true))).thenReturn(List.of());
+        when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(consolidationDetails.getContainersList());
+        when(packingDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getPackingList());
+        when(eventDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getEventsList());
+        when(referenceNumbersDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getReferenceNumbersList());
+        when(truckDriverDetailsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(List.of());
+        when(routingsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getRoutingsList());
+        when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getConsolidationAddresses());
+        when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
+
+        assertEquals(expectedEntity, response);
+    }
+
+    @Test
+    void testCreate_SyncFailure() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenThrow(new RunnerException("Test"));
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
+
+        assertEquals(expectedEntity, response);
+    }
+
+    @Test
+    void testCreate_AuditLogFailure() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+
+        var spyService = Mockito.spy(consolidationService);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
+
+        assertThrows(ValidationException.class, ()->spyService.create(commonRequestModel));
+    }
+
+    @Test
+    void testRetrieveByIdOrGuid_IdSuccess() throws RunnerException {
+        ConsolidationDetailsRequest request = ConsolidationDetailsRequest.builder().id(1L).build();
+        ConsolidationDetails consolidationDetails = testConsol;
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        var consolidationDetailsResponse = consolidationService.retrieveByIdOrGuid(request);
+
+        assertEquals(request.getId(), consolidationDetailsResponse.get().getId());
+    }
+
+    @Test
+    void testRetrieveByIdOrGuid_GuidSuccess() throws RunnerException {
+        ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
+        request.setGuid(UUID.fromString("1d27fe99-0874-4587-9a83-460bb5ba31f0"));
+        ConsolidationDetails consolidationDetails = testConsol;
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
+        var consolidationDetailsResponse = consolidationService.retrieveByIdOrGuid(request);
+
+        assertEquals(request.getGuid(), consolidationDetailsResponse.get().getGuid());
+    }
+
+    @Test
+    void testRetrieveByIdOrGuid_NullRequest_Failure() throws RunnerException {
+        ConsolidationDetailsRequest request = null;
+        assertThrows(NullPointerException.class, ()-> consolidationService.retrieveByIdOrGuid(request));
+    }
+    @Test
+    void testRetrieveByIdOrGuid_EmptyRequest_Failure() throws RunnerException {
+        ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
+        assertThrows(RunnerException.class, ()-> consolidationService.retrieveByIdOrGuid(request));
+    }
+
+    @Test
+    void testRetrieveByIdOrGuid_DataRetrieveForId_Failure() throws RunnerException {
+        ConsolidationDetailsRequest request = ConsolidationDetailsRequest.builder().id(1L).build();
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, ()-> consolidationService.retrieveByIdOrGuid(request));
+    }
+    @Test
+    void testRetrieveByIdOrGuid_DataRetrieveForGuid_Failure() throws RunnerException {
+        ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
+        request.setGuid(UUID.fromString("1d27fe99-0874-4587-9a83-460bb5ba31f0"));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, ()-> consolidationService.retrieveByIdOrGuid(request));
+    }
+
+    @Test
+    void testUpdate_Success() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
+        EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
+        keyMasterDataMap.put("20GP", containerTypeMasterData);
+        Cache cache = mock(Cache.class);
+
+        commonRequestModel.setData(copy);
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
+                .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
+
+        var spyService = Mockito.spy(consolidationService);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        when(masterDataUtils.fetchInBulkContainerTypes(anyList())).thenReturn(keyMasterDataMap);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
+        when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
+        ResponseEntity<IRunnerResponse> response = spyService.update(commonRequestModel);
+
+        assertEquals(expectedEntity, response);
+    }
+
+    @Test
+    void testUpdate_DataRetrieval_Failure() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        var spyService = Mockito.spy(consolidationService);
+        Mockito.doReturn(Optional.empty()).when(spyService).retrieveByIdOrGuid(any());
+        assertThrows(ValidationException.class, () -> spyService.update(commonRequestModel));
+    }
+
+    @Test
+    void testUpdate_GuidNotMatched_Failure() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetails entity = new ConsolidationDetails();
+        entity.setId(1L);
+        entity.setGuid(UUID.fromString("1d27fe99-0874-4587-9a83-460bb5ba31f0"));
+        ConsolidationDetailsRequest copy = modelMapperTest.map(entity , ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails oldEntity = new ConsolidationDetails();
+        oldEntity.setId(1L);
+        oldEntity.setGuid(UUID.fromString("1d27fe99-0874-4587-9a83-460bb7ba23f0"));
+
+        var spyService = Mockito.spy(consolidationService);
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(entity);
+        Mockito.doReturn(Optional.of(oldEntity)).when(spyService).retrieveByIdOrGuid(any());
+        assertThrows(ValidationException.class, () -> spyService.update(commonRequestModel));
+    }
+
+    @Test
+    void testAttachShipments_Success_Sea() throws RunnerException {
+        List<Long> shipmentIds = List.of(1L, 2L);
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setConsolidationId(1L);
+        consoleShipmentMapping.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Containers containers = new Containers();
+        containers.setId(1L);
+        shipmentDetails.setContainersList(List.of(containers));
+        shipmentDetails.setId(2L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setCarrierDetails(new CarrierDetails());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+
+        ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
+        consoleShipmentMapping1.setShipmentId(2L);
+        consoleShipmentMapping1.setConsolidationId(1L);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setCarrierDetails(new CarrierDetails());
+
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
+        when(consoleShipmentMappingDao.assignShipments(anyLong(), any(), any())).thenReturn(List.of(2L));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
+        when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
+        doNothing().when(containerService).afterSaveList(anyList(),anyBoolean());
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testAttachShipments_Success_Air() throws RunnerException {
+        List<Long> shipmentIds = List.of(1L, 2L);
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setConsolidationId(1L);
+        consoleShipmentMapping.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        shipmentDetails.setPackingList(List.of(packing));
+        shipmentDetails.setId(2L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setCarrierDetails(new CarrierDetails());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+
+        ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
+        consoleShipmentMapping1.setShipmentId(2L);
+        consoleShipmentMapping1.setConsolidationId(1L);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setCarrierDetails(new CarrierDetails());
+
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
+        when(consoleShipmentMappingDao.assignShipments(anyLong(), any(), any())).thenReturn(List.of(2L));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
+        when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testAttachShipments_ConsoleMapping_Failure() throws RunnerException {
+        List<Long> shipmentIds = List.of(1L, 2L);
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setConsolidationId(2L);
+        consoleShipmentMapping.setShipmentId(1L);
+
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachShipments_Success_Sea() {
+        List<Long> shipmentIds = List.of(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Containers containers = new Containers();
+        containers.setId(1L);
+        shipmentDetails.setId(1L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setContainersList(List.of(containers));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setGuid(UUID.randomUUID());
+
+        when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
+        when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachShipments_Success_Air() {
+        List<Long> shipmentIds = List.of(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        shipmentDetails.setId(1L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setPackingList(List.of(packing));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setGuid(UUID.randomUUID());
+
+        when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachShipments_Sync_Failure() throws RunnerException {
+        List<Long> shipmentIds = List.of(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        shipmentDetails.setId(1L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setPackingList(List.of(packing));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setGuid(UUID.randomUUID());
+
+        when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(packingsADSync.sync(anyList(), any())).thenThrow(new RuntimeException("Test"));
+        when(consolidationSync.sync(any(), any(), anyBoolean())).thenThrow(new RunnerException("Test"));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachShipmentsReverseSync_Success() {
+        List<Long> shipmentIds = List.of(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Containers containers = new Containers();
+        containers.setId(1L);
+        shipmentDetails.setId(1L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setContainersList(List.of(containers));
+
+        when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
+        when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
+        ResponseEntity<HttpStatus> responseEntity = consolidationService.detachShipmentsReverseSync(1L, shipmentIds);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    // TODO: static method CommonUtils fix
+//    @Test
+    void testPartialUpdate_Success() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest consoleRequest = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        ConsolidationPatchRequest copy = modelMapperTest.map(consoleRequest, ConsolidationPatchRequest.class);
+        Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
+        EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
+        keyMasterDataMap.put("20GP", containerTypeMasterData);
+        Cache cache = mock(Cache.class);
+
+        commonRequestModel.setData(copy);
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
+                .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
+
+        mockStatic(CommonUtils.class);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        Mockito.doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
+        when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(CommonUtils.convertToEntityList(anyList(), any())).thenReturn(List.of());
+        when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(consolidationDetails.getContainersList());
+        when(packingDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getPackingList());
+        when(eventDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getEventsList());
+        when(referenceNumbersDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getReferenceNumbersList());
+        when(truckDriverDetailsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(List.of());
+        when(routingsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getRoutingsList());
+        when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getConsolidationAddresses());
+        when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        when(masterDataUtils.fetchInBulkContainerTypes(anyList())).thenReturn(keyMasterDataMap);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
+        when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
+        ResponseEntity<IRunnerResponse> response = spyService.partialUpdate(commonRequestModel, false);
+
+        assertEquals(expectedEntity, response);
+
+    }
+
+    @Test
+    void testPartialUpdate_DaoUpdate_Failure() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest consoleRequest = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        ConsolidationPatchRequest copy = modelMapperTest.map(consoleRequest, ConsolidationPatchRequest.class);
+        Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
+        EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
+        keyMasterDataMap.put("20GP", containerTypeMasterData);
+        Cache cache = mock(Cache.class);
+
+        commonRequestModel.setData(copy);
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
+                .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
+
+        var spyService = Mockito.spy(consolidationService);
+
+        Mockito.doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
+        when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenThrow(new RuntimeException("Test"));
+        when(masterDataUtils.fetchInBulkContainerTypes(anyList())).thenReturn(keyMasterDataMap);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
+        when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
+        ResponseEntity<IRunnerResponse> response = spyService.partialUpdate(commonRequestModel, false);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testCompleteUpdate_Success() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
+        EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
+        keyMasterDataMap.put("20GP", containerTypeMasterData);
+        Cache cache = mock(Cache.class);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
+                .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        Mockito.doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(jsonHelper.convertToJson(consolidationDetails)).thenReturn("");
+        when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(commonUtils.convertToEntityList(anyList(), any(), anyBoolean())).thenReturn(List.of());
+        when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(consolidationDetails.getContainersList());
+        when(packingDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getPackingList());
+        when(eventDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getEventsList());
+        when(referenceNumbersDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getReferenceNumbersList());
+        when(truckDriverDetailsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(List.of());
+        when(routingsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getRoutingsList());
+        when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getConsolidationAddresses());
+        when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        when(masterDataUtils.fetchInBulkContainerTypes(anyList())).thenReturn(keyMasterDataMap);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
+        when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
+        assertEquals(expectedEntity, responseEntity);
+    }
+
+    @Test
+    void testCalculateUtilization_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
+        consolidationDetails.getAllocations().setWeightUnit(Constants.WEIGHT_UNIT_KG);
+        consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3);
+        consolidationDetails.getAllocations().setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        ConsoleCalculationsRequest request = new ConsoleCalculationsRequest();
+        request.setId(1L);
+        request.setTransportMode(consolidationDetails.getTransportMode());
+        request.setContainerCategory(consolidationDetails.getContainerCategory());
+
+        ConsoleCalculationsResponse response = new ConsoleCalculationsResponse();
+        response.setAllocations(modelMapperTest.map(consolidationDetails.getAllocations(), AllocationsResponse.class));
+        response.setAchievedQuantities(modelMapperTest.map(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(request.getAllocations(), Allocations.class)).thenReturn(consolidationDetails.getAllocations());
+        when(jsonHelper.convertValue(request.getAchievedQuantities(), AchievedQuantities.class)).thenReturn(consolidationDetails.getAchievedQuantities());
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(response.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(response.getAchievedQuantities());
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateUtilization(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateUtilization_Success_WithWeightAndVolume() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
+        consolidationDetails.getAllocations().setWeightUnit(Constants.WEIGHT_UNIT_KG);
+        consolidationDetails.getAllocations().setWeight(BigDecimal.TEN);
+        consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3);
+        consolidationDetails.getAllocations().setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        consolidationDetails.getAllocations().setVolume(BigDecimal.TEN);
+        ConsoleCalculationsRequest request = new ConsoleCalculationsRequest();
+        request.setId(1L);
+        request.setTransportMode(consolidationDetails.getTransportMode());
+        request.setContainerCategory(consolidationDetails.getContainerCategory());
+
+        ConsoleCalculationsResponse response = new ConsoleCalculationsResponse();
+        response.setAllocations(modelMapperTest.map(consolidationDetails.getAllocations(), AllocationsResponse.class));
+        response.setAchievedQuantities(modelMapperTest.map(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(request.getAllocations(), Allocations.class)).thenReturn(consolidationDetails.getAllocations());
+        when(jsonHelper.convertValue(request.getAchievedQuantities(), AchievedQuantities.class)).thenReturn(consolidationDetails.getAchievedQuantities());
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(response.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(response.getAchievedQuantities());
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateUtilization(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateUtilization_ConsoleNotFound_Failure() {
+        ConsoleCalculationsRequest request = new ConsoleCalculationsRequest();
+        request.setId(1L);
+        when(consolidationDetailsDao.findById(anyLong())).thenThrow(new RuntimeException("Test"));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateUtilization(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateAchieved_AllocatedForSameUnit_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
+        consolidationDetails.getAllocations().setWeightUnit(Constants.WEIGHT_UNIT_T);
+        consolidationDetails.getAllocations().setWeight(BigDecimal.TEN);
+        consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3);
+        consolidationDetails.getAllocations().setVolumeUnit(Constants.VOLUME_UNIT_CC);
+        consolidationDetails.getAllocations().setVolume(BigDecimal.TEN);
+        ConsoleCalculationsRequest request = new ConsoleCalculationsRequest();
+        request.setId(1L);
+        request.setTransportMode(consolidationDetails.getTransportMode());
+        request.setContainerCategory(consolidationDetails.getContainerCategory());
+
+        ConsoleCalculationsResponse response = new ConsoleCalculationsResponse();
+        response.setAllocations(modelMapperTest.map(consolidationDetails.getAllocations(), AllocationsResponse.class));
+        response.setAchievedQuantities(modelMapperTest.map(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(request.getAllocations(), Allocations.class)).thenReturn(consolidationDetails.getAllocations());
+        when(jsonHelper.convertValue(request.getAchievedQuantities(), AchievedQuantities.class)).thenReturn(consolidationDetails.getAchievedQuantities());
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(response.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(response.getAchievedQuantities());
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateAchieved_AllocatedForSameUnit_Failure() {
+        ConsoleCalculationsRequest request = new ConsoleCalculationsRequest();
+        request.setId(1L);
+        when(consolidationDetailsDao.findById(anyLong())).thenThrow(new RuntimeException("Test"));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateChargeable_Success_Sea() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
+        consolidationDetails.getAllocations().setWeightUnit(Constants.WEIGHT_UNIT_T);
+        consolidationDetails.getAllocations().setWeight(BigDecimal.TEN);
+        consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3);
+        consolidationDetails.getAllocations().setVolumeUnit(Constants.VOLUME_UNIT_CC);
+        consolidationDetails.getAllocations().setVolume(BigDecimal.TEN);
+        ConsoleCalculationsRequest request = new ConsoleCalculationsRequest();
+        request.setId(1L);
+        request.setTransportMode(consolidationDetails.getTransportMode());
+        request.setContainerCategory(consolidationDetails.getContainerCategory());
+
+        ConsoleCalculationsResponse response = new ConsoleCalculationsResponse();
+        response.setAllocations(modelMapperTest.map(consolidationDetails.getAllocations(), AllocationsResponse.class));
+        response.setAchievedQuantities(modelMapperTest.map(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(request.getAllocations(), Allocations.class)).thenReturn(consolidationDetails.getAllocations());
+        when(jsonHelper.convertValue(request.getAchievedQuantities(), AchievedQuantities.class)).thenReturn(consolidationDetails.getAchievedQuantities());
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(response.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(response.getAchievedQuantities());
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateChargeable(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateChargeable_Success_Air() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
+        consolidationDetails.getAllocations().setWeightUnit(Constants.WEIGHT_UNIT_T);
+        consolidationDetails.getAllocations().setWeight(BigDecimal.TEN);
+        consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3);
+        consolidationDetails.getAllocations().setVolumeUnit(Constants.VOLUME_UNIT_CC);
+        consolidationDetails.getAllocations().setVolume(BigDecimal.TEN);
+        ConsoleCalculationsRequest request = new ConsoleCalculationsRequest();
+        request.setId(1L);
+        request.setTransportMode(consolidationDetails.getTransportMode());
+        request.setContainerCategory(consolidationDetails.getContainerCategory());
+
+        ConsoleCalculationsResponse response = new ConsoleCalculationsResponse();
+        response.setAllocations(modelMapperTest.map(consolidationDetails.getAllocations(), AllocationsResponse.class));
+        response.setAchievedQuantities(modelMapperTest.map(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(request.getAllocations(), Allocations.class)).thenReturn(consolidationDetails.getAllocations());
+        when(jsonHelper.convertValue(request.getAchievedQuantities(), AchievedQuantities.class)).thenReturn(consolidationDetails.getAchievedQuantities());
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(response.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(response.getAchievedQuantities());
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateChargeable(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateChargeable_Failure() {
+        ConsoleCalculationsRequest request = new ConsoleCalculationsRequest();
+        request.setId(1L);
+        when(consolidationDetailsDao.findById(anyLong())).thenThrow(new RuntimeException("Test"));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateChargeable(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateAchievedValues_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
+        EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
+        keyMasterDataMap.put("20GP", containerTypeMasterData);
+        Cache cache = mock(Cache.class);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
+                .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
+
+        var spyService = Mockito.spy(consolidationService);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(masterDataUtils.fetchInBulkContainerTypes(anyList())).thenReturn(keyMasterDataMap);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
+        when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
+
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.calculateAchievedValues(CommonRequestModel.buildRequest(1L));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateAchievedValues_Failure() {
+        when(consolidationDetailsDao.findById(anyLong())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateAchievedValues(CommonRequestModel.buildRequest(1L));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateContainerSummary_Success() throws RunnerException {
+        CalculateContainerSummaryRequest request = new CalculateContainerSummaryRequest();
+        request.setContainersList(List.of());
+        Containers containers = new Containers();
+        containers.setId(1L);
+        ContainerSummaryResponse response = new ContainerSummaryResponse();
+
+        when(jsonHelper.convertValueToList(request.getContainersList(), Containers.class)).thenReturn(List.of(containers));
+        when(containerService.calculateContainerSummary(anyList(), any(), any())).thenReturn(response);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateContainerSummary(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateContainerSummary_Failure() throws RunnerException {
+        CalculateContainerSummaryRequest request = new CalculateContainerSummaryRequest();
+        request.setContainersList(List.of());
+        Containers containers = new Containers();
+        containers.setId(1L);
+
+        when(jsonHelper.convertValueToList(request.getContainersList(), Containers.class)).thenReturn(List.of(containers));
+        when(containerService.calculateContainerSummary(anyList(), any(), any())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateContainerSummary(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculatePackSummary_Success() throws RunnerException {
+        CalculatePackSummaryRequest request = new CalculatePackSummaryRequest();
+        request.setPackingList(List.of());
+        Packing packing = new Packing();
+        packing.setId(1L);
+        PackSummaryResponse response = new PackSummaryResponse();
+
+        when(jsonHelper.convertValueToList(request.getPackingList(), Packing.class)).thenReturn(List.of(packing));
+        when(packingService.calculatePackSummary(anyList(), any(), any(), any())).thenReturn(response);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculatePackSummary(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculatePackSummary_Failure() throws RunnerException {
+        CalculatePackSummaryRequest request = new CalculatePackSummaryRequest();
+        request.setPackingList(List.of());
+        Packing packing = new Packing();
+        packing.setId(1L);
+
+        when(jsonHelper.convertValueToList(request.getPackingList(), Packing.class)).thenReturn(List.of(packing));
+        when(packingService.calculatePackSummary(anyList(), any(), any(), any())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculatePackSummary(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListPacksForAssignDetach_Success_IsAssignTrue() {
+        ConsolePacksListRequest request = new ConsolePacksListRequest();
+        request.setIsAssign(true);
+        request.setConsolidationId(1L);
+        request.setContainerId(1L);
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>(List.of(ConsoleShipmentMapping.builder()
+                .shipmentId(1L).consolidationId(1L).build(), ConsoleShipmentMapping.builder()
+                .shipmentId(2L).consolidationId(1L).build(), ConsoleShipmentMapping.builder()
+                .shipmentId(3L).consolidationId(1L).build()));
+        Packing packing = jsonTestUtility.getJson("PACKING", Packing.class);
+        packing.setId(1L);
+        packing.setShipmentId(1L);
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>(List.of(ShipmentsContainersMapping.builder()
+                .containerId(1L).shipmentId(2L).build()));
+
+        ConsolePacksListResponse.PacksList packsList = modelMapperTest.map(packing, ConsolePacksListResponse.PacksList.class);
+
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
+        ShipmentDetails shipmentDetails3 = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
+        shipmentDetails3.setId(3L);
+        shipmentDetails3.setShipmentType(Constants.CARGO_TYPE_FCL);
+        PartiesResponse partiesResponse = modelMapperTest.map(shipmentDetails1.getClient(), PartiesResponse.class);
+
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(consoleShipmentMappingList);
+        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(packing)));
+        when(shipmentsContainersMappingDao.findByContainerId(anyLong())).thenReturn(shipmentsContainersMappingList);
+        when(jsonHelper.convertValue(packing, ConsolePacksListResponse.PacksList.class)).thenReturn(packsList);
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
+        when(jsonHelper.convertValue(shipmentDetails1.getClient(), PartiesResponse.class)).thenReturn(partiesResponse);
+        when(shipmentDao.findById(3L)).thenReturn(Optional.of(shipmentDetails3));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.listPacksForAssignDetach(CommonRequestModel.buildRequest(request));
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListPacksForAssignDetach_Success_IsAssignFalse() {
+        ConsolePacksListRequest request = new ConsolePacksListRequest();
+        request.setIsAssign(false);
+        request.setConsolidationId(1L);
+        request.setContainerId(1L);
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>(List.of(ConsoleShipmentMapping.builder()
+                .shipmentId(1L).consolidationId(1L).build(), ConsoleShipmentMapping.builder()
+                .shipmentId(2L).consolidationId(1L).build(), ConsoleShipmentMapping.builder()
+                .shipmentId(3L).consolidationId(1L).build()));
+        Packing packing = jsonTestUtility.getJson("PACKING", Packing.class);
+        packing.setId(1L);
+        packing.setShipmentId(1L);
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>(List.of(ShipmentsContainersMapping.builder()
+                .containerId(1L).shipmentId(2L).build()));
+
+        ConsolePacksListResponse.PacksList packsList = modelMapperTest.map(packing, ConsolePacksListResponse.PacksList.class);
+
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
+        PartiesResponse partiesResponse = modelMapperTest.map(shipmentDetails1.getClient(), PartiesResponse.class);
+
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(consoleShipmentMappingList);
+        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(packing)));
+        when(shipmentsContainersMappingDao.findByContainerId(anyLong())).thenReturn(shipmentsContainersMappingList);
+        when(jsonHelper.convertValue(packing, ConsolePacksListResponse.PacksList.class)).thenReturn(packsList);
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
+        when(jsonHelper.convertValue(shipmentDetails1.getClient(), PartiesResponse.class)).thenReturn(partiesResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.listPacksForAssignDetach(CommonRequestModel.buildRequest(request));
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListPacksForAssignDetach_Success_IsAssignFalse_NoPack() {
+        ConsolePacksListRequest request = new ConsolePacksListRequest();
+        request.setIsAssign(false);
+        request.setConsolidationId(1L);
+        request.setContainerId(1L);
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>(List.of(ConsoleShipmentMapping.builder()
+                .shipmentId(1L).consolidationId(1L).build(), ConsoleShipmentMapping.builder()
+                .shipmentId(2L).consolidationId(1L).build(), ConsoleShipmentMapping.builder()
+                .shipmentId(3L).consolidationId(1L).build()));
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>(List.of(ShipmentsContainersMapping.builder()
+                .containerId(1L).shipmentId(2L).build()));
+
+        ShipmentDetails shipmentDetails2 = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
+        shipmentDetails2.setId(2L);
+        shipmentDetails2.setShipmentType(Constants.CARGO_TYPE_FCL);
+        PartiesResponse partiesResponse = modelMapperTest.map(shipmentDetails2.getClient(), PartiesResponse.class);
+
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(consoleShipmentMappingList);
+        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(shipmentsContainersMappingDao.findByContainerId(anyLong())).thenReturn(shipmentsContainersMappingList);
+        when(shipmentDao.findById(2L)).thenReturn(Optional.of(shipmentDetails2));
+        when(jsonHelper.convertValue(shipmentDetails2.getClient(), PartiesResponse.class)).thenReturn(partiesResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.listPacksForAssignDetach(CommonRequestModel.buildRequest(request));
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListPacksForAssignDetach_Failure() {
+        ConsolePacksListRequest request = new ConsolePacksListRequest();
+        request.setIsAssign(true);
+        request.setConsolidationId(1L);
+        request.setContainerId(1L);
+
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.listPacksForAssignDetach(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 
