@@ -3331,6 +3331,12 @@
     "shipmentId": 987654321,
     "isPortalEnable": true
   },
+  "NOTE": {
+    "entityId": 123456789,
+    "entityType": "Order",
+    "assignedTo": "alice.liddell@example.org",
+    "insertDate": "2024-04-18T12:00:00"
+  },
   "PACKING_LIST": [
     {
       "packs": "1",
