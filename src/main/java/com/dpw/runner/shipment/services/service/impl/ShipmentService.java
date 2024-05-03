@@ -4425,7 +4425,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public void updateDateAndStatus(long id, LocalDateTime date, Integer status) throws RunnerException {
+    public void updateDateAndStatus(Long id, LocalDateTime date, Integer status) throws RunnerException {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
         if(shipmentDetails.isPresent()) {
             ShipmentDetails shipment = shipmentDetails.get();

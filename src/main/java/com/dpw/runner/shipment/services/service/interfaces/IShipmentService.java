@@ -77,7 +77,7 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> fetchActiveInvoices(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> showAssignAllContainers(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> fetchCreditLimit(String orgCode, String addressCode) throws RunnerException;
-    void updateDateAndStatus(long id, LocalDateTime date, Integer status) throws RunnerException;
+    void updateDateAndStatus(Long id, LocalDateTime date, Integer status) throws RunnerException;
     ResponseEntity<IRunnerResponse> fetchEmails(Long shipmentId, Long consolidationId);
     ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(CommonRequestModel commonRequestModel);
