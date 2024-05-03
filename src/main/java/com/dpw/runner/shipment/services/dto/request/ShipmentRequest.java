@@ -135,4 +135,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean autoCreateConsole;
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
+    private String currentPartyForQuote;
 }
