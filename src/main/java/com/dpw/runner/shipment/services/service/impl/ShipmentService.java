@@ -1550,7 +1550,8 @@ public class ShipmentService implements IShipmentService {
         }
 
         Parties consignor = shipmentDetails.getConsigner();
-        if(Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             List<Parties> orgList = new ArrayList<>();
             if(consignor != null) {
                 if(consignor != null && StringUtility.isNotEmpty(consignor.getAddressCode())) {
