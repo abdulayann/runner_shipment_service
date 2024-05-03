@@ -6,11 +6,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
-import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -32,6 +27,7 @@ import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
@@ -52,12 +48,15 @@ import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -71,7 +70,11 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Service
 @Slf4j
@@ -153,6 +156,58 @@ public class ReportService implements IReportService {
             }
         }
 
+        if((Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION)
+                || Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION)
+                && reportRequest.isFromConsolidation())) {
+            Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId()));
+            if(optionalConsolidationDetails.isPresent()) {
+                ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
+                byte[] dataByte;
+                List<byte[]> dataByteList = new ArrayList<>();
+                List<Awb> awbList = new ArrayList<>();
+                Map<String, List<Awb>> groupedAwb = new HashMap<>();
+                if(consolidationDetails.getShipmentsList() != null && !consolidationDetails.getShipmentsList().isEmpty()) {
+                    List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
+                    ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
+                    Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
+                    Page<Awb> awbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
+                    if(awbListPage != null && !awbListPage.isEmpty()) {
+                        awbList = awbListPage.getContent();
+                    }
+                }
+                if(!awbList.isEmpty()) {
+                    groupedAwb = awbList.stream().collect(Collectors.groupingBy(e -> e.getAwbShipmentInfo().getDestinationAirport()));
+                }
+                if(groupedAwb != null && !groupedAwb.isEmpty()) {
+                    for (Map.Entry<String, List<Awb>> entry: groupedAwb.entrySet()) {
+                        reportRequest.setFromConsolidation(false);
+                        reportRequest.setAwbList(groupedAwb.get(entry.getKey()));
+                        reportRequest.setShipmentIds(reportRequest.getAwbList().stream().map(Awb::getShipmentId).toList());
+                        dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
+                        if(dataByte != null) {
+                            dataByteList.add(dataByte);
+                        }
+                    }
+                }
+                if(awbList.size() < consolidationDetails.getShipmentsList().size()) {
+                    Set<Long> shipmentsWithoutAwb = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).collect(Collectors.toSet());
+                    for(Awb awb: awbList) {
+                        shipmentsWithoutAwb.remove(awb.getShipmentId());
+                    }
+                    if(!shipmentsWithoutAwb.isEmpty()) {
+                        reportRequest.setFromConsolidation(false);
+                        reportRequest.setAwbList(null);
+                        reportRequest.setShipmentIds(shipmentsWithoutAwb.stream().toList());
+                        dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
+                        if(dataByte != null) {
+                            dataByteList.add(dataByte);
+                        }
+                    }
+                }
+                return CommonUtils.concatAndAddContent(dataByteList);
+            }
+        }
+
         ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
 
         Boolean isOriginalPrint = false;
@@ -202,6 +257,16 @@ public class ReportService implements IReportService {
         }
         if(report instanceof ShipmentCANReport) {
             ((ShipmentCANReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
+        }
+        if(report instanceof CargoManifestAirConsolidationReport cargoManifestAirConsolidationReport) {
+            cargoManifestAirConsolidationReport.setAwbList(reportRequest.getAwbList());
+            cargoManifestAirConsolidationReport.setShipIds(reportRequest.getShipmentIds());
+            cargoManifestAirConsolidationReport.setShipperAndConsignee(reportRequest.isShipperAndConsignee());
+            cargoManifestAirConsolidationReport.setSecurityData(reportRequest.isSecurityData());
+        }
+        if(report instanceof CargoManifestAirShipmentReport cargoManifestAirShipmentReport) {
+            cargoManifestAirShipmentReport.setShipperAndConsignee(reportRequest.isShipperAndConsignee());
+            cargoManifestAirShipmentReport.setSecurityData(reportRequest.isSecurityData());
         }
 
         if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {
@@ -857,6 +922,18 @@ public class ReportService implements IReportService {
                     return setDocPages(null,
                             row.getSeaExportShipmentManifest() == null ? adminRow.getSeaExportShipmentManifest(): row.getSeaExportShipmentManifest(), null, row.getSeaExportShipmentManifest() != null, null, null, null);
                 }
+            case ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT:
+                return setDocPages(null,
+                        row.getAirImportShipmentManifest() == null ? adminRow.getAirImportShipmentManifest(): row.getAirImportShipmentManifest(), null, row.getAirImportShipmentManifest() != null, null, null, null);
+            case ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION:
+                return setDocPages(null,
+                        row.getAirImportConsoleManifest() == null ? adminRow.getAirImportConsoleManifest(): row.getAirImportConsoleManifest(), null, row.getAirImportConsoleManifest() != null, null, null, null);
+            case ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT:
+                return setDocPages(null,
+                        row.getAirExportShipmentManifest() == null ? adminRow.getAirExportShipmentManifest(): row.getAirExportShipmentManifest(), null, row.getAirExportShipmentManifest() != null, null, null, null);
+            case ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION:
+                return setDocPages(null,
+                        row.getAirExportConsoleManifest() == null ? adminRow.getAirExportConsoleManifest(): row.getAirExportConsoleManifest(), null, row.getAirExportConsoleManifest() != null, null, null, null);
             case ReportConstants.IMPORT_CONSOL_MANIFEST:
                 if (objectType != null && objectType.equalsIgnoreCase(ReportConstants.TRANS_AIR)) {
                     return setDocPages(null,

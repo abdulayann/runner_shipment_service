@@ -128,6 +128,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String secondarySalesAgentEmail;
     private List<ContainerIdDltReq> deletedContainerIds;
     private UUID sourceGuid;
+    private UUID clonedGuid;
     private Long consigneeDpsAddressId;
     private Long clientDpsAddressId;
     private Long consignorDpsAddressId;
