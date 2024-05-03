@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.helper;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
@@ -216,5 +217,10 @@ public class JsonTestUtility {
 
     public ReferenceNumbers getTestReferenceNumbers() {
         return objectMapper.convertValue(payload.get("REFERENCE_NUMBERS"), ReferenceNumbers.class);
+    }
+
+    public ReportRequest getTestReportRequest() {
+        ReportRequest reportRequest = objectMapper.convertValue(payload.get("REPORT_REQUEST"), ReportRequest.class);
+        return reportRequest;
     }
 }

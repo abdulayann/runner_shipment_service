@@ -4556,6 +4556,10 @@
     "RAExpiry": "2024-04-30T00:00:00",
     "TransportOrderRoad": "b240fd36d136d69b",
     "DisableBlPartiesName": null
+  },
+  "REPORT_REQUEST" : {
+    "reportId": "4415",
+    "reportInfo": "SeawayBill",
+    "reportKey": "ShipmentId"
   }
-
 }
