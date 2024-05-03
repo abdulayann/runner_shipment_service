@@ -3377,7 +3377,9 @@ public class ConsolidationService implements IConsolidationService {
             response.setContainerCategory(tenantSettings.getDefaultContainerType());
             response.setShipmentType(tenantSettings.getDefaultShipmentType());
             response.setBol((response.getTransportMode() == null || !response.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) ? generateCustomBolNumber() : null);
-
+            if(!Objects.equals(null, response.getTransportMode()) && response.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_SEA)) {
+                response.setModeOfBooking(Constants.INTTRA);
+            }
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCreatedAt(LocalDateTime.now());
             response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));

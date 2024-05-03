@@ -62,6 +62,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
@@ -180,22 +181,7 @@ public class HblService implements IHblService {
 
     @Override
     public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        try {
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id = request.getId();
-            Optional<Hbl> hbl = hblDao.findById(id);
-            if (!hbl.isPresent()) {
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            hblDao.delete(hbl.get());
-            return ResponseHelper.buildSuccessResponse();
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
+        return null;
     }
 
     @Override
@@ -244,8 +230,8 @@ public class HblService implements IHblService {
                 }
             }
             else {
-                List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-                if(shipmentSettingsDetails.size() > 0 && (shipmentSettingsDetails.get(0).getRestrictHblGen() == null || !shipmentSettingsDetails.get(0).getRestrictHblGen())) {
+                ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+                if(shipmentSettingsDetails.getRestrictHblGen() == null || !shipmentSettingsDetails.getRestrictHblGen()) {
                     try {
                         hbl = getHblFromShipmentId(shipmentId);
                     } catch (Exception ex) {
@@ -273,7 +259,7 @@ public class HblService implements IHblService {
         return hbl;
     }
     private void validateBeforeGeneration(ShipmentDetails shipmentDetails){
-        if(!Objects.isNull(shipmentDetails.getContainersList())) {
+        if(!Objects.isNull(shipmentDetails.getContainersList()) && !Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
             List<Containers> containers = shipmentDetails.getContainersList().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
             if (!containers.isEmpty())
                 throw new ValidationException("Please assign container number to all the containers before generating the HBL.");
@@ -284,7 +270,7 @@ public class HblService implements IHblService {
                 || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && Objects.equals(shipmentDetails.getJobType(), Constants.JOB_TYPE_CLB))){
             return;
         }
-        if(!Objects.isNull(shipmentDetails.getPackingList())) {
+        if(!Objects.isNull(shipmentDetails.getPackingList()) && !Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
             var packsList = shipmentDetails.getPackingList().stream().filter(x -> Objects.isNull(x.getContainerId())).toList();
             if(!packsList.isEmpty()){
                 throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the packages in the shipment.");
@@ -421,6 +407,8 @@ public class HblService implements IHblService {
     }
 
     private Hbl convertRequestToEntity(HblRequest request) {
+        if (Objects.isNull(request))
+            return Hbl.builder().build();
         HblDataDto hblData = jsonHelper.convertValue(request, HblDataDto.class);
         Hbl hbl = Hbl.builder().shipmentId(request.getShipmentId())
                 .hblData(hblData).hblCargo(request.getCargoes())
@@ -628,7 +616,7 @@ public class HblService implements IHblService {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
         if(containers != null && containers.size() > 0)
-            map = containers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+            map = containers.stream().filter(e -> !IsStringNullOrEmpty(e.getContainerNumber())).collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         Map<Long, String> finalMap = map;
         if(Objects.equals(packings, null)) {
             packings = new ArrayList<>();
@@ -671,11 +659,8 @@ public class HblService implements IHblService {
     public ResponseEntity<IRunnerResponse> saveV1Hbl(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         String responseMsg;
         HblRequestV2 request = (HblRequestV2) commonRequestModel.getData();
-        if(request == null) {
-            log.error("Request is empty for Hbl update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
 
-        if(request.getShipmentGuid() == null) {
+        if(request == null || request.getShipmentGuid() == null) {
             log.error("Request Id and Shipment Guid is null for Hbl update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -698,7 +683,7 @@ public class HblService implements IHblService {
             Hbl entity = convertRequestToEntity(hblRequest);
             entity.setShipmentId(shipmentDetails.get().toList().get(0).getId());
             entity.setGuid(request.getGuid());
-            if(!hblList.isEmpty() && hblList.size() > 0) {
+            if(!hblList.isEmpty()) {
                 entity.setId(hblList.get(0).getId());
                 entity.setGuid(hblList.get(0).getGuid());
             }
@@ -708,7 +693,6 @@ public class HblService implements IHblService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
         

@@ -1972,10 +1972,10 @@ public class ShipmentService implements IShipmentService {
                 ShipmentListResponse shipment = (ShipmentListResponse) shipmentListResponseData.get(i);
                 String origin = "", destination = "", destinationPort = "", originPort = "";
                 if(shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getUnlocationData() != null){
-                    origin = shipment.getCarrierDetails().getUnlocationData().get("origin_name");
-                    destination = shipment.getCarrierDetails().getUnlocationData().get("destination_name");
-                    destinationPort = shipment.getCarrierDetails().getUnlocationData().get("destinationPort_name");
-                    originPort = shipment.getCarrierDetails().getUnlocationData().get("originPort_name");
+                    origin = shipment.getCarrierDetails().getUnlocationData().get("origin");
+                    destination = shipment.getCarrierDetails().getUnlocationData().get("destination");
+                    destinationPort = shipment.getCarrierDetails().getUnlocationData().get("destinationPort");
+                    originPort = shipment.getCarrierDetails().getUnlocationData().get("originPort");
                 }
                 if(shipment.getCarrierDetails() != null){
                     origin = StringUtility.isEmpty(origin) ? shipment.getCarrierDetails().getOrigin() : origin;

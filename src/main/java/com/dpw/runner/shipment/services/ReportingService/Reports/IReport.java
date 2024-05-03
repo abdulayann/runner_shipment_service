@@ -274,6 +274,7 @@ public abstract class IReport {
         if (shipment == null) {
             return;
         }
+        var shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
 
         PickupDeliveryDetailsModel pickup = shipment.getPickupDetails();
         PickupDeliveryDetailsModel delivery = shipment.getDeliveryDetails();
@@ -647,7 +648,8 @@ public abstract class IReport {
 
                 if(shipment.getPickupDetails().getDestinationDetail() != null) {
                     List<String> cyNameAddress = new ArrayList<>();
-                    cyNameAddress.add(getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
+                    if(!Boolean.TRUE.equals(shipmentSettingsDetails.getDisableBlPartiesName()))
+                        cyNameAddress.add(getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
                     cyNameAddress.addAll(getOrgAddress(shipment.getPickupDetails().getDestinationDetail()));
                     dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
                 }
@@ -920,6 +922,7 @@ public abstract class IReport {
         if (consolidation == null) {
             return;
         }
+        var shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
 
         PartiesModel sendingAgent = consolidation.getSendingAgent();
         PartiesModel receivingAgent = consolidation.getReceivingAgent();
@@ -1144,7 +1147,8 @@ public abstract class IReport {
             }
             if(departureDetails.getContainerYardId() != null) {
                 List<String> cyNameAddress = new ArrayList<>();
-                cyNameAddress.add(getValueFromMap(departureDetails.getContainerYardId().getOrgData(), FULL_NAME));
+                if(!Boolean.TRUE.equals(shipmentSettingsDetails.getDisableBlPartiesName()))
+                    cyNameAddress.add(getValueFromMap(departureDetails.getContainerYardId().getOrgData(), FULL_NAME));
                 cyNameAddress.addAll(getOrgAddress(departureDetails.getContainerYardId()));
                 dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
             }
@@ -1156,17 +1160,28 @@ public abstract class IReport {
     {
         if (hbl == null) return;
         List<String> notify = new ArrayList<>();
+        var shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         if(hbl.getHblNotifyParty() != null && hbl.getHblNotifyParty().size() > 0) {
             HblPartyDto hblNotify = hbl.getHblNotifyParty().get(0);
-            notify = ReportHelper.getOrgAddress(hblNotify.getName(), hblNotify.getAddress(), null, null, hblNotify.getEmail(), null);
+            if(Boolean.TRUE.equals(shipmentSettingsDetails.getDisableBlPartiesName()))
+                notify = ReportHelper.getOrgAddress(null, hblNotify.getAddress(), null, null, hblNotify.getEmail(), null);
+            else
+                notify = ReportHelper.getOrgAddress(hblNotify.getName(), hblNotify.getAddress(), null, null, hblNotify.getEmail(), null);
         }
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromHbl(hbl);
         Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
         dictionary.put(ReportConstants.BL_NOTIFY_PARTY, notify);
             dictionary.put(ReportConstants.BL_NOTIFY_PARTY_CAPS, notify.stream().map(String::toUpperCase).toList());
         HblDataDto hblDataDto = hbl.getHblData();
-        List<String> consignor = ReportHelper.getOrgAddress(hblDataDto != null ? hblDataDto.getConsignorName() : null, hblDataDto != null ? hblDataDto.getConsignorAddress() : null, null, null, null, null);
-        List<String> consignee = ReportHelper.getOrgAddress(hblDataDto != null ? hblDataDto.getConsigneeName() : null, hblDataDto != null ? hblDataDto.getConsigneeAddress() : null, null, null, null, null);
+        List<String> consignor;
+        List<String> consignee;
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getDisableBlPartiesName())) {
+            consignor = ReportHelper.getOrgAddress(null, hblDataDto != null ? hblDataDto.getConsignorAddress() : null, null, null, null, null);
+            consignee = ReportHelper.getOrgAddress(null, hblDataDto != null ? hblDataDto.getConsigneeAddress() : null, null, null, null, null);
+        } else {
+            consignor = ReportHelper.getOrgAddress(hblDataDto != null ? hblDataDto.getConsignorName() : null, hblDataDto != null ? hblDataDto.getConsignorAddress() : null, null, null, null, null);
+            consignee = ReportHelper.getOrgAddress(hblDataDto != null ? hblDataDto.getConsigneeName() : null, hblDataDto != null ? hblDataDto.getConsigneeAddress() : null, null, null, null, null);
+        }
         if(consignor != null && consignor.size() > 0) {
             dictionary.put(ReportConstants.CONSIGNER, consignor);
             dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, StringUtility.toUpperCase(hblDataDto.getConsignorName()));

@@ -60,16 +60,20 @@ public class ReportController {
     @GetMapping(ApiConstants.API_CREATE_TAGS_SHIPMENT)
     public ResponseEntity<IRunnerResponse> createDocumentTagsForShipment(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) {
         String responseMsg;
+        HttpStatus httpStatus = null;
         try {
             CommonGetRequest request = CommonGetRequest.builder().build();
             id.ifPresent(request::setId);
             guid.ifPresent(request::setGuid);
             return reportService.createDocumentTagsForShipment(CommonRequestModel.buildRequest(request));
+        } catch (TranslationException e) {
+            responseMsg = e.getMessage();
+            httpStatus = HttpStatus.PRECONDITION_REQUIRED;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg, httpStatus);
     }
 }

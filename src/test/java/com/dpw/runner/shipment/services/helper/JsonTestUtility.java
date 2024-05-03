@@ -1,8 +1,12 @@
 package com.dpw.runner.shipment.services.helper;
 
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -48,8 +52,47 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("PACKING") , Packing.class);
     }
 
+    public PackingRequestV2 getTestPackingRequestV2(){
+        return objectMapper.convertValue(payload.get("PACKING_REQUEST_V2"), PackingRequestV2.class);
+    }
+    public List<Packing> getTestPackingList(){
+        return convertValueToList(payload.get("PACKING_LIST"), Packing.class);
+    }
+
+    public PackSummaryResponse getTestPackSummaryResponse(){
+        return objectMapper.convertValue(payload.get("PACK_SUMMARY_RESPONSE"), PackSummaryResponse.class);
+    }
+
+    public PackSummaryResponse getTestPackSummaryAirResponse(){
+        return objectMapper.convertValue(payload.get("PACK_SUMMARY_RESPONSE_AIR"), PackSummaryResponse.class);
+    }
+
+    public VolumeWeightChargeable getTestVolWtChargeable(){
+        return objectMapper.convertValue(payload.get("VOL_WT_CHARGEABLE"), VolumeWeightChargeable.class);
+    }
+
+    public AdditionalDetails getTestAdditionalDetails(){
+        return objectMapper.convertValue(payload.get("SHIPMENT"), ShipmentDetails.class).getAdditionalDetails();
+    }
+
+    public ShipmentSettingsDetails getTestShipmentSettingsDetails() {
+        return objectMapper.convertValue(payload.get("SHIPMENT_SETTINGS"), ShipmentSettingsDetails.class);
+    }
+
+    public ShipmentSettingsDetails getTestShipmentSettingsDetails_CreatePayload() {
+        return objectMapper.convertValue(payload.get("SHIPMENT_SETTINGS_CREATE"), ShipmentSettingsDetails.class);
+    }
+
+    public ShipmentSettingsSyncRequest getTestShipmentSettingsSyncRequest() {
+        return objectMapper.convertValue(payload.get("SHIPMENT_SETTINGS_SYNC"), ShipmentSettingsSyncRequest.class);
+    }
+
     public ShipmentDetails getTestShipment() {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("NEW_SHIPMENT"), ShipmentDetails.class);
+        return shipmentDetails;
+    }
+    public ShipmentDetails getCompleteShipment() {
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("COMPLETE_SHIPMENT"), ShipmentDetails.class);
         return shipmentDetails;
     }
 
@@ -107,10 +150,6 @@ public class JsonTestUtility {
 
     public Allocations getTestAllocation() {
         return objectMapper.convertValue(payload.get("NEW_ALLOCATION_CREATE"), Allocations.class);
-    }
-
-    public AdditionalDetails getTestAdditionalDetails() {
-        return objectMapper.convertValue(payload.get("NEW_ADDITIONAL_DETAIL") , AdditionalDetails.class);
     }
 
     public AchievedQuantities getTestAchievedQuantity() {
