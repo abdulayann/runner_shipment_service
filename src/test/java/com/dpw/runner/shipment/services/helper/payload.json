@@ -4598,6 +4598,10 @@
     "InsertDate": "2024-03-14T07:35:11.790",
     "UpdateUserId": 10386,
     "UpdateDate": "2024-03-15T10:41:33.890"
+  },
+  "REPORT_REQUEST" : {
+    "reportId": "4415",
+    "reportInfo": "SeawayBill",
+    "reportKey": "ShipmentId"
   }
-
 }

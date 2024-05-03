@@ -1486,7 +1486,8 @@ public class EntityTransferService implements IEntityTransferService {
                         }
 
                         if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) &&
-                                shipment.getDirection().equals(Constants.DIRECTION_EXP)) {
+                                shipment.getDirection().equals(Constants.DIRECTION_EXP) &&
+                            !Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
                             List<Hbl> hbls = hblDao.findByShipmentId(shipment.getId());
                             if(hbls.isEmpty())
                                 hblGenerationError = true;
@@ -1506,7 +1507,7 @@ public class EntityTransferService implements IEntityTransferService {
                         LocalDateTime shipEtd = shipment.getCarrierDetails().getEtd();
                         String shipPolId = shipment.getCarrierDetails().getOriginPort();
                         String shipPodId = shipment.getCarrierDetails().getDestinationPort();
-                        if(Strings.isNullOrEmpty(shipment.getHouseBill()) || Strings.isNullOrEmpty(shipment.getMasterBill()) ||
+                        if((Strings.isNullOrEmpty(shipment.getHouseBill()) && !Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_DRT)) || Strings.isNullOrEmpty(shipment.getMasterBill()) ||
                                 shipVoyage == null || shipFlightNumber == null || shipEta == null || shipEtd == null ||
                                 Strings.isNullOrEmpty(shipPolId) || Strings.isNullOrEmpty(shipPodId)) {
                             sendConsolidationError = true;
@@ -1591,7 +1592,8 @@ public class EntityTransferService implements IEntityTransferService {
                 }
                 if(Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
                     missingField.add("MAWB Number");
-                if(Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+                if(Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
+                && !Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.get().getJobType()))
                     missingField.add("House Bill");
                 if(Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
                     missingField.add("Master Bill");

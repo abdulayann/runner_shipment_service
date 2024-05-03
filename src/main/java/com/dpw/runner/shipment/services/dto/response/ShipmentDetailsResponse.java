@@ -183,4 +183,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private AwbStatus awbStatus;
+
+    private String currentPartyForQuote;
 }
