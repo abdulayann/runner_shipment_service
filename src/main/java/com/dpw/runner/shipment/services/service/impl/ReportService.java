@@ -163,56 +163,55 @@ public class ReportService implements IReportService {
             }
         }
 
-        if(Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION)
-                || Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION)) {
-            if(reportRequest.isFromConsolidation()) {
-                Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId()));
-                if(optionalConsolidationDetails.isPresent()) {
-                    ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
-                    byte[] dataByte;
-                    List<byte[]> dataByteList = new ArrayList<>();
-                    List<Awb> awbList = new ArrayList<>();
-                    Map<String, List<Awb>> groupedAwb = new HashMap<>();
-                    if(consolidationDetails.getShipmentsList() != null && !consolidationDetails.getShipmentsList().isEmpty()) {
-                        List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
-                        ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
-                        Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
-                        Page<Awb> awbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
-                        if(awbListPage != null && !awbListPage.isEmpty()) {
-                            awbList = awbListPage.getContent();
-                        }
+        if((Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION)
+                || Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION)
+                && reportRequest.isFromConsolidation())) {
+            Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId()));
+            if(optionalConsolidationDetails.isPresent()) {
+                ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
+                byte[] dataByte;
+                List<byte[]> dataByteList = new ArrayList<>();
+                List<Awb> awbList = new ArrayList<>();
+                Map<String, List<Awb>> groupedAwb = new HashMap<>();
+                if(consolidationDetails.getShipmentsList() != null && !consolidationDetails.getShipmentsList().isEmpty()) {
+                    List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
+                    ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
+                    Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
+                    Page<Awb> awbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
+                    if(awbListPage != null && !awbListPage.isEmpty()) {
+                        awbList = awbListPage.getContent();
                     }
-                    if(!awbList.isEmpty()) {
-                        groupedAwb = awbList.stream().collect(Collectors.groupingBy(e -> e.getAwbShipmentInfo().getDestinationAirport()));
-                    }
-                    if(groupedAwb != null && !groupedAwb.isEmpty()) {
-                        for (String key : groupedAwb.keySet()) {
-                            reportRequest.setFromConsolidation(false);
-                            reportRequest.setAwbList(groupedAwb.get(key));
-                            reportRequest.setShipmentIds(reportRequest.getAwbList().stream().map(Awb::getShipmentId).toList());
-                            dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
-                            if(dataByte != null) {
-                                dataByteList.add(dataByte);
-                            }
-                        }
-                    }
-                    if(awbList.size() < consolidationDetails.getShipmentsList().size()) {
-                        Set<Long> shipmentsWithoutAwb = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).collect(Collectors.toSet());
-                        for(Awb awb: awbList) {
-                            shipmentsWithoutAwb.remove(awb.getShipmentId());
-                        }
-                        if(shipmentsWithoutAwb.size() > 0) {
-                            reportRequest.setFromConsolidation(false);
-                            reportRequest.setAwbList(null);
-                            reportRequest.setShipmentIds(shipmentsWithoutAwb.stream().toList());
-                            dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
-                            if(dataByte != null) {
-                                dataByteList.add(dataByte);
-                            }
-                        }
-                    }
-                    return CommonUtils.concatAndAddContent(dataByteList);
                 }
+                if(!awbList.isEmpty()) {
+                    groupedAwb = awbList.stream().collect(Collectors.groupingBy(e -> e.getAwbShipmentInfo().getDestinationAirport()));
+                }
+                if(groupedAwb != null && !groupedAwb.isEmpty()) {
+                    for (Map.Entry<String, List<Awb>> entry: groupedAwb.entrySet()) {
+                        reportRequest.setFromConsolidation(false);
+                        reportRequest.setAwbList(groupedAwb.get(entry.getKey()));
+                        reportRequest.setShipmentIds(reportRequest.getAwbList().stream().map(Awb::getShipmentId).toList());
+                        dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
+                        if(dataByte != null) {
+                            dataByteList.add(dataByte);
+                        }
+                    }
+                }
+                if(awbList.size() < consolidationDetails.getShipmentsList().size()) {
+                    Set<Long> shipmentsWithoutAwb = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).collect(Collectors.toSet());
+                    for(Awb awb: awbList) {
+                        shipmentsWithoutAwb.remove(awb.getShipmentId());
+                    }
+                    if(!shipmentsWithoutAwb.isEmpty()) {
+                        reportRequest.setFromConsolidation(false);
+                        reportRequest.setAwbList(null);
+                        reportRequest.setShipmentIds(shipmentsWithoutAwb.stream().toList());
+                        dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
+                        if(dataByte != null) {
+                            dataByteList.add(dataByte);
+                        }
+                    }
+                }
+                return CommonUtils.concatAndAddContent(dataByteList);
             }
         }
 
