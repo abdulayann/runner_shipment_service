@@ -187,6 +187,10 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("EVENT"), Events.class);
     }
 
+    public Notes getTestNoteData() {
+        return objectMapper.convertValue(payload.get("NOTE"), Notes.class);
+    }
+
     public FileRepo getTestFileRepoData() {
         return objectMapper.convertValue(payload.get("FILE_REPO"), FileRepo.class);
     }
