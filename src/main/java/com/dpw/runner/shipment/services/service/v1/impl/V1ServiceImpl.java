@@ -428,16 +428,13 @@ public class V1ServiceImpl implements IV1Service {
             Object requestCriteria = req.getListObject();
             HttpEntity<V1DataResponse> entity = new HttpEntity(requestCriteria, V1AuthHelper.getHeaders());
             if (isListOnly ||
-                    (req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) ||
-                    (!Objects.isNull(req.getIsList()) && req.getIsList()) ) {
+                    (req.getListObject() != null && (Objects.equals(Constants.CONSOLIDATION_TYPE_AGT, req.getType()) || Objects.equals(Constants.CONSOLIDATION_TYPE_CLD, req.getType()) )) ||
+                    (Objects.equals(Boolean.TRUE, req.getIsList())) ) {
                 masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             } else {
                 masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_ORG_REF_FILTER_URL, entity, V1DataResponse.class, new Object[0]);
             }
-            double _timeTaken = System.currentTimeMillis() - time;
-            log.info("Token time taken in getCarrierMasterData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
-            if (_timeTaken > 200)
-                log.info(REQUEST_ID_FOR_EVENT_ACTUAL_TIME_TAKEN_MS_MSG,LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.MASTERDATA_CARRIER, _timeTaken);
+            log.info("Token time taken in getCarrierMasterData() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
@@ -488,10 +485,7 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CONTAINER_TYPE_DATA_URL, entity, V1DataResponse.class, new Object[0]);
-            double _timeTaken = System.currentTimeMillis() - time;
-            log.info("Token time taken in getContainerTypeMasterData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
-            if (_timeTaken > 200)
-                log.info(REQUEST_ID_FOR_EVENT_ACTUAL_TIME_TAKEN_MS_MSG,LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.MASTERDATA_CONTAINER_CODES, _timeTaken);
+            log.info("Token time taken in getContainerTypeMasterData() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
@@ -544,8 +538,6 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.VESSEL_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             double _timeTaken = System.currentTimeMillis() - time;
             log.info("Token time taken in getVesselData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
-            if (_timeTaken > 200)
-                log.info(REQUEST_ID_FOR_EVENT_ACTUAL_TIME_TAKEN_MS_MSG,LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.MASTERDATA_VESSEL, _timeTaken);
             return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
@@ -1021,10 +1013,7 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             locationResponse = this.restTemplate.postForEntity(this.UNLOCATION_URL, entity, V1DataResponse.class, new Object[0]);
-            double _timeTaken = System.currentTimeMillis() - time;
-            log.info("Token time taken in fetchUnlocation() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
-            if (_timeTaken > 200)
-                log.info(REQUEST_ID_FOR_EVENT_ACTUAL_TIME_TAKEN_MS_MSG,LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.MASTERDATA_UNLOCATIONS, _timeTaken);
+            log.info("Token time taken in fetchUnlocation() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) locationResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
@@ -1058,10 +1047,7 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.MULTIPLE_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
-            double _timeTaken = System.currentTimeMillis() - time;
-            log.info("Token time taken in fetchMultipleMasterData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
-            if (_timeTaken > 200)
-                log.info(REQUEST_ID_FOR_EVENT_ACTUAL_TIME_TAKEN_MS_MSG,LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.MASTERDATA_KEY_VALUE, _timeTaken);
+            log.info("Token time taken in fetchMultipleMasterData() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
@@ -1385,10 +1371,7 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CHARGE_TYPE_URL, entity, V1DataResponse.class, new Object[0]);
-            double _timeTaken = System.currentTimeMillis() - time;
-            log.info("Token time taken in fetchChargeCodeData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
-            if (_timeTaken > 200)
-                log.info(REQUEST_ID_FOR_EVENT_ACTUAL_TIME_TAKEN_MS_MSG,LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.MASTERDATA_CHARGE_TYPE, _timeTaken);
+            log.info("Token time taken in fetchChargeCodeData() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
@@ -1405,10 +1388,7 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_CHARGE_TYPE_URL, entity, V1RetrieveResponse.class, new Object[0]);
-            double _timeTaken = System.currentTimeMillis() - time;
-            log.info("Token time taken in fetchChargeCodeData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
-            if (_timeTaken > 200)
-                log.info(REQUEST_ID_FOR_EVENT_ACTUAL_TIME_TAKEN_MS_MSG,LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.MASTERDATA_CHARGE_TYPE, _timeTaken);
+            log.info("Token time taken in retrieveChargeCodeData() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1RetrieveResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
@@ -1849,7 +1829,7 @@ public class V1ServiceImpl implements IV1Service {
             v1Response = this.restTemplate.exchange(this.GET_MAX_SHIPMENT_ID_URL, HttpMethod.GET, entity, Object.class);
             log.info("{} {} {}", REQUEST_TOTAL_TIME_TAKEN_TO_GET_MAX_SHIPMENT_ID_MSG, LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - time));
             return (String) v1Response.getBody();
-        } catch (HttpStatusCodeException var6) {
+        } catch (HttpClientErrorException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             } else {
@@ -1869,7 +1849,7 @@ public class V1ServiceImpl implements IV1Service {
             v1Response = this.restTemplate.exchange(this.GET_SHIPMENT_SEQUENCE_NUMBER_URL, HttpMethod.GET, entity, Object.class);
             log.info(REQUEST_TOTAL_TIME_TAKEN_TO_GET_MAX_SHIPMENT_ID_MSG, LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
             return (String) v1Response.getBody();
-        } catch (HttpStatusCodeException var6) {
+        } catch (HttpClientErrorException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             } else {
@@ -1889,7 +1869,7 @@ public class V1ServiceImpl implements IV1Service {
             v1Response = this.restTemplate.exchange(this.GET_MAX_CONSOL_ID_URL, HttpMethod.GET, entity, Object.class);
             log.info(REQUEST_TOTAL_TIME_TAKEN_TO_GET_MAX_SHIPMENT_ID_MSG, LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
             return (String) v1Response.getBody();
-        } catch (HttpStatusCodeException var6) {
+        } catch (HttpClientErrorException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             } else {
@@ -1908,7 +1888,7 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.SHIPMENT_RETRIEVE_URL, entity, V1RetrieveResponse.class, new Object[0]);
             return (V1RetrieveResponse) masterDataResponse.getBody();
 
-        } catch (HttpStatusCodeException var6) {
+        } catch (HttpClientErrorException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             } else {
@@ -1925,7 +1905,7 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CREDIT_LIMIT_CHECK_URL, entity, CreditLimitValidateResponse.class, new Object[0]);
             return (CreditLimitValidateResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
+        } catch (HttpClientErrorException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             } else if(var6.getStatusCode() == HttpStatus.BAD_REQUEST){
@@ -2009,7 +1989,7 @@ public class V1ServiceImpl implements IV1Service {
             response = this.restTemplate.postForEntity(this.ORG_ADDRESS_LIST, entity, OrgAddressResponse.class);
             log.info("Token time taken in fetchOrgAddresses() function " + (System.currentTimeMillis() - time));
             return (OrgAddressResponse) response.getBody();
-        } catch (HttpStatusCodeException var6) {
+        } catch (HttpClientErrorException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             } else {
@@ -2024,13 +2004,12 @@ public class V1ServiceImpl implements IV1Service {
     public EntityTransferAddress fetchAddress(String addressId) {
         try {
             V1RetrieveRequest retrieveRequest = V1RetrieveRequest.builder().EntityId(addressId).build();
-            V1RetrieveResponse v1RetrieveResponse = this.retrieveAddress(retrieveRequest);
-            if(v1RetrieveResponse != null)
-            {
-                return modelMapper.map(v1RetrieveResponse.getEntity(), EntityTransferAddress.class);
-            }
-            return null;
-        } catch (HttpStatusCodeException var6) {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(retrieveRequest, V1AuthHelper.getHeaders());
+            ResponseEntity responseEntity = this.restTemplate.postForEntity(this.ADDRESS_RETRIEVE, entity, V1RetrieveResponse.class, new Object[0]);
+            log.info("Total time taken in fetchAddress() function: {}", (System.currentTimeMillis() - time));
+            return modelMapper.map(responseEntity.getBody(), EntityTransferAddress.class);
+        } catch (HttpClientErrorException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             } else {
@@ -2041,19 +2020,4 @@ public class V1ServiceImpl implements IV1Service {
         }
     }
 
-    private V1RetrieveResponse retrieveAddress(Object request) {
-        ResponseEntity responseEntity = null;
-
-        try {
-            long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            responseEntity = this.restTemplate.postForEntity(this.ADDRESS_RETRIEVE, entity, V1RetrieveResponse.class, new Object[0]);
-            log.info("Total time taken in retrieveDpsAddress() function: {}", (System.currentTimeMillis() - time));
-            return (V1RetrieveResponse) responseEntity.getBody();
-        } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
-        } catch (Exception var7) {
-            throw new V1ServiceException(var7.getMessage());
-        }
-    }
 }
