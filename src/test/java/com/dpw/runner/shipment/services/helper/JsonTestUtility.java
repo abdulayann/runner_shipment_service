@@ -105,6 +105,10 @@ public class JsonTestUtility {
         return consolidationDetails;
     }
 
+    public Routings getTestRouting() {
+        return objectMapper.convertValue(payload.get("NEW_ROUTING"), Routings.class);
+    }
+
     public ConsolidationDetails getTestNewConsolidation(){
         return objectMapper.convertValue(payload.get("NEW_CONSOLIDATION_CREATE"), ConsolidationDetails.class);
     }

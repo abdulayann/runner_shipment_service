@@ -4663,5 +4663,23 @@
     "reportId": "4415",
     "reportInfo": "SeawayBill",
     "reportKey": "ShipmentId"
+  },
+  "NEW_ROUTING": {
+    "isDeleted": false,
+    "shipmentId": 155357,
+    "leg": 1,
+    "mode": "SEA",
+    "routingStatus": "PLD",
+    "vesselName": "468275000",
+    "pol": "COBAQ_POR",
+    "pod": "CNBYQ_POR",
+    "isDomestic": false,
+    "eta": "2024-04-14T00:00:00",
+    "etd": "2024-04-12T00:00:00",
+    "ata": "2024-05-02T00:00:00",
+    "atd": "2024-04-30T00:00:00",
+    "isLinked": true,
+    "voyage": "123",
+    "transitDays": 2
   }
 }
