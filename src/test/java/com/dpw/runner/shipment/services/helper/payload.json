@@ -2092,6 +2092,59 @@
     "achievedWeight": 10,
     "achievedVolume": 15
   },
+  "CONTAINER": {
+    "id": 1,
+    "guid": "a4574234-9bba-4d42-b287-3a773e41e4e2",
+    "consolidationId": 2248,
+    "bookingId": 147775,
+    "containerCode": "20FR",
+    "containerNumber": "CIUY2121267",
+    "noOfPackages": 50,
+    "netWeight": 500.00,
+    "netWeightUnit": "KG",
+    "grossWeight": 500.00,
+    "grossWeightUnit": "KG",
+    "commodityCode": "680530",
+    "hsCode": "",
+    "containerCount": 1,
+    "customsReleaseCode": "23",
+    "containerStuffingLocation": "YW3g7SxpzQ",
+    "grossVolume": 100.000,
+    "grossVolumeUnit": "M3",
+    "minTemp": 21,
+    "hblDeliveryMode": "CFS/DOOR",
+    "allocationDate": "2024-05-03 12:44:53",
+    "tareWeight": 21.00,
+    "packs": "50",
+    "packsType": "BAG",
+    "pacrNumber": "212",
+    "commodityGroup": "FAK",
+    "isContractEnforced": true,
+    "commodityTypeData": {
+      "commodityCode": "Abrasive powder or grain natural or artificial on a base of materials n.e.s. in heading no. 6805 whether or not cut to shape or sewn or otherwise made up"
+    },
+    "containerCodeData": {
+      "containerCode": "20FR - Twenty foot flatrack"
+    },
+    "contractEnforcedQuantityLimit": 1,
+    "textFieldData": {},
+    "isAttached": true,
+    "eventsList": [],
+    "invoiceNumber": "312",
+    "invoiceCurrency": "AED",
+    "invoiceValue": 32,
+    "tenantId": 908,
+    "achievedWeightUnit": "KG",
+    "achievedVolumeUnit": "M3",
+    "allocatedWeightUnit": "KG",
+    "allocatedVolumeUnit": "M3",
+    "shipmentsList": [
+      {
+        "id": 1,
+        "shipmentType": "LCL"
+      }
+    ]
+  },
   "PACKING": {
     "isDimension": true,
     "packs": 1,
@@ -2106,6 +2159,7 @@
     "weight": 98656,
     "weightUnit": "KG",
     "netWeightUnit": "KG",
+    "volume": 231,
     "volumeUnit": "M3",
     "volumeWeight": 0,
     "volumeWeightUnit": "M3",

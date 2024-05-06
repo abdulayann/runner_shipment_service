@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -62,7 +63,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -1437,5 +1437,208 @@ class ConsolidationServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void testAssignPacksAndShipments_Success() {
+        ContainerShipmentADInConsoleRequest request = new ContainerShipmentADInConsoleRequest();
+        Containers containers = jsonTestUtility.getJson("CONTAINER", Containers.class);
+        Packing packing = jsonTestUtility.getJson("PACKING", Packing.class);
+        packing.setId(1L);
+        packing.setShipmentId(2L);
+        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        request.setContainer(containerRequest);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        packsList.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        request.setPacksList(List.of(packsList));
+
+        when(containerDao.findById(anyLong())).thenReturn(Optional.of(containers));
+        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(packing)));
+        when(packingDao.saveAll(anyList())).thenReturn(List.of(packing));
+        when(containerService.calculateUtilization(any())).thenReturn(containers);
+        when(containerDao.save(any())).thenReturn(containers);
+        doNothing().when(shipmentsContainersMappingDao).assignShipments(anyLong(), any(), anyBoolean());
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.assignPacksAndShipments(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+    @Test
+    void testAssignPacksAndShipments_Failure() {
+        ContainerShipmentADInConsoleRequest request = new ContainerShipmentADInConsoleRequest();
+        Containers containers = jsonTestUtility.getJson("CONTAINER", Containers.class);
+        Packing packing = jsonTestUtility.getJson("PACKING", Packing.class);
+        packing.setId(1L);
+        packing.setShipmentId(2L);
+        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        request.setContainer(containerRequest);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        packsList.setShipmentType(Constants.CARGO_TYPE_FCL);
+        request.setPacksList(List.of(packsList));
+
+        when(containerDao.findById(anyLong())).thenReturn(Optional.of(containers));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.assignPacksAndShipments(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachPacksAndShipments_Success() {
+        ContainerShipmentADInConsoleRequest request = new ContainerShipmentADInConsoleRequest();
+        request.setIsFCL(true);
+        Containers containers = jsonTestUtility.getJson("CONTAINER", Containers.class);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        containers.setShipmentsList(List.of(shipmentDetails));
+        Packing packing = jsonTestUtility.getJson("PACKING", Packing.class);
+        packing.setId(1L);
+        packing.setShipmentId(2L);
+        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        request.setContainer(containerRequest);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        packsList.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        request.setPacksList(List.of(packsList));
+
+        ContainerResponse response = modelMapperTest.map(containers, ContainerResponse.class);
+
+        when(containerDao.findById(anyLong())).thenReturn(Optional.of(containers));
+        when(packingDao.findById(anyLong())).thenReturn(Optional.of(packing));
+        when(packingDao.save(any())).thenReturn(packing);
+        when(containerService.calculateUtilization(any())).thenReturn(containers);
+        when(packingDao.findAll(any(), any())).thenReturn(null);
+        when(containerDao.save(any())).thenReturn(containers);
+        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
+        doNothing().when(containerService).afterSave(any(), anyBoolean());
+        when(jsonHelper.convertValue(containers, ContainerResponse.class)).thenReturn(response);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachPacksAndShipments(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachPacksAndShipments_Failure() {
+        ContainerShipmentADInConsoleRequest request = new ContainerShipmentADInConsoleRequest();
+        request.setIsFCL(true);
+        Containers containers = jsonTestUtility.getJson("CONTAINER", Containers.class);
+        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        request.setContainer(containerRequest);
+
+        when(containerDao.findById(anyLong())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachPacksAndShipments(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testFullConsolidationsList_Success() {
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
+        when(modelMapper.map(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.fullConsolidationsList(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+    @Test
+    void testFullConsolidationsList_Success1() {
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+        List<String> includeColumns = new ArrayList<>();
+        includeColumns.add("id");
+        includeColumns.add("consolidationNumber");
+        sampleRequest.setIncludeColumns(includeColumns);
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        Map<String, Object>  responseMap = new HashMap<>();
+        responseMap.put("id", 1);
+        responseMap.put("consolidationNumber", "CONS000231188");
+        PartialFetchUtils partialFetchUtils = new PartialFetchUtils(jsonHelper);
+
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.fullConsolidationsList(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testFullConsolidationsList_Failure() {
+        ListCommonRequest sampleRequest = null;
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.fullConsolidationsList(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testList_Success1() {
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
+
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
+        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testList_Success2() {
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+        List<String> includeColumns = new ArrayList<>();
+        includeColumns.add("id");
+        includeColumns.add("consolidationNumber");
+        sampleRequest.setIncludeColumns(includeColumns);
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
+        PartialFetchUtils partialFetchUtils = new PartialFetchUtils(jsonHelper);
+        Map<String, Object>  responseMap = new HashMap<>();
+        responseMap.put("id", 1);
+        responseMap.put("consolidationNumber", "CONS000231188");
+
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
+        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testList_Success_BookingIdFilter() {
+        ListCommonRequest sampleRequest = constructListCommonRequest("bookingId", 1, "=");
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
+        GuidsListResponse resp = new GuidsListResponse();
+        resp.setGuidsList(List.of(UUID.randomUUID()));
+
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
+        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
+        when(v1Service.fetchBookingIdFilterGuids(any())).thenReturn(resp);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testList_Failure() {
+        ListCommonRequest sampleRequest = null;
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListAsync_Success() throws ExecutionException, InterruptedException {
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
+
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
+        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
+
+        CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity = consolidationService.listAsync(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.OK, responseEntity.get().getStatusCode());
+    }
+    @Test
+    void testListAsync_Failure() throws ExecutionException, InterruptedException {
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+
+        when(consolidationDetailsDao.findAll(any(), any())).thenThrow(new RuntimeException());
+        CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity = consolidationService.listAsync(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.get().getStatusCode());
+    }
 
 }
