@@ -2,27 +2,33 @@ package com.dpw.runner.shipment.services.service.v1.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,8 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.HttpClientErrorException;
@@ -42,7 +47,10 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
+import java.util.regex.Matcher;
 
 @ContextConfiguration(classes = {V1ServiceImpl.class})
 @ExtendWith(SpringExtension.class)
@@ -3166,7 +3174,7 @@ class V1ServiceImplTest {
     }
 
     /**
-     * Method under test: {@link V1ServiceImpl#retrieveTenantSettings(Object)} (Object)}
+     * Method under test: {@link V1ServiceImpl#retrieveTenantSettings()}
      */
     @Test
     void testRetrieveTenantSettings() throws RestClientException {
@@ -3202,6 +3210,1583 @@ class V1ServiceImplTest {
         Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.retrieveTenantSettings());
         // Assert
         assertEquals("RuntimeException", throwable.getMessage());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#retrieveCompanySettings()} )}
+     */
+    @Test
+    void testRetrieveCompanySettings() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(CompanySettingsResponse.builder().SeaLclContainerFlag(true).build()));
+        when(mock.getBody()).thenReturn(CompanySettingsResponse.builder().SeaLclContainerFlag(true).build());
+        // Act
+        var responseEntity = v1ServiceImpl.retrieveCompanySettings();
+        // Assert
+        assertTrue(responseEntity.getSeaLclContainerFlag());
+    }
+
+    @Test
+    void testRetrieveCompanySettings2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.retrieveCompanySettings());
+        // Assert
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testRetrieveCompanySettings3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.retrieveCompanySettings());
+        // Assert
+        assertEquals("RuntimeException", throwable.getMessage());
+    }
+
+
+    /**
+     * Method under test: {@link V1ServiceImpl#getDefaultOrg()} )}
+     */
+    @Test
+    void testGetDefaultOrg() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var mockResponse = new PartyRequestV2();
+        mockResponse.setOrgCode("DPW");
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(mock.getBody()).thenReturn(mockResponse);
+        // Act
+        var responseEntity = v1ServiceImpl.getDefaultOrg();
+        // Assert
+        assertEquals("DPW", responseEntity.getOrgCode());
+    }
+
+    @Test
+    void testGetDefaultOrg2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getDefaultOrg());
+        // Assert
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testGetDefaultOrg3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getDefaultOrg());
+        // Assert
+        assertEquals("RuntimeException", throwable.getMessage());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchOwnType(Object)} (Object)}
+     */
+    @Test
+    void testFetchOwnType() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
+        // Act
+        var responseEntity = v1ServiceImpl.fetchOwnType("Request");
+        // Assert
+        assertEquals(1L, responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchOwnType2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchOwnType("Request"));
+        // Assert
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testFetchOwnType3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchOwnType("Request"));
+        // Assert
+        assertEquals("RuntimeException", throwable.getMessage());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchCarrierFilterList(Object)} (Object)}
+     */
+    @Test
+    void testFetchCarrierFilterList() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCarrierFilterList("Request");
+        // Assert
+        assertEquals(1L, responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchCarrierFilterList2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchCarrierFilterList("Request"));
+        // Assert
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testFetchCarrierFilterList3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchCarrierFilterList("Request"));
+        // Assert
+        assertEquals("RuntimeException", throwable.getMessage());
+    }
+
+
+    /**
+     * Method under test: {@link V1ServiceImpl#retrieveTenant()}
+     */
+    @Test
+    void testRetrieveTenant() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1RetrieveResponse.builder().entity("1L").build()));
+        when(mock.getBody()).thenReturn(V1RetrieveResponse.builder().entity("1L").build());
+        // Act
+        var responseEntity = v1ServiceImpl.retrieveTenant();
+        // Assert
+        assertEquals("1L", responseEntity.getEntity());
+    }
+
+    @Test
+    void testRetrieveTenant2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.retrieveTenant());
+        // Assert
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testRetrieveTenant3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.retrieveTenant());
+        // Assert
+        assertEquals("RuntimeException", throwable.getMessage());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchTransportInstructionList(Object)}
+     */
+    @Test
+    void testFetchTransportInstructionList() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+//        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
+        // Act
+        var responseEntity = v1ServiceImpl.fetchTransportInstructionList(CheckCreditLimitResponse.builder().build());
+
+        // Assert
+        assertEquals(1L, responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchTransportInstructionList2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchTransportInstructionList(CheckCreditLimitResponse.builder().build()));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchTransportInstructionList3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchTransportInstructionList(CheckCreditLimitResponse.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchTransportInstructionList4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchTransportInstructionList(CheckCreditLimitResponse.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchContainersListForTI(Object)}
+     */
+    @Test
+    void testFetchContainersListForTI() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+//        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
+        // Act
+        var responseEntity = v1ServiceImpl.fetchContainersListForTI(CheckCreditLimitResponse.builder().build());
+
+        // Assert
+        assertEquals(1L, responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchContainersListForTI2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchContainersListForTI(CheckCreditLimitResponse.builder().build()));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchContainersListForTI3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchContainersListForTI(CheckCreditLimitResponse.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchContainersListForTI4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchContainersListForTI(CheckCreditLimitResponse.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchConsolidationBookingData(Object)}
+     */
+    @Test
+    void testFetchConsolidationBookingData() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
+        var mockResponse = new ConsoleBookingListResponse();
+        var hashMap = new HashMap<UUID, ConsoleBookingListResponse.BookingData>();
+        hashMap.put(UUID.randomUUID(), new ConsoleBookingListResponse.BookingData());
+        mockResponse.setData(hashMap);
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.fetchConsolidationBookingData(CheckCreditLimitResponse.builder().build());
+
+        // Assert
+        assertEquals(hashMap, responseEntity.getData());
+    }
+
+    @Test
+    void testFetchConsolidationBookingData2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchConsolidationBookingData(CheckCreditLimitResponse.builder().build()));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchConsolidationBookingData3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchConsolidationBookingData(CheckCreditLimitResponse.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchConsolidationBookingData4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchConsolidationBookingData(CheckCreditLimitResponse.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchShipmentBillingData(Object)}
+     */
+    @Test
+    void testFetchShipmentBillingData() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
+        var mockResponse = new ShipmentBillingListResponse();
+        var hashMap = new HashMap<String, ShipmentBillingListResponse.BillingData>();
+        hashMap.put(UUID.randomUUID().toString(), new ShipmentBillingListResponse.BillingData());
+        mockResponse.setData(hashMap);
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.fetchShipmentBillingData(CheckCreditLimitResponse.builder().build());
+
+        // Assert
+        assertEquals(hashMap, responseEntity.getData());
+    }
+
+    @Test
+    void testFetchShipmentBillingData2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchShipmentBillingData(CheckCreditLimitResponse.builder().build()));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchShipmentBillingData3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchShipmentBillingData(CheckCreditLimitResponse.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchShipmentBillingData4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchShipmentBillingData(CheckCreditLimitResponse.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchWayBillNumberFilterGuids(Object)}
+     */
+    @Test
+    void testfetchWayBillNumberFilterGuids() throws RestClientException {
+        var mockResponse = new GuidsListResponse();
+        List<UUID> guidsList = List.of(UUID.randomUUID());
+        mockResponse.setGuidsList(guidsList);
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.fetchWayBillNumberFilterGuids("Request");
+
+        // Assert
+        assertEquals(guidsList, responseEntity.getGuidsList());
+    }
+
+    @Test
+    void testfetchWayBillNumberFilterGuids2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchWayBillNumberFilterGuids("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testfetchWayBillNumberFilterGuids3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchWayBillNumberFilterGuids("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testfetchWayBillNumberFilterGuids4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchWayBillNumberFilterGuids("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchBookingIdFilterGuids(Object)}
+     */
+    @Test
+    void testFetchBookingIdFilterGuids() throws RestClientException {
+        var mockResponse = new GuidsListResponse();
+        var guidsList = List.of(UUID.randomUUID());
+        mockResponse.setGuidsList(guidsList);
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.fetchBookingIdFilterGuids("Request");
+
+        // Assert
+        assertEquals(guidsList, responseEntity.getGuidsList());
+    }
+
+    @Test
+    void testFetchBookingIdFilterGuids2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchBookingIdFilterGuids("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchBookingIdFilterGuids3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchBookingIdFilterGuids("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchBookingIdFilterGuids4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchBookingIdFilterGuids("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#createTaskforHBL(Object)}
+     */
+    @Test
+    void testCreateTaskforHBL() throws RestClientException {
+        var mockResponse = new HblTaskCreationResponse();
+        mockResponse.setIsCreated(true);
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.createTaskforHBL("Request");
+
+        // Assert
+        assertTrue(responseEntity.getIsCreated());
+    }
+
+    @Test
+    void testCreateTaskforHBL2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.createTaskforHBL("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreateTaskforHBL3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.createTaskforHBL("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreateTaskforHBL4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.createTaskforHBL("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchGetTemplateMainPage(Object)}
+     */
+    @Test
+    void testFetchGetTemplateMainPage() throws RestClientException {
+        var mockResponse = V1DataResponse.builder().entityId(1L).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.fetchGetTemplateMainPage("Request");
+
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchGetTemplateMainPage2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchGetTemplateMainPage("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchGetTemplateMainPage3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchGetTemplateMainPage("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchGetTemplateMainPage4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchGetTemplateMainPage("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchRolesList(Object)}
+     */
+    @Test
+    void testFetchRolesList() throws RestClientException {
+        var mockResponse = V1DataResponse.builder().entityId(1L).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.fetchRolesList("Request");
+
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchRolesList2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchRolesList("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchRolesList3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchRolesList("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchRolesList4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchRolesList("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchBillingList(Object)}
+     */
+    @Test
+    void testFetchBillingList() throws RestClientException {
+        var mockResponse = V1DataResponse.builder().entityId(1L).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.fetchBillingList("Request");
+
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchBillingList2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchBillingList("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchBillingList3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchBillingList("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchBillingList4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchBillingList("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchBillChargesList(Object)}
+     */
+    @Test
+    void testFetchBillChargesList() throws RestClientException {
+        var mockResponse = V1DataResponse.builder().entityId(1L).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.fetchBillChargesList("Request");
+
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchBillChargesList2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchBillChargesList("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchBillChargesList3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchBillChargesList("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchBillChargesList4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchBillChargesList("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchArObjectList(Object)}
+     */
+    @Test
+    void testFetchArObjectList() throws RestClientException {
+        var mockResponse = V1DataResponse.builder().entityId(1L).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.fetchArObjectList("Request");
+
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchArObjectList2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchArObjectList("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchArObjectList3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchArObjectList("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchArObjectList4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchArObjectList("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchCreditLimit(Object)}
+     */
+    @Test
+    void testFetchCreditLimit() throws RestClientException {
+        var mockResponse = V1DataResponse.builder().entityId(1L).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCreditLimit("Request");
+
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchCreditLimit2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchCreditLimit("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchCreditLimit3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchCreditLimit("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchCreditLimit4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchCreditLimit("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#getShipment(V1RetrieveRequest)}
+     */
+    @Test
+    void testGetShipment() throws RestClientException {
+        var mockResponse = V1RetrieveResponse.builder().entity(1L).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.getShipment(V1RetrieveRequest.builder().build());
+
+        // Assert
+        assertEquals(mockResponse.getEntity(), responseEntity.getEntity());
+    }
+
+    @Test
+    void testGetShipment2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getShipment(V1RetrieveRequest.builder().build()));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetShipment3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getShipment(V1RetrieveRequest.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetShipment4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getShipment(V1RetrieveRequest.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#checkCreditLimit(CreditLimitValidateRequest)}
+     */
+    @Test
+    void testCheckCreditLimit() throws RestClientException {
+        var mockResponse = CreditLimitValidateResponse.builder().isValid(true).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.checkCreditLimit(CreditLimitValidateRequest.builder().build());
+
+        // Assert
+        assertEquals(mockResponse.getIsValid(), responseEntity.getIsValid());
+    }
+
+    @Test
+    void testCheckCreditLimit2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.checkCreditLimit(CreditLimitValidateRequest.builder().build()));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCheckCreditLimit3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(CreditLimitValidateResponse.class))).thenReturn(CreditLimitValidateResponse.builder().error(V1ErrorResponse.V1Error.builder().message(v1ErrorInString).build()).build());
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.checkCreditLimit(CreditLimitValidateRequest.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCheckCreditLimit4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.FORBIDDEN));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.checkCreditLimit(CreditLimitValidateRequest.builder().build()));
+        assertEquals(HttpClientErrorException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCheckCreditLimit5() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.checkCreditLimit(CreditLimitValidateRequest.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#getAddressTranslation(AddressTranslationRequest)}
+     */
+    @Test
+    void testGetAddressTranslation() throws RestClientException {
+        var mockResponse = AddressTranslationListResponse.builder().addressTranslationList(List.of()).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.getAddressTranslation(AddressTranslationRequest.builder().build());
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void testGetAddressTranslation2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getAddressTranslation(AddressTranslationRequest.builder().build()));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetAddressTranslation3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getAddressTranslation(AddressTranslationRequest.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetAddressTranslation4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getAddressTranslation(AddressTranslationRequest.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#getActiveInvoices(CheckActiveInvoiceRequest)}
+     */
+    @Test
+    void testGetActiveInvoices() throws RestClientException {
+        var mockResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(true).build();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipmentLite(false).build());
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build());
+
+        // Assert
+        assertFalse(responseEntity.getIsAnyActiveInvoiceFound());
+    }
+
+    @Test
+    void testGetActiveInvoices2() throws RestClientException {
+        var mockResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(true).build();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipmentLite(true).build());
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build());
+
+        // Assert
+        assertEquals(mockResponse.getIsAnyActiveInvoiceFound(), responseEntity.getIsAnyActiveInvoiceFound());
+    }
+
+    @Test
+    void testGetActiveInvoices3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build()));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetActiveInvoices4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetActiveInvoices5() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build()));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchOrgAddresses(Object)}
+     */
+    @Test
+    void testFetchOrgAddresses() throws RestClientException {
+        var mockResponse = OrgAddressResponse.builder().organizations(new HashMap<>()).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Act
+        var responseEntity = v1ServiceImpl.fetchOrgAddresses("Request");
+
+        // Assert
+        assertEquals(mockResponse.getOrganizations(), responseEntity.getOrganizations());
+    }
+
+    @Test
+    void testFetchOrgAddresses2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchOrgAddresses("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchOrgAddresses3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchOrgAddresses("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchOrgAddresses4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchOrgAddresses("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchAddress(String)}
+     */
+    @Test
+    void testFetchAddress() throws RestClientException {
+        var inputEntity = new EntityTransferAddress();
+        inputEntity.setOrgId(111L);
+        var mockResponse = V1RetrieveResponse.builder().entity(inputEntity).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(modelMapper.map(any(), eq(EntityTransferAddress.class))).thenReturn(inputEntity);
+        // Act
+        var responseEntity = v1ServiceImpl.fetchAddress("Request");
+
+        // Assert
+        assertEquals(inputEntity.getOrgId(), responseEntity.getOrgId());
+    }
+
+    @Test
+    void testFetchAddress2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchAddress("Request"));
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchAddress3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchAddress("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testFetchAddress4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchAddress("Request"));
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#fetchCarrierMasterData(Object, boolean)} ()}
+     */
+    @Test
+    void testFetchCarrierMasterData() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var request = new CarrierListObject();
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCarrierMasterData(request, false);
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchCarrierMasterData2() throws RestClientException {
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        var request = new CarrierListObject();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchCarrierMasterData(mockResponse, false));
+        // Assert
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testFetchCarrierMasterData3() throws RestClientException {
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        var request = new CarrierListObject();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchCarrierMasterData(mockResponse, false));
+        // Assert
+        assertEquals("RuntimeException", throwable.getMessage());
+    }
+
+    @Test
+    void testFetchCarrierMasterData4() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var request = new CarrierListObject();
+        request.setType(Constants.CONSOLIDATION_TYPE_AGT);
+        request.setIsList(true);
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCarrierMasterData(request, true);
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchCarrierMasterData5() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var request = new CarrierListObject();
+        request.setListObject("Criteria");
+        request.setType(Constants.CONSOLIDATION_TYPE_AGT);
+        request.setIsList(false);
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCarrierMasterData(request, true);
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchCarrierMasterData6() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var request = new CarrierListObject();
+        request.setListObject("Criteria");
+        request.setType(Constants.SHIPMENT_TYPE_DRT);
+        request.setIsList(true);
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCarrierMasterData(request, true);
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchCarrierMasterData7() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var request = new CarrierListObject();
+        request.setListObject("Criteria");
+        request.setIsList(true);
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCarrierMasterData(request, true);
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchCarrierMasterData8() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var request = new CarrierListObject();
+        request.setIsList(false);
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCarrierMasterData(request, true);
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchCarrierMasterData9() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var request = new CarrierListObject();
+        request.setType(Constants.CONSOLIDATION_TYPE_CLD);
+        request.setIsList(true);
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCarrierMasterData(request, true);
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchCarrierMasterData10() throws RestClientException {
+        // Arrange
+        var request = new CarrierListObject();
+        request.setType(Constants.CONSOLIDATION_TYPE_CLD);
+        request.setIsList(false);
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCarrierMasterData(request, true);
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchCarrierMasterData11() throws RestClientException {
+        // Arrange
+        var request = new CarrierListObject();
+        request.setType(Constants.SHIPMENT_TYPE_DRT);
+        request.setIsList(null);
+        var mockResponse = V1DataResponse.builder().entityId(87L).build();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(jsonHelper.convertValue(any(), eq(CarrierListObject.class))).thenReturn(request);
+        // Act
+        var responseEntity = v1ServiceImpl.fetchCarrierMasterData(request, true);
+        // Assert
+        assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
+    }
+
+
+    /**
+     * Method under test: {@link V1ServiceImpl#v1DataSync(Object, HttpHeaders)}
+     */
+    @Test
+    void testV1DataSync() throws RestClientException {
+        var mockResponse = V1DataSyncResponse.builder().isSuccess(true).build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(v1AuthHelper.getHeadersForDataSync()).thenReturn(new HttpHeaders());
+        // Act
+        var responseEntity = v1ServiceImpl.v1DataSync("Request", null);
+
+        // Assert
+        assertTrue(responseEntity.getIsSuccess());
+    }
+
+    @Test
+    void testV1DataSync2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        // Act and Assert
+        var responseEntity = v1ServiceImpl.v1DataSync("Request", new HttpHeaders());
+
+        // Assert
+        assertFalse(responseEntity.getIsSuccess());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#createBooking(CustomerBooking, boolean, boolean, UUID, HttpHeaders)}
+     */
+    @Test
+    void testCreateBooking() throws RestClientException {
+        var mockResponse = ResponseEntity.ok(new V1ShipmentCreationResponse());
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(), any())).thenReturn(CreateBookingModuleInV1.builder().IsP100Booking(true).Entity(new CreateBookingModuleInV1.BookingEntity()).build());
+        // Act
+        var responseEntity = v1ServiceImpl.createBooking(CustomerBooking.builder().build(), false, false, UUID.randomUUID(), null);
+
+        // Assert
+        assertEquals(mockResponse.getStatusCode() , responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCreateBooking2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act and Assert
+        Throwable t = assertThrows(Throwable.class, () -> v1ServiceImpl.createBooking(CustomerBooking.builder().build(), false, false, UUID.randomUUID(), null));
+        // Assert
+        assertEquals(V1ServiceException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreateBooking3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpServerErrorException(HttpStatus.UNAUTHORIZED, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act and Assert
+        Throwable t = assertThrows(Throwable.class, () -> v1ServiceImpl.createBooking(CustomerBooking.builder().build(), false, false, UUID.randomUUID(), new HttpHeaders()));
+        // Assert
+        assertEquals(V1ServiceException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreateBooking4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException(v1ErrorInString));
+        // Act and Assert
+        Throwable t = assertThrows(Throwable.class, () -> v1ServiceImpl.createBooking(CustomerBooking.builder().build(), false, false, UUID.randomUUID(), new HttpHeaders()));
+        // Assert
+        assertEquals(V1ServiceException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#getMaxConsolidationId()}
+     */
+    @Test
+    void testGetMaxConsolidationId() throws RestClientException {
+        var mockResponse = "10101";
+        // Arrange
+        ResponseEntity<Object> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenReturn(responseEntity);
+        // Act
+        var actualEntity = v1ServiceImpl.getMaxConsolidationId();
+        // Assert
+        assertEquals(mockResponse, actualEntity);
+    }
+
+    @Test
+    void testGetMaxConsolidationId2() throws RestClientException {
+        // Arrange
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getMaxConsolidationId());
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetMaxConsolidationId3() throws RestClientException {
+        HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
+        // Arrange
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getMaxConsolidationId());
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetMaxConsolidationId4() throws RestClientException {
+        // Arrange
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenThrow(new RuntimeException("Runtime"));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getMaxConsolidationId());
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#getShipmentSerialNumber()}
+     */
+    @Test
+    void testGetShipmentSerialNumber() throws RestClientException {
+        var mockResponse = "10101";
+        // Arrange
+        ResponseEntity<Object> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenReturn(responseEntity);
+        // Act
+        var actualEntity = v1ServiceImpl.getShipmentSerialNumber();
+        // Assert
+        assertEquals(mockResponse, actualEntity);
+    }
+
+    @Test
+    void testGetShipmentSerialNumber2() throws RestClientException {
+        // Arrange
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getShipmentSerialNumber());
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetShipmentSerialNumber3() throws RestClientException {
+        HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
+        // Arrange
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getShipmentSerialNumber());
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetShipmentSerialNumber4() throws RestClientException {
+        // Arrange
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenThrow(new RuntimeException("Runtime"));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getShipmentSerialNumber());
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    /**
+     * Method under test: {@link V1ServiceImpl#getMaxShipmentId()}
+     */
+    @Test
+    void testGetMaxShipmentId() throws RestClientException {
+        var mockResponse = "10101";
+        // Arrange
+        ResponseEntity<Object> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenReturn(responseEntity);
+        // Act
+        var actualEntity = v1ServiceImpl.getMaxShipmentId();
+        // Assert
+        assertEquals(mockResponse, actualEntity);
+    }
+
+    @Test
+    void testGetMaxShipmentId2() throws RestClientException {
+        // Arrange
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getMaxShipmentId());
+        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetMaxShipmentId3() throws RestClientException {
+        HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
+        // Arrange
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getMaxShipmentId());
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetMaxShipmentId4() throws RestClientException {
+        // Arrange
+        when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
+                .thenThrow(new RuntimeException("Runtime"));
+
+        // Act and Assert
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getMaxShipmentId());
+        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 
 }
