@@ -420,12 +420,7 @@ class V1ServiceUtilTest {
         consolidationDetail.setReceivingAgent(party);
         consolidationDetail.setSendingAgent(party);
         consolidationDetail.setShipmentType(Constants.DIRECTION_EXP);
-        var orgMap = new HashMap<String,  Map<String, Object>>();
-//        orgMap.put(getParty().getOrgCode(), getParty().getOrgData());
-
-        var addressMap = new HashMap<String, Map<String, Object>>();
-//        addressMap.put(getParty().getOrgCode() + "#" + getParty().getAddressCode(), getParty().getAddressData());
-        var mockV1Response = OrgAddressResponse.builder().addresses(addressMap).organizations(orgMap).build();
+        var mockV1Response = OrgAddressResponse.builder().addresses(new HashMap<>()).organizations(new HashMap<>()).build();
         //Mock
         when(iV1Service.fetchOrgAddresses(any())).thenReturn(mockV1Response);
         // Act
