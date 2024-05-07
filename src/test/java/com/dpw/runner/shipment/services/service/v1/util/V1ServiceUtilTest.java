@@ -114,6 +114,18 @@ class V1ServiceUtilTest {
 
     @Test
     void testCreateBookingRequestForV14() {
+        // Arrange
+        var inputBooking = jsonTestUtility.getCompleteCustomerBooking();
+        inputBooking.setCargoType("FCL");
+
+        when(iNotesDao.findByEntityIdAndEntityType(anyLong(), anyString())).thenReturn(null);
+        // Act and Assert
+        var response = v1ServiceUtil.createBookingRequestForV1(inputBooking, true, true, UUID.randomUUID());
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCreateBookingRequestForV15() {
         var inputBooking = jsonTestUtility.getCompleteCustomerBooking();
         inputBooking.getBookingCharges().get(0).setCreditor(party);
         inputBooking.getBookingCharges().get(0).setDebtor(party);

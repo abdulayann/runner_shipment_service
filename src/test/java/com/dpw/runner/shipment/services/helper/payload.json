@@ -4871,13 +4871,16 @@
         "grossWeightUnit": "MT",
         "containerCount": 1,
         "commodityGroup": "FAK",
-        "masterData": {
-          "commodityGroup": "FREIGHT ALL KINDS - FAK",
-          "grossWeightUnit": "Metric Tons"
-        },
-        "containerCodeData": {
-          "containerCode": "20GP - 20' general purpose"
-        },
+        "isAttached": false,
+        "eventsList": [],
+        "tenantId": 10299
+      },
+      {
+        "id": 66985,
+        "guid": "20ad1324-9cd4-4a6c-9f2b-72861f207726",
+        "bookingId": 67018,
+        "grossWeight": 20.00,
+        "grossWeightUnit": "MT",
         "isAttached": false,
         "eventsList": [],
         "tenantId": 10299
@@ -4889,6 +4892,33 @@
         "guid": "696aef20-0940-4914-8eb9-d7443a1cc9da",
         "bookingId": 55180,
         "packs": "1",
+        "packsType": "BBL",
+        "weight": 20,
+        "weightUnit": "KG",
+        "volume": 1,
+        "volumeUnit": "M3",
+        "length": 1,
+        "lengthUnit": "M",
+        "width": 1,
+        "widthUnit": "M",
+        "height": 1,
+        "heightUnit": "M",
+        "commodityGroup": "FAK",
+        "masterData": {
+          "commodityGroup": "FREIGHT ALL KINDS - FAK",
+          "widthUnit": "Meters",
+          "volumeUnit": "Cubic Meters",
+          "lengthUnit": "Meters",
+          "packsType": "Barrel",
+          "heightUnit": "Meters",
+          "weightUnit": "KiloGrams"
+        },
+        "isDimension": true
+      },
+      {
+        "id": 331,
+        "guid": "696aef20-0940-4914-8eb9-d7443a1cc9d4",
+        "bookingId": 55180,
         "packsType": "BBL",
         "weight": 20,
         "weightUnit": "KG",
