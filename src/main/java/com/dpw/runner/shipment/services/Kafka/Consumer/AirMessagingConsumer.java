@@ -62,7 +62,7 @@ public class AirMessagingConsumer {
             });
             log.info("Passed");
         } catch (Exception ex) {
-            log.error("Exception occurred for event: {} for message: {} with exception: {}", LoggerEvent.KAFKA_BILL_EVENT, message, ex.getLocalizedMessage());
+            log.error("Exception occurred for event: {} for message: {} with exception: {}", LoggerEvent.KAFKA_AIR_MESSAGING_EVENT, message, ex.getLocalizedMessage());
         } finally {
             UserContext.removeUser();
         }

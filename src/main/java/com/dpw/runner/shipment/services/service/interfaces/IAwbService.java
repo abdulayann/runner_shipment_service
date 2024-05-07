@@ -28,7 +28,7 @@ public interface IAwbService {
     ResponseEntity<IRunnerResponse> retrieveByAwbByMawb(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> getChargeTypeMasterData(CommonGetRequest commonGetRequest) throws RunnerException;
-    ResponseEntity<IRunnerResponse> validateIataAgent();
+    ResponseEntity<IRunnerResponse> validateIataAgent(Boolean fromShipment);
     Awb getMawnLinkPacks(Awb awb);
     ResponseEntity<IRunnerResponse> getFnmStatusMessage(Optional<Long> shipmentId, Optional<Long> consolidaitonId);
 }
