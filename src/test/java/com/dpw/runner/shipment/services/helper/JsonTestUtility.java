@@ -231,4 +231,8 @@ public class JsonTestUtility {
         ReportRequest reportRequest = objectMapper.convertValue(payload.get("REPORT_REQUEST"), ReportRequest.class);
         return reportRequest;
     }
+
+    public CustomerBooking getCompleteCustomerBooking() {
+        return objectMapper.convertValue(payload.get("COMPLETE_CUSTOMER_BOOKING"), CustomerBooking.class);
+    }
 }
