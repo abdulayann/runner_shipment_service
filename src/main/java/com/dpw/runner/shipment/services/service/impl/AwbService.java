@@ -3211,12 +3211,17 @@ public class AwbService implements IAwbService {
         return chargeCode;
     }
 
-    public ResponseEntity<IRunnerResponse> validateIataAgent() {
+    @Override
+    public ResponseEntity<IRunnerResponse> validateIataAgent(Boolean fromShipment) {
         TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
         IataAgentResponse res;
         if(tenantModel.IATAAgent && !Strings.isNullOrEmpty(tenantModel.AgentIATACode)
                 && !Strings.isNullOrEmpty(tenantModel.AgentCASSCode) && !Strings.isNullOrEmpty(tenantModel.PIMAAddress)){
-            res = IataAgentResponse.builder().iataAgent(true).message("FWB & FZB  will be sent before printing, do you want to proceed?").build();
+            if(Boolean.TRUE.equals(fromShipment)){
+                res = IataAgentResponse.builder().iataAgent(true).message("FWB will be sent before printing, do you want to proceed?").build();
+            } else {
+                res = IataAgentResponse.builder().iataAgent(true).message("FWB & FZB  will be sent before printing, do you want to proceed?").build();
+            }
         } else if (tenantModel.IATAAgent && !Strings.isNullOrEmpty(tenantModel.AgentIATACode)
                 && !Strings.isNullOrEmpty(tenantModel.AgentCASSCode) && Strings.isNullOrEmpty(tenantModel.PIMAAddress)) {
             res = IataAgentResponse.builder().iataAgent(false).message("PIMA address is not added in the branch settings, FWB and FZB will not be sent").build();

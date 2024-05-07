@@ -20,4 +20,6 @@ public class EventConstants {
     public static final String TRACK_EVENTS_FETCH_SUCCESSFUL = "Track Events fetched Successfully";
     public static final String TRACK_EVENT_DETAILS = "/trackEvents";
     public static final String EVENT_RETRIEVE_BY_ID_ERROR = "Event is null for Id {} with Request Id {}";
+    public static final String FWB_FZB_EVENT_CODE = "FWB/FZB";
+    public static final String FWB_EVENT_CODE = "FWB";
 }
