@@ -1853,7 +1853,8 @@
       "tenantIdsData": {},
       "textData": {},
       "importBroker": null,
-      "exportBroker": null
+      "exportBroker": null,
+      "efreightStatus": "EAW"
     },
     "carrierDetails": {
       "id": 1,

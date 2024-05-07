@@ -117,6 +117,7 @@ class ShipmentDaoTest {
         mockShipment.getClient().setId(null);
         mockShipment.getConsigner().setId(null);
         mockShipment.getConsignee().setId(null);
+        mockShipment.getAdditionalDetails().getNotifyParty().setId(null);
 
 
     }
