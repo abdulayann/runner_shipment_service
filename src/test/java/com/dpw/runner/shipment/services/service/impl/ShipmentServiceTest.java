@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
@@ -29,42 +30,49 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.Spy;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -78,6 +86,8 @@ class ShipmentServiceTest {
     private ShipmentService shipmentService;
     @Mock
     private IShipmentDao shipmentDao;
+    @Mock
+    private IShipmentRepository shipmentRepository;
     @Mock
     private IShipmentSync shipmentSync;
     @Mock
@@ -149,6 +159,14 @@ class ShipmentServiceTest {
     private CommonUtils commonUtils;
     @Mock
     private ObjectMapper mockObjectMapper;
+    @Mock
+    ConsolidationService consolidationService;
+    @Mock
+    private HttpServletResponse response;
+
+    @Captor
+    private ArgumentCaptor<Workbook> workbookCaptor;
+
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
     private static ShipmentDetails testShipment;
@@ -951,6 +969,170 @@ class ShipmentServiceTest {
         assertEquals(ResponseHelper.buildSuccessResponse(mockCreditV1Response), httpResponse);
     }
 
+    @Test
+    void testCreateConsolidationNullCheck() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(false).build());
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        List<Containers> containers = new ArrayList<>();
+        assertEquals(null, shipmentService.createConsolidation(shipmentDetails, containers));
+    }
+
+    @Test
+    void testCreateConsolidationConsolidationLite() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
+        CarrierDetails carrierDetails = CarrierDetails.builder().build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
+        List<Containers> containers = new ArrayList<>();
+        String errorMessage = "Not able to create consolidation, before adding 'New Containers' , please provide ‘Origin’ and ‘Destination’ values.";
+
+        Exception e = assertThrows(ValidationException.class, () -> shipmentService.createConsolidation(shipmentDetails, containers));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void testCreateConsolidationConsolidationLiteSameOriginDestination() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
+        CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("OriginPort").build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
+        List<Containers> containers = new ArrayList<>();
+        String errorMessage = "‘Origin’ and ‘Destination’ can't be same";
+
+        Exception e = assertThrows(ValidationException.class, () -> shipmentService.createConsolidation(shipmentDetails, containers));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void testCreateConsolidation() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
+
+        PartyRequestV2 partyRequestV2 = new PartyRequestV2();
+        partyRequestV2.setTenantId(1);
+
+        Parties parties = Parties.builder().orgCode("1").build();
+
+        when(v1Service.getDefaultOrg()).thenReturn(partyRequestV2);
+        when(modelMapper.map(any(), any())).thenReturn(parties);
+
+        doNothing().when(consolidationService).generateConsolidationNumber(any(ConsolidationDetails.class));
+        CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("DestinationPort").build();
+        Routings routings = new Routings();
+        routings.setTenantId(1);
+        routings.setMode("mode");
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .carrierDetails(carrierDetails)
+                .direction(Constants.DIRECTION_IMP)
+                .masterBill("1234")
+                .routingsList(Arrays.asList(routings))
+                .build();
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+
+        ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
+
+        assertNotNull(result);
+        assertEquals(carrierDetails, result.getCarrierDetails());
+    }
+
+    @Test
+    void testCreateConsolidationDefaultDirectionExp() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
+
+        PartyRequestV2 partyRequestV2 = new PartyRequestV2();
+        partyRequestV2.setTenantId(1);
+
+        Parties parties = Parties.builder().orgCode("1").build();
+
+        when(v1Service.getDefaultOrg()).thenReturn(partyRequestV2);
+        when(modelMapper.map(any(), any())).thenReturn(parties);
+
+        doNothing().when(consolidationService).generateConsolidationNumber(any(ConsolidationDetails.class));
+        CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("DestinationPort").build();
+
+        Routings routings = new Routings();
+        routings.setTenantId(1);
+        routings.setMode("mode");
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .carrierDetails(carrierDetails)
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("1234")
+                .routingsList(Arrays.asList(routings))
+                .build();
+
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).shipmentType(Constants.DIRECTION_EXP).sendingAgent(parties).receivingAgent(parties).build();
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+
+        ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
+
+        assertNotNull(result);
+        assertEquals(carrierDetails, result.getCarrierDetails());
+    }
+
+
+    @Test
+    public void testExportExcel_NullRequest() throws IOException, IllegalAccessException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        String errorMessage = "Shipment List Request is Null";
+        Exception e = assertThrows(ValidationException.class, () -> shipmentService.exportExcel(response, commonRequestModel));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    public void testExportExcel() throws IOException, IllegalAccessException {
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        CarrierDetails carrierDetails = CarrierDetails.builder()
+                .origin("origin_name")
+                .originPort("originPort_name")
+                .destination("destination_name")
+                .destinationPort("destinationPort_name")
+                .build();
+
+        shipmentDetailsList.add(ShipmentDetails.builder().status(1).carrierDetails(carrierDetails).build());
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsList),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ServletOutputStream servletOutputStream = new ServletOutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                outputStream.write(b);
+            }
+
+            @Override
+            public boolean isReady() {
+                return true;
+            }
+
+            @Override
+            public void setWriteListener(javax.servlet.WriteListener writeListener) {}
+        };
+        when(response.getOutputStream()).thenReturn(servletOutputStream);
+
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(sampleRequest).build();
+        shipmentService.exportExcel(response, commonRequestModel);
+
+        verify(response, times(1)).setContentType(anyString());
+        verify(response, times(1)).setHeader(anyString(), anyString());
+        verify(response, times(1)).getOutputStream();
+        assertNotNull(outputStream.toByteArray()); // Verify that the output stream contains data
+    }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
