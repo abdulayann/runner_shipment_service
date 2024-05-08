@@ -41,7 +41,7 @@ public class V1ServiceUtil {
         return CreateBookingModuleInV1.builder()
                 .IsP100Booking(Boolean.TRUE)
                 .Entity(createEntity(customerBooking, isShipmentEnabled, isBillingEnabled))
-                .ShipmentGuid(shipmentGuid != null ? shipmentGuid.toString() : null)
+                .ShipmentGuid(StringUtility.convertToString(shipmentGuid))
                 .build();
     }
 
@@ -97,7 +97,6 @@ public class V1ServiceUtil {
                 .SecondarySalesAgentEmail(customerBooking.getSecondarySalesAgentEmail())
                 .QuoteContainers(createContainers(customerBooking.getContainersList()))
                 .RoutingList(createRoutingList(customerBooking.getRoutingList()))
-                .Documents(createDocuments(customerBooking.getFileRepoList()))
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
                 .OrgDetails(null)
                 .BillCharges(createQuoteCharges(customerBooking.getBookingCharges()))
@@ -158,72 +157,6 @@ public class V1ServiceUtil {
                 .map(container -> container.getGuid()).toList();
     }
 
-    private static List<CreateBookingModuleInV1.BookingEntity.OrgDetail> createOrgDetails(CustomerBooking customerBooking) {
-        if (customerBooking == null)
-            return null;
-        List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText() || customerBooking.getIsConsigneeAddressFreeText());
-        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText() || customerBooking.getIsConsignorAddressFreeText());
-        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText() || customerBooking.getIsNotifyPartyAddressFreeText());
-        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText() || customerBooking.getIsCustomerAddressFreeText());
-        Set<CreateBookingModuleInV1.BookingEntity.OrgDetail> hs = new HashSet<>();
-        if (customerBooking.getBookingCharges() != null) {
-            for (var bc : customerBooking.getBookingCharges()) {
-                var creditor = convertParty(bc.getCreditor(), false);
-                var debtor = convertParty(bc.getDebtor(), true);
-                if (creditor != null)
-                    list.add(creditor);
-                if (debtor != null)
-                    list.add(debtor);
-            }
-        }
-        if (consignee != null)
-            list.add(consignee);
-        if (consignor != null)
-            list.add(consignor);
-        if (notify != null)
-            list.add(notify);
-        if (customer != null)
-            list.add(customer);
-        return list;
-    }
-
-    private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party, Boolean isFreeText) {
-        if (Objects.isNull(party) || Objects.isNull(isFreeText) || isFreeText || Objects.isNull(party.getOrgCode()) || Objects.isNull(party.getAddressCode()))
-            return null;
-        var addressData = party.getAddressData();
-        var orgData = party == null || party.getOrgData() == null ? Collections.emptyMap() : party.getOrgData();
-        return CreateBookingModuleInV1.BookingEntity.OrgDetail.builder()
-                .OrgSource(PartiesConstants.API)
-                .OrganizationCode(party != null ? party.getOrgCode() : null)
-                .FullName((String) orgData.get(PartiesConstants.FULLNAME))
-                .Address1((String) orgData.get(PartiesConstants.ADDRESS1))
-                .Address2((String) orgData.get(PartiesConstants.ADDRESS2))
-                .Addresses(List.of(CreateBookingModuleInV1.BookingEntity.OrgDetail.OrgDetailAddress.builder()
-                        .CompanyName((String) orgData.get(PartiesConstants.FULLNAME))
-                        .AddressShortCode((String) addressData.get("AddressShortCode"))
-                        .Address1((String) orgData.get(PartiesConstants.ADDRESS1))
-                        .SiteIdentifier((String) addressData.get(PartiesConstants.SITE_IDENTIFIER))
-                        .Country(addressData.containsKey("Country") ? (String) addressData.get("Country") :
-                                (String) orgData.get(PartiesConstants.COUNTRY)).build()))
-                .Country((String) orgData.get(PartiesConstants.COUNTRY))
-                .CityCode((String) orgData.get(PartiesConstants.CITY_CODE))
-                .State((String) orgData.get(PartiesConstants.STATE))
-                .ZipPostCode((String) orgData.get(PartiesConstants.ZIP_POST_CODE))
-                .UnlocoCode((String) orgData.get(PartiesConstants.UNLOCO_CODE))
-                .CurrencyCode((String) orgData.get(PartiesConstants.CURRENCY_CODE))
-                .Phone((String) orgData.get(PartiesConstants.PHONE))
-                .Mobile((String) orgData.get(PartiesConstants.MOBILE))
-                .Fax((String) orgData.get(PartiesConstants.FAX))
-                .Email((String) orgData.get(PartiesConstants.EMAIL))
-                .ActiveClient(Boolean.TRUE)
-                .DefaultAddressSiteIdentifier(PartiesConstants.SITE)
-                .Receivables(Boolean.TRUE)
-                .Consigner(Boolean.TRUE)
-                .Consignee(Boolean.TRUE)
-                .build();
-    }
-
     private static List<CreateBookingModuleInV1.BookingEntity.LooseCargo> createLooseCarges(List<Packing> packingList) {
         if (packingList == null)
             return null;
@@ -248,18 +181,6 @@ public class V1ServiceUtil {
                         .HazardousCheckBox(packing.getHazardous())
                         .HsCode(packing.getHSCode())
                         .build()).toList();
-    }
-
-    private static List<CreateBookingModuleInV1.BookingEntity.Document> createDocuments(List<FileRepo> fileRepoList) {
-        if (fileRepoList == null)
-            return null;
-        return fileRepoList.stream().filter(Objects::nonNull).map(fileRepo -> CreateBookingModuleInV1.BookingEntity.Document.builder()
-                .ClientEnabled(fileRepo.getClientEnabled())
-                .DocType(fileRepo.getDocType())
-                .Path(fileRepo.getPath())
-                .FileName(fileRepo.getFileName())
-                .EventCode(fileRepo.getEventCode())
-                .build()).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.Routing> createRoutingList(List<Routings> routingList) {
@@ -294,9 +215,8 @@ public class V1ServiceUtil {
 
     public CheckCreditLimitFromV1Response validateCreditLimit(Parties client, String restrictedItem, UUID shipmentGuid, Boolean taskCreation) {
         try {
-            Boolean enableCreditLimitManagement = TenantSettingsDetailsContext.getCurrentTenantSettings() != null? TenantSettingsDetailsContext.getCurrentTenantSettings().getEnableCreditLimitManagement() : false;
             CheckCreditLimitFromV1Response creditLimitResponse = CheckCreditLimitFromV1Response.builder().isValid(true).build();
-            if(!enableCreditLimitManagement){
+            if(Boolean.FALSE.equals(TenantSettingsDetailsContext.getCurrentTenantSettings().getEnableCreditLimitManagement())){
                 return creditLimitResponse;
             }
             Integer clientId = null;
@@ -309,7 +229,7 @@ public class V1ServiceUtil {
                     .restrictedItem(restrictedItem)
                     .clientId(clientId)
                     .clientAddressId(clientAddressId)
-                    .shipmentGuid(shipmentGuid != null ? shipmentGuid.toString(): null)
+                    .shipmentGuid(StringUtility.convertToString(shipmentGuid))
                     .taskCreation(taskCreation)
                     .build());
             if (!response.getIsValid()){
@@ -354,18 +274,16 @@ public class V1ServiceUtil {
     }
 
     private void setEmails(Parties party, Set<String> emailSet, Map<String, Map<String, Object>> organizations, Map<String, Map<String, Object>> addresses) {
-        if (Objects.isNull(party))
+        if (Objects.isNull(party) || Objects.isNull(party.getOrgCode()))
             return;
 
-        if (!Objects.isNull(party.getOrgCode()) && organizations.containsKey(party.getOrgCode()) && organizations.get(party.getOrgCode()) != null
-                && organizations.get(party.getOrgCode()).containsKey(PartiesConstants.EMAIL))
+        if (organizations.containsKey(party.getOrgCode()) && organizations.get(party.getOrgCode()).containsKey(PartiesConstants.EMAIL))
             emailSet.add(StringUtility.convertToString(organizations.get(party.getOrgCode()).get(PartiesConstants.EMAIL)));
 
-        if (!Objects.isNull(party.getOrgCode()) && !Objects.isNull(party.getAddressCode())) {
-            String key = party.getOrgCode() + "#" + party.getAddressCode();
-            if (addresses.containsKey(key) && addresses.get(key) != null && addresses.get(key).containsKey(PartiesConstants.EMAIL) )
-                emailSet.add(StringUtility.convertToString(addresses.get(key).get(PartiesConstants.EMAIL)));
-        }
+        String key = party.getOrgCode() + "#" + party.getAddressCode();
+        if (addresses.get(key) != null && addresses.get(key).containsKey(PartiesConstants.EMAIL) )
+            emailSet.add(StringUtility.convertToString(addresses.get(key).get(PartiesConstants.EMAIL)));
+
     }
 
     private AddressTranslationRequest.OrgAddressCode createV1OrgRequest(Parties parties) {
@@ -383,6 +301,8 @@ public class V1ServiceUtil {
     }
 
     private String getLastLoadJson(List<Containers> containersList) {
+        if (Objects.isNull(containersList))
+            return null;
         var list = new ArrayList<CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails>();
         containersList.forEach(c -> {
             var _current = new CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails();

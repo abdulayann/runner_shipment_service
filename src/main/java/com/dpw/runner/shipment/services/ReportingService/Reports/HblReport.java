@@ -383,7 +383,7 @@ public class HblReport extends IReport{
         }
         List<String> consigner = null;
         List<String> consignee = null;
-        if (hblModel.blObject != null && !hblModel.shipment.getTransportMode().equals(AIR)) {
+        if (hblModel.blObject != null && hblModel.isHbl && !hblModel.shipment.getTransportMode().equals(AIR)) {
             List<String> notify = getNotifyOrgAddress(hblModel.blObject, hblModel.shipmentSettingsDetails);
             if (!Objects.isNull(notify)) {
                 dictionary.put(BL_NOTIFY_PARTY, notify);

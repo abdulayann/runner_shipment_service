@@ -334,7 +334,8 @@
       "entityType": "HAWB",
       "ntrQtyGoods": "DIMS: IN \r\n5=400X300X2,1=100X200X10\r\nTOTAL VOLUMETRIC WEIGHT ",
       "currency": "EGP",
-      "customsValue": 0
+      "customsValue": 0,
+      "chargeCode": "CC"
     },
     "awbOtherInfo": {
       "entityId": 1,
@@ -1190,7 +1191,432 @@
     "consolidationAddresses": [],
     "sourceGuid": "1d27fe99-0874-4587-9a83-460bb5ba31f0"
   },
-  "MAWB": {},
+  "MAWB": {
+    "id": 3,
+    "guid": "79e341db-b2ec-4c4d-96d9-3c965bd2cfe7",
+    "awbNumber": "986-55667780",
+    "consolidationId": 1,
+    "awbShipmentInfo": {
+      "entityId": 3,
+      "entityType": "MAWB",
+      "shipperName": "RA BRANCH",
+      "shipperAddress": "\r\nADDRESS\r\nAP\r\nANANTHAPUR\r\nIND",
+      "consigneeName": "RJ_TEST_ORG",
+      "consigneeAddress": "\r\nCAIRO\r\nCAIRO\r\nCAIRO\r\nCAIRO\r\nEGY\r\n99999\r\n20-202-27962043",
+      "consigneeReferenceNumber": "648578",
+      "issuingAgentName": "ABB EGYPT",
+      "issuingAgentAddress": "\r\n696 EL HOURIA ST., 8TH FLOOR, APARTMENT NO. 806,  LOURAN\r\nEG\r\nEL ISKANDARIYA (ALEXANDRIA)\r\nEGY\r\n999999999",
+      "iataCode": "LLB",
+      "awbNumber": "986-55667780",
+      "originAirport": "brussel",
+      "destinationAirport": "bagani",
+      "firstCarrier": "Air Transat",
+      "agentCASSCode": "123"
+    },
+    "awbNotifyPartyInfo": [],
+    "awbRoutingInfo": [
+      {
+        "entityId": 2246,
+        "entityType": "MAWB",
+        "flightDate": "2024-04-25T05:26:00",
+        "destinationPortName": "sddl9Gq3Mxs514wSpfbw",
+        "originPortName": "INAMD_AIR",
+        "isShipmentCreated": true
+      }
+    ],
+    "awbCargoInfo": {
+      "entityId": 2246,
+      "entityType": "MAWB",
+      "handlingInfo": "Attached : Commercial Invoice & P/List",
+      "ntrQtyGoods": "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED\r\n",
+      "currency": "EGP",
+      "customsValue": 0,
+      "customOriginCode": "EG"
+    },
+    "awbPaymentInfo": {},
+    "awbOtherChargesInfo": [],
+    "awbOtherInfo": {
+      "entityId": 2246,
+      "entityType": "MAWB",
+      "shipper": "RA BRANCH",
+      "executedAt": "gOT4LaVeSmcLBDIXDaLK",
+      "executedOn": "2024-05-02T06:48:39"
+    },
+    "awbOciInfo": [],
+    "awbGoodsDescriptionInfo": [
+      {
+        "entityId": 2246,
+        "entityType": "MAWB",
+        "piecesNo": 1,
+        "grossWt": 1.0,
+        "grossWtUnit": "KG",
+        "chargeableWt": 167,
+        "guid": "2ca31231-df5c-4f57-8f4a-7596b51b03c0",
+        "isShipmentCreated": true
+      }
+    ],
+    "awbPackingInfo": [
+      {
+        "guid": "38bc225a-fa41-40a5-afae-71a11a524dfa",
+        "packs": "1",
+        "packsType": "BAG",
+        "weight": 1,
+        "weightUnit": "KG",
+        "volume": 1,
+        "volumeUnit": "M3",
+        "inspections": "none",
+        "commodity": "282580",
+        "length": 1,
+        "lengthUnit": "M",
+        "width": 1,
+        "widthUnit": "M",
+        "height": 1,
+        "heightUnit": "M",
+        "marksnNums": "marks 123",
+        "minTempUnit": "CEL",
+        "hsCode": "",
+        "goodsDescription": "TEST GOODS",
+        "referenceNumber": "123",
+        "netWeight": 1,
+        "netWeightUnit": "KG",
+        "volumeWeight": 166.67,
+        "volumeWeightUnit": "KG",
+        "awbNumber": "HBL109823",
+        "awbGoodsDescriptionInfoGuid": "335a926d-0434-487a-9f02-c5de541397d5"
+      }
+    ],
+    "awbSpecialHandlingCodesMappings": [],
+    "defaultAwbShipmentInfo": {
+      "entityId": 2246,
+      "entityType": "MAWB",
+      "shipperName": "RA BRANCH",
+      "shipperAddress": "\r\nADDRESS\r\nAP\r\nANANTHAPUR\r\nIND",
+      "consigneeName": "RJ_TEST_ORG",
+      "consigneeAddress": "\r\nCAIRO\r\nCAIRO\r\nCAIRO\r\nCAIRO\r\nEGY\r\n99999\r\n20-202-27962043",
+      "consigneeReferenceNumber": "648578",
+      "issuingAgentName": "ABB EGYPT",
+      "issuingAgentAddress": "\r\n696 El Houria st., 8th Floor, apartment No. 806,  Louran\r\nEG\r\nEl Iskandariya (Alexandria)\r\nEGY\r\n999999999",
+      "iataCode": "LLB",
+      "awbNumber": "986-55667780",
+      "originAirport": "brussel",
+      "destinationAirport": "bagani",
+      "firstCarrier": "Air Transat"
+    },
+    "defaultAwbRoutingInfo": [
+      {
+        "entityId": 2246,
+        "entityType": "MAWB",
+        "flightDate": "2024-04-25T05:26:00",
+        "destinationPortName": "sddl9Gq3Mxs514wSpfbw",
+        "originPortName": "INAMD_AIR",
+        "isShipmentCreated": true
+      }
+    ]
+  },
+  "MAWB_CONSOLIDATION" : {
+    "id": 1,
+    "guid": "5d59e068-2a01-4eaa-b64d-798667875a03",
+    "consolidationNumber": "ineA24050558",
+    "consolidationType": "STD",
+    "transportMode": "AIR",
+    "containerCategory": "LSE",
+    "mawb": "986-55667780",
+    "referenceNumber": "ineA24050558",
+    "shipmentType": "EXP",
+    "bol": "986-55667780",
+    "sourceTenantId": 166,
+    "receivingBranch": 166,
+    "intraBranch": false,
+    "carrierDetails": {
+      "id": 157261,
+      "guid": "309fc0a5-7ec0-451b-a390-8bb69ccfb766",
+      "shippingLine": "Air Transat",
+      "flightNumber": "124",
+      "aircraftType": "CAO",
+      "origin": "ID8Xo0wS4hrzkU9hxIXU",
+      "destination": "NABQI_AIR",
+      "eta": "2024-04-30 05:25:00",
+      "etd": "2024-04-25 05:26:00",
+      "originPort": "ID8Xo0wS4hrzkU9hxIXU",
+      "destinationPort": "NABQI_AIR",
+      "masterData": {
+        "aircraftType": "CAO (Cargo Aircraft)"
+      },
+      "unlocationData": {
+        "destinationPort": "NABQI bagani",
+        "destination_country": "NA",
+        "originPort_code": "BEBRU",
+        "originPort_name": "brussel",
+        "origin": "BEBRU brussel",
+        "destination": "NABQI bagani",
+        "originPort": "BEBRU brussel",
+        "destination_name": "bagani",
+        "destinationPort_code": "NABQI",
+        "destinationPort_name": "bagani",
+        "origin_country": "BE",
+        "destination_code": "NABQI",
+        "originPort_country": "BE",
+        "destinationPort_country": "NA",
+        "origin_code": "BEBRU",
+        "origin_name": "brussel"
+      },
+      "carrierMasterData": {
+        "shippingLine": "Air Transat"
+      },
+      "voyageOrFlightNumber": "124"
+    },
+    "achievedQuantities": {
+      "id": 1926,
+      "guid": "4f3d7e44-acd0-47cc-b1fe-99f9cf343439",
+      "weightVolume": 0.000,
+      "weightVolumeUnit": "KG",
+      "consolidatedWeight": 0.000,
+      "consolidatedWeightUnit": "KG",
+      "consolidatedVolume": 0.00,
+      "consolidatedVolumeUnit": "M3",
+      "consolidationChargeQuantity": 0.00,
+      "consolidationChargeQuantityUnit": "KG",
+      "weightUtilization": "0",
+      "volumeUtilization": "0"
+    },
+    "allocations": {
+      "id": 2103,
+      "guid": "4b7536cb-3499-42e1-b3f7-a6a13eacfee3",
+      "weightUnit": "KG",
+      "volumeUnit": "M3",
+      "chargeableUnit": "KG"
+    },
+    "departureDetails": {
+      "id": 4324,
+      "guid": "1f79c924-91a0-4e9d-9658-effa58f8a325",
+      "containerYardId": {
+        "id": 648576,
+        "guid": "14fea169-76da-48e9-9b97-bd4edf0b4eef",
+        "tenantId": 166
+      },
+      "transportPortId": {
+        "id": 648577,
+        "guid": "b8c12120-9771-45c0-a8d8-4aae85a0019b",
+        "tenantId": 166
+      },
+      "firstForeignPort": "ID8Xo0wS4hrzkU9hxIXU",
+      "lastForeignPort": "NABQI_AIR",
+      "ctoid": {
+        "id": 648575,
+        "guid": "06e7a032-1cef-4a76-975e-e311c79c471a",
+        "tenantId": 166
+      },
+      "cfsid": {
+        "id": 648574,
+        "guid": "adb70248-f2a7-4af4-8c27-b6d03acc2854",
+        "tenantId": 166
+      }
+    },
+    "sendingAgent": {
+      "id": 648579,
+      "guid": "05a7c13a-7d2e-4fdd-bd60-b91c56a379b9",
+      "orgCode": "LL_QR_25300",
+      "tenantId": 166,
+      "addressCode": "Def RA Address",
+      "orgData": {
+        "Id": 25300,
+        "City": "agra",
+        "State": "UP",
+        "Source": "Runner",
+        "Country": "IND",
+        "Address1": "Noida",
+        "FullName": "RA Branch",
+        "Payables": false,
+        "TenantId": 166,
+        "Receivables": true,
+        "ActiveClient": true,
+        "ForworderAgent": false,
+        "OrganizationCode": "LL_QR_25300"
+      },
+      "addressData": {
+        "Id": 38237,
+        "City": "ananthapur",
+        "State": "AP",
+        "Active": true,
+        "Country": "IND",
+        "Address1": "Address",
+        "TenantId": 166,
+        "IsObsolete": false,
+        "AddressType": "General",
+        "CompanyName": "RA Branch",
+        "AddressShortCode": "Def RA Address"
+      }
+    },
+    "receivingAgent": {
+      "id": 648578,
+      "guid": "eae30916-f046-4a2d-9381-36f826c81b67",
+      "orgCode": "22481_1",
+      "tenantId": 166,
+      "addressCode": "Default",
+      "orgData": {
+        "Id": 23632,
+        "City": "Cairo",
+        "Email": "accounts@wor.com",
+        "State": "Cairo",
+        "label": "RJ_Test_Org",
+        "value": "22481_1",
+        "Country": "EGY",
+        "Address1": "Cairo",
+        "Address2": "Cairo",
+        "FullName": "RJ_Test_Org",
+        "Payables": false,
+        "CompanyId": 166,
+        "Receivables": true,
+        "ZipPostCode": "99999",
+        "OrganizationCode": "22481_1",
+        "InsertUserIdUsername": "egyptp100@dpworld.com",
+        "UpdateUserIdUsername": "egyptp100@dpworld.com"
+      },
+      "addressData": {
+        "Id": 35420,
+        "City": "Cairo",
+        "Email": "accounts@wor.com",
+        "State": "Cairo",
+        "label": "RJ_Test_Org\nCairo, Cairo, Cairo, Cairo\nEGY, 99999\n20-202-27962043",
+        "value": "Default",
+        "Country": "EGY",
+        "Address1": "Cairo",
+        "Address2": "Cairo",
+        "RAKCType": 1,
+        "OrgSource": "Fusion",
+        "KCRAExpiry": "2024-04-30T00:00:00.000",
+        "KCRANumber": "75766889",
+        "AddressType": 2,
+        "CompanyName": "RJ_Test_Org",
+        "OrgFullName": "RJ_Test_Org",
+        "OrgPayables": false,
+        "ZipPostCode": "99999",
+        "ContactPhone": "20-202-27962043",
+        "OrgReceivables": true,
+        "SiteIdentifier": "Cairo_1",
+        "OrgActiveClient": true,
+        "AddressShortCode": "Default",
+        "OrgOrganizationCode": "22481_1",
+        "AdditionalAddressInfo": "22481_1 Default Address"
+      }
+    },
+    "borrowedFrom": {
+      "id": 648572,
+      "guid": "1001d395-0272-40cc-9999-0c6077dc0597",
+      "tenantId": 166
+    },
+    "creditor": {
+      "id": 648573,
+      "guid": "84a01fe2-87e5-4112-a18c-361f61405f66",
+      "tenantId": 166
+    },
+    "packingList": [
+      {
+        "id": 1534,
+        "guid": "9e8bf8f7-2ecb-4de1-a1da-2fde6885d21d",
+        "consolidationId": 2246,
+        "shipmentId": 5337,
+        "packs": "1",
+        "packsType": "BAG",
+        "weight": 1.000,
+        "weightUnit": "KG",
+        "volume": 1.00,
+        "volumeUnit": "M3",
+        "inspections": "none",
+        "commodity": "282580",
+        "length": 1,
+        "lengthUnit": "M",
+        "width": 1,
+        "widthUnit": "M",
+        "height": 1,
+        "heightUnit": "M",
+        "marksnNums": "marks 123",
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "goodsDescription": "test goods",
+        "referenceNumber": "123",
+        "netWeight": 1.000,
+        "netWeightUnit": "KG",
+        "volumeWeight": 166.67,
+        "volumeWeightUnit": "KG",
+        "innerPackageNumber": "1",
+        "innerPackageType": "AMM",
+        "chargeable": 166.67,
+        "chargeableUnit": "KG",
+        "shipmentNumber": "ineA24040490",
+        "commodityGroup": "Miscell",
+        "isDimension": true,
+        "handlingInfo": "handle w/ care",
+        "hscode": ""
+      }
+    ],
+    "referenceNumbersList": [],
+    "routingsList": [
+      {
+        "id": 113779,
+        "guid": "3ff7df8a-ae0c-4ae0-8ea0-f6844ba62d3f",
+        "leg": 1,
+        "mode": "AIR",
+        "routingStatus": "CFD",
+        "pol": "INAMD_AIR",
+        "pod": "sddl9Gq3Mxs514wSpfbw",
+        "eta": "2024-04-30 05:25:00",
+        "etd": "2024-04-25 05:26:00",
+        "consolidationId": 2246,
+        "domestic": false
+      }
+    ],
+    "containersList": [],
+    "jobsList": [],
+    "eventsList": [
+      {
+        "id": 7205,
+        "guid": "5a22e6b4-7c5d-4756-aae5-e6ce5366c3a0",
+        "entityId": 2246,
+        "entityType": "CONSOLIDATION",
+        "eventCode": "CONCRTD",
+        "estimated": "2024-05-02 06:47:14",
+        "actual": "2024-05-02 06:47:14",
+        "isPublicTrackingEvent": true,
+        "tenantId": "166",
+        "source": "CargoRunner"
+      }
+    ],
+    "fileRepoList": [],
+    "createdBy": "egyptp100_1@dpworld.com",
+    "consolidationAddresses": [],
+    "createdAt": "2024-05-02 06:47:14",
+    "masterData": {
+      "containerCategory": "LSE (Loose)",
+      "efreightStatus": "NON (e-freight NOT supported)",
+      "transportMode": "AIR (Air)",
+      "consolidationType": "DRT (Direct)",
+      "shipmentType": "EXP (Export)"
+    },
+    "unlocationData": {},
+    "currenciesMasterData": {},
+    "tenantIdsData": {
+      "receivingBranch": "Load Line Egypt",
+      "sourceTenantId": "Load Line Egypt"
+    },
+    "textData": {},
+    "containerSummary": {
+      "totalPackages": "0",
+      "totalContainers": "0",
+      "totalWeight": "0,000 KG",
+      "totalTareWeight": "0,000 KG",
+      "totalContainerVolume": "0,00 M3"
+    },
+    "packSummary": {
+      "totalPacks": "1 BAG",
+      "totalPacksWeight": "1,000 KG",
+      "totalPacksVolume": "1,00 M3",
+      "packsVolumetricWeight": "166,667 KG",
+      "packsChargeableWeight": "167,000 KG"
+    },
+    "efreightStatus": "EAW",
+    "awbStatus": "AWB_GENERATED"
+  },
   "HBL": {
     "isDeleted": false,
     "shipmentId": 1,
@@ -1370,6 +1796,51 @@
       "paidPlace": "21407269-AB59-49E8-9DE4-BBBF34BD52FC",
       "placeOfIssue": "21407269-AB59-49E8-9DE4-BBBF34BD52FC",
       "placeOfSupply": "21407269-AB59-49E8-9DE4-BBBF34BD52FC",
+      "notifyParty": {
+        "id": 648550,
+        "guid": "f967f996-0d14-48c4-ab51-a388440aad67",
+        "orgCode": "HARSH_TEST",
+        "tenantId": 166,
+        "addressCode": "SHORT",
+        "orgData": {
+          "Receivables": false,
+          "Email": "contact@godship.com",
+          "CompanyId": 166,
+          "ZipPostCode": "400001",
+          "Address2": "British Columbia",
+          "Payables": true,
+          "City": "Cairo",
+          "label": "Hudson Bay",
+          "Address1": "X-123 Square Central",
+          "UpdateUserIdUsername": "egyptp100_1@dpworld.com",
+          "State": "BC",
+          "FullName": "Hudson Bay",
+          "Country": "CAN",
+          "OrganizationCode": "HARSH_TEST",
+          "Id": 23780,
+          "value": "HARSH_TEST",
+          "InsertUserIdUsername": "egyptp100_1@dpworld.com"
+        },
+        "addressData": {
+          "AddressShortCode": "SHORT",
+          "Email": "contact@godship.com",
+          "OrgFullName": "Hudson Bay",
+          "OrgSource": "Fusion",
+          "ZipPostCode": "400001",
+          "OrgReceivables": false,
+          "SiteIdentifier": "SITE",
+          "City": "British Columbia",
+          "Address1": "Adress 1",
+          "CompanyName": "COMPANY",
+          "State": "British Columbia",
+          "OrgOrganizationCode": "HARSH_TEST",
+          "Country": "CAN",
+          "Id": 35727,
+          "OrgActiveClient": true,
+          "AddressType": 1,
+          "OrgPayables": true
+        }
+      },
       "masterData": {},
       "unlocationData": {
         "placeOfIssue": "PEAB4 Abancay",
@@ -1381,43 +1852,9 @@
       },
       "tenantIdsData": {},
       "textData": {},
-      "notifyParty": {
-        "orgCode": "{FirstName:3}{Sequence:9}12310",
-        "addressCode": "Default",
-        "orgData": {
-          "Id": 12310,
-          "OrganizationCode": "{FirstName:3}{Sequence:9}12310",
-          "FullName": "hgj hgj",
-          "Address1": "jhkj jkjkj",
-          "Country": "ABW",
-          "City": "Aruba",
-          "Unloco": 17180,
-          "CompanyId": 89,
-          "PaymentTermsCode": "I10",
-          "InsertUserIdUsername": "dpwevgnuser1",
-          "UpdateUserIdUsername": "dpwevgnuser1",
-          "label": "hgj hgj",
-          "value": "{FirstName:3}{Sequence:9}12310"
-        },
-        "addressData": {
-          "Id": 29986,
-          "AddressShortCode": "Default",
-          "CompanyName": "hgj hgj",
-          "AddressType": 2,
-          "AdditionalAddressInfo": "Default Address",
-          "Address1": "jhkj jkjkj",
-          "Country": "ABW",
-          "City": "Aruba",
-          "Unloco": "17180",
-          "OrgOrganizationCode": "{FirstName:3}{Sequence:9}12310",
-          "OrgFullName": "hgj hgj",
-          "OrgActiveClient": true,
-          "OrgReceivables": false,
-          "OrgPayables": true
-        }
-      },
       "importBroker": null,
-      "exportBroker": null
+      "exportBroker": null,
+      "efreightStatus": "EAW"
     },
     "carrierDetails": {
       "id": 1,
@@ -1754,7 +2191,51 @@
     "consigneeDpsAddressId": null,
     "destinationPortCountry": "NOR",
     "eventsList": [],
-    "shipmentAddresses": []
+    "shipmentAddresses": [],
+    "packingList": [
+      {
+        "id": 1527,
+        "guid": "9bce7680-fb3e-4b80-96a0-919d4011ec66",
+        "shipmentId": 5534,
+        "packs": "1",
+        "packsType": "BAG",
+        "weightUnit": "KG",
+        "volumeUnit": "M3",
+        "commodity": "847040",
+        "lengthUnit": "M",
+        "widthUnit": "M",
+        "heightUnit": "M",
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "netWeightUnit": "KG",
+        "containerId": 151347,
+        "commodityGroup": "FAK",
+        "isDimension": true,
+        "hscode": "234"
+      }
+    ],
+    "routingsList": [
+      {
+        "id": 113766,
+        "guid": "6ed5c624-611a-4c30-a970-cd828279aec9",
+        "shipmentId": 5534,
+        "leg": 1,
+        "mode": "AIR",
+        "routingStatus": "PLD",
+        "pol": "EGDAM",
+        "pod": "AEDXB_POR",
+        "eta": "2024-05-04 00:00:00",
+        "etd": "2024-05-01 00:00:00",
+        "ata": "2024-05-04 00:00:00",
+        "atd": "2024-05-11 00:00:00",
+        "isLinked": true,
+        "aircraftRegistration": "ADV123",
+        "flightNumber": "1443",
+        "aircraftType": "CAO",
+        "carrier": "Air India",
+        "domestic": false
+      }
+    ]
   },
   "NEW_CONSOLIDATION_CREATE": {
     "transportMode": "SEA",
@@ -2332,7 +2813,8 @@
         "Address1": "P.O. BOX 90219 WINDHOEK",
         "value": "05071511015",
         "InsertUserIdUsername": "na@dpworld.com",
-        "UpdateUserIdUsername": "na@dpworld.com"
+        "UpdateUserIdUsername": "na@dpworld.com",
+        "Email": "email@test.com"
       },
       "addressData": {
         "AddressShortCode": "Default",
@@ -2349,7 +2831,8 @@
         "Id": 117701,
         "OrgActiveClient": true,
         "AddressType": 2,
-        "OrgPayables": false
+        "OrgPayables": false,
+        "Email": "emai1l@test.com"
       }
     },
     "consigner": {
@@ -4681,5 +5164,453 @@
     "isLinked": true,
     "voyage": "123",
     "transitDays": 2
+  },
+  "COMPLETE_CUSTOMER_BOOKING": {
+    "id": 55180,
+    "guid": "ba9fb317-e724-4b9c-873e-30a3347def13",
+    "serviceMode": "P2P",
+    "bookingStatus": "READY_FOR_SHIPMENT",
+    "customer": {
+      "id": 227372,
+      "guid": "f47bc123-a59c-4303-baf2-c7a2f46c2468",
+      "orgCode": "FRC00006872",
+      "tenantId": 10299,
+      "addressCode": "FRO00002409",
+      "orgData": {
+        "Email": "p100_digitaluser2_stage@maildrop.cc",
+        "State": "al-Daqahliya",
+        "Country": "EG",
+        "Address1": "cairo test company",
+        "CityCode": "cairo",
+        "FullName": "Digital_user_stage",
+        "Receivables": true,
+        "ZipPostCode": "123234",
+        "ActiveClient": true,
+        "OrganizationCode": "FRC00006872"
+      },
+      "addressData": {
+        "Email": "p100_digitaluser2_stage@maildrop.cc",
+        "State": "al-Daqahliya",
+        "Mobile": "3211234567",
+        "Country": "EG",
+        "Address1": "cairo test company",
+        "CompanyName": "Digital_user_stage",
+        "ZipPostCode": "123234",
+        "AddressShortCode": "FRO00002409"
+      }
+    },
+    "isCustomerFreeText": false,
+    "consignor": {
+      "id": 227371,
+      "guid": "cf97e4bb-dfda-4d10-8b88-f04b2c752411",
+      "orgCode": "FRC00007063",
+      "tenantId": 10299,
+      "addressCode": "FRO00002658",
+      "orgData": {
+        "Email": "siloxo7573@gronasu.com",
+        "Phone": "12345678909",
+        "State": "al-Buhayra",
+        "Mobile": "12345678909",
+        "Country": "EG",
+        "Address1": "lane 1 ",
+        "FullName": "Jio industry",
+        "Receivables": true,
+        "ActiveClient": true,
+        "OrganizationCode": "FRC00007063"
+      },
+      "addressData": {
+        "City": "buharya",
+        "Email": "siloxo7573@gronasu.com",
+        "State": "al-Buhayra",
+        "Mobile": "undefined-undefined",
+        "Country": "EG",
+        "Address1": "lane 1 ",
+        "CompanyName": "Jio industry",
+        "AddressShortCode": "FRO00002658"
+      }
+    },
+    "isConsignorFreeText": false,
+    "consignee": {
+      "id": 227370,
+      "guid": "250f263b-10d3-47b7-8fef-01b71ca16cce",
+      "orgCode": "FRC00007049",
+      "tenantId": 10299,
+      "addressCode": "FRO00002643",
+      "orgData": {
+        "Email": "mayegi8674@bnovel.com",
+        "Phone": "58379989",
+        "State": "al-Daqahliya",
+        "Mobile": "58379989",
+        "Country": "EG",
+        "Address1": "STREET 35767B",
+        "FullName": "Tata power llc",
+        "Receivables": true,
+        "ActiveClient": true,
+        "OrganizationCode": "FRC00007049",
+        "CustomerIdentifier": "1232631_001",
+        "DefaultAddressSiteIdentifier": "1232631_001_FF-EGP_001_B"
+      },
+      "addressData": {
+        "City": "CAIRO",
+        "Email": "mayegi8674@bnovel.com",
+        "State": "al-Daqahliya",
+        "Mobile": "undefined-undefined",
+        "Country": "EG",
+        "Address1": "STREET 35767B",
+        "CompanyName": "Tata power llc",
+        "SiteIdentifier": "1232631_001_FF-EGP_001_B",
+        "AddressShortCode": "FRO00002643"
+      }
+    },
+    "isConsigneeFreeText": false,
+    "notifyParty": {
+      "id": 227373,
+      "guid": "eff2f495-aa04-4dc7-a58f-07a1e7db0d9d",
+      "orgCode": "FRC00007049",
+      "tenantId": 10299,
+      "addressCode": "FRO00002643",
+      "orgData": {
+        "Email": "mayegi8674@bnovel.com",
+        "Phone": "58379989",
+        "State": "al-Daqahliya",
+        "Mobile": "58379989",
+        "Country": "EG",
+        "Address1": "STREET 35767B",
+        "FullName": "Tata power llc",
+        "Receivables": true,
+        "ActiveClient": true,
+        "OrganizationCode": "FRC00007049",
+        "CustomerIdentifier": "1232631_001",
+        "DefaultAddressSiteIdentifier": "1232631_001_FF-EGP_001_B"
+      },
+      "addressData": {
+        "City": "CAIRO",
+        "Email": "mayegi8674@bnovel.com",
+        "State": "al-Daqahliya",
+        "Mobile": "undefined-undefined",
+        "Country": "EG",
+        "Address1": "STREET 35767B",
+        "CompanyName": "Tata power llc",
+        "SiteIdentifier": "1232631_001_FF-EGP_001_B",
+        "AddressShortCode": "FRO00002643"
+      }
+    },
+    "isNotifyPartyFreeText": false,
+    "customerEmail": "p100_digitaluser2_stage@maildrop.cc",
+    "bookingNumber": "IRLC-1240770-994167",
+    "bookingDate": "2023-10-03 13:18:10",
+    "incoTerms": "CIP",
+    "carrierDetails": {
+      "id": 55182,
+      "guid": "8a659251-217e-4e64-86e7-e063f535bebd",
+      "shippingLine": "ANLC",
+      "vessel": "A19F92EA-635F-43AA-9B90-D258918D648A",
+      "voyage": "v555",
+      "origin": "EGDAM_POR",
+      "destination": "GBBEL_POR",
+      "originPort": "EGDAM_POR",
+      "destinationPort": "GBBEL_POR",
+      "unlocationData": {
+        "destinationPort": "GBBEL belfast",
+        "destination_country": "GB",
+        "originPort_code": "EGDAM",
+        "originPort_name": "DAMIETTA",
+        "origin": "EGDAM DAMIETTA",
+        "destination": "GBBEL belfast",
+        "originPort": "EGDAM DAMIETTA",
+        "destination_name": "belfast",
+        "destinationPort_code": "GBBEL",
+        "destinationPort_name": "belfast",
+        "origin_country": "EG",
+        "destination_code": "GBBEL",
+        "originPort_country": "EG",
+        "destinationPort_country": "GB",
+        "origin_code": "EGDAM",
+        "origin_name": "DAMIETTA"
+      },
+      "carrierMasterData": {},
+      "vesselsMasterData": {},
+      "voyageOrFlightNumber": "v555"
+    },
+    "transportType": "SEA",
+    "cargoType": "LCL",
+    "direction": "EXP",
+    "chargeable": 1,
+    "chargeableUnit": "m3",
+    "contractId": "DPWQ-165038-100518",
+    "createdBy": "egy@dpworld.com",
+    "contractStatus": "SINGLE_USAGE",
+    "businessCode": "ab2f6b79-0384-43b2-ba09-e6c38c1df6f6",
+    "shipmentId": "ALYS23100044",
+    "containersList": [
+      {
+        "id": 66985,
+        "guid": "20ad1324-9cd4-4a6c-9f2b-72861f207725",
+        "bookingId": 67018,
+        "containerCode": "20GP",
+        "grossWeight": 20.00,
+        "grossWeightUnit": "MT",
+        "containerCount": 1,
+        "commodityGroup": "FAK",
+        "isAttached": false,
+        "eventsList": [],
+        "tenantId": 10299
+      },
+      {
+        "id": 66985,
+        "guid": "20ad1324-9cd4-4a6c-9f2b-72861f207726",
+        "bookingId": 67018,
+        "grossWeight": 20.00,
+        "grossWeightUnit": "MT",
+        "isAttached": false,
+        "eventsList": [],
+        "tenantId": 10299
+      }
+    ],
+    "packingList": [
+      {
+        "id": 330,
+        "guid": "696aef20-0940-4914-8eb9-d7443a1cc9da",
+        "bookingId": 55180,
+        "packs": "1",
+        "packsType": "BBL",
+        "weight": 20,
+        "weightUnit": "KG",
+        "volume": 1,
+        "volumeUnit": "M3",
+        "length": 1,
+        "lengthUnit": "M",
+        "width": 1,
+        "widthUnit": "M",
+        "height": 1,
+        "heightUnit": "M",
+        "commodityGroup": "FAK",
+        "masterData": {
+          "commodityGroup": "FREIGHT ALL KINDS - FAK",
+          "widthUnit": "Meters",
+          "volumeUnit": "Cubic Meters",
+          "lengthUnit": "Meters",
+          "packsType": "Barrel",
+          "heightUnit": "Meters",
+          "weightUnit": "KiloGrams"
+        },
+        "isDimension": true
+      },
+      {
+        "id": 331,
+        "guid": "696aef20-0940-4914-8eb9-d7443a1cc9d4",
+        "bookingId": 55180,
+        "packsType": "BBL",
+        "weight": 20,
+        "weightUnit": "KG",
+        "volume": 1,
+        "volumeUnit": "M3",
+        "length": 1,
+        "lengthUnit": "M",
+        "width": 1,
+        "widthUnit": "M",
+        "height": 1,
+        "heightUnit": "M",
+        "commodityGroup": "FAK",
+        "masterData": {
+          "commodityGroup": "FREIGHT ALL KINDS - FAK",
+          "widthUnit": "Meters",
+          "volumeUnit": "Cubic Meters",
+          "lengthUnit": "Meters",
+          "packsType": "Barrel",
+          "heightUnit": "Meters",
+          "weightUnit": "KiloGrams"
+        },
+        "isDimension": true
+      }
+    ],
+    "routingList": [
+      {
+        "id": 1563,
+        "guid": "9ecd18c9-3489-464a-85ae-77f0965c0318",
+        "bookingId": 55180,
+        "leg": 1,
+        "mode": "SEA",
+        "pol": "EGDAM_POR",
+        "pod": "GBBEL_POR",
+        "unlocationData": {
+          "pod_code": "GBBEL",
+          "pol_code": "EGDAM",
+          "pod": "GBBEL belfast",
+          "pod_country": "GB",
+          "pol_country": "EG",
+          "pol": "EGDAM DAMIETTA",
+          "pol_name": "DAMIETTA",
+          "pod_name": "belfast"
+        },
+        "masterData": {
+          "mode": "Sea"
+        },
+        "domestic": false
+      }
+    ],
+    "bookingCharges": [
+      {
+        "id": 5309,
+        "guid": "f5ded451-d21a-4759-9165-e40840a3b806",
+        "bookingId": 55180,
+        "chargeType": "AMS",
+        "measurementBasis": "percbm",
+        "overseasCostAmount": 0,
+        "currentCostRate": 0,
+        "localSellAmount": 5,
+        "overseasSellAmount": 5,
+        "overseasSellCurrency": "EGP",
+        "localSellCurrency": "EGP",
+        "currentSellRate": 5,
+        "sellRateCurrency": "EGP",
+        "sellExchange": 1,
+        "revenueLineTotal": 5,
+        "chargeTypeMasterData": {
+          "chargeType": "AMS"
+        },
+        "containersList": [
+          {
+            "guid": "87c7da77-de59-470e-bb59-8ff9cd517bb7"
+          }
+        ]
+      },
+      {
+        "id": 5310,
+        "guid": "87c7da77-de59-470e-bb59-8ff9cd517bb7",
+        "bookingId": 55180,
+        "chargeType": "STF",
+        "measurementBasis": "percbm",
+        "overseasCostAmount": 0,
+        "currentCostRate": 0,
+        "localSellAmount": 5,
+        "overseasSellAmount": 5,
+        "overseasSellCurrency": "EGP",
+        "localSellCurrency": "EGP",
+        "currentSellRate": 5,
+        "sellRateCurrency": "EGP",
+        "sellExchange": 1,
+        "revenueLineTotal": 5,
+        "chargeTypeMasterData": {
+          "chargeType": "STUFFING CHARGES"
+        }
+      },
+      {
+        "id": 5311,
+        "guid": "3f7bce85-504a-49b6-8d6a-e413477f6ade",
+        "bookingId": 55180,
+        "chargeType": "IFC",
+        "measurementBasis": "pership",
+        "overseasCostAmount": 0,
+        "currentCostRate": 0,
+        "localSellAmount": 50,
+        "overseasSellAmount": 50,
+        "overseasSellCurrency": "EGP",
+        "localSellCurrency": "EGP",
+        "currentSellRate": 50,
+        "sellRateCurrency": "EGP",
+        "sellExchange": 1,
+        "revenueLineTotal": 50,
+        "chargeTypeMasterData": {
+          "chargeType": "ISPS Fee"
+        }
+      },
+      {
+        "id": 5312,
+        "guid": "15fe3c61-73c0-477d-bae5-2761e4961149",
+        "bookingId": 55180,
+        "chargeType": "HDOC",
+        "measurementBasis": "percbm",
+        "overseasCostAmount": 0,
+        "currentCostRate": 0,
+        "localSellAmount": 8,
+        "overseasSellAmount": 8,
+        "overseasSellCurrency": "EGP",
+        "localSellCurrency": "EGP",
+        "currentSellRate": 8,
+        "sellRateCurrency": "EGP",
+        "sellExchange": 1,
+        "revenueLineTotal": 8,
+        "chargeTypeMasterData": {
+          "chargeType": "Bill of lading charges"
+        }
+      },
+      {
+        "id": 5313,
+        "guid": "9aa647f7-a7e8-44a6-ad44-62e312cd964f",
+        "bookingId": 55180,
+        "chargeType": "BRC",
+        "measurementBasis": "percbm",
+        "overseasCostAmount": 0,
+        "currentCostRate": 0,
+        "localSellAmount": 509.89,
+        "overseasSellAmount": 509.89,
+        "overseasSellCurrency": "EGP",
+        "localSellCurrency": "EGP",
+        "currentSellRate": 509.89,
+        "sellRateCurrency": "EGP",
+        "sellExchange": 1,
+        "revenueLineTotal": 509.89,
+        "chargeTypeMasterData": {
+          "chargeType": "BL RE-RELEASE CHARGES"
+        }
+      },
+      {
+        "id": 5314,
+        "guid": "89ac8193-412c-4635-9c7a-1c64027511fc",
+        "bookingId": 55180,
+        "chargeType": "RPC",
+        "measurementBasis": "percbm",
+        "overseasCostAmount": 0,
+        "currentCostRate": 0,
+        "localSellAmount": 927.07,
+        "overseasSellAmount": 927.07,
+        "overseasSellCurrency": "EGP",
+        "localSellCurrency": "EGP",
+        "currentSellRate": 927.07,
+        "sellRateCurrency": "EGP",
+        "sellExchange": 1,
+        "revenueLineTotal": 927.07,
+        "chargeTypeMasterData": {
+          "chargeType": "REEFER POWER"
+        }
+      },
+      {
+        "id": 5315,
+        "guid": "5ad857ae-e40c-44b9-b2b1-8550ba38858a",
+        "bookingId": 55180,
+        "chargeType": "PGC",
+        "measurementBasis": "percbm",
+        "overseasCostAmount": 0,
+        "currentCostRate": 0,
+        "localSellAmount": 927.07,
+        "overseasSellAmount": 927.07,
+        "overseasSellCurrency": "EGP",
+        "localSellCurrency": "EGP",
+        "currentSellRate": 927.07,
+        "sellRateCurrency": "EGP",
+        "sellExchange": 1,
+        "revenueLineTotal": 927.07,
+        "chargeTypeMasterData": {
+          "chargeType": "PLUG IN CHARGES"
+        }
+      }
+    ],
+    "fileRepoList": [],
+    "masterData": {
+      "cargoType": "Less Container Load",
+      "incoTerms": "Carriage and Insurance Paid to",
+      "serviceMode": "Port to Port",
+      "transportType": "Sea Freight",
+      "direction": "Export"
+    },
+    "totalRevenue": 2432.03,
+    "isPackageManual": false,
+    "isConsignorAddressFreeText": false,
+    "isConsigneeAddressFreeText": false,
+    "isCustomerAddressFreeText": false,
+    "isNotifyPartyAddressFreeText": false,
+    "isNotifyConsigneeEqual": false,
+    "isBillCreated": false
   }
 }

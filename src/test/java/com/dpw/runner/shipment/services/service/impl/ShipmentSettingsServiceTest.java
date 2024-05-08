@@ -35,6 +35,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -179,6 +181,41 @@ class ShipmentSettingsServiceTest {
     }
 
     @Test
+    void completeUpdate_failure() throws RunnerException {
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
+        doReturn(objectMapperTest.convertValue(testShipmentSettingsDetails_New, ShipmentSettingsDetails.class)).when(spyService).convertRequestToEntity(any());
+        when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> spyService.completeUpdate(commonRequestModel));
+    }
+
+    @Test
+    void completeUpdate_RequestNull() throws RunnerException{
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeUpdate(commonRequestModel));
+    }
+
+    @Test
+    void completeUpdate_IdNull() throws RunnerException{
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        shipmentSettingRequest.setId(null);
+        shipmentSettingRequest.setTenantId(null);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.completeUpdate(commonRequestModel));
+    }
+
+    @Test
+    void completeUpdate_TenantIdNull() throws RunnerException{
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        shipmentSettingRequest.setTenantId(null);
+        when(shipmentSettingsDao.findById(anyLong())).thenReturn(Optional.empty());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.completeUpdate(commonRequestModel));
+    }
+
+    @Test
     void completeSettingsUpdateCreateV1_Create() throws RunnerException{
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
         when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
@@ -201,8 +238,89 @@ class ShipmentSettingsServiceTest {
     }
 
     @Test
+    void testCompleteSettingsUpdateCreateV1_RequestNull() throws RunnerException{
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeSettingsUpdateCreateV1(commonRequestModel));
+    }
+
+    @Test
+    void testCompleteSettingsUpdateCreateV1_RequestTenantIdNull() throws RunnerException{
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        shipmentSettingRequest.setTenantId(null);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeSettingsUpdateCreateV1(commonRequestModel));
+    }
+
+    @Test
+    void testCompleteSettingsUpdateCreateV1_FailCreate() throws RunnerException{
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        doThrow(new RunnerException("")).when(spyService).completeCreateFromV1(any());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> spyService.completeSettingsUpdateCreateV1(commonRequestModel));
+    }
+
+    @Test
+    void testCompleteSettingsUpdateCreateV1_FailUpdate() throws RunnerException{
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
+        doThrow(new RunnerException("")).when(spyService).completeUpdateFromV1(any(), any());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> spyService.completeSettingsUpdateCreateV1(commonRequestModel));
+    }
+
+    @Test
+    void testCompleteCreateFromV1() throws RunnerException{
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeCreateFromV1(commonRequestModel));
+    }
+
+    @Test
+    void testCompleteCreateFromV1_Branches() throws RunnerException{
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        shipmentSettingRequest.setHblTermsConditionTemplate(new ArrayList<>());
+        shipmentSettingRequest.setHblHawbBackPrintTemplate(new ArrayList<>());
+        shipmentSettingRequest.setTenantProducts(new ArrayList<>());
+        shipmentSettingRequest.setProductSequenceConfig(new ArrayList<>());
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        ResponseEntity<IRunnerResponse> responseEntity  = shipmentSettingsService.completeCreateFromV1(CommonRequestModel.buildRequest(shipmentSettingRequest));
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCompleteCreateFromV1_RequestNull() throws RunnerException{
+        when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeCreateFromV1(commonRequestModel));
+    }
+
+    @Test
+    void testCompleteUpdateFromV1() throws RunnerException{
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Optional<ShipmentSettingsDetails> shipmentSettingsDetails = Optional.of(testShipmentSettingsDetails);
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeUpdateFromV1(shipmentSettingsDetails, commonRequestModel));
+    }
+
+    @Test
     void uploadTemplate_Create() {
         TemplateUploadRequest templateUploadRequest = new TemplateUploadRequest();
+        ResponseEntity<TemplateUploadResponse> docServiceResponse = new ResponseEntity<>(HttpStatus.CREATED);
+        when(documentService.createDocumentTemplate(any())).thenReturn(docServiceResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void uploadTemplate_Create_LengthZero() {
+        TemplateUploadRequest templateUploadRequest = new TemplateUploadRequest();
+        templateUploadRequest.setPreviousFileId("");
         ResponseEntity<TemplateUploadResponse> docServiceResponse = new ResponseEntity<>(HttpStatus.CREATED);
         when(documentService.createDocumentTemplate(any())).thenReturn(docServiceResponse);
         ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
@@ -283,6 +401,13 @@ class ShipmentSettingsServiceTest {
     }
 
     @Test
+    void retrieveByTenantId_IdNull() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveByTenantId(CommonRequestModel.buildRequest(commonGetRequest));
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void retrieveByTenantId_RequestNull() {
         ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveByTenantId(CommonRequestModel.buildRequest());
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -302,6 +427,57 @@ class ShipmentSettingsServiceTest {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
         when(shipmentSettingsDao.findByTenantId(any())).thenThrow(new RuntimeException());
         ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveByTenantId(CommonRequestModel.buildRequest(commonGetRequest));
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveById() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).guid(UUID.randomUUID().toString()).build();
+        when(shipmentSettingsDao.findById(anyLong())).thenReturn(Optional.of(testShipmentSettingsDetails));
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveById(CommonRequestModel.buildRequest(commonGetRequest));
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveById_requestNull() {
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveById(CommonRequestModel.buildRequest((com.dpw.runner.shipment.services.commons.requests.IRunnerRequest) null));
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveById_IdNull() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveById(CommonRequestModel.buildRequest(commonGetRequest));
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveById_GuidNotNull() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
+        when(shipmentSettingsDao.findByGuid(any())).thenReturn(Optional.of(testShipmentSettingsDetails));
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveById(CommonRequestModel.buildRequest(commonGetRequest));
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveById_GuidNotNull_Failure() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
+        when(shipmentSettingsDao.findByGuid(any())).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveById(CommonRequestModel.buildRequest(commonGetRequest));
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveById_Failure() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        when(shipmentSettingsDao.findById(anyLong())).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveById(CommonRequestModel.buildRequest(commonGetRequest));
+        Assertions.assertNotNull(responseEntity);
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
