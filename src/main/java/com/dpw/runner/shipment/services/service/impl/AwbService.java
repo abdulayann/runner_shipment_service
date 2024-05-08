@@ -1169,30 +1169,6 @@ public class AwbService implements IAwbService {
             }
         }
 
-//        var consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId());
-//        if (consolidationDetails.isPresent()) {
-//            var consol = consolidationDetails.get();
-//            for (var orgRow : consol.getConsolidationAddresses()) {
-//                if (orgRow.getType().equals(ISSUING_CARRIER_AGENT_NAME)) {
-//                    var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
-//                    awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
-//                    var issuingAgentAddress = AwbUtility.constructAddress(orgRow.getAddressData());
-//                    awbShipmentInfo.setIssuingAgentAddress(issuingAgentAddress == null ? issuingAgentAddress : issuingAgentAddress.toUpperCase());
-//                    String country = orgRow.getOrgData() != null ?
-//                            (String) orgRow.getOrgData().get(COUNTRY) : null;
-//                    if (country != null)
-//                        awbCargoInfo.setCustomOriginCode(getCountryCode(country));
-//
-//                    awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
-//                            ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
-//                            : awbShipmentInfo.getIataCode());
-//                    awbShipmentInfo.setAgentCASSCode(StringUtility.isEmpty(awbShipmentInfo.getAgentCASSCode())
-//                            ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_CASS_CODE))
-//                            : awbShipmentInfo.getAgentCASSCode());
-//                }
-//            }
-//        }
-
         try {
             TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
             setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
