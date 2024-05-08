@@ -423,64 +423,6 @@ public class PackingDao implements IPackingDao {
         }
     }
 
-    public List<Packing> savePacks(List<Packing> packs, Long contianerId) {
-        List<Packing> res = new ArrayList<>();
-        for (Packing req : packs) {
-            if (req.getId() != null) {
-                long id = req.getId();
-                Optional<Packing> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug("Container is null for Id {}", req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-            }
-            req.setContainerId(contianerId);
-            req = save(req);
-            res.add(req);
-        }
-        return res;
-    }
-
-    public List<Packing> removeContainerFromPacking(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws RunnerException {
-        String responseMsg;
-        List<Packing> responsePackings = new ArrayList<>();
-        try {
-            // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", containerId, "=");
-            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
-            removeEntityFromContainer(packings.getContent(), null, updatedPacksId);
-            return responsePackings;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
-    }
-
-    public List<Packing> insertContainerInPacking(List<Packing> packings, Long containerId) throws RunnerException {
-        List<Packing> res = new ArrayList<>();
-        Optional<Packing> oldEntity = Optional.empty();
-        for (Packing req : packings) {
-            if (req.getId() != null) {
-                long id = req.getId();
-                oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-            }
-            if (oldEntity.isPresent() && oldEntity.get().getContainerId() != containerId) {
-                req = oldEntity.get();
-                req.setContainerId(containerId);
-                req = save(req);
-                res.add(req);
-            }
-        }
-        return res;
-    }
-
     public List<Packing> saveEntityFromContainer(List<Packing> packings, Long containerId) {
         List<Packing> res = new ArrayList<>();
         for (Packing req : packings) {
@@ -495,30 +437,6 @@ public class PackingDao implements IPackingDao {
             req.setContainerId(containerId);
             req = save(req);
             res.add(req);
-        }
-        return res;
-    }
-
-    public List<Packing> removeEntityFromContainer(List<Packing> packings, Long containerId, List<Long> updatedPacksId) {
-        List<Packing> res = new ArrayList<>();
-        HashSet<Long> remaniningPacksId = new HashSet<>();
-        for (Long packId : updatedPacksId) {
-            remaniningPacksId.add(packId);
-        }
-        for (Packing req : packings) {
-            if (!remaniningPacksId.contains(req.getId())) {
-                if (req.getId() != null) {
-                    long id = req.getId();
-                    Optional<Packing> oldEntity = findById(id);
-                    if (!oldEntity.isPresent()) {
-                        log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
-                        throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                    }
-                }
-                req.setContainerId(null);
-                req = save(req);
-                res.add(req);
-            }
         }
         return res;
     }
