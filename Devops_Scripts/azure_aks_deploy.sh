@@ -155,3 +155,6 @@ else
     echo "*****App Deployment fail !!!*****"
     exit 1
 fi
+service_yaml_path="${PWD}/_runner_shipment_service/runner-shipment-service/Devops_Scripts/service-values.yaml"
+values=$(grep ":" "$service_yaml_path" | awk -F ": " '{print $1"="$2}')
+${kubectl_current} label namespace $namespace $values
