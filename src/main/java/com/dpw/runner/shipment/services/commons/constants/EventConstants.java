@@ -23,4 +23,6 @@ public class EventConstants {
 
     public static final String EMPTY_REQUEST_ERROR = "Request can't be empty!";
     public static final String EMPTY_REQUEST_ID_ERROR = "Id can't be null in request";
+    public static final String FWB_FZB_EVENT_CODE = "FWB/FZB";
+    public static final String FWB_EVENT_CODE = "FWB";
 }
