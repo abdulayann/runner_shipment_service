@@ -371,10 +371,11 @@ class PackingDaoTest {
 
     @Test
     void testUpdateEntityFromConsole_WithOldEntity_oldEntityBranch() throws RunnerException{
-        List<Packing> routingsList = Collections.singletonList(testPacking);
+        List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
-        doReturn(routingsList).when(spyService).saveEntityFromConsole(any(), anyLong());
-        spyService.updateEntityFromConsole(routingsList, 1L, new ArrayList<>());
+        doReturn(packingList).when(spyService).saveEntityFromConsole(any(), anyLong());
+        List<Packing> packings = spyService.updateEntityFromConsole(packingList, 1L, new ArrayList<>());
+        assertEquals(packingList, packings);
     }
 
     @Test
@@ -713,7 +714,9 @@ class PackingDaoTest {
         PackingDao spyService = spy(packingDao);
         List<Packing> packingList = Collections.singletonList(testPacking);
         doReturn(new PageImpl<>(packingList)).when(spyService).findAll(any(), any());
+        doReturn(packingList).when(spyService).saveEntityFromContainer(any(), any());
         spyService.deleteEntityFromContainer(1L);
+        verify(spyService, times(1)).saveEntityFromContainer(any(), any());
     }
 
     @Test
