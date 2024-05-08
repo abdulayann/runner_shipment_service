@@ -187,12 +187,14 @@ class ShipmentSettingsServiceTest {
         when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
         doReturn(objectMapperTest.convertValue(testShipmentSettingsDetails_New, ShipmentSettingsDetails.class)).when(spyService).convertRequestToEntity(any());
         when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
-        Assertions.assertThrows(RuntimeException.class, () -> spyService.completeUpdate(CommonRequestModel.buildRequest(shipmentSettingRequest)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> spyService.completeUpdate(commonRequestModel));
     }
 
     @Test
     void completeUpdate_RequestNull() throws RunnerException{
-        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeUpdate(CommonRequestModel.buildRequest()));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeUpdate(commonRequestModel));
     }
 
     @Test
@@ -200,7 +202,8 @@ class ShipmentSettingsServiceTest {
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
         shipmentSettingRequest.setId(null);
         shipmentSettingRequest.setTenantId(null);
-        Assertions.assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.completeUpdate(CommonRequestModel.buildRequest(shipmentSettingRequest)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.completeUpdate(commonRequestModel));
     }
 
     @Test
@@ -208,7 +211,8 @@ class ShipmentSettingsServiceTest {
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
         shipmentSettingRequest.setTenantId(null);
         when(shipmentSettingsDao.findById(anyLong())).thenReturn(Optional.empty());
-        Assertions.assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.completeUpdate(CommonRequestModel.buildRequest(shipmentSettingRequest)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.completeUpdate(commonRequestModel));
     }
 
     @Test
@@ -235,14 +239,16 @@ class ShipmentSettingsServiceTest {
 
     @Test
     void testCompleteSettingsUpdateCreateV1_RequestNull() throws RunnerException{
-        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest()));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeSettingsUpdateCreateV1(commonRequestModel));
     }
 
     @Test
     void testCompleteSettingsUpdateCreateV1_RequestTenantIdNull() throws RunnerException{
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
         shipmentSettingRequest.setTenantId(null);
-        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(shipmentSettingRequest)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeSettingsUpdateCreateV1(commonRequestModel));
     }
 
     @Test
@@ -251,7 +257,8 @@ class ShipmentSettingsServiceTest {
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
         when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
         doThrow(new RunnerException("")).when(spyService).completeCreateFromV1(any());
-        Assertions.assertThrows(RuntimeException.class, () -> spyService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(shipmentSettingRequest)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> spyService.completeSettingsUpdateCreateV1(commonRequestModel));
     }
 
     @Test
@@ -260,14 +267,16 @@ class ShipmentSettingsServiceTest {
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
         when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
         doThrow(new RunnerException("")).when(spyService).completeUpdateFromV1(any(), any());
-        Assertions.assertThrows(RuntimeException.class, () -> spyService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(shipmentSettingRequest)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> spyService.completeSettingsUpdateCreateV1(commonRequestModel));
     }
 
     @Test
     void testCompleteCreateFromV1() throws RunnerException{
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
         when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
-        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeCreateFromV1(CommonRequestModel.buildRequest(shipmentSettingRequest)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeCreateFromV1(commonRequestModel));
     }
 
     @Test
@@ -286,14 +295,16 @@ class ShipmentSettingsServiceTest {
     @Test
     void testCompleteCreateFromV1_RequestNull() throws RunnerException{
         when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
-        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeCreateFromV1(CommonRequestModel.buildRequest()));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeCreateFromV1(commonRequestModel));
     }
 
     @Test
     void testCompleteUpdateFromV1() throws RunnerException{
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
         when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
-        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeUpdateFromV1(Optional.of(testShipmentSettingsDetails), CommonRequestModel.buildRequest(shipmentSettingRequest)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeUpdateFromV1(Optional.of(testShipmentSettingsDetails), commonRequestModel));
     }
 
     @Test
