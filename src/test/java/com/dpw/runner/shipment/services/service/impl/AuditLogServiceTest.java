@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageImpl;
@@ -85,7 +84,7 @@ class AuditLogServiceTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
     }
     @Test
-    void testDownloadExcel() throws RunnerException {
+    void testDownloadExcel() {
         assertThrows(RunnerException.class, () -> auditLogService.downloadExcel(null));
     }
 
@@ -146,23 +145,13 @@ class AuditLogServiceTest {
         assertThrows(RunnerException.class, () -> auditLogService.downloadExcel(CommonRequestModel.builder().data(new ListCommonRequest()).build()));
     }
 
-    /**
-     * Method under test: {@link AuditLogService#addAuditLog(AuditLogMetaData)}
-     */
     @Test
-    void testAddAuditLog() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
-            NoSuchMethodException, InvocationTargetException {
-        // Arrange, Act and Assert
+    void testAddAuditLog() {
         assertThrows(RunnerException.class, () -> auditLogService.addAuditLog(new AuditLogMetaData()));
     }
 
-    /**
-     * Method under test: {@link AuditLogService#addAuditLog(AuditLogMetaData)}
-     */
     @Test
-    void testAddAuditLog2() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
-            NoSuchMethodException, InvocationTargetException {
-        // Arrange
+    void testAddAuditLog2() {
         BaseEntity newData = new BaseEntity();
         newData.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         newData.setCreatedBy("abc");
@@ -184,20 +173,14 @@ class AuditLogServiceTest {
         prevData.setUpdatedBy("def");
         AuditLogMetaData auditLogMetaData = parentIdResult.prevData(prevData).build();
 
-        // Act and Assert
         assertThrows(RunnerException.class, () -> auditLogService.addAuditLog(auditLogMetaData));
     }
 
-    /**
-     * Method under test: {@link AuditLogService#addAuditLog(AuditLogMetaData)}
-     */
     @Test
-    void testAddAuditLog3() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
-            NoSuchMethodException, InvocationTargetException {
-        // Arrange
+    void testAddAuditLog3() {
         AuditLogMetaData.AuditLogMetaDataBuilder auditLogMetaDataBuilder = mock(
                 AuditLogMetaData.AuditLogMetaDataBuilder.class);
-        when(auditLogMetaDataBuilder.newData(Mockito.<BaseEntity>any())).thenReturn(AuditLogMetaData.builder());
+        when(auditLogMetaDataBuilder.newData(any())).thenReturn(AuditLogMetaData.builder());
 
         BaseEntity newData = new BaseEntity();
         newData.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
@@ -220,7 +203,6 @@ class AuditLogServiceTest {
         prevData.setUpdatedBy("def");
         AuditLogMetaData auditLogMetaData = parentIdResult.prevData(prevData).build();
 
-        // Act and Assert
         assertThrows(RunnerException.class, () -> auditLogService.addAuditLog(auditLogMetaData));
         verify(auditLogMetaDataBuilder).newData(isA(BaseEntity.class));
     }
