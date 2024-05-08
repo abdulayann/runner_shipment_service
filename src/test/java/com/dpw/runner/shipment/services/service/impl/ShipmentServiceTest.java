@@ -36,6 +36,7 @@ import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.syncing.Entity.AuditLogRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -951,6 +952,25 @@ class ShipmentServiceTest {
         assertEquals(ResponseHelper.buildSuccessResponse(mockCreditV1Response), httpResponse);
     }
 
+    @Test
+    void completeV1ShipmentCreateAndUpdate() throws RunnerException {
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentId("AIR-CAN-00001").shipmentCreatedOn(LocalDateTime.now()).consolidationList(Arrays.asList(consolidationDetails)).build();
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(shipmentRequest, ShipmentDetailsResponse.class);
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
