@@ -43,7 +43,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class RoutingsDaoTest {
+class RoutingsDaoTest {
 
     @Mock
     private IRoutingsRepository routingsRepository;
@@ -173,7 +173,7 @@ public class RoutingsDaoTest {
         Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
 
         assertDoesNotThrow(() -> routingsDao.delete(routings));
-        verify(routingsRepository, Mockito.times(1)).delete(eq(routings));
+        verify(routingsRepository, Mockito.times(1)).delete(routings);
     }
 
     @Test
