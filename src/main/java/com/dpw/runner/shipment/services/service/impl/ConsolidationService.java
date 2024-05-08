@@ -71,6 +71,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
@@ -3073,6 +3074,7 @@ public class ConsolidationService implements IConsolidationService {
                 .routingsList(List.of(customRouting))
                 .mawb(isMawb ? shipment.getMasterBill() : null)
                 .createdBy(UserContext.getUser().getUsername())
+                .modeOfBooking(StringUtils.equals(transportMode, Constants.TRANSPORT_MODE_SEA) ? Constants.INTTRA : null)
                 //.isLinked(true)
                 .build();
 
