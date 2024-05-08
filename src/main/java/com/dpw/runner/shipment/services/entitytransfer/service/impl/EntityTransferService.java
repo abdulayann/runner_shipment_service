@@ -276,7 +276,7 @@ public class EntityTransferService implements IEntityTransferService {
 //            });
 //        }
 //    }
-
+//
 //    private Map<String, EntityTransferMasterLists> addMasterData (IEntityTranferBaseEntity entityPayload, Class mainClass) {
 //        MasterListRequestV2 requests = new MasterListRequestV2();
 //        Map<String, String> fieldNameKeyMap = new HashMap<>();
@@ -326,7 +326,7 @@ public class EntityTransferService implements IEntityTransferService {
 //        }
 //        return null;
 //    }
-
+//
 //    private void addAllUnlocationDatas (EntityTransferShipmentDetails shipmentDetails) {
 //        if(shipmentDetails.getAdditionalDetails() != null) {
 //            shipmentDetails.getAdditionalDetails().setUnlocationData(addUnlocationData(shipmentDetails.getAdditionalDetails(), AdditionalDetails.class));
@@ -335,7 +335,7 @@ public class EntityTransferService implements IEntityTransferService {
 //            shipmentDetails.getCarrierDetails().setUnlocationData(addUnlocationData(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
 //        }
 //    }
-
+//
 //    private Map<String, EntityTransferUnLocations> addUnlocationData (IEntityTranferBaseEntity entityPayload, Class baseClass) {
 //        Map<String, EntityTransferUnLocations> fieldNameUnlocationDataMap = new HashMap<>();
 //        Map<String, EntityTransferUnLocations> keyUnlocationDataMap = new HashMap<>();
@@ -381,7 +381,7 @@ public class EntityTransferService implements IEntityTransferService {
 //        }
 //        return null;
 //    }
-
+//
 //    private void addDedicatedMasterData (EntityTransferShipmentDetails shipmentDetails) {
 //        if (shipmentDetails.getCarrierDetails() != null) {
 //            shipmentDetails.getCarrierDetails().setCarrierMasterData(carrierMasterData(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
@@ -641,8 +641,8 @@ public class EntityTransferService implements IEntityTransferService {
 //        }
 //        return null;
 //    }
-
-
+//
+//
 //    private SendEntityResponse sendTaskToV1 (int tenantId, int approverRole, List<Integer> tenantIds, EntityTransferShipmentDetails entityTransferShipmentDetails, Boolean sendToOrganization, String shipmentId, String houseBill, String masterBill, long id) {
 //        CreateShipmentTaskRequest createShipmentTaskRequest = CreateShipmentTaskRequest.builder()
 //                .tenantId(tenantId).approverRole(approverRole).tenantIds(tenantIds)
@@ -816,8 +816,8 @@ public class EntityTransferService implements IEntityTransferService {
 //        SendEntityResponse response = v1Service.sendConsolidationTask(createConsolidationTaskRequest);
 //        return response;
 //    }
-
-    //    private void createConsolidationPayload (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
+//
+//        private void createConsolidationPayload (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
 //        addConsolidationMasterData(entityTransferConsolidationDetails);
 //        addConsolidationUnlocationDatas(entityTransferConsolidationDetails);
 //        addConsolidationDedicatedMasterData(entityTransferConsolidationDetails);
@@ -1212,8 +1212,8 @@ public class EntityTransferService implements IEntityTransferService {
 //            }
 //        });
 //    }
-
-
+//
+//
 //    @Override
 //    @Transactional
 //    public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) {
@@ -1240,7 +1240,7 @@ public class EntityTransferService implements IEntityTransferService {
 //            throw new RuntimeException(e);
 //        }
 //    }
-
+//
 //    private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
 //        ConsolidationDetailsRequest request = jsonHelper.convertValue(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
 //        Map<UUID, List<UUID>> containerVsShipmentGuid = entityTransferConsolidationDetails.getContainerVsShipmentGuid();
@@ -1309,7 +1309,7 @@ public class EntityTransferService implements IEntityTransferService {
 //            });
 //        }
 //    }
-
+//
 //    private void createConsolidationMasterDatas (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
 //        List<EntityTransferMasterLists> masterDataList = new ArrayList<>();
 //        if(entityTransferConsolidationDetails.getMasterData() != null) {
@@ -1358,7 +1358,7 @@ public class EntityTransferService implements IEntityTransferService {
 //
 //        this.createMasterData(masterDataList);
 //    }
-
+//
 //    private void createConsolidationUnlocationData (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
 //        List<EntityTransferUnLocations> unLocationsList = new ArrayList<>();
 //        if(entityTransferConsolidationDetails.getUnlocationData() != null)
