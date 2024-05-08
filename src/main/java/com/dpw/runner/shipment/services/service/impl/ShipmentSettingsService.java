@@ -37,7 +37,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -258,7 +257,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
     }
@@ -288,10 +286,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(shipmentSettingsPage.get().toList() != null && shipmentSettingsPage.get().toList().size() > 0)
                 oldEntity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
         }
-        else {
-            long id = request.getId();
-            oldEntity = shipmentSettingsDao.findById(id);
-        }
         if(!oldEntity.isPresent()) {
             try{
                 return (ResponseEntity<IRunnerResponse>) completeCreateFromV1(commonRequestModel);
@@ -299,7 +293,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
                 log.error(responseMsg, e);
-                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
                 throw new RuntimeException(e);
             }
         }
@@ -310,7 +303,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
                 log.error(responseMsg, e);
-                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
                 throw new RuntimeException(e);
             }
         }
@@ -359,7 +351,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
@@ -464,7 +455,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
     }
