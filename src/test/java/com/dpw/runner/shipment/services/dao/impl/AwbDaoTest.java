@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOCIInfo;
@@ -94,6 +95,8 @@ class AwbDaoTest {
     private AwbUtility awbUtility;
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Mock
+    private IEventDao eventDao;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;

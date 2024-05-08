@@ -209,7 +209,7 @@ public class AwbDao implements IAwbDao {
                                 // AirMessageSent flag set to SENT
                                 this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                                 this.updateUserDetails(shipAwb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
-                                this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.SHIPMENT, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent");
+                                this.createAirMessagingEvents(ship.getId(), Constants.SHIPMENT, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent");
                             }
                         }
                     }
