@@ -304,7 +304,8 @@ class ShipmentSettingsServiceTest {
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
         when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
-        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeUpdateFromV1(Optional.of(testShipmentSettingsDetails), commonRequestModel));
+        Optional<ShipmentSettingsDetails> shipmentSettingsDetails = Optional.of(testShipmentSettingsDetails);
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeUpdateFromV1(shipmentSettingsDetails, commonRequestModel));
     }
 
     @Test
