@@ -1480,7 +1480,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    List<Awb> getLinkedAwbFromMawb(Long mawbId) {
+    List<Awb>  getLinkedAwbFromMawb(Long mawbId) {
         List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
 
         // Fetch all the awb records with the mapped hawbId
@@ -1641,6 +1641,7 @@ public class AwbService implements IAwbService {
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for AWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Request can't be null");
         }
 
         if (request.getShipmentId() == null) {
@@ -2150,6 +2151,7 @@ public class AwbService implements IAwbService {
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for MAWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Request can't be null");
         }
 
         if (request.getConsolidationId() == null) {
@@ -2169,7 +2171,7 @@ public class AwbService implements IAwbService {
 
         // fetch consolidation info
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
-        if(shipmentSettingsDetails.getRestrictAWBEdit()){
+        if(shipmentSettingsDetails.getRestrictAWBEdit() != null && shipmentSettingsDetails.getRestrictAWBEdit()){
             ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder()
                     .id(awb.getId())
                     .shipmentId(request.getShipmentId())
