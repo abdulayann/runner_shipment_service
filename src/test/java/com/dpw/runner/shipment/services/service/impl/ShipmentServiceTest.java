@@ -1153,6 +1153,358 @@ class ShipmentServiceTest {
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
+    @Test
+    void completeV1ShipmentCreateAndUpdateBookingCarriageNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        List<BookingCarriageRequest> bookingCarriageRequestList = Arrays.asList(BookingCarriageRequest.builder().build());
+        List<BookingCarriage> bookingCarriageList = new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentId("AIR-CAN-00001").shipmentCreatedOn(LocalDateTime.now()).consolidationList(Arrays.asList(consolidationDetails)).bookingCarriagesList(bookingCarriageRequestList).build();
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+
+        when(bookingCarriageDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(bookingCarriageDao.updateEntityFromShipment(bookingCarriageList, 1L, new ArrayList<>())).thenReturn(bookingCarriageList);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeV1ShipmentCreateAndUpdateContainersListNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        List<ContainerRequest> containerRequests = Arrays.asList(ContainerRequest.builder().build());
+        List<Containers> containersList = new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+                .id(1L)
+                .shipmentId("AIR-CAN-00001")
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(consolidationDetails))
+                .containersList(containerRequests).build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeV1ShipmentCreateAndUpdateElDetailsNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        List<ELDetailsRequest> elDetailsRequests = Arrays.asList(ELDetailsRequest.builder().build());
+        List<ELDetails> elDetailsList = new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentId("AIR-CAN-00001").shipmentCreatedOn(LocalDateTime.now()).consolidationList(Arrays.asList(consolidationDetails)).elDetailsList(elDetailsRequests).build();
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+
+        when(elDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(elDetailsDao.updateEntityFromShipment(elDetailsList, 1L, new ArrayList<>())).thenReturn(elDetailsList);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeV1ShipmentCreateAndUpdateTruckDriverDetailsNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        List<TruckDriverDetailsRequest> truckDriverDetailsRequests = Arrays.asList(TruckDriverDetailsRequest.builder().build());
+        List<TruckDriverDetails> truckDriverDetails = new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentId("AIR-CAN-00001").shipmentCreatedOn(LocalDateTime.now()).consolidationList(Arrays.asList(consolidationDetails)).truckDriverDetails(truckDriverDetailsRequests).build();
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+
+        when(truckDriverDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(truckDriverDetailsDao.updateEntityFromShipment(truckDriverDetails, 1L, new ArrayList<>())).thenReturn(truckDriverDetails);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeV1ShipmentCreateAndUpdateEventsRequestListNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        List<EventsRequest> eventsRequestList = Arrays.asList(EventsRequest.builder().build());
+        List<Events> eventsList = new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+                .id(1L).shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(consolidationDetails))
+                .eventsList(eventsRequestList)
+                .build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(eventDao.updateEntityFromOtherEntity(eventsList, 1L, Constants.SHIPMENT, new ArrayList<>())).thenReturn(eventsList);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeV1ShipmentCreateAndUpdateReferenceNumbersRequestListNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        List<ReferenceNumbersRequest> referenceNumbersRequestList = Arrays.asList(ReferenceNumbersRequest.builder().build());
+        List<ReferenceNumbers> referenceNumbersList = new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+                .id(1L).shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(consolidationDetails))
+                .referenceNumbersList(referenceNumbersRequestList)
+                .build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+
+        when(referenceNumbersDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(referenceNumbersDao.updateEntityFromShipment(referenceNumbersList, 1L, new ArrayList<>())).thenReturn(referenceNumbersList);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeV1ShipmentCreateAndUpdateRoutingsRequestListNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        List<RoutingsRequest> routingsRequestList = Arrays.asList(RoutingsRequest.builder().build());
+        List<Routings> routingsList = new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+                .id(1L)
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(consolidationDetails))
+                .routingsList(routingsRequestList).build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+
+        when(routingsDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(routingsDao.updateEntityFromShipment(routingsList, 1L, new ArrayList<>())).thenReturn(routingsList);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeV1ShipmentCreateAndUpdateServiceDetailsRequestListNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        List<ServiceDetailsRequest> serviceDetailsRequests = Arrays.asList(ServiceDetailsRequest.builder().build());
+        List<ServiceDetails> serviceDetailsList = new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+                .id(1L)
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(consolidationDetails))
+                .servicesList(serviceDetailsRequests)
+                .build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+
+        when(serviceDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(serviceDetailsDao.updateEntityFromShipment(serviceDetailsList, 1L, new ArrayList<>())).thenReturn(serviceDetailsList);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeV1ShipmentCreateAndUpdateShipmentAddressesRequestListNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        List<PartiesRequest> partiesRequests = Arrays.asList(PartiesRequest.builder().build());
+        List<Parties> partiesList = new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+                .id(1L)
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(consolidationDetails))
+                .shipmentAddresses(partiesRequests).build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+
+        when(partiesDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(partiesDao.updateEntityFromOtherEntity(partiesList, 1L, Constants.SHIPMENT_ADDRESSES, new ArrayList<>())).thenReturn(partiesList);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeV1ShipmentCreateAndUpdateNotesRequestListNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        List<NotesRequest> notesRequests = Arrays.asList(NotesRequest.builder().build());
+        List<Notes> notesList = new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+                .id(1L)
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(consolidationDetails))
+                .notesList(notesRequests).build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+
+        when(notesDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(notesDao.updateEntityFromOtherEntity(notesList, 1L, Constants.SHIPMENT, new ArrayList<>())).thenReturn(notesList);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         for(var i: lst) {
