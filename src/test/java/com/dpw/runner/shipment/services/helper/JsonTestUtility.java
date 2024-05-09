@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -86,6 +87,9 @@ public class JsonTestUtility {
     public ShipmentSettingsSyncRequest getTestShipmentSettingsSyncRequest() {
         return objectMapper.convertValue(payload.get("SHIPMENT_SETTINGS_SYNC"), ShipmentSettingsSyncRequest.class);
     }
+    public List<EntityTransferMasterLists> getAutoAttachConsoleMasterData() {
+        return convertValueToList(payload.get("AUTO_ATTACH_CONSOLE_MASTER_DATA_LIST"), EntityTransferMasterLists.class);
+    }
 
     public ShipmentDetails getTestShipment() {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("NEW_SHIPMENT"), ShipmentDetails.class);
@@ -111,6 +115,10 @@ public class JsonTestUtility {
 
     public ConsolidationDetails getTestNewConsolidation(){
         return objectMapper.convertValue(payload.get("NEW_CONSOLIDATION_CREATE"), ConsolidationDetails.class);
+    }
+
+    public ConsolidationDetails getCompleteConsolidation() {
+        return objectMapper.convertValue(payload.get("COMPLETE_CONSOLIDATION"), ConsolidationDetails.class);
     }
 
     public Awb getTestHawb() {

@@ -2609,24 +2609,24 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity) throws ExecutionException, InterruptedException {
-        var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
-        return (List<T>) runnerListResponse.getData();
-    }
-
-    private <T extends IRunnerResponse> List<T> getResponse(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-        var runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
-        return (List<T>) runnerListResponse.getData();
-    }
-
-    private <T extends IRunnerResponse> T getResponseEntity(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-        var runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
-        return (T) runnerResponse.getData();
-    }
-
-    private Containers convertRequestToEntity(ContainerRequest request) {
-        return jsonHelper.convertValue(request, Containers.class);
-    }
+//    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity) throws ExecutionException, InterruptedException {
+//        var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
+//        return (List<T>) runnerListResponse.getData();
+//    }
+//
+//    private <T extends IRunnerResponse> List<T> getResponse(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
+//        var runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
+//        return (List<T>) runnerListResponse.getData();
+//    }
+//
+//    private <T extends IRunnerResponse> T getResponseEntity(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
+//        var runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
+//        return (T) runnerResponse.getData();
+//    }
+//
+//    private Containers convertRequestToEntity(ContainerRequest request) {
+//        return jsonHelper.convertValue(request, Containers.class);
+//    }
 
     @Transactional
     public ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel, boolean dataMigration, String createdBy, LocalDateTime createdDate) throws RunnerException {

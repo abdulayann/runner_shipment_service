@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -62,6 +63,7 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
@@ -1639,6 +1641,228 @@ class ConsolidationServiceTest {
         when(consolidationDetailsDao.findAll(any(), any())).thenThrow(new RuntimeException());
         CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity = consolidationService.listAsync(CommonRequestModel.buildRequest(sampleRequest));
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.get().getStatusCode());
+    }
+
+    @Test
+    void testDelete_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build()));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDelete_DataRetrieval_Failure() {
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build()));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveById_Success_byId() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setMergeContainers(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(consolidationDetails, ConsolidationDetailsResponse.class);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build()));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveById_Success_byGuid() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(consolidationDetails, ConsolidationDetailsResponse.class);
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().guid("1d27fe99-0874-4587-9a83-460bb5ba31f0").build()));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveById_DataRetrieval_Failure() {
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build()));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveById_NullRequest_Failure() {
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().build()));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAllMasterData_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        Map<String, Object> response = new HashMap<>();
+        var spyService = Mockito.spy(consolidationService);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+        Mockito.doReturn(response).when(spyService).fetchAllMasterDataByKey(any(), any());
+
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.getAllMasterData(CommonRequestModel.buildRequest(1L));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+    @Test
+    void testGetAllMasterData_Failure() {
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAllMasterData(CommonRequestModel.buildRequest(1L));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testToggleLock_Success() throws RunnerException {
+        ConsolidationDetails consolidationDetails = testConsol;
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.save(any(), anyBoolean())).thenReturn(consolidationDetails);
+        doNothing().when(consolidationSync).syncLockStatus(any());
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.toggleLock(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build()));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testToggleLock_Failure() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setIsLocked(true);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+
+        assertThrows(RunnerException.class, () -> consolidationService.toggleLock(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build())));
+    }
+
+    @Test
+    void testExportExcel_Success() throws IOException, IllegalAccessException {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("id", 1, "=");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        ConsolidationDetails consolidationDetails = testConsol;
+        UsersDto usersDto = UserContext.getUser();
+        usersDto.setEnableTimeZone(false);
+        UserContext.setUser(usersDto);
+        ConsolidationListResponse consolidationListResponse = modelMapperTest.map(consolidationDetails, ConsolidationListResponse.class);
+
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
+        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(consolidationListResponse);
+
+        consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
+        assertEquals(200,response.getStatus());
+    }
+
+//    @Test
+//    void testPushShipmentDataToDependentService_Success() {
+//        ConsolidationDetails consolidationDetails = testConsol;
+//        when(trackingServiceAdapter.checkIfConsolContainersExist(any())).thenReturn(true);
+//        when(trackingServiceAdapter.checkIfAwbExists(any())).thenReturn(true);
+//
+//
+//        consolidationService.pushShipmentDataToDependentService(consolidationDetails, false)
+//    }
+
+    @Test
+    void testGetConsolFromShipment_Success() {
+        ShipmentDetails shipmentDetails = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = modelMapperTest.map(shipmentDetails, ShipmentDetailsResponse.class);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setShipmentLite(false);
+        PartiesResponse exportBrokerResponse = modelMapperTest.map(shipmentDetailsResponse.getAdditionalDetails().getExportBroker(), PartiesResponse.class);
+        PartiesResponse importBrokerResponse = modelMapperTest.map(shipmentDetailsResponse.getAdditionalDetails().getImportBroker(), PartiesResponse.class);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(jsonHelper.convertValue(shipmentDetailsResponse.getAdditionalDetails().getImportBroker(), PartiesResponse.class)).thenReturn(importBrokerResponse);
+        when(jsonHelper.convertValue(shipmentDetailsResponse.getAdditionalDetails().getExportBroker(), PartiesResponse.class)).thenReturn(exportBrokerResponse);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getConsolFromShipment(shipmentDetails.getId());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetConsolFromShipment_Failure_ShipmentDataRetrievalError() {
+        ShipmentDetails shipmentDetails = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> consolidationService.getConsolFromShipment(shipmentDetails.getId()));
+    }
+
+    @Test
+    void testGetConsolFromShipment_Failure_TenantSettingsDataRetrievalError() {
+        ShipmentDetails shipmentDetails = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = modelMapperTest.map(shipmentDetails, ShipmentDetailsResponse.class);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> consolidationService.getConsolFromShipment(shipmentDetails.getId()));
+    }
+
+    @Test
+    void testGetAutoAttachConsolidationDetails_Success_WithMasterBill() {
+        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(testConsol.getBol())
+                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
+                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
+                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
+                .pod(testConsol.getCarrierDetails().getDestinationPort()).build();
+        List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
+        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
+
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
+        when(jsonHelper.convertValueToList(Arrays.asList(testConsol), ConsolidationDetailsResponse.class)).thenReturn(Arrays.asList(consolidationDetailsResponse));
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill() {
+        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
+                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
+                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
+                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
+                .pod(testConsol.getCarrierDetails().getDestinationPort()).build();
+        List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
+        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
+
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
+        when(jsonHelper.convertValueToList(Arrays.asList(testConsol), ConsolidationDetailsResponse.class)).thenReturn(Arrays.asList(consolidationDetailsResponse));
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAutoUpdateGoodsAndHandlingInfo_Success() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(consolidationDetails, ConsolidationDetailsResponse.class);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setMultipleShipmentEnabled(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel.buildRequest(1L));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAutoUpdateGoodsAndHandlingInfo_Failure() {
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel.buildRequest(1L));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 }
