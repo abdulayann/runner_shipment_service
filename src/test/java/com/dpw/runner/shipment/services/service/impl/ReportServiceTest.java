@@ -8,20 +8,23 @@ import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dao.impl.AwbDao;
-import com.dpw.runner.shipment.services.dao.impl.EventDao;
-import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
+import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.document.service.impl.DocumentManagerServiceImpl;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,9 +44,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,6 +89,21 @@ public class ReportServiceTest {
 
     @Mock
     private ShipmentService shipmentService;
+
+    @Mock
+    private HblDao hblDao;
+
+    @Mock
+    private FileRepoDao fileRepoDao;
+
+    @Mock
+    private MasterDataUtils masterDataUtils;
+
+    @Mock
+    private ExecutorService executorService;
+
+    @Mock
+    private DocumentManagerServiceImpl documentManagerService;
 
     private final String path = "src/test/java/com/dpw/runner/shipment/services/files/";
 
@@ -477,12 +497,15 @@ public class ReportServiceTest {
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
         shipmentSettingsDetails.setAutoEventCreate(true);
+        shipmentSettingsDetails.setRestrictBlRelease(true);
 
         ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
         shipmentSettingsDetails2.setHouseMainPage("123456789");
+        shipmentSettingsDetails2.setHblFooter("123456789");
         shipmentSettingsDetails2.setTenantId(44);
         shipmentSettingsDetails2.setAutoEventCreate(true);
         shipmentSettingsDetails2.setPrintAfterEachPage(true);
+        shipmentSettingsDetails2.setRestrictBlRelease(true);
         reportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
         reportRequest.setPrintIATAChargeCode(true);
         reportRequest.setDisplayFreightAmount(false);
@@ -490,6 +513,7 @@ public class ReportServiceTest {
         reportRequest.setPrintType(ReportConstants.ORIGINAL);
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
+        reportRequest.setNoOfCopies("2");
         // Mock
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
@@ -499,10 +523,37 @@ public class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.ORIGINALS, 1);
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
+        dataRetrived.put(ReportConstants.COPY_BILLS, 1);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+        shipmentDetails.getAdditionalDetails().setOriginal(1);
+        shipmentDetails.getAdditionalDetails().setReleaseType("ORG");
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.update(shipmentDetails, false)).thenReturn(shipmentDetails);
+        Hbl hbl = new Hbl();
+        hbl.setHblData(new HblDataDto());
+        hbl.getHblData().setOriginalSeq(1);
+        hbl.getHblData().setVersion(1);
+        when(hblDao.findByShipmentId(Long.parseLong(reportRequest.getReportId()))).thenReturn(Arrays.asList(hbl));
+        DocumentManagerResponse documentManagerResponse = new DocumentManagerResponse();
+        documentManagerResponse.setSuccess(true);
+        when(documentManagerService.temporaryFileUpload(any(), any())).thenReturn(documentManagerResponse);
+        //when(documentManagerService.saveFile(any())).thenReturn(documentManagerResponse);
+
+
+        Runnable mockRunnable = mock(Runnable.class);
+
+        // Define the behavior of the mock
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
+
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
