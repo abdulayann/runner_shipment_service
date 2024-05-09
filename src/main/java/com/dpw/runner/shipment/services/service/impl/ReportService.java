@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
@@ -27,7 +26,6 @@ import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
@@ -48,15 +46,11 @@ import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -72,9 +66,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Service
 @Slf4j
@@ -164,45 +155,22 @@ public class ReportService implements IReportService {
                 ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
                 byte[] dataByte;
                 List<byte[]> dataByteList = new ArrayList<>();
-                List<Awb> awbList = new ArrayList<>();
-                Map<String, List<Awb>> groupedAwb = new HashMap<>();
+                Map<String, List<Long>> groupedShipments = new HashMap<>();
                 if(consolidationDetails.getShipmentsList() != null && !consolidationDetails.getShipmentsList().isEmpty()) {
-                    List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
-                    ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
-                    Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
-                    Page<Awb> awbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
-                    if(awbListPage != null && !awbListPage.isEmpty()) {
-                        awbList = awbListPage.getContent();
-                    }
-                }
-                if(!awbList.isEmpty()) {
-                    groupedAwb = awbList.stream().collect(Collectors.groupingBy(e -> e.getAwbShipmentInfo().getDestinationAirport()));
-                }
-                if(groupedAwb != null && !groupedAwb.isEmpty()) {
-                    for (Map.Entry<String, List<Awb>> entry: groupedAwb.entrySet()) {
-                        reportRequest.setFromConsolidation(false);
-                        reportRequest.setAwbList(groupedAwb.get(entry.getKey()));
-                        reportRequest.setShipmentIds(reportRequest.getAwbList().stream().map(Awb::getShipmentId).toList());
-                        dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
-                        if(dataByte != null) {
-                            dataByteList.add(dataByte);
+                    groupedShipments = consolidationDetails.getShipmentsList().stream()
+                            .collect(Collectors.groupingBy(e -> e.getCarrierDetails().getDestinationPort(),
+                                    Collectors.mapping(ShipmentDetails::getId, Collectors.toList())));
+                    if(groupedShipments != null && !groupedShipments.isEmpty()) {
+                        for (Map.Entry<String, List<Long>> entry: groupedShipments.entrySet()) {
+                            reportRequest.setFromConsolidation(false);
+                            reportRequest.setShipmentIds(entry.getValue());
+                            dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
+                            if(dataByte != null) {
+                                dataByteList.add(dataByte);
+                            }
                         }
                     }
-                }
-                if(awbList.size() < consolidationDetails.getShipmentsList().size()) {
-                    Set<Long> shipmentsWithoutAwb = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).collect(Collectors.toSet());
-                    for(Awb awb: awbList) {
-                        shipmentsWithoutAwb.remove(awb.getShipmentId());
-                    }
-                    if(!shipmentsWithoutAwb.isEmpty()) {
-                        reportRequest.setFromConsolidation(false);
-                        reportRequest.setAwbList(null);
-                        reportRequest.setShipmentIds(shipmentsWithoutAwb.stream().toList());
-                        dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
-                        if(dataByte != null) {
-                            dataByteList.add(dataByte);
-                        }
-                    }
+
                 }
                 return CommonUtils.concatAndAddContent(dataByteList);
             }
@@ -259,7 +227,6 @@ public class ReportService implements IReportService {
             ((ShipmentCANReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
         }
         if(report instanceof CargoManifestAirConsolidationReport cargoManifestAirConsolidationReport) {
-            cargoManifestAirConsolidationReport.setAwbList(reportRequest.getAwbList());
             cargoManifestAirConsolidationReport.setShipIds(reportRequest.getShipmentIds());
             cargoManifestAirConsolidationReport.setShipperAndConsignee(reportRequest.isShipperAndConsignee());
             cargoManifestAirConsolidationReport.setSecurityData(reportRequest.isSecurityData());

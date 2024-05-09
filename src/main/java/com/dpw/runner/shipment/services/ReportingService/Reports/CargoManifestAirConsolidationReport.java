@@ -4,14 +4,21 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelpe
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestAirConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.nimbusds.jose.util.Pair;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -19,20 +26,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Component
 @Data
 public class CargoManifestAirConsolidationReport extends IReport{
 
     @Autowired
+    private IAwbDao awbDao;
+
+    @Autowired
     private JsonHelper jsonHelper;
 
     @Autowired
     private IPackingService packingService;
-
-    private List<Awb> awbList;
 
     private List<Long> shipIds;
 
@@ -56,20 +67,21 @@ public class CargoManifestAirConsolidationReport extends IReport{
         cargoManifestAirConsolidationModel.setPackSummaryResponse(packingService.calculatePackSummary(jsonHelper.convertValueToList(cargoManifestAirConsolidationModel.getConsolidationModel().getPackingList(), Packing.class),
                 cargoManifestAirConsolidationModel.getConsolidationModel().getTransportMode(),
                 cargoManifestAirConsolidationModel.getConsolidationModel().getContainerCategory(), new ShipmentMeasurementDetailsDto()));
-        if(awbList != null && !awbList.isEmpty()) {
+        if(shipIds != null && !shipIds.isEmpty()) {
             Map<Long, ShipmentModel> shipmentModelMap = getShipments(shipIds);
-            for(Awb awb: awbList) {
-                if(shipmentModelMap.containsKey(awb.getShipmentId())) {
-                    cargoManifestAirConsolidationModel.getShipmentModelList().add(shipmentModelMap.get(awb.getShipmentId()));
-                    cargoManifestAirConsolidationModel.getAwbList().add(awb);
-                }
+            ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipIds, "IN");
+            Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
+            Page<Awb> awbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
+            Map<Long, List<Awb>> awbMap = new HashMap<>();
+            if(awbListPage != null && !awbListPage.isEmpty()) {
+                awbMap = awbListPage.getContent().stream().collect(Collectors.groupingBy(Awb::getShipmentId));
             }
-        }
-        else if(shipIds != null && !shipIds.isEmpty()) {
-            Map<Long, ShipmentModel> shipmentModelMap = getShipments(shipIds);
             for(Map.Entry<Long, ShipmentModel> entry: shipmentModelMap.entrySet()) {
                 cargoManifestAirConsolidationModel.getShipmentModelList().add(shipmentModelMap.get(entry.getKey()));
-                cargoManifestAirConsolidationModel.getAwbList().add(null);
+                if(awbMap.containsKey(entry.getKey()))
+                    cargoManifestAirConsolidationModel.getAwbList().add(awbMap.get(entry.getKey()).get(0));
+                else
+                    cargoManifestAirConsolidationModel.getAwbList().add(null);
             }
         }
         return cargoManifestAirConsolidationModel;

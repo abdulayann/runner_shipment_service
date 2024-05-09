@@ -141,7 +141,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void test_saveNewAwbShipmentInfo() {
+    void test_saveNewAwbShipmentInfo() {
         try {
 
             Awb savedAwb = objectMapperTest.convertValue(mockAwb, Awb.class);
@@ -162,7 +162,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void testSaveNewAwbShipmentInfoThrowsExceptionWhenDuplicateOciInfo() {
+    void testSaveNewAwbShipmentInfoThrowsExceptionWhenDuplicateOciInfo() {
         try {
             Awb awb = mockAwb;
             AwbOCIInfo awbOCIInfo = AwbOCIInfo.builder().informationIdentifier(1).tradeIdentificationCode(1).build();
@@ -180,7 +180,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void testSaveNewAwbShipmentInfoThrowsExceptionWhenIataDescriptionLengthGreaterThan3() {
+    void testSaveNewAwbShipmentInfoThrowsExceptionWhenIataDescriptionLengthGreaterThan3() {
         try {
             Awb awb = mockAwb;
             AwbOtherChargesInfo awbOtherChargesInfo = AwbOtherChargesInfo.builder().iataDescription("ABCD").build();
@@ -279,7 +279,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void testFindAll() {
+    void testFindAll() {
 
         Specification<Awb> spec = null; // Replace with your dummy specification
         Pageable pageable = null;
@@ -295,7 +295,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void testFindById() {
+    void testFindById() {
         Long id = 1L;
         Optional<Awb> optionalResponse = Optional.of(mockAwb);
 
@@ -308,7 +308,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void testFindByGuid() {
+    void testFindByGuid() {
         UUID guid = UUID.randomUUID();
         Optional<Awb> optionalResponse = Optional.of(mockAwb);
 
@@ -321,7 +321,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void testFindByShipmentId() {
+    void testFindByShipmentId() {
         Long shipmentId = 1L;
         List<Awb> listResponse = List.of(mockAwb);
 
@@ -334,7 +334,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void testFindByConsolidationId() {
+    void testFindByConsolidationId() {
         Long consolidationId = 1L;
         List<Awb> listResponse = List.of(testMawb);
 
@@ -347,7 +347,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void testFindByIssuingAgent() {
+    void testFindByIssuingAgent() {
         String issuingAgent = "testAgent";
         List<Awb> listResponse = List.of(testMawb);
 
@@ -360,7 +360,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void testFindByAwbNumber() {
+    void testFindByAwbNumber() {
         List<String> awbNumbers = List.of(testMawb.getAwbNumber());
         List<Awb> listResponse = List.of(testMawb);
 
@@ -373,7 +373,7 @@ class AwbDaoTest {
     }
 
     @Test
-    public void testFindByAwbNumberAndIssuingAgent() {
+    void testFindByAwbNumberAndIssuingAgent() {
         String issuingAgent = "testAgent";
         List<String> awbNumbers = List.of(testMawb.getAwbNumber());
         List<Awb> listResponse = List.of(testMawb);

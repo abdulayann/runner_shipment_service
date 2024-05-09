@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
@@ -787,8 +788,8 @@ public abstract class IReport {
                 dict.put(SCREENING_CODES, shipmentModel.getAdditionalDetails().getScreeningStatus());
                 dict.put(CONSIGNMENT_STATUS, shipmentModel.getSecurityStatus());
                 dict.put(EXEMPTION_CARGO, shipmentModel.getAdditionalDetails().getExemptionCodes());
-                if(awb != null)
-                    dict.put(SPH, awb.getAwbSpecialHandlingCodesMappings());
+                if(awb != null && awb.getAwbSpecialHandlingCodesMappings() != null && !awb.getAwbSpecialHandlingCodesMappings().isEmpty())
+                    dict.put(SPH, awb.getAwbSpecialHandlingCodesMappings().stream().map(AwbSpecialHandlingCodesMappingInfo::getShcId).collect(Collectors.toSet()));
             }
             else
                 dict.put(IS_SECURITY, false);

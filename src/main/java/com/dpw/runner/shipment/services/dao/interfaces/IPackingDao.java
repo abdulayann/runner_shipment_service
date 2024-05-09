@@ -42,14 +42,6 @@ public interface IPackingDao {
 
     List<Packing> saveAll(List<Packing> packingList);
 
-    List<Packing> savePacks(List<Packing> packs, Long containerId);
-
-    List<Packing> removeContainerFromPacking(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws RunnerException;
-
-    List<Packing> insertContainerInPacking(List<Packing> packingList, Long containerId) throws RunnerException;
-
-    List<Packing> removeEntityFromContainer(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws RunnerException;
-
     List<Packing> saveEntityFromContainer(List<Packing> packings, Long containerId);
 
     void deleteEntityFromContainer(Long id);
