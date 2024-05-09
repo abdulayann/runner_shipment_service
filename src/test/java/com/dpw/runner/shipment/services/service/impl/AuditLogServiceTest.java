@@ -8,7 +8,7 @@ import static org.mockito.Mockito.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.*;
-import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
+import com.dpw.runner.shipment.services.dao.impl.AuditLogDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.AuditLog;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -59,7 +59,7 @@ class AuditLogServiceTest {
     private ExcelUtils excelUtils;
 
     @Mock
-    private IAuditLogDao iAuditLogDao;
+    private AuditLogDao auditLogDao;
 
     @Mock
     private JsonHelper jsonHelper;
@@ -113,7 +113,7 @@ class AuditLogServiceTest {
         auditLog.setEntityId(1L);
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         when(excelUtils.createExcelAsResource(any(), any(), any())).thenReturn(resource);
         when(jsonHelper.convertValue(any(), eq(JsonNode.class))).thenReturn(jsonNode);
         Resource result = auditLogService.downloadExcel(CommonRequestModel.builder().data(new ListCommonRequest()).build());
@@ -142,7 +142,7 @@ class AuditLogServiceTest {
         auditLog.setEntityId(1L);
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         when(jsonHelper.convertValue(any(), eq(JsonNode.class))).thenReturn(jsonNode);
         doThrow(new RunnerException()).when(excelUtils).createExcelAsResource(any(), any(), any());
         assertThrows(RunnerException.class, () -> auditLogService.downloadExcel(CommonRequestModel.builder().data(new ListCommonRequest()).build()));
@@ -250,7 +250,7 @@ class AuditLogServiceTest {
         prevData.setDirection("EXP");
         AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(prevData).newData(newData).parent("Shipment").operation("UPDATE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
-        verify(iAuditLogDao, times(1)).save(any());
+        verify(auditLogDao, times(1)).save(any());
     }
 
     @Test
@@ -265,7 +265,7 @@ class AuditLogServiceTest {
 
         AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(null).newData(newData).parent("Shipment").operation("CREATE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
-        verify(iAuditLogDao, times(1)).save(any());
+        verify(auditLogDao, times(1)).save(any());
     }
 
     @Test
@@ -286,7 +286,7 @@ class AuditLogServiceTest {
 
         AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(prevData).newData(newData).parent("Shipment").operation("UPDATE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
-        verify(iAuditLogDao, times(0)).save(any());
+        verify(auditLogDao, times(0)).save(any());
     }
 
     @Test
@@ -300,7 +300,7 @@ class AuditLogServiceTest {
         prevData.setUpdatedBy("def");
         AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(prevData).newData(null).parent("Shipment").operation("DELETE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
-        verify(iAuditLogDao, times(1)).save(any());
+        verify(auditLogDao, times(1)).save(any());
     }
 
     @Test
@@ -324,7 +324,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("ShipmentDetails");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
@@ -344,7 +344,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("Containers");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
@@ -364,7 +364,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("Packing");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
@@ -384,7 +384,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("Routings");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
@@ -404,7 +404,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("Notes");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
@@ -424,7 +424,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("BookingCarriage");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
@@ -444,7 +444,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("Events");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
@@ -464,7 +464,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("ReferenceNumbers");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
@@ -484,7 +484,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("Parties");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
@@ -504,7 +504,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("ServiceDetails");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
@@ -524,7 +524,7 @@ class AuditLogServiceTest {
         auditLog.setEntity("TruckDriverDetails");
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        when(iAuditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
         var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
         assertNotNull(response);
     }
