@@ -43,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageImpl;
@@ -248,6 +249,7 @@ class AuditLogServiceTest {
         prevData.setHouseBill("222");
         prevData.setShipmentCompletedOn(LocalDateTime.now());
         prevData.setDirection("EXP");
+        when(auditLogDao.save(any())).thenReturn(new AuditLog());
         AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(prevData).newData(newData).parent("Shipment").operation("UPDATE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
         verify(auditLogDao, times(1)).save(any());
@@ -263,6 +265,7 @@ class AuditLogServiceTest {
         newData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         newData.setUpdatedBy("def");
 
+        when(auditLogDao.save(any())).thenReturn(new AuditLog());
         AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(null).newData(newData).parent("Shipment").operation("CREATE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
         verify(auditLogDao, times(1)).save(any());
@@ -298,6 +301,7 @@ class AuditLogServiceTest {
         prevData.setId(1L);
         prevData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         prevData.setUpdatedBy("def");
+        when(auditLogDao.save(any())).thenReturn(new AuditLog());
         AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(prevData).newData(null).parent("Shipment").operation("DELETE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
         verify(auditLogDao, times(1)).save(any());
