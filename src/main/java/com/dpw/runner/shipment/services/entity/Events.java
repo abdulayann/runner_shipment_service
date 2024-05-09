@@ -84,8 +84,8 @@ public class Events extends MultiTenancy {
     @Column(name = "total_weight")
     private BigDecimal totalWeight;
 
-    @Column(name = "partial")
-    private String partial;
+    @Column(name = "is_partial")
+    private Boolean isPartial;
 
     @Column(name = "received_date")
     private LocalDateTime receivedDate;

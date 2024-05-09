@@ -38,6 +38,6 @@ public interface IEventRepository extends MultiTenancyRepository<Events> {
     void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt);
 
     @Modifying @Transactional
-    @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, partial, received_date, scheduled_date, created_at, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)", nativeQuery = true)
-    void createEventForAirMessagingEvent(UUID guid, Long entityId, String entityType, String eventCode, String description, String source, Integer tenantId, Integer pieces, Integer totalPieces, BigDecimal weight, BigDecimal totalWeight, String partial, LocalDateTime receivedDate, LocalDateTime scheduledDate, LocalDateTime createdAt, LocalDateTime updatedAt);
+    @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, created_at, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)", nativeQuery = true)
+    void createEventForAirMessagingEvent(UUID guid, Long entityId, String entityType, String eventCode, String description, String source, Integer tenantId, Integer pieces, Integer totalPieces, BigDecimal weight, BigDecimal totalWeight, Boolean isPartial, LocalDateTime receivedDate, LocalDateTime scheduledDate, LocalDateTime createdAt, LocalDateTime updatedAt);
 }
