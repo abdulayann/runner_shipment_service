@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.Awb;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -33,7 +32,6 @@ public class ReportRequest implements IRunnerRequest {
     boolean fromConsolidation;
     Boolean pushAwbEvent;
     Boolean printWithoutTranslation;
-    List<Awb> awbList;
     List<Long> shipmentIds;
     boolean isShipperAndConsignee;
     boolean isSecurityData;
