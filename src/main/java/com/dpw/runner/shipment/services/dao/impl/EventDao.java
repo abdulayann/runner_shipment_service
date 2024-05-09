@@ -386,32 +386,46 @@ public class EventDao implements IEventDao {
 
     @Override
     @Transactional
-    public void createEventForAirMessagingEvent(UUID guid, Long entityId, String entityType, String eventCode, String description, String source, Integer tenantId, Integer pieces, Integer totalPieces, BigDecimal weight, BigDecimal totalWeight, String partial, LocalDateTime receivedDate, LocalDateTime scheduledDate, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        Query query = entityManager.createNativeQuery("insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, partial, received_date, scheduled_date, created_at, updated_at) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                .setParameter(1, guid)
-                .setParameter(2, entityId)
-                .setParameter(3, entityType)
-                .setParameter(4, eventCode)
-                .setParameter(5, description)
-                .setParameter(6, source)
-                .setParameter(7, tenantId)
-                .setParameter(8, new TypedParameterValue(StandardBasicTypes.INTEGER, pieces))
-                .setParameter(9, new TypedParameterValue(StandardBasicTypes.INTEGER, totalPieces))
-                .setParameter(10, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, weight))
-                .setParameter(11, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, totalWeight))
-                .setParameter(12, partial)
-                .setParameter(15, createdAt)
-                .setParameter(16, updatedAt);
+    public void createEventForAirMessagingEvent(Events events) {
+        Query query = entityManager.createNativeQuery("insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, created_at, updated_at, estimated, actual, place_name, place_description, longitude, latitude) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                .setParameter(1, events.getGuid())
+                .setParameter(2, events.getEntityId())
+                .setParameter(3, events.getEntityType())
+                .setParameter(4, events.getEventCode())
+                .setParameter(5, events.getDescription())
+                .setParameter(6, events.getSource())
+                .setParameter(7, events.getTenantId())
+                .setParameter(8, new TypedParameterValue(StandardBasicTypes.INTEGER, events.getPieces()))
+                .setParameter(9, new TypedParameterValue(StandardBasicTypes.INTEGER, events.getTotalPieces()))
+                .setParameter(10, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, events.getWeight()))
+                .setParameter(11, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, events.getTotalWeight()))
+                .setParameter(12, events.getIsPartial())
+                .setParameter(15, events.getCreatedAt())
+                .setParameter(16, events.getUpdatedAt())
+                .setParameter(19, events.getPlaceName())
+                .setParameter(20, events.getPlaceDescription())
+                .setParameter(21, events.getLongitude())
+                .setParameter(22, events.getLatitude());
 
-        if(receivedDate != null) {
-            query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(receivedDate)));
+        if(events.getReceivedDate() != null) {
+            query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getReceivedDate())));
         } else {
             query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
         }
-        if(scheduledDate != null) {
-            query.setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(scheduledDate)));
+        if(events.getScheduledDate() != null) {
+            query.setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getScheduledDate())));
         } else {
             query.setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+        }
+        if(events.getEstimated() != null) {
+            query.setParameter(17, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getEstimated())));
+        } else {
+            query.setParameter(17, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+        }
+        if(events.getActual() != null) {
+            query.setParameter(18, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getActual())));
+        } else {
+            query.setParameter(18, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
         }
         query.executeUpdate();
 
