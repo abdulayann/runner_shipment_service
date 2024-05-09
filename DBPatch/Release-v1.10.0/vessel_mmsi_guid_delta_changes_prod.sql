@@ -18,14 +18,11 @@ update carrier_details set vessel = '31763461-1b2c-4e91-b2e3-4b473cb2a066' where
 update carrier_details set vessel = '40f76034-5263-441b-928a-b9f848df4872' where vessel = '564938000';
 update carrier_details set vessel = '55a2aabb-341d-42ef-97eb-2d847407cf05' where vessel = '566958000';
 update carrier_details set vessel = 'a9815d1b-679f-4d75-8e9d-ec2ada9bc7d4' where vessel = '636015181';
-update carrier_details set vessel = 'f1c51f30-3de8-4329-81e3-a32f397c0895' where vessel = '636015181';
 update carrier_details set vessel = '9021ee73-95cd-4675-a67c-22370646eafe' where vessel = '636016363';
 update carrier_details set vessel = '32525782-0559-4187-9e3d-f7baa1e3e9c3' where vessel = '636016672';
 update carrier_details set vessel = 'df07d523-8f80-487a-b8f4-3f35e6b5fbce' where vessel = '636016703';
 update carrier_details set vessel = '3aafb7d1-1882-4a92-9653-d2db6f5bbd42' where vessel = '636021139';
 update carrier_details set vessel = '9d8d2e48-4b92-45ee-8043-5971c854e6a5' where vessel = '636093041';
-update carrier_details set vessel = '46e7d614-87a8-4597-9ccd-669732501235' where vessel = '636093041';
-update carrier_details set vessel = 'e6d31813-01f1-4c78-a7bb-a19da71206c6' where vessel = '636093041';
 update carrier_details set vessel = '681aa119-f01b-4036-9b97-528cee508ec9' where vessel = 'SM MUMBAI';
 
 
