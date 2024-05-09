@@ -248,7 +248,7 @@ class AuditLogServiceTest {
         prevData.setHouseBill("222");
         prevData.setShipmentCompletedOn(LocalDateTime.now());
         prevData.setDirection("EXP");
-        when(auditLogDao.save(any())).thenReturn(new AuditLog());
+        //when(auditLogDao.save(any())).thenReturn(new AuditLog());
         AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(prevData).newData(newData).parent("Shipment").operation("UPDATE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
     }
@@ -263,7 +263,7 @@ class AuditLogServiceTest {
         newData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         newData.setUpdatedBy("def");
 
-        when(auditLogDao.save(any())).thenReturn(new AuditLog());
+        //when(auditLogDao.save(any())).thenReturn(new AuditLog());
         AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(null).newData(newData).parent("Shipment").operation("CREATE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
     }
@@ -297,7 +297,7 @@ class AuditLogServiceTest {
         prevData.setId(1L);
         prevData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         prevData.setUpdatedBy("def");
-        when(auditLogDao.save(any())).thenReturn(new AuditLog());
+        //when(auditLogDao.save(any())).thenReturn(new AuditLog());
         AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(prevData).newData(null).parent("Shipment").operation("DELETE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
     }
