@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -40,17 +39,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ExtendWith({MockitoExtension.class, SpringExtension.class})
-@Execution(CONCURRENT)
-class AuditLogServiceTest {
+@ExtendWith(MockitoExtension.class)
+public class AuditLogServiceTest {
 
     @Mock
     private CommonUtils commonUtils;
