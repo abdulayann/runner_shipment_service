@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Triple;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -302,7 +303,7 @@ public class AuditLogService implements IAuditLogService {
         return key;
     }
 
-    public void validateRequest(AuditLogMetaData auditLogMetaData) throws RunnerException {
+    private void validateRequest(@NotNull AuditLogMetaData auditLogMetaData) throws RunnerException {
         if (ObjectUtils.isEmpty(auditLogMetaData.getParent()) || ObjectUtils.isEmpty(auditLogMetaData.getParentId())) {
             throw new RunnerException("Parent or parent id is missing");
         } else if (ObjectUtils.isEmpty(auditLogMetaData.getNewData()) && ObjectUtils.isEmpty(auditLogMetaData.getPrevData())) {

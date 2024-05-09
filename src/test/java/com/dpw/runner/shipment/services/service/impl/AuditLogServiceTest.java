@@ -215,7 +215,12 @@ class AuditLogServiceTest {
         AuditLogMetaData auditLogMetaData = new AuditLogMetaData();
         auditLogMetaData.setParent("S");
         auditLogMetaData.setParentId(1L);
-        assertThrows(RunnerException.class, () -> auditLogService.addAuditLog(auditLogMetaData));
+        Exception e = assertThrows(RunnerException.class, () -> {
+            auditLogService.addAuditLog(auditLogMetaData);
+        });
+
+        String errorMessage ="Data is missing for ops " + auditLogMetaData.getOperation();
+        assertEquals(errorMessage, e.getMessage());
     }
 
     @Test
