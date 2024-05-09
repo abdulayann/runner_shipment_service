@@ -183,44 +183,7 @@ public class ContainerService implements IContainerService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.debug("Request is empty for Container Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        Containers container = convertRequestToEntity(request);
-        List<EventsRequest> eventsRequestList = request.getEventsList();
-        try {
-            container = containerDao.save(container);
-            if (request.getPacksList() != null) {
-                List<PackingRequest> packingRequest = request.getPacksList();
-                List<Packing> packs = packingDao.savePacks(convertToEntityList(packingRequest, Packing.class), container.getId());
-                container.setPacksList(packs);
-            }
-            if (eventsRequestList != null) {
-                List<Events> events = eventDao.saveEntityFromOtherEntity(
-                        convertToEntityList(eventsRequestList, Events.class), container.getId(), Constants.CONTAINER);
-                container.setEventsList(events);
-            }
-
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .newData(container)
-                            .prevData(null)
-                            .parent(Containers.class.getSimpleName())
-                            .parentId(container.getId())
-                            .operation(DBOperationType.CREATE.name()).build()
-            );
-            log.info("Container Details Saved Successfully for Id {} with Request Id {}", container.getId(), LoggerHelper.getRequestIdFromMDC());
-            afterSave(container, true);
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
+        return null;
     }
 
     @Override
@@ -714,81 +677,7 @@ public class ContainerService implements IContainerService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
-        String responseMsg;
-        ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.debug("Request is empty for Container Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-
-        if (request.getId() == null) {
-            log.debug("Request Id is null for Container Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        long id = request.getId();
-        Optional<Containers> oldEntity = containerDao.findById(id);
-        List<Long> updatedPackIds = new ArrayList<>();
-        List<PackingRequest> updatedPackingRequest = new ArrayList<>();
-        List<PackingRequest> packingRequestList = request.getPacksList();
-        if(packingRequestList != null && !packingRequestList.isEmpty()) {
-            for(PackingRequest packingRequest : packingRequestList) {
-                if(packingRequest.getId() != null) {
-                    updatedPackIds.add(packingRequest.getId());
-                }
-            }
-        }
-
-        List<PackingRequest> packingRequestWithEmptyContainerId = new ArrayList<>();
-        if(packingRequestList != null && !packingRequestList.isEmpty()) {
-            for(PackingRequest packingRequest : packingRequestList) {
-                if(packingRequest.getContainerId() == null) {
-                    packingRequestWithEmptyContainerId.add(packingRequest);
-                }
-            }
-        }
-
-        request.setPacksList(updatedPackingRequest);
-
-
-
-        Containers containers = convertRequestToEntity(request);
-
-        if(containers.getGuid() != null && !oldEntity.get().getGuid().equals(containers.getGuid())) {
-            throw new RunnerException("Provided GUID doesn't match with the existing one !");
-        }
-        List<EventsRequest> eventsRequestList = request.getEventsList();
-        try {
-
-            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-            containers = containerDao.save(containers);
-
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .newData(containers)
-                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Containers.class))
-                            .parent(Containers.class.getSimpleName())
-                            .parentId(containers.getId())
-                            .operation(DBOperationType.UPDATE.name()).build()
-            );
-
-            if (packingRequestList != null) {
-                packingDao.removeContainerFromPacking(convertToEntityList(packingRequestList, Packing.class), id, updatedPackIds);
-                packingDao.insertContainerInPacking(convertToEntityList(packingRequestWithEmptyContainerId, Packing.class), id);
-
-            }
-            if(eventsRequestList != null){
-                List<Events> events = eventDao.saveEntityFromOtherEntity(
-                        convertToEntityList(eventsRequestList, Events.class), containers.getId(), Constants.CONTAINER);
-                containers.setEventsList(events);
-            }
-            afterSave(containers, false);
-            log.info("Updated the container details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
+        return null;
     }
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {

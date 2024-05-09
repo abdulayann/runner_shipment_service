@@ -2648,6 +2648,7 @@
     "goodsDescription": "SAMPLE_DESCRIPTION",
     "maxTempUnit": "CEL",
     "minTempUnit": "CEL",
+    "containerId": 5,
     "dropdownMetadata": {
       "origin": {
         "label": " bazar - INBOM,    bazar   - Door",
