@@ -42,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.MDC;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageImpl;
 
@@ -211,6 +212,8 @@ public class AuditLogServiceTest {
         AuditLogMetaData auditLogMetaData = new AuditLogMetaData();
         auditLogMetaData.setParent("S");
         auditLogMetaData.setParentId(1L);
+        mockStatic(MDC.class);
+        when(MDC.get("skip-audit-log")).thenReturn("false");
         Exception e = assertThrows(RunnerException.class, () -> {
             auditLogService.addAuditLog(auditLogMetaData);
         });
