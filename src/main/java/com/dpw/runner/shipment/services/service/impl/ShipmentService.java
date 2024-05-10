@@ -3624,6 +3624,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setSourceGuid(null);
             cloneShipmentDetails.setClonedGuid(shipmentDetails.get().getGuid());
             cloneShipmentDetails.setContractId(null);
+            cloneShipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 
