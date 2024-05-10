@@ -147,6 +147,8 @@ public class AuditLogServiceTest {
 
     @Test
     void testAddAuditLog() {
+        mockStatic(MDC.class);
+        when(MDC.get("skip-audit-log")).thenReturn("false");
         assertThrows(RunnerException.class, () -> auditLogService.addAuditLog(new AuditLogMetaData()));
     }
 
