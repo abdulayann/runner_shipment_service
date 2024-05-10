@@ -81,6 +81,7 @@ public class AuditLogServiceTest {
     @BeforeEach
     void setUp() throws IOException {
         testShipment = jsonTestUtility.getTestShipment();
+        MDC.put("skip-audit-log", "false");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
     }
     @Test
@@ -147,8 +148,6 @@ public class AuditLogServiceTest {
 
     @Test
     void testAddAuditLog() {
-        mockStatic(MDC.class);
-        when(MDC.get("skip-audit-log")).thenReturn("false");
         assertThrows(RunnerException.class, () -> auditLogService.addAuditLog(new AuditLogMetaData()));
     }
 
@@ -214,8 +213,6 @@ public class AuditLogServiceTest {
         AuditLogMetaData auditLogMetaData = new AuditLogMetaData();
         auditLogMetaData.setParent("S");
         auditLogMetaData.setParentId(1L);
-        mockStatic(MDC.class);
-        when(MDC.get("skip-audit-log")).thenReturn("false");
         Exception e = assertThrows(RunnerException.class, () -> {
             auditLogService.addAuditLog(auditLogMetaData);
         });
