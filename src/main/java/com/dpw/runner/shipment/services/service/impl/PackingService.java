@@ -208,7 +208,7 @@ public class PackingService implements IPackingService {
                     }
                 }
             }
-        } else if (packingRow.getVolumeWeight() != null && StringUtils.isEmpty(packingRow.getVolumeWeightUnit())) {
+        } else if (packingRow.getVolumeWeight() != null) {
             throw new ValidationException("Volumetric weight unit is empty or Volumetric weight unit not entered at row: " + i);
         }
     }
@@ -218,16 +218,13 @@ public class PackingService implements IPackingService {
                                                  Map<Long, Long> dicDGSubstanceUNDGContact, Map<Long, String> dicDGSubstanceFlashPoint
             , int row, Packing packingRow) {
         Boolean isHazardous = packingRow.getHazardous();
-        if (isHazardous != null) {
-            if (isHazardous == true) {
+        if (isHazardous != null && isHazardous) {
                 // DG CLASS(HAZARDOUS CLASS)
                 if (!StringUtils.isEmpty(packingRow.getDGClass())) {
                     String dgClass = packingRow.getDGClass();
-                    if (!StringUtils.isEmpty(dgClass)) {
                         if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(dgClass)) {
                             throw new ValidationException("DG class is invalid at row: " + row);
                         }
-                    }
                 }
 
                 if (packingRow.getDGSubstanceId() != null) {
@@ -239,10 +236,10 @@ public class PackingService implements IPackingService {
                 if (!StringUtils.isEmpty(packingRow.getFlashPoint())) {
                     if (packingRow.getDGSubstanceId() != null) {
                         if (!dicDGSubstanceFlashPoint.containsKey(packingRow.getDGSubstanceId()) ||
-                                dicDGSubstanceFlashPoint.get(packingRow.getDGSubstanceId()) != packingRow.getFlashPoint()) {
+                                !Objects.equals(dicDGSubstanceFlashPoint.get(packingRow.getDGSubstanceId()), packingRow.getFlashPoint())) {
                             throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
                         }
-                    } else if (packingRow.getDGSubstanceId() == null && !StringUtils.isEmpty(packingRow.getFlashPoint())) {
+                    } else {
                         throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
                     }
                 }
@@ -251,14 +248,13 @@ public class PackingService implements IPackingService {
                     if (packingRow.getDGSubstanceId() != null) {
                         long substanceId = packingRow.getDGSubstanceId();
                         if (!dicDGSubstanceUNDGContact.containsKey(substanceId) ||
-                                dicDGSubstanceUNDGContact.get(packingRow.getDGSubstanceId()) != Long.valueOf(packingRow.getUNDGContact())) {
+                                !Objects.equals(dicDGSubstanceUNDGContact.get(packingRow.getDGSubstanceId()), Long.valueOf(packingRow.getUNDGContact()))) {
                             throw new ValidationException("UNDGContact is invalid at row: " + row);
                         }
                     } else if (packingRow.getDGSubstanceId() == null && !StringUtils.isEmpty(packingRow.getUNDGContact())) {
                         throw new ValidationException("UNDGContact is invalid at row: " + row);
                     }
                 }
-            }
         }
     }
 
@@ -275,7 +271,7 @@ public class PackingService implements IPackingService {
     private void checkCalculatedVolumeAndActualVolume(int row, Packing packingRow) throws RunnerException {
         if (!StringUtils.isEmpty(packingRow.getVolumeUnit())) {
             if (packingRow.getVolume() != null) {
-                if (packingRow.getVolumeUnit() != VOLUME_UNIT_M3) {
+                if (!Objects.equals(packingRow.getVolumeUnit(), VOLUME_UNIT_M3)) {
                     throw new ValidationException("Volume unit not in M3 at row: " + row);
                 }
                 BigDecimal actualVolume = packingRow.getVolume();
@@ -286,7 +282,7 @@ public class PackingService implements IPackingService {
                     throw new ValidationException("Volume is invalid at row: " + row);
                 }
             }
-        } else if (packingRow.getVolume() != null && StringUtils.isEmpty(packingRow.getVolumeUnit())) {
+        } else if (packingRow.getVolume() != null) {
             throw new ValidationException("Volume unit is empty or Volume unit not entered at row: " + row);
         }
     }
@@ -332,7 +328,7 @@ public class PackingService implements IPackingService {
             if (vwob.getChargeable() != null) {
                 calculatedChargeable = vwob.getChargeable();
                 calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
-                if (calculatedChargeable != actualChargeable) {
+                if (!Objects.equals(calculatedChargeable, actualChargeable)) {
                     BigDecimal difference = calculatedChargeable.subtract(actualChargeable).abs();
                     BigDecimal threshold = new BigDecimal("0.01");
                     if (difference.compareTo(threshold) > 0) {

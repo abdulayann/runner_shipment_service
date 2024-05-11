@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 @Slf4j
@@ -51,6 +53,83 @@ public class JsonTestUtility {
 
     public Packing getTestPacking(){
         return objectMapper.convertValue(payload.get("PACKING") , Packing.class);
+    }
+
+    public Packing getTestCsvPacking(){
+        return objectMapper.convertValue(payload.get("CSV_PACKING") , Packing.class);
+    }
+
+    public VolumeWeightChargeable getVolumeWeightChargeable() { return objectMapper.convertValue(payload.get("VolumeWeightChargeable"), VolumeWeightChargeable.class); }
+    public Map getMasterDataMap() {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload.get("MasterDataMap")),
+                    new TypeReference<Map<String, Set<String>>>() {
+                    });
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    public Map getMasterDataMapWithCommodity() {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload.get("MasterDataMapWithCommodity")),
+                    new TypeReference<Map<String, Set<String>>>() {
+                    });
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    public Map getMasterDataMapWithSameCommodity() {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload.get("MasterDataMapWithSameCommodity")),
+                    new TypeReference<Map<String, Set<String>>>() {
+                    });
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    public Map getDgSubstanceContactMap() {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload.get("dgSubstanceContactMap")),
+                    new TypeReference<Map<Integer, Long>>() {
+                    });
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    public Map getDgSubstanceContactMapLong() {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload.get("dgSubstanceContactMap")),
+                    new TypeReference<Map<Long, Long>>() {
+                    });
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    public Map getDgSubstanceFlashPoint() {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload.get("dgSubstanceFlashPoint")),
+                    new TypeReference<Map<Integer, String>>() {
+                    });
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 
     public PackingRequestV2 getTestPackingRequestV2(){
