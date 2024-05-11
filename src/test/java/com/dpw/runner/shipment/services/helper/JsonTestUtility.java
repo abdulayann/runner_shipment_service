@@ -108,22 +108,10 @@ public class JsonTestUtility {
         }
     }
 
-    public Map getDgSubstanceContactMapLong() {
-        try {
-            return objectMapper.readValue(objectMapper.writeValueAsString(payload.get("dgSubstanceContactMap")),
-                    new TypeReference<Map<Long, Long>>() {
-                    });
-        }
-        catch (Exception e)
-        {
-            return null;
-        }
-    }
-
     public Map getDgSubstanceFlashPoint() {
         try {
             return objectMapper.readValue(objectMapper.writeValueAsString(payload.get("dgSubstanceFlashPoint")),
-                    new TypeReference<Map<Integer, String>>() {
+                    new TypeReference<Map<Long, String>>() {
                     });
         }
         catch (Exception e)

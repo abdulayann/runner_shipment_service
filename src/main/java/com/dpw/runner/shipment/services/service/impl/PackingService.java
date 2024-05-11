@@ -235,8 +235,8 @@ public class PackingService implements IPackingService {
 
                 if (!StringUtils.isEmpty(packingRow.getFlashPoint())) {
                     if (packingRow.getDGSubstanceId() != null) {
-                        if (!dicDGSubstanceFlashPoint.containsKey(packingRow.getDGSubstanceId()) ||
-                                !Objects.equals(dicDGSubstanceFlashPoint.get(packingRow.getDGSubstanceId()), packingRow.getFlashPoint())) {
+                        if (!dicDGSubstanceFlashPoint.containsKey(Long.valueOf(packingRow.getDGSubstanceId())) ||
+                                !Objects.equals(dicDGSubstanceFlashPoint.get(Long.valueOf(packingRow.getDGSubstanceId())), packingRow.getFlashPoint())) {
                             throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
                         }
                     } else {
@@ -248,7 +248,7 @@ public class PackingService implements IPackingService {
                     if (packingRow.getDGSubstanceId() != null) {
                         long substanceId = packingRow.getDGSubstanceId();
                         if (!dicDGSubstanceUNDGContact.containsKey(substanceId) ||
-                                !Objects.equals(dicDGSubstanceUNDGContact.get(packingRow.getDGSubstanceId()), Long.valueOf(packingRow.getUNDGContact()))) {
+                                !Objects.equals(dicDGSubstanceUNDGContact.get(Long.valueOf(packingRow.getDGSubstanceId())), Long.valueOf(packingRow.getUNDGContact()))) {
                             throw new ValidationException("UNDGContact is invalid at row: " + row);
                         }
                     } else if (packingRow.getDGSubstanceId() == null && !StringUtils.isEmpty(packingRow.getUNDGContact())) {

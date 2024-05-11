@@ -1157,8 +1157,8 @@ class PackingServiceTest {
                 .oldContainer(containerRequest).build();
 
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
-
-        assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build()));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(commonRequestModel));
     }
 
     @Test
