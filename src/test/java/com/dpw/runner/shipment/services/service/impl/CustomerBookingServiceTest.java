@@ -99,8 +99,6 @@ class CustomerBookingServiceTest {
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
         objectMapper = JsonTestUtility.getMapper();
-        customerBookingRequest = jsonTestUtility.getCustomerBookingRequest();
-        customerBooking = jsonTestUtility.getCustomerBooking();
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -109,6 +107,8 @@ class CustomerBookingServiceTest {
 
     @BeforeEach
     void setup() {
+        customerBookingRequest = jsonTestUtility.getCustomerBookingRequest();
+        customerBooking = jsonTestUtility.getCustomerBooking();
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
     }
 
