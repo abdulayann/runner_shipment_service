@@ -94,9 +94,6 @@ public class ReportServiceTest {
     private HblDao hblDao;
 
     @Mock
-    private FileRepoDao fileRepoDao;
-
-    @Mock
     private MasterDataUtils masterDataUtils;
 
     @Mock
@@ -538,21 +535,20 @@ public class ReportServiceTest {
         when(hblDao.findByShipmentId(Long.parseLong(reportRequest.getReportId()))).thenReturn(Arrays.asList(hbl));
         DocumentManagerResponse documentManagerResponse = new DocumentManagerResponse();
         documentManagerResponse.setSuccess(true);
-        when(documentManagerService.temporaryFileUpload(any(), any())).thenReturn(documentManagerResponse);
         //when(documentManagerService.saveFile(any())).thenReturn(documentManagerResponse);
 
 
         Runnable mockRunnable = mock(Runnable.class);
 
         // Define the behavior of the mock
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
+//        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+//            // Get the argument passed to the withMdc method
+//            Runnable argument = invocation.getArgument(0);
+//            // Call the run method of the argument
+//            argument.run();
+//            // Add any additional behavior or return value as needed
+//            return mockRunnable;
+//        });
 
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
