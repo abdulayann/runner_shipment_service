@@ -108,9 +108,7 @@ public class PackingService implements IPackingService {
 
     @Autowired
     private IPackingSync packingSync;
-    @Lazy
-    @Autowired
-    private ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
 
@@ -914,9 +912,7 @@ public class PackingService implements IPackingService {
     public ResponseEntity<IRunnerResponse> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         PackingRequestV2 packingRequestV2 = (PackingRequestV2) commonRequestModel.getData();
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.PACKAGES, StringUtility.convertToString(packingRequestV2.getGuid()), packingRequestV2);
-            }
+
             Optional<Packing> existingPacking = packingDao.findByGuid(packingRequestV2.getGuid());
             Packing packing = modelMapper.map(packingRequestV2, Packing.class);
             if (existingPacking.isPresent()) {

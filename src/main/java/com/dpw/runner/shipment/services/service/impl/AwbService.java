@@ -123,9 +123,7 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private UnitConversionUtility unitConversionUtility;
-    @Lazy
-    @Autowired
-    private ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
 
@@ -1388,63 +1386,6 @@ public class AwbService implements IAwbService {
 
     public ResponseEntity<IRunnerResponse> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync){
         return ResponseHelper.buildSuccessResponse();
-//        try{
-//            AwbRequestV2 request = (AwbRequestV2) commonRequestModel.getData();
-//            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-//                return syncQueueService.saveSyncRequest(SyncingConstants.AWB, StringUtility.convertToString(request.getGuid()), request);
-//            }
-//            Long entityId = null;
-//            var awbType = request.getAwbShipmentInfo().getEntityType();
-//            Optional<ConsolidationDetails> consolidation = consolidationDetailsDao.findByGuid(request.getConsolidationGuid());
-//            Optional<ShipmentDetails> shipment = shipmentDao.findByGuid(request.getShipmentGuid());
-//
-//            List<Awb> existingAwb;
-//            Awb awb = jsonHelper.convertValue(request, Awb.class);
-//
-//            if(awbType.equals("MAWB") && consolidation.isPresent()){
-//                entityId = consolidation.get().getId();
-//                awb.setConsolidationId(entityId);
-//                existingAwb = awbDao.findByConsolidationId(consolidation.get().getId());
-//            }
-//            else if(shipment.isPresent()) {
-//                entityId = shipment.get().getId();
-//                awb.setShipmentId(entityId);
-//                existingAwb = awbDao.findByShipmentId(shipment.get().getId());
-//            }
-//            else {
-//                throw new RunnerException("Shipment/Consolidation not present, Please create that first !");
-//            }
-//
-//            setEntityId(awb, entityId);
-//            if(existingAwb.isEmpty()){
-//                // SAVE
-//            } else {
-//                // UPDATE
-//                awb.setId(existingAwb.get(0).getId());
-//                awb.setGuid(existingAwb.get(0).getGuid());
-//            }
-//            awbDao.save(awb);
-//
-//            if(awbType.equals("MAWB") && consolidation.isPresent()) {
-//                // Link this MAWB with it's HAWB
-//                List<ShipmentDetails> shipmentList = consolidation.get().getShipmentsList();
-//                List<Long> shipmentId = new ArrayList();
-//                if(shipmentList != null && shipmentList.size() > 0) {
-//                    for(var i : shipmentList)
-//                        shipmentId.add(i.getId());
-//                }
-//                var listCriteria = constructListCommonRequest("shipmentId", shipmentId, "IN");
-//                Pair<Specification<Awb>, Pageable> pair = fetchData(listCriteria, Awb.class);
-//                var hawbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
-//                LinkHawbMawb(awb, hawbListPage.getContent());
-//            }
-//
-//            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(awb, AwbResponse.class));
-//
-//        } catch (Exception e){
-//            log.error("{}", e);
-//            return ResponseHelper.buildFailedResponse(e.getMessage());
-//        }
     }
 
 //    private void setEntityId(Awb request, Long entityId){

@@ -34,7 +34,6 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
@@ -110,9 +109,6 @@ class EventServiceTest {
 
     @Mock
     private RestTemplate restTemplate;
-
-    @Mock
-    private ISyncQueueService syncQueueService;
 
     @Mock
     private SyncConfig syncConfig;
