@@ -71,6 +71,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
@@ -141,9 +142,6 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IEventDao eventDao;
-
-    @Autowired
-    private IFileRepoDao fileRepoDao;
 
     @Autowired
     private INotesDao notesDao;
@@ -615,59 +613,6 @@ public class ConsolidationService implements IConsolidationService {
         return getNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.getTenantId(), true, null, false);
     }
 
-
-    @Transactional
-    public void createEvent(ConsolidationDetails consolidationDetails, EventsRequest eventsRequest) {
-        eventsRequest.setEntityId(consolidationDetails.getId());
-        eventsRequest.setEntityType(Constants.CONSOLIDATION);
-        eventDao.save(jsonHelper.convertValue(eventsRequest, Events.class));
-    }
-
-    @Transactional
-    public void createFileRepo(ConsolidationDetails consolidationDetails, FileRepoRequest fileRepoRequest) {
-        fileRepoRequest.setEntityId(consolidationDetails.getId());
-        fileRepoRequest.setEntityType(Constants.CONSOLIDATION);
-        fileRepoDao.save(jsonHelper.convertValue(fileRepoRequest, FileRepo.class));
-    }
-
-    @Transactional
-    public void createNote(ConsolidationDetails consolidationDetails, NotesRequest notesRequest) {
-        notesRequest.setEntityId(consolidationDetails.getId());
-        notesRequest.setEntityType(Constants.CONSOLIDATION);
-        notesDao.save(jsonHelper.convertValue(notesRequest, Notes.class));
-    }
-
-    @Transactional
-    public void createParties(ConsolidationDetails consolidationDetails, PartiesRequest partiesRequest) {
-        partiesRequest.setEntityId(consolidationDetails.getId());
-        partiesRequest.setEntityType(Constants.CONSOLIDATION_ADDRESSES);
-        partiesDao.save(jsonHelper.convertValue(partiesRequest, Parties.class));
-    }
-
-    @Transactional
-    public void createReferenceNumber(ConsolidationDetails consolidationDetails, ReferenceNumbersRequest referenceNumbersRequest) {
-        referenceNumbersRequest.setConsolidationId(consolidationDetails.getId());
-        referenceNumbersDao.save(jsonHelper.convertValue(referenceNumbersRequest, ReferenceNumbers.class));
-    }
-
-    @Transactional
-    public void createTruckDriver(ConsolidationDetails consolidationDetails, TruckDriverDetailsRequest truckDriverDetailsRequest) {
-        truckDriverDetailsRequest.setConsolidationId(consolidationDetails.getId());
-        truckDriverDetailsDao.save(jsonHelper.convertValue(truckDriverDetailsRequest, TruckDriverDetails.class));
-    }
-
-    @Transactional
-    public void createPacking(ConsolidationDetails consolidationDetails, PackingRequest packingRequest) {
-        packingRequest.setConsolidationId(consolidationDetails.getId());
-        packingDao.save(jsonHelper.convertValue(packingRequest, Packing.class));
-    }
-
-    @Transactional
-    public void createRouting(ConsolidationDetails consolidationDetails, RoutingsRequest routingsRequest) {
-        routingsRequest.setConsolidationId(consolidationDetails.getId());
-        routingsDao.save(jsonHelper.convertValue(routingsRequest, Routings.class));
-    }
-
     public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request) throws RunnerException {
         String responseMsg;
 
@@ -718,8 +663,6 @@ public class ConsolidationService implements IConsolidationService {
             // TODO- implement Validation logic
 
             Optional<ConsolidationDetails> oldEntity = retrieveByIdOrGuid(request);
-            long id = oldEntity.get().getId();
-
             if (!oldEntity.isPresent()) {
                 log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -906,10 +849,6 @@ public class ConsolidationService implements IConsolidationService {
             if (eventsRequestList != null) {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.CONSOLIDATION);
                 entity.setEventsList(updatedEvents);
-            }
-            if (fileRepoRequestList != null) {
-                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.CONSOLIDATION);
-                entity.setFileRepoList(updatedFileRepos);
             }
             if (referenceNumbersRequestList != null) {
                 List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
@@ -2670,24 +2609,24 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity) throws ExecutionException, InterruptedException {
-        var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
-        return (List<T>) runnerListResponse.getData();
-    }
-
-    private <T extends IRunnerResponse> List<T> getResponse(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-        var runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
-        return (List<T>) runnerListResponse.getData();
-    }
-
-    private <T extends IRunnerResponse> T getResponseEntity(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-        var runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
-        return (T) runnerResponse.getData();
-    }
-
-    private Containers convertRequestToEntity(ContainerRequest request) {
-        return jsonHelper.convertValue(request, Containers.class);
-    }
+//    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity) throws ExecutionException, InterruptedException {
+//        var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
+//        return (List<T>) runnerListResponse.getData();
+//    }
+//
+//    private <T extends IRunnerResponse> List<T> getResponse(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
+//        var runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
+//        return (List<T>) runnerListResponse.getData();
+//    }
+//
+//    private <T extends IRunnerResponse> T getResponseEntity(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
+//        var runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
+//        return (T) runnerResponse.getData();
+//    }
+//
+//    private Containers convertRequestToEntity(ContainerRequest request) {
+//        return jsonHelper.convertValue(request, Containers.class);
+//    }
 
     @Transactional
     public ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel, boolean dataMigration, String createdBy, LocalDateTime createdDate) throws RunnerException {
@@ -2788,13 +2727,6 @@ public class ConsolidationService implements IConsolidationService {
                 Page<Events> oldEvents = eventDao.findAll(pair.getLeft(), pair.getRight());
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.CONSOLIDATION, oldEvents.stream().toList());
                 entity.setEventsList(updatedEvents);
-            }
-            if (fileRepoRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.CONSOLIDATION);
-                Pair<Specification<FileRepo>, Pageable> pair = fetchData(listCommonRequest, FileRepo.class);
-                Page<FileRepo> oldFileRepoList = fileRepoDao.findAll(pair.getLeft(), pair.getRight());
-                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.CONSOLIDATION, oldFileRepoList.stream().toList());
-                entity.setFileRepoList(updatedFileRepos);
             }
             if (referenceNumbersRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, entity.getId(), "=");
@@ -2983,10 +2915,6 @@ public class ConsolidationService implements IConsolidationService {
             List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(eventsRequestList, Events.class, isFromBooking ? false : isCreate), id, Constants.CONSOLIDATION);
             consolidationDetails.setEventsList(updatedEvents);
         }
-        if (fileRepoRequestList != null) {
-            List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(fileRepoRequestList, FileRepo.class, isFromBooking ? false : isCreate), id, Constants.CONSOLIDATION);
-            consolidationDetails.setFileRepoList(updatedFileRepos);
-        }
         if (referenceNumbersRequestList != null) {
             List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isFromBooking ? false : isCreate), id);
             consolidationDetails.setReferenceNumbersList(updatedReferenceNumbers);
@@ -3146,6 +3074,7 @@ public class ConsolidationService implements IConsolidationService {
                 .routingsList(List.of(customRouting))
                 .mawb(isMawb ? shipment.getMasterBill() : null)
                 .createdBy(UserContext.getUser().getUsername())
+                .modeOfBooking(StringUtils.equals(transportMode, Constants.TRANSPORT_MODE_SEA) ? Constants.INTTRA : null)
                 //.isLinked(true)
                 .build();
 

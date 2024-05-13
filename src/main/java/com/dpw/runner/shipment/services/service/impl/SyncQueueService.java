@@ -50,8 +50,6 @@ public class SyncQueueService implements ISyncQueueService {
     @Autowired
     private IPackingService packingService;
     @Autowired
-    private IRoutingsService routingsService;
-    @Autowired
     private IELDetailsService elDetailsService;
     @Autowired
     private IEventService eventService;
@@ -143,10 +141,6 @@ public class SyncQueueService implements ISyncQueueService {
 
                     case SyncingConstants.PACKAGES:
                         packingService.V1PackingCreateAndUpdate(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), PackingRequestV2.class)).build(), false);
-                        break;
-
-                    case SyncingConstants.ROUTINGS:
-                        routingsService.V1RoutingsCreateAndUpdate(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), RoutingsRequestV2.class)).build(), false);
                         break;
 
                     case SyncingConstants.EL_DETAILS:

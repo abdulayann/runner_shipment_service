@@ -45,7 +45,7 @@ public class EventsResponse implements IRunnerResponse {
     private Integer totalPieces;
     private BigDecimal weight;
     private BigDecimal totalWeight;
-    private String partial;
+    private Boolean isPartial;
     private LocalDateTime receivedDate;
     private LocalDateTime scheduledDate;
 }

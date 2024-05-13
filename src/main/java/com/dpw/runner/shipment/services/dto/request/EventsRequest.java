@@ -35,7 +35,7 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private Integer totalPieces;
     private BigDecimal weight;
     private BigDecimal totalWeight;
-    private String partial;
+    private Boolean isPartial;
     private LocalDateTime receivedDate;
     private LocalDateTime scheduledDate;
 }

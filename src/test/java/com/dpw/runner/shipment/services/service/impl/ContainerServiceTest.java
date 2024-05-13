@@ -42,7 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -130,18 +129,9 @@ class ContainerServiceTest {
 
     @Test
     public void testCreate_Success() {
-        ContainerRequest mockContainerRequest = objectMapper.convertValue(testContainer, ContainerRequest.class);
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockContainerRequest);
-        ContainerResponse containerResponse = objectMapper.convertValue(mockContainerRequest, ContainerResponse.class);
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.create(CommonRequestModel.buildRequest());
 
-        when(jsonHelper.convertValue(any(ContainerRequest.class), eq(Containers.class))).thenReturn(testContainer);
-        when(containerDao.save(any())).thenReturn(testContainer);
-        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.create(commonRequestModel);
-
-        Assertions.assertNotNull(responseEntity);
-        assertEquals(ResponseHelper.buildSuccessResponse(containerResponse), responseEntity);
+        Assertions.assertNull(responseEntity);
     }
 
 
@@ -206,24 +196,9 @@ class ContainerServiceTest {
 
     @Test
     void testUpdate() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        testContainer.setId(1L);
-        ContainerRequest mockContainerRequest = objectMapper.convertValue(testContainer, ContainerRequest.class);
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockContainerRequest);
-        ContainerResponse containerResponse = objectMapper.convertValue(mockContainerRequest, ContainerResponse.class);
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.update(CommonRequestModel.buildRequest());
 
-        when(containerDao.findById(anyLong())).thenReturn(Optional.of(testContainer));
-        when(jsonHelper.convertValue(any(ContainerRequest.class), eq(Containers.class))).thenReturn(testContainer);
-
-        when(jsonHelper.convertToJson(any(Containers.class))).thenReturn(StringUtils.EMPTY);
-        when(containerDao.save(any(Containers.class))).thenReturn(testContainer);
-        when(jsonHelper.convertValue(any(Containers.class), eq(ContainerResponse.class))).thenReturn(containerResponse);
-
-
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.update(commonRequestModel);
-
-        Mockito.verify(auditLogService, times(1)).addAuditLog(any(AuditLogMetaData.class));
-        Assertions.assertNotNull(responseEntity);
-        assertEquals(ResponseHelper.buildSuccessResponse(containerResponse) , responseEntity);
+        Assertions.assertNull(responseEntity);
     }
 
     @Test

@@ -174,7 +174,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
     private UUID sourceGuid;
-
+    private UUID clonedGuid;
     private Long consigneeDpsAddressId;
     private Long clientDpsAddressId;
     private Long consignorDpsAddressId;
@@ -183,4 +183,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private AwbStatus awbStatus;
+
+    private String currentPartyForQuote;
 }

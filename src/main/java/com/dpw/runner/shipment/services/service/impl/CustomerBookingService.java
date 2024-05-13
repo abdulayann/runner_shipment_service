@@ -98,10 +98,6 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IContainerDao containerDao;
 
     @Autowired
-    private IFileRepoDao fileRepoDao;
-
-
-    @Autowired
     private MasterDataUtils masterDataUtils;
     @Autowired
     private IFusionServiceAdapter fusionServiceAdapter;
@@ -189,10 +185,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         List<PackingRequest> packingRequest = request.getPackingList();
         if (packingRequest != null)
             customerBooking.setPackingList(packingDao.saveEntityFromBooking(convertToEntityList(packingRequest, Packing.class), bookingId));
-
-        List<FileRepoRequest> fileRepoRequest = request.getFileRepoList();
-        if (fileRepoRequest != null)
-            customerBooking.setFileRepoList(fileRepoDao.saveEntityFromOtherEntity(convertToEntityList(fileRepoRequest, FileRepo.class), bookingId, Constants.BOOKING));
 
         List<RoutingsRequest> routingsRequest = request.getRoutingList();
         if (routingsRequest != null)
@@ -291,10 +283,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         List<PackingRequest> packingRequest = request.getPackingList();
         if (packingRequest != null)
             customerBooking.setPackingList(packingDao.updateEntityFromBooking(convertToEntityList(packingRequest, Packing.class), bookingId));
-
-        List<FileRepoRequest> fileRepoRequest = request.getFileRepoList();
-        if (fileRepoRequest != null)
-            customerBooking.setFileRepoList(fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequest, FileRepo.class), bookingId, Constants.BOOKING));
 
         List<RoutingsRequest> routingsRequest = request.getRoutingList();
         if (routingsRequest != null)

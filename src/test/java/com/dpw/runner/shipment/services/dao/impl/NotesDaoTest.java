@@ -1,160 +1,252 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.Notes;
-import com.nimbusds.jose.util.Pair;
-import org.junit.jupiter.api.AfterAll;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.runner.RunWith;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.Assert.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
-//@ExtendWith({MockitoExtension.class, SpringExtension.class})
-@RunWith(SpringRunner.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-@Execution(CONCURRENT)
+@ExtendWith(MockitoExtension.class)
 class NotesDaoTest {
 
-    @Container
-    private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
+    private static JsonTestUtility jsonTestUtility;
+    private static Notes testData;
 
-    static {
-        postgresContainer = new PostgreSQLContainer("postgres:15-alpine")
-                .withDatabaseName("integration-tests-db")
-                .withUsername("sa")
-                .withPassword("sa");
-        postgresContainer.start();
-    }
+    @InjectMocks
+    private NotesDao notesDao;
 
-    @Autowired
-    private INotesDao dao;
+    @Mock
+    private INotesRepository notesRepository;
+
+    @Mock
+    private ValidatorUtility validatorUtility;
+
+    @Mock
+    private JsonHelper jsonHelper;
+
+    @Mock
+    private IAuditLogService auditLogService;
+
+
+    private static ObjectMapper objectMapper;
 
     @BeforeAll
-    static void beforeAll() {
-        postgresContainer.start();
-    }
-
-    @AfterAll
-    static void afterAll() {
-        postgresContainer.stop();
-    }
-
-    @DynamicPropertySource
-    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
+    static void beforeAll() throws IOException {
+        jsonTestUtility = new JsonTestUtility();
+        objectMapper = JsonTestUtility.getMapper();
     }
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        TenantContext.setCurrentTenant(2);
-        UserContext.setUser(UsersDto.builder().Username("user").Permissions(new HashMap<>()).build()); // Set up a mock user for testing
+        TenantContext.setCurrentTenant(1);
+        testData = jsonTestUtility.getTestNoteData();
+        var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
+        PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
+        UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
     }
 
     @Test
-    public void testSave() {
+    void save() {
         Notes notes = new Notes();
-//        when(notesRepository.save(notes)).thenReturn(notes);
-
-        Notes savedNotes = dao.save(notes);
-
-        assertEquals(notes, savedNotes);
-//        Mockito.verify(notesRepository).save(notes);
+        Mockito.when(notesRepository.save(Mockito.any())).thenReturn(notes);
+        Notes notes1 = notesDao.save(Mockito.any());
+        assert(notes == notes1);
     }
 
     @Test
-    public void testSaveAll() {
-        List<Notes> notesList = new ArrayList<>();
-        notesList.add(Notes.builder().text("SampleNote").build());
-//        when(notesRepository.saveAll(notesList)).thenReturn(notesList);
-
-        List<Notes> savedNotesList = dao.saveAll(notesList);
-
-        assertEquals(notesList.size(), savedNotesList.size());
-//        Mockito.verify(notesRepository,times(1)).saveAll(notesList);
+    void saveAll() {
+        List<Notes> notes = new ArrayList<>();
+        Mockito.when(notesRepository.saveAll(Mockito.any())).thenReturn(notes);
+        List<Notes> notes1 = notesDao.saveAll(Mockito.any());
+        assert(notes.size() == notes1.size());
     }
 
     @Test
-    public void testFindAll() {
+    void findAllWithSpec() {
+        Specification<Notes> spec = null;
+        Pageable pageable = null;
+        List<Notes> noteList = new ArrayList<>();
+        Page<Notes> notesList = new PageImpl<>(noteList);
+        Mockito.when(notesRepository.findAll(spec, pageable)).thenReturn(notesList);
+        Page<Notes> notes = notesDao.findAll(spec, pageable);
+        assert(notesList.getTotalElements() == notes.getTotalElements());
+    }
+
+    @Test
+    void findById() {
         Notes notes = new Notes();
-        notes.setText("sample note1");
-        dao.save(notes);
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", 1 , "=");
-        Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
-        Page<Notes> retrievedPage = dao.findAll(pair.getLeft(), pair.getRight());
-        assertFalse(retrievedPage.isEmpty());
-        assertTrue(!retrievedPage.getContent().isEmpty());
-        assertTrue(retrievedPage.getContent().get(0).equals(notes));
-    }
-
-    @Test
-    public void testFindById() {
+        notes.setId(1L);
         Long id = 1L;
-        Notes notes = new Notes();
-        notes.setText("sample note1");
-        dao.save(notes);
-
-        Optional<Notes> retrievedNotes = dao.findById(id);
-
-        assertTrue(retrievedNotes.isPresent());
-        assertEquals(notes, retrievedNotes.get());
+        Mockito.when(notesRepository.findById(Mockito.any())).thenReturn(Optional.of(notes));
+        Optional<Notes> notes1 = notesDao.findById(id);
+        assert(Objects.equals(notes.getId(), notes1.get().getId()));
     }
 
     @Test
-    public void testDelete() {
+    void delete() {
         Notes notes = new Notes();
-
-        dao.delete(notes);
-
-//        Mockito.verify(notesRepository).delete(notes);
+        notesDao.delete(notes);
     }
 
     @Test
-    public void testFindByEntityIdAndEntityType() {
+    void findByEntityIdAndEntityType() {
         Long entityId = 1L;
-        String entityType = "type";
-        List<Notes> notesList = new ArrayList<>();
-        // Add some Notes objects to the list
-
-//        when(notesRepository.findByEntityIdAndEntityType(entityId, entityType)).thenReturn(notesList);
-
-        List<Notes> retrievedNotesList = dao.findByEntityIdAndEntityType(entityId, entityType);
-
-        assertEquals(notesList.size(), retrievedNotesList.size());
-//        Mockito.verify(notesRepository).findByEntityIdAndEntityType(entityId, entityType);
+        String entityType = "Shipment";
+        List<Notes> notes = new ArrayList<>();
+        Mockito.when(notesRepository.findByEntityIdAndEntityType(Mockito.any(), Mockito.any())).thenReturn(notes);
+        List<Notes> notes1 = notesDao.findByEntityIdAndEntityType(entityId, entityType);
+        assert(notes.size() == notes1.size());
     }
+
+    @Test
+    void updateEntityFromOtherEntity() {
+        testData.setId(1L);
+
+        Notes savedNote = testData;
+
+        Page<Notes> page = new PageImpl(List.of(savedNote));
+        when(notesRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        try {
+            var result = notesDao.updateEntityFromOtherEntity(List.of(testData) , 1L , "Shipment");
+            assertNotNull(result);
+        } catch(Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    void updateEntityFromOtherEntityWithException() throws RunnerException {
+        doThrow(new RuntimeException()).when(notesRepository).findAll(any(Specification.class), any(Pageable.class));
+        try {
+            var e = assertThrows(RunnerException.class, () -> notesDao.updateEntityFromOtherEntity(List.of(testData), 1L, "Shipment"));
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    void updateEntityFromOtherEntityWithOldEntityList() {
+        testData.setId(1L);
+
+        when(notesRepository.findById(1L)).thenReturn(Optional.of(testData));
+
+        try {
+            var result = notesDao.updateEntityFromOtherEntity(
+                    List.of(testData), 1L, "Shipment", List.of(testData));
+            assertNotNull(result);
+        } catch(Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    void updateEntityFromOtherEntityWithOldEntityListDeletesOldNotes() throws JsonProcessingException {
+        testData.setId(2L);
+        testData.setGuid(UUID.randomUUID());
+        Notes oldNote = objectMapper.convertValue(testData, Notes.class);
+        oldNote.setId(1L);
+        oldNote.setGuid(UUID.randomUUID());
+
+        when(notesRepository.findById(2L)).thenReturn(Optional.of(oldNote));
+        when(notesRepository.save(testData)).thenReturn(testData);
+        when(notesRepository.save(oldNote)).thenReturn(oldNote);
+        when(jsonHelper.convertToJson(oldNote)).thenReturn(objectMapper.writeValueAsString(oldNote));
+
+        try {
+            var result = notesDao.updateEntityFromOtherEntity(
+                    List.of(testData), 1L, "Shipment", List.of(testData, oldNote));
+            assertNotNull(result);
+        } catch(Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    void updateEntityFromOtherEntityWithOldEntityListThrowsException() {
+        testData.setId(1L);
+
+        var e = assertThrows(RunnerException.class, () ->
+                notesDao.updateEntityFromOtherEntity(
+                        List.of(testData), 1L, "Shipment", List.of(testData)));
+
+
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, e.getMessage());
+    }
+
+
+    @Test
+    void saveEntityFromOtherEntity() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Long noteId = 1L;
+        testData.setId(noteId);
+
+        when(notesRepository.findById(noteId)).thenReturn(Optional.of(testData));
+        when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
+        when(notesRepository.save(testData)).thenReturn(testData);
+
+        var result = notesDao.saveEntityFromOtherEntity(List.of(testData) , 1L , "Shipment");
+
+        verify(auditLogService, atLeast(1)).addAuditLog(any());
+    }
+
+    @Test
+    void saveEntityFromOtherEntityWithOldEntityMap() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Long noteId = 1L;
+        testData.setId(noteId);
+
+        Map<Long, Notes> oldEntityMap = new HashMap<>();
+        oldEntityMap.put(testData.getId(), testData);
+
+        when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
+        when(notesRepository.saveAll(anyList())).thenReturn(List.of(testData));
+
+        var result = notesDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", oldEntityMap);
+
+    }
+
+    @Test
+    void saveEntityFromOtherEntityWithOldEntityMapThrowsException() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Long noteId = 1L;
+        testData.setId(noteId);
+
+        var e = assertThrows(DataRetrievalFailureException.class, () ->
+                notesDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", new HashMap<>()));
+
+    }
+
+
+
 }

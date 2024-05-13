@@ -161,9 +161,6 @@ public class ShipmentService implements IShipmentService {
     private IEventDao eventDao;
 
     @Autowired
-    private IFileRepoDao fileRepoDao;
-
-    @Autowired
     private INotesDao notesDao;
 
     @Autowired
@@ -706,12 +703,6 @@ public class ShipmentService implements IShipmentService {
         });
     }
 
-    private void createFileRepoAsync(ShipmentDetails shipmentDetails, List<FileRepoRequest> fileRepoRequest) {
-        fileRepoRequest.forEach(fileRepo -> {
-            createFileRepo(shipmentDetails, fileRepo);
-        });
-    }
-
     private void createEventsAsync(ShipmentDetails shipmentDetails, List<EventsRequest> eventsRequest) {
         eventsRequest.forEach(event -> {
             createEvent(shipmentDetails, event);
@@ -754,13 +745,6 @@ public class ShipmentService implements IShipmentService {
         eventsRequest.setEntityId(shipmentDetails.getId());
         eventsRequest.setEntityType(Constants.SHIPMENT);
         eventDao.save(objectMapper.convertValue(eventsRequest, Events.class));
-    }
-
-    @Transactional
-    public void createFileRepo(ShipmentDetails shipmentDetails, FileRepoRequest fileRepoRequest) {
-        fileRepoRequest.setEntityId(shipmentDetails.getId());
-        fileRepoRequest.setEntityType(Constants.SHIPMENT);
-        fileRepoDao.save(objectMapper.convertValue(fileRepoRequest, FileRepo.class));
     }
 
     @Transactional
@@ -959,6 +943,7 @@ public class ShipmentService implements IShipmentService {
                 consolRef(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getReferenceNumber() : "").
                 masterBill(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getBol() : null).
                 freightLocalCurrency(UserContext.getUser().CompanyCurrency).
+                currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
                 build();
 
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
@@ -1534,10 +1519,11 @@ public class ShipmentService implements IShipmentService {
                 throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
         }
         if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
-            if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
                 shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
             }
-            else if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            else if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ||
+                    shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))) {
                 shipmentDetails.setHouseBill(null);
             }
         }
@@ -1733,10 +1719,6 @@ public class ShipmentService implements IShipmentService {
         if (serviceDetailsRequestList != null) {
             List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(commonUtils.convertToEntityList(serviceDetailsRequestList, ServiceDetails.class, isCreate), id);
             shipmentDetails.setServicesList(updatedServiceDetails);
-        }
-        if (fileRepoRequestList != null) {
-            List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(fileRepoRequestList, FileRepo.class, isCreate), id, Constants.SHIPMENT);
-            shipmentDetails.setFileRepoList(updatedFileRepos);
         }
         if (notesRequestList != null) {
             List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequestList, Notes.class, isCreate), id, Constants.SHIPMENT);
@@ -2514,7 +2496,6 @@ public class ShipmentService implements IShipmentService {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            shipmentDetails.get().setFileRepoList(fileRepoDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
             shipmentDetails.get().setNotesList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
@@ -2670,10 +2651,6 @@ public class ShipmentService implements IShipmentService {
             }
             // Create events on basis of shipment status Confirmed/Created
             autoGenerateEvents(entity, previousStatus);
-            if (fileRepoRequestList != null) {
-                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
-                entity.setFileRepoList(updatedFileRepos);
-            }
 
             if (notesRequestList != null) {
                 List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT);
@@ -2937,7 +2914,7 @@ public class ShipmentService implements IShipmentService {
                         oldContainers.addAll(oldConsolContainers.getContent());
                     }
                 }
-                updatedContainers = containerDao.updateEntityFromShipmentV1(convertToEntityList(containerRequestList, Containers.class), oldContainers);
+                updatedContainers = containerDao.updateEntityFromShipmentV1(jsonHelper.convertValueToList(containerRequestList, Containers.class), oldContainers);
             } else if(!oldEntity.isEmpty()){
                 updatedContainers = oldEntity.get().getContainersList();
             }
@@ -2966,14 +2943,14 @@ public class ShipmentService implements IShipmentService {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<BookingCarriage>, Pageable> bookingCarriagePair = fetchData(listCommonRequest, BookingCarriage.class);
                 Page<BookingCarriage> oldBookingCarriages = bookingCarriageDao.findAll(bookingCarriagePair.getLeft(), bookingCarriagePair.getRight());
-                List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(convertToEntityList(bookingCarriageRequestList, BookingCarriage.class), id, oldBookingCarriages.stream().toList());
+                List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(jsonHelper.convertValueToList(bookingCarriageRequestList, BookingCarriage.class), id, oldBookingCarriages.stream().toList());
                 entity.setBookingCarriagesList(updatedBookingCarriages);
             }
             if (truckDriverDetailsRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<TruckDriverDetails>, Pageable> truckDriverDetailsPair = fetchData(listCommonRequest, TruckDriverDetails.class);
                 Page<TruckDriverDetails> oldTruckDriverDetails = truckDriverDetailsDao.findAll(truckDriverDetailsPair.getLeft(), truckDriverDetailsPair.getRight());
-                List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromShipment(convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class), id, oldTruckDriverDetails.stream().toList());
+                List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromShipment(jsonHelper.convertValueToList(truckDriverDetailsRequestList, TruckDriverDetails.class), id, oldTruckDriverDetails.stream().toList());
                 entity.setTruckDriverDetails(updatedTruckDriverDetails);
             }
             if (packingRequestList != null) {
@@ -2993,56 +2970,49 @@ public class ShipmentService implements IShipmentService {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<ELDetails>, Pageable> elDetailsPair = fetchData(listCommonRequest, ELDetails.class);
                 Page<ELDetails> oldELDetails = elDetailsDao.findAll(elDetailsPair.getLeft(), elDetailsPair.getRight());
-                List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id, oldELDetails.stream().toList());
+                List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(jsonHelper.convertValueToList(elDetailsRequestList, ELDetails.class), id, oldELDetails.stream().toList());
                 entity.setElDetailsList(updatedELDetails);
             }
             if (eventsRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT);
                 Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
                 Page<Events> oldEvents = eventDao.findAll(pair.getLeft(), pair.getRight());
-                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT, oldEvents.stream().toList());
+                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(jsonHelper.convertValueToList(eventsRequestList, Events.class), id, Constants.SHIPMENT, oldEvents.stream().toList());
                 entity.setEventsList(updatedEvents);
             }
             if (referenceNumbersRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
                 Page<ReferenceNumbers> oldReferenceNumbers = referenceNumbersDao.findAll(pair.getLeft(), pair.getRight());
-                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id, oldReferenceNumbers.stream().toList());
+                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequestList, ReferenceNumbers.class), id, oldReferenceNumbers.stream().toList());
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
             }
             if (routingsRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
                 Page<Routings> oldRoutings = routingsDao.findAll(pair.getLeft(), pair.getRight());
-                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(convertToEntityList(routingsRequestList, Routings.class), id, oldRoutings.stream().toList());
+                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(jsonHelper.convertValueToList(routingsRequestList, Routings.class), id, oldRoutings.stream().toList());
                 entity.setRoutingsList(updatedRoutings);
             }
             if (serviceDetailsRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<ServiceDetails>, Pageable> pair = fetchData(listCommonRequest, ServiceDetails.class);
                 Page<ServiceDetails> oldServiceDetails = serviceDetailsDao.findAll(pair.getLeft(), pair.getRight());
-                List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id, oldServiceDetails.stream().toList());
+                List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(jsonHelper.convertValueToList(serviceDetailsRequestList, ServiceDetails.class), id, oldServiceDetails.stream().toList());
                 entity.setServicesList(updatedServiceDetails);
             }
             if (shipmentAddressesRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT_ADDRESSES);
                 Pair<Specification<Parties>, Pageable> pair = fetchData(listCommonRequest, Parties.class);
                 Page<Parties> oldParties = partiesDao.findAll(pair.getLeft(), pair.getRight());
-                List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(convertToEntityList(shipmentAddressesRequestList, Parties.class), id, Constants.SHIPMENT_ADDRESSES, oldParties.stream().toList());
+                List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(jsonHelper.convertValueToList(shipmentAddressesRequestList, Parties.class), id, Constants.SHIPMENT_ADDRESSES, oldParties.stream().toList());
                 entity.setShipmentAddresses(updatedParties);
-            }
-            if (fileRepoRequestList != null) {
-                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT);
-                Pair<Specification<FileRepo>, Pageable> pair = fetchData(listCommonRequest, FileRepo.class);
-                Page<FileRepo> oldFileRepoList = fileRepoDao.findAll(pair.getLeft(), pair.getRight());
-                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT, oldFileRepoList.stream().toList());
-                entity.setFileRepoList(updatedFileRepos);
             }
             if (notesRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT);
                 Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
                 Page<Notes> oldNoteList = notesDao.findAll(pair.getLeft(), pair.getRight());
-                List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT, oldNoteList.stream().toList());
+                List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(jsonHelper.convertValueToList(notesRequestList, Notes.class), id, Constants.SHIPMENT, oldNoteList.stream().toList());
                 entity.setNotesList(updatedNotes);
             }
             if (customerBookingNotes != null && customerBookingNotes.size() > 0) {
@@ -3050,7 +3020,7 @@ public class ShipmentService implements IShipmentService {
                 Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
                 Page<Notes> oldNoteList = notesDao.findAll(pair.getLeft(), pair.getRight());
                 if(oldNoteList == null || oldNoteList.isEmpty()) {
-                    List<Notes> updatedNotes = notesDao.saveEntityFromOtherEntity(convertToEntityList(customerBookingNotes, Notes.class), id, Constants.CUSTOMER_BOOKING);
+                    List<Notes> updatedNotes = notesDao.saveEntityFromOtherEntity(jsonHelper.convertValueToList(customerBookingNotes, Notes.class), id, Constants.CUSTOMER_BOOKING);
                 }
             }
             if(!dataMigration)
@@ -3650,10 +3620,14 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setStatus(ShipmentStatus.Created.getValue());
             cloneShipmentDetails.setConsolRef(null);
             cloneShipmentDetails.setEventsList(null);
+            cloneShipmentDetails.setBookingReference(null);
+            cloneShipmentDetails.setSourceGuid(null);
+            cloneShipmentDetails.setClonedGuid(shipmentDetails.get().getGuid());
+            cloneShipmentDetails.setContractId(null);
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 
-            if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()))
+            if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()) && !Constants.SHIPMENT_TYPE_DRT.equals(cloneShipmentDetails.getJobType()))
                 cloneShipmentDetails.setHouseBill(generateCustomHouseBL(null));
 
             CommonRequestModel requestModel = CommonRequestModel.buildRequest(cloneShipmentDetails);

@@ -53,9 +53,6 @@ public class NotesService implements INotesService {
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         NotesRequest request = (NotesRequest) commonRequestModel.getData();
-        if(request == null) {
-            log.debug("Request is empty for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
         Notes notes = convertRequestToNotesEntity(request);
         try {
             notes = notesDao.save(notes);
@@ -84,14 +81,11 @@ public class NotesService implements INotesService {
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         NotesRequest request = (NotesRequest) commonRequestModel.getData();
-        if(request == null) {
-            log.debug("Request is empty for Notes update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
 
         if(request.getId() == null) {
             log.debug("Request Id is null for Notes update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        long id = request.getId();
+        Long id = request.getId();
         Optional<Notes> oldEntity = notesDao.findById(id);
         if (oldEntity.isEmpty()) {
             log.debug(NotesConstants.NOTES_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -100,9 +94,6 @@ public class NotesService implements INotesService {
 
         Notes notes = convertRequestToNotesEntity(request);
         notes.setId(oldEntity.get().getId());
-        if(notes.getGuid() != null && !oldEntity.get().getGuid().equals(notes.getGuid())) {
-            throw new RunnerException("Provided GUID doesn't match with the existing one !");
-        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             notes = notesDao.save(notes);
@@ -131,9 +122,6 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.error("Request is empty for Notes list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
             Pair<Specification<Notes>, Pageable> tuple = fetchData(request, Notes.class);
             Page<Notes> notesPage = notesDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Notes list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
@@ -155,9 +143,6 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.error("Request is empty for Notes async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
             Pair<Specification<Notes>, Pageable> tuple = fetchData(request, Notes.class);
             Page<Notes> notesPage = notesDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Notes async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
@@ -178,13 +163,10 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.debug("Request is empty for Notes delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
             if(request.getId() == null) {
                 log.debug("Request Id is null for Notes delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
+            Long id = request.getId();
 
             Optional<Notes> note = notesDao.findById(id);
             if (note.isEmpty()) {
@@ -220,13 +202,10 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
-                log.error("Request is empty for Notes retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Notes retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
+            Long id = request.getId();
             Optional<Notes> notes = notesDao.findById(id);
             if (notes.isEmpty()) {
                 log.debug(NotesConstants.NOTES_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());

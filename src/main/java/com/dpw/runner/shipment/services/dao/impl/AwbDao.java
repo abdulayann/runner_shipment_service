@@ -8,14 +8,13 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -35,6 +34,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Repository
@@ -57,6 +57,9 @@ public class AwbDao implements IAwbDao {
     IConsolidationDetailsDao consolidationDetailsDao;
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
+    private IEventDao eventDao;
     @Override
     public Awb save(Awb awbShipmentInfo) throws RunnerException {
         boolean isCreate = false; // TODO- handle create/update here
@@ -198,6 +201,7 @@ public class AwbDao implements IAwbDao {
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
+                            this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent");
 
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
@@ -205,6 +209,7 @@ public class AwbDao implements IAwbDao {
                                 // AirMessageSent flag set to SENT
                                 this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                                 this.updateUserDetails(shipAwb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
+                                this.createAirMessagingEvents(ship.getId(), Constants.SHIPMENT, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent");
                             }
                         }
                     }
@@ -217,6 +222,7 @@ public class AwbDao implements IAwbDao {
                             // AirMessageSent flag set to SENT
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
+                            this.createAirMessagingEvents(shipmentDetails.get().getId(), Constants.SHIPMENT, EventConstants.FWB_EVENT_CODE, "FWB sent");
                         }
 
                     }
@@ -224,8 +230,20 @@ public class AwbDao implements IAwbDao {
             }
         } catch (Exception e)
         {
-            log.error("Error pushing awb to kafka");
+            log.error("Error pushing awb to kafka for entityId: {} with error: {}", id, e.getMessage());
         }
+    }
+
+    private void createAirMessagingEvents(Long entityId, String entityType, String eventCode, String description) {
+        Events events = new Events();
+        events.setEntityType(entityType);
+        events.setEntityId(entityId);
+        events.setEventCode(eventCode);
+        events.setDescription(description);
+        events.setEstimated(LocalDateTime.now());
+        events.setActual(LocalDateTime.now());
+        events.setSource(Constants.CARGO_RUNNER);
+        eventDao.save(events);
     }
 
     public void pushToKafkaForAirMessaging(Awb awb, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {

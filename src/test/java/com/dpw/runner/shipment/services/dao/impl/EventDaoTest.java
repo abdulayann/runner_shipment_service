@@ -424,29 +424,14 @@ class EventDaoTest {
 
     @Test
     void createEventForAirMessagingEvent() {
-        UUID guid = null;
-        Long entityId = null;
-        String entityType = null;
-        String eventCode = null;
-        String description = null;
-        String source = null;
-        Integer tenantId = null;
-        Integer pieces = null;
-        Integer totalPieces = null;
-        BigDecimal weight = null;
-        BigDecimal totalWeight = null;
-        String partial = null;
-        LocalDateTime receivedDate = null;
-        LocalDateTime scheduledDate = null;
-        LocalDateTime createdAt = null;
-        LocalDateTime updatedAt = null;
+        Events events = new Events();
 
         Query queryMock = mock(Query.class);
 
         when(entityManager.createNativeQuery(anyString())).thenReturn(queryMock);
         when(queryMock.setParameter(anyInt(), any())).thenReturn(queryMock);
 
-        eventDao.createEventForAirMessagingEvent(guid,entityId,entityType,eventCode,description,source,tenantId,pieces,totalPieces,weight,totalWeight,partial,receivedDate,scheduledDate,createdAt,updatedAt);
+        eventDao.createEventForAirMessagingEvent(events);
     }
 
 
