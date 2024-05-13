@@ -4,75 +4,76 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
+import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-@RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 class ConsolidationDaoTest {
-    @Container
-    private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
 
-    static {
-        postgresContainer.withDatabaseName("integration-tests-db")
-                .withUsername("sa")
-                .withPassword("sa");
-        postgresContainer.start();
-    }
+    @Mock
+    private IConsolidationRepository consolidationRepository;
 
-    @BeforeAll
-    static void beforeAll() throws IOException {
-        postgresContainer.start();
-        jsonTestUtility = new JsonTestUtility();
-    }
+    @Mock
+    IShipmentRepository shipmentRepository;
 
-    @AfterAll
-    static void afterAll() {
-        postgresContainer.stop();
-    }
+    @Mock
+    private ValidatorUtility validatorUtility;
 
-    @DynamicPropertySource
-    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
-    }
+    @Mock
+    private JsonHelper jsonHelper;
 
-    @Autowired
-    private IConsolidationDetailsDao consolidationsDao;
+    @Mock
+    private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Mock
+    private IMawbStocksDao mawbStocksDao;
+
+    @Mock
+    private IMawbStocksLinkDao mawbStocksLinkDao;
+
+    @Mock
+    private IV1Service v1Service;
+    @InjectMocks
+    private ConsolidationDao consolidationsDao;
 
     private static JsonTestUtility jsonTestUtility;
     private static ConsolidationDetails testConsol;
@@ -80,10 +81,11 @@ class ConsolidationDaoTest {
     private static ObjectMapper objectMapperTest;
     private static ConsolidationDetailsRequest testConsolRequest;
 
-    static {
+    @BeforeAll
+    static void init(){
         try {
-            objectMapperTest = JsonTestUtility.getMapper();
             jsonTestUtility = new JsonTestUtility();
+            objectMapperTest = JsonTestUtility.getMapper();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -102,118 +104,218 @@ class ConsolidationDaoTest {
     }
 
     @Test
-    void save() {
-        var consol = jsonTestUtility.getTestNewConsolidation();
-        ConsolidationDetails result = consolidationsDao.save(consol, false);
-        assertEquals(result, consol);
+    void testSave_Success_Sea() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        doReturn(consolidationDetails).when(consolidationRepository).save(any());
+        ConsolidationDetails responseEntity = spyService.save(consolidationDetails, false);
+        assertEquals(consolidationDetails, responseEntity);
     }
 
     @Test
-    void update() {
-        var consolToBeSaved = jsonTestUtility.getTestNewConsolidation();
-        var result = consolidationsDao.save(consolToBeSaved , false);
-        result.setBol("SAMPLE_BOL");
-        var newResult = consolidationsDao.update(result, false);
-        assertEquals(newResult.getBol(), result.getBol());
-        assertEquals(result.getGuid(), newResult.getGuid());
+    void testSave_Success_Air() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        CarrierResponse carrierResponse = CarrierResponse.builder().airlineCode("390").itemValue("Aegean Airlines").hasAirPort(true).build();
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(List.of(carrierResponse)).build();
+        MawbStocks mawbStocks = jsonTestUtility.getMawbStock();
+        MawbStocksLink mawbStocksLink = jsonTestUtility.getNewMawbStockLink();
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(v1DataResponse).when(v1Service).fetchCarrierMasterData(any(), anyBoolean());
+        doReturn(List.of(carrierResponse)).when(jsonHelper).convertValueToList(List.of(carrierResponse), CarrierResponse.class);
+        doReturn(consolidationDetails).when(consolidationRepository).save(any());
+        doReturn(new PageImpl<>(List.of())).when(mawbStocksLinkDao).findAll(any(), any());
+        doReturn(mawbStocks).when(mawbStocksDao).save(any());
+        doReturn(mawbStocksLink).when(mawbStocksLinkDao).save(any());
+        doReturn(List.of(mawbStocksLink)).when(mawbStocksLinkDao).findByMawbNumber(anyString());
+        doReturn(Optional.of(mawbStocks)).when(mawbStocksDao).findById(anyLong());
+        ConsolidationDetails responseEntity = spyService.save(consolidationDetails, false);
+        assertEquals(consolidationDetails, responseEntity);
     }
 
     @Test
-    @Disabled
-    void findAll() {
-        var consol = jsonTestUtility.getTestNewConsolidation();
-        var result = consolidationsDao.save(consol , false);
-        Specification<ConsolidationDetails> spec =  (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.equal(root.get("transportMode"), "SEA");
-        };
-        var consolList = consolidationsDao.findAll(spec, PageRequest.of(0 , 10));
-        assertFalse(consolList.isEmpty());
-        assertEquals(consolList.stream().toList().get(0).getContainerCategory() , result.getContainerCategory());
+    void testSave_Failure_Air_Validations1() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
+        var spyService = Mockito.spy(consolidationsDao);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
     @Test
-    void findById() {
-        var consol = jsonTestUtility.getTestNewConsolidation();
-        var result = consolidationsDao.save(consol , false);
-        var consolList = consolidationsDao.findById(result.getId());
-        assertFalse(consolList.isEmpty());
-        assertEquals(consolList.get().getGuid() , result.getGuid());
+    void testSave_Failure_Air_Validations2_EXP() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setRestrictedLocationsEnabled(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        var spyService = Mockito.spy(consolidationsDao);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
     @Test
-    void delete() {
-        var consol = jsonTestUtility.getTestNewConsolidation();
-        var result = consolidationsDao.save(consol, false);
-        consolidationsDao.delete(result);
-        assertThrows(JpaObjectRetrievalFailureException.class , () -> consolidationsDao.findById(result.getId()));
+    void testSave_Failure_Air_Validations2_IMP() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.setShipmentType(Constants.IMP);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setRestrictedLocationsEnabled(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        var spyService = Mockito.spy(consolidationsDao);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
     @Test
-    void saveAll() {
-        var consolList = List.of(jsonTestUtility.getTestNewConsolidation());
-        var result = consolidationsDao.saveAll(consolList);
-        assertFalse(result.isEmpty());
-        assertNotNull(result.get(0).getGuid());
+    void testSave_Failure_Sea_Validations3_Bol() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        ConsolidationDetails consolidationDetails1 = jsonTestUtility.getTestConsolidation();
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(List.of(consolidationDetails1)).when(spyService).findByBol(consolidationDetails.getBol());
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
     @Test
-    void findByGuid() {
-        var consol = jsonTestUtility.getTestNewConsolidation();
-        var result = consolidationsDao.save(consol, false);
-        var newResult = consolidationsDao.findByGuid(result.getGuid());
-        assertTrue(newResult.isPresent());
-        assertEquals(newResult.get().getTransportMode(), result.getTransportMode());
-        assertEquals(newResult.get().getId(), result.getId());
-        assertEquals(newResult.get().getGuid() , result.getGuid());
+    void testSave_Failure_Air_ETA_ETD() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.getCarrierDetails().setEta(LocalDateTime.parse("2024-05-09T20:50:36"));
+        consolidationDetails.getCarrierDetails().setEtd(LocalDateTime.parse("2024-05-11T20:50:36"));
+        var spyService = Mockito.spy(consolidationsDao);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
     @Test
-    void findByBol() {
-        var consol = jsonTestUtility.getTestNewConsolidation();
-        consol.setBol("TEST_BOL");
-        var result = consolidationsDao.save(consol, false);
-        var newResult = consolidationsDao.findByBol("TEST_BOL");
-        assertFalse(newResult.isEmpty());
-        assertEquals(newResult.get(0).getGuid() , result.getGuid());
+    void testSave_Failure_SEA_ETA_ETD() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.getCarrierDetails().setEta(LocalDateTime.parse("2024-05-09T20:50:36"));
+        consolidationDetails.getCarrierDetails().setEtd(LocalDateTime.parse("2024-05-11T20:50:36"));
+        var spyService = Mockito.spy(consolidationsDao);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
     @Test
-    void findByReferenceNumber() {
-        var consol = jsonTestUtility.getTestNewConsolidation();
-        consol.setReferenceNumber("TEST_REFERENCE_NUMBER");
-        var result = consolidationsDao.save(consol, false);
-        var newResult = consolidationsDao.findByReferenceNumber("TEST_REFERENCE_NUMBER");
-        assertFalse(newResult.isEmpty());
-        assertEquals(newResult.get(0).getGuid() , result.getGuid());
+    void testSave_Failure() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.empty()).when(spyService).findById(anyLong());
+        assertThrows(DataRetrievalFailureException.class, () -> spyService.save(consolidationDetails, false));
     }
 
     @Test
-    void findMaxId() {
-        var consol = jsonTestUtility.getTestNewConsolidation();
-        var result = consolidationsDao.save(consol, false);
-        var newResult = consolidationsDao.findMaxId();
-        assertEquals(newResult , result.getId());
+    void testUpdate_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        doReturn(consolidationDetails).when(consolidationRepository).save(any());
+        ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
+        assertEquals(consolidationDetails, responseEntity);
     }
-
 
     @Test
-    @Transactional
-    @Disabled
-    void updateConsoleBookingFields() {
-        var consol = jsonTestUtility.getTestNewConsolidation();
-        var result = consolidationsDao.save(consol, false);
-        ConsoleBookingRequest request = ConsoleBookingRequest.builder()
-                .guid(result.getGuid())
-                .bookingId("TEST_ID")
-                .bookingNumber("TEST_NUM")
-                .bookingStatus("TEST_STATUS")
-                .build();
-        var newResult = consolidationsDao.updateConsoleBookingFields(request);
-        assertTrue(newResult == 1);
-        var updatedConsol = consolidationsDao.findByGuid(result.getGuid());
-        assertTrue(updatedConsol.isPresent());
-        assertEquals(updatedConsol.get().getBookingId(), "TEST_ID");
-        assertEquals(updatedConsol.get().getBookingNumber(), "TEST_NUM");
-        assertEquals(updatedConsol.get().getBookingStatus(), "TEST_STATUS");
+    void testFindAll_Success() {
+        Page<ConsolidationDetails> consolidationPage = mock(Page.class);
+        Specification<ConsolidationDetails> spec = mock(Specification.class);
+        Pageable pageable = mock(Pageable.class);
+        when(consolidationRepository.findAll(spec, pageable)).thenReturn(consolidationPage);
+        Page<ConsolidationDetails> consolidationDetails = consolidationsDao.findAll(spec, pageable);
+        assertEquals(consolidationPage, consolidationDetails);
     }
+
+    @Test
+    void testFindById_Success() {
+        Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.of(testConsol);
+        when(consolidationRepository.findById(anyLong())).thenReturn(optionalConsolidationDetails);
+        Optional<ConsolidationDetails> consolidationDetails = consolidationsDao.findById(1L);
+        assertTrue(consolidationDetails.isPresent());
+        assertEquals(testConsol, consolidationDetails.get());
+    }
+
+    @Test
+    void testDelete_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        assertDoesNotThrow(() -> consolidationsDao.delete(consolidationDetails));
+        verify(consolidationRepository, Mockito.times(1)).delete(consolidationDetails);
+    }
+
+    @Test
+    void testDelete_Failure() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setIsLocked(true);
+        assertThrows(ValidationException.class, () -> consolidationsDao.delete(consolidationDetails));
+    }
+
+    @Test
+    void testSaveAll_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(consolidationDetails).when(spyService).save(consolidationDetails, false);
+        List<ConsolidationDetails> responseEntity = spyService.saveAll(List.of(consolidationDetails));
+        assertEquals(List.of(consolidationDetails), responseEntity);
+    }
+
+    @Test
+    void testFindByGuid_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        when(consolidationRepository.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
+        Optional<ConsolidationDetails> responseEntity = consolidationsDao.findByGuid(consolidationDetails.getGuid());
+        assertTrue(responseEntity.isPresent());
+        assertEquals(consolidationDetails, responseEntity.get());
+    }
+
+    @Test
+    void testFindByBol_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        when(consolidationRepository.findByBol(anyString())).thenReturn(List.of(consolidationDetails));
+        List<ConsolidationDetails> responseEntity = consolidationsDao.findByBol(consolidationDetails.getBol());
+        assertEquals(List.of(consolidationDetails), responseEntity);
+    }
+
+    @Test
+    void testFindByReferenceNumber_Success() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        when(consolidationRepository.findByReferenceNumber(anyString())).thenReturn(List.of(consolidationDetails));
+        List<ConsolidationDetails> responseEntity = consolidationsDao.findByReferenceNumber(consolidationDetails.getReferenceNumber());
+        assertEquals(List.of(consolidationDetails), responseEntity);
+    }
+
+    @Test
+    void testFindMaxId_Success() {
+        when(consolidationRepository.findMaxId()).thenReturn(123L);
+        Long val = consolidationsDao.findMaxId();
+        assertEquals(123L, val);
+    }
+
+    @Test
+    void testUpdateConsoleBookingFields_Success() {
+        ConsoleBookingRequest request = ConsoleBookingRequest.builder().guid(UUID.randomUUID()).bookingId("123").bookingNumber("Booking123").bookingStatus("xyz").build();
+        when(consolidationRepository.updateConsoleBookingFields(any(),anyString(),anyString(),anyString())).thenReturn(1);
+        int response = consolidationsDao.updateConsoleBookingFields(request);
+        assertEquals(1, response);
+    }
+
+    @Test
+    void testSaveCreatedDateAndUser_Success() {
+        consolidationsDao.saveCreatedDateAndUser(1L, "user", LocalDateTime.parse("2024-05-09T20:50:36"));
+        verify(consolidationRepository, Mockito.times(1)).saveCreatedDateAndUser(1L, "user", LocalDateTime.parse("2024-05-09T20:50:36"));
+    }
+
+    @Test
+    void testGetConsolidationNumberFromId_Success() {
+        String ConsolidationNumber = "CONS000233659";
+        when(consolidationRepository.getConsolidationNumberFromId(anyLong())).thenReturn(ConsolidationNumber);
+        String response = consolidationsDao.getConsolidationNumberFromId(1L);
+        assertEquals(ConsolidationNumber, response);
+    }
+
+
 }

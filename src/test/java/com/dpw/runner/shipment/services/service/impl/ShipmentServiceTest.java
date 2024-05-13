@@ -14,13 +14,17 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.ApiError;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.platform.RouteRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
@@ -34,6 +38,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
@@ -70,8 +75,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.*;
@@ -95,6 +102,8 @@ class ShipmentServiceTest {
     private JsonHelper jsonHelper;
     @Mock
     private ModelMapper modelMapper;
+    @Mock
+    private CarrierDetailsMapper carrierDetailsMapper;
     @Mock
     private IV1Service v1Service;
     @Mock
@@ -120,6 +129,8 @@ class ShipmentServiceTest {
     @Mock
     private INotesDao notesDao;
     @Mock
+    private IAwbDao awbDao;
+    @Mock
     private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
     @Mock
     private IReferenceNumbersDao referenceNumbersDao;
@@ -137,6 +148,8 @@ class ShipmentServiceTest {
     private IShipmentSettingsDao shipmentSettingsDao;
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
+    @Mock
+    private IAdditionalDetailDao additionalDetailDao;
     @Mock
     private ShipmentDetailsMapper shipmentDetailsMapper;
 
@@ -744,6 +757,90 @@ class ShipmentServiceTest {
     }
 
     @Test
+    void attachListShipmentEtaNotNull_success() {
+        // Mock data
+        long consolidationId = 1L;
+        AttachListShipmentRequest attachListShipmentRequest = new AttachListShipmentRequest();
+        attachListShipmentRequest.setConsolidationId(consolidationId);
+        attachListShipmentRequest.setEtdMatch(false); // Set other properties as needed
+        attachListShipmentRequest.setEtaMatch(true);
+        attachListShipmentRequest.setScheduleMatch(true);
+        attachListShipmentRequest.setFilterCriteria(new ArrayList<>());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setCarrierDetails(CarrierDetails.builder().originPort(Constants.ORIGIN_PORT).destinationPort(Constants.DESTINATION_PORT).eta(LocalDateTime.now()).etd(LocalDateTime.now()).vessel(Constants.VESSEL).voyage(Constants.VOYAGE).build());
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(new ShipmentDetails());
+        // Set up shipmentDetailsList as needed for your test
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsList),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+
+        // Execute the method under test
+        ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
+
+        // Assert
+        assertEquals(expectedResponse, result);
+    }
+
+    @Test
+    void attachListShipmentEtaNotNullTransportModeAir_success() {
+        // Mock data
+        long consolidationId = 1L;
+        AttachListShipmentRequest attachListShipmentRequest = new AttachListShipmentRequest();
+        attachListShipmentRequest.setConsolidationId(consolidationId);
+        attachListShipmentRequest.setEtdMatch(false); // Set other properties as needed
+        attachListShipmentRequest.setEtaMatch(true);
+        attachListShipmentRequest.setScheduleMatch(true);
+        attachListShipmentRequest.setFilterCriteria(new ArrayList<>());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setCarrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).shippingLine(Constants.SHIPPING_LINE).flightNumber(Constants.FLIGHT_NUMBER).build());
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(new ShipmentDetails());
+        // Set up shipmentDetailsList as needed for your test
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsList),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+
+        // Execute the method under test
+        ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
+
+        // Assert
+        assertEquals(expectedResponse, result);
+    }
+
+    @Test
     void fetchShipmentsForConsoleId_success() throws RunnerException {
         Long consoleId = 1L;
         CommonGetRequest request = CommonGetRequest.builder().id(consoleId).build();
@@ -1190,7 +1287,7 @@ class ShipmentServiceTest {
         mockShipmentResponse.setId(1L);
         mockShipmentResponse.setShipmentId("AIR-CAN-00001");
 
-        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         List<ContainerRequest> containerRequests = Arrays.asList(ContainerRequest.builder().build());
         List<Containers> containersList = new ArrayList<>();
 
@@ -1473,8 +1570,8 @@ class ShipmentServiceTest {
         mockShipmentResponse.setId(1L);
         mockShipmentResponse.setShipmentId("AIR-CAN-00001");
 
-        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().build();
-        List<NotesRequest> notesRequests = Arrays.asList(NotesRequest.builder().build());
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        List<NotesRequest> notesRequests = Arrays.asList(NotesRequest.builder().id(1L).build());
         List<Notes> notesList = new ArrayList<>();
 
         ShipmentRequest shipmentRequest = ShipmentRequest.builder()
@@ -1486,10 +1583,10 @@ class ShipmentServiceTest {
 
         CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
         ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
-        Optional<ConsolidationDetails> consoleDetails = Optional.empty();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
 
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
-        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consoleDetails));
 
         when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
         when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
@@ -1500,10 +1597,640 @@ class ShipmentServiceTest {
         when(notesDao.updateEntityFromOtherEntity(notesList, 1L, Constants.SHIPMENT, new ArrayList<>())).thenReturn(notesList);
         when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
 
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), notesRequests, true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeV1ShipmentCreateAndUpdateNonEmptyConsolidation() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        List<ContainerRequest> containerRequests = Arrays.asList(ContainerRequest.builder().build());
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+                .id(1L)
+                .shipmentId("AIR-CAN-00001")
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(consolidationDetails))
+                .containersList(containerRequests).build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        Optional<ConsolidationDetails> consoleDetails = Optional.of(ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).build());
+
+        PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(Containers.builder().build()));
+        when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(consoleDetails);
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
+    @Test
+    void completeV1ShipmentCreateAndUpdatePackingRequestListNotNull() throws RunnerException {
+        ShipmentDetailsResponse mockShipmentResponse = new ShipmentDetailsResponse();
+        mockShipmentResponse.setId(1L);
+        mockShipmentResponse.setShipmentId("AIR-CAN-00001");
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        List<PackingRequest> packingRequestList = Arrays.asList(PackingRequest.builder().build());
+        List<Packing> packingList= new ArrayList<>();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+                .id(1L)
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(consolidationDetails))
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .packingList(packingRequestList).build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consoleDetails));
+
+        when(mockObjectMapper.convertValue(shipmentRequest, ShipmentDetails.class)).thenReturn(shipmentDetails);
+        when(shipmentDao.update(shipmentDetails, true)).thenReturn(shipmentDetails);
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
+
+        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(packingDao.updateEntityFromShipment(anyList(), anyLong(), anyList(), any(), any(), any())).thenReturn(packingList);
+        when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void partialUpdateIdNullTest() {
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+        String errorMessage = "Request Id is null";
+        Exception e = assertThrows(RunnerException.class, () -> shipmentService.partialUpdate(commonRequestModel, true));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void partialUpdateTestEntityNotPresent() {
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+        String errorMessage = "Failed to fetch data for given constraint.";
+        Exception e = assertThrows(DataRetrievalFailureException.class, () -> shipmentService.partialUpdate(commonRequestModel, true));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void partialUpdateTest() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+
+    }
+
+    @Test
+    void partialUpdateTestShipmentIdNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().shipmentId(JsonNullable.of("AIR-CAN-00001")).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .build();
+
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(Arrays.asList(ShipmentDetails.builder().build()));
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+    }
+
+    @Test
+    void partialUpdateTestShipmentIdNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).shipmentId(null).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+        String errorMessage = "Failed to fetch data for given constraint.";
+        Exception e = assertThrows(DataRetrievalFailureException.class, () -> shipmentService.partialUpdate(commonRequestModel, true));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void partialUpdateTestMultipleShipments() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().shipmentId(JsonNullable.of("AIR-CAN-00001")).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .build();
+
+        ArrayList<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(shipmentDetails);
+        shipmentDetailsList.add(shipmentDetails);
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        String errorMessage = "Multiple entries found for unique field, data issue found.";
+        Exception e = assertThrows(DataRetrievalFailureException.class, () -> shipmentService.partialUpdate(commonRequestModel, true));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void partialUpdateTestAdditionalDetailsNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).additionalDetail(AdditionalDetailRequest.builder().build()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .additionalDetails(additionalDetails)
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+
+        when(additionalDetailDao.updateEntityFromShipment(any())).thenReturn(additionalDetails);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+
+    }
+
+    @Test
+    void partialUpdateTestCarrierDetailsNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).carrierDetails(CarrierPatchRequest.builder().build()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        doNothing().when(carrierDetailsMapper).update(any(), any());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+
+    }
+
+    @Test
+    void partialUpdateTestTruckDriverDetailsNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).truckDriverDetails(Arrays.asList(TruckDriverDetailsRequest.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        List<TruckDriverDetails> truckDriverDetailsList = Arrays.asList(TruckDriverDetails.builder().build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .truckDriverDetails(truckDriverDetailsList)
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(truckDriverDetailsDao.updateEntityFromShipment(any(), any())).thenReturn(truckDriverDetailsList);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+
+    }
+
+    @Test
+    void partialUpdateTestPackingRequestNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).packingList(Arrays.asList(PackingRequest.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        Packing packing = new Packing();
+        packing.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .packingList(Arrays.asList(packing))
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(packingDao.updateEntityFromShipment(any(), any(), any())).thenReturn(Arrays.asList(packing));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+
+    }
+
+    @Test
+    void partialUpdateTestElDetailsNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).elDetailsList(Arrays.asList(ELDetailsRequest.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .elDetailsList(Arrays.asList(ELDetails.builder().build()))
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(elDetailsDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(ELDetails.builder().build()));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+
+    }
+
+    @Test
+    void partialUpdateTestEventRequestNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).eventsList(Arrays.asList(EventsRequest.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        Events events = new Events();
+        events.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .eventsList(Arrays.asList(events))
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(eventDao.updateEntityFromOtherEntity(any(), any(), any())).thenReturn(Arrays.asList(events));
+        doNothing().when(eventService).updateAtaAtdInShipment(any(), any(), any());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+
+    }
+
+    @Test
+    void partialUpdateTestNoteRequestNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).notesList(Arrays.asList(NotesRequest.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .notesList(Arrays.asList(Notes.builder().build()))
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(notesDao.updateEntityFromOtherEntity(any(), any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+    }
+
+    @Test
+    void partialUpdateTestReferenceNumberNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).referenceNumbersList(Arrays.asList(ReferenceNumbersRequest.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .referenceNumbersList(Arrays.asList(referenceNumbers))
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(referenceNumbersDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(referenceNumbers));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+    }
+
+    @Test
+    void partialUpdateTestRoutingsNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).routingsList(Arrays.asList(RoutingsRequest.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        Routings routings = new Routings();
+        routings.setTenantId(1);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .routingsList(Arrays.asList(routings))
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(routingsDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(routings));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+    }
+
+    @Test
+    void partialUpdateTestServiceDetailNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder()
+                .id(JsonNullable.of(1L))
+                .servicesList(Arrays.asList(ServiceDetailsRequest.builder().build()))
+                .build();
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        ServiceDetails serviceDetails = new ServiceDetails();
+        serviceDetails.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .servicesList(Arrays.asList(serviceDetails))
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(serviceDetailsDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(serviceDetails));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+
+    }
+
+    @Test
+    void partialUpdateTestBookingCarriageNotNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).bookingCarriagesList(Arrays.asList(BookingCarriageRequest.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .bookingCarriagesList(Arrays.asList(BookingCarriage.builder().build()))
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(bookingCarriageDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(BookingCarriage.builder().build()));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+    }
+
+    @Test
+    void createShipmentInV2Test() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).build();
+        when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build();
+        shipmentDetails.setGuid(UUID.randomUUID());
+        ConsolidationDetailsResponse mockConsolidationDetailsResponse = new ConsolidationDetailsResponse();
+
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
+        doReturn(ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().build())).when(consolidationService).createFromBooking(any());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(null);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createShipmentInV2(customerBookingRequest);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void assignAllContainerTest() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
+        ContainerAssignListRequest containerAssignListRequest = new ContainerAssignListRequest();
+        containerAssignListRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(containerAssignListRequest).build();
+        PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(Containers.builder()
+                .allocatedWeight(BigDecimal.TEN)
+                .achievedWeight(BigDecimal.TEN)
+                .allocatedVolume(BigDecimal.TEN)
+                .achievedWeightUnit(Constants.WEIGHT_UNIT_KG)
+                .achievedVolumeUnit(Constants.VOLUME_UNIT_M3)
+                .allocatedWeightUnit(Constants.WEIGHT_UNIT_KG)
+                .allocatedVolumeUnit(Constants.VOLUME_UNIT_M3)
+                .build()));
+
+        when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
+        when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(Arrays.asList(ShipmentsContainersMapping.builder().shipmentId(1L).build()));
+        when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build()));
+        //doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignAllContainers(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testAssignAllContainers_CatchBlock() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
+        CommonRequestModel commonRequestModel = Mockito.mock(CommonRequestModel.class);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.assignAllContainers(commonRequestModel);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculateAutoUpdateWeightVolumeInShipmentTest() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .weightChargeableUnit(Constants.WEIGHT_UNIT_KG)
+                .volumeChargeableUnit(Constants.VOLUME_UNIT_M3)
+                .build());
+
+        AutoUpdateWtVolRequest autoUpdateWtVolRequest = new AutoUpdateWtVolRequest();
+        autoUpdateWtVolRequest.setPackingList(Arrays.asList(PackingRequest.builder().build()));
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(autoUpdateWtVolRequest).build();
+        AutoUpdateWtVolResponse autoUpdateWtVolResponse = new AutoUpdateWtVolResponse();
+
+        List<Packing> packingList = new ArrayList<>();
+
+        when(jsonHelper.convertValue(autoUpdateWtVolRequest, AutoUpdateWtVolResponse.class)).thenReturn(autoUpdateWtVolResponse);
+        when(jsonHelper.convertValueToList(anyList(), eq(Packing.class))).thenReturn(packingList);
+        when(packingService.calculatePackSummary(any(), any(), any(), any())).thenReturn(new PackSummaryResponse());
+
+        assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
+        assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
+    }
+
+    @Test
+    void testcalculateAutoUpdateWtVolInShipment_CatchBlock() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
+        CommonRequestModel commonRequestModel = Mockito.mock(CommonRequestModel.class);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetDataMappings_CatchBlock() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.getMasterDataMappings();
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void assignShipmentContainersTestCatchBlock() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.assignShipmentContainers(CommonRequestModel.builder().build());
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void retrieveByIdTest() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Arrays.asList(Notes.builder().entityId(1L).build()));
+
+        when(jsonHelper.convertValueToList(anyList(), eq(NotesResponse.class))).thenReturn(Arrays.asList(NotesResponse.builder().build()));
+        when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().build());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel);
+        assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Arrays.asList(NotesResponse.builder().build())).build()), httpResponse);
+    }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
