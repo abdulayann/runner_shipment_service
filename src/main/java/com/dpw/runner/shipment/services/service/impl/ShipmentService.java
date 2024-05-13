@@ -567,7 +567,7 @@ public class ShipmentService implements IShipmentService {
 
             List<NotesRequest> notesRequest = request.getNotesList();
             if (notesRequest != null) {
-                for (NotesRequest req : notesRequest) {
+                for(NotesRequest req : notesRequest) {
                     req.setEntityId(shipmentId);
                 }
             }
@@ -1803,7 +1803,7 @@ public class ShipmentService implements IShipmentService {
                 List<RoutingsRequest> routeRequestList = shipmentRequest.getRoutingsList().stream().sorted(Comparator.comparingLong(RoutingsRequest::getLeg)).toList();
                 var routeRequest = routeRequestList.stream().filter(x -> x.getMode().equals(shipmentRequest.getTransportMode())).findFirst();
                 if(routeRequest.isPresent()) {
-                    createRoutes.add(convertToClass(routeRequest.get(), Routings.class));
+                    createRoutes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
                     createRoutes = createConsoleRoutePayload(createRoutes);
                 }
             } else {
@@ -2460,7 +2460,7 @@ public class ShipmentService implements IShipmentService {
             log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
             ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
             log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
-            response.setCustomerBookingNotesList(convertToDtoList(notes,NotesResponse.class));
+            response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
             createShipmentPayload(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
