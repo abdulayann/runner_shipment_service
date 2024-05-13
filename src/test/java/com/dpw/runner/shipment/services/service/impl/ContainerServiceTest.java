@@ -777,7 +777,7 @@ class ContainerServiceTest {
     @Test
     void V1ContainerCreateAndUpdate_Failure() throws RunnerException{
         when(containerDao.findByGuid(any())).thenThrow(new RuntimeException());
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2());
         assertThrows(RuntimeException.class, () -> containerService.V1ContainerCreateAndUpdate(commonRequestModel, false));
     }
 
