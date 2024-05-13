@@ -11,6 +11,6 @@ public interface IHblTermsConditionTemplateDao {
     List<HblTermsConditionTemplate> saveAll(List<HblTermsConditionTemplate> hblTermsConditionTemplateList);
     List<HblTermsConditionTemplate> saveEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint);
     List<HblTermsConditionTemplate> updateEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint) throws RunnerException;
-    HblTermsConditionTemplate getTemplateCode(String templateCode, boolean pageType, String printType);
+    HblTermsConditionTemplate getTemplateCode(String templateCode, Boolean pageType, String printType);
 
 }

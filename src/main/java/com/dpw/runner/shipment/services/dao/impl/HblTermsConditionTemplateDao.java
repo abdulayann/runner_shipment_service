@@ -120,7 +120,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
     }
 
 
-    public HblTermsConditionTemplate getTemplateCode(String templateCode, boolean pageType, String printType) {
+    public HblTermsConditionTemplate getTemplateCode(String templateCode, Boolean pageType, String printType) {
         FilterCriteria customCriteria = FilterCriteria.builder()
                 .innerFilter(Arrays.asList(FilterCriteria.builder()
                                 .criteria(Criteria.builder()
