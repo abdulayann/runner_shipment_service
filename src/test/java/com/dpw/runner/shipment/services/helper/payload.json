@@ -2731,6 +2731,70 @@
       }
     }
   },
+  "CSV_PACKING": {
+    "guid": "9ceb9e18-0e89-411c-970f-37297dbbb03a",
+    "consolidationId": 2094,
+    "shipmentId": 4792,
+    "packs": "1",
+    "packsType": "BAG",
+    "weight": 434,
+    "weightUnit": "KG",
+    "volume": 1.303,
+    "volumeUnit": "M3",
+    "commodity": "680510",
+    "length": 43,
+    "lengthUnit": "IN",
+    "width": 43,
+    "widthUnit": "IN",
+    "height": 43,
+    "heightUnit": "IN",
+    "isTemperatureControlled": true,
+    "minTemp": 43,
+    "minTempUnit": "FAH",
+    "maxTemp": 545,
+    "maxTempUnit": "FAH",
+    "goodsDescription": "goods desc",
+    "hazardous": true,
+    "netWeight": 433,
+    "netWeightUnit": "KG",
+    "volumeWeight": 217.167,
+    "volumeWeightUnit": "KG",
+    "innerPackageNumber": "23",
+    "innerPackageType": "BBG",
+    "chargeable": 434,
+    "chargeableUnit": "KG",
+    "shipmentNumber": "SHP000109091",
+    "isDimension": true,
+    "handlingInfo": "handling info",
+    "dgsubstanceId": 1436,
+    "undgcontact": "2035",
+    "hscode": "ewdc",
+    "dgclass": ""
+  },
+  "VolumeWeightChargeable": {
+    "chargeable": 3453,
+    "chargeableUnit": "KG",
+    "volumeWeight": 4211,
+    "volumeWeightUnit": "KG"
+  },
+  "MasterDataMap": {
+    "WeightUnit": ["KT"]
+  },
+  "MasterDataMapWithCommodity": {
+    "WeightUnit": ["KG"],
+    "CommodityCodes": ["123"]
+  },
+  "MasterDataMapWithSameCommodity": {
+    "WeightUnit": ["KG"],
+    "CommodityCodes": ["680510"],
+    "DGClass": ["dgClass"]
+  },
+  "dgSubstanceContactMap": {
+    "1436": "23"
+  },
+  "dgSubstanceFlashPoint": {
+    "1436": "23"
+  },
   "HBL_LOCK_ALL_FALSE": {
     "id": 60,
     "consignorNameLock": false,
