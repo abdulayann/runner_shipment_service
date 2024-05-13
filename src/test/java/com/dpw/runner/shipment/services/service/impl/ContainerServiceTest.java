@@ -777,7 +777,8 @@ class ContainerServiceTest {
     @Test
     void V1ContainerCreateAndUpdate_Failure() throws RunnerException{
         when(containerDao.findByGuid(any())).thenThrow(new RuntimeException());
-        assertThrows(RuntimeException.class, () -> containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2()), false));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2();
+        assertThrows(RuntimeException.class, () -> containerService.V1ContainerCreateAndUpdate(commonRequestModel, false));
     }
 
     @Test
@@ -794,7 +795,8 @@ class ContainerServiceTest {
         BulkContainerRequestV2 bulkContainerRequestV2 = BulkContainerRequestV2.builder().bulkContainers(List.of(jsonTestUtility.getTestContainerRequestV2())).build();
         ContainerService spyService = spy(containerService);
         doThrow(new RunnerException()).when(spyService).V1ContainerCreateAndUpdate(any(), anyBoolean());
-        assertThrows(RuntimeException.class, () -> spyService.V1BulkContainerCreateAndUpdate(CommonRequestModel.buildRequest(bulkContainerRequestV2)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(bulkContainerRequestV2);
+        assertThrows(RuntimeException.class, () -> spyService.V1BulkContainerCreateAndUpdate(commonRequestModel));
     }
 
 }
