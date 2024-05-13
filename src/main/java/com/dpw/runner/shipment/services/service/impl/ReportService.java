@@ -148,8 +148,8 @@ public class ReportService implements IReportService {
         }
 
         if((Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION)
-                || Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION)
-                && reportRequest.isFromConsolidation())) {
+                || Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION))
+                && reportRequest.isFromConsolidation()) {
             Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId()));
             if(optionalConsolidationDetails.isPresent()) {
                 ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
@@ -236,14 +236,14 @@ public class ReportService implements IReportService {
             cargoManifestAirShipmentReport.setSecurityData(reportRequest.isSecurityData());
         }
 
-        if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {
-            try {
-                //dataRetrived = new ReportRepository().getReportDataNewFlow(ReportInfo, ReportId);
-                newFlowSuccess = true;
-            } catch (Exception ignored) {
-                dataRetrived = null;
-            }
-        }
+//        if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {
+//            try {
+//                //dataRetrived = new ReportRepository().getReportDataNewFlow(ReportInfo, ReportId);
+//                newFlowSuccess = true;
+//            } catch (Exception ignored) {
+//                dataRetrived = null;
+//            }
+//        }
 
         //TODO - Need to handle for new flow
         dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
@@ -463,14 +463,16 @@ public class ReportService implements IReportService {
            dataRetrived.put(ReportConstants.DOCUMENT_PRINT_TYPE, documentPrintType);
         }
 
-        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PACKING_LIST) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FREIGHT_CERTIFICATION) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PRE_ALERT) ||
-                reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_CONFIRMATION) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER) ||
-                reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPMENT_CAN_DOCUMENT) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.COMMERCIAL_INVOICE) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.CUSTOMS_INSTRUCTION) ||
-                reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.ARRIVAL_NOTICE)){
-            if (dataRetrived.containsKey(ReportConstants.TRANSPORT_MODE)){
-                objectType = dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString();
-            }
+//        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PACKING_LIST) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FREIGHT_CERTIFICATION) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PRE_ALERT) ||
+//                reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_CONFIRMATION) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER) ||
+//                reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPMENT_CAN_DOCUMENT) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.COMMERCIAL_INVOICE) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.CUSTOMS_INSTRUCTION) ||
+//                reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.ARRIVAL_NOTICE) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.EX)){
+//
+//
+//        }
 
+        if (dataRetrived.containsKey(ReportConstants.TRANSPORT_MODE)){
+            objectType = dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString();
         }
 
         DocPages pages = GetFromTenantSettings(reportRequest.getReportInfo(), hbltype, objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, reportRequest.getTransportMode(), reportRequest.getMultiTemplateCode());
@@ -927,7 +929,7 @@ public class ReportService implements IReportService {
                             row.getCommercialInvMainPageAir() == null ? adminRow.getCommercialInvMainPageAir() : row.getCommercialInvMainPageAir(), null, row.getCommercialInvMainPageAir() != null, null, null, null);
                 else
                     return setDocPages(null,
-                            row.getCommercialInvMainPage() == null ? adminRow.getCommercialInvMainPageAir() : row.getCommercialInvMainPageAir(), null, row.getCommercialInvMainPage() != null, null, null, null);
+                            row.getCommercialInvMainPage() == null ? adminRow.getCommercialInvMainPage() : row.getCommercialInvMainPage(), null, row.getCommercialInvMainPage() != null, null, null, null);
             case ReportConstants.GENERATE_ISF_FILE:
                 return setDocPages(null,
                         row.getIsfFileMainPage() == null ? adminRow.getIsfFileMainPage() : row.getIsfFileMainPage(), null, row.getIsfFileMainPage() != null, null, null, null);
@@ -1196,52 +1198,52 @@ public class ReportService implements IReportService {
 
         if (StringUtility.isEmpty(logopath))
             return inputBytes;
-
-        logopath = GetBaseUrl() + "/" + logopath;
-        //TODO- don't exact requirement
-//        System.Net.ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, errors) =>
+//        logopath = GetBaseUrl() + "/" + logopath;
+//        //TODO- don't exact requirement
+////        System.Net.ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, errors) =>
+////        {
+////            return true;
+////        };
+//        // Stream inputImageStream =  new MemoryStream(imageData);
+//        OutputStream outputPdfStream = new ByteArrayOutputStream();
+//        PdfReader reader = new PdfReader(inputBytes);
+//        PdfStamper stamper = new PdfStamper(reader, outputPdfStream);
+//
+//        PdfWriter writer = stamper.getWriter();
+//
+//        for (int i = 1; i <= reader.getNumberOfPages(); i++)
 //        {
-//            return true;
-//        };
-        // Stream inputImageStream =  new MemoryStream(imageData);
-        OutputStream outputPdfStream = new ByteArrayOutputStream();
-        PdfReader reader = new PdfReader(inputBytes);
-        PdfStamper stamper = new PdfStamper(reader, outputPdfStream);
-
-        PdfWriter writer = stamper.getWriter();
-
-        for (int i = 1; i <= reader.getNumberOfPages(); i++)
-        {
-            PdfDictionary pg = reader.getPageN(i);
-            PdfDictionary res = (PdfDictionary)PdfReader.getPdfObject(pg.get(PdfName.RESOURCES));
-            PdfDictionary xobj = (PdfDictionary)PdfReader.getPdfObject(res.get(PdfName.XOBJECT));
-            if (xobj == null) continue;
-            for(PdfName name : xobj.getKeys())
-            {
-                PdfObject obj = xobj.get(name);
-                if (obj.isIndirect())
-                {
-                    Image image = Image.getInstance(logopath);
-                    PdfDictionary tg = (PdfDictionary)PdfReader.getPdfObject(obj);
-                    PdfName type = tg.getAsName(PdfName.SUBTYPE);
-                    String width = tg.get(PdfName.WIDTH).toString();
-                    String height = tg.get(PdfName.HEIGHT).toString();
-                    if (PdfName.IMAGE.equals(type))
-                    {
-                        PdfReader.killIndirect(obj);
-                        Image maskImage = image.getImageMask();
-                        if (maskImage != null)
-                            writer.addDirectImageSimple(maskImage);
-                        writer.addDirectImageSimple(image, (PRIndirectReference)obj);
-                    }
-
-                }
-            }
-
-        }
-        stamper.close();
-        reader.close();
-        return ((ByteArrayOutputStream)outputPdfStream).toByteArray();
+//            PdfDictionary pg = reader.getPageN(i);
+//            PdfDictionary res = (PdfDictionary)PdfReader.getPdfObject(pg.get(PdfName.RESOURCES));
+//            PdfDictionary xobj = (PdfDictionary)PdfReader.getPdfObject(res.get(PdfName.XOBJECT));
+//            if (xobj == null) continue;
+//            for(PdfName name : xobj.getKeys())
+//            {
+//                PdfObject obj = xobj.get(name);
+//                if (obj.isIndirect())
+//                {
+//                    Image image = Image.getInstance(logopath);
+//                    PdfDictionary tg = (PdfDictionary)PdfReader.getPdfObject(obj);
+//                    PdfName type = tg.getAsName(PdfName.SUBTYPE);
+//                    String width = tg.get(PdfName.WIDTH).toString();
+//                    String height = tg.get(PdfName.HEIGHT).toString();
+//                    if (PdfName.IMAGE.equals(type))
+//                    {
+//                        PdfReader.killIndirect(obj);
+//                        Image maskImage = image.getImageMask();
+//                        if (maskImage != null)
+//                            writer.addDirectImageSimple(maskImage);
+//                        writer.addDirectImageSimple(image, (PRIndirectReference)obj);
+//                    }
+//
+//                }
+//            }
+//
+//        }
+//        stamper.close();
+//        reader.close();
+//        return ((ByteArrayOutputStream)outputPdfStream).toByteArray();
+        return inputBytes;
     }
 
     public String GetBaseUrl()
