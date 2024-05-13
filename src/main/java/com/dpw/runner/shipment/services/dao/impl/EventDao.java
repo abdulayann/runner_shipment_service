@@ -387,7 +387,7 @@ public class EventDao implements IEventDao {
     @Override
     @Transactional
     public void createEventForAirMessagingEvent(Events events) {
-        Query query = entityManager.createNativeQuery("insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, created_at, updated_at, estimated, actual, place_name, place_description, longitude, latitude) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        Query query = entityManager.createNativeQuery("insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, created_at, updated_at, estimated, actual, place_name, place_description, longitude, latitude) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                 .setParameter(1, events.getGuid())
                 .setParameter(2, events.getEntityId())
                 .setParameter(3, events.getEntityType())
