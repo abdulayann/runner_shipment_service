@@ -148,6 +148,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         CustomerBookingRequest request = (CustomerBookingRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
         }
 
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
@@ -223,25 +224,27 @@ public class CustomerBookingService implements ICustomerBookingService {
             bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, customerBooking.getId());
             customerBooking.setBookingCharges(bookingCharges);
         }
-        auditLogService.addAuditLog(
-                AuditLogMetaData.builder()
-                        .newData(customerBooking)
-                        .prevData(null)
-                        .parent(CustomerBooking.class.getSimpleName())
-                        .parentId(customerBooking.getId())
-                        .operation(DBOperationType.CREATE.name()).build()
-        );
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(customerBooking)
+                            .prevData(null)
+                            .parent(CustomerBooking.class.getSimpleName())
+                            .parentId(customerBooking.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
     }
 
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         CustomerBookingRequest request = (CustomerBookingRequest) commonRequestModel.getData();
-        if (request == null) {
+        if (request == null || request.getId() == null) {
             log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        if (request.getId() == null) {
-            log.error("Request Id is null for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
         }
         long id = request.getId();
         Optional<CustomerBooking> oldEntity = customerBookingDao.findById(id);
@@ -350,14 +353,18 @@ public class CustomerBookingService implements ICustomerBookingService {
                 }
             }
         }
-        auditLogService.addAuditLog(
-                AuditLogMetaData.builder()
-                        .newData(customerBooking)
-                        .prevData(jsonHelper.readFromJson(oldEntity, CustomerBooking.class))
-                        .parent(CustomerBooking.class.getSimpleName())
-                        .parentId(customerBooking.getId())
-                        .operation(DBOperationType.UPDATE.name()).build()
-        );
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(customerBooking)
+                            .prevData(jsonHelper.readFromJson(oldEntity, CustomerBooking.class))
+                            .parent(CustomerBooking.class.getSimpleName())
+                            .parentId(customerBooking.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
         return customerBooking;
     }
 
@@ -387,25 +394,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Override
     @Async
     public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        try {
-            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error("Request is empty for Booking async list for Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            Pair<Specification<CustomerBooking>, Pageable> tuple = fetchData(request, CustomerBooking.class, tableNames);
-            Page<CustomerBooking> customerBookingPage = customerBookingDao.findAll(tuple.getLeft(), tuple.getRight());
-            log.info("Booking async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(customerBookingPage.getContent()),
-                    customerBookingPage.getTotalPages(),
-                    customerBookingPage.getTotalElements()));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
-        }
+        return null;
     }
 
     @Override
@@ -413,11 +402,9 @@ public class CustomerBookingService implements ICustomerBookingService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
+            if (request == null || request.getId() == null) {
                 log.debug("Request is empty for Booking delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if (request.getId() == null) {
-                log.debug("Request Id is null for Booking delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             long id = request.getId();
             Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
@@ -442,11 +429,9 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             double _start = System.currentTimeMillis();
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
+            if (request == null || request.getId() == null) {
                 log.error("Request is empty for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if (request.getId() == null) {
-                log.error("Request Id is null for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             long id = request.getId();
             Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
@@ -714,26 +699,26 @@ public class CustomerBookingService implements ICustomerBookingService {
                         .guid(charge.getGuid())
                         .build());
 
-                if (charge.getContainers() != null) {
-                    charge.getContainers().forEach(cont -> {
-                        if (cont.getRunner_guid() != null) {
-                            if (charge.getContainersUUID() != null)
-                                charge.getContainersUUID().add(cont.getRunner_guid());
-                            else
-                                charge.setContainersUUID(List.of(cont.getRunner_guid()));
-                        } else {
-                            if (charge.getContainersUUID() != null) {
-                                if (referenceIdVsGuidContainerMap.containsKey(cont.getReference_id())) {
-                                    charge.getContainersUUID().add(referenceIdVsGuidContainerMap.get(cont.getReference_id()));
-                                }
-                            } else {
-                                if (referenceIdVsGuidContainerMap.containsKey(cont.getReference_id())) {
-                                    charge.setContainersUUID(List.of(referenceIdVsGuidContainerMap.get(cont.getReference_id())));
-                                }
-                            }
-                        }
-                    });
-                }
+//                if (charge.getContainers() != null) {
+//                    charge.getContainers().forEach(cont -> {
+//                        if (cont.getRunner_guid() != null) {
+//                            if (charge.getContainersUUID() != null)
+//                                charge.getContainersUUID().add(cont.getRunner_guid());
+//                            else
+//                                charge.setContainersUUID(List.of(cont.getRunner_guid()));
+//                        } else {
+//                            if (charge.getContainersUUID() != null) {
+//                                if (referenceIdVsGuidContainerMap.containsKey(cont.getReference_id())) {
+//                                    charge.getContainersUUID().add(referenceIdVsGuidContainerMap.get(cont.getReference_id()));
+//                                }
+//                            } else {
+//                                if (referenceIdVsGuidContainerMap.containsKey(cont.getReference_id())) {
+//                                    charge.setContainersUUID(List.of(referenceIdVsGuidContainerMap.get(cont.getReference_id())));
+//                                }
+//                            }
+//                        }
+//                    });
+//                }
             });
             platformResponse.setCharges(referenceNumbersGuidMapResponses);
         }

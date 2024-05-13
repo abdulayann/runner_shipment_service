@@ -3,7 +3,10 @@ package com.dpw.runner.shipment.services.helper;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
+import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
@@ -333,5 +336,16 @@ public class JsonTestUtility {
 
     public CustomerBooking getCompleteCustomerBooking() {
         return objectMapper.convertValue(payload.get("COMPLETE_CUSTOMER_BOOKING"), CustomerBooking.class);
+    }
+
+    public CustomerBookingRequest getCustomerBookingRequest() {
+        return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBookingRequest.class);
+    }
+    public CustomerBooking getCustomerBooking() {
+        return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBooking.class);
+    }
+
+    public PlatformToRunnerCustomerBookingRequest getPlatformCreateUpdateRequest() {
+        return objectMapper.convertValue(payload.get("PLATFORM_CREATE_UPDATE"), PlatformToRunnerCustomerBookingRequest.class);
     }
 }
