@@ -60,7 +60,6 @@ import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
-@Execution(ExecutionMode.CONCURRENT)
 class CustomerBookingServiceTest {
 
     @InjectMocks
