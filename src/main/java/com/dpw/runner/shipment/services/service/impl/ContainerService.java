@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -16,7 +17,9 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.ContainerEventExcelModel;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -67,7 +70,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
@@ -984,7 +986,7 @@ public class ContainerService implements IContainerService {
                     ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", request.getShipmentId(), "=");
                     Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
                     Page<Packing> allPackings = packingDao.findAll(pair.getLeft(), pair.getRight());
-                    if(!allPackings.isEmpty() && allPackings.get().findAny().isPresent())
+                    if(allPackings != null && !allPackings.isEmpty())
                     {
                         List<Packing> packingList = allPackings.stream().toList();
                         List<Packing> detachPacks = new ArrayList<>();
@@ -1076,7 +1078,7 @@ public class ContainerService implements IContainerService {
     @Override
     public ResponseEntity<IRunnerResponse> getContainersForSelection(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         boolean lclAndSeaOrRoadFlag = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
         boolean IsConsolidatorFlag = shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator();
         List<Containers> containersList = new ArrayList<>();
@@ -1276,7 +1278,7 @@ public class ContainerService implements IContainerService {
             double totalPacks = 0;
             String toWeightUnit = Constants.WEIGHT_UNIT_KG;
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
-            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
                 toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
@@ -1449,14 +1451,8 @@ public class ContainerService implements IContainerService {
             List<Long> shipIds = null;
             boolean isCreate = true;
             if (existingCont != null && existingCont.size() > 0) {
-                if (existingCont != null && existingCont.size() > 0) {
-                    containers.setId(existingCont.get(0).getId());
-                    containers.setConsolidationId(existingCont.get(0).getConsolidationId());
-                } else {
-                    if (containerRequest.getConsolidationGuid() != null) {
-                        isCreate = false;
-                    }
-                }
+                containers.setId(existingCont.get(0).getId());
+                containers.setConsolidationId(existingCont.get(0).getConsolidationId());
             } else {
                 if (containerRequest.getConsolidationGuid() != null) {
                     Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(containerRequest.getConsolidationGuid());
@@ -1478,13 +1474,12 @@ public class ContainerService implements IContainerService {
             if (shipIds != null) {
                 shipmentsContainersMappingDao.assignShipments(containers.getId(), shipIds, true);
             }
-            ContainerResponse response = objectMapper.convertValue(containers, ContainerResponse.class);
+            ContainerResponse response = jsonHelper.convertValue(containers, ContainerResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
     }
@@ -1506,7 +1501,6 @@ public class ContainerService implements IContainerService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
     }

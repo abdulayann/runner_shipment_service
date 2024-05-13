@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -125,6 +126,9 @@ public class JsonTestUtility {
     }
     public PackingRequestV2 getTestPackingRequestV2(){
         return objectMapper.convertValue(payload.get("PACKING_REQUEST_V2"), PackingRequestV2.class);
+    }
+    public ContainerRequestV2 getTestContainerRequestV2(){
+        return objectMapper.convertValue(payload.get("CONTAINER_REQUEST_V2"), ContainerRequestV2.class);
     }
     public List<Packing> getTestPackingList(){
         return convertValueToList(payload.get("PACKING_LIST"), Packing.class);

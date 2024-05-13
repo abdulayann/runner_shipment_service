@@ -119,6 +119,7 @@ public class Containers extends MultiTenancy {
     private String containerStuffingLocation;
 
     @Column(name = "container_comments")
+    @Size(max = 255, message = "max size is 255 for container_comments")
     private String containerComments;
 
     @Column(name = "gross_volume")

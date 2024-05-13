@@ -5,26 +5,21 @@ import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangesRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -33,7 +28,10 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
+import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
@@ -73,6 +71,21 @@ class ContainerServiceTest {
     private IContainerDao containerDao;
 
     @Mock
+    private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Mock
+    private IShipmentDao shipmentDao;
+
+    @Mock
+    private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Mock
+    private MasterDataUtils masterDataUtils;
+
+    @Mock
+    private SyncEntityConversionService syncEntityConversionService;
+
+    @Mock
     private KafkaProducer producer;
 
     @Mock
@@ -97,6 +110,8 @@ class ContainerServiceTest {
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     private static JsonTestUtility jsonTestUtility;
     private static Containers testContainer;
+    private static Packing testPacking;
+    private static ShipmentDetails testShipment;
     private static ObjectMapper objectMapper;
 
     @InjectMocks
@@ -116,13 +131,15 @@ class ContainerServiceTest {
     @BeforeEach
     public void setUp() {
         testContainer = jsonTestUtility.getTestContainer();
+        testShipment = jsonTestUtility.getTestShipment();
+        testPacking = jsonTestUtility.getTestPacking();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").multipleShipmentEnabled(true).build());
         MockitoAnnotations.initMocks(this);
     }
 
@@ -419,6 +436,365 @@ class ContainerServiceTest {
 
         var response = containerService.getContainers(requestModel);
         assertNotNull(response);
+    }
+
+    @Test
+    void getContainers_Failure() {
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest();
+        var response = containerService.getContainers(requestModel);
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void calculateAchievedQuantity_onPackDetach_FailureOnRetrieve() {
+        ContainerPackADInShipmentRequest request = new ContainerPackADInShipmentRequest();
+        request.setContainerId(1L);
+        request.setPacksId(List.of(2L));
+        request.setShipmentId(3L);
+        when(containerDao.findById(anyLong())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculateAchievedQuantity_onPackDetach_EmptyOnRetrieve() {
+        ContainerPackADInShipmentRequest request = new ContainerPackADInShipmentRequest();
+        request.setContainerId(1L);
+        request.setPacksId(List.of(2L));
+        request.setShipmentId(3L);
+        when(containerDao.findById(anyLong())).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculateAchievedQuantity_onPackDetach_PacksIdNull() {
+        ContainerPackADInShipmentRequest request = new ContainerPackADInShipmentRequest();
+        request.setContainerId(1L);
+        request.setShipmentId(3L);
+        when(containerDao.findById(anyLong())).thenReturn(Optional.of(testContainer));
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculateAchievedQuantity_onPackDetach_PacksIdEmpty() {
+        ContainerPackADInShipmentRequest request = new ContainerPackADInShipmentRequest();
+        request.setContainerId(1L);
+        request.setShipmentId(3L);
+        request.setPacksId(new ArrayList<>());
+        when(containerDao.findById(anyLong())).thenReturn(Optional.of(testContainer));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculateAchievedQuantity_onPackDetach_FCL() {
+        ContainerPackADInShipmentRequest request = new ContainerPackADInShipmentRequest();
+        request.setContainerId(1L);
+        request.setPacksId(List.of(2L));
+        request.setShipmentId(3L);
+        when(containerDao.findById(anyLong())).thenReturn(Optional.of(testContainer));
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        testPacking.setId(2L);
+        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testPacking)));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        assertNotNull(responseEntity);
+    }
+
+    @Test
+    void calculateAchievedQuantity_onPackDetach() {
+        ContainerPackADInShipmentRequest request = new ContainerPackADInShipmentRequest();
+        request.setContainerId(1L);
+        request.setPacksId(List.of(2L));
+        request.setShipmentId(3L);
+        when(containerDao.findById(anyLong())).thenReturn(Optional.of(testContainer));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        testPacking.setId(2L);
+        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testPacking)));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        assertNotNull(responseEntity);
+    }
+
+    @Test
+    void calculateAchievedQuantity_onPackDetach_EmptyPackOnRetrieve() {
+        ContainerPackADInShipmentRequest request = new ContainerPackADInShipmentRequest();
+        request.setContainerId(1L);
+        request.setPacksId(List.of(2L));
+        request.setShipmentId(3L);
+        when(containerDao.findById(anyLong())).thenReturn(Optional.of(testContainer));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        testPacking.setId(2L);
+        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        assertNotNull(responseEntity);
+    }
+
+    @Test
+    void calculateAchievedQuantity_onPackDetach_NullPackOnRetrieve() {
+        ContainerPackADInShipmentRequest request = new ContainerPackADInShipmentRequest();
+        request.setContainerId(1L);
+        request.setPacksId(List.of(2L));
+        request.setShipmentId(3L);
+        when(containerDao.findById(anyLong())).thenReturn(Optional.of(testContainer));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        testPacking.setId(2L);
+        when(packingDao.findAll(any(), any())).thenReturn(null);
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        assertNotNull(responseEntity);
+    }
+
+    @Test
+    void getContainersForSelection() {
+        ContainerAssignListRequest containerAssignListRequest = new ContainerAssignListRequest();
+        containerAssignListRequest.setShipmentId(1L);
+        containerAssignListRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        containerAssignListRequest.setConsolidationId(2L);
+        containerAssignListRequest.setTake(20);
+        testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
+        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getContainersForSelection_NonSeaCase() {
+        ContainerAssignListRequest containerAssignListRequest = new ContainerAssignListRequest();
+        containerAssignListRequest.setShipmentId(1L);
+        containerAssignListRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        containerAssignListRequest.setConsolidationId(2L);
+        testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testContainer.setShipmentsList(List.of(testShipment));
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
+        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getContainersForSelection_WithShipmentsList() {
+        ContainerAssignListRequest containerAssignListRequest = new ContainerAssignListRequest();
+        containerAssignListRequest.setShipmentId(1L);
+        containerAssignListRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        containerAssignListRequest.setConsolidationId(2L);
+        containerAssignListRequest.setTake(20);
+        testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testContainer.setShipmentsList(List.of(testShipment));
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getContainersForSelection_() {
+        ContainerAssignListRequest containerAssignListRequest = new ContainerAssignListRequest();
+        containerAssignListRequest.setShipmentId(1L);
+        containerAssignListRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        containerAssignListRequest.setConsolidationId(2L);
+        containerAssignListRequest.setTake(20);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMultipleShipmentEnabled(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsConsolidator(true);
+        testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testContainer.setShipmentsList(List.of(testShipment));
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
+        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getContainersForSelection_Failure() {
+        ContainerAssignListRequest containerAssignListRequest = new ContainerAssignListRequest();
+        containerAssignListRequest.setShipmentId(1L);
+        containerAssignListRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        containerAssignListRequest.setConsolidationId(2L);
+        containerAssignListRequest.setTake(20);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMultipleShipmentEnabled(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsConsolidator(true);
+        testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testContainer.setShipmentsList(List.of(testShipment));
+        when(containerDao.findAll(any(), any())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void checkForDelete() {
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>();
+        shipmentsContainersMappingList.add(new ShipmentsContainersMapping());
+        shipmentsContainersMappingList.add(new ShipmentsContainersMapping());
+        when(shipmentsContainersMappingDao.findByContainerId(anyLong())).thenReturn(shipmentsContainersMappingList);
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.checkForDelete(CommonRequestModel.buildRequest(1L));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void checkForDelete_null() {
+        when(shipmentsContainersMappingDao.findByContainerId(anyLong())).thenReturn(null);
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.checkForDelete(CommonRequestModel.buildRequest(1L));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void checkForDelete_empty() {
+        when(shipmentsContainersMappingDao.findByContainerId(anyLong())).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.checkForDelete(CommonRequestModel.buildRequest(1L));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void checkForDelete_Failure() {
+        when(shipmentsContainersMappingDao.findByContainerId(anyLong())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.checkForDelete(CommonRequestModel.buildRequest(1L));
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculateContainerSummary() throws RunnerException{
+        List<Containers> containersList = List.of(testContainer);
+        ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
+        assertNotNull(containerSummaryResponse);
+    }
+
+    @Test
+    void calculateContainerSummary_Branches() throws RunnerException{
+        testContainer.setNoOfPackages(null);
+        testContainer.setPacks(null);
+        testContainer.setContainerCount(null);
+        List<Containers> containersList = List.of(testContainer);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setWeightChargeableUnit(null);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeChargeableUnit(null);
+        ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
+        assertNotNull(containerSummaryResponse);
+    }
+
+    @Test
+    void calculateContainerSummary_() {
+        List<Containers> containersList = new ArrayList<>();
+        containersList.add(testContainer);
+        String summary = containerService.calculateContainerSummary(containersList);
+        assertNotNull(summary);
+    }
+
+    @Test
+    void calculateContainerSummary_ContCount() {
+        List<Containers> containersList = new ArrayList<>();
+        testContainer.setContainerCount(4L);
+        testContainer.setIsPart(true);
+        containersList.add(testContainer);
+        String summary = containerService.calculateContainerSummary(containersList);
+        assertNotNull(summary);
+    }
+
+    @Test
+    void calculateContainerSummary_ContCount_MultipleConts() {
+        List<Containers> containersList = new ArrayList<>();
+        testContainer.setContainerCount(4L);
+        testContainer.setIsPart(false);
+        containersList.add(testContainer);
+        containersList.add(testContainer);
+        String summary = containerService.calculateContainerSummary(containersList);
+        assertNotNull(summary);
+    }
+
+    @Test
+    void calculateContainerSummary_ContCount_MultipleConts_IsPart() {
+        List<Containers> containersList = new ArrayList<>();
+        testContainer.setContainerCount(4L);
+        testContainer.setIsPart(true);
+        containersList.add(testContainer);
+        containersList.add(testContainer);
+        String summary = containerService.calculateContainerSummary(containersList);
+        assertNotNull(summary);
+    }
+
+    @Test
+    void calculateContainerSummary_NullRequest() {
+        String summary = containerService.calculateContainerSummary(null);
+        assertNull(summary);
+    }
+
+    @Test
+    void calculateContainerSummary_EmptyRequest() {
+        String summary = containerService.calculateContainerSummary(new ArrayList<>());
+        assertNull(summary);
+    }
+
+    @Test
+    void V1ContainerCreateAndUpdate() throws RunnerException{
+        when(syncEntityConversionService.containerV1ToV2(any())).thenReturn(testContainer);
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(jsonTestUtility.getTestConsolidation()));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testShipment)));
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2()), false);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void V1ContainerCreateAndUpdate_ExistingCont() throws RunnerException{
+        when(syncEntityConversionService.containerV1ToV2(any())).thenReturn(testContainer);
+        when(containerDao.findByGuid(any())).thenReturn(List.of(testContainer));
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2()), false);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void V1ContainerCreateAndUpdate_Failure() throws RunnerException{
+        when(containerDao.findByGuid(any())).thenThrow(new RuntimeException());
+        assertThrows(RuntimeException.class, () -> containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2()), false));
+    }
+
+    @Test
+    void V1BulkContainerCreateAndUpdate() throws RunnerException{
+        BulkContainerRequestV2 bulkContainerRequestV2 = BulkContainerRequestV2.builder().bulkContainers(List.of(jsonTestUtility.getTestContainerRequestV2())).build();
+        ContainerService spyService = spy(containerService);
+        doReturn(new ResponseEntity<>(HttpStatus.OK)).when(spyService).V1ContainerCreateAndUpdate(any(), anyBoolean());
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.V1BulkContainerCreateAndUpdate(CommonRequestModel.buildRequest(bulkContainerRequestV2));
+        assertNotNull(responseEntity);
+    }
+
+    @Test
+    void V1BulkContainerCreateAndUpdate_Failure() throws RunnerException{
+        BulkContainerRequestV2 bulkContainerRequestV2 = BulkContainerRequestV2.builder().bulkContainers(List.of(jsonTestUtility.getTestContainerRequestV2())).build();
+        ContainerService spyService = spy(containerService);
+        doThrow(new RunnerException()).when(spyService).V1ContainerCreateAndUpdate(any(), anyBoolean());
+        assertThrows(RuntimeException.class, () -> spyService.V1BulkContainerCreateAndUpdate(CommonRequestModel.buildRequest(bulkContainerRequestV2)));
     }
 
 }
