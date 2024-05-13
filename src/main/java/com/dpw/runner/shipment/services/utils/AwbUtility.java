@@ -764,27 +764,43 @@ public class AwbUtility {
         var tenantId = awb.get().getTenantId();
         if(awb.get().getConsolidationId() != null) {
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationIdByQuery(awb.get().getConsolidationId());
-            eventDao.createEventForAirMessagingEvent(UUID.randomUUID(), awb.get().getConsolidationId(),
-                    Constants.CONSOLIDATION, airMessageEvent.getEventCode(), airMessageEvent.getEventCode(), Constants.DESCARTES,
-                    tenantId, airMessageEvent.getPieces(), airMessageEvent.getTotalPieces(), airMessageEvent.getWeight(),
-                    airMessageEvent.getTotalWeight(), airMessageEvent.getIsPartial(), airMessageEvent.getActualTimeOfEvent(),
-                    airMessageEvent.getScheduledTimeOfEvent(), LocalDateTime.now(), LocalDateTime.now());
+
+            eventDao.createEventForAirMessagingEvent(prepareEventPayload(airMessageEvent, awb.get().getConsolidationId(), Constants.CONSOLIDATION, tenantId));
             if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()){
-                consoleShipmentMappings.forEach(x -> eventDao.createEventForAirMessagingEvent(UUID.randomUUID(), x.getShipmentId(),
-                        Constants.SHIPMENT, airMessageEvent.getEventCode(), airMessageEvent.getEventCode(), Constants.DESCARTES,
-                        tenantId, airMessageEvent.getPieces(), airMessageEvent.getTotalPieces(), airMessageEvent.getWeight(),
-                        airMessageEvent.getTotalWeight(), airMessageEvent.getIsPartial(), airMessageEvent.getActualTimeOfEvent(),
-                        airMessageEvent.getScheduledTimeOfEvent(), LocalDateTime.now(), LocalDateTime.now()));
+                consoleShipmentMappings.forEach(x -> eventDao.createEventForAirMessagingEvent(prepareEventPayload(airMessageEvent, x.getShipmentId(), Constants.SHIPMENT, tenantId)));
             }
         } else if (awb.get().getShipmentId() != null) {
-            eventDao.createEventForAirMessagingEvent(UUID.randomUUID(), awb.get().getShipmentId(),
-                    Constants.SHIPMENT, airMessageEvent.getEventCode(), airMessageEvent.getEventCode(), Constants.DESCARTES,
-                    tenantId, airMessageEvent.getPieces(), airMessageEvent.getTotalPieces(), airMessageEvent.getWeight(),
-                    airMessageEvent.getTotalWeight(), airMessageEvent.getIsPartial(), airMessageEvent.getActualTimeOfEvent(),
-                    airMessageEvent.getScheduledTimeOfEvent(), LocalDateTime.now(), LocalDateTime.now());
+            eventDao.createEventForAirMessagingEvent(prepareEventPayload(airMessageEvent, awb.get().getShipmentId(), Constants.SHIPMENT, tenantId));
         }
 
 
+    }
+
+    private Events prepareEventPayload(AirMessagingEventDto airMessageEvent, Long entityId, String entityType, Integer tenantId) {
+        Events events = new Events();
+        events.setGuid(UUID.randomUUID());
+        events.setEntityId(entityId);
+        events.setEntityType(entityType);
+        events.setTenantId(tenantId);
+        events.setEventCode(airMessageEvent.getEventCode());
+        events.setDescription(airMessageEvent.getEventCode());
+        events.setSource(Constants.DESCARTES);
+        events.setPieces(airMessageEvent.getPieces());
+        events.setTotalPieces(airMessageEvent.getTotalPieces());
+        events.setWeight(airMessageEvent.getWeight());
+        events.setTotalWeight(airMessageEvent.getTotalWeight());
+        events.setIsPartial(Objects.equals(airMessageEvent.getIsPartial(), "P"));
+        events.setCreatedAt(LocalDateTime.now());
+        events.setUpdatedAt(LocalDateTime.now());
+        events.setActual(airMessageEvent.getActualTimeOfEvent());
+        events.setEstimated(airMessageEvent.getEstimatedTimeOfEvent());
+        events.setReceivedDate(airMessageEvent.getTimeOfReceivingFSUMessage());
+        events.setScheduledDate(airMessageEvent.getScheduledTimeOfEvent());
+        events.setPlaceName(airMessageEvent.getPlaceOfEvent());
+        events.setPlaceDescription(airMessageEvent.getPlaceDescription());
+        events.setLatitude(airMessageEvent.getLatitude());
+        events.setLongitude(airMessageEvent.getLongitude());
+        return events;
     }
 
     public void sendAirMessagingFailureEmail(Awb awb, List<Awb> awbsList) throws MessagingException, IOException {
