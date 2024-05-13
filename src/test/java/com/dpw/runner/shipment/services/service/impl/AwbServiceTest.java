@@ -1596,6 +1596,27 @@ class AwbServiceTest {
     }
 
     @Test
+    void testValidateIataAgentFromShipment() {
+
+        IataAgentResponse mockResponse = IataAgentResponse.builder().iataAgent(true).message("FWB will be sent before printing, do you want to proceed?").build();
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.IATAAgent = true;
+        mockTenantModel.AgentIATACode = "test-code";
+        mockTenantModel.AgentCASSCode = "test-code";
+        mockTenantModel.PIMAAddress = "test-addr";
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        var httpResponse = awbService.validateIataAgent(true);
+
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
+    }
+
+    @Test
     void testValidateIataAgent() {
 
         IataAgentResponse mockResponse = IataAgentResponse.builder().iataAgent(true).message("FWB & FZB  will be sent before printing, do you want to proceed?").build();
@@ -1610,11 +1631,12 @@ class AwbServiceTest {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent();
+        var httpResponse = awbService.validateIataAgent(false);
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
     }
+
     @Test
     void testValidateIataAgentWithNullPIMAAddress() {
 
@@ -1630,7 +1652,7 @@ class AwbServiceTest {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent();
+        var httpResponse = awbService.validateIataAgent(false);
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
@@ -1647,7 +1669,7 @@ class AwbServiceTest {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent();
+        var httpResponse = awbService.validateIataAgent(false);
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
