@@ -42,7 +42,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class PartiesDaoTest {
+class PartiesDaoTest {
     @Mock
     private IPartiesRepository partiesRepository;
     @Mock

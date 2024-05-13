@@ -41,7 +41,7 @@ import java.util.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class PickupDeliveryDetailsDaoTest {
+class PickupDeliveryDetailsDaoTest {
     @Mock
     private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
 
