@@ -19,7 +19,6 @@ public interface IConsolidationDetailsDao {
     Optional<ConsolidationDetails> findById(Long id);
     void delete(ConsolidationDetails consolidationDetails);
     List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails);
-    Optional<ShipmentDetails> findShipmentById(Long shipmentId);
     Optional<ConsolidationDetails> findByGuid (UUID guid);
     List<ConsolidationDetails> findByBol (String bol);
     List<ConsolidationDetails> findByReferenceNumber(String ref);

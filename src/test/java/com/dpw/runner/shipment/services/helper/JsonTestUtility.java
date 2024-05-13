@@ -120,6 +120,9 @@ public class JsonTestUtility {
         }
     }
 
+    public PickupDeliveryDetails getTestPickupDeliveryDetails() {
+        return objectMapper.convertValue(payload.get("PICKUP_DELIVERY_DETAILS"), PickupDeliveryDetails.class);
+    }
     public PackingRequestV2 getTestPackingRequestV2(){
         return objectMapper.convertValue(payload.get("PACKING_REQUEST_V2"), PackingRequestV2.class);
     }
@@ -174,6 +177,27 @@ public class JsonTestUtility {
     public ConsolidationDetails getTestConsolidation(){
         ConsolidationDetails consolidationDetails = objectMapper.convertValue(payload.get("CONSOLIDATION"), ConsolidationDetails.class);
         return consolidationDetails;
+    }
+
+    public ConsolidationDetails getTestConsolidationAir(){
+        ConsolidationDetails consolidationDetails = objectMapper.convertValue(payload.get("CONSOLIDATION_AIR"), ConsolidationDetails.class);
+        return consolidationDetails;
+    }
+    public MawbStocks getMawbStock() {
+        MawbStocks mawbStocks = objectMapper.convertValue(payload.get("MAWB_STOCK"), MawbStocks.class);
+        return mawbStocks;
+    }
+    public MawbStocksLink getNewMawbStockLink(){
+        MawbStocksLink mawbStocksLink = objectMapper.convertValue(payload.get("MAWB_STOCK_LINK_NEW"), MawbStocksLink.class);
+        return mawbStocksLink;
+    }
+    public List<Parties> getConsoldiationAddressList() {
+        List<Parties> parties = convertValueToList(payload.get("CONSOLIDATION_ADDRESS_LIST"), Parties.class);
+        return parties;
+    }
+    public Parties getParties() {
+        Parties parties = objectMapper.convertValue(payload.get("PARTIES"), Parties.class);
+        return parties;
     }
 
     public Routings getTestRouting() {

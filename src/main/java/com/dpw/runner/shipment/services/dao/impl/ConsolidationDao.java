@@ -167,10 +167,6 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return res;
     }
 
-    public Optional<ShipmentDetails> findShipmentById(Long shipmentId) {
-        return shipmentRepository.findById(shipmentId);
-    }
-
     public Optional<ConsolidationDetails> findByGuid (UUID guid) {
         return consolidationRepository.findByGuid(guid);
     }
