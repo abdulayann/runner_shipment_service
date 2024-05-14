@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -1944,6 +1945,81 @@ class ConsolidationServiceTest {
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationService.autoGenerateEvents(consolidationDetails);
         verify(eventDao, times(1)).save(any());
+    }
+
+    @Test
+    void testGenerateConsolidationNumber_Success() throws RunnerException {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setConsolidationNumber(null);
+        consolidationDetails.setReferenceNumber(null);
+        consolidationDetails.setBol(null);
+        TenantProducts tenantProducts = new TenantProducts();
+        tenantProducts.setId(1L);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setConsolidationLite(false);
+        shipmentSettingsDetails.setCustomisedSequence(true);
+        var spyService = Mockito.spy(consolidationService);
+        when(shipmentSettingsDao.list()).thenReturn(List.of(shipmentSettingsDetails));
+        when(productEngine.populateEnabledTenantProducts(shipmentSettingsDetails)).thenReturn(List.of(tenantProducts));
+        when(productEngine.GetCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI)).thenReturn("CONS007262");
+        when(productEngine.IdentifyProduct(any(ConsolidationDetails.class), any())).thenReturn(tenantProducts);
+        when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
+        when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("BOL23131");
+        spyService.generateConsolidationNumber(consolidationDetails);
+        assertEquals("CONS007262", consolidationDetails.getConsolidationNumber());
+        assertEquals("CONS007262", consolidationDetails.getReferenceNumber());
+        assertEquals("BOL23131", consolidationDetails.getBol());
+    }
+
+    @Test
+    void testGenerateConsolidationNumber_Success1() throws RunnerException {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setConsolidationNumber(null);
+        consolidationDetails.setReferenceNumber(null);
+        consolidationDetails.setBol(null);
+        TenantProducts tenantProducts = new TenantProducts();
+        tenantProducts.setId(1L);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setConsolidationLite(false);
+        shipmentSettingsDetails.setCustomisedSequence(true);
+        var spyService = Mockito.spy(consolidationService);
+        when(shipmentSettingsDao.list()).thenReturn(List.of(shipmentSettingsDetails));
+        when(productEngine.populateEnabledTenantProducts(shipmentSettingsDetails)).thenReturn(List.of(tenantProducts));
+        when(productEngine.GetCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI)).thenReturn("");
+        when(productEngine.IdentifyProduct(any(ConsolidationDetails.class), any())).thenReturn(tenantProducts);
+        when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
+        when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("");
+        when(v1Service.getMaxConsolidationId()).thenReturn("123311");
+        doReturn("BOL2121").when(spyService).generateCustomBolNumber();
+        spyService.generateConsolidationNumber(consolidationDetails);
+        assertEquals("CONS000123311", consolidationDetails.getConsolidationNumber());
+        assertEquals("CONS000123311", consolidationDetails.getReferenceNumber());
+        assertEquals("BOL2121", consolidationDetails.getBol());
+    }
+
+    @Test
+    void testGenerateConsolidationNumber_Success2() throws RunnerException {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setConsolidationNumber(null);
+        consolidationDetails.setReferenceNumber(null);
+        consolidationDetails.setBol(null);
+        TenantProducts tenantProducts = new TenantProducts();
+        tenantProducts.setId(1L);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setConsolidationLite(false);
+        shipmentSettingsDetails.setCustomisedSequence(false);
+        var spyService = Mockito.spy(consolidationService);
+        when(shipmentSettingsDao.list()).thenReturn(List.of(shipmentSettingsDetails));
+        when(productEngine.populateEnabledTenantProducts(shipmentSettingsDetails)).thenReturn(List.of(tenantProducts));
+        when(productEngine.IdentifyProduct(any(ConsolidationDetails.class), any())).thenReturn(tenantProducts);
+        when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
+        when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("");
+        when(v1Service.getMaxConsolidationId()).thenReturn("123311");
+        doReturn("BOL2121").when(spyService).generateCustomBolNumber();
+        spyService.generateConsolidationNumber(consolidationDetails);
+        assertEquals("CONS000123311", consolidationDetails.getConsolidationNumber());
+        assertEquals("CONS000123311", consolidationDetails.getReferenceNumber());
+        assertEquals("BOL2121", consolidationDetails.getBol());
     }
 
 }

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 
@@ -209,6 +210,9 @@ public class JsonTestUtility {
 
     public ConsolidationDetails getTestNewConsolidation(){
         return objectMapper.convertValue(payload.get("NEW_CONSOLIDATION_CREATE"), ConsolidationDetails.class);
+    }
+    public AirMessagingLogs getTestAirMessagingLogs () {
+        return objectMapper.convertValue(payload.get("AIR_MESSAGING_LOGS"), AirMessagingLogs.class);
     }
 
     public ConsolidationDetails getCompleteConsolidation() {

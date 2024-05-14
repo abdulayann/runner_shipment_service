@@ -53,8 +53,6 @@ public class SyncQueueService implements ISyncQueueService {
     private IELDetailsService elDetailsService;
     @Autowired
     private IEventService eventService;
-    @Autowired
-    private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
 
     @Autowired
     private HttpServletRequest request;
@@ -151,9 +149,9 @@ public class SyncQueueService implements ISyncQueueService {
                         eventService.V1EventsCreateAndUpdate(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), EventsRequestV2.class)).build(), false);
                         break;
 
-                    case SyncingConstants.PICKUP_DELIVERY:
-                        pickupDeliveryDetailsService.V1PickupDeliveryCreateAndUpdate(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), PickupDeliveryDetailsRequestV2.class)).build(), false);
-                        break;
+//                    case SyncingConstants.PICKUP_DELIVERY:
+//                        pickupDeliveryDetailsService.V1PickupDeliveryCreateAndUpdate(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), PickupDeliveryDetailsRequestV2.class)).build(), false);
+//                        break;
                     default:
 
                 }
