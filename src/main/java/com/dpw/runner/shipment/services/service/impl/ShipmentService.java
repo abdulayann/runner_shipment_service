@@ -65,6 +65,9 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.github.bohnman.squiggly.Squiggly;
+import com.github.bohnman.squiggly.util.SquigglyUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -528,7 +531,7 @@ public class ShipmentService implements IShipmentService {
     private String generateString(int length) {
         StringBuilder salt = new StringBuilder();
         while (salt.length() < length) {
-            salt.append(Constants.SALT_CHARS.charAt(this.rnd.nextInt() * Constants.SALT_CHARS.length()));
+            salt.append(Constants.SALT_CHARS.charAt(Math.abs(this.rnd.nextInt() * Constants.SALT_CHARS.length()) % Constants.SALT_CHARS.length()));
         }
         return salt.toString();
     }
