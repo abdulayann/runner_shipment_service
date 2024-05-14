@@ -320,7 +320,37 @@ public class EventService implements IEventService {
 
     @Override
     public ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse();
+        EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
+        try {
+            Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
+            Events events = modelMapper.map(eventsRequestV2, Events.class);
+            if (existingEvent != null && existingEvent.isPresent()) {
+                events.setId(existingEvent.get().getId());
+            }
+            if (eventsRequestV2.getShipmentGuid() != null) {
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(eventsRequestV2.getShipmentGuid());
+                if (shipmentDetails.isPresent()) {
+                    events.setEntityId(shipmentDetails.get().getId());
+                    events.setEntityType(Constants.SHIPMENT);
+                }
+            }
+            if (eventsRequestV2.getConsolidationGuid() != null) {
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(eventsRequestV2.getConsolidationGuid());
+                if (consolidationDetails.isPresent()) {
+                    events.setEntityId(consolidationDetails.get().getId());
+                    events.setEntityType(Constants.CONSOLIDATION);
+                }
+            }
+            events = eventDao.save(events);
+            EventsResponse response = objectMapper.convertValue(events, EventsResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
+        }
     }
 
   public ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) throws RunnerException {

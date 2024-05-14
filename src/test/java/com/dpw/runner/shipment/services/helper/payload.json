@@ -4084,6 +4084,26 @@
     "volumeWeight": "166.667",
     "volumeWeightUnit": "KG"
   },
+  "EVENTS_REQUEST_V2": {
+    "Guid": "8623ed5b-069b-4dca-b36a-6ab3fd594f0b",
+    "EntityType": "Entity Type",
+    "Actual": "2024-05-14T12:30:45.123456789",
+    "Description": "Description",
+    "Estimated": "2024-05-14T12:30:45.123456789",
+    "Event_estimate_update_reasons": "Reasons",
+    "IsPublicTrackingEvent": true,
+    "Latitude": "Latitude",
+    "Longitude": "Longitude",
+    "EventCode": "Event Code",
+    "MasterList": "Master List",
+    "PlaceDescription": "Place Description",
+    "PlaceName": "Place Name",
+    "Source": "Source",
+    "ShipmentGuid": "8623ed5b-069b-4dca-b36a-6ab3fd594f0b",
+    "ConsolidationGuid": "8623ed5b-069b-4dca-b36a-6ab3fd594f0b",
+    "ContainerNumber": "Container Number",
+    "AWBNumber": "AWB Number"
+  },
   "PACKING_REQUEST_V2": {
     "Guid": "3537ef0a-f183-4a0d-9ec1-f594422ce9ae",
     "ChargeableUnit": "M3",
