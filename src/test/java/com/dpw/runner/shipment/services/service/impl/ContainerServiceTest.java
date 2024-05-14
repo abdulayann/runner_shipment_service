@@ -6,10 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
@@ -30,7 +27,10 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
+import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
+import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,14 +47,17 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -66,6 +69,18 @@ import static org.mockito.Mockito.*;
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
 class ContainerServiceTest {
+
+    @Mock
+    private IContainersSync containersSync;
+
+    @Mock
+    private IContainerSync containerSync;
+
+    @Mock
+    private CSVParsingUtil parser;
+
+    @Mock
+    private ICustomerBookingDao customerBookingDao;
 
     @Mock
     private IContainerDao containerDao;
@@ -797,6 +812,254 @@ class ContainerServiceTest {
         doThrow(new RunnerException()).when(spyService).V1ContainerCreateAndUpdate(any(), anyBoolean());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(bulkContainerRequestV2);
         assertThrows(RuntimeException.class, () -> spyService.V1BulkContainerCreateAndUpdate(commonRequestModel));
+    }
+
+    @Test
+    public void testExportContainers_Success() throws IOException, RunnerException, IllegalAccessException {
+        HttpServletResponse response = new MockHttpServletResponse();
+        ExportContainerListRequest request = new ExportContainerListRequest();
+        request.setConsolidationId("1");
+        request.setFreeTimeNoOfDaysDetention(3L);
+        request.setFreeTimeNoOfDaysStorage(4L);
+
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        List<Containers> containers = new ArrayList<>();
+        testContainer.setBookingId(6L);
+        containers.add(testContainer);
+        consolidationDetails.setContainersList(containers);
+
+        Optional<ConsolidationDetails> consol = Optional.of(consolidationDetails);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(consol);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
+
+        List<String> contHeaders = new ArrayList<>();
+        contHeaders.add("containerNumber");
+        when(parser.getHeadersForContainer()).thenReturn(contHeaders);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getCustomerBooking()));
+        assertDoesNotThrow(() -> containerService.exportContainers(response, request));
+    }
+
+    @Test
+    public void testExportContainers_Failure_ConsoleIdNull() throws IOException, RunnerException, IllegalAccessException {
+        HttpServletResponse response = new MockHttpServletResponse();
+        ExportContainerListRequest request = new ExportContainerListRequest();
+        request.setFreeTimeNoOfDaysDetention(3L);
+        request.setFreeTimeNoOfDaysStorage(4L);
+        assertThrows(RuntimeException.class, () -> containerService.exportContainers(response, request));
+    }
+
+    @Test
+    public void testExportContainers_Failure_ConsoleNotFound() throws IOException, RunnerException, IllegalAccessException {
+        HttpServletResponse response = new MockHttpServletResponse();
+        ExportContainerListRequest request = new ExportContainerListRequest();
+        request.setConsolidationId("1");
+        request.setFreeTimeNoOfDaysDetention(3L);
+        request.setFreeTimeNoOfDaysStorage(4L);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(RuntimeException.class, () -> containerService.exportContainers(response, request));
+    }
+
+    @Test
+    public void testExportContainers_Failure_EmptyContainers() throws IOException, RunnerException, IllegalAccessException {
+        HttpServletResponse response = new MockHttpServletResponse();
+        ExportContainerListRequest request = new ExportContainerListRequest();
+        request.setConsolidationId("1");
+        request.setFreeTimeNoOfDaysDetention(3L);
+        request.setFreeTimeNoOfDaysStorage(4L);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        List<Containers> containers = new ArrayList<>();
+        consolidationDetails.setContainersList(containers);
+
+        Optional<ConsolidationDetails> consol = Optional.of(consolidationDetails);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(consol);
+        assertThrows(RuntimeException.class, () -> containerService.exportContainers(response, request));
+    }
+
+    @Test
+    public void testExportContainers_Failure_NullContainers() throws IOException, RunnerException, IllegalAccessException {
+        HttpServletResponse response = new MockHttpServletResponse();
+        ExportContainerListRequest request = new ExportContainerListRequest();
+        request.setConsolidationId("1");
+        request.setFreeTimeNoOfDaysDetention(3L);
+        request.setFreeTimeNoOfDaysStorage(4L);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setContainersList(null);
+
+        Optional<ConsolidationDetails> consol = Optional.of(consolidationDetails);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(consol);
+        assertThrows(RuntimeException.class, () -> containerService.exportContainers(response, request));
+    }
+
+    @Test
+    void afterSaveList() {
+        List<Containers> containersList = new ArrayList<>();
+        testContainer.setTenantId(66);
+        containersList.add(testContainer);
+        assertDoesNotThrow(() -> containerService.afterSaveList(containersList, true));
+    }
+
+    @Test
+    void afterSaveList_Empty() {
+        List<Containers> containersList = new ArrayList<>();
+        assertDoesNotThrow(() -> containerService.afterSaveList(containersList, true));
+    }
+
+    @Test
+    void afterSaveList_Null() {
+        assertDoesNotThrow(() -> containerService.afterSaveList(null, true));
+    }
+
+    @Test
+    void detachContainer_SyncFailure() {
+        List<Packing> packingList = new ArrayList<>();
+        packingList.add(testPacking);
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(packingsADSync.sync(any(), any())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.detachContainer(packingList, testContainer, 4L, false);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void detachContainer_Failure() {
+        List<Packing> packingList = new ArrayList<>();
+        packingList.add(testPacking);
+        when(containerDao.save(any())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.detachContainer(packingList, testContainer, 4L, false);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculateAllocatedData_Changes() {
+        testContainer.setId(1L);
+        CheckAllocatedDataChangesRequest request = CheckAllocatedDataChangesRequest.builder()
+                .containerCode("20GP")
+                .allocatedVolume(new BigDecimal(37893))
+                .allocatedVolumeUnit(Constants.VOLUME_UNIT_M3)
+                .allocatedWeight(new BigDecimal(36288))
+                .allocatedWeightUnit(Constants.WEIGHT_UNIT_KG)
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        EntityTransferContainerType entityTransferContainerType = EntityTransferContainerType.builder()
+                .CubicCapacityUnit(Constants.VOLUME_UNIT_M3)
+                .CubicCapacity(43.0)
+                .MaxCargoGrossWeight(434.9)
+                .MaxCargoGrossWeightUnit(Constants.WEIGHT_UNIT_KG)
+                .build();
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(entityTransferContainerType).build();
+
+        when(v1Service.fetchContainerTypeData(any(CommonV1ListRequest.class))).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(any() , eq(EntityTransferContainerType.class))).thenReturn(List.of(entityTransferContainerType));
+
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAllocatedData(commonRequestModel);
+
+        Assertions.assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK.value(), responseEntity.getStatusCodeValue());
+    }
+
+    @Test
+    void calculateAllocatedData_Failure() {
+        testContainer.setId(1L);
+        CheckAllocatedDataChangesRequest request = CheckAllocatedDataChangesRequest.builder()
+                .containerCode("20GP")
+                .allocatedVolume(new BigDecimal(37893))
+                .allocatedVolumeUnit(Constants.VOLUME_UNIT_M3)
+                .allocatedWeight(new BigDecimal(36288))
+                .allocatedWeightUnit(Constants.WEIGHT_UNIT_KG)
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        when(v1Service.fetchContainerTypeData(any(CommonV1ListRequest.class))).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAllocatedData(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST.value(), responseEntity.getStatusCodeValue());
+    }
+
+    @Test
+    void calculateAchieved_AllocatedForSameUnit_failure() {
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchieved_AllocatedForSameUnit(null);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void retrieveById() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.retrieveById(commonRequestModel);
+        assertNotNull(responseEntity);
+    }
+
+    @Test
+    void retrieveById_IdNull() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder()
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.retrieveById(commonRequestModel);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void retrieveById_ContainerEmpty() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder()
+                .id(1L)
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+        when(containerDao.findById(any())).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.retrieveById(commonRequestModel);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void delete() {
+        assertThrows(NullPointerException.class, () -> containerService.delete(null));
+    }
+
+    @Test
+    void delete_IdNull() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        when(containerDao.findById(any())).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.delete(commonRequestModel);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void delete_Failure() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(jsonHelper.convertToJson(any())).thenThrow(new RuntimeException());
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.delete(commonRequestModel);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listAsync_Failure() throws Exception{
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntityCompletableFuture = containerService.listAsync(commonRequestModel);
+        assertNotNull(responseEntityCompletableFuture);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntityCompletableFuture.get().getStatusCode());
+    }
+
+    @Test
+    void list_Failure() throws Exception{
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.list(commonRequestModel);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void uploadContainers() throws Exception{
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        testContainer.setGuid(UUID.randomUUID());
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        when(parser.parseExcelFile(any(), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(List.of(testContainer));
+        when(containerSync.sync(any(), any(), any())).thenAnswer(invocation -> {return new ResponseEntity<>(HttpStatus.OK);});
+        assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
 }
