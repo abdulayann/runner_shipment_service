@@ -1807,7 +1807,7 @@ public class ShipmentService implements IShipmentService {
                     createRoutes = createConsoleRoutePayload(createRoutes);
                 }
             } else {
-                createRoutes = convertToEntityList(shipmentRequest.getRoutingsList(), Routings.class);
+                createRoutes = commonUtils.convertToEntityList(shipmentRequest.getRoutingsList(), Routings.class);
                 createRoutes = createConsoleRoutePayload(createRoutes);
             }
         }
@@ -2598,7 +2598,7 @@ public class ShipmentService implements IShipmentService {
             if(entity.getConsolidationList() != null && entity.getConsolidationList().size() > 0)
                 consolidationId = entity.getConsolidationList().get(0).getId();
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), consolidationId, id, false);
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class), consolidationId, id, false);
             } else {
                 updatedContainers = oldEntity.get().getContainersList();
             }

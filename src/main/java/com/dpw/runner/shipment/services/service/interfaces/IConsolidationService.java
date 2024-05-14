@@ -16,7 +16,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public interface IConsolidationService extends ICommonService{
-    List<ConsolidationDetails> createTestConsolidations(Integer count);
     ResponseEntity<IRunnerResponse> fetchConsolidations(CommonRequestModel commonRequestModel);
     CompletableFuture<ResponseEntity<IRunnerResponse>> retrieveByIdAsync(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;

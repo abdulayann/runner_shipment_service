@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,6 +56,9 @@ class ShipmentSettingsServiceTest {
 
     @Mock
     IShipmentSettingsDao shipmentSettingsDao;
+
+    @Mock
+    CommonUtils commonUtils;
 
     @Mock
     IHblTermsConditionTemplateDao hblTermsConditionTemplateDao;
