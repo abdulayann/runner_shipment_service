@@ -2352,7 +2352,7 @@ class ShipmentServiceTest {
     }
 
     @Test
-    public void testExportExcelUnlocationNotNull() throws IOException, IllegalAccessException {
+    void testExportExcelUnlocationNotNull() throws IOException, IllegalAccessException {
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         CarrierDetails carrierDetails = CarrierDetails.builder()
@@ -2407,7 +2407,7 @@ class ShipmentServiceTest {
     }
 
     @Test
-    public void testFullShipmentListCatch() throws IOException, IllegalAccessException {
+    void testFullShipmentListCatch() throws IOException, IllegalAccessException {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsList(commonRequestModel);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
