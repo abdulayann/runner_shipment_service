@@ -783,16 +783,19 @@ public abstract class IReport {
             else
                 dict = new HashMap<>(dictionary);
             getPackingDetails(shipmentModel, dict);
-            if(isSecurity) {
+            dict.put(VOLUME_WEIGHT, ConvertToWeightNumberFormat(shipmentModel.getVolumetricWeight()));
+            dict.put(VOLUME_WEIGHT_UNIT, shipmentModel.getVolumetricWeightUnit());
+            if(isSecurity)
                 dict.put(IS_SECURITY, true);
-                dict.put(SCREENING_CODES, shipmentModel.getAdditionalDetails().getScreeningStatus());
-                dict.put(CONSIGNMENT_STATUS, shipmentModel.getSecurityStatus());
-                dict.put(EXEMPTION_CARGO, shipmentModel.getAdditionalDetails().getExemptionCodes());
-                if(awb != null && awb.getAwbSpecialHandlingCodesMappings() != null && !awb.getAwbSpecialHandlingCodesMappings().isEmpty())
-                    dict.put(SPH, awb.getAwbSpecialHandlingCodesMappings().stream().map(AwbSpecialHandlingCodesMappingInfo::getShcId).collect(Collectors.toSet()));
-            }
             else
                 dict.put(IS_SECURITY, false);
+            populateRaKcData(dict, shipmentModel);
+            if(awb != null) {
+                if(awb.getAwbSpecialHandlingCodesMappings() != null && !awb.getAwbSpecialHandlingCodesMappings().isEmpty())
+                    dict.put(SPH, awb.getAwbSpecialHandlingCodesMappings().stream().map(AwbSpecialHandlingCodesMappingInfo::getShcId).collect(Collectors.toSet()));
+                if(awb.getAwbCargoInfo() != null)
+                    dict.put(SCI, awb.getAwbCargoInfo().getSci());
+            }
             dict.put(WITH_CONSIGNOR, isShipperAndConsignee);
             if(shipmentModel.getDirection().equals(IMP)) {
                 try {dict.put(ORIGIN_AGENT_RN_NUMBER, shipmentModel.getAdditionalDetails().getImportBroker().getAddressData().get(KCRA_NUMBER));} catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
