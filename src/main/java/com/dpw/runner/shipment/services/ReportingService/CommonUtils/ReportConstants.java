@@ -267,6 +267,7 @@ public class ReportConstants {
     public static final String NET_WEIGHT = "NetWeight";
     public static final String NET_WEIGHT_UNIT = "NetWeightUnit";
     public static final String VOLUME_WEIGHT = "VolumeWeight";
+    public static final String VOLUME_WEIGHT_UNIT = "VolumeWeightUnit";
     public static final String V_WEIGHT_AND_UNIT = "VWeightAndUnit";
     public static final String V_WEIGHT_AND_UNIT_PACKS = "VWeightAndUnitPacks";
     public static final String WEIGHT_AND_UNIT = "WeightAndUnit";

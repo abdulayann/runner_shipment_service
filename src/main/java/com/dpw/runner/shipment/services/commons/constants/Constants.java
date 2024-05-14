@@ -45,6 +45,7 @@ public class Constants {
     public static final String CARRIAGE = "CARRIAGE";
     public static final String PreCarriage = "PreCarriage";
     public static final String SERVICE_DETAILS = "SERVICE_DETAILS";
+    public static final String NOTES = "NOTES";
     public static final String Main = "Main";
     public static final String EVENTS = "EVENTS";
     public static final String JOBS = "JOBS";
@@ -398,6 +399,8 @@ public class Constants {
     public static final String UNUSED = "Unused";
     public static final String NON = "NON";
     public static final String EAW = "EAW";
+    public static final String EAP = "EAP";
+    public static final String AOM = "AOM";
     public static final String EVENT = "event";
     public static final String TYPE = "Type";
     public static final String DESCARTES = "Descartes";

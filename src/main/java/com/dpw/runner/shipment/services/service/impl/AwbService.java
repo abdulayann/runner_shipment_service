@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -22,6 +23,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
@@ -763,9 +765,10 @@ public class AwbService implements IAwbService {
         // generate Awb Entity
 
         List<AwbSpecialHandlingCodesMappingInfo> sph = null;
-        if(!Strings.isNullOrEmpty(consolidationDetails.getEfreightStatus())
-                && (consolidationDetails.getEfreightStatus().equalsIgnoreCase("EAW")
-         || consolidationDetails.getEfreightStatus().equalsIgnoreCase("EAP"))) {
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && !Strings.isNullOrEmpty(consolidationDetails.getEfreightStatus())
+                && (consolidationDetails.getEfreightStatus().equalsIgnoreCase(Constants.EAW)
+         || consolidationDetails.getEfreightStatus().equalsIgnoreCase(Constants.EAP))) {
             sph = Arrays.asList(AwbSpecialHandlingCodesMappingInfo
                     .builder()
                     .shcId(consolidationDetails.getEfreightStatus())
@@ -1092,9 +1095,10 @@ public class AwbService implements IAwbService {
             }
         }
         List<AwbSpecialHandlingCodesMappingInfo> sph = null;
-        if(!Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getEfreightStatus())
-            && (shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAW") ||
-                (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAP")))) {
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && !Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getEfreightStatus())
+            && (shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase(Constants.EAW) ||
+                (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase(Constants.EAP)))) {
             sph = Arrays.asList(AwbSpecialHandlingCodesMappingInfo
                     .builder()
                     .shcId(shipmentDetails.getAdditionalDetails().getEfreightStatus())
