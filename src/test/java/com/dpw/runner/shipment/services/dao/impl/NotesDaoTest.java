@@ -90,7 +90,7 @@ class NotesDaoTest {
     void saveAll() {
         List<Notes> notes = new ArrayList<>();
         Mockito.when(notesRepository.saveAll(Mockito.any())).thenReturn(notes);
-        List<Notes> notes1 = notesDao.saveAll(Mockito.any());
+        List<Notes> notes1 = notesDao.saveAll(notes);
         assert(notes.size() == notes1.size());
     }
 
