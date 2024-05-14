@@ -70,6 +70,7 @@ public class ReportConstants {
     public static final String REFERENCE_NUMBER = "ReferenceNumber";
     public static final String REFERENCE_NO = "ReferenceNo";
     public static final String ORIGIN = "Origin";
+    public static final String ORIGIN_AIR = "OriginAir";
     public static final String ORIGIN_NAME = "OriginName";
     public static final String ORIGIN_COUNTRY = "OriginCountry";
     public static final String ETA = "Eta";
@@ -416,6 +417,7 @@ public class ReportConstants {
     public static final String CURRENCY_SUMMARY = "CurrencySummary";
     public static final String REVENUE_BILL_CHARGES = "RevenueBillCharges";
     public static final String DESTINATION = "Destination";
+    public static final String DESTINATION_AIR = "DestinationAir";
     public static final String DEBTOR_ADDRESS = "DebtorAddress";
     public static final String OVERSEAS_CURRENCY = "OverseasCurrency";
     public static final String LOCAL_CURRENCY = "LocalCurrency";
@@ -882,7 +884,9 @@ public class ReportConstants {
     public static final String ORIGIN_PORT = "OriginPort";
     public static final String DESTINATION_PORT = "DestinationPort";
     public static final String ORIGIN_PORT_NAME_INCAPS = "OriginPortNameInCaps";
+    public static final String ORIGIN_PORT_NAME_INCAPS_AIR = "OriginPortNameInCapsAir";
     public static final String DESTINATION_PORT_NAME_INCAPS = "DestinationPortNameInCaps";
+    public static final String DESTINATION_PORT_NAME_INCAPS_AIR = "DestinationPortNameInCapsAir";
     public static final String SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE = "ShipmentFlightNoWithIATACode";
     public static final String CONSOL_FLIGHT_NUMBER_WITH_IATACODE = "ConsolFlightNoWithIATACode";
     public static final String COUNTRY_OF_GOODS_ORIGIN = "CountryOfGoodsOrigin";
