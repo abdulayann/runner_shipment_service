@@ -68,7 +68,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
 
 @Service
 @Slf4j
@@ -78,6 +77,8 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private ModelMapper modelMapper;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -185,15 +186,15 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         List<PackingRequest> packingRequest = request.getPackingList();
         if (packingRequest != null)
-            customerBooking.setPackingList(packingDao.saveEntityFromBooking(convertToEntityList(packingRequest, Packing.class), bookingId));
+            customerBooking.setPackingList(packingDao.saveEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
 
         List<RoutingsRequest> routingsRequest = request.getRoutingList();
         if (routingsRequest != null)
-            customerBooking.setRoutingList(routingsDao.saveEntityFromBooking(convertToEntityList(routingsRequest, Routings.class), bookingId));
+            customerBooking.setRoutingList(routingsDao.saveEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
 
         List<ContainerRequest> containerRequest = request.getContainersList();
         if (containerRequest != null) {
-            List<Containers> containers = containerDao.updateEntityFromBooking(convertToEntityList(containerRequest, Containers.class), bookingId);
+            List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             customerBooking.setContainersList(containers);
         }
 
@@ -285,15 +286,15 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         List<PackingRequest> packingRequest = request.getPackingList();
         if (packingRequest != null)
-            customerBooking.setPackingList(packingDao.updateEntityFromBooking(convertToEntityList(packingRequest, Packing.class), bookingId));
+            customerBooking.setPackingList(packingDao.updateEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
 
         List<RoutingsRequest> routingsRequest = request.getRoutingList();
         if (routingsRequest != null)
-            customerBooking.setRoutingList(routingsDao.updateEntityFromBooking(convertToEntityList(routingsRequest, Routings.class), bookingId));
+            customerBooking.setRoutingList(routingsDao.updateEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
 
         List<ContainerRequest> containerRequest = request.getContainersList();
         if (containerRequest != null) {
-            List<Containers> containers = containerDao.updateEntityFromBooking(convertToEntityList(containerRequest, Containers.class), bookingId);
+            List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             customerBooking.setContainersList(containers);
         }
 
