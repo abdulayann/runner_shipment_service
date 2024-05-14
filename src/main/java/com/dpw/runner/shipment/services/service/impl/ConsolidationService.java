@@ -438,20 +438,20 @@ public class ConsolidationService implements IConsolidationService {
         consolidationRes.setShipmentIds(shipmentIds);
     }
 
-    private List<Parties> createParties(ConsolidationDetails consolidationDetails) {
-        List<Parties> parties = new ArrayList<>();
-        for (String partyType : PARTY_TYPE) {
-            Parties party = Parties.builder()
-                    .type(partyType).orgCode(generateString(7)).addressCode(generateString(7))
-                    .orgData(ORG).addressData(ADDRESS)
-                    .entityId(consolidationDetails.getId()).entityType("CONSOLIDATION")
-                    .build();
-            party.setTenantId(1);
-            parties.add(party);
-        }
-        parties = partiesDao.saveAll(parties);
-        return parties;
-    }
+//    private List<Parties> createParties(ConsolidationDetails consolidationDetails) {
+//        List<Parties> parties = new ArrayList<>();
+//        for (String partyType : PARTY_TYPE) {
+//            Parties party = Parties.builder()
+//                    .type(partyType).orgCode(generateString(7)).addressCode(generateString(7))
+//                    .orgData(ORG).addressData(ADDRESS)
+//                    .entityId(consolidationDetails.getId()).entityType("CONSOLIDATION")
+//                    .build();
+//            party.setTenantId(1);
+//            parties.add(party);
+//        }
+//        parties = partiesDao.saveAll(parties);
+//        return parties;
+//    }
 
     //TODO - Fill more data in the consolidation
     private ConsolidationDetails createConsolidationData() {
@@ -462,13 +462,13 @@ public class ConsolidationService implements IConsolidationService {
         return consolidationDetails;
     }
 
-    private String generateString(int length) {
-        StringBuilder salt = new StringBuilder();
-        while (salt.length() < length) {
-            salt.append(Constants.SALT_CHARS.charAt(this.rnd.nextInt() * Constants.SALT_CHARS.length()));
-        }
-        return salt.toString();
-    }
+//    private String generateString(int length) {
+//        StringBuilder salt = new StringBuilder();
+//        while (salt.length() < length) {
+//            salt.append(Constants.SALT_CHARS.charAt(this.rnd.nextInt() * Constants.SALT_CHARS.length()));
+//        }
+//        return salt.toString();
+//    }
 
     @Override
     @Transactional
