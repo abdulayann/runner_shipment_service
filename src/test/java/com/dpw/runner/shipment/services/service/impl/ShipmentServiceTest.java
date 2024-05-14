@@ -11,9 +11,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.ApiError;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -49,6 +47,9 @@ import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.github.bohnman.squiggly.Squiggly;
+import com.github.bohnman.squiggly.util.SquigglyUtils;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -122,6 +123,8 @@ class ShipmentServiceTest {
     private ITruckDriverDetailsDao truckDriverDetailsDao;
     @Mock
     private IPackingDao packingDao;
+    @Mock
+    private PartialFetchUtils partialFetchUtils;
     @Mock
     private IELDetailsDao elDetailsDao;
     @Mock
@@ -2230,6 +2233,341 @@ class ShipmentServiceTest {
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Arrays.asList(NotesResponse.builder().build())).build()), httpResponse);
+    }
+
+    @Test
+    void completeUpdateConsolidationListNotEmpty_success() throws RunnerException {
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(1L);
+
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails2.setId(2L);
+
+        testShipment.setId(1L);
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setConsolidationList(Arrays.asList(consolidationDetails1));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        when(shipmentDao.findById(any()))
+                .thenReturn(
+                        Optional.of(
+                                testShipment
+                                        .setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                                        .setSourceTenantId(1L)
+                                        .setConsolidationList(Arrays.asList(consolidationDetails2))
+                                        .setContainersList(new ArrayList<>())));
+
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+
+        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
+        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void retrieveByIdTestCatchBlock() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.retrieveById(CommonRequestModel.builder().build());
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void completeUpdateContainerIds_success() throws RunnerException {
+        testShipment.setId(1L);
+        testShipment.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        ShipmentDetails mockShipment = testShipment;
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).shipConsolidationContainerEnabled(true).build());
+
+        Routings routings = new Routings();
+        routings.setMode(Constants.TRANSPORT_MODE_SEA);
+
+        RoutingsRequest routingsRequest = new RoutingsRequest();
+        routingsRequest.setMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        mockShipmentRequest.setBookingCarriagesList(Arrays.asList(BookingCarriageRequest.builder().build()));
+        mockShipmentRequest.setTruckDriverDetails(Arrays.asList(TruckDriverDetailsRequest.builder().build()));
+        mockShipmentRequest.setReplaceConsoleRoute(true);
+        mockShipmentRequest.setConsolidationList(Arrays.asList(ConsolidationDetailsRequest.builder().build()));
+        mockShipmentRequest.setRoutingsList(Arrays.asList(routingsRequest));
+        mockShipmentRequest.setCreateMainLegRoute(true);
+
+        ContainerIdDltReq containerIdDltReq = new ContainerIdDltReq();
+        containerIdDltReq.setId(1L);
+
+        mockShipmentRequest.setDeletedContainerIds(Arrays.asList(containerIdDltReq));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        PartyRequestV2 partyRequestV2 = new PartyRequestV2();
+        partyRequestV2.setTenantId(1);
+
+        when(shipmentDao.findById(any()))
+                .thenReturn(
+                        Optional.of(
+                                testShipment
+                                        .setContainersList(new ArrayList<>())));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
+        when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
+
+        Containers containers = new Containers();
+        containers.setGuid(UUID.randomUUID());
+
+        PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(containers));
+        when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
+
+        Packing packing = new Packing();
+        packing.setId(1L);
+        List<Packing> packingList = new ArrayList<>();
+        packingList.add(packing);
+
+        PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing));
+        when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void createTestShipmentSuccess() throws RunnerException {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        List<ShipmentDetails> shipmentDetailsList = shipmentService.createTestShipment(1);
+        assertNotNull(shipmentDetailsList);
+    }
+
+    @Test
+    void testExportExcelUnlocationNotNull() throws IOException, IllegalAccessException {
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        CarrierDetails carrierDetails = CarrierDetails.builder()
+                .origin("origin_name")
+                .originPort("originPort_name")
+                .destination("destination_name")
+                .destinationPort("destinationPort_name")
+                .build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().status(1).carrierDetails(carrierDetails).build();
+        shipmentDetailsList.add(shipmentDetails);
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        List<IRunnerResponse> responseList = convertEntityListToDtoList(shipmentDetailsList);
+        ShipmentListResponse shipmentListResponse = (ShipmentListResponse) responseList.get(0);
+        shipmentListResponse.getCarrierDetails().setUnlocationData(new HashMap<>());
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                responseList,
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ServletOutputStream servletOutputStream = new ServletOutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                outputStream.write(b);
+            }
+
+            @Override
+            public boolean isReady() {
+                return true;
+            }
+
+            @Override
+            public void setWriteListener(javax.servlet.WriteListener writeListener) {}
+        };
+        when(response.getOutputStream()).thenReturn(servletOutputStream);
+
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(sampleRequest).build();
+        shipmentService.exportExcel(response, commonRequestModel);
+
+        verify(response, times(1)).setContentType(anyString());
+        verify(response, times(1)).setHeader(anyString(), anyString());
+        verify(response, times(1)).getOutputStream();
+        assertNotNull(outputStream.toByteArray()); // Verify that the output stream contains data
+    }
+
+    @Test
+    void testFullShipmentListCatch() throws IOException, IllegalAccessException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsList(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testFullShipmentList() throws IOException, IllegalAccessException {
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(ShipmentDetails.builder().build());
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+        when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(new ShipmentDetailsResponse());
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToFullShipmentList(shipmentDetailsPage.getContent()),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsList(commonRequestModel);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void assignShipmentContainers() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
+        ShipmentContainerAssignRequest shipmentContainerAssignRequest = new ShipmentContainerAssignRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentContainerAssignRequest).build();
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentId("SHP001");
+
+        Containers container = Containers.builder().bookingId(1L).isPart(true).shipmentsList(Arrays.asList(shipmentDetails)).containerNumber("1").build();
+        PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(container));
+        when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignShipmentContainers(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void assignShipmentContainersIsFcl() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
+        ShipmentContainerAssignRequest shipmentContainerAssignRequest = new ShipmentContainerAssignRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentContainerAssignRequest).build();
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentId("SHP001");
+
+        Containers container = Containers.builder().bookingId(1L).isPart(true).containerNumber("1").build();
+        PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(container));
+        when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        when(containerDao.saveAll(anyList())).thenReturn(Arrays.asList(Containers.builder().build()));
+        doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignShipmentContainers(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void listCatch() {
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.list(CommonRequestModel.builder().build());
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listRequestNull() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.list(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+    
+    @Test
+    void list() {
+        Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(Arrays.asList(FilterCriteria.builder().build())).build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        GuidsListResponse guidsListResponse = new GuidsListResponse();
+        when(v1Service.fetchWayBillNumberFilterGuids(any())).thenReturn(guidsListResponse);
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(new ShipmentDetails());
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsPage.getContent()),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.list(commonRequestModel);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void deleteCatch() {
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.delete(CommonRequestModel.builder().build());
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void deleteRequestNull() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.delete(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void deleteRequestIdNull() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(null).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.delete(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void deleteRequestShipmentNull() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.delete(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void delete() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
+
+        when(jsonHelper.convertToJson(any())).thenReturn("OldEntity");
+        doNothing().when(shipmentDao).delete(any());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.delete(commonRequestModel);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+    }
+
+
+    private List<IRunnerResponse> convertEntityListToFullShipmentList(List<ShipmentDetails> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(shipmentDetail -> {
+            ShipmentDetailsResponse response = modelMapper.map(shipmentDetail, ShipmentDetailsResponse.class);
+            responseList.add(response);
+        });
+        return responseList;
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
