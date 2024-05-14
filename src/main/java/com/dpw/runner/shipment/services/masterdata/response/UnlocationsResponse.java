@@ -16,6 +16,8 @@ public class UnlocationsResponse implements Serializable {
     private String name;
     @JsonProperty("PortName")
     private String portName;
+    @JsonProperty("AirPortName")
+    private String airPortName;
     @JsonProperty("LocCode")
     private String locCode;
     @JsonProperty("NameWoDiacritics")

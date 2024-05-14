@@ -1196,6 +1196,18 @@ public abstract class IReport {
             if(destination != null && destination.getPortName() != null) {
                 dictionary.put(ReportConstants.DESTINATION, destination.getPortName().toUpperCase());
             }
+            if (pol != null && pol.getAirPortName() != null) {
+                dictionary.put(ReportConstants.ORIGIN_PORT_NAME_INCAPS_AIR, pol.getAirPortName().toUpperCase());
+            }
+            if (pod != null && pod.getAirPortName() != null) {
+                dictionary.put(ReportConstants.DESTINATION_PORT_NAME_INCAPS_AIR, pod.getAirPortName().toUpperCase());
+            }
+            if(origin != null && origin.getAirPortName() != null) {
+                dictionary.put(ReportConstants.ORIGIN_AIR, origin.getAirPortName().toUpperCase());
+            }
+            if(destination != null && destination.getAirPortName() != null) {
+                dictionary.put(ReportConstants.DESTINATION_AIR, destination.getAirPortName().toUpperCase());
+            }
         }
 
         PartiesModel notifyParty = null;
