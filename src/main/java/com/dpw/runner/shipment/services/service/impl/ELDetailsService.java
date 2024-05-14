@@ -21,7 +21,6 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IELDetailsService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.ElDetailsRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -59,7 +58,6 @@ public class ELDetailsService implements IELDetailsService {
     private final ObjectMapper objectMapper;
     private final ModelMapper modelMapper;
     private final IShipmentDao shipmentDao;
-    private final ISyncQueueService syncQueueService;
     private final SyncConfig syncConfig;
 
     @Autowired
@@ -69,7 +67,6 @@ public class ELDetailsService implements IELDetailsService {
                             ObjectMapper objectMapper,
                             ModelMapper modelMapper,
                             IShipmentDao shipmentDao,
-                            @Lazy ISyncQueueService syncQueueService,
                             SyncConfig syncConfig) {
         this.elDetailsDao = elDetailsDao;
         this.jsonHelper = jsonHelper;
@@ -77,7 +74,6 @@ public class ELDetailsService implements IELDetailsService {
         this.objectMapper = objectMapper;
         this.modelMapper = modelMapper;
         this.shipmentDao = shipmentDao;
-        this.syncQueueService = syncQueueService;
         this.syncConfig = syncConfig;
     }
 
@@ -280,9 +276,6 @@ public class ELDetailsService implements IELDetailsService {
     public ResponseEntity<IRunnerResponse> V1ELDetailsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         ElDetailsRequestV2 elDetailsRequestV2 = (ElDetailsRequestV2) commonRequestModel.getData();
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && Boolean.TRUE.equals(!syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.EL_DETAILS, StringUtility.convertToString(elDetailsRequestV2.getGuid()), elDetailsRequestV2);
-            }
             Optional<ELDetails> existingELDetails = elDetailsDao.findByGuid(elDetailsRequestV2.getGuid());
             ELDetails elDetails = modelMapper.map(elDetailsRequestV2, ELDetails.class);
             if (existingELDetails.isPresent()) {

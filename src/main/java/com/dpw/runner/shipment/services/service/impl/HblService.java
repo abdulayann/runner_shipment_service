@@ -32,7 +32,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -82,9 +81,7 @@ public class HblService implements IHblService {
     IContainerDao containerDao;
     @Autowired
     IShipmentSettingsDao shipmentSettingsDao;
-    @Lazy
-    @Autowired
-    private ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
     @Autowired
@@ -663,9 +660,6 @@ public class HblService implements IHblService {
         if(request == null || request.getShipmentGuid() == null) {
             log.error("Request Id and Shipment Guid is null for Hbl update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-        if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-            return syncQueueService.saveSyncRequest(SyncingConstants.HBL, StringUtility.convertToString(request.getShipmentGuid()), request);
         }
 
         ListCommonRequest listCommonRequest = constructListCommonRequest("guid", request.getShipmentGuid(), "=");

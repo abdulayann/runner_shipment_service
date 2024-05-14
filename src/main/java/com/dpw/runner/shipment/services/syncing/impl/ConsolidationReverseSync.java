@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.ArrivalDepartureDetails;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomConsolidationRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
@@ -40,9 +39,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
 
     @Autowired
     private IConsolidationService consolidationService;
-    @Lazy
-    @Autowired
-    private ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
     @Autowired
@@ -55,7 +52,6 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         String responseMsg;
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.CONSOLIDATION, StringUtility.convertToString(request.getGuid()), request);
             }
             response = modelMapper.map(request, ConsolidationDetailsRequest.class);
 

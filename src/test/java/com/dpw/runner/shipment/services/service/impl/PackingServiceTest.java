@@ -26,7 +26,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingSync;
@@ -106,8 +105,6 @@ class PackingServiceTest {
     @Mock
     private IPackingSync packingSync;
 
-    @Mock
-    private ISyncQueueService syncQueueService;
     @Mock
     private SyncConfig syncConfig;
 
@@ -1395,7 +1392,6 @@ class PackingServiceTest {
         field.setAccessible(true);
         field.set(syncConfig, false);
         ResponseEntity<IRunnerResponse> responseEntity = new ResponseEntity<>(HttpStatus.OK);
-        when(syncQueueService.saveSyncRequest(any(), any(), any())).thenReturn(responseEntity);
         ResponseEntity<IRunnerResponse> response = packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }

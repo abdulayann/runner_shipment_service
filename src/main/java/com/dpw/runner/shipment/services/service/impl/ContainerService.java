@@ -36,7 +36,6 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
@@ -145,9 +144,7 @@ public class ContainerService implements IContainerService {
 
     @Value("${containersKafka.queue}")
     private String senderQueue;
-    @Lazy
-    @Autowired
-    private ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
 
@@ -1443,9 +1440,6 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<IRunnerResponse> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.CONTAINERS, StringUtility.convertToString(containerRequest.getGuid()), containerRequest);
-            }
             List<Containers> existingCont = containerDao.findByGuid(containerRequest.getGuid());
             Containers containers = syncEntityConversionService.containerV1ToV2(containerRequest);
             List<Long> shipIds = null;
