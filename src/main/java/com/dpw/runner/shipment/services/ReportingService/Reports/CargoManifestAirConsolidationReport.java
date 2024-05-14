@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,9 @@ public class CargoManifestAirConsolidationReport extends IReport{
     private JsonHelper jsonHelper;
 
     @Autowired
+    private CommonUtils commonUtils;
+
+    @Autowired
     private IPackingService packingService;
 
     private List<Long> shipIds;
@@ -64,7 +68,7 @@ public class CargoManifestAirConsolidationReport extends IReport{
         cargoManifestAirConsolidationModel.setTenantModel(getTenant());
         cargoManifestAirConsolidationModel.setShipmentModelList(new ArrayList<>());
         cargoManifestAirConsolidationModel.setAwbList(new ArrayList<>());
-        cargoManifestAirConsolidationModel.setPackSummaryResponse(packingService.calculatePackSummary(jsonHelper.convertValueToList(cargoManifestAirConsolidationModel.getConsolidationModel().getPackingList(), Packing.class),
+        cargoManifestAirConsolidationModel.setPackSummaryResponse(packingService.calculatePackSummary(commonUtils.convertToList(cargoManifestAirConsolidationModel.getConsolidationModel().getPackingList(), Packing.class),
                 cargoManifestAirConsolidationModel.getConsolidationModel().getTransportMode(),
                 cargoManifestAirConsolidationModel.getConsolidationModel().getContainerCategory(), new ShipmentMeasurementDetailsDto()));
         if(shipIds != null && !shipIds.isEmpty()) {
