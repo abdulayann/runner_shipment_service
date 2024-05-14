@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRu
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -127,6 +128,9 @@ public class JsonTestUtility {
 
     public PickupDeliveryDetails getTestPickupDeliveryDetails() {
         return objectMapper.convertValue(payload.get("PICKUP_DELIVERY_DETAILS"), PickupDeliveryDetails.class);
+    }
+    public EventsRequestV2 getTestEventsRequestV2() {
+        return objectMapper.convertValue(payload.get("EVENTS_REQUEST_V2"), EventsRequestV2.class);
     }
     public PackingRequestV2 getTestPackingRequestV2(){
         return objectMapper.convertValue(payload.get("PACKING_REQUEST_V2"), PackingRequestV2.class);
