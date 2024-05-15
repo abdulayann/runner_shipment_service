@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -2246,12 +2247,22 @@ public abstract class IReport {
         }
 
         List<Map<String, Object>> packsDictionary = new ArrayList<>();
-
+        Map<String, EntityTransferCommodityType> commodityTypeMap = new HashMap<>();
+        try{
+            List<String> commodityCodes = shipment.getPackingList().stream().map(PackingModel::getCommodity).toList();
+            if(!commodityCodes.isEmpty())
+                commodityTypeMap = masterDataUtils.fetchInBulkCommodityTypes(commodityCodes);
+        } catch (Exception e) {
+            log.error("Error while ");
+        }
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         for(var pack : shipment.getPackingList()) {
             Map<String, Object> dict = new HashMap<>();
-            if(pack.getCommodity() != null)
+            if(pack.getCommodity() != null) {
                 dict.put(COMMODITY_DESC, pack.getCommodity());
+                if(commodityTypeMap != null && commodityTypeMap.containsKey(pack.getCommodity()))
+                    dict.put(COMMODITY_DESC_NAME, commodityTypeMap.get(pack.getCommodity()).getDescription());
+            }
             if(pack.getWeight() != null){
                 dict.put(WEIGHT_AND_UNIT_PACKS, String.format(REGEX_S_S, ConvertToWeightNumberFormat(pack.getWeight(), v1TenantSettingsResponse),
                         pack.getWeightUnit()));

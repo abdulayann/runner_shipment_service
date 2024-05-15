@@ -99,6 +99,7 @@ public class ReportConstants {
     public static final String PACKS = "Packs";
     public static final String PACKS_UNIT = "PacksUnit";
     public static final String COMMODITY_DESC = "CommodityDesc";
+    public static final String COMMODITY_DESC_NAME = "CommodityDescName";
     public static final String PACKS_DETAILS = "PacksDetails";
     public static final String HAS_PACKAGES = "hasPackages";
     public static final String TareWeight = "TareWeight";
