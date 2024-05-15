@@ -22,7 +22,7 @@ public interface IShipmentSettingsRepository extends MultiTenancyRepository<Ship
     @Query(value = "SELECT sd.shipment_console_import_approver_role FROM shipment_setting sd WHERE sd.tenant_id = ?1", nativeQuery = true)
     Integer getShipmentConsoleImportApprovarRole(int tenantId);
 
-    @Query(value = "SELECT * FROM shipment_setting sd WHERE sd.tenant_id IN ?1", nativeQuery = true)
+    @Query(value = "SELECT * FROM shipment_setting sd WHERE sd.tenant_id IN ?1 AND sd.is_deleted = false", nativeQuery = true)
     List<ShipmentSettingsDetails> getTenantSetting(List<Integer> tenantId);
     Optional<ShipmentSettingsDetails> findByTenantId(Integer tenantId);
 }
