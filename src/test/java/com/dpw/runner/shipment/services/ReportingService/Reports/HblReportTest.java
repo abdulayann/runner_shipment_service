@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.impl.*;
@@ -24,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -46,6 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -90,7 +93,9 @@ public class HblReportTest {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
+        mockUser.setEnableTimeZone(false);
         UserContext.setUser(mockUser);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
     }
 
     private static ReportRequest reportRequest;
@@ -128,6 +133,10 @@ public class HblReportTest {
         shipmentModel.setFreightOverseas(BigDecimal.TEN);
         shipmentModel.setFreightOverseasCurrency("INR");
         shipmentModel.setGoodsDescription("123");
+        shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setChargable(BigDecimal.TEN);
+        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
         referenceNumbersModel.setType(ERN);
         shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
@@ -140,19 +149,44 @@ public class HblReportTest {
         partiesModel.setAddressData(orgData);
         shipmentModel.setConsignee(partiesModel);
         shipmentModel.setConsigner(partiesModel);
+        shipmentModel.setClient(partiesModel);
         shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
         CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
         carrierDetailModel.setOrigin("test");
         carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setEta(LocalDateTime.now());
+        carrierDetailModel.setEtd(LocalDateTime.now());
+        carrierDetailModel.setAtd(LocalDateTime.now());
+        carrierDetailModel.setAta(LocalDateTime.now());
         AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
         additionalDetailModel.setPaidPlace("test");
         additionalDetailModel.setNotifyParty(partiesModel);
+        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+        additionalDetailModel.setOnBoard("SHP");
         shipmentModel.setCarrierDetails(carrierDetailModel);
         shipmentModel.setAdditionalDetails(additionalDetailModel);
         shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
+
+        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+        delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
+        delivertDetails.setDestinationDetail(partiesModel);
+        delivertDetails.setAgentDetail(partiesModel);
+        delivertDetails.setSourceDetail(partiesModel);
+        delivertDetails.setTransporterDetail(partiesModel);
+        shipmentModel.setPickupDetails(delivertDetails);
+        shipmentModel.setDeliveryDetails(delivertDetails);
         hblModel.setShipment(shipmentModel);
 
+        PackingModel packingModel = new PackingModel();
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
+
+        BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
+        bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
+        shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
+
         ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setPayment("PPM");
         consolidationModel.setReceivingAgent(partiesModel);
         consolidationModel.setSendingAgent(partiesModel);
         consolidationModel.setCarrierDetails(carrierDetailModel);
@@ -175,7 +209,9 @@ public class HblReportTest {
         consoleShipmentMapping.setShipmentId(1L);
         consoleShipmentMapping.setConsolidationId(1L);
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(123L);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("id", "123");
         Map<String, Object> dictionary = new HashMap<>();
@@ -184,6 +220,7 @@ public class HblReportTest {
         when(jsonHelper.convertToJson(hbl)).thenReturn(blObjectJson);
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
+        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         hblReport.populateDictionary(hblModel);
     }
 }
