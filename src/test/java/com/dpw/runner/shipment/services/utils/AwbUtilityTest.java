@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AirMessagingStatus;
@@ -31,6 +30,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -113,7 +114,7 @@ class AwbUtilityTest {
 
 
     @Test
-    public void testGetFormattedAddressBasic() {
+    void testGetFormattedAddressBasic() {
         AwbAddressParam addressParam = new AwbAddressParam();
         addressParam.setAddress1("123 Main St");
         addressParam.setCity("City");
@@ -126,7 +127,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testGetFormattedAddressEmpty() {
+    void testGetFormattedAddressEmpty() {
         AwbAddressParam addressParam = new AwbAddressParam();
         String formattedAddress = awbUtility.getFormattedAddress(addressParam);
 
@@ -134,7 +135,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testGetFormattedAddressComplete() {
+    void testGetFormattedAddressComplete() {
         AwbAddressParam addressParam = new AwbAddressParam();
         addressParam.setAddress1("123 Main St");
         addressParam.setAddress2("Apt 101");
@@ -152,7 +153,7 @@ class AwbUtilityTest {
 
 
     @Test
-    public void testConstructAddressBasic() {
+    void testConstructAddressBasic() {
         Map<String, Object> addressData = new HashMap<>();
         addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
         addressData.put(PartiesConstants.CITY, "City");
@@ -165,7 +166,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testConstructAddressEmpty() {
+    void testConstructAddressEmpty() {
         Map<String, Object> addressData = new HashMap<>();
         String constructedAddress = awbUtility.constructAddress(addressData);
 
@@ -173,14 +174,14 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testConstructAddressNull() {
+    void testConstructAddressNull() {
         String constructedAddress = awbUtility.constructAddress(null);
 
         assertEquals("", constructedAddress);
     }
 
     @Test
-    public void testConstructAddressComplete() {
+    void testConstructAddressComplete() {
         Map<String, Object> addressData = new HashMap<>();
         addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
         addressData.put(PartiesConstants.ADDRESS2, "Apt 101");
@@ -197,7 +198,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testRoundOffAirShipment_NoChange() {
+    void testRoundOffAirShipment_NoChange() {
         double charge = 13.00;
         BigDecimal expected = new BigDecimal(13.00);
         BigDecimal result = awbUtility.roundOffAirShipment(charge);
@@ -205,7 +206,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testRoundOffAirShipment_NegativeValue() {
+    void testRoundOffAirShipment_NegativeValue() {
         double charge = -12.49;
         BigDecimal expected = new BigDecimal(-12.00);
         BigDecimal result = awbUtility.roundOffAirShipment(charge);
@@ -213,27 +214,27 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingConsigner() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingConsigner() {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         assertThrows(ValidationException.class, () -> awbUtility.validateShipmentInfoBeforeGeneratingAwb(shipmentDetails));
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingConsignerOrgCode() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingConsignerOrgCode() {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setConsigner(new Parties());
         assertThrows(ValidationException.class, () -> awbUtility.validateShipmentInfoBeforeGeneratingAwb(shipmentDetails));
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingConsignee() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingConsignee() {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setConsigner(Parties.builder().orgCode("org1").build());
         assertThrows(ValidationException.class, () -> awbUtility.validateShipmentInfoBeforeGeneratingAwb(shipmentDetails));
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingConsigneeOrgCode() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingConsigneeOrgCode() {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setConsigner(Parties.builder().orgCode("org1").build());
         shipmentDetails.setConsignee(Parties.builder().build());
@@ -241,7 +242,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingCarrierDetails() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingCarrierDetails() {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setConsigner(Parties.builder().orgCode("org1").build());
         shipmentDetails.setConsignee(Parties.builder().orgCode("org2").build());
@@ -249,7 +250,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingCarrierDetailsShippingLine() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingCarrierDetailsShippingLine() {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setConsigner(Parties.builder().orgCode("org1").build());
         shipmentDetails.setConsignee(Parties.builder().orgCode("org2").build());
@@ -258,33 +259,33 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingOriginPort() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingOriginPort() {
 
         ShipmentDetails shipmentDetails = createShipmentDetailsWithCarrierDetails(null, "DestinationPort", 1L);
         assertThrows(ValidationException.class, () -> awbUtility.validateShipmentInfoBeforeGeneratingAwb(shipmentDetails));
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingDestinationPort() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingDestinationPort() {
         ShipmentDetails shipmentDetails = createShipmentDetailsWithCarrierDetails("OriginPort", null, 1L);
         assertThrows(ValidationException.class, () -> awbUtility.validateShipmentInfoBeforeGeneratingAwb(shipmentDetails));
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingCarrierId() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingCarrierId() {
         ShipmentDetails shipmentDetails = createShipmentDetailsWithCarrierDetails("OriginPort", "DestinationPort", null);
         assertThrows(ValidationException.class, () -> awbUtility.validateShipmentInfoBeforeGeneratingAwb(shipmentDetails));
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingMawbNumber() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingMawbNumber() {
         ShipmentDetails shipmentDetails = createShipmentDetailsWithCarrierDetails("OriginPort", "DestinationPort", 1L);
         shipmentDetails.setJobType(ShipmentConstants.SHIPMENT_TYPE_DRT);
         assertThrows(ValidationException.class, () -> awbUtility.validateShipmentInfoBeforeGeneratingAwb(shipmentDetails));
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_BlankMawbNumber() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_BlankMawbNumber() {
         ShipmentDetails shipmentDetails = createShipmentDetailsWithCarrierDetails("OriginPort", "DestinationPort", 1L);
         shipmentDetails.setJobType(ShipmentConstants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setMasterBill("");
@@ -292,7 +293,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testValidateShipmentInfoBeforeGeneratingAwb_MissingHawbNumber() {
+    void testValidateShipmentInfoBeforeGeneratingAwb_MissingHawbNumber() {
         ShipmentDetails shipmentDetails = createShipmentDetailsWithCarrierDetails("OriginPort", "DestinationPort", 1L);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setMasterBill("masterBill");
@@ -314,27 +315,27 @@ class AwbUtilityTest {
 
 
     @Test
-    public void testValidateConsolidationInfoBeforeGeneratingAwb_MissingSendingAgent() {
+    void testValidateConsolidationInfoBeforeGeneratingAwb_MissingSendingAgent() {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         assertThrows(ValidationException.class, () -> awbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails));
     }
 
     @Test
-    public void testValidateConsolidationInfoBeforeGeneratingAwb_MissingSendingAgentOrgCode() {
+    void testValidateConsolidationInfoBeforeGeneratingAwb_MissingSendingAgentOrgCode() {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setSendingAgent(new Parties());
         assertThrows(ValidationException.class, () -> awbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails));
     }
 
     @Test
-    public void testValidateConsolidationInfoBeforeGeneratingAwb_MissingReceivingAgent() {
+    void testValidateConsolidationInfoBeforeGeneratingAwb_MissingReceivingAgent() {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setSendingAgent(Parties.builder().orgCode("org1").build()); // Ensure Sending Agent is not null
         assertThrows(ValidationException.class, () -> awbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails));
     }
 
     @Test
-    public void testValidateConsolidationInfoBeforeGeneratingAwb_MissingReceivingAgentOrgCode() {
+    void testValidateConsolidationInfoBeforeGeneratingAwb_MissingReceivingAgentOrgCode() {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setSendingAgent(Parties.builder().orgCode("org1").build());
         consolidationDetails.setReceivingAgent(Parties.builder().orgCode("org1").build());
@@ -342,7 +343,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testValidateConsolidationInfoBeforeGeneratingAwb_MissingCarrierDetails() {
+    void testValidateConsolidationInfoBeforeGeneratingAwb_MissingCarrierDetails() {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setSendingAgent(Parties.builder().orgCode("org1").build());
         consolidationDetails.setReceivingAgent(Parties.builder().orgCode("org1").build());
@@ -350,19 +351,19 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testValidateConsolidationInfoBeforeGeneratingAwb_MissingOriginPort() {
+    void testValidateConsolidationInfoBeforeGeneratingAwb_MissingOriginPort() {
         ConsolidationDetails consolidationDetails = createConsolidationDetailsWithCarrierDetails(null, "DestinationPort");
         assertThrows(ValidationException.class, () -> awbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails));
     }
 
     @Test
-    public void testValidateConsolidationInfoBeforeGeneratingAwb_MissingDestinationPort() {
+    void testValidateConsolidationInfoBeforeGeneratingAwb_MissingDestinationPort() {
         ConsolidationDetails consolidationDetails = createConsolidationDetailsWithCarrierDetails("OriginPort", null);
         assertThrows(ValidationException.class, () -> awbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails));
     }
 
     @Test
-    public void testValidateConsolidationInfoBeforeGeneratingAwb_MissingMawbNumber() {
+    void testValidateConsolidationInfoBeforeGeneratingAwb_MissingMawbNumber() {
         ConsolidationDetails consolidationDetails = createConsolidationDetailsWithCarrierDetails("OriginPort", "DestinationPort");
         assertThrows(ValidationException.class, () -> awbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails));
     }
@@ -453,12 +454,13 @@ class AwbUtilityTest {
         awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
     }
 
-    @Test
-    void testCreateStatusUpdateForAirMessagingFor_REJECTED_Mawb() throws MessagingException, RunnerException, IOException {
+    @ParameterizedTest
+    @ValueSource(strings = {"INTERNAL_VALIDATION_ERROR", "EXTERNAL_VALIDATION_ERROR","INTERNAL_ERROR", "REJECTED", "INITIATED", "SUBMITTED", "RECEIVED"})
+    void testCreateStatusUpdateForAirMessagingForMawb(String args) throws MessagingException, RunnerException, IOException {
         var guid = UUID.randomUUID();
         AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
         airMessagingStatusDto.setGuid(guid);
-        airMessagingStatusDto.setStatus("REJECTED");
+        airMessagingStatusDto.setStatus(args);
 
         Awb mockAwb = testMawb;
         mockAwb.setTenantId(1);
@@ -475,49 +477,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    void testCreateStatusUpdateForAirMessagingFor_SUBMITTED_Mawb() throws MessagingException, RunnerException, IOException {
-        var guid = UUID.randomUUID();
-        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
-        airMessagingStatusDto.setGuid(guid);
-        airMessagingStatusDto.setStatus("SUBMITTED");
-
-        Awb mockAwb = testMawb;
-        mockAwb.setTenantId(1);
-        List<Awb> linkedHawb = List.of(testHawb.setShipmentId(1L));
-
-        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
-        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(linkedHawb);
-
-        awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
-
-
-        verify(airMessagingLogsDao, times(1)).createAirMessagingLogs(any(), any(), any(), any(), any(), any(), any(), any());
-        verify(eventDao, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void testCreateStatusUpdateForAirMessagingFor_RECEIVED_Mawb() throws MessagingException, RunnerException, IOException {
-        var guid = UUID.randomUUID();
-        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
-        airMessagingStatusDto.setGuid(guid);
-        airMessagingStatusDto.setStatus("RECEIVED");
-
-        Awb mockAwb = testMawb;
-        mockAwb.setTenantId(1);
-        List<Awb> linkedHawb = List.of(testHawb.setShipmentId(1L));
-
-        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
-        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(linkedHawb);
-
-        awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
-
-
-        verify(airMessagingLogsDao, times(1)).createAirMessagingLogs(any(), any(), any(), any(), any(), any(), any(), any());
-        verify(eventDao, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void testCreateStatusUpdateForAirMessagingFor_UNSUPPORTED_STATUS_Mawb() throws MessagingException, RunnerException, IOException {
+    void testCreateStatusUpdateForAirMessagingForUnSupportedStatus() throws MessagingException, RunnerException, IOException {
         var guid = UUID.randomUUID();
         AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
         airMessagingStatusDto.setGuid(guid);
@@ -533,19 +493,103 @@ class AwbUtilityTest {
     }
 
     @Test
-    void testCreateStatusUpdateForAirMessagingFor_RECEIVED_Hawb() throws MessagingException, RunnerException, IOException {
+    void testCreateStatusUpdateForAirMessagingForHawbSentStatus() throws MessagingException, RunnerException, IOException {
         var guid = UUID.randomUUID();
+        String mockStatus = "SUBMITTED";
         AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
         airMessagingStatusDto.setGuid(guid);
-        airMessagingStatusDto.setStatus("RECEIVED");
+        airMessagingStatusDto.setStatus(mockStatus);
 
         Awb mockAwb = testHawb;
         mockAwb.setShipmentId(1L);
         mockAwb.setTenantId(1);
+        Awb mockMawb = testMawb;
 
         when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
         when(shipmentDao.getShipmentNumberFromId(anyList())).thenReturn(List.of(testShipment));
-        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(List.of(mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS)));
+        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(List.of(
+                mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT),
+                mockMawb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS)
+        ));
+
+        awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
+
+    }
+
+    @Test
+    void testCreateStatusUpdateForAirMessagingForHawbFailedStatus() throws MessagingException, RunnerException, IOException {
+        var guid = UUID.randomUUID();
+        String mockStatus = "SUBMITTED";
+        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
+        airMessagingStatusDto.setGuid(guid);
+        airMessagingStatusDto.setStatus(mockStatus);
+
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setId(1L);
+        mockShipment.setShipmentId("shipmentId");
+
+        Awb mockAwb = testHawb;
+        mockAwb.setShipmentId(1L);
+        mockAwb.setTenantId(1);
+        mockAwb.setUserMailId("userEmail");
+        Awb mockMawb = testMawb;
+        mockMawb.setUserMailId("userEmail");
+
+        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
+        when(shipmentDao.getShipmentNumberFromId(anyList())).thenReturn(List.of(mockShipment));
+        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(List.of(
+                mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_FAILED),
+                mockMawb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS)
+        ));
+
+        awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
+
+    }
+
+    @Test
+    void testCreateStatusUpdateForAirMessagingForHawbSuccessStatus() throws MessagingException, RunnerException, IOException {
+        var guid = UUID.randomUUID();
+        String mockStatus = "SUBMITTED";
+        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
+        airMessagingStatusDto.setGuid(guid);
+        airMessagingStatusDto.setStatus(mockStatus);
+
+        Awb mockAwb = testHawb;
+        mockAwb.setShipmentId(1L);
+        mockAwb.setTenantId(1);
+        Awb mockMawb = testMawb;
+
+        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
+        when(shipmentDao.getShipmentNumberFromId(anyList())).thenReturn(List.of(testShipment));
+        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(List.of(
+                mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS),
+                mockMawb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS)
+        ));
+
+        awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
+
+    }
+
+    @Test
+    void testCreateStatusUpdateForAirMessagingForDmawb() throws MessagingException, RunnerException, IOException {
+        var guid = UUID.randomUUID();
+        String mockStatus = "SUBMITTED";
+        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
+        airMessagingStatusDto.setGuid(guid);
+        airMessagingStatusDto.setStatus(mockStatus);
+
+        Awb mockAwb = testDmawb;
+        mockAwb.setShipmentId(1L);
+        mockAwb.setTenantId(1);
+
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setJobType(Constants.SHIPMENT_TYPE_DRT);
+
+        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
+        when(shipmentDao.getShipmentNumberFromId(anyList())).thenReturn(List.of(mockShipment));
+        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(List.of(
+                mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS)
+        ));
 
         awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
 
@@ -593,14 +637,14 @@ class AwbUtilityTest {
 
 
     @Test
-    public void testSendAirMessagingFailureEmail_AwbIsNull_NoExceptionThrown() throws MessagingException, IOException {
+    void testSendAirMessagingFailureEmail_AwbIsNull_NoExceptionThrown() throws MessagingException, IOException {
         Awb awb = null;
         List<Awb> awbsList = new ArrayList<>();
         assertDoesNotThrow(() -> awbUtility.sendAirMessagingFailureEmail(awb, awbsList));
     }
 
     @Test
-    public void testSendAirMessagingFailureEmailMawbSuccessStatusLog() throws MessagingException, IOException {
+    void testSendAirMessagingFailureEmailMawbSuccessStatusLog() throws MessagingException, IOException {
         Awb mockAwb = testMawb;
         mockAwb.setUserMailId("user email id");
         List<Awb> awbList = List.of(testHawb.setShipmentId(1L), testHawb.setShipmentId(1L));
@@ -621,7 +665,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testSendAirMessagingFailureEmailMawbFailureStatusLog() throws MessagingException, IOException {
+    void testSendAirMessagingFailureEmailMawbFailureStatusLog() throws MessagingException, IOException {
         Awb mockAwb = testMawb;
         mockAwb.setUserMailId("user email id");
         List<Awb> awbList = List.of(testHawb.setShipmentId(1L), testHawb.setShipmentId(1L));
@@ -641,7 +685,7 @@ class AwbUtilityTest {
     }
 
     @Test
-    public void testSendAirMessagingFailureEmailDmawbSuccessStatusLog() throws MessagingException, IOException {
+    void testSendAirMessagingFailureEmailDmawbSuccessStatusLog() throws MessagingException, IOException {
         Awb mockAwb = testDmawb;
         mockAwb.setUserMailId("user email id");
         List<Awb> awbList = new ArrayList<>();
