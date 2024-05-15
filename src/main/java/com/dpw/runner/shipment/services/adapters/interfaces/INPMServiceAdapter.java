@@ -7,6 +7,8 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
 public interface INPMServiceAdapter {
+    ResponseEntity<IRunnerResponse> fetchContractFromShipment(CommonRequestModel commonRequestModel) throws RunnerException;
+
     ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> fetchContractsTemp(CommonRequestModel commonRequestModel) throws RunnerException;
 

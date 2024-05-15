@@ -37,6 +37,24 @@ public class NPMController {
         this.npmService = npmService;
     }
 
+    @PostMapping(NPMConstants.RETRIEVE_CONTRACT_SHIPMENT)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @ExcludeTimeZone
+    public ResponseEntity<IRunnerResponse> fetchContractFromShipment(@RequestBody @Valid ListContractRequest request) {
+        String responseMsg;
+        try {
+            return  npmService.fetchContractFromShipment(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : NPMConstants.CONTRACT_LIST_FAILED;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @PostMapping(NPMConstants.LIST_CONTRACT)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
