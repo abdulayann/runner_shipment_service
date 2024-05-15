@@ -501,22 +501,6 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private List<Parties> createParties(ShipmentDetails shipmentDetails) {
-        List<Parties> parties = new ArrayList<>();
-        for (String partyType : PARTY_TYPE) {
-            Parties party = Parties.builder()
-                    .type(partyType).orgCode(generateString(7)).addressCode(generateString(7))
-                    .orgData(ORG).addressData(ADDRESS)
-                    .entityId(shipmentDetails.getId()).entityType("SHIPMENT")
-                    .build();
-            party.setTenantId(1);
-            parties.add(party);
-        }
-        parties = partiesDao.saveAll(parties);
-        return parties;
-    }
-
-
     private ShipmentDetails createShipmentData() {
         int random = rnd.nextInt(100);
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(1)
@@ -608,6 +592,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         //ExecutorService executorService = Executors.newFixedThreadPool(100);
 
+
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -677,122 +662,11 @@ public class ShipmentService implements IShipmentService {
         //shipmentDetails = shipmentDao.findById(shipmentDetails.getId()).get();
     }
 
-
-    private void createPartiesAsync(ShipmentDetails shipmentDetails, List<PartiesRequest> partiesRequest) {
-        partiesRequest.forEach(parties -> {
-            createParties(shipmentDetails, parties);
-        });
-    }
-
-    private void createServiceDetailsAsync(ShipmentDetails shipmentDetails, List<ServiceDetailsRequest> serviceDetailsRequest) {
-        serviceDetailsRequest.forEach(serviceDetails -> {
-            createServiceDetail(shipmentDetails, serviceDetails);
-        });
-    }
-
-    private void createRoutingsAsync(ShipmentDetails shipmentDetails, List<RoutingsRequest> routingsRequest) {
-        routingsRequest.forEach(routing -> {
-            createRouting(shipmentDetails, routing);
-        });
-    }
-
-    private void createReferenceNumbersAsync(ShipmentDetails shipmentDetails, List<ReferenceNumbersRequest> referenceNumbersRequest) {
-        referenceNumbersRequest.forEach(referenceNumber -> {
-            createReferenceNumber(shipmentDetails, referenceNumber);
-        });
-    }
-
-    private void createNotesAsync(ShipmentDetails shipmentDetails, List<NotesRequest> notesRequest) {
-        notesRequest.forEach(notes -> {
-            createNote(shipmentDetails, notes);
-        });
-    }
-
-    private void createEventsAsync(ShipmentDetails shipmentDetails, List<EventsRequest> eventsRequest) {
-        eventsRequest.forEach(event -> {
-            createEvent(shipmentDetails, event);
-        });
-    }
-
-    private void createElDetailsAsync(ShipmentDetails shipmentDetails, List<ELDetailsRequest> elDetailsRequest) {
-        elDetailsRequest.forEach(elDetails -> {
-            createElDetail(shipmentDetails, elDetails);
-        });
-    }
-
-    private void createBookingCarriagesAsync(ShipmentDetails shipmentDetails, List<BookingCarriageRequest> bookingCarriageRequest) {
-        bookingCarriageRequest.forEach(booking -> {
-            createbookingCarriage(shipmentDetails, booking);
-        });
-    }
-
-    private void createPackingsAsync(ShipmentDetails shipmentDetails, List<PackingRequest> packingRequest) {
-        packingRequest.forEach(packing -> {
-            createPacking(shipmentDetails, packing);
-        });
-
-    }
-
-    @Transactional
-    public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) {
-        bookingCarriageRequest.setShipmentId(shipmentDetails.getId());
-        bookingCarriageDao.save(objectMapper.convertValue(bookingCarriageRequest, BookingCarriage.class));
-    }
-
-    @Transactional
-    public void createElDetail(ShipmentDetails shipmentDetails, ELDetailsRequest elDetailsRequest) {
-        elDetailsRequest.setShipmentId(shipmentDetails.getId());
-        elDetailsDao.save(objectMapper.convertValue(elDetailsRequest, ELDetails.class));
-    }
-
-    @Transactional
-    public void createEvent(ShipmentDetails shipmentDetails, EventsRequest eventsRequest) {
-        eventsRequest.setEntityId(shipmentDetails.getId());
-        eventsRequest.setEntityType(Constants.SHIPMENT);
-        eventDao.save(objectMapper.convertValue(eventsRequest, Events.class));
-    }
-
-    @Transactional
-    public void createNote(ShipmentDetails shipmentDetails, NotesRequest notesRequest) {
-        notesRequest.setEntityId(shipmentDetails.getId());
-        notesRequest.setEntityType(Constants.SHIPMENT);
-        notesDao.save(objectMapper.convertValue(notesRequest, Notes.class));
-    }
-
     @Transactional
     public void createParties(ShipmentDetails shipmentDetails, PartiesRequest partiesRequest) {
         partiesRequest.setEntityId(shipmentDetails.getId());
         partiesRequest.setEntityType("SHIPMENT");
         packingDao.save(objectMapper.convertValue(partiesRequest, Packing.class));
-    }
-
-    @Transactional
-    public void createReferenceNumber(ShipmentDetails shipmentDetails, ReferenceNumbersRequest referenceNumbersRequest) {
-        referenceNumbersRequest.setShipmentId(shipmentDetails.getId());
-        referenceNumbersDao.save(objectMapper.convertValue(referenceNumbersRequest, ReferenceNumbers.class));
-    }
-
-    @Transactional
-    public void createPacking(ShipmentDetails shipmentDetails, PackingRequest packingRequest) {
-        packingRequest.setShipmentId(shipmentDetails.getId());
-        packingDao.save(objectMapper.convertValue(packingRequest, Packing.class));
-    }
-
-    @Transactional
-    public void createRouting(ShipmentDetails shipmentDetails, RoutingsRequest routingsRequest) {
-        routingsRequest.setShipmentId(shipmentDetails.getId());
-        routingsDao.save(objectMapper.convertValue(routingsRequest, Routings.class));
-    }
-
-    @Transactional
-    public void createServiceDetail(ShipmentDetails shipmentDetails, ServiceDetailsRequest serviceDetailsRequest) {
-        serviceDetailsRequest.setShipmentId(shipmentDetails.getId());
-        serviceDetailsDao.save(objectMapper.convertValue(serviceDetailsRequest, ServiceDetails.class));
-    }
-
-    @Transactional
-    public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetails additionalDetails) {
-        additionalDetailDao.save(additionalDetails);
     }
 
 
@@ -2712,22 +2586,6 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-
-    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity) throws ExecutionException, InterruptedException {
-        RunnerListResponse runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
-        return (List<T>) runnerListResponse.getData();
-    }
-
-    private <T extends IRunnerResponse> List<T> getResponse(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-        RunnerListResponse runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
-        return (List<T>) runnerListResponse.getData();
-    }
-
-    private <T extends IRunnerResponse> T getResponseEntity(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-        RunnerResponse runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
-        return (T) runnerResponse.getData();
-    }
-
     private String generateShipmentId(ShipmentDetails shipmentDetails) {
         List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
         String shipmentId = "";
@@ -2795,32 +2653,6 @@ public class ShipmentService implements IShipmentService {
     private String getShipmentsSerialNumber() {
         // Moving this responsibility to v1 sequnce table to avoid syncing overhead
         return v1Service.getShipmentSerialNumber();
-    }
-
-    private String createShipmentSequence(ShipmentSettingsDetails shipmentSetting) {
-        String sequence = generateSequence(shipmentSetting.getShipmentIdGenerationType(), shipmentSetting.getShipmentIdGenerationPrefix(), shipmentSetting.getShipmentIdGenerationCounter());
-        if (shipmentSetting.getShipmentIdGenerationType() == GenerationType.Serial) {
-            shipmentSetting.setShipmentIdGenerationCounter(shipmentSetting.getShipmentIdGenerationCounter() + 1);
-            shipmentSettingsDao.save(shipmentSetting);
-        }
-        return sequence;
-    }
-
-    private String generateSequence(GenerationType generationType, String prefix, Integer counter) {
-        if(generationType == null)
-            return StringUtility.getRandomString(10);
-        String suffix;
-        switch (generationType) {
-            case Random:
-                suffix = StringUtility.getRandomString(10);
-                break;
-            case Serial:
-                suffix = String.valueOf(counter);
-                break;
-            default:
-                suffix = StringUtility.getEmptyString();
-        }
-        return !StringUtils.isEmpty(prefix) ? prefix + suffix : suffix;
     }
 
     public ResponseEntity<IRunnerResponse> syncShipmentAuditLogsToService(CommonRequestModel commonRequestModel) {
@@ -3899,16 +3731,6 @@ public class ShipmentService implements IShipmentService {
         return res;
     }
 
-    private String generateBlViaProductUtility(ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSetting) {
-        String res = null;
-        try {
-            res = productEngine.getCustomizedBLNumber(shipmentDetails, tenantSetting);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        }
-        return res;
-    }
-
     @Override
     public ResponseEntity<IRunnerResponse> getDefaultShipment() {
         String responseMsg;
@@ -4326,19 +4148,6 @@ public class ShipmentService implements IShipmentService {
         }
         CheckActiveInvoiceRequest checkActiveInvoiceRequest = CheckActiveInvoiceRequest.builder().BillGuid(request.getGuid()).build();
         return ResponseHelper.buildSuccessResponse(v1Service.getActiveInvoices(checkActiveInvoiceRequest));
-    }
-
-
-    private boolean shipmentHasHblOrHawb(ShipmentDetails shipmentDetails) {
-        boolean res = false;
-        if(shipmentDetails.getTransportMode() == null || shipmentDetails.getDirection() == null)
-            return false;
-        if(shipmentDetails.getTransportMode().equals("AIR") && shipmentDetails.getDirection().equals("EXP") && (
-                shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals("STD")))
-            res = true;
-        if(shipmentDetails.getTransportMode().equals("SEA") && shipmentDetails.getDirection().equals("EXP"))
-            res = true;
-        return res;
     }
 
     public ResponseEntity<IRunnerResponse> showAssignAllContainers(CommonRequestModel commonRequestModel) {
