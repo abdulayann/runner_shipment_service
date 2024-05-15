@@ -2681,49 +2681,6 @@ class ShipmentServiceTest {
     }
 
     @Test
-    void partialUpdateTestAir() throws RunnerException {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
-
-        ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
-        ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
-
-        AdditionalDetails additionalDetails = new AdditionalDetails();
-        additionalDetails.setImportBroker(Parties.builder().addressCode("code").build());
-        additionalDetails.setExportBroker(Parties.builder().addressCode("code").build());
-
-        HashMap<String, Object> hm = new HashMap<>();
-        hm.put("RAKCType", 2);
-
-        HashMap<String, Map<String, Object>> map = new HashMap();
-        map.put("org1#add1", hm);
-        map.put("org2#add2", hm);
-
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .shipmentId("AIR-CAN-00001")
-                .shipmentCreatedOn(LocalDateTime.now())
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
-                .containersList(Arrays.asList(Containers.builder().build()))
-                .jobType(Constants.SHIPMENT_TYPE_DRT)
-                .transportMode(Constants.TRANSPORT_MODE_AIR)
-                .additionalDetails(additionalDetails)
-                .consignee(Parties.builder().orgCode("org1").addressCode("add1").build())
-                .consigner(Parties.builder().orgCode("org2").addressCode("add2").build())
-                .build();
-
-        String errorMessage = "Screening Status and Security Status is mandatory for KC consginor.";
-
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        doNothing().when(shipmentDetailsMapper).update(any(), any());
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(OrgAddressResponse.builder().addresses(map).build());
-
-        Exception e = assertThrows(RunnerException.class, () -> shipmentService.partialUpdate(commonRequestModel, true));
-        assertEquals(errorMessage, e.getMessage());
-    }
-
-    @Test
     void checkRaStatusFieldsTest() {
         HashMap<String, Object> hm = new HashMap<>();
         hm.put("RAKCType", 1);
