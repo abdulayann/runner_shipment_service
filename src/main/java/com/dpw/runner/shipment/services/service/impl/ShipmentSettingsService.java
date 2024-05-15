@@ -280,14 +280,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
         Optional<ShipmentSettingsDetails> oldEntity = Optional.empty();
         if(request.getTenantId() != null) {
-            ListCommonRequest newRequest = new ListCommonRequest();
-            newRequest.setPageNo(1);
-            newRequest.setPageSize(Integer.MAX_VALUE);
-            newRequest.setFilterCriteria(new ArrayList<>());
-            Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
-            Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
-            if(shipmentSettingsPage.get().toList() != null && shipmentSettingsPage.get().toList().size() > 0)
-                oldEntity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
+            List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(request.getTenantId().intValue()));
+            if(shipmentSettingsDetails != null && !shipmentSettingsDetails.isEmpty())
+                oldEntity = Optional.ofNullable(shipmentSettingsDetails.get(0));
         }
         if(!oldEntity.isPresent()) {
             try{
