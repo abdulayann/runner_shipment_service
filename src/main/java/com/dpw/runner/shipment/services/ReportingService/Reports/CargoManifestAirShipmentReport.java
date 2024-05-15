@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,9 @@ public class CargoManifestAirShipmentReport extends IReport{
         Map<String, Object> dictionary = new HashMap<>();
         populateShipmentFields(cargoManifestAirShipmentModel.getShipmentDetails(), dictionary);
         dictionary.put(ReportConstants.AIRCRAFT_TYPE, cargoManifestAirShipmentModel.getShipmentDetails().getCarrierDetails().getAircraftType());
-        dictionary = populateHAWBAndSecurityData(List.of(cargoManifestAirShipmentModel.getShipmentDetails()), List.of(cargoManifestAirShipmentModel.getAwb()), dictionary, isSecurityData, isShipperAndConsignee, false);
+        List<Awb> awbList = new ArrayList<>();
+        awbList.add(cargoManifestAirShipmentModel.getAwb());
+        dictionary = populateHAWBAndSecurityData(List.of(cargoManifestAirShipmentModel.getShipmentDetails()), awbList, dictionary, isSecurityData, isShipperAndConsignee, false);
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
         ReportHelper.addTenantDetails(dictionary, cargoManifestAirShipmentModel.getTenantModel());
         PartiesModel originAgent = cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails().getExportBroker();
