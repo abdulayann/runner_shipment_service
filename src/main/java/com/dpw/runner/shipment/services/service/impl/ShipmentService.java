@@ -3010,7 +3010,7 @@ public class ShipmentService implements IShipmentService {
             var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllSalesAgentInSingleCall(shipmentDetailsResponse, null)), executorService);
             var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllContainerTypesInSingleCall(shipmentDetailsResponse, null)), executorService);
             // TODO- Remove this call and sync job staus from billing using producer and consumer
-            var billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addBillData(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addBillData(shipmentDetails, shipmentDetailsResponse)), executorService);
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
                     containerTypeFuture, billDataFuture).join();
             Map<Long, ContainerResponse> map = new HashMap<>();
