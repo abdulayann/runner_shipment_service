@@ -8,7 +8,9 @@ import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
@@ -359,5 +361,13 @@ public class JsonTestUtility {
 
     public PlatformToRunnerCustomerBookingRequest getPlatformCreateUpdateRequest() {
         return objectMapper.convertValue(payload.get("PLATFORM_CREATE_UPDATE"), PlatformToRunnerCustomerBookingRequest.class);
+    }
+
+    public EntityTransferOrganizations getOrganizationData() {
+        return objectMapper.convertValue(payload.get("ORG_DATA"), EntityTransferOrganizations.class);
+    }
+
+    public EntityTransferAddress getAddressData() {
+        return objectMapper.convertValue(payload.get("ADDRESS_DATA"), EntityTransferAddress.class);
     }
 }
