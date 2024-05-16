@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -8,21 +9,27 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.BookingChargesRequest;
+import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.*;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditBalanceFusionResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -45,6 +52,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -96,6 +104,8 @@ class CustomerBookingServiceTest {
     private IBookingChargesDao bookingChargesDao;
     @Mock
     private CommonUtils commonUtils;
+    @Mock
+    private IFusionServiceAdapter fusionServiceAdapter;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -737,5 +747,225 @@ class CustomerBookingServiceTest {
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
+    @Test
+    void testCreditCheckFailure() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(false)
+                        .IsCreditLimitWithFusionEnabled(false)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreditCheckFailure2() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(false)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreditCheckFailure3() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of())
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreditCheckWithCreditLimitWith0Value() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .CreditLimitOn(0)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+//        creditLimitRequest.setCustomerIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        var org = jsonTestUtility.getOrganizationData();
+        var address = jsonTestUtility.getAddressData();
+
+        when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().entities(List.of(org)).build());
+        when(jsonHelper.convertValueToList(any(),eq(EntityTransferOrganizations.class))).thenReturn(List.of(org));
+
+        when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(List.of(address)).build());
+        when(jsonHelper.convertValueToList(any(),eq(EntityTransferAddress.class))).thenReturn(List.of(address));
+
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreditCheckWithCreditLimitWith0Value2() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .CreditLimitOn(0)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setCustomerIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreditCheckWithCreditLimitWith1Value() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .CreditLimitOn(1)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreditCheckWithCreditLimitWith1ValueWithGlobalFusionOn() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .IsGlobalFusionIntegrationEnabled(true)
+                        .BusinessUnitName("ANY")
+                        .CreditLimitOn(1)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setSiteIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        var mockFusionResponse = ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().data(new CheckCreditBalanceFusionResponse()).build());
+        var mockUpdateCreditLimitResponse = new UpdateOrgCreditLimitBookingResponse();
+        var mockCheckCreditBalanceFusionResponse = new CheckCreditBalanceFusionResponse();
+        mockCheckCreditBalanceFusionResponse.setData(
+                CheckCreditBalanceFusionResponse.FusionData.builder()
+                        .accountNumber("213123213")
+                        .siteNumber("213213213321")
+                        .creditDetails(List.of(CheckCreditBalanceFusionResponse.CreditDetails.builder().CreditLimit(111).CreditLimitCurrency("INR").TotalCreditLimit(111).build()))
+                        .build());
+        mockUpdateCreditLimitResponse.setSuccess(true);
+        when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(mockFusionResponse);
+        when(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(any())).thenReturn(ResponseEntity.ok(mockUpdateCreditLimitResponse));
+        when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
+        when(jsonHelper.convertValue(any(), eq(UpdateOrgCreditLimitBookingResponse.class))).thenReturn(mockUpdateCreditLimitResponse);
+        var responseEntity = customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCreditCheckWithCreditLimitWith1ValueWithGlobalFusionOn2() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .IsGlobalFusionIntegrationEnabled(true)
+                        .BusinessUnitName("ANY")
+                        .CreditLimitOn(1)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setSiteIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        var mockFusionResponse = ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().data(new CheckCreditBalanceFusionResponse()).build());
+        var mockUpdateCreditLimitResponse = new UpdateOrgCreditLimitBookingResponse();
+        var mockCheckCreditBalanceFusionResponse = new CheckCreditBalanceFusionResponse();
+        mockCheckCreditBalanceFusionResponse.setData(
+                CheckCreditBalanceFusionResponse.FusionData.builder()
+                        .accountNumber("78678").siteNumber("434343")
+                        .creditDetails(List.of(CheckCreditBalanceFusionResponse.CreditDetails.builder().CreditLimit(111).CreditLimitCurrency("INR").TotalCreditLimit(111).build()))
+                        .build());
+        mockUpdateCreditLimitResponse.setSuccess(false);
+        when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(mockFusionResponse);
+        when(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(any())).thenReturn(ResponseEntity.ok(mockUpdateCreditLimitResponse));
+        when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
+        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreditCheckWithCreditLimitWith1ValueWithGlobalFusionOn3() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .IsGlobalFusionIntegrationEnabled(true)
+                        .BusinessUnitName("ANY")
+                        .CreditLimitOn(1)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setSiteIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        var mockFusionResponse = ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().data(new CheckCreditBalanceFusionResponse()).build());
+        var mockUpdateCreditLimitResponse = new UpdateOrgCreditLimitBookingResponse();
+        var mockCheckCreditBalanceFusionResponse = new CheckCreditBalanceFusionResponse();
+        mockCheckCreditBalanceFusionResponse.setData(
+                CheckCreditBalanceFusionResponse.FusionData.builder()
+                        .accountNumber("78678").siteNumber("434343")
+                        .creditDetails(List.of(CheckCreditBalanceFusionResponse.CreditDetails.builder().CreditLimit(111).CreditLimitCurrency("INR").TotalCreditLimit(111).build()))
+                        .build());
+        mockUpdateCreditLimitResponse.setSuccess(false);
+        when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(null);
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testCreditCheckWithCreditLimitWith1ValueWithGlobalFusionOn4() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .IsGlobalFusionIntegrationEnabled(true)
+                        .BusinessUnitName("ANY")
+                        .CreditLimitOn(1)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setSiteIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        var mockFusionResponse = ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().data(new CheckCreditBalanceFusionResponse()).build());
+        var mockUpdateCreditLimitResponse = new UpdateOrgCreditLimitBookingResponse();
+        var mockCheckCreditBalanceFusionResponse = new CheckCreditBalanceFusionResponse();
+        mockCheckCreditBalanceFusionResponse.setData(
+                CheckCreditBalanceFusionResponse.FusionData.builder()
+                        .accountNumber("213123213")
+                        .siteNumber("213213213321")
+                        .build());
+        mockUpdateCreditLimitResponse.setSuccess(true);
+        when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(mockFusionResponse);
+        when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
 
 }

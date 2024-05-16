@@ -477,7 +477,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         CheckCreditBalanceFusionRequest request = CheckCreditBalanceFusionRequest.builder().req_Params(new CheckCreditBalanceFusionRequest.ReqParams()).build();
         if(v1TenantSettingsResponse.getCreditLimitOn() == 0){
 
-            if(creditLimitRequest != null && creditLimitRequest.getCustomerIdentifierId() == null &&  creditLimitRequest.getClientOrgCode()!=null){
+            if(creditLimitRequest != null && creditLimitRequest.getCustomerIdentifierId() == null &&  creditLimitRequest.getClientOrgCode() != null){
                 CommonV1ListRequest orgRequest = new CommonV1ListRequest();
                 List<Object> orgCriteria = new ArrayList<>();
                 List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
