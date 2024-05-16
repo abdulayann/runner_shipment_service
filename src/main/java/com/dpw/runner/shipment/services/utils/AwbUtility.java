@@ -83,7 +83,8 @@ public class AwbUtility {
     {
         String forMattedAddress = "";
         String newLine = "\r\n";
-        forMattedAddress = addressParam.getAddress1();
+        if (!StringUtility.isEmpty(addressParam.getAddress1()))
+            forMattedAddress = addressParam.getAddress1();
         if (!StringUtility.isEmpty(addressParam.getAddress2()))
             forMattedAddress += newLine + addressParam.getAddress2();
         if (!StringUtility.isEmpty(addressParam.getState()))
@@ -123,104 +124,6 @@ public class AwbUtility {
         return sb.toString();
     }
 
-    public static String generateNatureAndQuantGoodsField(String goodsDescription, BigDecimal volumeWeight, List<AwbPackingInfo> packingList) {
-        String natureAndQuantGoodsValue = goodsDescription != null ? goodsDescription : "";
-        String packsDescriptionValue = "";
-        String dimensionText = "DIMS: In ";
-        HashSet<String> uniqueDimension = new HashSet<String>();
-        String newLine = "\r\n";
-        char[] toTrim = {',', ' '};
-        String volumetricWeight = String.format("{0:0.0#}", volumeWeight);
-        String dimnAndPacksText = "";
-
-        if (!StringUtility.isEmpty(natureAndQuantGoodsValue)) {
-            natureAndQuantGoodsValue += newLine;
-        }
-        if (packingList != null && packingList.size() > 0) {
-            var counter = 0;
-            for (var packing : packingList) {
-                String pieces = " ";
-                String len = " ";
-                String width = " ";
-                String height = " ";
-                String equals = "=";
-                String cross = "X";
-
-                if (!StringUtility.isEmpty(packing.getPacks())) {
-                    pieces = packing.getPacks() + equals;
-                } else {
-                    pieces += equals;
-                }
-
-                if (packing.getLength() != null) {
-                    len = packing.getLength() + cross;
-                } else {
-                    len += cross;
-                }
-
-                if (packing.getWidth() != null) {
-                    width = packing.getWidth() + cross;
-                } else {
-                    width += cross;
-                }
-
-                if (packing.getHeight() != null) {
-                    height = packing.getHeight().toString();
-                }
-                if (!StringUtility.isEmpty(packing.getLengthUnit()) &&
-                        !StringUtility.isEmpty(packing.getWidthUnit()) &&
-                        !StringUtility.isEmpty(packing.getHeightUnit())) {
-                    uniqueDimension.add(packing.getLengthUnit());
-                    uniqueDimension.add(packing.getWidthUnit());
-                    uniqueDimension.add(packing.getHeightUnit());
-                }
-                counter++;
-
-                packsDescriptionValue += pieces + len + width + height + ",";
-                if (counter == packingList.size()) {
-                    packsDescriptionValue = StringUtils.stripEnd(packsDescriptionValue, ",");
-                    packsDescriptionValue = StringUtils.stripEnd(packsDescriptionValue, " ");
-                }
-
-                if (counter % 2 == 0) {
-                    packsDescriptionValue += newLine;
-                }
-            }
-
-
-            if (uniqueDimension.size() == 1) {
-                String dimentionUnit = uniqueDimension.stream().findFirst().get();
-                if (dimentionUnit == "CM") {
-                    dimentionUnit = "CMS";
-                } else if (dimentionUnit == "IN") {
-                    dimentionUnit = "Inches";
-                } else if (dimentionUnit == "M") {
-                    dimentionUnit = "Meter";
-                } else if (dimentionUnit == "FT") {
-                    dimentionUnit = "Feet";
-                } else {
-                    dimentionUnit = "";
-                }
-
-                dimensionText += dimentionUnit + newLine;
-            } else {
-                dimensionText += newLine;
-            }
-
-            if (counter % 2 != 0) {
-                packsDescriptionValue += newLine;
-            }
-            packsDescriptionValue += "Total Volumetric Weight ";
-
-//            if (tenantSettings != null && tenantSettings.WeightChargeableUnit == "KG") { //TODO fetch values from tenant
-//                packsDescriptionValue += volumetricWeight + " " + "KGS";
-//            }
-
-            dimnAndPacksText = dimensionText + packsDescriptionValue;
-
-        }
-        return natureAndQuantGoodsValue + dimnAndPacksText;
-    }
 
     public static BigDecimal roundOffAirShipment(double charge) {
         if ((charge - 0.50) <= Math.floor(charge) && charge != Math.floor(charge))
@@ -286,12 +189,6 @@ public class AwbUtility {
         }
     }
 
-    public static String generateNatureAndQuantFieldsForConsolMawb(String goodsDescription, BigDecimal volumeWeight, List<AwbPackingInfo> packingList)
-    {
-        String defaultTextForQuantAndGoods = Constants.DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB;
-        String newLine = "\r\n";
-        return defaultTextForQuantAndGoods + newLine + generateNatureAndQuantGoodsField(goodsDescription, volumeWeight, packingList);
-    }
 
     public AwbAirMessagingResponse createAirMessagingRequestForConsole(Awb awb, ConsolidationDetails consolidationDetails) {
         TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
