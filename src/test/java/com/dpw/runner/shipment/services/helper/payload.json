@@ -2787,7 +2787,8 @@
   "MasterDataMapWithSameCommodity": {
     "WeightUnit": ["KG"],
     "CommodityCodes": ["680510"],
-    "DGClass": ["dgClass"]
+    "DGClass": ["dgClass"],
+    "Unlocations": ["unloc"]
   },
   "dgSubstanceContactMap": {
     "1436": "23"
