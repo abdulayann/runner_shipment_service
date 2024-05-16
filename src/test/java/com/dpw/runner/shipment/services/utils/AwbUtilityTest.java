@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingStatusDto;
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -12,15 +11,23 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbPaymentInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
+import com.dpw.runner.shipment.services.dto.response.AwbRoutingInfoResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AirMessagingStatus;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IGenericQueryRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -33,6 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.mockito.Mock;
@@ -385,8 +393,172 @@ class AwbUtilityTest {
     // ************** Air Messaging ****************** //
 
 
+    @Test
+    void createAirMessagingRequestForConsol() {
+        Awb mockAwb = testMawb;
+        mockAwb.setShipmentId(1L);
+        ConsolidationDetails mockConsol = testConsol;
 
-    void createAirMessagingRequestForShipment() {
+
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+
+        AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
+
+        AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        AwbPaymentInfo awbPaymentInfo = new AwbPaymentInfo();
+        awbPaymentInfo.setTotalPrepaid(BigDecimal.ZERO);
+        awbPaymentInfo.setTotalCollect(BigDecimal.ZERO);
+        awbAirMessagingResponse.setAwbPaymentInfo(awbPaymentInfo);
+        awbAirMessagingResponse.setAwbRoutingInfo(List.of(awbRoutingInfoResponse));
+        when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
+
+        //Mock fetchOrgInfoFromV1
+        HashMap<String, Map<String, Object>> responseOrgs = new HashMap<>();
+        HashMap<String, Map<String, Object>> responseAddrs = new HashMap<>();
+
+        responseOrgs.put(mockConsol.getSendingAgent().getOrgCode(), Collections.emptyMap());
+        responseAddrs.put(mockConsol.getSendingAgent().getOrgCode() + '#' + mockConsol.getSendingAgent().getAddressCode(), Collections.emptyMap());
+        responseOrgs.put(mockConsol.getReceivingAgent().getOrgCode(), Collections.emptyMap());
+        responseAddrs.put(mockConsol.getReceivingAgent().getOrgCode() + '#' + mockConsol.getReceivingAgent().getAddressCode(), Collections.emptyMap());
+
+        OrgAddressResponse mockOrgAddressResponse = OrgAddressResponse.builder()
+                .organizations(responseOrgs).addresses(responseAddrs).build();
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
+        List<EntityTransferOrganizations> orgsList = new ArrayList<>();
+        orgsList.add(EntityTransferOrganizations.builder().build());
+        when(masterDataUtils.fetchOrganizations(any(), any())).thenReturn(orgsList);
+        when(v1Service.addressList(any())).thenReturn(new V1DataResponse());
+        List<EntityTransferAddress> addressList = new ArrayList<>();
+        addressList.add(EntityTransferAddress.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(addressList);
+
+        var metaRoutingInfo = new AwbAirMessagingResponse.AwbRoutingInfoRes();
+        String mockPort = "port";
+        String mockByCarrier = "carrier";
+        metaRoutingInfo.setOriginPortName(mockPort);
+        metaRoutingInfo.setDestinationPortName(mockPort);
+        metaRoutingInfo.setByCarrier("carrier");
+        when(jsonHelper.convertValueToList(any(), eq(AwbAirMessagingResponse.AwbRoutingInfoRes.class))).thenReturn(
+                List.of(metaRoutingInfo)
+        );
+
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        UnlocationsResponse mockUnlocResponse = new UnlocationsResponse();
+        unlocationsMap.put(mockConsol.getCarrierDetails().getOriginPort(), mockUnlocResponse);
+        unlocationsMap.put(mockConsol.getCarrierDetails().getDestinationPort(), mockUnlocResponse);
+        unlocationsMap.put(mockPort, mockUnlocResponse);
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsMap);
+
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        EntityTransferCarrier mockCarrier = new EntityTransferCarrier();
+        carriersMap.put(mockByCarrier, mockCarrier);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+
+        var expectedResponse = awbUtility.createAirMessagingRequestForConsole(mockAwb, mockConsol);
+
+        assertNotNull(expectedResponse);
+
+    }
+
+    @Test
+    void createAirMessagingRequestForConsolWithAddressList() {
+        Awb mockAwb = testMawb;
+        mockAwb.setShipmentId(1L);
+        ConsolidationDetails mockConsol = testConsol;
+
+        Parties consolAddress = Parties.builder().type(Constants.FAG).orgCode("org1").addressCode("adCode").build();
+        consolAddress.setOrgData(Map.ofEntries(
+                Map.entry(PartiesConstants.COUNTRY, "test"),
+                Map.entry(PartiesConstants.CITY, "test"),
+                Map.entry(PartiesConstants.CURRENCY_CODE, "test"),
+                Map.entry(PartiesConstants.KC_RA_EXPIRY, "test"),
+                Map.entry(PartiesConstants.KC_RA_NUMBER, "test")
+        ));
+        mockConsol.setConsolidationAddresses(List.of(consolAddress));
+
+        var issuingAgent = consolAddress;
+
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+
+        AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
+
+        AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        AwbPaymentInfo awbPaymentInfo = new AwbPaymentInfo();
+        awbPaymentInfo.setTotalPrepaid(BigDecimal.ZERO);
+        awbPaymentInfo.setTotalCollect(BigDecimal.ZERO);
+        awbAirMessagingResponse.setAwbPaymentInfo(awbPaymentInfo);
+        awbAirMessagingResponse.setAwbRoutingInfo(List.of(awbRoutingInfoResponse));
+        when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
+
+        //Mock fetchOrgInfoFromV1
+        HashMap<String, Map<String, Object>> responseOrgs = new HashMap<>();
+        HashMap<String, Map<String, Object>> responseAddrs = new HashMap<>();
+
+        responseOrgs.put(mockConsol.getSendingAgent().getOrgCode(), Collections.emptyMap());
+        responseAddrs.put(mockConsol.getSendingAgent().getOrgCode() + '#' + mockConsol.getSendingAgent().getAddressCode(), Collections.emptyMap());
+        responseOrgs.put(mockConsol.getReceivingAgent().getOrgCode(), Collections.emptyMap());
+        responseAddrs.put(mockConsol.getReceivingAgent().getOrgCode() + '#' + mockConsol.getReceivingAgent().getAddressCode(), Collections.emptyMap());
+
+        responseOrgs.put(issuingAgent.getOrgCode(), Collections.emptyMap());
+        responseAddrs.put(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode(), Collections.emptyMap());
+
+        OrgAddressResponse mockOrgAddressResponse = OrgAddressResponse.builder()
+                .organizations(responseOrgs).addresses(responseAddrs).build();
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
+//        List<EntityTransferOrganizations> orgsList = new ArrayList<>();
+//        orgsList.add(EntityTransferOrganizations.builder().build());
+//        when(masterDataUtils.fetchOrganizations(any(), any())).thenReturn(orgsList);
+//        when(v1Service.addressList(any())).thenReturn(new V1DataResponse());
+//        List<EntityTransferAddress> addressList = new ArrayList<>();
+//        addressList.add(EntityTransferAddress.builder().build());
+//        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(addressList);
+
+        var metaRoutingInfo = new AwbAirMessagingResponse.AwbRoutingInfoRes();
+        String mockPort = "port";
+        String mockByCarrier = "carrier";
+        metaRoutingInfo.setOriginPortName(mockPort);
+        metaRoutingInfo.setDestinationPortName(mockPort);
+        metaRoutingInfo.setByCarrier("carrier");
+        when(jsonHelper.convertValueToList(any(), eq(AwbAirMessagingResponse.AwbRoutingInfoRes.class))).thenReturn(
+                List.of(metaRoutingInfo)
+        );
+
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        UnlocationsResponse mockUnlocResponse = new UnlocationsResponse();
+        unlocationsMap.put(mockConsol.getCarrierDetails().getOriginPort(), mockUnlocResponse);
+        unlocationsMap.put(mockConsol.getCarrierDetails().getDestinationPort(), mockUnlocResponse);
+        unlocationsMap.put(mockPort, mockUnlocResponse);
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsMap);
+
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        EntityTransferCarrier mockCarrier = new EntityTransferCarrier();
+        carriersMap.put(mockByCarrier, mockCarrier);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+
+        var expectedResponse = awbUtility.createAirMessagingRequestForConsole(mockAwb, mockConsol);
+
+        assertNotNull(expectedResponse);
+
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1,2,3})
+    void createAirMessagingRequestForShipment(int args) {
         Awb mockAwb = testHawb;
         mockAwb.setShipmentId(1L);
         ShipmentDetails mockShipment = testShipment;
@@ -400,25 +572,120 @@ class AwbUtilityTest {
 
 
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
+
+        AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        AwbPaymentInfo awbPaymentInfo = new AwbPaymentInfo();
+        if(args == 1) awbPaymentInfo.setTotalPrepaid(BigDecimal.ZERO);
+        if(args == 2) awbPaymentInfo.setTotalCollect(BigDecimal.ZERO);
+        if(args == 3) {
+            awbPaymentInfo.setTotalPrepaid(BigDecimal.ZERO);
+            awbPaymentInfo.setTotalCollect(BigDecimal.ZERO);
+        }
+        awbAirMessagingResponse.setAwbPaymentInfo(awbPaymentInfo);
+        awbAirMessagingResponse.setAwbRoutingInfo(List.of(awbRoutingInfoResponse));
         when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
 
+        //Mock fetchOrgInfoFromV1
+        HashMap<String, Map<String, Object>> responseOrgs = new HashMap<>();
+        HashMap<String, Map<String, Object>> responseAddrs = new HashMap<>();
 
-        awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment);
+        responseOrgs.put(mockShipment.getConsigner().getOrgCode(), Collections.emptyMap());
+        responseAddrs.put(mockShipment.getConsigner().getOrgCode() + '#' + mockShipment.getConsigner().getAddressCode(), Collections.emptyMap());
+        responseOrgs.put(mockShipment.getConsignee().getOrgCode(), Collections.emptyMap());
+        responseAddrs.put(mockShipment.getConsignee().getOrgCode() + '#' + mockShipment.getConsignee().getAddressCode(), Collections.emptyMap());
 
+        OrgAddressResponse mockOrgAddressResponse = OrgAddressResponse.builder()
+                        .organizations(responseOrgs).addresses(responseAddrs).build();
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
+        List<EntityTransferOrganizations> orgsList = new ArrayList<>();
+        orgsList.add(EntityTransferOrganizations.builder().build());
+        when(masterDataUtils.fetchOrganizations(any(), any())).thenReturn(orgsList);
+        when(v1Service.addressList(any())).thenReturn(new V1DataResponse());
+        List<EntityTransferAddress> addressList = new ArrayList<>();
+        addressList.add(EntityTransferAddress.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(addressList);
+
+        var metaRoutingInfo = new AwbAirMessagingResponse.AwbRoutingInfoRes();
+        String mockPort = "port";
+        String mockByCarrier = "carrier";
+        metaRoutingInfo.setOriginPortName(mockPort);
+        metaRoutingInfo.setDestinationPortName(mockPort);
+        metaRoutingInfo.setByCarrier("carrier");
+        when(jsonHelper.convertValueToList(any(), eq(AwbAirMessagingResponse.AwbRoutingInfoRes.class))).thenReturn(
+                List.of(metaRoutingInfo)
+        );
+
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        UnlocationsResponse mockUnlocResponse = new UnlocationsResponse();
+        unlocationsMap.put(mockShipment.getCarrierDetails().getOriginPort(), mockUnlocResponse);
+        unlocationsMap.put(mockShipment.getCarrierDetails().getDestinationPort(), mockUnlocResponse);
+        unlocationsMap.put(mockPort, mockUnlocResponse);
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsMap);
+
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        EntityTransferCarrier mockCarrier = new EntityTransferCarrier();
+        carriersMap.put(mockByCarrier, mockCarrier);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+
+        var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment);
+
+        assertNotNull(expectedResponse);
+
+    }
+
+    @Test
+    void createAirMessagingRequestForShipmentWithShipAddress() {
+        Awb mockAwb = testHawb;
+        mockAwb.setShipmentId(1L);
+        ShipmentDetails mockShipment = testShipment;
+        addShipmentDataForAwbGeneration(mockShipment);
+
+        var issuingAgent = mockShipment.getShipmentAddresses().get(0);
+
+
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+
+        AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
+        when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
+
+        //Mock fetchOrgInfoFromV1
+        HashMap<String, Map<String, Object>> responseOrgs = new HashMap<>();
+        HashMap<String, Map<String, Object>> responseAddrs = new HashMap<>();
+
+        responseOrgs.put(issuingAgent.getOrgCode(), Collections.emptyMap());
+        responseAddrs.put(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode(), Collections.emptyMap());
+
+        OrgAddressResponse mockOrgAddressResponse = OrgAddressResponse.builder()
+                .organizations(responseOrgs).addresses(responseAddrs).build();
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
+
+        var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment);
+
+        assertNotNull(expectedResponse);
     }
 
     private void addShipmentDataForAwbGeneration(ShipmentDetails shipment) {
         Parties shipmentAddress = Parties.builder().type(Constants.FAG).orgCode("org1").addressCode("adCode").build();
         shipmentAddress.setOrgData(Map.ofEntries(
-                Map.entry(ReportConstants.COUNTRY, "test"),
-                Map.entry(ReportConstants.CITY, "test_city")
+                Map.entry(PartiesConstants.COUNTRY, "test"),
+                Map.entry(PartiesConstants.CITY, "test"),
+                Map.entry(PartiesConstants.CURRENCY_CODE, "test"),
+                Map.entry(PartiesConstants.KC_RA_EXPIRY, "test"),
+                Map.entry(PartiesConstants.KC_RA_NUMBER, "test")
         ));
 
         Routings routing = new Routings();
         routing.setLeg(1L);
 
         shipment.setShipmentAddresses(List.of(shipmentAddress));
-//        shipment.setRoutingsList(List.of(routing));
     }
 
 
@@ -435,24 +702,6 @@ class AwbUtilityTest {
         assertThrows(RunnerException.class, () -> awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto));
     }
 
-
-
-    @Test
-    void testCreateStatusUpdateForAirMessagingFor_INTERNAL_VALIDATION_ERROR_Mawb() throws MessagingException, RunnerException, IOException {
-        var guid = UUID.randomUUID();
-        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
-        airMessagingStatusDto.setGuid(guid);
-        airMessagingStatusDto.setStatus("INTERNAL_VALIDATION_ERROR");
-
-        Awb mockAwb = testMawb;
-        mockAwb.setTenantId(1);
-        List<Awb> linkedHawb = List.of(testHawb.setShipmentId(1L));
-
-        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
-        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(linkedHawb);
-
-        awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
-    }
 
     @ParameterizedTest
     @ValueSource(strings = {"INTERNAL_VALIDATION_ERROR", "EXTERNAL_VALIDATION_ERROR","INTERNAL_ERROR", "REJECTED", "INITIATED", "SUBMITTED", "RECEIVED"})
@@ -490,6 +739,100 @@ class AwbUtilityTest {
         when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
 
         assertThrows(RunnerException.class, () -> awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto));
+    }
+
+    @Test
+    void testCreateStatusUpdateForAirMessagingForMawbSentHawb() throws MessagingException, RunnerException, IOException {
+        var guid = UUID.randomUUID();
+        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
+        airMessagingStatusDto.setGuid(guid);
+        airMessagingStatusDto.setStatus("RECEIVED");
+
+        Awb mockAwb = testMawb;
+        mockAwb.setTenantId(1);
+        List<Awb> linkedHawb = List.of(testHawb.setShipmentId(1L).
+                setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT));
+
+        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
+        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(linkedHawb);
+
+        awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
+
+
+        verify(airMessagingLogsDao, times(1)).createAirMessagingLogs(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(eventDao, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testCreateStatusUpdateForAirMessagingForMawbFailedHawb() throws MessagingException, RunnerException, IOException {
+        var guid = UUID.randomUUID();
+        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
+        airMessagingStatusDto.setGuid(guid);
+        airMessagingStatusDto.setStatus("RECEIVED");
+
+        Awb mockAwb = testMawb;
+        mockAwb.setTenantId(1);
+        List<Awb> linkedHawb = List.of(testHawb.setShipmentId(1L).
+                setAirMessageStatus(AwbStatus.AIR_MESSAGE_FAILED));
+
+        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
+        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(linkedHawb);
+
+        var spyBean = Mockito.spy(awbUtility);
+        doNothing().when(spyBean).sendAirMessagingFailureEmail(any(), any());
+
+        spyBean.createStatusUpdateForAirMessaging(airMessagingStatusDto);
+
+
+        verify(airMessagingLogsDao, times(1)).createAirMessagingLogs(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(eventDao, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testCreateStatusUpdateForAirMessagingForMawbFailedHawbEmailThrowsException() throws MessagingException, RunnerException, IOException {
+        var guid = UUID.randomUUID();
+        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
+        airMessagingStatusDto.setGuid(guid);
+        airMessagingStatusDto.setStatus("RECEIVED");
+
+        Awb mockAwb = testMawb;
+        mockAwb.setTenantId(1);
+        List<Awb> linkedHawb = List.of(testHawb.setShipmentId(1L).
+                setAirMessageStatus(AwbStatus.AIR_MESSAGE_FAILED));
+
+        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
+        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(linkedHawb);
+
+        var spyBean = Mockito.spy(awbUtility);
+        doThrow(new IOException("test")).when(spyBean).sendAirMessagingFailureEmail(any(), any());
+
+        spyBean.createStatusUpdateForAirMessaging(airMessagingStatusDto);
+
+
+        verify(airMessagingLogsDao, times(1)).createAirMessagingLogs(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(eventDao, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testCreateStatusUpdateForAirMessagingForMawbSuccessHawb() throws MessagingException, RunnerException, IOException {
+        var guid = UUID.randomUUID();
+        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
+        airMessagingStatusDto.setGuid(guid);
+        airMessagingStatusDto.setStatus("RECEIVED");
+
+        Awb mockAwb = testMawb;
+        mockAwb.setTenantId(1);
+        List<Awb> linkedHawb = List.of(testHawb.setShipmentId(1L).
+                setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS));
+
+        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
+        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(linkedHawb);
+
+        awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
+
+
+        verify(airMessagingLogsDao, times(1)).createAirMessagingLogs(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(eventDao, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -547,6 +890,40 @@ class AwbUtilityTest {
     }
 
     @Test
+    void testCreateStatusUpdateForAirMessagingForHawbFailedStatusEmailThrowsException() throws MessagingException, RunnerException, IOException {
+        var guid = UUID.randomUUID();
+        String mockStatus = "SUBMITTED";
+        AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
+        airMessagingStatusDto.setGuid(guid);
+        airMessagingStatusDto.setStatus(mockStatus);
+
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setId(1L);
+        mockShipment.setShipmentId("shipmentId");
+
+        Awb mockAwb = testHawb;
+        mockAwb.setShipmentId(1L);
+        mockAwb.setTenantId(1);
+        mockAwb.setUserMailId("userEmail");
+        Awb mockMawb = testMawb;
+        mockMawb.setUserMailId("userEmail");
+
+        when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
+        when(shipmentDao.getShipmentNumberFromId(anyList())).thenReturn(List.of(mockShipment));
+        when(awbDao.findAllLinkedAwbs(guid)).thenReturn(List.of(
+                mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_FAILED),
+                mockMawb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS)
+        ));
+
+        var spyBean = Mockito.spy(awbUtility);
+        doThrow(new IOException("test")).when(spyBean).sendAirMessagingFailureEmail(any(), any());
+
+        spyBean.createStatusUpdateForAirMessaging(airMessagingStatusDto);
+
+        verify(spyBean, times(1)).sendAirMessagingFailureEmail(any(), any());
+    }
+
+    @Test
     void testCreateStatusUpdateForAirMessagingForHawbSuccessStatus() throws MessagingException, RunnerException, IOException {
         var guid = UUID.randomUUID();
         String mockStatus = "SUBMITTED";
@@ -596,6 +973,24 @@ class AwbUtilityTest {
     }
 
 
+
+    @Test
+    void testCreateEventUpdateForAirMessagingThrowsException() {
+        AirMessagingEventDto airMessagingEventDto = new AirMessagingEventDto();
+        airMessagingEventDto.setGuid(UUID.randomUUID());
+
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build();
+
+
+        when(awbDao.findByGuid(airMessagingEventDto.getGuid())).thenReturn(Optional.empty());
+
+        try {
+            awbUtility.createEventUpdateForAirMessaging(airMessagingEventDto);
+        }
+        catch (Exception e){
+            assertNotNull(e);
+        }
+    }
 
     @Test
     void testCreateEventUpdateForAirMessagingForMawb() {
