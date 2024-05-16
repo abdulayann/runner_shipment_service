@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -37,10 +38,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -376,6 +374,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Booking list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             Pair<Specification<CustomerBooking>, Pageable> tuple = fetchData(request, CustomerBooking.class, tableNames);
             Page<CustomerBooking> customerBookingPage = customerBookingDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -446,8 +445,6 @@ public class CustomerBookingService implements ICustomerBookingService {
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
             double _next = System.currentTimeMillis();
             log.info("Time taken to fetch details from db: {} Request Id {}", _next - current, LoggerHelper.getRequestIdFromMDC());
-            if (_next - current > 200)
-                log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_FETCH_JSON_CONVERTER, _next - current);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
         } catch (Exception e) {
@@ -461,19 +458,14 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Override
     public ResponseEntity<IRunnerResponse> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws RunnerException {
         CreditLimitRequest creditLimitRequest = (CreditLimitRequest) commonRequestModel.getData();
-        V1RetrieveResponse v1RetrieveResponse = v1Service.retrieveTenantSettings();
 
-        V1TenantSettingsResponse v1TenantSettingsResponse = modelMapper.map(v1RetrieveResponse.getEntity(), V1TenantSettingsResponse.class);
-        int tenantId = userContext.getUser().TenantId;
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         List<Object> criteria = new ArrayList<>();
         List<Object> field = new ArrayList<>(List.of(CustomerBookingConstants.TENANT_ID));
         String operator = "=";
-        criteria.addAll(List.of(field, operator, tenantId));
-        V1DataResponse tenantName = v1Service.tenantNameByTenantId(CommonV1ListRequest.builder().criteriaRequests(criteria).build());
+        criteria.addAll(List.of(field, operator, UserContext.getUser().TenantId));
 
-        V1TenantResponse v1TenantResponse = modelMapper.map(((ArrayList) tenantName.entities).get(0), V1TenantResponse.class);
-
-        if (!v1TenantSettingsResponse.getEnableCreditLimitManagement() || !v1TenantSettingsResponse.getIsCreditLimitWithFusionEnabled()) {
+        if (Boolean.FALSE.equals(v1TenantSettingsResponse.getEnableCreditLimitManagement()) || Boolean.FALSE.equals(v1TenantSettingsResponse.getIsCreditLimitWithFusionEnabled())) {
             log.error("EnableCreditLimitManagement Or EnableCreditLimitIntegrationWithFusion is False in Branch settings with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException("EnableCreditLimitManagement Or EnableCreditLimitIntegrationWithFusion is False in Branch settings");
         }
@@ -510,8 +502,8 @@ public class CustomerBookingService implements ICustomerBookingService {
                 finalCriteria.add("and");
 
                 List<Object>orgIdCriteria=new ArrayList<>();
-                List<Object> orgIdfield = new ArrayList<>(List.of("OrgId"));
-                orgIdCriteria.add(List.of(orgIdfield, op, orgId));
+                List<Object> orgIdField = List.of("OrgId");
+                orgIdCriteria.add(List.of(orgIdField, op, orgId));
                 finalCriteria.addAll(orgIdCriteria);
 
                 addressReq.setCriteriaRequests(finalCriteria);
@@ -535,7 +527,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             request.getReq_Params().setSite_number(creditLimitRequest.getSiteIdentifierId());
         }
-        if (v1TenantSettingsResponse.getIsGlobalFusionIntegrationEnabled()) {
+        if (Boolean.TRUE.equals(v1TenantSettingsResponse.getIsGlobalFusionIntegrationEnabled())) {
             request.getReq_Params().setCalling_System(CustomerBookingConstants.GCR_FUSION);
             request.getReq_Params().setBu_id(v1TenantSettingsResponse.getBusinessUnitName());
             ResponseEntity<IRunnerResponse> response = fusionServiceAdapter.checkCreditLimitP100(CommonRequestModel.buildRequest(request));
@@ -921,8 +913,6 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     public VesselsResponse getVesselsData(String name) {
-        if(IsStringNullOrEmpty(name))
-            return null;
         List<Object> vesselCriteria = Arrays.asList(
                 List.of("Name"),
                 "=",
@@ -942,7 +932,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if(!IsStringNullOrEmpty(request.getVessel())) {
             VesselsResponse vesselsResponse = getVesselsData(request.getVessel());
             if(vesselsResponse != null)
-                vessel = vesselsResponse.getGuid().toString();
+                vessel = StringUtility.convertToString(vesselsResponse.getGuid());
         }
         CarrierDetailRequest carrierDetailRequest = CarrierDetailRequest.builder()
                 .origin(request.getOrigin())
@@ -1104,8 +1094,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             var containerTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllContainerTypesInSingleCall(customerBookingResponse)), executorService);
             var chargeTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllChargeTypesInSingleCall(customerBookingResponse)), executorService);
             if(customerBookingResponse.getBookingStatus() == BookingStatus.READY_FOR_SHIPMENT) {
-                DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenantSettings();
-                V1TenantSettingsResponse tenantSettingsResponse = modelMapper.map(dependentServiceResponse.getData(), V1TenantSettingsResponse.class);
+                V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
                 Boolean isShipmentV2 = tenantSettingsResponse.getShipmentServiceV2Enabled();
                 if (isShipmentV2) {
                     if (customerBookingResponse.getShipmentEntityIdV2() == null) {
@@ -1119,12 +1108,12 @@ public class CustomerBookingService implements ICustomerBookingService {
                                 ShipmentRetrieveResponse shipmentRetrieveResponse = (ShipmentRetrieveResponse) v1RetrieveResponse.getEntity();
                                 var shipment = shipmentDao.findByGuid(shipmentRetrieveResponse.getGuid());
                                 if (shipment.isPresent())
-                                    customerBookingResponse.setShipmentEntityIdV2(shipment.get().getId().toString());
+                                    customerBookingResponse.setShipmentEntityIdV2(StringUtility.convertToString(shipment.get().getId()));
                             }
                         } else {
                             var shipment = shipmentDao.findByGuid(UUID.fromString(customerBooking.getShipmentGuid()));
                             if (shipment.isPresent())
-                                customerBookingResponse.setShipmentEntityIdV2(shipment.get().getId().toString());
+                                customerBookingResponse.setShipmentEntityIdV2(StringUtility.convertToString(shipment.get().getId()));
                         }
                     }
                 } else {
@@ -1134,17 +1123,14 @@ public class CustomerBookingService implements ICustomerBookingService {
                             ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
                             if (shipmentBillingListResponse.getData() != null && !shipmentBillingListResponse.getData().isEmpty()) {
                                 ShipmentBillingListResponse.BillingData billingData = shipmentBillingListResponse.getData().get(customerBookingResponse.getShipmentGuid());
-                                customerBookingResponse.setShipmentEntityId(billingData.getId() != null ? billingData.getId().toString() : null);
+                                customerBookingResponse.setShipmentEntityId(StringUtility.convertToString(billingData.getId()));
                             }
                         }
                     }
                 }
             }
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, vesselsFuture, carrierFuture, containerTypeFuture, chargeTypeFuture).join();
-            double _timeTaken = System.currentTimeMillis() - _start;
-            log.info("Time taken to fetch Master-data from V1: {} ms. || RequestId: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
-            if (_timeTaken > 300)
-                log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_COMPLETE_MASTER_DATA_FETCH, _timeTaken);
+            log.info("Time taken to fetch Master-data from V1: {} ms. || RequestId: {}", System.currentTimeMillis() - _start, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", customerBooking.getBookingNumber(), ex.getMessage());
         }
