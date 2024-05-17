@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
@@ -74,6 +75,8 @@ public class ShipmentController {
     IOrderManagementAdapter orderManagementAdapter;
     @Autowired
     IConsolidationService consolidationService;
+    @Autowired
+    IDateTimeChangeLogService dateTimeChangeLogService;
 
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List", response = RunnerListResponse.class)})
@@ -533,6 +536,15 @@ public class ShipmentController {
     public ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(@RequestBody CheckCreditLimitFromV1Request request) {
         try {
             return shipmentService.checkCreditLimitFromV1(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @GetMapping(value = "/get/dateTimeChanges")
+    public ResponseEntity<IRunnerResponse> getDateTimeChanges() {
+        try {
+            return dateTimeChangeLogService.getDateTimeChangeLog(null);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
