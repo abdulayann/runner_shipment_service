@@ -208,25 +208,22 @@ public class AwbService implements IAwbService {
     public ResponseEntity<IRunnerResponse> updateAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         AwbRequest request = (AwbRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.error("Request is empty for AWB update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-
-        if (request.getId() == null) {
-            log.error("Request Id is null for AWB update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        long id = request.getId();
-        Optional<Awb> oldEntity = awbDao.findById(id);
-        if (!oldEntity.isPresent()) {
-            log.debug(AwbConstants.AWB_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-
 
         Awb awb = convertRequestToEntity(request);
         awb.setAwbNumber(awb.getAwbShipmentInfo().getAwbNumber());
 
         try {
+            if (request.getId() == null) {
+                log.error("Request Id is null for AWB update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Request Id can't be null");
+            }
+            long id = request.getId();
+            Optional<Awb> oldEntity = awbDao.findById(id);
+            if (!oldEntity.isPresent()) {
+                log.debug(AwbConstants.AWB_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
             if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
@@ -443,9 +440,6 @@ public class AwbService implements IAwbService {
         String responseMsg;
 
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.debug("Request is empty for MAWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
 
         if (request.getConsolidationId() == null) {
             log.error("Consolidation Id can't be null or empty in create MAWB Request");
@@ -2645,11 +2639,9 @@ public class AwbService implements IAwbService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error(AwbConstants.AWB_RETRIEVE_REQUEST_NULL_ERROR, LoggerHelper.getRequestIdFromMDC());
-            }
             if (request.getId() == null) {
                 log.error("Request Id is null for MAWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Request id can't be null");
             }
             long id = request.getId();
             List<Awb> awb = getLinkedAwbFromMawb(id);
