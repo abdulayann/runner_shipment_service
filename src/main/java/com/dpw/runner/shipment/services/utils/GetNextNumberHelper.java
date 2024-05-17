@@ -35,210 +35,198 @@ import java.util.regex.Pattern;
 @Component
 public class GetNextNumberHelper {
 
-  @Autowired
-  private IProductSequenceConfigDao productSequenceConfigDao;
+    @Autowired
+    private IProductSequenceConfigDao productSequenceConfigDao;
 
-  @Autowired
-  private IShipmentSettingsSync shipmentSettingsSync;
-  @Autowired
-  private V1AuthHelper v1AuthHelper;
+    @Autowired
+    private IShipmentSettingsSync shipmentSettingsSync;
+    @Autowired
+    private V1AuthHelper v1AuthHelper;
 
-  public String generateCustomSequence(
-      ProductSequenceConfig sequenceSettings,
-      String regexPattern,
-      int tenantId,
-      boolean updateCounter,
-      UsersDto user,
-      boolean updateBranchCode) throws RunnerException {
-    if (regexPattern.isEmpty()) {
-      throw new RunnerException("RegexExpression can't be empty or null");
-    }
-    // TODO revisit
-    int startPosition = regexPattern.indexOf("{");
-    String prefix =
-        startPosition == -1 ? regexPattern : regexPattern.substring(0, startPosition); // prefix
-    String suffix = "";
-    //        CompaniesRow companiesRow = null;
-    if (sequenceSettings.getGenerationType() == GenerationType.Regex) {
-      Pattern p = Pattern.compile("\\{([^}]*)\\}"); // original v1 regex @"(?<={)[\w;]{1,}(?=})"
-      Matcher matches = p.matcher(regexPattern);
-      var ValueOf = new HashMap<String, String>();
-      LocalDateTime currDate = LocalDateTime.now();
-
-      ValueOf.put(Constants.BRANCH, "BR"); // branch is not clear
-      ValueOf.put("dd", DateTimeFormatter.ofPattern("dd").format(currDate));
-      ValueOf.put("yy", Integer.valueOf(currDate.getYear()).toString().substring(2)); // last 2 digits
-      ValueOf.put("mm", padLeft(Integer.valueOf(currDate.getMonthValue()).toString(), 2, '0'));
-      ValueOf.put("yyyy", Integer.valueOf(currDate.getYear()).toString());
-      ValueOf.put("mon", currDate.getMonth().getDisplayName(TextStyle.SHORT, Locale.ROOT));
-      DateTimeFormatter df = DateTimeFormatter.ofPattern("MMMM");
-      // Format the date to get the month in "MMMM" format
-      String monthName = df.format(currDate);
-      ValueOf.put("month", monthName);
-      ValueOf.put("cc", ""); // Empty string
-      ValueOf.put("seq", ""); // Empty string
-
-      while (matches.find()) {
-        String word = matches.group(1);
-        List<String> wordSplit = List.of(word.split(";"));
-        if (ValueOf.get(wordSplit.get(0).toLowerCase()) == null) {
-          throw new ValidationException("CONFIGURED_SEQUENCE_REGEX_VALIDATION");
+    public String generateCustomSequence(ProductSequenceConfig sequenceSettings, String regexPattern, int tenantId,
+                                         boolean updateCounter, UsersDto user, boolean updateBranchCode) throws RunnerException {
+        if (regexPattern.isEmpty()) {
+            throw new RunnerException("RegexExpression can't be empty or null");
         }
-        if (wordSplit.size() > 1) {
-          if (wordSplit.get(0).equalsIgnoreCase("seq")) {
-            String resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
-            suffix += padLeft(
-                    GetNextRegexSequenceNumber(sequenceSettings, resetFreq),
-                    Integer.parseInt(wordSplit.get(1)),
-                    '0');
-          }
-          else
-            suffix += padLeft(
-                    ValueOf.get(wordSplit.get(0).toLowerCase()),
-                    Integer.parseInt(wordSplit.get(1)),
-                    '0');
+        int startPosition = regexPattern.indexOf("{");
+        String prefix =
+            startPosition == -1 ? regexPattern : regexPattern.substring(0, startPosition); // prefix
+        String suffix = "";
+        //        CompaniesRow companiesRow = null;
+        if (sequenceSettings.getGenerationType() == GenerationType.Regex) {
+            Pattern p = Pattern.compile("\\{([^}]*)\\}"); // original v1 regex @"(?<={)[\w;]{1,}(?=})"
+            Matcher matches = p.matcher(regexPattern);
+            var ValueOf = new HashMap<String, String>();
+            LocalDateTime currDate = LocalDateTime.now();
+
+            ValueOf.put(Constants.BRANCH, "BR"); // branch is not clear
+            ValueOf.put("dd", DateTimeFormatter.ofPattern("dd").format(currDate));
+            ValueOf.put("yy", Integer.valueOf(currDate.getYear()).toString().substring(2)); // last 2 digits
+            ValueOf.put("mm", padLeft(Integer.valueOf(currDate.getMonthValue()).toString(), 2, '0'));
+            ValueOf.put("yyyy", Integer.valueOf(currDate.getYear()).toString());
+            ValueOf.put("mon", currDate.getMonth().getDisplayName(TextStyle.SHORT, Locale.ROOT));
+            DateTimeFormatter df = DateTimeFormatter.ofPattern("MMMM");
+            // Format the date to get the month in "MMMM" format
+            String monthName = df.format(currDate);
+            ValueOf.put("month", monthName);
+            ValueOf.put("cc", ""); // Empty string
+            ValueOf.put("seq", ""); // Empty string
+
+            while (matches.find()) {
+                String word = matches.group(1);
+                List<String> wordSplit = List.of(word.split(";"));
+                if (ValueOf.get(wordSplit.get(0).toLowerCase()) == null) {
+                    throw new ValidationException("CONFIGURED_SEQUENCE_REGEX_VALIDATION");
+                }
+                if (wordSplit.size() > 1) {
+                    if (wordSplit.get(0).equalsIgnoreCase("seq")) {
+                        String resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
+                        suffix += padLeft(
+                            GetNextRegexSequenceNumber(sequenceSettings, resetFreq),
+                            Integer.parseInt(wordSplit.get(1)),
+                            '0');
+                    }
+                    else {
+                        suffix += padLeft(
+                            ValueOf.get(wordSplit.get(0).toLowerCase()),
+                            Integer.parseInt(wordSplit.get(1)),
+                            '0');
+                    }
+                }
+                // Ignoring this case for now TODO post clarification
+                //                else if (wordSplit.get(0).equalsIgnoreCase("cc")) {
+                //                    if (companiesRow == null && user != null && user.CompanyId != null)
+                //                    {
+                //                        companiesRow = uow.Connection.List<CompaniesRow>(new
+                // Criteria("Id").In(user.CompanyId)).FirstOrDefault();
+                //                        ValueOf["cc"] = companiesRow.Code;
+                //                    }
+                //                    suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
+                //                }
+                else if (updateBranchCode && wordSplit.get(0).equalsIgnoreCase(Constants.BRANCH)) {
+                    if (user != null) {
+                        ValueOf.put(Constants.BRANCH, user.getCode());
+                    }
+                    suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
+                }
+                else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
+            }
         }
-        // Ignoring this case for now TODO post clarification
-        //                else if (wordSplit.get(0).equalsIgnoreCase("cc")) {
-        //                    if (companiesRow == null && user != null && user.CompanyId != null)
-        //                    {
-        //                        companiesRow = uow.Connection.List<CompaniesRow>(new
-        // Criteria("Id").In(user.CompanyId)).FirstOrDefault();
-        //                        ValueOf["cc"] = companiesRow.Code;
-        //                    }
-        //                    suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
-        //                }
-        else if (updateBranchCode && wordSplit.get(0).equalsIgnoreCase(Constants.BRANCH)) {
-          if (user != null) {
-            ValueOf.put(Constants.BRANCH, user.getCode());
-          }
-          suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
+        else if (sequenceSettings.getGenerationType() == GenerationType.Random) {
+            suffix = StringUtility.getRandomString(10);
         }
-        else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
-      }
+        else if (sequenceSettings.getGenerationType() == GenerationType.Serial) {
+            suffix = sequenceSettings.getSerialCounter().toString();
+            sequenceSettings.setSerialCounter(sequenceSettings.getSerialCounter() + 1);
+        }
+        if (prefix.length() + suffix.length() > 50) {
+            throw new ValidationException("CONFIGURED_SEQUENCE_LENGTH_VALIDATION");
+        }
+        if (updateCounter) {
+            sequenceSettings = productSequenceConfigDao.save(sequenceSettings);
+            try {
+                shipmentSettingsSync.syncProductSequence(sequenceSettings, v1AuthHelper.getHeadersForDataSync());
+            } catch (Exception e) {
+                log.error("Error performing sync on shipment settings product sequence entity, {}", e);
+            }
+        }
+        return prefix + suffix;
     }
-    else if (sequenceSettings.getGenerationType() == GenerationType.Random) {
-      suffix = StringUtility.getRandomString(10);
+
+    public String GetNextRegexSequenceNumber(ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {
+        LocalDateTime seqStartTime = sequenceSettings.getSequenceStartTime();
+        boolean resetCounter = seqStartTime == null;
+        if (resetFreq.equalsIgnoreCase("daily")) {
+            LocalDateTime localTimeStart, localTimeNow;
+
+            String timeZoneId = UserContext.getUser().TimeZoneId;
+            if (timeZoneId == null || timeZoneId.isEmpty())
+                throw new RunnerException("TimeZoneId Required if resetFreq is Daily");
+
+            TimeZone localZone = TimeZone.getTimeZone(timeZoneId);
+            localTimeNow =
+                (LocalDateTime.now(Clock.systemUTC())).atZone(localZone.toZoneId()).toLocalDateTime();
+            localTimeStart =
+                sequenceSettings.getSequenceStartTime() != null
+                    ? sequenceSettings
+                          .getSequenceStartTime()
+                          .atZone(localZone.toZoneId())
+                          .toLocalDateTime()
+                    : localTimeNow;
+
+            if (localTimeStart.isBefore(localTimeNow)) resetCounter = true;
+        }
+        if (resetCounter) {
+            sequenceSettings.setSerialCounter(0);
+            sequenceSettings.setSequenceStartTime(LocalDateTime.now(Clock.systemUTC()));
+        }
+        sequenceSettings.setSerialCounter(sequenceSettings.getSerialCounter() + 1);
+        return sequenceSettings.getSerialCounter().toString();
     }
-    else if (sequenceSettings.getGenerationType() == GenerationType.Serial) {
-      suffix = sequenceSettings.getSerialCounter().toString();
-      sequenceSettings.setSerialCounter(sequenceSettings.getSerialCounter() + 1);
-    }
-    if (prefix.length() + suffix.length() > 50) {
-      throw new ValidationException("CONFIGURED_SEQUENCE_LENGTH_VALIDATION");
-    }
-    if (updateCounter) {
-      sequenceSettings = productSequenceConfigDao.save(sequenceSettings);
-      try {
-        shipmentSettingsSync.syncProductSequence(sequenceSettings, v1AuthHelper.getHeadersForDataSync());
-      } catch (Exception e) {
-        log.error("Error performing sync on shipment settings product sequence entity, {}", e);
-      }
-    }
-    return prefix + suffix;
-  }
 
-  public String GetNextRegexSequenceNumber(
-      ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {
-    LocalDateTime seqStartTime = sequenceSettings.getSequenceStartTime();
-    boolean resetCounter = seqStartTime == null;
-    if (resetFreq.equalsIgnoreCase("daily")) {
-      LocalDateTime localTimeStart, localTimeNow;
+    public ProductSequenceConfig getProductSequence(Long productId, ProductProcessTypes processType) {
+        FilterCriteria entityIdCriteria =
+            FilterCriteria.builder()
+                .innerFilter(
+                    Arrays.asList(
+                        FilterCriteria.builder()
+                            .criteria(
+                                Criteria.builder()
+                                    .fieldName("tenantProductId")
+                                    .operator("=")
+                                    .value(productId)
+                                    .build())
+                            .build(),
+                        FilterCriteria.builder()
+                            .logicOperator("AND")
+                            .criteria(
+                                Criteria.builder()
+                                    .fieldName(Constants.PRODUCT_PROCESS_TYPES)
+                                    .operator("=")
+                                    .value(processType.toString())
+                                    .build())
+                            .build()))
+                .build();
 
-      /*var retreq = new RetrieveRequest();
-      retreq.EntityId = TenantId;
-      TenantsRow tenant = new TenantsRepository().GetTenantByTenantId(uow.Connection, TenantId);
-      String TimeZoneId = tenant.TimeZoneId;*/
+        ListCommonRequest listCommonRequest =
+            ListCommonRequest.builder()
+                .pageNo(1)
+                .pageSize(Integer.MAX_VALUE)
+                .filterCriteria(Collections.singletonList(entityIdCriteria))
+                .build();
 
-      String timeZoneId = UserContext.getUser().TimeZoneId;
-      if (timeZoneId == null || timeZoneId.isEmpty())
-        throw new RunnerException("TimeZoneId Required if resetFreq is Daily");
-
-      TimeZone localZone = TimeZone.getTimeZone(timeZoneId);
-      localTimeNow =
-          (LocalDateTime.now(Clock.systemUTC())).atZone(localZone.toZoneId()).toLocalDateTime();
-      localTimeStart =
-          sequenceSettings.getSequenceStartTime() != null
-              ? sequenceSettings
-                  .getSequenceStartTime()
-                  .atZone(localZone.toZoneId())
-                  .toLocalDateTime()
-              : localTimeNow;
-
-      if (localTimeStart.isBefore(localTimeNow)) resetCounter = true;
-    }
-    if (resetCounter) {
-      sequenceSettings.setSerialCounter(0);
-      sequenceSettings.setSequenceStartTime(LocalDateTime.now(Clock.systemUTC()));
-    }
-    sequenceSettings.setSerialCounter(sequenceSettings.getSerialCounter() + 1);
-    return sequenceSettings.getSerialCounter().toString();
-  }
-
-  // TODO criteria to find the Product sequence
-  public ProductSequenceConfig getProductSequence( Long productId, ProductProcessTypes processType) {
-    FilterCriteria entityIdCriteria =
-        FilterCriteria.builder()
-            .innerFilter(
-                Arrays.asList(
-                    FilterCriteria.builder()
-                        .criteria(
-                            Criteria.builder()
-                                .fieldName("tenantProductId")
-                                .operator("=")
-                                .value(productId)
-                                .build())
-                        .build(),
-                    FilterCriteria.builder()
-                        .logicOperator("AND")
-                        .criteria(
-                            Criteria.builder()
-                                .fieldName(Constants.PRODUCT_PROCESS_TYPES)
-                                .operator("=")
-                                .value(processType.toString())
-                                .build())
-                        .build()))
-            .build();
-
-    ListCommonRequest listCommonRequest =
-        ListCommonRequest.builder()
-            .pageNo(1)
-            .pageSize(Integer.MAX_VALUE)
-            .filterCriteria(Arrays.asList(entityIdCriteria))
-            .build();
-
-    Map<String, RunnerEntityMapping> tableNames =
-        Map.ofEntries(
-            Map.entry(
-                "tenantProductId",
-                RunnerEntityMapping.builder()
-                    .tableName("tenantProducts")
-                    .dataType(Long.class)
-                    .fieldName("id")
-                    .build()),
-            Map.entry(
+        Map<String, RunnerEntityMapping> tableNames =
+            Map.ofEntries(
+                Map.entry(
+                    "tenantProductId",
+                    RunnerEntityMapping.builder()
+                        .tableName("tenantProducts")
+                        .dataType(Long.class)
+                        .fieldName("id")
+                        .build()),
+                Map.entry(
                     Constants.PRODUCT_PROCESS_TYPES,
-                RunnerEntityMapping.builder()
-                    .tableName("ProductSequenceConfig")
-                    .dataType(ProductProcessTypes.class)
-                    .fieldName(Constants.PRODUCT_PROCESS_TYPES)
-                    .build()));
+                    RunnerEntityMapping.builder()
+                        .tableName("ProductSequenceConfig")
+                        .dataType(ProductProcessTypes.class)
+                        .fieldName(Constants.PRODUCT_PROCESS_TYPES)
+                        .build()));
 
-    Pair<Specification<ProductSequenceConfig>, Pageable> pair = DbAccessHelper.fetchData(listCommonRequest, ProductSequenceConfig.class, tableNames);
-    Page<ProductSequenceConfig> productSequenceConfigPage = productSequenceConfigDao.findAll(pair.getLeft(), pair.getRight());
-    return productSequenceConfigPage.getTotalElements() > 0 ? productSequenceConfigPage.getContent().get(0) : null;
-  }
-
-  public String padLeft(String input, int len, char c) {
-    if (input.length() >= len) {
-      return input;
+        Pair<Specification<ProductSequenceConfig>, Pageable> pair = DbAccessHelper.fetchData(listCommonRequest, ProductSequenceConfig.class, tableNames);
+        Page<ProductSequenceConfig> productSequenceConfigPage = productSequenceConfigDao.findAll(pair.getLeft(), pair.getRight());
+        return productSequenceConfigPage.getTotalElements() > 0 ? productSequenceConfigPage.getContent().get(0) : null;
     }
-    StringBuilder sb = new StringBuilder();
-    while (sb.length() < len - input.length()) {
-      sb.append(c);
-    }
-    sb.append(input);
 
-    return sb.toString();
-  }
+    public String padLeft(String input, int len, char c) {
+        if (input.length() >= len) {
+            return input;
+        }
+        StringBuilder sb = new StringBuilder();
+        while (sb.length() < len - input.length()) {
+            sb.append(c);
+        }
+        sb.append(input);
+
+        return sb.toString();
+    }
 }
