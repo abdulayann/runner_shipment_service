@@ -5,6 +5,7 @@ import java.security.SecureRandom;
 /**
  * this helper is used to implement all common methods in all projects like utils function
  */
+@Generated
 public class StringUtility {
     private StringUtility(){}
     public static final SecureRandom random = new SecureRandom();

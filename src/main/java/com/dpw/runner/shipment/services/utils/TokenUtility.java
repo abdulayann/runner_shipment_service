@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.text.ParseException;
 import java.util.Objects;
 
+@Generated
 @Component
 @Slf4j
 public class TokenUtility {
