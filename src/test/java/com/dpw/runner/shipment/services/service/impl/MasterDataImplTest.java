@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class MasterDataImplTest {
+class MasterDataImplTest {
 
     @Mock
     private MasterDataFactory masterDataFactory;
