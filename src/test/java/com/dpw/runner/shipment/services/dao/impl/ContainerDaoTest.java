@@ -346,4 +346,15 @@ class ContainerDaoTest {
         assertDoesNotThrow(() -> containerDao.findByConsolidationId(1L));
     }
 
+    @Test
+    void getAllContainers() {
+        assertDoesNotThrow(() -> containerDao.getAllContainers());
+    }
+
+    @Test
+    void updateEntityFromShipmentConsole() {
+        when(containerRepository.findAll(any(Specification.class), any(Pageable.class))).thenThrow(new RuntimeException());
+        assertThrows(RunnerException.class, () -> containerDao.updateEntityFromShipmentConsole(List.of(testContainer), 3L, null, true));
+    }
+
 }

@@ -11,7 +11,9 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.request.ContainerEventExcelModel;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -19,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -31,6 +34,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +42,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -54,10 +59,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -71,6 +73,12 @@ import static org.mockito.Mockito.*;
 class ContainerServiceTest {
 
     @Mock
+    private CommonUtils commonUtils;
+
+    @Mock
+    private ConsolidationService consolidationService;
+
+    @Mock
     private IContainersSync containersSync;
 
     @Mock
@@ -78,6 +86,9 @@ class ContainerServiceTest {
 
     @Mock
     private CSVParsingUtil parser;
+
+    @Mock
+    private CSVParsingUtil newParser;
 
     @Mock
     private ICustomerBookingDao customerBookingDao;
@@ -1052,14 +1063,244 @@ class ContainerServiceTest {
     }
 
     @Test
-    void uploadContainers() throws Exception{
+    void uploadContainers_NullReq() throws Exception {
+        assertThrows(ValidationException.class, () -> containerService.uploadContainers(null));
+    }
+
+    @Test
+    void uploadContainers_NullConsoleId() throws Exception {
+        BulkUploadRequest request = new BulkUploadRequest();
+        assertThrows(ValidationException.class, () -> containerService.uploadContainers(request));
+    }
+
+    @Test
+    void uploadContainers_OwnContAndShipperOwnTrue() throws Exception{
         BulkUploadRequest request = new BulkUploadRequest();
         request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setIsOwnContainer(true);
+        testContainer.setIsShipperOwned(true);
+        testContainer.setHazardous(true);
+        testContainer.setIsPart(true);
+        testContainer.setContainerStuffingLocation("unloc");
+        testContainer.setHazardousUn("hzUn");
+        testContainer.setCommodityCode("680510");
+        testContainer.setHandlingInfo("handlingInfo");
+        testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setChargeable(new BigDecimal(3453));
+        testContainer.setGrossVolume(new BigDecimal(432));
+        testContainer.setDgClass("dgClass");
         when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
-        when(parser.parseExcelFile(any(), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(List.of(testContainer));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    return List.of(testContainer);
+                });
+        assertThrows(ValidationException.class, () -> containerService.uploadContainers(request));
+    }
+
+    @Test
+    void uploadContainers_DgClassInvalid() throws Exception{
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setIsOwnContainer(true);
+        testContainer.setIsShipperOwned(false);
+        testContainer.setHazardous(true);
+        testContainer.setHazardousUn("hzUn");
+        testContainer.setCommodityCode("680510");
+        testContainer.setHandlingInfo("handlingInfo");
+        testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setChargeable(new BigDecimal(3453));
+        testContainer.setGrossVolume(new BigDecimal(432));
+        testContainer.setIsPart(false);
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    testContainer.setContainerNumber("MSKU00000");
+                    return List.of(testContainer);
+                });
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
+        assertThrows(ValidationException.class, () -> containerService.uploadContainers(request));
+    }
+
+    @Test
+    void uploadContainers_ContNumAndCountInvalid() throws Exception{
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setIsOwnContainer(true);
+        testContainer.setIsShipperOwned(false);
+        testContainer.setHazardous(true);
+        testContainer.setIsPart(true);
+        testContainer.setContainerStuffingLocation("unloc");
+        testContainer.setHazardousUn("hzUn");
+        testContainer.setCommodityCode("680510");
+        testContainer.setHandlingInfo("handlingInfo");
+        testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setChargeable(new BigDecimal(3453));
+        testContainer.setGrossVolume(new BigDecimal(432));
+        testContainer.setDgClass("dgClass");
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    return List.of(testContainer);
+                });
+        assertThrows(ValidationException.class, () -> containerService.uploadContainers(request));
+    }
+
+    @Test
+    void uploadContainers_SEA() throws Exception{
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setIsOwnContainer(true);
+        testContainer.setIsShipperOwned(false);
+        testContainer.setHazardous(true);
+        testContainer.setIsPart(true);
+        testContainer.setContainerStuffingLocation("unloc");
+        testContainer.setHazardousUn("hzUn");
+        testContainer.setCommodityCode("680510");
+        testContainer.setHandlingInfo("handlingInfo");
+        testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setChargeable(new BigDecimal(3453));
+        testContainer.setGrossVolume(new BigDecimal(432));
+        testContainer.setDgClass("dgClass");
+        testContainer.setContainerCount(1L);
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    return List.of(testContainer);
+                });
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
         when(containerSync.sync(any(), any(), any())).thenAnswer(invocation -> {return new ResponseEntity<>(HttpStatus.OK);});
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
+    }
+
+    @Test
+    void uploadContainers_AIR() throws Exception{
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setIsOwnContainer(true);
+        testContainer.setIsShipperOwned(false);
+        testContainer.setHazardous(true);
+        testContainer.setIsPart(true);
+        testContainer.setContainerStuffingLocation("unloc");
+        testContainer.setHazardousUn("hzUn");
+        testContainer.setCommodityCode("680510");
+        testContainer.setHandlingInfo("handlingInfo");
+        testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setChargeable(new BigDecimal(3453));
+        testContainer.setGrossVolume(new BigDecimal(432));
+        testContainer.setDgClass("dgClass");
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                   return List.of(testContainer);
+                });
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        when(containerSync.sync(any(), any(), any())).thenAnswer(invocation -> {return new ResponseEntity<>(HttpStatus.OK);});
+        assertDoesNotThrow(() -> containerService.uploadContainers(request));
+    }
+
+    @Test
+    void downloadContainers() throws RunnerException{
+        HttpServletResponse response = new MockHttpServletResponse();
+        BulkDownloadRequest request = new BulkDownloadRequest();
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        request.setConsolidationId("3");
+        request.setShipmentId("6");
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+//        when(shipmentsContainersMappingDao.findByShipmentId(any()))
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getTestConsolidation()));
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainersExcelModel.class)));
+        assertDoesNotThrow(() -> containerService.downloadContainers(response, request));
+    }
+
+    @Test
+    void downloadContainerEvents() throws Exception {
+        HttpServletResponse response = new MockHttpServletResponse();
+        BulkDownloadRequest request = new BulkDownloadRequest();
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        request.setConsolidationId("3");
+        request.setShipmentId("6");
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        when(commonUtils.convertToList(any(), eq(ContainerEventExcelModel.class))).thenReturn(List.of(objectMapper.convertValue(jsonTestUtility.getTestEventData(), ContainerEventExcelModel.class)));
+        assertDoesNotThrow(() -> containerService.downloadContainerEvents(response, request));
+    }
+
+    @Test
+    void uploadContainerEvents() throws Exception {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(4L);
+        when(newParser.parseExcelFile(any(), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(List.of(jsonTestUtility.getTestEventData()));
+        assertDoesNotThrow(() -> containerService.uploadContainerEvents(request));
+    }
+
+    @Test
+    void uploadContainerEvents_Failure() throws Exception {
+        assertThrows(ValidationException.class, () -> containerService.uploadContainerEvents(null));
+    }
+
+    @Test
+    void uploadContainerEvents_Failure_NullId() throws Exception {
+        BulkUploadRequest request = new BulkUploadRequest();
+        assertThrows(ValidationException.class, () -> containerService.uploadContainerEvents(request));
     }
 
 }

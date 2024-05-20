@@ -193,11 +193,9 @@ public class ContainerService implements IContainerService {
         Map<UUID, Containers> containerMap = new HashMap<>();
         Map<String, UUID> containerNumbersSet = new HashMap<>();
         Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
-        if(request.getConsolidationId() != null) {
             List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
             containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
             containerNumbersSet = consolContainers.stream().filter(Objects::nonNull).filter(c -> c.getContainerNumber() != null).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getGuid));
-        }
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
         List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
@@ -251,7 +249,7 @@ public class ContainerService implements IContainerService {
     }
 
     private void isPartValidation(BulkUploadRequest request, Containers containersRow) {
-        Boolean isPartValue = containersRow.getIsPart() == null ? false : containersRow.getIsPart();
+        boolean isPartValue = containersRow.getIsPart() != null && containersRow.getIsPart();
         if (isPartValue) {
             var shipmentRecordOpt = shipmentDao.findById(request.getShipmentId());
             if (shipmentRecordOpt.isPresent() && Constants.CARGO_TYPE_FCL.equals(shipmentRecordOpt.get().getShipmentType()) && isPartValue) {
@@ -339,7 +337,7 @@ public class ContainerService implements IContainerService {
             if (vwob.getChargeable() != null) {
                 calculatedChargeable = vwob.getChargeable();
                 calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
-                if (calculatedChargeable != actualChargeable) {
+                if (!Objects.equals(calculatedChargeable, actualChargeable)) {
                     throw new ValidationException("Chargeable is invalid at row: " + row);
                 }
             }
@@ -533,36 +531,6 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private void ColumnsToIgnore(Map<String, Field> fieldNameMap, BulkDownloadRequest request) {
-        if(request.isExport()){
-            for(var field : Constants.ColumnsToBeDeletedForExport) {
-                if (fieldNameMap.containsKey(field)) {
-                    fieldNameMap.remove(field);
-                }
-            }
-        } else {
-            for (var field : Constants.ColumnsToBeDeleted) {
-                if (fieldNameMap.containsKey(field)) {
-                    fieldNameMap.remove(field);
-                }
-            }
-
-            if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)){
-                for (var field : Constants.ColumnsToBeDeletedForCargo) {
-                    if (fieldNameMap.containsKey(field)) {
-                        fieldNameMap.remove(field);
-                    }
-                }
-            } else if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
-            || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RF) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RAI)) {
-                for (var field : Constants.ColumnsToBeDeletedForContainer) {
-                    if (fieldNameMap.containsKey(field)) {
-                        fieldNameMap.remove(field);
-                    }
-                }
-            }
-        }
-    }
     private List<Field> reorderFields(Map<String, Field> fieldNameMap, List<String> columnsName) {
         List<Field> fields = new ArrayList<>();
         for(var field: columnsName){

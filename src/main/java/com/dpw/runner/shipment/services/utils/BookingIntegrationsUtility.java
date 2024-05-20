@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 @EnableAsync(proxyTargetClass = true)
+@Generated
 public class BookingIntegrationsUtility {
 
     @Autowired

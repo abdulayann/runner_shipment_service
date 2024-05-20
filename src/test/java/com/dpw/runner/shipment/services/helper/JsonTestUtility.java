@@ -224,6 +224,13 @@ public class JsonTestUtility {
     public AirMessagingLogs getTestAirMessagingLogs () {
         return objectMapper.convertValue(payload.get("AIR_MESSAGING_LOGS"), AirMessagingLogs.class);
     }
+    public ShipmentsContainersMapping getTestShipmentsContainersMapping() {
+        return objectMapper.convertValue(payload.get("SHIPMENTS_CONTAINERS_MAPPING"), ShipmentsContainersMapping.class);
+    }
+
+    public TenantProducts getTenantProducts() {
+        return objectMapper.convertValue(payload.get("TENANT_PRODUCT"), TenantProducts.class);
+    }
 
     public ConsolidationDetails getCompleteConsolidation() {
         return objectMapper.convertValue(payload.get("COMPLETE_CONSOLIDATION"), ConsolidationDetails.class);

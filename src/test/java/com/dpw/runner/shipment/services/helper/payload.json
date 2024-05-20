@@ -1805,8 +1805,8 @@
       "ItemDescription": "Partial Collect Credit — Partial Prepaid Cash",
       "ValuenDesc": "CA (Partial Collect Credit — Partial Prepaid Cash)",
       "Identifier1": "false",
-      "Identifier2": "true",
-      "Identifier3": "true",
+      "Identifier2": "false",
+      "Identifier3": "false",
       "Identifier4": "false",
       "TenantId": 1,
       "IsActive": 1,
@@ -2787,7 +2787,8 @@
   "MasterDataMapWithSameCommodity": {
     "WeightUnit": ["KG"],
     "CommodityCodes": ["680510"],
-    "DGClass": ["dgClass"]
+    "DGClass": ["dgClass"],
+    "Unlocations": ["unloc"]
   },
   "dgSubstanceContactMap": {
     "1436": "23"
@@ -9784,5 +9785,31 @@
     "OrgReceivables": true,
     "label": "ADVIK AUTOCOMP PRIVATE LIMITED\nPlot No B5, ADVIK AUTOCOMP PRIVATE LIMITED, Phase II, MIDC Chakan, Vasuli, Chakan, PUNE, MH\nIND, 410501\n",
     "value": "FRDO0005605"
+  },
+  "SHIPMENTS_CONTAINERS_MAPPING": {
+    "id": 1,
+    "guid": "89154a0d-6429-4f12-9fe5-4ff7260f11a2",
+    "containerId": 12,
+    "shipmentId": 31,
+    "createdAt": "2024-05-06 12:07:51",
+    "updateAt": "2024-01-31 13:57:57",
+    "createdBy": "dpwcanuser",
+    "isDeleted": false
+  },
+  "TENANT_PRODUCT": {
+    "id": "186",
+    "created_at": "2023-11-06 05:29:28.19556",
+    "created_by": "dpwcanuser",
+    "guid": "9309408e-42de-4add-b195-bacb188c88ee",
+    "updated_at": "2023-11-06 05:29:28.195561",
+    "updated_by": "dpwcanuser",
+    "tenant_id": "66",
+    "product_type": "54",
+    "alias": "All_Shipments",
+    "priority": "1",
+    "enabled": "True",
+    "enable_grouping": "False",
+    "shipment_settings_id": "1",
+    "is_deleted": "True"
   }
 }
