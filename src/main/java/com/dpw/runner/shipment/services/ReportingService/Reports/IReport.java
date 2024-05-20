@@ -1949,6 +1949,7 @@ public abstract class IReport {
 
     public List<ShipmentAndContainerResponse> getShipmentAndContainerResponse(List<ShipmentModel> shipments) {
         List<ShipmentAndContainerResponse> shipmentContainers = new ArrayList<>();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         if(shipments == null)
             return shipmentContainers;
 
@@ -1960,9 +1961,9 @@ public abstract class IReport {
             shipmentContainer.houseBill = shipment.getHouseBill();
             shipmentContainer.masterBill = shipment.getMasterBill();
             shipmentContainer.description = StringUtility.toUpperCase(shipment.getGoodsDescription());
-            shipmentContainer.weight = addCommas(StringUtility.convertToString(shipment.getWeight()));
-            shipmentContainer.volume = addCommas(StringUtility.convertToString(shipment.getVolume()));
-            shipmentContainer.packs = addCommaWithoutDecimal(BigDecimal.valueOf(shipment.getNoOfPacks() != null ? shipment.getNoOfPacks() : 0));
+            shipmentContainer.weight = ConvertToWeightNumberFormat(StringUtility.convertToString(shipment.getWeight()), v1TenantSettingsResponse);
+            shipmentContainer.volume = ConvertToVolumeNumberFormat(StringUtility.convertToString(shipment.getVolume()), v1TenantSettingsResponse);
+            shipmentContainer.packs = GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks() != null ? shipment.getNoOfPacks() : 0), 0, v1TenantSettingsResponse);
             shipmentContainer.packsUnit = StringUtility.convertToString(shipment.getPacksUnit());
             shipmentContainer.weightUnit = StringUtility.convertToString(shipment.getWeightUnit());
             shipmentContainer.volumeUnit = StringUtility.convertToString(shipment.getVolumeUnit());
