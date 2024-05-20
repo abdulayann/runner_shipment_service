@@ -1,0 +1,1 @@
+update shipment_details set [status] = 0, updated_at = now() where id = 161 and tenant_id = 459
