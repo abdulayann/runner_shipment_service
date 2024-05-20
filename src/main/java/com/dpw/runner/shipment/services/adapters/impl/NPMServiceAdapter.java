@@ -158,7 +158,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             if(response.getBody() != null)
             {
                 mapContractToShipment(shipmentDetailsResponse, response.getBody());
-                shipmentService.fetchAllMasterDataByKey(null, shipmentDetailsResponse);
+                var masterData = shipmentService.fetchAllMasterDataByKey(null, shipmentDetailsResponse);
+                shipmentDetailsResponse.setMasterDataMap(masterData);
             }
             return ResponseHelper.buildDependentServiceResponse(shipmentDetailsResponse,0,0);
         } catch (HttpStatusCodeException ex) {
