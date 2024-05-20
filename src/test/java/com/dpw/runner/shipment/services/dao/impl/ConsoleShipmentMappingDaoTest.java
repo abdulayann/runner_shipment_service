@@ -37,7 +37,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class ConsoleShipmentMappingDaoTest {
+class ConsoleShipmentMappingDaoTest {
 
     @Mock
     private IConsoleShipmentsMappingRepository consoleShipmentsMappingRepository;

@@ -42,7 +42,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class BookingChargesDaoTest {
+class BookingChargesDaoTest {
 
     @Mock
     private IBookingChargesRepository bookingChargesRepository;
