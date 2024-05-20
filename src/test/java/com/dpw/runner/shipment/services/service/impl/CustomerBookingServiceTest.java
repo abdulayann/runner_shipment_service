@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -14,14 +15,11 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.request.BookingChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditBalanceFusionResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
@@ -39,25 +37,20 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.poi.sl.draw.geom.GuideIf;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -258,7 +251,14 @@ class CustomerBookingServiceTest {
         PlatformToRunnerCustomerBookingRequest request = new PlatformToRunnerCustomerBookingRequest();
         var container = BookingContainerRequest.builder().containerCode("20FR").containerCount(12L).commodityGroup("FAK").build();
         container.setGuid(UUID.randomUUID());
-
+        var addressDataMap = customerBooking.getCustomer().getAddressData();
+        var orgDataMap = customerBooking.getCustomer().getOrgData();
+        addressDataMap.put(PartiesConstants.ADDRESS2, "delhi");
+        addressDataMap.put(PartiesConstants.CITY, "New Delhi");
+        addressDataMap.put(PartiesConstants.STATE, "New Delhi");
+        addressDataMap.put(PartiesConstants.ZIP_POST_CODE, "110011");
+        addressDataMap.put(PartiesConstants.MOBILE, "9871413293");
+        addressDataMap.put(PartiesConstants.PHONE, "01198765432");
         var containersList = List.of(
                 BookingContainerRequest.builder().containerCode("20GP").containerCount(1L).commodityGroup("FAK").runner_guid(UUID.randomUUID()).build(),
                 BookingContainerRequest.builder().containerCode("20FR").containerCount(12L).commodityGroup("FAK").build(),
@@ -277,11 +277,26 @@ class CustomerBookingServiceTest {
                 BookingRoutingsRequest.builder().reference_id(UUID.randomUUID().toString()).carrier("APLU").build(),
                 route
         );
+        var chargesList = List.of(
+                PlatformBookingChargesRequest.builder()
+                        .creditor(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build())
+                        .debtor(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build())
+                        .build()
+        );
         request.setContainersList(containersList);
         request.setPackingList(packingList);
         request.setRoutingList(routingList);
-        request.setBookingCharges(List.of());
+        request.setBookingCharges(chargesList);
         request.setVessel("Vessel");
+        request.setIsSingleUsageContract(true);
+        request.setIsConsignorFreeText(true);
+        request.setIsConsigneeFreeText(true);
+        request.setIsNotifyPartyFreeText(true);
+        request.setCustomer(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").build());
+        request.setConsignee(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+        request.setConsignee(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+        request.setNotifyParty(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
@@ -461,7 +476,7 @@ class CustomerBookingServiceTest {
 
     }
 
-    //@Test
+    @Test
     void testCreateGeneratesBookingNumberForCreateCompleteRequest() throws RunnerException {
         CustomerBookingRequest request = customerBookingRequest;
 
@@ -473,10 +488,6 @@ class CustomerBookingServiceTest {
         when(customerBookingDao.save(any())).thenReturn(customerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(bookingCharge);
-        //mockStatic(CommonUtils.class);
-//        when(CommonUtils.convertToEntityList(anyList(), eq(Packing.class))).thenReturn(customerBooking.getPackingList());
-//        when(CommonUtils.convertToEntityList(anyList(), eq(Routings.class))).thenReturn(customerBooking.getRoutingList());
-//        when(CommonUtils.convertToEntityList(anyList(), eq(Containers.class))).thenReturn(customerBooking.getContainersList());
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(CommonRequestModel.buildRequest(request));
 
@@ -722,7 +733,7 @@ class CustomerBookingServiceTest {
     }
 
     @Test
-    void testCreateWithCompletePayload() throws RunnerException {
+    void testCreateWithCompletePayload() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         var inputCustomerBooking = customerBooking;
 
         var container = Containers.builder().build();
@@ -739,7 +750,7 @@ class CustomerBookingServiceTest {
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
-
+        doThrow(new RuntimeException()).when(auditLogService).addAuditLog(any());
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(CommonRequestModel.buildRequest(request));
 
@@ -966,6 +977,325 @@ class CustomerBookingServiceTest {
         when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testBookingUpdateNullRequest() {
+        // test
+        var t = assertThrows(Throwable.class, () -> customerBookingService.update(CommonRequestModel.builder().build()));
+        // assert
+        assertEquals(DataRetrievalFailureException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(DaoConstants.DAO_INVALID_REQUEST_MSG, t.getMessage());
+    }
+
+    @Test
+    void testBookingUpdateNullRequestId() {
+        // test
+        var t = assertThrows(Throwable.class, () -> customerBookingService.update(CommonRequestModel.builder().data(new CustomerBookingRequest()).build()));
+        // assert
+        assertEquals(DataRetrievalFailureException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(DaoConstants.DAO_INVALID_REQUEST_MSG, t.getMessage());
+    }
+
+    @Test
+    void testBookingUpdateWithIdDoesNotExists() {
+        // mock
+        when(customerBookingDao.findById(any())).thenReturn(Optional.empty());
+        // test
+        var t = assertThrows(Throwable.class, () -> customerBookingService.update(CommonRequestModel.builder().data(customerBookingRequest).build()));
+        // assert
+        assertEquals(DataRetrievalFailureException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, t.getMessage());
+    }
+
+    @Test
+    void testBookingUpdateWithReadyForShipment() {
+        var mockBookingEntity = customerBooking;
+        mockBookingEntity.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
+        // mock
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(mockBookingEntity));
+        // test
+        var t = assertThrows(Throwable.class, () -> customerBookingService.update(CommonRequestModel.builder().data(customerBookingRequest).build()));
+        // assert
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testBookingUpdateWithSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        var inputCustomerBooking = customerBooking;
+        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+
+        var container = Containers.builder().build();
+        container.setGuid(UUID.randomUUID());
+        inputCustomerBooking.setContainersList(
+                Arrays.asList(container)
+        );
+        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
+        request.getBookingCharges().get(0).setContainersUUID(List.of(container.getGuid()));
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
+        when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(new BookingCharges());
+        when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
+        doThrow(new RuntimeException()).when(auditLogService).addAuditLog(any());
+        // Test
+        var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testBookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .ShipmentServiceV2Enabled(true)
+                        .build()
+        );
+        var inputCustomerBooking = customerBooking;
+        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
+        request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
+        when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(new BookingCharges());
+        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
+        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().build()));
+        // Test
+        var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testBookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentDisabled() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .ShipmentServiceV2Enabled(false)
+                        .build()
+        );
+        var inputCustomerBooking = customerBooking;
+        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
+        request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
+        var mockV1ShipmentCreationResponse = new V1ShipmentCreationResponse();
+        mockV1ShipmentCreationResponse.setShipmentId("123");
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
+        when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(new BookingCharges());
+        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(jsonHelper.convertValue(any(), eq(V1ShipmentCreationResponse.class))).thenReturn(mockV1ShipmentCreationResponse);
+        when(bookingIntegrationsUtility.createShipmentInV1(any(), anyBoolean(), anyBoolean(), any(), any())).thenReturn(ResponseEntity.ok(mockV1ShipmentCreationResponse));
+        // Test
+        var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+
+    @Test
+    void testBookingUpdateWithSuccessCreateInPlatform() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        var inputCustomerBooking = customerBooking;
+        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
+        when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(new BookingCharges());
+        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(bookingChargesDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getBookingCharges());
+        // Test
+        var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testBookingUpdateWithSuccessUpdateInPlatform() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        var inputCustomerBooking = customerBooking;
+        inputCustomerBooking.setIsPlatformBookingCreated(true);
+        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
+        when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(new BookingCharges());
+        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(bookingChargesDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getBookingCharges());
+        // Test
+        var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testBookingUpdateWithUtilization() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
+        var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);;
+        oldCustomerBooking.setContractId("old");
+        newCustomerBooking.setContractId("new");
+        newCustomerBooking.setBookingStatus(BookingStatus.CANCELLED);
+        CustomerBookingRequest request = objectMapper.convertValue(newCustomerBooking, CustomerBookingRequest.class);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(newCustomerBooking, CustomerBookingResponse.class);
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(newCustomerBooking);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
+        when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(new BookingCharges());
+        when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        // Test
+        var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testBookingUpdateWithUtilization2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
+        var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);;
+        oldCustomerBooking.setContractId(null);
+        newCustomerBooking.setContractId("new");
+        CustomerBookingRequest request = objectMapper.convertValue(newCustomerBooking, CustomerBookingRequest.class);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(newCustomerBooking, CustomerBookingResponse.class);
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(newCustomerBooking);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
+        when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(new BookingCharges());
+        when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        // Test
+        var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testBookingUpdateWithUtilization3() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
+        var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
+        oldCustomerBooking.setContractId("old");
+        newCustomerBooking.setContractId(null);
+        CustomerBookingRequest request = objectMapper.convertValue(newCustomerBooking, CustomerBookingRequest.class);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(newCustomerBooking, CustomerBookingResponse.class);
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(newCustomerBooking);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
+        when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(new BookingCharges());
+        when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        // Test
+        var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testPlatformCreateBooking3() throws RunnerException {
+        PlatformToRunnerCustomerBookingRequest request = new PlatformToRunnerCustomerBookingRequest();
+        var container = BookingContainerRequest.builder().containerCode("20FR").containerCount(12L).commodityGroup("FAK").build();
+        container.setGuid(UUID.randomUUID());
+        var addressDataMap = customerBooking.getCustomer().getAddressData();
+        var orgDataMap = customerBooking.getCustomer().getOrgData();
+        var containersList = List.of(
+                BookingContainerRequest.builder().containerCode("20GP").containerCount(1L).commodityGroup("FAK").runner_guid(UUID.randomUUID()).build(),
+                BookingContainerRequest.builder().containerCode("20FR").containerCount(12L).commodityGroup("FAK").build(),
+                container
+        );
+        var pack = BookingPackingRequest.builder().dimensionUnit("M").isDimension(true).commodityGroup("FAK").build();
+        pack.setGuid(UUID.randomUUID());
+        var packingList = List.of(
+                BookingPackingRequest.builder().dimensionUnit("M").isDimension(true).commodityGroup("FAK").build(),
+                BookingPackingRequest.builder().dimensionUnit("M").isDimension(false).commodityGroup("FAK").build(),
+                pack
+        );
+        var route = BookingRoutingsRequest.builder().reference_id(UUID.randomUUID().toString()).carrier("UIHJK").build();
+        route.setGuid(UUID.randomUUID());
+        var routingList = List.of(
+                BookingRoutingsRequest.builder().reference_id(UUID.randomUUID().toString()).carrier("APLU").build(),
+                route
+        );
+        var chargesList = List.of(
+                PlatformBookingChargesRequest.builder()
+                        .creditor(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build())
+                        .debtor(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build())
+                        .build()
+        );
+        request.setContainersList(containersList);
+        request.setPackingList(packingList);
+        request.setRoutingList(routingList);
+
+        request.setBookingCharges(chargesList);
+        request.setCustomer(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").build());
+        request.setConsignee(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+        request.setConsignee(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+        request.setNotifyParty(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        customerBookingRequest.setContainersList(List.of(
+                ContainerRequest.builder().guid(UUID.randomUUID()).id(123L).containerCode("20GP").build(),
+                ContainerRequest.builder().guid(UUID.fromString("9f9c2d42-d479-44bf-8541-0029e498fc86")).build()
+        ));
+        customerBookingRequest.setPackingList(List.of(
+                PackingRequest.builder().guid(UUID.randomUUID()).build(),
+                PackingRequest.builder().guid(UUID.fromString("9f9c2d42-d479-44bf-8541-0029e498fc88")).build()
+        ));
+        customerBookingRequest.setRoutingList(List.of(
+                RoutingsRequest.builder().guid(UUID.randomUUID()).build(),
+                RoutingsRequest.builder().guid(UUID.fromString("2cc2e601-f931-4d75-8d16-178b1888ceb6")).build()
+        ));
+        customerBookingRequest.setBookingCharges(List.of(
+                BookingChargesRequest.builder().guid(UUID.randomUUID()).build(),
+                BookingChargesRequest.builder().guid(UUID.fromString("da0348c2-3cf4-46ef-a6d6-48db4dcef45b")).build()
+        ));
+
+        CustomerBooking customerBooking = objectMapper.convertValue(this.customerBooking, CustomerBooking.class);
+        customerBooking.setId(1L);
+        customerBooking.setGuid(UUID.randomUUID());
+        customerBooking.setBookingNumber("DBAR-5586091-311749");
+        customerBooking.setCarrierDetails(CarrierDetails.builder().build());
+        customerBooking.setIsConsigneeAddressFreeText(customerBooking.getIsConsigneeFreeText() != null && customerBooking.getIsConsigneeFreeText());
+        customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
+        customerBooking.setIsCustomerAddressFreeText(false);
+        customerBooking.setIsNotifyPartyAddressFreeText(customerBooking.getIsNotifyPartyFreeText() != null && customerBooking.getIsNotifyPartyFreeText());
+        customerBooking.setSource(BookingSource.Platform);
+        customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
+
+
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(customerBooking, CustomerBookingResponse.class);
+        // Mock
+        when(customerBookingDao.findByBookingNumber(any())).thenReturn(Optional.of(customerBooking));
+        when(modelMapper.map(any(), eq(CustomerBookingRequest.class))).thenReturn(customerBookingRequest);
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(customerBooking);
+        when(customerBookingDao.save(any())).thenReturn(customerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(new BookingCharges());
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.platformCreateBooking(commonRequestModel);
+
+        // Assert
+        verify(customerBookingDao, times(1)).save(customerBooking);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
 }

@@ -9369,7 +9369,12 @@
     "contractStatus": "SINGLE_USAGE",
     "source": "Platform",
     "businessCode": "ab2f6b79-0384-43b2-ba09-e6c38c1df6f6",
-    "containersList": [],
+    "containersList": [
+      {
+        "id": 2684,
+        "guid": "9f9c2d42-d479-44bf-8541-0029e498fc86"
+      }
+    ],
     "packingList": [
       {
         "id": 2684,
