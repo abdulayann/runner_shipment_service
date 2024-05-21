@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
+    private UUID guid;
     private Long shipmentId;
     private Long bookingId;
     private Long leg;

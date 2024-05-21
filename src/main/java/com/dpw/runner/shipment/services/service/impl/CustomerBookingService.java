@@ -264,14 +264,17 @@ public class CustomerBookingService implements ICustomerBookingService {
         // NPM update contract
         contractUtilisationForUpdate(customerBooking, oldEntity.get());
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
-        if (!Objects.isNull(customerBooking.getBusinessCode()) && !Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_KYC)
-                && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform) {
-            CustomerBooking finalCustomerBooking = customerBooking;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(finalCustomerBooking)), executorService);
-
-        } else if (isCreatedInPlatform) {
-            CustomerBooking finalCustomerBooking = customerBooking;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(finalCustomerBooking)), executorService);
+        try {
+            if (!Objects.isNull(customerBooking.getBusinessCode()) && !Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_KYC)
+                    && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform) {
+                CustomerBooking finalCustomerBooking = customerBooking;
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(finalCustomerBooking)), executorService);
+            } else if (isCreatedInPlatform) {
+                CustomerBooking finalCustomerBooking = customerBooking;
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(finalCustomerBooking)), executorService);
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
         }
 
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
@@ -324,17 +327,15 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBooking.setBookingCharges(bookingCharges);
         }
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
-            DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenantSettings();
-            V1TenantSettingsResponse tenantSettingsResponse = modelMapper.map(dependentServiceResponse.getData(), V1TenantSettingsResponse.class);
-            Boolean isShipmentV2 = tenantSettingsResponse.getShipmentServiceV2Enabled();
-            if(isShipmentV2)
+            V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+            if(Boolean.TRUE.equals(tenantSettingsResponse.getShipmentServiceV2Enabled()))
             {
                 ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
                 if(shipmentResponse != null) {
                     bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
                     customerBooking.setShipmentId(shipmentResponse.getShipmentId());
-                    customerBooking.setShipmentEntityIdV2(shipmentResponse.getId().toString());
-                    customerBooking.setShipmentGuid(shipmentResponse.getGuid().toString());
+                    customerBooking.setShipmentEntityIdV2(StringUtility.convertToString(shipmentResponse.getId()));
+                    customerBooking.setShipmentGuid(StringUtility.convertToString(shipmentResponse.getGuid()));
                     customerBooking.setShipmentCreatedDate(LocalDateTime.now());
                     customerBooking = customerBookingDao.save(customerBooking);
                 }
