@@ -139,6 +139,12 @@ public class HblReportTest {
         shipmentContainers.setNetWeight(BigDecimal.TEN);
         shipmentContainers.setNoOfPackages(10L);
         shipmentContainers.setContainerNumber("CONT000283");
+        shipmentContainers.setGrossVolume(BigDecimal.TEN);
+        shipmentContainers.setGrossVolumeUnit("M3");
+        shipmentContainers.setGrossWeight(BigDecimal.TEN);
+        shipmentContainers.setGrossWeightUnit("KG");
+        shipmentContainers.setPacksType("PKG");
+        shipmentContainers.setPacks("100");
         containerModelList.add(shipmentContainers);
         shipmentContainers = new ContainerModel();
         shipmentContainers.setContainerCount(1L);
@@ -146,6 +152,12 @@ public class HblReportTest {
         shipmentContainers.setNetWeight(BigDecimal.TEN);
         shipmentContainers.setNoOfPackages(10L);
         shipmentContainers.setContainerNumber("CONT000284");
+        shipmentContainers.setGrossVolume(BigDecimal.TEN);
+        shipmentContainers.setGrossVolumeUnit("M3");
+        shipmentContainers.setGrossWeight(BigDecimal.TEN);
+        shipmentContainers.setGrossWeightUnit("KG");
+        shipmentContainers.setPacksType("PKG");
+        shipmentContainers.setPacks("100");
         containerModelList.add(shipmentContainers);
         shipmentModel.setContainersList(containerModelList);
 
