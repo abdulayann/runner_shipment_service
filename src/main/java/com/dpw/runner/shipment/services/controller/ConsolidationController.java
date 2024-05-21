@@ -105,7 +105,7 @@ public class ConsolidationController {
     public ResponseEntity<IRunnerResponse> list(@RequestBody ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullConsolidation) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
-            if(getFullConsolidation != null && getFullConsolidation) {
+            if(Boolean.TRUE.equals(getFullConsolidation)) {
                 return consolidationService.fullConsolidationsList(CommonRequestModel.buildRequest(listCommonRequest));
             }
             return consolidationService.list(CommonRequestModel.buildRequest(listCommonRequest));
