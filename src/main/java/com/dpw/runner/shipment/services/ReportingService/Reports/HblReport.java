@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Component
 public class HblReport extends IReport{
@@ -181,7 +182,7 @@ public class HblReport extends IReport{
         hblModel.noofPackages = 0;
         if(hblModel.shipment.getContainersList() != null && hblModel.shipment.getContainersList().size() > 0) {
             for (ContainerModel container: hblModel.shipment.getContainersList()) {
-                hblModel.noofPackages = container.getNoOfPackages() != null ? container.getNoOfPackages() : 0 + hblModel.noofPackages;
+                hblModel.noofPackages = IsStringNullOrEmpty(container.getPacks()) ? 0 : Long.parseLong(container.getPacks()) + hblModel.noofPackages;
                 hblModel.setContainerCountGrouped(new HashMap<>());
                 hblModel.setContainerWeightGrouped(new HashMap<>());
                 hblModel.setContainerVolumeGrouped(new HashMap<>());

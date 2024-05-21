@@ -988,13 +988,8 @@ public class ShipmentService implements IShipmentService {
                 double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
                 totalWeight = totalWeight + wInDef;
                 tareWeight = tareWeight + tarDef;
-                double noOfPackages = 0;
-                if(containers.getNoOfPackages() != null)
-                    noOfPackages = containers.getNoOfPackages().doubleValue();
                 if(!IsStringNullOrEmpty(containers.getPacks()))
                     packageCount = packageCount + Long.parseLong(containers.getPacks());
-                else
-                    packageCount = packageCount + noOfPackages;
                 totalVolume = totalVolume + volume;
                 if(containers.getContainerCount() != null)
                     totalContainerCount = totalContainerCount + containers.getContainerCount();
@@ -1024,11 +1019,6 @@ public class ShipmentService implements IShipmentService {
             for (Containers container : containersList) {
                 if (!IsStringNullOrEmpty(container.getPacks())) {
                     packageCount = packageCount + Integer.parseInt(container.getPacks());
-                } else {
-                    if(container.getNoOfPackages() != null)
-                        packageCount = packageCount + container.getNoOfPackages();
-                }
-                if (!IsStringNullOrEmpty(container.getPacks())) {
                     totalPacks = totalPacks + Integer.parseInt(container.getPacks());
                 }
             };

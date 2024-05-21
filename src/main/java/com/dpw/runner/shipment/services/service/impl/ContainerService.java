@@ -164,7 +164,7 @@ public class ContainerService implements IContainerService {
     IPackingsSync packingsADSync;
     private List<String> columnsSequenceForExcelDownload = List.of(
             "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
-            "hblDeliveryMode", "containerNumber", "containerCount", "descriptionOfGoods", "handlingInfo", "noOfPackages",
+            "hblDeliveryMode", "containerNumber", "containerCount", "descriptionOfGoods", "handlingInfo",
             "hazardous", "dgClass", "hazardousUn", "packs", "packsType", "marksNums", "minTemp", "minTempUnit",
             "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "tareWeight", "tareWeightUnit", "grossVolume",
             "grossVolumeUnit", "measurement", "measurementUnit", "commodityCode", "hsCode", "customsReleaseCode",
@@ -1256,13 +1256,8 @@ public class ContainerService implements IContainerService {
                     double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
                     totalWeight = totalWeight + wInDef;
                     tareWeight = tareWeight + tarDef;
-                    double noOfPackages = 0;
-                    if(containers.getNoOfPackages() != null)
-                        noOfPackages = containers.getNoOfPackages().doubleValue();
                     if(!IsStringNullOrEmpty(containers.getPacks()))
                         packageCount = packageCount + Long.parseLong(containers.getPacks());
-                    else
-                        packageCount = packageCount + noOfPackages;
                     totalVolume = totalVolume + volume;
                     if(containers.getContainerCount() != null)
                         totalContainerCount = totalContainerCount + containers.getContainerCount();

@@ -23,6 +23,8 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 @Component
 public class ContainerManifestPrint extends IReport {
     @Autowired
@@ -96,7 +98,7 @@ public class ContainerManifestPrint extends IReport {
             totalPackages =
                     containersList.stream()
                             .filter(Objects::nonNull) // Filter out null values
-                            .map(c -> c.getNoOfPackages() != null ? c.getNoOfPackages() : 0)
+                            .map(c -> IsStringNullOrEmpty(c.getPacks()) ? 0 : Long.parseLong(c.getPacks()))
                             .reduce(Long::sum)
                             .orElse(0L); // Default value if the stream is empty
         }

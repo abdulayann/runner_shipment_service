@@ -15,7 +15,6 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -2431,10 +2430,6 @@ public class ConsolidationService implements IConsolidationService {
         try {
             finalContainer.setDescriptionOfGoods(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods()));
 //        finalContainer.setHa(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods())); TODO- missing handling info in containers
-            if(finalContainer.getNoOfPackages() != null && container.getNoOfPackages() != null)
-                finalContainer.setNoOfPackages(finalContainer.getNoOfPackages() + container.getNoOfPackages());
-            else if(container.getNoOfPackages() != null)
-                finalContainer.setNoOfPackages(container.getNoOfPackages());
             if(!IsStringNullOrEmpty(finalContainer.getPacks()) && !IsStringNullOrEmpty(container.getPacks()))
                 finalContainer.setPacks(String.valueOf(new BigDecimal(finalContainer.getPacks()).add(new BigDecimal(container.getPacks()))));
             else if(!IsStringNullOrEmpty(container.getPacks())) {

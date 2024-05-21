@@ -14,7 +14,10 @@ import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -148,7 +151,7 @@ public abstract class IReport {
         ShipmentContainers ship = new ShipmentContainers();
         ship.ContainerNumber = row.getContainerNumber();
         ship.SealNumber = StringUtility.isEmpty(row.getCarrierSealNumber()) ? row.getShipperSealNumber() : row.getCarrierSealNumber();
-        ship.NoofPackages = row.getNoOfPackages();
+        ship.NoofPackages = IsStringNullOrEmpty(row.getPacks()) ? null : Long.valueOf(row.getPacks());
         if(row.getPacks() != null && !row.getPacks().isEmpty())
             ship.ShipmentPacks = Long.valueOf(row.getPacks());
         ship.ShipmentPacksUnit = row.getPacksType();

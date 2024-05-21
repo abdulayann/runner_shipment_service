@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
@@ -343,7 +344,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                     .mode(container.getHblDeliveryMode())
                     .containerCount(container.getContainerCount())
                     .descriptionOfGoods(container.getDescriptionOfGoods())
-                    .noofPackages(container.getNoOfPackages())
+                    .noofPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()))
                     .netWeight(container.getNetWeight())
                     .netWeightUom(container.getNetWeightUnit())
                     .build();

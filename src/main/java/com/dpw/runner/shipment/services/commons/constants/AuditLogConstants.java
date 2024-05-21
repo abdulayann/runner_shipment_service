@@ -551,7 +551,6 @@ public class AuditLogConstants {
                 put(CONTAINER_CODE, "Container Code");
                 put("sealNumber", "Seal Number");
                 put("descriptionOfGoods", "Description Of Goods");
-                put("noOfPackages", "No Of Packages");
                 put(NET_WEIGHT, NET_WEIGHT_VAL);
                 put(NET_WEIGHT_UNIT, NET_WEIGHT_UNIT_VAL);
                 put("grossWeight", "Gross Weight");
