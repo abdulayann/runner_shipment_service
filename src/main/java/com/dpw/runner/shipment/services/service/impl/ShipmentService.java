@@ -1611,7 +1611,7 @@ public class ShipmentService implements IShipmentService {
             createShipmentRouteInConsole(shipmentRequest);
         }
         Hbl hbl = null;
-        if(updatedContainers.size() > 0) {
+        if(updatedContainers != null && updatedContainers.size() > 0) {
             hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
         }
         pushShipmentDataToDependentService(shipmentDetails, isCreate);
