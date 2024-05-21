@@ -14,10 +14,7 @@ import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
@@ -49,7 +46,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class TrackingServiceAdapterTest {
+class TrackingServiceAdapterTest {
 
     @Mock
     private ISBUtils sbUtils;
@@ -224,7 +221,9 @@ public class TrackingServiceAdapterTest {
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(new UnlocationsResponse()));
-        trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+        UniversalTrackingPayload response = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+        assertNotNull(response);
+        assertEquals("APL", response.getCarrier());
     }
 
     @Test
@@ -234,7 +233,9 @@ public class TrackingServiceAdapterTest {
         when(consolidationDao.findById(any())).thenReturn(Optional.empty());
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(new UnlocationsResponse()));
-        trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+        UniversalTrackingPayload response = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+        assertNotNull(response);
+        assertEquals("APL", response.getCarrier());
     }
 
     @Test
@@ -243,6 +244,8 @@ public class TrackingServiceAdapterTest {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         when(consolidationDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails)));
-        trackingServiceAdapter.getAllEvents(shipmentDetails, consolidationDetails, "refNum");
+        List<Events> events = trackingServiceAdapter.getAllEvents(shipmentDetails, consolidationDetails, "refNum");
+        assertNotNull(events);
+        assertEquals(new ArrayList<>(), events);
     }
 }
