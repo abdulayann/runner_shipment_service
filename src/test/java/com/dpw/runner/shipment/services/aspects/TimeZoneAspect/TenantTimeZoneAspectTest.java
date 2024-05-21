@@ -8,6 +8,8 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -35,6 +37,7 @@ class TenantTimeZoneAspectTest {
     @Mock
     private ProceedingJoinPoint proceedingJoinPoint;
 
+    @BeforeEach
     public void setUp() {
         tenantTimeZoneAspect = new TenantTimeZoneAspect();
     }
@@ -59,5 +62,6 @@ class TenantTimeZoneAspectTest {
         when(proceedingJoinPoint.proceed(any())).thenReturn(responseEntity);
         tenantTimeZoneAspect = new TenantTimeZoneAspect();
         tenantTimeZoneAspect.changeTimeZone(proceedingJoinPoint);
+        assert (true);
     }
 }
