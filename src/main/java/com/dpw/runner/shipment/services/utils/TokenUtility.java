@@ -31,7 +31,7 @@ public class TokenUtility {
         return claimsSet.getSubject();
     }
 
-    private void validateValidity(JWTClaimsSet claimsSet) throws BadJWTException {
+    public void validateValidity(JWTClaimsSet claimsSet) throws BadJWTException {
         DefaultJWTClaimsVerifier defaultJWTClaimsVerifier=new DefaultJWTClaimsVerifier(claimsSet,null);
         defaultJWTClaimsVerifier.verify(claimsSet,null);
     }
