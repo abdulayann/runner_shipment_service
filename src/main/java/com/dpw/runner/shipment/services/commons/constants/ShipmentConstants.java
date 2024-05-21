@@ -74,6 +74,7 @@ public class ShipmentConstants {
     public static final String CHECK_CREDIT_LIMIT_FROM_V1 = "/check-credit-limit";
     public static final String FETCH_CREDIT_LIMIT = "/creditLimit";
     public static final String FETCH_EMAILS = "/email";
+    public static final String GET_DATETIME_CHANGES = "/get/dateTimeChanges";
 
     public static final String SHIPMENT_CREATION = "SHPCR";
 

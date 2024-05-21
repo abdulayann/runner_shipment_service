@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
+import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -541,10 +542,11 @@ public class ShipmentController {
         }
     }
 
-    @GetMapping(value = "/get/dateTimeChanges")
-    public ResponseEntity<IRunnerResponse> getDateTimeChanges() {
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = UpstreamDateUpdateResponse.class)})
+    @GetMapping(value = ShipmentConstants.GET_DATETIME_CHANGES)
+    public ResponseEntity<IRunnerResponse> getDateTimeChanges(@RequestParam Long shipmentId) {
         try {
-            return dateTimeChangeLogService.getDateTimeChangeLog(null);
+            return shipmentService.getDateTimeChangeUpdates(shipmentId);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
