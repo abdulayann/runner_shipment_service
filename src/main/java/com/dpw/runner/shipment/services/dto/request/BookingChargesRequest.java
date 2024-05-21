@@ -19,6 +19,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class BookingChargesRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
+    private UUID guid;
     private Long bookingId;
     private String seqNo;
     private String chargeType;
