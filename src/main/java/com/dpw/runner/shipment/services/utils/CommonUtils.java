@@ -37,6 +37,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -412,6 +414,16 @@ public class CommonUtils {
     private ShipmentSettingsDetails getTenantSettings() {
         Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
         return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
+    }
+
+
+    public static boolean areTimeStampsEqual(LocalDateTime a, LocalDateTime b) {
+        if(a == null || b == null)
+            return false;
+        var res = a.truncatedTo(ChronoUnit.MINUTES).compareTo(b.truncatedTo(ChronoUnit.MINUTES));
+        if(res == 0)
+            return true;
+        return false;
     }
 
 }
