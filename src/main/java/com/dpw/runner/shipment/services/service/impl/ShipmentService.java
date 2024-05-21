@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
@@ -66,6 +67,7 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.runner.Runner;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,6 +91,7 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -264,6 +267,10 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private ProductIdentifierUtility productEngine;
+
+    @Autowired
+    private IDateTimeChangeLogService dateTimeChangeLogService;
+
     private SecureRandom rnd = new SecureRandom();
 
     @Autowired
@@ -4149,4 +4156,76 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildFailedResponse("Please send a valid doc type for check credit limit.");
         }
     }
+
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getDateTimeChangeUpdates(Long shipmentId) throws RunnerException {
+        if(Objects.isNull(shipmentId))
+            throw new RunnerException("shipment id can't be null");
+
+        Optional<ShipmentDetails> optional = shipmentDao.findById(shipmentId);
+        if(optional.isEmpty())
+            throw new RunnerException("No shipment present for provided id");
+
+        ShipmentDetails shipment = optional.get();
+        
+
+        // Replace w/ api call from trackingServiceAdapter
+        TrackingServiceApiResponse trackingResponse = trackingServiceAdapter.fetchTrackingData(
+            TrackingRequest.builder().referenceNumber(shipment.getShipmentId()).build());
+        trackingResponse.setContainers(List.of(TrackingServiceApiResponse.Container.builder()
+            .journey(new TrackingServiceApiResponse.Journey()).build()));
+
+        LocalDateTime trackingAta = null;
+        LocalDateTime trackingAtd = null;
+        LocalDateTime trackingEta = null;
+        LocalDateTime trackingEtd = null;
+
+        if(trackingResponse != null && trackingResponse.getContainers() != null && !trackingResponse.getContainers().isEmpty()
+            && trackingResponse.getContainers().get(0).getJourney() != null) {
+            trackingAta = Optional.ofNullable(trackingResponse.getContainers().get(0).getJourney().getPortOfArrivalAta()).map(i -> i.getDateTime()).orElse(null);
+            trackingAtd = Optional.ofNullable(trackingResponse.getContainers().get(0).getJourney().getPortOfDepartureAtd()).map(i -> i.getDateTime()).orElse(null);
+            trackingEta = Optional.ofNullable(trackingResponse.getContainers().get(0).getJourney().getPortOfArrivalEta()).map(i -> i.getDateTime()).orElse(null);
+            trackingEtd = Optional.ofNullable(trackingResponse.getContainers().get(0).getJourney().getPortOfDepartureEtd()).map(i -> i.getDateTime()).orElse(null);
+        }
+
+        List<DateTimeChangeLog> shipmentDateLogs = dateTimeChangeLogService.getDateTimeChangeLog(shipmentId);
+        Map<DateType, List<DateTimeChangeLog>> dateChangeLogMap = shipmentDateLogs.stream().collect(
+            Collectors.groupingBy(i -> i.getDateType())
+        );
+
+        UpstreamDateUpdateResponse upstreamDateUpdateResponse = new UpstreamDateUpdateResponse();
+
+        //ata
+        upstreamDateUpdateResponse.setAta(UpstreamDateUpdateResponse.DateAndLogResponse.builder().build());
+        var ataChangeLogsResponse = jsonHelper.convertValueToList(dateChangeLogMap.get(DateType.ATA), DateTimeChangeLogResponse.class);
+        upstreamDateUpdateResponse.getAta().setChangeLogs(ataChangeLogsResponse);
+        if(trackingAta != null && !CommonUtils.areTimeStampsEqual(trackingAta, shipment.getCarrierDetails().getAta())) {
+            upstreamDateUpdateResponse.getAta().setUpdatedDate(trackingAta);
+        }
+        //atd
+        upstreamDateUpdateResponse.setAtd(UpstreamDateUpdateResponse.DateAndLogResponse.builder().build());
+        var atdChangeLogsResponse = jsonHelper.convertValueToList(dateChangeLogMap.get(DateType.ATD), DateTimeChangeLogResponse.class);
+        upstreamDateUpdateResponse.getAtd().setChangeLogs(atdChangeLogsResponse);
+        if(trackingAtd != null && !CommonUtils.areTimeStampsEqual(trackingAtd, shipment.getCarrierDetails().getAtd())) {
+            upstreamDateUpdateResponse.getAtd().setUpdatedDate(trackingAtd);
+        }
+        //eta
+        upstreamDateUpdateResponse.setEta(UpstreamDateUpdateResponse.DateAndLogResponse.builder().build());
+        var etaChangeLogsResponse = jsonHelper.convertValueToList(dateChangeLogMap.get(DateType.ETA), DateTimeChangeLogResponse.class);
+        upstreamDateUpdateResponse.getEta().setChangeLogs(etaChangeLogsResponse);
+        if(trackingEta != null && !CommonUtils.areTimeStampsEqual(trackingEta, shipment.getCarrierDetails().getEta())) {
+             upstreamDateUpdateResponse.getEta().setUpdatedDate(trackingEta);
+        }
+        //etd
+        upstreamDateUpdateResponse.setEtd(UpstreamDateUpdateResponse.DateAndLogResponse.builder().build());
+        var etdChangeLogsResponse = jsonHelper.convertValueToList(dateChangeLogMap.get(DateType.ETD), DateTimeChangeLogResponse.class);
+        upstreamDateUpdateResponse.getEtd().setChangeLogs(etdChangeLogsResponse);
+        if(trackingEtd != null && !CommonUtils.areTimeStampsEqual(trackingEtd, shipment.getCarrierDetails().getEtd())) {
+            upstreamDateUpdateResponse.getEtd().setUpdatedDate(trackingEtd);
+        }
+
+        return ResponseHelper.buildSuccessResponse(upstreamDateUpdateResponse);
+    }
+
 }
