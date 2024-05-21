@@ -9764,7 +9764,8 @@
     "OrganizationCode": "FRC00003424",
     "Id": 24247,
     "value": "FRC00003424",
-    "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com"
+    "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+    "WhitelistedTenantGUID": "f5386934-d42a-448d-96e0-0eb273fd0f0e"
   },
   "ADDRESS_DATA": {
     "Id": 37709,
