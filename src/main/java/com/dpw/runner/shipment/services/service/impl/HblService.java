@@ -590,7 +590,7 @@ public class HblService implements IHblService {
             hblContainer.setGuid(container.getGuid());
             hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
             hblContainer.setSealNumber(container.getSealNumber());
-            hblContainer.setNoOfPackages(container.getNoOfPackages());
+            hblContainer.setNoOfPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()));
             hblContainer.setContainerGrossVolume(container.getGrossVolume());
             hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
             hblContainer.setContainerGrossWeight(container.getGrossWeight());
@@ -885,7 +885,7 @@ public class HblService implements IHblService {
                 hblContainer.setGuid(container.getGuid());
                 hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
                 hblContainer.setSealNumber(container.getSealNumber());
-                hblContainer.setNoOfPackages(container.getNoOfPackages());
+                hblContainer.setNoOfPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()));
                 hblContainer.setContainerGrossVolume(container.getGrossVolume());
                 hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
                 hblContainer.setContainerGrossWeight(container.getGrossWeight());

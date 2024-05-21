@@ -719,7 +719,6 @@ class ContainerServiceTest extends CommonMocks {
 
     @Test
     void calculateContainerSummary_Branches() throws RunnerException{
-        testContainer.setNoOfPackages(null);
         testContainer.setPacks(null);
         testContainer.setContainerCount(null);
         List<Containers> containersList = List.of(testContainer);

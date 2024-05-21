@@ -365,7 +365,7 @@ public class Constants {
     public static final String FAILURE_EXECUTING = "failure executing :(";
     public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
 
-    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,"noOfPackages",NET_WEIGHT,"netWeightUnit",
+    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
             GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
@@ -383,7 +383,7 @@ public class Constants {
             "deliveryAddress", "allocationDate", CREATED_BY, CREATED_AT, UPDATED_BY,
             UPDATED_AT, "eventsList", IS_DELETED, "truckingDetails");
 
-    public static final List<String> ColumnsToBeDeletedForCargo = List.of("sealNumber","noOfPackages", "isOwnContainer", "ownType", IS_DELETED,
+    public static final List<String> ColumnsToBeDeletedForCargo = List.of("sealNumber", "isOwnContainer", "ownType", IS_DELETED,
             "measurement","measurementUnit","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber",
             CONTAINER_CODE,"isReefer",CONTAINER_NUMBER,

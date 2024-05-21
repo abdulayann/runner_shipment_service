@@ -2482,10 +2482,6 @@ public class ConsolidationService implements IConsolidationService {
         try {
             finalContainer.setDescriptionOfGoods(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods()));
 //        finalContainer.setHa(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods())); TODO- missing handling info in containers
-            if(finalContainer.getNoOfPackages() != null && container.getNoOfPackages() != null)
-                finalContainer.setNoOfPackages(finalContainer.getNoOfPackages() + container.getNoOfPackages());
-            else if(container.getNoOfPackages() != null)
-                finalContainer.setNoOfPackages(container.getNoOfPackages());
             if(!IsStringNullOrEmpty(finalContainer.getPacks()) && !IsStringNullOrEmpty(container.getPacks()))
                 finalContainer.setPacks(String.valueOf(new BigDecimal(finalContainer.getPacks()).add(new BigDecimal(container.getPacks()))));
             else if(!IsStringNullOrEmpty(container.getPacks())) {
