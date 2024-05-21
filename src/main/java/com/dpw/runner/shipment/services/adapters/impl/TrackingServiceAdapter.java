@@ -350,7 +350,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                     .mode(container.getHblDeliveryMode())
                     .containerCount(container.getContainerCount())
                     .descriptionOfGoods(container.getDescriptionOfGoods())
-                    .noofPackages(container.getNoOfPackages())
+                    .noofPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()))
                     .netWeight(container.getNetWeight())
                     .netWeightUom(container.getNetWeightUnit())
                     .build();

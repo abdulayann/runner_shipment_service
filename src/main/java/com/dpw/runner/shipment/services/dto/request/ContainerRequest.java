@@ -29,7 +29,6 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String containerNumber;
     private String sealNumber;
     private String descriptionOfGoods;
-    private Long noOfPackages;
     private BigDecimal netWeight;
     private String netWeightUnit;
     private BigDecimal grossWeight;
