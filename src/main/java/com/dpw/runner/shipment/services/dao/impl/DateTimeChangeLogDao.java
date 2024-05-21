@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.repository.interfaces.IDateTimeChangeLog
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public class DateTimeChangeLogDao implements IDateTimeChangeLogDao {
 
@@ -25,5 +27,15 @@ public class DateTimeChangeLogDao implements IDateTimeChangeLogDao {
     @Override
     public void delete(DateTimeChangeLog dateTimeChangeLog) {
         dateTimeChangeLogRepository.delete(dateTimeChangeLog);
+    }
+
+    @Override
+    public List<DateTimeChangeLog> getLogsForShipmentId(Long shipmentId) {
+        return dateTimeChangeLogRepository.findByShipmentId(shipmentId);
+    }
+
+    @Override
+    public void deleteAll(List<DateTimeChangeLog> dateTimeChangeLogs) {
+        dateTimeChangeLogRepository.deleteAll(dateTimeChangeLogs);
     }
 }
