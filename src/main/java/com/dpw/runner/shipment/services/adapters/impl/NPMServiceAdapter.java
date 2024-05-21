@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -127,6 +128,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Autowired
     private ICustomerBookingDao customerBookingDao;
 
+    @Autowired
+    private IShipmentService shipmentService;
+
     @Override
     public ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
@@ -154,6 +158,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             if(response.getBody() != null)
             {
                 mapContractToShipment(shipmentDetailsResponse, response.getBody());
+                var masterData = shipmentService.fetchAllMasterDataByKey(null, shipmentDetailsResponse);
+                shipmentDetailsResponse.setMasterDataMap(masterData);
             }
             return ResponseHelper.buildDependentServiceResponse(shipmentDetailsResponse,0,0);
         } catch (HttpStatusCodeException ex) {
@@ -172,22 +178,6 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
             List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(listResponse,0,0);
-        } catch (HttpStatusCodeException ex) {
-            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
-        }
-    }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> fetchContractsTemp(CommonRequestModel commonRequestModel) throws RunnerException {
-        try {
-            ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
-            String url = npmBaseUrl + npmContracts;
-            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
-            ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
-            this.setOriginAndDestinationNameTemp(response.getBody());
-            return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));

@@ -185,4 +185,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private AwbStatus awbStatus;
 
     private String currentPartyForQuote;
+    private Map<String, Object> masterDataMap;
 }
