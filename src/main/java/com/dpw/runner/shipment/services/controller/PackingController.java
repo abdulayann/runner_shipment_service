@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.util.Objects;
 
 @Slf4j
 @SuppressWarnings(value = "ALL")
@@ -56,7 +57,7 @@ public class PackingController {
     })
     @PostMapping(ApiConstants.API_UPLOAD)
     public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
-        if (request.getFile().isEmpty()) {
+        if (Objects.isNull(request.getFile()) || request.getFile().isEmpty()) {
             return ResponseHelper.buildFailedResponse("No File Found !");
         }
 

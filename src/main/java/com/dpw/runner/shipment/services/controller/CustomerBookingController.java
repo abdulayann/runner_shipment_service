@@ -149,12 +149,8 @@ public class CustomerBookingController {
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     @PreAuthorize("hasAuthority('" + PermissionConstants.customerBookingView + "')")
     public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) {
-        double start = System.currentTimeMillis();
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         ResponseEntity<IRunnerResponse> response = customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
-        double timeTaken = System.currentTimeMillis() - start;
-        if (timeTaken > 500)
-            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_RETRIEVAL, timeTaken);
         return response;
     }
 
