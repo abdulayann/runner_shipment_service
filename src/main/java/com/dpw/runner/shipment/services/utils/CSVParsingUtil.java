@@ -222,10 +222,13 @@ public class CSVParsingUtil<T> {
                     }
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
-                if (dgSubstanceIdPos == -1) {
+                if (dgSubstanceIdPos != -1) {
                     try {
-                        Long dgSubstanceIdVal = Long.parseLong(getCellValueAsString(row.getCell(dgSubstanceIdPos)));
-                        dgSubstanceIdList.add(dgSubstanceIdVal);
+                        String dgSubstanceIdCell = getCellValueAsString(row.getCell(dgSubstanceIdPos));
+                        if(!StringUtils.isEmpty(dgSubstanceIdCell)) {
+                            Long dgSubstanceIdVal = Long.parseLong(dgSubstanceIdCell);
+                            dgSubstanceIdList.add(dgSubstanceIdVal);
+                        }
                     } catch (Exception ex) {
                         throw new ValidationException("DGSubstanceId is invalid at row: " + i);
                     }
@@ -632,12 +635,6 @@ public class CSVParsingUtil<T> {
             }
         }
 
-    }
-
-    private void checkForUnitValidationEvents(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode) {
-//        if (column.toLowerCase().contains()) {
-//TODO
-//        }
     }
 
     private void checkForUnitValidations(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode)
