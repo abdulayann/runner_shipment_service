@@ -151,4 +151,6 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String destinationContractType;
     private Boolean isAutoSellRequired;
     private List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsInstructions;
+
+    private UpstreamDateUpdateRequest dateUpdateRequest;
 }
