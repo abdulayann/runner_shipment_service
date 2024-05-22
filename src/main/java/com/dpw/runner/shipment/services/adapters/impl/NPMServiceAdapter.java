@@ -56,7 +56,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -297,36 +296,6 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
                 }
                 response.setUnlocMasterData(locationMap);
-            }
-        }
-    }
-
-    private void setOriginAndDestinationNameTemp(ListContractResponse response) {
-        Set<String> locCodes = new HashSet<>();
-        if(response != null && response.getContracts() != null  && !response.getContracts().isEmpty()) {
-            response.getContracts().forEach(cont -> {
-                locCodes.add(cont.getOrigin());
-                locCodes.add(cont.getDestination());
-            });
-            List<Object> criteria = Arrays.asList(
-                    Arrays.asList(LOCATIONS_REFERENCE_GUID),
-                    "In",
-                    Arrays.asList(locCodes)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
-                Map<String, String> locationMap = new HashMap<>();
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation.getName());
-                }
-                response.getContracts().forEach(cont -> {
-                    if(locationMap.containsKey(cont.getOrigin()))
-                        cont.setOrigin_name(locationMap.get(cont.getOrigin()));
-                    if(locationMap.containsKey(cont.getDestination()))
-                        cont.setDestination_name(locationMap.get(cont.getDestination()));
-                });
             }
         }
     }
@@ -733,7 +702,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             shipmentResponse.setContractId(contract.getContract_id());
             shipmentResponse.setContractType(contract.getContract_type());
             shipmentResponse.setCarrierDetails(createCarrierDetails(contract));
-            shipmentResponse.setShipmentType(contract.getLoad_types().get(0));
+            shipmentResponse.setShipmentType(contract.getLoad_types() != null && !contract.getLoad_types().isEmpty() ? contract.getLoad_types().get(0) : null);
             if(contract.getMeta() != null)
             {
                 shipmentResponse.setTransportMode(contract.getMeta().getMode_of_transport());
