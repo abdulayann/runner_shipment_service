@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -22,6 +23,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
@@ -123,9 +125,7 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private UnitConversionUtility unitConversionUtility;
-    @Lazy
-    @Autowired
-    private ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
 
@@ -208,25 +208,22 @@ public class AwbService implements IAwbService {
     public ResponseEntity<IRunnerResponse> updateAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         AwbRequest request = (AwbRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.error("Request is empty for AWB update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-
-        if (request.getId() == null) {
-            log.error("Request Id is null for AWB update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        long id = request.getId();
-        Optional<Awb> oldEntity = awbDao.findById(id);
-        if (!oldEntity.isPresent()) {
-            log.debug(AwbConstants.AWB_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-
 
         Awb awb = convertRequestToEntity(request);
         awb.setAwbNumber(awb.getAwbShipmentInfo().getAwbNumber());
 
         try {
+            if (request.getId() == null) {
+                log.error("Request Id is null for AWB update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Request Id can't be null");
+            }
+            long id = request.getId();
+            Optional<Awb> oldEntity = awbDao.findById(id);
+            if (!oldEntity.isPresent()) {
+                log.debug(AwbConstants.AWB_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
             if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
@@ -443,9 +440,6 @@ public class AwbService implements IAwbService {
         String responseMsg;
 
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.debug("Request is empty for MAWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
 
         if (request.getConsolidationId() == null) {
             log.error("Consolidation Id can't be null or empty in create MAWB Request");
@@ -765,9 +759,10 @@ public class AwbService implements IAwbService {
         // generate Awb Entity
 
         List<AwbSpecialHandlingCodesMappingInfo> sph = null;
-        if(!Strings.isNullOrEmpty(consolidationDetails.getEfreightStatus())
-                && (consolidationDetails.getEfreightStatus().equalsIgnoreCase("EAW")
-         || consolidationDetails.getEfreightStatus().equalsIgnoreCase("EAP"))) {
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && !Strings.isNullOrEmpty(consolidationDetails.getEfreightStatus())
+                && (consolidationDetails.getEfreightStatus().equalsIgnoreCase(Constants.EAW)
+         || consolidationDetails.getEfreightStatus().equalsIgnoreCase(Constants.EAP))) {
             sph = Arrays.asList(AwbSpecialHandlingCodesMappingInfo
                     .builder()
                     .shcId(consolidationDetails.getEfreightStatus())
@@ -1094,9 +1089,10 @@ public class AwbService implements IAwbService {
             }
         }
         List<AwbSpecialHandlingCodesMappingInfo> sph = null;
-        if(!Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getEfreightStatus())
-            && (shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAW") ||
-                (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase("EAP")))) {
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && !Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getEfreightStatus())
+            && (shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase(Constants.EAW) ||
+                (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase(Constants.EAP)))) {
             sph = Arrays.asList(AwbSpecialHandlingCodesMappingInfo
                     .builder()
                     .shcId(shipmentDetails.getAdditionalDetails().getEfreightStatus())
@@ -1388,63 +1384,6 @@ public class AwbService implements IAwbService {
 
     public ResponseEntity<IRunnerResponse> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync){
         return ResponseHelper.buildSuccessResponse();
-//        try{
-//            AwbRequestV2 request = (AwbRequestV2) commonRequestModel.getData();
-//            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-//                return syncQueueService.saveSyncRequest(SyncingConstants.AWB, StringUtility.convertToString(request.getGuid()), request);
-//            }
-//            Long entityId = null;
-//            var awbType = request.getAwbShipmentInfo().getEntityType();
-//            Optional<ConsolidationDetails> consolidation = consolidationDetailsDao.findByGuid(request.getConsolidationGuid());
-//            Optional<ShipmentDetails> shipment = shipmentDao.findByGuid(request.getShipmentGuid());
-//
-//            List<Awb> existingAwb;
-//            Awb awb = jsonHelper.convertValue(request, Awb.class);
-//
-//            if(awbType.equals("MAWB") && consolidation.isPresent()){
-//                entityId = consolidation.get().getId();
-//                awb.setConsolidationId(entityId);
-//                existingAwb = awbDao.findByConsolidationId(consolidation.get().getId());
-//            }
-//            else if(shipment.isPresent()) {
-//                entityId = shipment.get().getId();
-//                awb.setShipmentId(entityId);
-//                existingAwb = awbDao.findByShipmentId(shipment.get().getId());
-//            }
-//            else {
-//                throw new RunnerException("Shipment/Consolidation not present, Please create that first !");
-//            }
-//
-//            setEntityId(awb, entityId);
-//            if(existingAwb.isEmpty()){
-//                // SAVE
-//            } else {
-//                // UPDATE
-//                awb.setId(existingAwb.get(0).getId());
-//                awb.setGuid(existingAwb.get(0).getGuid());
-//            }
-//            awbDao.save(awb);
-//
-//            if(awbType.equals("MAWB") && consolidation.isPresent()) {
-//                // Link this MAWB with it's HAWB
-//                List<ShipmentDetails> shipmentList = consolidation.get().getShipmentsList();
-//                List<Long> shipmentId = new ArrayList();
-//                if(shipmentList != null && shipmentList.size() > 0) {
-//                    for(var i : shipmentList)
-//                        shipmentId.add(i.getId());
-//                }
-//                var listCriteria = constructListCommonRequest("shipmentId", shipmentId, "IN");
-//                Pair<Specification<Awb>, Pageable> pair = fetchData(listCriteria, Awb.class);
-//                var hawbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
-//                LinkHawbMawb(awb, hawbListPage.getContent());
-//            }
-//
-//            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(awb, AwbResponse.class));
-//
-//        } catch (Exception e){
-//            log.error("{}", e);
-//            return ResponseHelper.buildFailedResponse(e.getMessage());
-//        }
     }
 
 //    private void setEntityId(Awb request, Long entityId){
@@ -1480,7 +1419,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    List<Awb> getLinkedAwbFromMawb(Long mawbId) {
+    List<Awb>  getLinkedAwbFromMawb(Long mawbId) {
         List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
 
         // Fetch all the awb records with the mapped hawbId
@@ -1641,6 +1580,7 @@ public class AwbService implements IAwbService {
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for AWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Request can't be null");
         }
 
         if (request.getShipmentId() == null) {
@@ -2150,6 +2090,7 @@ public class AwbService implements IAwbService {
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for MAWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Request can't be null");
         }
 
         if (request.getConsolidationId() == null) {
@@ -2169,7 +2110,7 @@ public class AwbService implements IAwbService {
 
         // fetch consolidation info
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
-        if(shipmentSettingsDetails.getRestrictAWBEdit()){
+        if(shipmentSettingsDetails.getRestrictAWBEdit() != null && shipmentSettingsDetails.getRestrictAWBEdit()){
             ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder()
                     .id(awb.getId())
                     .shipmentId(request.getShipmentId())
@@ -2698,11 +2639,9 @@ public class AwbService implements IAwbService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error(AwbConstants.AWB_RETRIEVE_REQUEST_NULL_ERROR, LoggerHelper.getRequestIdFromMDC());
-            }
             if (request.getId() == null) {
                 log.error("Request Id is null for MAWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Request id can't be null");
             }
             long id = request.getId();
             List<Awb> awb = getLinkedAwbFromMawb(id);

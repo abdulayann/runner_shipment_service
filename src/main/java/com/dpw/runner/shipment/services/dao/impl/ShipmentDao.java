@@ -167,6 +167,10 @@ public class ShipmentDao implements IShipmentDao {
                 }
             }
         }
+        if(!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()))
+            shipmentDetails.setHouseBill(shipmentDetails.getHouseBill().trim());
+        if(!StringUtil.isNullOrEmpty(shipmentDetails.getMasterBill()))
+            shipmentDetails.setMasterBill(shipmentDetails.getMasterBill().trim());
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));

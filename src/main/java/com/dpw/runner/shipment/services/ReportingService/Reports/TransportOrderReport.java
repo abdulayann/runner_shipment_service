@@ -102,11 +102,11 @@ public class TransportOrderReport extends IReport{
         dictionary.put(ReportConstants.INSURANCE_VALUE_CURRENCY, shipmentModel.getInsuranceValueCurrency());
 
         if(shipmentModel != null && shipmentModel.getFreightLocal() != null)
-            dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.Format(shipmentModel.getFreightLocal(), shipmentModel.getFreightLocalCurrency(), v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.Format(shipmentModel.getFreightLocal(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         if(shipmentModel != null && shipmentModel.getFreightLocalCurrency() != null && !shipmentModel.getFreightLocalCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_LOCAL_CURRENCY, shipmentModel.getFreightLocalCurrency());
         if(shipmentModel != null && shipmentModel.getFreightOverseas() != null)
-            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(shipmentModel.getFreightOverseas(), shipmentModel.getFreightOverseasCurrency(), v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(shipmentModel.getFreightOverseas(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         if(shipmentModel != null && shipmentModel.getFreightOverseasCurrency() != null && !shipmentModel.getFreightOverseasCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, shipmentModel.getFreightOverseasCurrency());
         if(shipmentModel.getPickupDetails() != null && shipmentModel.getPickupDetails().getSourceDetail() != null) {

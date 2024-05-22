@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -16,7 +17,9 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.ContainerEventExcelModel;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -33,11 +36,9 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
-import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
@@ -63,11 +64,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
@@ -143,9 +144,7 @@ public class ContainerService implements IContainerService {
 
     @Value("${containersKafka.queue}")
     private String senderQueue;
-    @Lazy
-    @Autowired
-    private ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
 
@@ -194,11 +193,9 @@ public class ContainerService implements IContainerService {
         Map<UUID, Containers> containerMap = new HashMap<>();
         Map<String, UUID> containerNumbersSet = new HashMap<>();
         Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
-        if(request.getConsolidationId() != null) {
             List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
             containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
             containerNumbersSet = consolContainers.stream().filter(Objects::nonNull).filter(c -> c.getContainerNumber() != null).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getGuid));
-        }
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
         List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
@@ -252,7 +249,7 @@ public class ContainerService implements IContainerService {
     }
 
     private void isPartValidation(BulkUploadRequest request, Containers containersRow) {
-        Boolean isPartValue = containersRow.getIsPart() == null ? false : containersRow.getIsPart();
+        boolean isPartValue = containersRow.getIsPart() != null && containersRow.getIsPart();
         if (isPartValue) {
             var shipmentRecordOpt = shipmentDao.findById(request.getShipmentId());
             if (shipmentRecordOpt.isPresent() && Constants.CARGO_TYPE_FCL.equals(shipmentRecordOpt.get().getShipmentType()) && isPartValue) {
@@ -340,7 +337,7 @@ public class ContainerService implements IContainerService {
             if (vwob.getChargeable() != null) {
                 calculatedChargeable = vwob.getChargeable();
                 calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
-                if (calculatedChargeable != actualChargeable) {
+                if (!Objects.equals(calculatedChargeable, actualChargeable)) {
                     throw new ValidationException("Chargeable is invalid at row: " + row);
                 }
             }
@@ -534,36 +531,6 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private void ColumnsToIgnore(Map<String, Field> fieldNameMap, BulkDownloadRequest request) {
-        if(request.isExport()){
-            for(var field : Constants.ColumnsToBeDeletedForExport) {
-                if (fieldNameMap.containsKey(field)) {
-                    fieldNameMap.remove(field);
-                }
-            }
-        } else {
-            for (var field : Constants.ColumnsToBeDeleted) {
-                if (fieldNameMap.containsKey(field)) {
-                    fieldNameMap.remove(field);
-                }
-            }
-
-            if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)){
-                for (var field : Constants.ColumnsToBeDeletedForCargo) {
-                    if (fieldNameMap.containsKey(field)) {
-                        fieldNameMap.remove(field);
-                    }
-                }
-            } else if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
-            || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RF) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RAI)) {
-                for (var field : Constants.ColumnsToBeDeletedForContainer) {
-                    if (fieldNameMap.containsKey(field)) {
-                        fieldNameMap.remove(field);
-                    }
-                }
-            }
-        }
-    }
     private List<Field> reorderFields(Map<String, Field> fieldNameMap, List<String> columnsName) {
         List<Field> fields = new ArrayList<>();
         for(var field: columnsName){
@@ -984,7 +951,7 @@ public class ContainerService implements IContainerService {
                     ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", request.getShipmentId(), "=");
                     Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
                     Page<Packing> allPackings = packingDao.findAll(pair.getLeft(), pair.getRight());
-                    if(!allPackings.isEmpty() && allPackings.get().findAny().isPresent())
+                    if(allPackings != null && !allPackings.isEmpty())
                     {
                         List<Packing> packingList = allPackings.stream().toList();
                         List<Packing> detachPacks = new ArrayList<>();
@@ -1076,7 +1043,7 @@ public class ContainerService implements IContainerService {
     @Override
     public ResponseEntity<IRunnerResponse> getContainersForSelection(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         boolean lclAndSeaOrRoadFlag = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
         boolean IsConsolidatorFlag = shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator();
         List<Containers> containersList = new ArrayList<>();
@@ -1276,7 +1243,7 @@ public class ContainerService implements IContainerService {
             double totalPacks = 0;
             String toWeightUnit = Constants.WEIGHT_UNIT_KG;
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
-            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
                 toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
@@ -1442,21 +1409,15 @@ public class ContainerService implements IContainerService {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.CONTAINERS, StringUtility.convertToString(containerRequest.getGuid()), containerRequest);
+                return new ResponseEntity<>(HttpStatus.OK);
             }
             List<Containers> existingCont = containerDao.findByGuid(containerRequest.getGuid());
             Containers containers = syncEntityConversionService.containerV1ToV2(containerRequest);
             List<Long> shipIds = null;
             boolean isCreate = true;
             if (existingCont != null && existingCont.size() > 0) {
-                if (existingCont != null && existingCont.size() > 0) {
-                    containers.setId(existingCont.get(0).getId());
-                    containers.setConsolidationId(existingCont.get(0).getConsolidationId());
-                } else {
-                    if (containerRequest.getConsolidationGuid() != null) {
-                        isCreate = false;
-                    }
-                }
+                containers.setId(existingCont.get(0).getId());
+                containers.setConsolidationId(existingCont.get(0).getConsolidationId());
             } else {
                 if (containerRequest.getConsolidationGuid() != null) {
                     Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(containerRequest.getConsolidationGuid());
@@ -1478,13 +1439,12 @@ public class ContainerService implements IContainerService {
             if (shipIds != null) {
                 shipmentsContainersMappingDao.assignShipments(containers.getId(), shipIds, true);
             }
-            ContainerResponse response = objectMapper.convertValue(containers, ContainerResponse.class);
+            ContainerResponse response = jsonHelper.convertValue(containers, ContainerResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
     }
@@ -1506,7 +1466,6 @@ public class ContainerService implements IContainerService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
     }

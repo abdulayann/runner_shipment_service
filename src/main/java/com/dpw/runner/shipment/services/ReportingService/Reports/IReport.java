@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -783,16 +784,19 @@ public abstract class IReport {
             else
                 dict = new HashMap<>(dictionary);
             getPackingDetails(shipmentModel, dict);
-            if(isSecurity) {
+            dict.put(VOLUME_WEIGHT, ConvertToWeightNumberFormat(shipmentModel.getVolumetricWeight()));
+            dict.put(VOLUME_WEIGHT_UNIT, shipmentModel.getVolumetricWeightUnit());
+            if(isSecurity)
                 dict.put(IS_SECURITY, true);
-                dict.put(SCREENING_CODES, shipmentModel.getAdditionalDetails().getScreeningStatus());
-                dict.put(CONSIGNMENT_STATUS, shipmentModel.getSecurityStatus());
-                dict.put(EXEMPTION_CARGO, shipmentModel.getAdditionalDetails().getExemptionCodes());
-                if(awb != null && awb.getAwbSpecialHandlingCodesMappings() != null && !awb.getAwbSpecialHandlingCodesMappings().isEmpty())
-                    dict.put(SPH, awb.getAwbSpecialHandlingCodesMappings().stream().map(AwbSpecialHandlingCodesMappingInfo::getShcId).collect(Collectors.toSet()));
-            }
             else
                 dict.put(IS_SECURITY, false);
+            populateRaKcData(dict, shipmentModel);
+            if(awb != null) {
+                if(awb.getAwbSpecialHandlingCodesMappings() != null && !awb.getAwbSpecialHandlingCodesMappings().isEmpty())
+                    dict.put(SPH, awb.getAwbSpecialHandlingCodesMappings().stream().map(AwbSpecialHandlingCodesMappingInfo::getShcId).collect(Collectors.toSet()));
+                if(awb.getAwbCargoInfo() != null)
+                    dict.put(SCI, awb.getAwbCargoInfo().getSci());
+            }
             dict.put(WITH_CONSIGNOR, isShipperAndConsignee);
             if(shipmentModel.getDirection().equals(IMP)) {
                 try {dict.put(ORIGIN_AGENT_RN_NUMBER, shipmentModel.getAdditionalDetails().getImportBroker().getAddressData().get(KCRA_NUMBER));} catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
@@ -1192,6 +1196,18 @@ public abstract class IReport {
             }
             if(destination != null && destination.getPortName() != null) {
                 dictionary.put(ReportConstants.DESTINATION, destination.getPortName().toUpperCase());
+            }
+            if (pol != null && pol.getAirPortName() != null) {
+                dictionary.put(ReportConstants.ORIGIN_PORT_NAME_INCAPS_AIR, pol.getAirPortName().toUpperCase());
+            }
+            if (pod != null && pod.getAirPortName() != null) {
+                dictionary.put(ReportConstants.DESTINATION_PORT_NAME_INCAPS_AIR, pod.getAirPortName().toUpperCase());
+            }
+            if(origin != null && origin.getAirPortName() != null) {
+                dictionary.put(ReportConstants.ORIGIN_AIR, origin.getAirPortName().toUpperCase());
+            }
+            if(destination != null && destination.getAirPortName() != null) {
+                dictionary.put(ReportConstants.DESTINATION_AIR, destination.getAirPortName().toUpperCase());
             }
         }
 
@@ -1933,6 +1949,7 @@ public abstract class IReport {
 
     public List<ShipmentAndContainerResponse> getShipmentAndContainerResponse(List<ShipmentModel> shipments) {
         List<ShipmentAndContainerResponse> shipmentContainers = new ArrayList<>();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         if(shipments == null)
             return shipmentContainers;
 
@@ -1944,9 +1961,9 @@ public abstract class IReport {
             shipmentContainer.houseBill = shipment.getHouseBill();
             shipmentContainer.masterBill = shipment.getMasterBill();
             shipmentContainer.description = StringUtility.toUpperCase(shipment.getGoodsDescription());
-            shipmentContainer.weight = addCommas(StringUtility.convertToString(shipment.getWeight()));
-            shipmentContainer.volume = addCommas(StringUtility.convertToString(shipment.getVolume()));
-            shipmentContainer.packs = addCommaWithoutDecimal(BigDecimal.valueOf(shipment.getNoOfPacks() != null ? shipment.getNoOfPacks() : 0));
+            shipmentContainer.weight = ConvertToWeightNumberFormat(StringUtility.convertToString(shipment.getWeight()), v1TenantSettingsResponse);
+            shipmentContainer.volume = ConvertToVolumeNumberFormat(StringUtility.convertToString(shipment.getVolume()), v1TenantSettingsResponse);
+            shipmentContainer.packs = GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks() != null ? shipment.getNoOfPacks() : 0), 0, v1TenantSettingsResponse);
             shipmentContainer.packsUnit = StringUtility.convertToString(shipment.getPacksUnit());
             shipmentContainer.weightUnit = StringUtility.convertToString(shipment.getWeightUnit());
             shipmentContainer.volumeUnit = StringUtility.convertToString(shipment.getVolumeUnit());
@@ -2231,12 +2248,22 @@ public abstract class IReport {
         }
 
         List<Map<String, Object>> packsDictionary = new ArrayList<>();
-
+        Map<String, EntityTransferCommodityType> commodityTypeMap = new HashMap<>();
+        try{
+            List<String> commodityCodes = shipment.getPackingList().stream().map(PackingModel::getCommodity).toList();
+            if(!commodityCodes.isEmpty())
+                commodityTypeMap = masterDataUtils.fetchInBulkCommodityTypes(commodityCodes);
+        } catch (Exception e) {
+            log.error("Error while ");
+        }
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         for(var pack : shipment.getPackingList()) {
             Map<String, Object> dict = new HashMap<>();
-            if(pack.getCommodity() != null)
+            if(pack.getCommodity() != null) {
                 dict.put(COMMODITY_DESC, pack.getCommodity());
+                if(commodityTypeMap != null && commodityTypeMap.containsKey(pack.getCommodity()))
+                    dict.put(COMMODITY_DESC_NAME, commodityTypeMap.get(pack.getCommodity()).getDescription());
+            }
             if(pack.getWeight() != null){
                 dict.put(WEIGHT_AND_UNIT_PACKS, String.format(REGEX_S_S, ConvertToWeightNumberFormat(pack.getWeight(), v1TenantSettingsResponse),
                         pack.getWeightUnit()));
@@ -2730,7 +2757,19 @@ public abstract class IReport {
                 dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes());
             }
             if(additionalDetailModel.getScreeningStatus() != null && !additionalDetailModel.getScreeningStatus().isEmpty()) {
-                dictionary.put(SCREENING_CODES, additionalDetailModel.getScreeningStatus());
+                Set<String> screeningCodes = additionalDetailModel.getScreeningStatus().stream().collect(Collectors.toSet());
+                if(screeningCodes.contains(Constants.AOM)){
+                    screeningCodes.remove(Constants.AOM);
+                    String aomString = Constants.AOM;
+                    if(additionalDetailModel.getAomFreeText() != null) {
+                        aomString =  aomString + " (" + additionalDetailModel.getAomFreeText() + ")";
+                    }
+                    screeningCodes.add(aomString);
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                } else {
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                }
+
             }
         }
 

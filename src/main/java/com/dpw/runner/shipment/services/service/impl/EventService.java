@@ -27,12 +27,9 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
-import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -40,12 +37,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -90,9 +87,7 @@ public class EventService implements IEventService {
 
     @Autowired
     private RestTemplate restTemplate;
-    @Lazy
-    @Autowired
-    private ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
 
@@ -323,41 +318,40 @@ public class EventService implements IEventService {
 
     @Override
     public ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse();
-//        EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
-//        try {
-//            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-//                return syncQueueService.saveSyncRequest(SyncingConstants.EVENTS, StringUtility.convertToString(eventsRequestV2.getGuid()), eventsRequestV2);
-//            }
-//            Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
-//            Events events = modelMapper.map(eventsRequestV2, Events.class);
-//            if (existingEvent != null && existingEvent.isPresent()) {
-//                events.setId(existingEvent.get().getId());
-//            }
-//            if (eventsRequestV2.getShipmentGuid() != null) {
-//                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(eventsRequestV2.getShipmentGuid());
-//                if (shipmentDetails.isPresent()) {
-//                    events.setEntityId(shipmentDetails.get().getId());
-//                    events.setEntityType(Constants.SHIPMENT);
-//                }
-//            }
-//            if (eventsRequestV2.getConsolidationGuid() != null) {
-//                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(eventsRequestV2.getConsolidationGuid());
-//                if (consolidationDetails.isPresent()) {
-//                    events.setEntityId(consolidationDetails.get().getId());
-//                    events.setEntityType(Constants.CONSOLIDATION);
-//                }
-//            }
-//            events = eventDao.save(events);
-//            EventsResponse response = objectMapper.convertValue(events, EventsResponse.class);
-//            return ResponseHelper.buildSuccessResponse(response);
-//        } catch (Exception e) {
-//            String responseMsg = e.getMessage() != null ? e.getMessage()
-//                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-//            log.error(responseMsg, e);
-//            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-//            throw new RuntimeException(e);
-//        }
+        EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
+        try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return new ResponseEntity<>(HttpStatus.OK);
+            }
+            Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
+            Events events = modelMapper.map(eventsRequestV2, Events.class);
+            if (existingEvent != null && existingEvent.isPresent()) {
+                events.setId(existingEvent.get().getId());
+            }
+            if (eventsRequestV2.getShipmentGuid() != null) {
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(eventsRequestV2.getShipmentGuid());
+                if (shipmentDetails.isPresent()) {
+                    events.setEntityId(shipmentDetails.get().getId());
+                    events.setEntityType(Constants.SHIPMENT);
+                }
+            }
+            if (eventsRequestV2.getConsolidationGuid() != null) {
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(eventsRequestV2.getConsolidationGuid());
+                if (consolidationDetails.isPresent()) {
+                    events.setEntityId(consolidationDetails.get().getId());
+                    events.setEntityType(Constants.CONSOLIDATION);
+                }
+            }
+            events = eventDao.save(events);
+            EventsResponse response = objectMapper.convertValue(events, EventsResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
+        }
     }
 
   public ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) throws RunnerException {

@@ -8,10 +8,13 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -39,13 +42,23 @@ public class NotesDao implements INotesDao {
     private JsonHelper jsonHelper;
     @Autowired
     private IAuditLogService auditLogService;
+    @Autowired
+    private ValidatorUtility validatorUtility;
 
     @Override
     public Notes save(Notes notes) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(notes), Constants.NOTES, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
+            throw new ValidationException(String.join(",", errors));
         return notesRepository.save(notes);
     }
     @Override
     public List<Notes> saveAll(List<Notes> notesList) {
+        for(var notes : notesList){
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(notes), Constants.NOTES, LifecycleHooks.ON_CREATE, false);
+            if (!errors.isEmpty())
+                throw new ValidationException(String.join(",", errors));
+        }
         return notesRepository.saveAll(notesList);
     }
 

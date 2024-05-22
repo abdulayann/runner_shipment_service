@@ -619,10 +619,16 @@ public class MasterDataUtils{
                 switch (masterDataType) {
                     case CacheConstants.UNLOCATIONS:
                         EntityTransferUnLocations object = (EntityTransferUnLocations) cache.get();
-                        fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
+                        if(isBooking) {
+                            fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
+                        }
+                        else {
+                            fieldNameMasterDataMap.put(key, object.lookupDesc);
+                        }
                         fieldNameMasterDataMap.put(key + Constants.COUNTRY, object.Country);
                         fieldNameMasterDataMap.put(key + Constants.NAME, object.NameWoDiacritics);
                         fieldNameMasterDataMap.put(key + Constants.CODE, object.LocCode);
+
                         break;
                     case CacheConstants.UNLOCATIONS_AWB:
                         EntityTransferUnLocations obj = (EntityTransferUnLocations) cache.get();

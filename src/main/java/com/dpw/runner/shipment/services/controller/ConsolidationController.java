@@ -74,13 +74,6 @@ public class ConsolidationController {
         return consolidationService.fetchConsolidations(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @PostMapping(value = "/create-test-consolidation/{count}")
-    public ResponseEntity<List<ConsolidationDetails>> createTestRecord(@PathVariable Integer count) {
-        ResponseEntity<List<ConsolidationDetails>> response = ResponseEntity.status(HttpStatus.OK)
-                .body(consolidationService.createTestConsolidations(count));
-        return response;
-    }
-
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -112,7 +105,7 @@ public class ConsolidationController {
     public ResponseEntity<IRunnerResponse> list(@RequestBody ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullConsolidation) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
-            if(getFullConsolidation != null && getFullConsolidation) {
+            if(Boolean.TRUE.equals(getFullConsolidation)) {
                 return consolidationService.fullConsolidationsList(CommonRequestModel.buildRequest(listCommonRequest));
             }
             return consolidationService.list(CommonRequestModel.buildRequest(listCommonRequest));

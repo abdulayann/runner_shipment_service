@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
@@ -32,19 +31,14 @@ import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -83,7 +77,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
@@ -136,6 +129,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private MasterDataHelper masterDataHelper;
 
     @Autowired
     private IPackingDao packingDao;
@@ -498,22 +494,6 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private List<Parties> createParties(ShipmentDetails shipmentDetails) {
-        List<Parties> parties = new ArrayList<>();
-        for (String partyType : PARTY_TYPE) {
-            Parties party = Parties.builder()
-                    .type(partyType).orgCode(generateString(7)).addressCode(generateString(7))
-                    .orgData(ORG).addressData(ADDRESS)
-                    .entityId(shipmentDetails.getId()).entityType("SHIPMENT")
-                    .build();
-            party.setTenantId(1);
-            parties.add(party);
-        }
-        parties = partiesDao.saveAll(parties);
-        return parties;
-    }
-
-
     private ShipmentDetails createShipmentData() {
         int random = rnd.nextInt(100);
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(1)
@@ -528,7 +508,7 @@ public class ShipmentService implements IShipmentService {
     private String generateString(int length) {
         StringBuilder salt = new StringBuilder();
         while (salt.length() < length) {
-            salt.append(Constants.SALT_CHARS.charAt(this.rnd.nextInt() * Constants.SALT_CHARS.length()));
+            salt.append(Constants.SALT_CHARS.charAt(Math.abs(this.rnd.nextInt() * Constants.SALT_CHARS.length()) % Constants.SALT_CHARS.length()));
         }
         return salt.toString();
     }
@@ -566,8 +546,10 @@ public class ShipmentService implements IShipmentService {
             }
 
             List<NotesRequest> notesRequest = request.getNotesList();
-            for(NotesRequest req : notesRequest) {
-                req.setEntityId(shipmentId);
+            if (notesRequest != null) {
+                for(NotesRequest req : notesRequest) {
+                    req.setEntityId(shipmentId);
+                }
             }
             if (notesRequest != null) {
                 for(NotesRequest req : notesRequest) {
@@ -602,6 +584,7 @@ public class ShipmentService implements IShipmentService {
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         //ExecutorService executorService = Executors.newFixedThreadPool(100);
+
 
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         if (request == null) {
@@ -672,122 +655,11 @@ public class ShipmentService implements IShipmentService {
         //shipmentDetails = shipmentDao.findById(shipmentDetails.getId()).get();
     }
 
-
-    private void createPartiesAsync(ShipmentDetails shipmentDetails, List<PartiesRequest> partiesRequest) {
-        partiesRequest.forEach(parties -> {
-            createParties(shipmentDetails, parties);
-        });
-    }
-
-    private void createServiceDetailsAsync(ShipmentDetails shipmentDetails, List<ServiceDetailsRequest> serviceDetailsRequest) {
-        serviceDetailsRequest.forEach(serviceDetails -> {
-            createServiceDetail(shipmentDetails, serviceDetails);
-        });
-    }
-
-    private void createRoutingsAsync(ShipmentDetails shipmentDetails, List<RoutingsRequest> routingsRequest) {
-        routingsRequest.forEach(routing -> {
-            createRouting(shipmentDetails, routing);
-        });
-    }
-
-    private void createReferenceNumbersAsync(ShipmentDetails shipmentDetails, List<ReferenceNumbersRequest> referenceNumbersRequest) {
-        referenceNumbersRequest.forEach(referenceNumber -> {
-            createReferenceNumber(shipmentDetails, referenceNumber);
-        });
-    }
-
-    private void createNotesAsync(ShipmentDetails shipmentDetails, List<NotesRequest> notesRequest) {
-        notesRequest.forEach(notes -> {
-            createNote(shipmentDetails, notes);
-        });
-    }
-
-    private void createEventsAsync(ShipmentDetails shipmentDetails, List<EventsRequest> eventsRequest) {
-        eventsRequest.forEach(event -> {
-            createEvent(shipmentDetails, event);
-        });
-    }
-
-    private void createElDetailsAsync(ShipmentDetails shipmentDetails, List<ELDetailsRequest> elDetailsRequest) {
-        elDetailsRequest.forEach(elDetails -> {
-            createElDetail(shipmentDetails, elDetails);
-        });
-    }
-
-    private void createBookingCarriagesAsync(ShipmentDetails shipmentDetails, List<BookingCarriageRequest> bookingCarriageRequest) {
-        bookingCarriageRequest.forEach(booking -> {
-            createbookingCarriage(shipmentDetails, booking);
-        });
-    }
-
-    private void createPackingsAsync(ShipmentDetails shipmentDetails, List<PackingRequest> packingRequest) {
-        packingRequest.forEach(packing -> {
-            createPacking(shipmentDetails, packing);
-        });
-
-    }
-
-    @Transactional
-    public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) {
-        bookingCarriageRequest.setShipmentId(shipmentDetails.getId());
-        bookingCarriageDao.save(objectMapper.convertValue(bookingCarriageRequest, BookingCarriage.class));
-    }
-
-    @Transactional
-    public void createElDetail(ShipmentDetails shipmentDetails, ELDetailsRequest elDetailsRequest) {
-        elDetailsRequest.setShipmentId(shipmentDetails.getId());
-        elDetailsDao.save(objectMapper.convertValue(elDetailsRequest, ELDetails.class));
-    }
-
-    @Transactional
-    public void createEvent(ShipmentDetails shipmentDetails, EventsRequest eventsRequest) {
-        eventsRequest.setEntityId(shipmentDetails.getId());
-        eventsRequest.setEntityType(Constants.SHIPMENT);
-        eventDao.save(objectMapper.convertValue(eventsRequest, Events.class));
-    }
-
-    @Transactional
-    public void createNote(ShipmentDetails shipmentDetails, NotesRequest notesRequest) {
-        notesRequest.setEntityId(shipmentDetails.getId());
-        notesRequest.setEntityType(Constants.SHIPMENT);
-        notesDao.save(objectMapper.convertValue(notesRequest, Notes.class));
-    }
-
     @Transactional
     public void createParties(ShipmentDetails shipmentDetails, PartiesRequest partiesRequest) {
         partiesRequest.setEntityId(shipmentDetails.getId());
         partiesRequest.setEntityType("SHIPMENT");
         packingDao.save(objectMapper.convertValue(partiesRequest, Packing.class));
-    }
-
-    @Transactional
-    public void createReferenceNumber(ShipmentDetails shipmentDetails, ReferenceNumbersRequest referenceNumbersRequest) {
-        referenceNumbersRequest.setShipmentId(shipmentDetails.getId());
-        referenceNumbersDao.save(objectMapper.convertValue(referenceNumbersRequest, ReferenceNumbers.class));
-    }
-
-    @Transactional
-    public void createPacking(ShipmentDetails shipmentDetails, PackingRequest packingRequest) {
-        packingRequest.setShipmentId(shipmentDetails.getId());
-        packingDao.save(objectMapper.convertValue(packingRequest, Packing.class));
-    }
-
-    @Transactional
-    public void createRouting(ShipmentDetails shipmentDetails, RoutingsRequest routingsRequest) {
-        routingsRequest.setShipmentId(shipmentDetails.getId());
-        routingsDao.save(objectMapper.convertValue(routingsRequest, Routings.class));
-    }
-
-    @Transactional
-    public void createServiceDetail(ShipmentDetails shipmentDetails, ServiceDetailsRequest serviceDetailsRequest) {
-        serviceDetailsRequest.setShipmentId(shipmentDetails.getId());
-        serviceDetailsDao.save(objectMapper.convertValue(serviceDetailsRequest, ServiceDetails.class));
-    }
-
-    @Transactional
-    public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetails additionalDetails) {
-        additionalDetailDao.save(additionalDetails);
     }
 
 
@@ -1417,13 +1289,16 @@ public class ShipmentService implements IShipmentService {
                 isNewConsolAttached = true;
             }
         }
-        else
+        else {
+            shipmentDetails.setConsolRef(null);
             tempConsolIds = Objects.isNull(oldEntity) ? new ArrayList<>() : oldEntity.getConsolidationList().stream().map(e -> e.getId()).toList();
+        }
 
         List<PackingRequest> packingRequest = shipmentRequest.getPackingList();
         List<ContainerRequest> containerRequest = shipmentRequest.getContainersList();
 
         if(removedConsolIds != null && removedConsolIds.size() > 0) {
+            shipmentDetails.setConsolRef(null);
             List<Containers> allConsolConts = new ArrayList<>();
             for(Long consolidationId: removedConsolIds) {
                 List<Containers> containersList = containerDao.findByConsolidationId(consolidationId);
@@ -1542,7 +1417,8 @@ public class ShipmentService implements IShipmentService {
         }
 
         Parties consignor = shipmentDetails.getConsigner();
-        if(Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             List<Parties> orgList = new ArrayList<>();
             if(consignor != null) {
                 if(consignor != null && StringUtility.isNotEmpty(consignor.getAddressCode())) {
@@ -1735,7 +1611,7 @@ public class ShipmentService implements IShipmentService {
             createShipmentRouteInConsole(shipmentRequest);
         }
         Hbl hbl = null;
-        if(updatedContainers.size() > 0) {
+        if(updatedContainers != null && updatedContainers.size() > 0) {
             hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
         }
         pushShipmentDataToDependentService(shipmentDetails, isCreate);
@@ -1801,11 +1677,11 @@ public class ShipmentService implements IShipmentService {
                 List<RoutingsRequest> routeRequestList = shipmentRequest.getRoutingsList().stream().sorted(Comparator.comparingLong(RoutingsRequest::getLeg)).toList();
                 var routeRequest = routeRequestList.stream().filter(x -> x.getMode().equals(shipmentRequest.getTransportMode())).findFirst();
                 if(routeRequest.isPresent()) {
-                    createRoutes.add(convertToClass(routeRequest.get(), Routings.class));
+                    createRoutes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
                     createRoutes = createConsoleRoutePayload(createRoutes);
                 }
             } else {
-                createRoutes = convertToEntityList(shipmentRequest.getRoutingsList(), Routings.class);
+                createRoutes = commonUtils.convertToEntityList(shipmentRequest.getRoutingsList(), Routings.class);
                 createRoutes = createConsoleRoutePayload(createRoutes);
             }
         }
@@ -2458,7 +2334,7 @@ public class ShipmentService implements IShipmentService {
             log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
             ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
             log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
-            response.setCustomerBookingNotesList(convertToDtoList(notes,NotesResponse.class));
+            response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
             createShipmentPayload(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -2596,14 +2472,14 @@ public class ShipmentService implements IShipmentService {
             if(entity.getConsolidationList() != null && entity.getConsolidationList().size() > 0)
                 consolidationId = entity.getConsolidationList().get(0).getId();
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), consolidationId, id, false);
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class), consolidationId, id, false);
             } else {
                 updatedContainers = oldEntity.get().getContainersList();
             }
             entity.setContainersList(updatedContainers);
             AdditionalDetails updatedAdditionalDetails = null;
             if (additionalDetailRequest != null) {
-                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class));
+                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(jsonHelper.convertValue(additionalDetailRequest, AdditionalDetails.class));
                 entity.setAdditionalDetails(updatedAdditionalDetails);
             }
             CarrierDetails updatedCarrierDetails = null;
@@ -2629,23 +2505,23 @@ public class ShipmentService implements IShipmentService {
                 entity.setCarrierDetails(updatedCarrierDetails);
             }
             if (bookingCarriageRequestList != null) {
-                List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(convertToEntityList(bookingCarriageRequestList, BookingCarriage.class), id);
+                List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(jsonHelper.convertValueToList(bookingCarriageRequestList, BookingCarriage.class), id);
                 entity.setBookingCarriagesList(updatedBookingCarriages);
             }
             if (truckDriverDetailsRequestList != null) {
-                List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromShipment(convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class), id);
+                List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromShipment(jsonHelper.convertValueToList(truckDriverDetailsRequestList, TruckDriverDetails.class), id);
                 entity.setTruckDriverDetails(updatedTruckDriverDetails);
             }
             if (packingRequestList != null) {
-                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, null);
+                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(jsonHelper.convertValueToList(packingRequestList, Packing.class), id, null);
                 entity.setPackingList(updatedPackings);
             }
             if (elDetailsRequestList != null) {
-                List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id);
+                List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(jsonHelper.convertValueToList(elDetailsRequestList, ELDetails.class), id);
                 entity.setElDetailsList(updatedELDetails);
             }
             if (eventsRequestList != null) {
-                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
+                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(jsonHelper.convertValueToList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
                 entity.setEventsList(updatedEvents);
                 eventService.updateAtaAtdInShipment(updatedEvents, entity, shipmentSettingsDetails);
             }
@@ -2653,19 +2529,19 @@ public class ShipmentService implements IShipmentService {
             autoGenerateEvents(entity, previousStatus);
 
             if (notesRequestList != null) {
-                List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT);
+                List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(jsonHelper.convertValueToList(notesRequestList, Notes.class), id, Constants.SHIPMENT);
                 entity.setNotesList(updatedNotes);
             }
             if (referenceNumbersRequestList != null) {
-                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
+                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequestList, ReferenceNumbers.class), id);
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
             }
             if (routingsRequestList != null) {
-                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(convertToEntityList(routingsRequestList, Routings.class), id);
+                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(jsonHelper.convertValueToList(routingsRequestList, Routings.class), id);
                 entity.setRoutingsList(updatedRoutings);
             }
             if (serviceDetailsRequestList != null) {
-                List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id);
+                List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(jsonHelper.convertValueToList(serviceDetailsRequestList, ServiceDetails.class), id);
                 entity.setServicesList(updatedServiceDetails);
             }
 
@@ -2705,22 +2581,6 @@ public class ShipmentService implements IShipmentService {
         shipmentSync.syncLockStatus(shipmentDetails);
         pushShipmentDataToDependentService(shipmentDetails, false);
         return ResponseHelper.buildSuccessResponse();
-    }
-
-
-    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity) throws ExecutionException, InterruptedException {
-        RunnerListResponse runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
-        return (List<T>) runnerListResponse.getData();
-    }
-
-    private <T extends IRunnerResponse> List<T> getResponse(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-        RunnerListResponse runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
-        return (List<T>) runnerListResponse.getData();
-    }
-
-    private <T extends IRunnerResponse> T getResponseEntity(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-        RunnerResponse runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
-        return (T) runnerResponse.getData();
     }
 
     private String generateShipmentId(ShipmentDetails shipmentDetails) {
@@ -2790,32 +2650,6 @@ public class ShipmentService implements IShipmentService {
     private String getShipmentsSerialNumber() {
         // Moving this responsibility to v1 sequnce table to avoid syncing overhead
         return v1Service.getShipmentSerialNumber();
-    }
-
-    private String createShipmentSequence(ShipmentSettingsDetails shipmentSetting) {
-        String sequence = generateSequence(shipmentSetting.getShipmentIdGenerationType(), shipmentSetting.getShipmentIdGenerationPrefix(), shipmentSetting.getShipmentIdGenerationCounter());
-        if (shipmentSetting.getShipmentIdGenerationType() == GenerationType.Serial) {
-            shipmentSetting.setShipmentIdGenerationCounter(shipmentSetting.getShipmentIdGenerationCounter() + 1);
-            shipmentSettingsDao.save(shipmentSetting);
-        }
-        return sequence;
-    }
-
-    private String generateSequence(GenerationType generationType, String prefix, Integer counter) {
-        if(generationType == null)
-            return StringUtility.getRandomString(10);
-        String suffix;
-        switch (generationType) {
-            case Random:
-                suffix = StringUtility.getRandomString(10);
-                break;
-            case Serial:
-                suffix = String.valueOf(counter);
-                break;
-            default:
-                suffix = StringUtility.getEmptyString();
-        }
-        return !StringUtils.isEmpty(prefix) ? prefix + suffix : suffix;
     }
 
     public ResponseEntity<IRunnerResponse> syncShipmentAuditLogsToService(CommonRequestModel commonRequestModel) {
@@ -2963,7 +2797,7 @@ public class ShipmentService implements IShipmentService {
                     packingPair = fetchData(listCommonRequest, Packing.class);
                     oldConsolPackings = packingDao.findAll(packingPair.getLeft(), packingPair.getRight()).stream().toList();
                 }
-                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, oldPackings.stream().toList(), oldConsolPackings, updatedContainers, map);
+                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(jsonHelper.convertValueToList(packingRequestList, Packing.class), id, oldPackings.stream().toList(), oldConsolPackings, updatedContainers, map);
                 entity.setPackingList(updatedPackings);
             }
             if (elDetailsRequestList != null) {
@@ -3126,20 +2960,21 @@ public class ShipmentService implements IShipmentService {
      * @param shipmentDetailsResponse
      * @return
      */
+    @Override
     public Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         Map<String, Object> masterDataResponse = new HashMap<>();
-        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCurrencyDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var activityDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllActivityDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllSalesAgentInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllContainerTypesInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllVesselDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
-        var dgSubstanceFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllDGSubstanceDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllMasterDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllUnlocationDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCarrierDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCurrencyDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCommodityTypesInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllTenantDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllWarehouseDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var activityDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllActivityDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllSalesAgentInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllContainerTypesInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllVesselDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var dgSubstanceFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllDGSubstanceDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
         CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
                 containerTypeFuture, vesselsFuture, dgSubstanceFuture).join();
 
@@ -3154,26 +2989,26 @@ public class ShipmentService implements IShipmentService {
     public void createShipmentPayload(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         try {
             double _start = System.currentTimeMillis();
-            var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
-            var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
-            var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
-            var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCurrencyDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
-            var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
-            var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
-            var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
-            var activityDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllActivityDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
-            var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllSalesAgentInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
-            var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllContainerTypesInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllMasterDataInSingleCall(shipmentDetailsResponse, null)), executorService);
+            var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllUnlocationDataInSingleCall(shipmentDetailsResponse, null)), executorService);
+            var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCarrierDataInSingleCall(shipmentDetailsResponse, null)), executorService);
+            var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCurrencyDataInSingleCall(shipmentDetailsResponse, null)), executorService);
+            var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCommodityTypesInSingleCall(shipmentDetailsResponse, null)), executorService);
+            var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllTenantDataInSingleCall(shipmentDetailsResponse, null)), executorService);
+            var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllWarehouseDataInSingleCall(shipmentDetailsResponse, null)), executorService);
+            var activityDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllActivityDataInSingleCall(shipmentDetailsResponse, null)), executorService);
+            var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllSalesAgentInSingleCall(shipmentDetailsResponse, null)), executorService);
+            var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllContainerTypesInSingleCall(shipmentDetailsResponse, null)), executorService);
             // TODO- Remove this call and sync job staus from billing using producer and consumer
-            var billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addBillData(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addBillData(shipmentDetails, shipmentDetailsResponse)), executorService);
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
                     containerTypeFuture, billDataFuture).join();
             Map<Long, ContainerResponse> map = new HashMap<>();
             List<ContainerResponse> containers = shipmentDetailsResponse.getContainersList();
             if(containers != null)
                 map = containers.stream().collect(Collectors.toMap(ContainerResponse::getId, Function.identity()));
-            setContainersPacksAutoUpdateData(shipmentDetailsResponse, map);
-            setTruckDriverDetailsData(shipmentDetailsResponse, map);
+            masterDataHelper.setContainersPacksAutoUpdateData(shipmentDetailsResponse, map);
+            masterDataHelper.setTruckDriverDetailsData(shipmentDetailsResponse, map);
             if(!Objects.isNull(shipmentDetails)) {
                 shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
                 shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
@@ -3213,386 +3048,6 @@ public class ShipmentService implements IShipmentService {
 
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() ));
-        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() ));
-        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
-            listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() ));
-
-        if(masterDataResponse != null) {
-            if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
-                shipmentDetailsResponse.getRoutingsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId())));
-            if(!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
-                shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId())));
-            if(!Objects.isNull(shipmentDetailsResponse.getPackingList()))
-                shipmentDetailsResponse.getPackingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId())));
-            if(!Objects.isNull(shipmentDetailsResponse.getReferenceNumbersList()))
-                shipmentDetailsResponse.getReferenceNumbersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() + r.getId())));
-            if(!Objects.isNull(shipmentDetailsResponse.getServicesList()))
-                shipmentDetailsResponse.getServicesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() + r.getId())));
-            if(!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-                shipmentDetailsResponse.getContainersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId())));
-        }
-
-        MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-        masterListRequestV2.setMasterListRequests(listRequests);
-        masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
-
-        Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
-
-        if(masterDataResponse == null) {
-            shipmentDetailsResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.MASTER_LIST));
-            if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-                shipmentDetailsResponse.getAdditionalDetails().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.MASTER_LIST) );
-            if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
-                shipmentDetailsResponse.getCarrierDetails().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.MASTER_LIST) );
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> locationCodes = new ArrayList<>();
-        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
-        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() )));
-
-        if(masterDataResponse != null) {
-            if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
-                shipmentDetailsResponse.getRoutingsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId())));
-            if(!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
-                shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId())));
-            if(!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-                shipmentDetailsResponse.getContainersList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId())));
-            if(!Objects.isNull(shipmentDetailsResponse.getServicesList()))
-                shipmentDetailsResponse.getServicesList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() + r.getId())));
-            if(!Objects.isNull(shipmentDetailsResponse.getPackingList()))
-                shipmentDetailsResponse.getPackingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId())));
-        }
-
-        Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
-        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
-
-        if(masterDataResponse == null) {
-            if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
-                shipmentDetailsResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS));
-            if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-                shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
-        if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            tenantIdList.addAll(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()));
-
-        Map v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
-        masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS);
-
-        if(masterDataResponse == null) {
-            shipmentDetailsResponse.setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.TENANTS));
-            if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-                shipmentDetailsResponse.getAdditionalDetails().setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.TENANTS));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.TENANTS, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCurrencyDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> currencyList = new ArrayList<>(masterDataUtils.createInBulkCurrencyRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
-        Map v1Data = masterDataUtils.fetchInCurrencyList(currencyList);
-        masterDataUtils.pushToCache(v1Data, CacheConstants.CURRENCIES);
-
-        if(masterDataResponse == null) {
-            shipmentDetailsResponse.setCurrenciesMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.CURRENCIES));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CURRENCIES, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> carrierList = new ArrayList<>();
-        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
-            carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
-
-        if(masterDataResponse != null) {
-            if (!Objects.isNull(shipmentDetailsResponse.getRoutingsList())) {
-                List<String> finalCarrierList = carrierList;
-                shipmentDetailsResponse.getRoutingsList().forEach(r -> finalCarrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
-            }
-        }
-
-        Map v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
-        masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
-
-        if(masterDataResponse == null) {
-            shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CARRIER, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        Set<String> commodityTypes = new HashSet<>();
-        if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-            shipmentDetailsResponse.getContainersList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
-
-        if(masterDataResponse != null) {
-            if (!Objects.isNull(shipmentDetailsResponse.getPackingList()))
-                shipmentDetailsResponse.getPackingList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
-        }
-
-        Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
-
-        if(masterDataResponse == null) {
-            if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-                shipmentDetailsResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.COMMODITY)));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllWarehouseDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        Set<String> wareHouseTypes = new HashSet<>();
-        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            wareHouseTypes.addAll(masterDataUtils.createInBulkWareHouseRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()) );
-
-        Map v1Data = masterDataUtils.fetchInWareHousesList(wareHouseTypes.stream().toList());
-        masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES);
-
-        if(masterDataResponse == null) {
-            if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-                shipmentDetailsResponse.getAdditionalDetails().addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.WAREHOUSES, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllActivityDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        Set<String> activityTypes = new HashSet<>();
-        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            activityTypes.addAll(masterDataUtils.createInBulkActivityTypeRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()) );
-
-        Map v1Data = masterDataUtils.fetchInActivityMasterList(activityTypes.stream().toList());
-        masterDataUtils.pushToCache(v1Data, CacheConstants.ACTIVITY_TYPE);
-
-        if(masterDataResponse == null) {
-            if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-                shipmentDetailsResponse.getAdditionalDetails().addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.ACTIVITY_TYPE));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.ACTIVITY_TYPE, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllSalesAgentInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        Set<String> salesAgents = new HashSet<>();
-        if (!Objects.isNull(shipmentDetailsResponse))
-            salesAgents.addAll(masterDataUtils.createInBulkSalesAgentRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()) );
-
-        Map v1Data = masterDataUtils.fetchInSalesAgentList(salesAgents.stream().toList());
-        masterDataUtils.pushToCache(v1Data, CacheConstants.SALES_AGENT);
-
-        if(masterDataResponse == null) {
-            if (!Objects.isNull(shipmentDetailsResponse))
-                shipmentDetailsResponse.addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.SALES_AGENT));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.SALES_AGENT, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> containerTypes = new ArrayList<>();
-        if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-            shipmentDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
-
-        Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
-        masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
-
-        if(masterDataResponse == null) {
-            if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-                shipmentDetailsResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.CONTAINER_TYPE)));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CONTAINER_TYPE, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> vesselList = new ArrayList<>();
-        if (!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
-            shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId() )));
-        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
-            vesselList.addAll((masterDataUtils.createInBulkVesselsRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
-        if (!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
-            shipmentDetailsResponse.getRoutingsList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
-
-        Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
-        masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);
-
-        if(masterDataResponse == null) {
-            shipmentDetailsResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.VESSELS, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllDGSubstanceDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        Set<String> dgSubstanceIdList = new HashSet<>();
-        if (!Objects.isNull(shipmentDetailsResponse.getPackingList()))
-            shipmentDetailsResponse.getPackingList().forEach(r -> dgSubstanceIdList.addAll(masterDataUtils.createInBulkDGSubstanceRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
-
-        Map v1Data = masterDataUtils.fetchInDGSubstanceList(dgSubstanceIdList.stream().toList());
-        masterDataUtils.pushToCache(v1Data, CacheConstants.DG_SUBSTANCES);
-
-        if(masterDataResponse == null) { }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.DG_SUBSTANCES, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
-    }
-
-    private CompletableFuture<ShipmentBillingListResponse> addBillData(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        if (Objects.isNull(shipmentDetails) || Objects.isNull(TenantSettingsDetailsContext.getCurrentTenantSettings()) || Boolean.TRUE.equals(TenantSettingsDetailsContext.getCurrentTenantSettings().getBillingServiceV2Enabled()))
-            return CompletableFuture.completedFuture(null);
-        ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
-                .guidsList(List.of(shipmentDetails.getGuid())).build();
-        ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
-        if (shipmentBillingListResponse != null && shipmentBillingListResponse.getData() != null && shipmentBillingListResponse.getData().containsKey(shipmentDetails.getGuid().toString())
-                && !IsStringNullOrEmpty(shipmentBillingListResponse.getData().get(shipmentDetails.getGuid().toString()).getBillStatus())) {
-            shipmentDetails.setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.getGuid().toString()).getBillStatus());
-            shipmentDetailsResponse.setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.getGuid().toString()).getBillStatus());
-            shipmentDao.saveJobStatus(shipmentDetails.getId(), shipmentDetails.getJobStatus());
-        }
-        return CompletableFuture.completedFuture(shipmentBillingListResponse);
-    }
-
-    private void setContainersPacksAutoUpdateData (ShipmentDetailsResponse shipmentDetailsResponse, Map<Long, ContainerResponse> map) {
-        List<PackingResponse> packings = shipmentDetailsResponse.getPackingList();
-        List<ContainerResponse> containers = shipmentDetailsResponse.getContainersList();
-        Map<Long, Map<String, String>> contMap = new HashMap<>();
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-        boolean flag = shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate() != null && shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate().booleanValue()
-                && shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
-        if(packings != null && packings.size() > 0) {
-            for (PackingResponse pack : packings) {
-                if(pack.getContainerId() != null) {
-                    if(map.containsKey(pack.getContainerId())) {
-                        pack.setContainerNumber(map.get(pack.getContainerId()).getContainerNumber());
-                        pack.setContainerDesc(String.format("%s-%s-%s", map.get(pack.getContainerId()).getContainerCount(), map.get(pack.getContainerId()).getContainerNumber(), map.get(pack.getContainerId()).getContainerCode()));
-                    }
-                    if(flag) {
-                        if(!contMap.containsKey(pack.getContainerId())) {
-                            Map<String, String> tempMap = new HashMap<>();
-                            tempMap.put(Constants.HANDLING_INFO, "");
-                            tempMap.put(Constants.DESCRIPTION_OF_GOODS, "");
-                            contMap.put(pack.getContainerId(), tempMap);
-                        }
-                        String handlingInfo = contMap.get(pack.getContainerId()).get(Constants.HANDLING_INFO);
-                        String descriptionOfGoods = contMap.get(pack.getContainerId()).get(Constants.DESCRIPTION_OF_GOODS);
-                        if(!IsStringNullOrEmpty(pack.getHandlingInfo())) {
-                            if (handlingInfo.length() == 0)
-                                handlingInfo = pack.getHandlingInfo();
-                            else
-                                handlingInfo = handlingInfo + ", " + pack.getHandlingInfo();
-                        }
-                        if(!IsStringNullOrEmpty(pack.getGoodsDescription())) {
-                            if(descriptionOfGoods.length() == 0)
-                                descriptionOfGoods = pack.getGoodsDescription();
-                            else
-                                descriptionOfGoods = descriptionOfGoods + ", " + pack.getGoodsDescription();
-                        }
-                        contMap.get(pack.getContainerId()).put(Constants.HANDLING_INFO, handlingInfo);
-                        contMap.get(pack.getContainerId()).put(Constants.DESCRIPTION_OF_GOODS, descriptionOfGoods);
-                    }
-                }
-            }
-        }
-        if(containers != null && containers.size() > 0) {
-            for(ContainerResponse container : containers) {
-                if(flag) {
-                    if(contMap.containsKey(container.getId())) {
-                        container.setTextFieldData(contMap.get(container.getId()));
-                    }
-                    else {
-                        Map<String, String> tempMap = new HashMap<>();
-                        tempMap.put(Constants.HANDLING_INFO, "");
-                        tempMap.put(Constants.DESCRIPTION_OF_GOODS, "");
-                        container.setTextFieldData(tempMap);
-                    }
-                }
-                else {
-                    Map<String, String> tempMap = new HashMap<>();
-                    tempMap.put(Constants.HANDLING_INFO, container.getHandlingInfo());
-                    tempMap.put(Constants.DESCRIPTION_OF_GOODS, container.getDescriptionOfGoods());
-                    container.setTextFieldData(tempMap);
-                }
-            }
-        }
-    }
-
-    private void setTruckDriverDetailsData(ShipmentDetailsResponse shipmentDetailsResponse, Map<Long, ContainerResponse> map) {
-        List<TruckDriverDetailsResponse> truckDriverDetailsResponses = shipmentDetailsResponse.getTruckDriverDetails();
-        if(truckDriverDetailsResponses != null && !truckDriverDetailsResponses.isEmpty()) {
-            for (TruckDriverDetailsResponse truckDriverDetailsResponse: truckDriverDetailsResponses) {
-                if(truckDriverDetailsResponse.getContainerId() != null && map.containsKey(truckDriverDetailsResponse.getContainerId())) {
-                    truckDriverDetailsResponse.setContainerNumber(map.get(truckDriverDetailsResponse.getContainerId()).getContainerNumber());
-                }
-            }
-        }
-    }
-
     public ResponseEntity<IRunnerResponse> cloneShipment(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
@@ -3624,6 +3079,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setSourceGuid(null);
             cloneShipmentDetails.setClonedGuid(shipmentDetails.get().getGuid());
             cloneShipmentDetails.setContractId(null);
+            cloneShipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 
@@ -3633,8 +3089,8 @@ public class ShipmentService implements IShipmentService {
             CommonRequestModel requestModel = CommonRequestModel.buildRequest(cloneShipmentDetails);
             log.info("Shipment details cloning started for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(cloneShipmentDetails, ShipmentDetailsResponse.class);
-            addAllUnlocationDataInSingleCall(null, response, null);
-            addAllTenantDataInSingleCall(null, response, null);
+            masterDataHelper.addAllUnlocationDataInSingleCall(response, null);
+            masterDataHelper.addAllTenantDataInSingleCall(response, null);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -3699,8 +3155,8 @@ public class ShipmentService implements IShipmentService {
         try {
             ShipmentDetailsResponse response = jsonHelper.convertValue(orderManagementAdapter.getOrder(orderId), ShipmentDetailsResponse.class);
             this.createShipmentPayload(null, response);
-            this.addAllMasterDataInSingleCall(null, response, null);
-            this.addAllUnlocationDataInSingleCall(null, response, null);
+            masterDataHelper.addAllMasterDataInSingleCall(response, null);
+            masterDataHelper.addAllUnlocationDataInSingleCall(response, null);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e){
             throw new RunnerException(e.getMessage());
@@ -3890,16 +3346,6 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
-        return res;
-    }
-
-    private String generateBlViaProductUtility(ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSetting) {
-        String res = null;
-        try {
-            res = productEngine.getCustomizedBLNumber(shipmentDetails, tenantSetting);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        }
         return res;
     }
 
@@ -4145,8 +3591,9 @@ public class ShipmentService implements IShipmentService {
     private ConsolidationDetails updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) throws RunnerException {
         List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
         ConsolidationDetails consolidationDetails;
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
-        if(linkedConsol != null && Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(shipment.getAdditionalDetails().getEfreightStatus(), Constants.NON)){
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && linkedConsol != null && Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(shipment.getAdditionalDetails().getEfreightStatus(), Constants.NON)){
             consolidationDetails = consolidationDetailsDao.findById(linkedConsol.getId()).get();
             if(consolidationDetails != null && Objects.equals(consolidationDetails.getEfreightStatus(), Constants.EAW)){
                 throw new RunnerException("EFreight status can only be EAW as Consolidation EFrieght Status is EAW");
@@ -4320,19 +3767,6 @@ public class ShipmentService implements IShipmentService {
         }
         CheckActiveInvoiceRequest checkActiveInvoiceRequest = CheckActiveInvoiceRequest.builder().BillGuid(request.getGuid()).build();
         return ResponseHelper.buildSuccessResponse(v1Service.getActiveInvoices(checkActiveInvoiceRequest));
-    }
-
-
-    private boolean shipmentHasHblOrHawb(ShipmentDetails shipmentDetails) {
-        boolean res = false;
-        if(shipmentDetails.getTransportMode() == null || shipmentDetails.getDirection() == null)
-            return false;
-        if(shipmentDetails.getTransportMode().equals("AIR") && shipmentDetails.getDirection().equals("EXP") && (
-                shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals("STD")))
-            res = true;
-        if(shipmentDetails.getTransportMode().equals("SEA") && shipmentDetails.getDirection().equals("EXP"))
-            res = true;
-        return res;
     }
 
     public ResponseEntity<IRunnerResponse> showAssignAllContainers(CommonRequestModel commonRequestModel) {

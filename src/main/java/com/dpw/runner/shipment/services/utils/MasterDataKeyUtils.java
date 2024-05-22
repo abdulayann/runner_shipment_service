@@ -49,7 +49,7 @@ public class MasterDataKeyUtils {
                         switch (masterDataType) {
                             case CacheConstants.UNLOCATIONS:
                                 EntityTransferUnLocations object = (EntityTransferUnLocations) cache.get();
-                                response.put(value, object.LocCode + " " + object.NameWoDiacritics);
+                                response.put(value, object.getLookupDesc());
                                 break;
                             case CacheConstants.UNLOCATIONS_AWB:
                                 EntityTransferUnLocations obj = (EntityTransferUnLocations) cache.get();

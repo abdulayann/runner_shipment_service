@@ -129,7 +129,7 @@ public class TenantProductsDao implements ITenantProductsDao {
         }
     }
 
-    private void delete(TenantProducts tenantProducts) {
+    public void delete(TenantProducts tenantProducts) {
         tenantProductsRepository.delete(tenantProducts);
     }
 

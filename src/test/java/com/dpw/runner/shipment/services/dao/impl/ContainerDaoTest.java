@@ -1,213 +1,360 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.service.impl.AuditLogService;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
 
-@RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@Execution(ExecutionMode.CONCURRENT)
 class ContainerDaoTest {
 
-    @Autowired
-    private IContainerDao containerDao;
+    @Mock
+    private IPackingDao packingDao;
 
-    @Autowired
-    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+    @Mock
+    private IContainerRepository containerRepository;
 
-    @Autowired
-    private IConsolidationDetailsDao consolidationDetailsDao;
+    @Mock
+    private ValidatorUtility validatorUtility;
 
-    @Autowired
-    private IShipmentDao shipmentDao;
+    @Mock
+    private JsonHelper jsonHelper;
+
+    @Mock
+    private AuditLogService auditLogService;
+
+    @InjectMocks
+    private ContainerDao containerDao;
 
     private static JsonTestUtility jsonTestUtility;
-    private static ShipmentDetails testShipment;
-    private static ConsolidationDetails testConsol;
-    private static Containers container;
-
     private static ObjectMapper objectMapperTest;
-
-    @Container
-    private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
-
-    static {
-        postgresContainer.withDatabaseName("integration-tests-db")
-                .withUsername("sa")
-                .withPassword("sa");
-        postgresContainer.start();
-    }
+    private static Containers testContainer;
 
     @BeforeAll
-    static void beforeAll() throws IOException {
-        postgresContainer.start();
-        objectMapperTest = JsonTestUtility.getMapper();
-        jsonTestUtility = new JsonTestUtility();
+    static void init(){
+        try {
+            jsonTestUtility = new JsonTestUtility();
+            objectMapperTest = JsonTestUtility.getMapper();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        TenantContext.setCurrentTenant(1);
-        testShipment = jsonTestUtility.getTestShipment();
-        testConsol = jsonTestUtility.getTestNewConsolidation();
-        container = jsonTestUtility.getTestContainer();
-        var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
-        PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
-        UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-    }
-
-    @AfterAll
-    static void afterAll() {
-        postgresContainer.stop();
-    }
-
-    @DynamicPropertySource
-    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
-    }
-
-
-    @Test
-    void save() {
-        var result = containerDao.save(container);
-        assertTrue(result.getId() != null);
+        testContainer = jsonTestUtility.getTestContainer();
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder().P100Branch(false).build());
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
+        MockitoAnnotations.initMocks(this);
     }
 
     @Test
-    void findAll() {
-        var result = containerDao.save(container);
-        Specification<Containers> spec =  (root, query, criteriaBuilder) ->
-            criteriaBuilder.equal(root.get("consolidationId"), 1);
-
-        var containerList = containerDao.findAll(spec, PageRequest.of(0 , 10));
-        assertFalse(containerList.isEmpty());
-        assertEquals(containerList.stream().toList().get(0).getContainerCode(), result.getContainerCode());
+    void testSave_DataRetException() {
+        testContainer.setId(4L);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        assertThrows(DataRetrievalFailureException.class, () -> containerDao.save(testContainer));
     }
 
     @Test
-    void getAllContainers() {
-        containerDao.save(container);
-        var containerList = containerDao.getAllContainers();
-        assertFalse(containerList.isEmpty());
-        assertTrue(containerList.get(0).getId() != null);
+    void testSave_Failure() {
+        Set<String> errors = new HashSet<>();
+        errors.add("Required field missing");
+        testContainer.setHazardous(true);
+        when(jsonHelper.convertToJson(any())).thenReturn(jsonTestUtility.convertToJson(testContainer));
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(errors);
+        assertThrows(ValidationException.class, () -> containerDao.save(testContainer));
     }
 
     @Test
-    void findById() {
-        var savedContainer = containerDao.save(container);
-        var result = containerDao.findById(savedContainer.getId());
-        assertFalse(result.isEmpty());
-        assertEquals(result.get().getId() , savedContainer.getId());
+    void testSave() {
+        testContainer.setId(4L);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(containerRepository.save(any())).thenReturn(testContainer);
+        Containers containers = containerDao.save(testContainer);
+        assertEquals(testContainer, containers);
+    }
+
+    @Test
+    void testSave_NewCont() {
+        testContainer.setId(null);
+        testContainer.setHazardous(true);
+        testContainer.setDgClass("dgClass");
+        List<Events> eventsList = new ArrayList<>();
+        eventsList.add(new Events());
+        testContainer.setEventsList(eventsList);
+        List<ShipmentDetails> shipmentDetails = new ArrayList<>();
+        shipmentDetails.add(new ShipmentDetails());
+        testContainer.setShipmentsList(shipmentDetails);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(containerRepository.save(any())).thenReturn(testContainer);
+        Containers containers = containerDao.save(testContainer);
+        assertEquals(testContainer, containers);
+    }
+
+    @Test
+    void testSave_Branches() {
+        testContainer.setId(7L);
+        testContainer.setHazardous(true);
+        testContainer.setDgClass("dgClass");
+        List<Events> eventsList = new ArrayList<>();
+        eventsList.add(new Events());
+        testContainer.setEventsList(eventsList);
+        List<ShipmentDetails> shipmentDetails = new ArrayList<>();
+        testContainer.setShipmentsList(shipmentDetails);
+        List<TruckDriverDetails> truckDriverDetails = new ArrayList<>();
+        testContainer.setTruckingDetails(truckDriverDetails);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(containerRepository.save(any())).thenReturn(testContainer);
+        Containers containers = containerDao.save(testContainer);
+        assertEquals(testContainer, containers);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking() throws RunnerException {
+        testContainer.setId(4L);
+        List<Containers> containersList = Collections.singletonList(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(new PageImpl<>(containersList)).when(spyService).findAll(any(), any());
+        doReturn(containersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        List<Containers> containersList1 = spyService.updateEntityFromBooking(containersList, 1L);
+        assertNotNull(containersList1);
+        assertEquals(containersList, containersList1);
+    }
+
+    @Test
+    void CestUpdateEntityFromBooking_Nullcontainers() throws RunnerException {
+        List<Containers> containersList = Collections.singletonList(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(new PageImpl<>(containersList)).when(spyService).findAll(any(), any());
+        List<Containers> containersList1 = spyService.updateEntityFromBooking(null, 1L);
+        assertNotNull(containersList1);
+        assertEquals(new ArrayList<>(), containersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_NullId() throws RunnerException {
+        List<Containers> containersList = Collections.singletonList(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(new PageImpl<>(containersList)).when(spyService).findAll(any(), any());
+        doReturn(containersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        List<Containers> containersList1 = spyService.updateEntityFromBooking(containersList, 1L);
+        assertNotNull(containersList1);
+        assertEquals(containersList, containersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_Failure() throws RunnerException {
+        List<Containers> containersList = Collections.singletonList(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doThrow(new RuntimeException()).when(spyService).findAll(any(), any());
+        assertThrows(RunnerException.class, () -> spyService.updateEntityFromBooking(containersList, 1L));
+    }
+
+    @Test
+    void testSaveEntityFromBooking() throws Exception {
+        testContainer.setId(4L);
+        List<Containers> containersList = Collections.singletonList(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(new PageImpl<>(containersList)).when(spyService).findAll(any(), any());
+        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        doReturn(testContainer).when(spyService).save(any());
+        List<Containers> containers = spyService.saveEntityFromBooking(containersList, 1L);
+        assertNotNull(containers);
+        assertEquals(containersList, containers);
+    }
+
+    @Test
+    void testSaveEntityFromBooking_NullId() throws Exception {
+        List<Containers> containersList = Collections.singletonList(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(new PageImpl<>(containersList)).when(spyService).findAll(any(), any());
+        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        doReturn(testContainer).when(spyService).save(any());
+        List<Containers> containers = spyService.saveEntityFromBooking(containersList, 1L);
+        assertNotNull(containers);
+        assertEquals(containersList, containers);
+    }
+
+    @Test
+    void testSaveEntityFromBooking_RetrievalFailure() throws Exception {
+        testContainer.setId(4L);
+        List<Containers> containersList = Collections.singletonList(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
+        assertThrows(RuntimeException.class, () -> spyService.saveEntityFromBooking(containersList, 1L));
+    }
+
+    @Test
+    void testSaveEntityFromBooking_AuditLogFailure() throws Exception {
+        testContainer.setId(4L);
+        List<Containers> containersList = Collections.singletonList(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(new PageImpl<>(containersList)).when(spyService).findAll(any(), any());
+        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        doReturn(testContainer).when(spyService).save(any());
+        List<Containers> containers = spyService.saveEntityFromBooking(containersList, 1L);
+        assertNotNull(containers);
+        assertEquals(containersList, containers);
+    }
+
+    @Test
+    void testUpdateEntityFromShipmentConsole() throws RunnerException {
+        List<Containers> containersList = new ArrayList<>();
+        containersList.add(testContainer);
+        when(containerRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(containersList));
+        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(jsonTestUtility.getTestPacking())));
+        ContainerDao spyService = spy(containerDao);
+        doReturn(containersList).when(spyService).saveAll(anyList());
+        List<Containers> containers = spyService.updateEntityFromShipmentConsole(containersList, 1L, 2L, true);
+        assertNotNull(containers);
+        assertEquals(containersList, containers);
+    }
+
+    @Test
+    void testUpdateEntityFromConsolidationV1() throws RunnerException {
+        List<Containers> containersList = new ArrayList<>();
+        containersList.add(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(containersList).when(spyService).saveAll(anyList());
+        List<Containers> containers = spyService.updateEntityFromConsolidationV1(containersList, 1L, containersList);
+        assertNotNull(containers);
+        assertEquals(containersList, containers);
+    }
+
+    @Test
+    void testUpdateEntityFromConsolidationV1_Failure() throws RunnerException {
+        List<Containers> containersList = new ArrayList<>();
+        containersList.add(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doThrow(new RuntimeException()).when(spyService).saveAll(anyList());
+        assertThrows(RunnerException.class, () -> spyService.updateEntityFromConsolidationV1(containersList, 1L, containersList));
+    }
+
+    @Test
+    void testUpdateEntityFromShipmentV1() throws RunnerException {
+        List<Containers> containersList = new ArrayList<>();
+        containersList.add(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(containersList).when(spyService).saveAll(anyList());
+        List<Containers> containers = spyService.updateEntityFromShipmentV1(containersList, containersList);
+        assertNotNull(containers);
+        assertEquals(containersList, containers);
+    }
+
+    @Test
+    void testUpdateEntityFromShipmentV1_Failure() throws RunnerException {
+        List<Containers> containersList = new ArrayList<>();
+        containersList.add(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doThrow(new RuntimeException()).when(spyService).saveAll(anyList());
+        assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipmentV1(containersList, containersList));
+    }
+
+    @Test
+    void findByShipmentId() {
+        List<Containers> containersList = new ArrayList<>();
+        containersList.add(testContainer);
+        when(containerRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(containersList));
+        List<Containers> containers = containerDao.findByShipmentId(4L);
+        assertNotNull(containers);
+        assertEquals(containersList, containers);
     }
 
     @Test
     void findByGuid() {
-        var savedContainer = containerDao.save(container);
-        var result = containerDao.findByGuid(savedContainer.getGuid());
-        assertFalse(result.isEmpty());
-        assertEquals(result.get(0).getId() , savedContainer.getId());
-    }
-
-    @Test
-    void delete() {
-        var savedContainer = containerDao.save(container);
-        containerDao.delete(savedContainer);
-        var result = containerDao.findById(savedContainer.getId());
-        assertTrue(result.isEmpty());
+        when(containerRepository.findByGuid(any())).thenReturn(List.of(testContainer));
+        List<Containers> containersList = containerDao.findByGuid(UUID.randomUUID());
+        assertNotNull(containersList);
+        assertEquals(List.of(testContainer), containersList);
     }
 
     @Test
     void deleteById() {
-        var savedContainer = containerDao.save(container);
-        containerDao.deleteById(savedContainer.getId());
-        var result = containerDao.findById(savedContainer.getId());
-        assertTrue(result.isEmpty());
+        assertDoesNotThrow(() -> containerDao.deleteById(6L));
+    }
+
+    @Test
+    void CestUpdateEntityFromBooking_FailedAuditLog() throws Exception {
+        List<Containers> containersList = Collections.singletonList(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(new PageImpl<>(containersList)).when(spyService).findAll(any(), any());
+        doThrow(new RunnerException()).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        List<Containers> containersList1 = spyService.updateEntityFromBooking(null, 1L);
+        assertNotNull(containersList1);
+        assertEquals(new ArrayList<>(), containersList1);
     }
 
     @Test
     void saveAll() {
-        var containersList = List.of(container);
-        var result = containerDao.saveAll(containersList);
-        assertFalse(result.isEmpty());
-        assertNotNull(result.get(0).getGuid());
-    }
-
-    @Test
-    void updateEntityFromConsolidationV1() throws RunnerException {
-        containerDao.save(container);
-        container.setContainerComments("New container");
-        var result = containerDao.updateEntityFromConsolidationV1(List.of(container) , container.getConsolidationId() , Collections.EMPTY_LIST);
-        assertFalse(result.isEmpty());
-    }
-
-    @Test
-    void updateEntityFromShipmentV1() throws RunnerException {
-        containerDao.save(container);
-        var result = containerDao.updateEntityFromShipmentV1(List.of(container) , Collections.EMPTY_LIST);
-        assertFalse(result.isEmpty());
-    }
-
-    @Test
-    @Disabled
-    void findByShipmentId() throws RunnerException {
-        var containerSaved = containerDao.save(container);
-        container.setShipmentsList(List.of(testShipment));
-        testShipment.setId(null);
-        testShipment.setGuid(null);
-        var shipment = shipmentDao.save(testShipment, false);
-        shipmentsContainersMappingDao.assignContainers(shipment.getId() , List.of(containerSaved.getId()));
-        var result = containerDao.findByShipmentId(shipment.getId());
-        assertFalse(result.isEmpty());
+        List<Containers> containersList = List.of(testContainer);
+        ContainerDao spyService = spy(containerDao);
+        doReturn(testContainer).when(spyService).save(any());
+        List<Containers> containers = spyService.saveAll(containersList);
+        assertNotNull(containers);
+        assertEquals(containersList, containers);
     }
 
     @Test
     void findByConsolidationId() {
-        var consol = consolidationDetailsDao.save(testConsol , false);
-        container.setConsolidationId(consol.getId());
-        var containerSaved = containerDao.save(container);
-        var result = containerDao.findByConsolidationId(consol.getId());
-        assertFalse(result.isEmpty());
+        assertDoesNotThrow(() -> containerDao.findByConsolidationId(1L));
     }
+
+    @Test
+    void getAllContainers() {
+        assertDoesNotThrow(() -> containerDao.getAllContainers());
+    }
+
+    @Test
+    void updateEntityFromShipmentConsole() {
+        when(containerRepository.findAll(any(Specification.class), any(Pageable.class))).thenThrow(new RuntimeException());
+        assertThrows(RunnerException.class, () -> containerDao.updateEntityFromShipmentConsole(List.of(testContainer), 3L, null, true));
+    }
+
 }

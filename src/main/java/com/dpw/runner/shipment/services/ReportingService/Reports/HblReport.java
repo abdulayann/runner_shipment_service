@@ -180,11 +180,11 @@ public class HblReport extends IReport{
         }
         hblModel.noofPackages = 0;
         if(hblModel.shipment.getContainersList() != null && hblModel.shipment.getContainersList().size() > 0) {
+            hblModel.setContainerCountGrouped(new HashMap<>());
+            hblModel.setContainerWeightGrouped(new HashMap<>());
+            hblModel.setContainerVolumeGrouped(new HashMap<>());
             for (ContainerModel container: hblModel.shipment.getContainersList()) {
                 hblModel.noofPackages = container.getNoOfPackages() != null ? container.getNoOfPackages() : 0 + hblModel.noofPackages;
-                hblModel.setContainerCountGrouped(new HashMap<>());
-                hblModel.setContainerWeightGrouped(new HashMap<>());
-                hblModel.setContainerVolumeGrouped(new HashMap<>());
                 if(container.getContainerCode() != null) {
                     if(hblModel.getContainerCountGrouped().containsKey(container.getContainerCode()))
                         hblModel.getContainerCountGrouped().put(container.getContainerCode(), hblModel.getContainerCountGrouped().get(container.getContainerCode()) + container.getContainerCount());

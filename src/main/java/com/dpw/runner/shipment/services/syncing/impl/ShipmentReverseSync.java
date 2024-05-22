@@ -14,17 +14,14 @@ import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
-import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -42,9 +39,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
 
     @Autowired
     IShipmentService shipmentService;
-    @Lazy
-    @Autowired
-    ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
     @Autowired
@@ -58,7 +53,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             ShipmentDetails sd = modelMapper.map(cs, ShipmentDetails.class);
 
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.SHIPMENT, StringUtility.convertToString(sd.getGuid()), cs);
+                return new ResponseEntity<>(HttpStatus.OK);
             }
             mapCarrierDetailsReverse(cs, sd);
             mapAdditionalDetailsReverse(cs, sd);

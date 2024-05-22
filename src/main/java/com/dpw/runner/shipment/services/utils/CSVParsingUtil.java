@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -32,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,163 +57,27 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Component
 public class CSVParsingUtil<T> {
 
-    @Autowired
     private ConsoleShipmentMappingDao consoleShipmentMappingDao;
 
-    @Autowired
     private IShipmentDao shipmentDao;
 
-    @Autowired
     private IV1Service v1Service;
 
-    @Autowired
     private JsonHelper jsonHelper;
 
-    @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
     private final Set<String> hiddenFields = Set.of("pickupAddress",
             "deliveryAddress", "eventsList", "packsList", "shipmentsList", "bookingCharges");
     ExecutorService executorService = Executors.newFixedThreadPool(10);
 
-    public Set<String> generateContainerHeaders() {
-        Set<String> hs = new LinkedHashSet<>();
-        Field[] fields = Containers.class.getDeclaredFields();
-        for (Field field : fields) {
-            if (hiddenFields.contains(field.getName())) continue;
-            hs.add(field.getName());
-        }
-        return hs;
-    }
-
-    public Set<String> generateCSVHeaderForPacking() {
-        Set<String> hs = new LinkedHashSet<>();
-        Field[] fields = Packing.class.getDeclaredFields();
-        for (Field field : fields) {
-            hs.add(field.getName());
-        }
-        return hs;
-    }
-
-    public Set<String> generateCSVHeaderForEvent() {
-        Field[] fields = Events.class.getDeclaredFields();
-        Set<String> hs = new LinkedHashSet<>();
-        for (Field field : fields) {
-            hs.add(field.getName());
-        }
-        return hs;
-    }
-
-    public List<String> getHeadersForShipment() {
-        List<String> headers = new ArrayList<>();
-        List<Field> fields = Arrays.stream(ShipmentListResponse.class.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("client", "consigner", "consignee", "additionalDetails", Constants.CARRIER_DETAILS, "pickupDetails", "deliveryDetails");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-        for (Field field : fields) {
-            headers.add(field.getName());
-        }
-        return headers;
-    }
-
-
-    public List<String> getHeadersForAllocations() {
-        List<String> headers = new ArrayList<>();
-        List<Field> fields = Arrays.stream(AllocationsResponse.class.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("id", "guid");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-        for (Field field : fields) {
-            headers.add(field.getName());
-        }
-        return headers;
-    }
-
-    public List<String> getHeadersForConsolidation() {
-        List<String> headers = new ArrayList<>();
-        List<Field> fields = Arrays.stream(ConsolidationListResponse.class.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("sendingAgent", "receivingAgent", "borrowedFrom", "creditor", "coLoadWith", "arrivalDetails",
-                "departureDetails", Constants.CARRIER_DETAILS, "achievedQuantities", "allocations");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-        for (Field field : fields)
-            headers.add(field.getName());
-        return headers;
-    }
-
-    public List<String> getHeadersForArrivalDepartureDetails() {
-        List<String> headers = new ArrayList<>();
-        List<Field> fields = Arrays.stream(ConsolidationListResponse.class.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("id", "guid", "containerYardId", "transportPortId", "CFSId", "CTOId", "firstForeignPortId", "lastForeignPortId");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-        for (Field field : fields)
-            headers.add(field.getName());
-        return headers;
-    }
-
-    public List<String> getHeadersForParties() {
-        List<String> headers = new ArrayList<>();
-        List<Field> fields = Arrays.stream(PartiesResponse.class.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("guid", "id", "orgData", "addressData");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-        for (Field field : fields) {
-            headers.add(field.getName());
-        }
-        return headers;
-    }
-
-    public List<String> getHeadersForAchievedQuantities() {
-        List<String> headers = new ArrayList<>();
-        List<Field> fields = Arrays.stream(AchievedQuantitiesResponse.class.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("guid", "id");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-        for (Field field : fields) {
-            headers.add(field.getName());
-        }
-        return headers;
-    }
-
-    public List<String> getHeadersForCarrier() {
-        List<String> headers = new ArrayList<>();
-        List<Field> fields = Arrays.stream(CarrierDetailResponse.class.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("guid", "id", "masterData", "unlocationData", "carrierMasterData", "vesselsMasterData");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-        for (Field field : fields) {
-            headers.add(field.getName());
-        }
-        return headers;
-    }
-
-    public List<String> getHeadersForPDDetails() {
-        List<String> headers = new ArrayList<>();
-        List<Field> fields = Arrays.stream(PickupDeliveryDetailsListResponse.class.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("guid", "id");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-        for (Field field : fields) {
-            headers.add(field.getName());
-        }
-        return headers;
+    @Autowired
+    public CSVParsingUtil(ConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IV1Service v1Service, JsonHelper jsonHelper, IConsolidationDetailsDao consolidationDetailsDao) {
+        this.consoleShipmentMappingDao = consoleShipmentMappingDao;
+        this.shipmentDao = shipmentDao;
+        this.v1Service = v1Service;
+        this.jsonHelper = jsonHelper;
+        this.consolidationDetailsDao = consolidationDetailsDao;
     }
 
     public List<String> getHeadersForContainer() {
@@ -234,168 +96,6 @@ public class CSVParsingUtil<T> {
             headers.add(field.getName());
         }
         return headers;
-    }
-
-    public List<String> getAllAttributeValuesAsListForCarrier(CarrierDetailResponse carrierDetailResponse) throws IllegalAccessException {
-        if (carrierDetailResponse == null) carrierDetailResponse = new CarrierDetailResponse();
-        Class<?> clazz = carrierDetailResponse.getClass();
-        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-
-        Set<String> removedFields = Set.of("guid", "id", "masterData", "unlocationData", "carrierMasterData", "vesselsMasterData");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-
-        List<String> lst = new ArrayList<>();
-
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object value = carrierDetailResponse == null ? null : field.get(carrierDetailResponse);
-            lst.add(value != null ? value.toString() : "");
-        }
-        return lst;
-    }
-
-    public List<String> getAllAttributeValuesAsListForPDDetail(PickupDeliveryDetailsListResponse pdResponse) throws IllegalAccessException {
-        if (pdResponse == null) pdResponse = new PickupDeliveryDetailsListResponse();
-        Class<?> clazz = pdResponse.getClass();
-        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("guid", "id");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-
-        List<String> lst = new ArrayList<>();
-
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object value = pdResponse == null ? null : field.get(pdResponse);
-            lst.add(value != null ? value.toString() : "");
-        }
-        return lst;
-    }
-
-    public List<String> getAllAttributeValuesAsListForParty(PartiesResponse party) throws IllegalAccessException {
-        if (party == null) party = new PartiesResponse();
-        Class<?> clazz = party.getClass();
-        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("guid", "id", "orgData", "addressData");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-
-        List<String> lst = new ArrayList<>();
-
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object value = party == null ? null : field.get(party);
-            lst.add(value != null ? value.toString() : "");
-        }
-        return lst;
-    }
-
-    public List<String> getAllAttributeValuesAsList(ShipmentListResponse shipment) throws IllegalAccessException {
-        if (shipment == null) shipment = new ShipmentListResponse();
-        Class<?> clazz = shipment.getClass();
-        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("client", "consigner", "consignee", "additionalDetails", Constants.CARRIER_DETAILS, "pickupDetails", "deliveryDetails");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-
-        List<String> lst = new ArrayList<>();
-
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object value = shipment == null ? null : field.get(shipment);
-            lst.add(value != null ? value.toString() : "");
-        }
-        return lst;
-    }
-
-    public List<String> getAllAttributeValuesAsListConsol(ConsolidationListResponse response) throws IllegalAccessException {
-        if (response == null) response = new ConsolidationListResponse();
-        Class<?> clazz = response.getClass();
-        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("sendingAgent", "receivingAgent", "borrowedFrom", "creditor", "coLoadWith", "arrivalDetails", "departureDetails", Constants.CARRIER_DETAILS, "achievedQuantities", "allocations"); // Parties
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-
-        List<String> lst = new ArrayList<>();
-
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object value = response == null ? null : field.get(response);
-            lst.add(value != null ? value.toString() : "");
-        }
-        return lst;
-    }
-
-    public List<String> getAllAttributeValuesAsListForAllocations(AllocationsResponse response) throws IllegalAccessException {
-        if (response == null) response = new AllocationsResponse();
-        Class<?> clazz = response.getClass();
-        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("id", "guid");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-
-        List<String> lst = new ArrayList<>();
-
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object value = response == null ? null : field.get(response);
-            lst.add(value != null ? value.toString() : "");
-        }
-        return lst;
-    }
-
-
-    public List<String> getAllAttributeValuesAsListForAchievedQuantities(AchievedQuantitiesResponse response) throws IllegalAccessException {
-        if (response == null) response = new AchievedQuantitiesResponse();
-        Class<?> clazz = response.getClass();
-        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("id", "guid");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-
-        List<String> lst = new ArrayList<>();
-
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object value = response == null ? null : field.get(response);
-            lst.add(value != null ? value.toString() : "");
-        }
-        return lst;
-    }
-
-    public List<String> getAllAttributeValuesAsListForArrivalDepartureDetails(ArrivalDepartureDetailsResponse response) throws IllegalAccessException {
-        if (response == null) response = new ArrivalDepartureDetailsResponse();
-        Class<?> clazz = response.getClass();
-        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
-        Set<String> removedFields = Set.of("id", "guid");
-        fields = fields.stream().filter(field -> {
-            if (removedFields.contains(field.getName())) return false;
-            else return true;
-        }).toList();
-
-        List<String> lst = new ArrayList<>();
-
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object value = response == null ? null : field.get(response);
-            lst.add(value != null ? value.toString() : "");
-        }
-        return lst;
     }
 
     public List<String> getAllAttributeValuesAsListContainer(ContainerResponse response) throws IllegalAccessException {
@@ -419,50 +119,6 @@ public class CSVParsingUtil<T> {
         }
         return lst;
     }
-
-    public void addContainerToSheet(T entity, XSSFWorkbook workbook, XSSFSheet sheet, int rowNum) {
-        Row row = sheet.createRow(rowNum);
-        Field[] fields = Containers.class.getDeclaredFields();
-        int counter = 0;
-        addRowToSheet(entity, row, fields, counter);
-    }
-
-    public void addPackToSheet(T entity, XSSFWorkbook workbook, XSSFSheet sheet, int rowNum) {
-        Row row = sheet.createRow(rowNum);
-        Field[] fields = Packing.class.getDeclaredFields();
-        int counter = 0;
-        addRowToSheet(entity, row, fields, counter);
-    }
-
-    private void addRowToSheet(T entity, Row row, Field[] fields, int counter) {
-        for (Field field : fields) {
-            if (hiddenFields.contains(field.getName())) continue;
-            field.setAccessible(true);
-            try {
-                Object value = field.get(entity);
-                row.createCell(counter++).setCellValue(value != null ? value.toString() : "");
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public void addEventToSheet(Events entity, XSSFWorkbook workbook, XSSFSheet sheet, int rowNum) {
-        Field[] fields = Events.class.getDeclaredFields();
-        Row row = sheet.createRow(rowNum);
-        int counter = 0;
-        for (Field field : fields) {
-            if (hiddenFields.contains(field.getName())) continue;
-            field.setAccessible(true);
-            try {
-                Object value = field.get(entity);
-                row.createCell(counter++).setCellValue(value != null ? value.toString() : "");
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
 
     public String getCamelCase(String name) {
         return WordUtils.uncapitalize(name);
@@ -566,10 +222,13 @@ public class CSVParsingUtil<T> {
                     }
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
-                if (dgSubstanceIdPos == -1) {
+                if (dgSubstanceIdPos != -1) {
                     try {
-                        Long dgSubstanceIdVal = Long.parseLong(getCellValueAsString(row.getCell(dgSubstanceIdPos)));
-                        dgSubstanceIdList.add(dgSubstanceIdVal);
+                        String dgSubstanceIdCell = getCellValueAsString(row.getCell(dgSubstanceIdPos));
+                        if(!StringUtils.isEmpty(dgSubstanceIdCell)) {
+                            Long dgSubstanceIdVal = Long.parseLong(dgSubstanceIdCell);
+                            dgSubstanceIdList.add(dgSubstanceIdVal);
+                        }
                     } catch (Exception ex) {
                         throw new ValidationException("DGSubstanceId is invalid at row: " + i);
                     }
@@ -976,12 +635,6 @@ public class CSVParsingUtil<T> {
             }
         }
 
-    }
-
-    private void checkForUnitValidationEvents(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode) {
-//        if (column.toLowerCase().contains()) {
-//TODO
-//        }
     }
 
     private void checkForUnitValidations(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode)

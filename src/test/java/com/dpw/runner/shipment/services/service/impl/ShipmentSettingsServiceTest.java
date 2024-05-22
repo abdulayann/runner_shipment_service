@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,6 +56,9 @@ class ShipmentSettingsServiceTest {
 
     @Mock
     IShipmentSettingsDao shipmentSettingsDao;
+
+    @Mock
+    CommonUtils commonUtils;
 
     @Mock
     IHblTermsConditionTemplateDao hblTermsConditionTemplateDao;
@@ -218,7 +222,7 @@ class ShipmentSettingsServiceTest {
     @Test
     void completeSettingsUpdateCreateV1_Create() throws RunnerException{
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
-        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(new ArrayList<>());
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(shipmentSettingsDetailsResponse);
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetails.class))).thenReturn(testShipmentSettingsDetails);
@@ -229,7 +233,7 @@ class ShipmentSettingsServiceTest {
     @Test
     void completeSettingsUpdateCreateV1_Update() throws RunnerException{
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
-        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(shipmentSettingsDetailsResponse);
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetails.class))).thenReturn(testShipmentSettingsDetails);
@@ -255,7 +259,7 @@ class ShipmentSettingsServiceTest {
     void testCompleteSettingsUpdateCreateV1_FailCreate() throws RunnerException{
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
-        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(new ArrayList<>());
         doThrow(new RunnerException("")).when(spyService).completeCreateFromV1(any());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
         Assertions.assertThrows(RuntimeException.class, () -> spyService.completeSettingsUpdateCreateV1(commonRequestModel));
@@ -265,7 +269,7 @@ class ShipmentSettingsServiceTest {
     void testCompleteSettingsUpdateCreateV1_FailUpdate() throws RunnerException{
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
-        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(testShipmentSettingsDetails));
         doThrow(new RunnerException("")).when(spyService).completeUpdateFromV1(any(), any());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingRequest);
         Assertions.assertThrows(RuntimeException.class, () -> spyService.completeSettingsUpdateCreateV1(commonRequestModel));

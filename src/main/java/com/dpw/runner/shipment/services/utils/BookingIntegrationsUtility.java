@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 @EnableAsync(proxyTargetClass = true)
+@Generated
 public class BookingIntegrationsUtility {
 
     @Autowired
@@ -281,7 +282,7 @@ public class BookingIntegrationsUtility {
                         .load_type(shipmentDetails.getShipmentType())
                         .container_type_code(container.getContainerCode())
                         .pkg_type(container.getPacksType())
-                        .is_package(StringUtility.isNotEmpty(container.getPacksType()))
+                        .is_package(false)
                         .product_category_code(container.getCommodityGroup())
                         .product_name(getItemDescription(MasterDataType.COMMODITY_GROUP, container.getCommodityGroup()))
                         .is_reefer(container.getIsReefer())

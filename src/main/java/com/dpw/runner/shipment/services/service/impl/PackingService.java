@@ -31,10 +31,12 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
-import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,6 +53,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -108,9 +111,7 @@ public class PackingService implements IPackingService {
 
     @Autowired
     private IPackingSync packingSync;
-    @Lazy
-    @Autowired
-    private ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
 
@@ -208,7 +209,7 @@ public class PackingService implements IPackingService {
                     }
                 }
             }
-        } else if (packingRow.getVolumeWeight() != null && StringUtils.isEmpty(packingRow.getVolumeWeightUnit())) {
+        } else if (packingRow.getVolumeWeight() != null) {
             throw new ValidationException("Volumetric weight unit is empty or Volumetric weight unit not entered at row: " + i);
         }
     }
@@ -218,16 +219,13 @@ public class PackingService implements IPackingService {
                                                  Map<Long, Long> dicDGSubstanceUNDGContact, Map<Long, String> dicDGSubstanceFlashPoint
             , int row, Packing packingRow) {
         Boolean isHazardous = packingRow.getHazardous();
-        if (isHazardous != null) {
-            if (isHazardous == true) {
+        if (isHazardous != null && isHazardous) {
                 // DG CLASS(HAZARDOUS CLASS)
                 if (!StringUtils.isEmpty(packingRow.getDGClass())) {
                     String dgClass = packingRow.getDGClass();
-                    if (!StringUtils.isEmpty(dgClass)) {
                         if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(dgClass)) {
                             throw new ValidationException("DG class is invalid at row: " + row);
                         }
-                    }
                 }
 
                 if (packingRow.getDGSubstanceId() != null) {
@@ -238,11 +236,11 @@ public class PackingService implements IPackingService {
 
                 if (!StringUtils.isEmpty(packingRow.getFlashPoint())) {
                     if (packingRow.getDGSubstanceId() != null) {
-                        if (!dicDGSubstanceFlashPoint.containsKey(packingRow.getDGSubstanceId()) ||
-                                dicDGSubstanceFlashPoint.get(packingRow.getDGSubstanceId()) != packingRow.getFlashPoint()) {
+                        if (!dicDGSubstanceFlashPoint.containsKey(Long.valueOf(packingRow.getDGSubstanceId())) ||
+                                !Objects.equals(dicDGSubstanceFlashPoint.get(Long.valueOf(packingRow.getDGSubstanceId())), packingRow.getFlashPoint())) {
                             throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
                         }
-                    } else if (packingRow.getDGSubstanceId() == null && !StringUtils.isEmpty(packingRow.getFlashPoint())) {
+                    } else {
                         throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
                     }
                 }
@@ -251,14 +249,13 @@ public class PackingService implements IPackingService {
                     if (packingRow.getDGSubstanceId() != null) {
                         long substanceId = packingRow.getDGSubstanceId();
                         if (!dicDGSubstanceUNDGContact.containsKey(substanceId) ||
-                                dicDGSubstanceUNDGContact.get(packingRow.getDGSubstanceId()) != Long.valueOf(packingRow.getUNDGContact())) {
+                                !Objects.equals(dicDGSubstanceUNDGContact.get(Long.valueOf(packingRow.getDGSubstanceId())), Long.valueOf(packingRow.getUNDGContact()))) {
                             throw new ValidationException("UNDGContact is invalid at row: " + row);
                         }
                     } else if (packingRow.getDGSubstanceId() == null && !StringUtils.isEmpty(packingRow.getUNDGContact())) {
                         throw new ValidationException("UNDGContact is invalid at row: " + row);
                     }
                 }
-            }
         }
     }
 
@@ -275,7 +272,7 @@ public class PackingService implements IPackingService {
     private void checkCalculatedVolumeAndActualVolume(int row, Packing packingRow) throws RunnerException {
         if (!StringUtils.isEmpty(packingRow.getVolumeUnit())) {
             if (packingRow.getVolume() != null) {
-                if (packingRow.getVolumeUnit() != VOLUME_UNIT_M3) {
+                if (!Objects.equals(packingRow.getVolumeUnit(), VOLUME_UNIT_M3)) {
                     throw new ValidationException("Volume unit not in M3 at row: " + row);
                 }
                 BigDecimal actualVolume = packingRow.getVolume();
@@ -286,7 +283,7 @@ public class PackingService implements IPackingService {
                     throw new ValidationException("Volume is invalid at row: " + row);
                 }
             }
-        } else if (packingRow.getVolume() != null && StringUtils.isEmpty(packingRow.getVolumeUnit())) {
+        } else if (packingRow.getVolume() != null) {
             throw new ValidationException("Volume unit is empty or Volume unit not entered at row: " + row);
         }
     }
@@ -332,7 +329,7 @@ public class PackingService implements IPackingService {
             if (vwob.getChargeable() != null) {
                 calculatedChargeable = vwob.getChargeable();
                 calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
-                if (calculatedChargeable != actualChargeable) {
+                if (!Objects.equals(calculatedChargeable, actualChargeable)) {
                     BigDecimal difference = calculatedChargeable.subtract(actualChargeable).abs();
                     BigDecimal threshold = new BigDecimal("0.01");
                     if (difference.compareTo(threshold) > 0) {
@@ -919,7 +916,7 @@ public class PackingService implements IPackingService {
         PackingRequestV2 packingRequestV2 = (PackingRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.PACKAGES, StringUtility.convertToString(packingRequestV2.getGuid()), packingRequestV2);
+                return new ResponseEntity<>(HttpStatus.OK);
             }
             Optional<Packing> existingPacking = packingDao.findByGuid(packingRequestV2.getGuid());
             Packing packing = modelMapper.map(packingRequestV2, Packing.class);

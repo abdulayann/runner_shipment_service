@@ -14,8 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
-import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
@@ -34,6 +33,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +55,7 @@ import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
@@ -126,6 +127,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Autowired
     private ICustomerBookingDao customerBookingDao;
 
+    @Autowired
+    private IShipmentService shipmentService;
+
     @Override
     public ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
@@ -143,14 +147,20 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> fetchContractFromShipment(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
-            ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
-            List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(response.getBody());
-            return ResponseHelper.buildDependentServiceResponse(listResponse,0,0);
+            ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
+            ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+            if(response.getBody() != null)
+            {
+                mapContractToShipment(shipmentDetailsResponse, response.getBody());
+                var masterData = shipmentService.fetchAllMasterDataByKey(null, shipmentDetailsResponse);
+                shipmentDetailsResponse.setMasterDataMap(masterData);
+            }
+            return ResponseHelper.buildDependentServiceResponse(shipmentDetailsResponse,0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
@@ -159,14 +169,14 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchContractsTemp(CommonRequestModel commonRequestModel) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
-            ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
-            this.setOriginAndDestinationNameTemp(response.getBody());
-            return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+            ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
+            List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(response.getBody());
+            return ResponseHelper.buildDependentServiceResponse(listResponse,0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
@@ -286,36 +296,6 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
                 }
                 response.setUnlocMasterData(locationMap);
-            }
-        }
-    }
-
-    private void setOriginAndDestinationNameTemp(ListContractResponse response) {
-        Set<String> locCodes = new HashSet<>();
-        if(response != null && response.getContracts() != null  && !response.getContracts().isEmpty()) {
-            response.getContracts().forEach(cont -> {
-                locCodes.add(cont.getOrigin());
-                locCodes.add(cont.getDestination());
-            });
-            List<Object> criteria = Arrays.asList(
-                    Arrays.asList(LOCATIONS_REFERENCE_GUID),
-                    "In",
-                    Arrays.asList(locCodes)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
-                Map<String, String> locationMap = new HashMap<>();
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation.getName());
-                }
-                response.getContracts().forEach(cont -> {
-                    if(locationMap.containsKey(cont.getOrigin()))
-                        cont.setOrigin_name(locationMap.get(cont.getOrigin()));
-                    if(locationMap.containsKey(cont.getDestination()))
-                        cont.setDestination_name(locationMap.get(cont.getDestination()));
-                });
             }
         }
     }
@@ -714,4 +694,133 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         }
     }
 
+    private void mapContractToShipment(ShipmentDetailsResponse shipmentResponse, ListContractResponse contractResponse) {
+        List<ListContractResponse.ContractResponse> contracts = contractResponse.getContracts();
+        if(contracts != null && contracts.size() > 0)
+        {
+            ListContractResponse.ContractResponse contract = contracts.get(0);
+            shipmentResponse.setContractId(contract.getContract_id());
+            shipmentResponse.setContractType(contract.getContract_type());
+            shipmentResponse.setCarrierDetails(createCarrierDetails(contract));
+            shipmentResponse.setShipmentType(contract.getLoad_types() != null && !contract.getLoad_types().isEmpty() ? contract.getLoad_types().get(0) : null);
+            if(contract.getMeta() != null)
+            {
+                shipmentResponse.setTransportMode(contract.getMeta().getMode_of_transport());
+                shipmentResponse.setDirection(contract.getMeta().getShipment_movement());
+                shipmentResponse.setIncoterms(contract.getMeta().getIncoterm());
+                shipmentResponse.setServiceType(contract.getMeta().getService_mode());
+                ListContractResponse.BranchInfo branchInfo = contract.getMeta().getBranch_info();
+                if(branchInfo != null)
+                {
+                    shipmentResponse.setPrimarySalesAgentEmail(branchInfo.getSales_agent_primary_email());
+                    shipmentResponse.setSecondarySalesAgentEmail(branchInfo.getSales_agent_secondary_email());
+                    shipmentResponse.setSalesBranch(branchInfo.getId());
+                }
+                shipmentResponse.setRoutingsList(createRoutings(contract));
+                if((shipmentResponse.getTransportMode().equals("SEA") && shipmentResponse.getShipmentType().equals("LCL")) || (shipmentResponse.getTransportMode().equals("AIR")))
+                {
+                    shipmentResponse.setPackingList(createPackings(contract));
+                }
+                else
+                {
+                    shipmentResponse.setContainersList(createContainers(contract));
+                }
+            }
+        }
+    }
+
+    private CarrierDetailResponse createCarrierDetails(ListContractResponse.ContractResponse contract) {
+        return CarrierDetailResponse.builder()
+                .origin(contract.getOrigin())
+                .destination(contract.getDestination())
+                .originPort(contract.getMeta() != null ? contract.getMeta().getPol() : null)
+                .destinationPort(contract.getMeta() != null ? contract.getMeta().getPod() : null)
+                .build();
+    }
+
+    private List<RoutingsResponse> createRoutings(ListContractResponse.ContractResponse contractResponse) {
+        if(contractResponse.getMeta() != null && contractResponse.getMeta().getRoute() != null)
+        {
+            AtomicLong index = new AtomicLong(1L);
+            var routes = contractResponse.getMeta().getRoute().stream().filter(route -> route != null && route.getType() != null && route.getType().equals("LEG")).map(route -> RoutingsResponse.builder()
+                    .leg(index.getAndIncrement())
+                    .pol(route.getOrigin() != null ? route.getOrigin().getCode() : null)
+                    .pod(route.getDestination() != null ? route.getDestination().getCode() : null)
+                    .mode(contractResponse.getMeta().getMode_of_transport())
+                    .build()).toList();
+            return routes;
+        }
+        return null;
+    }
+
+    private List<PackingResponse> createPackings(ListContractResponse.ContractResponse contractResponse)
+    {
+        if(contractResponse.getContract_usage() != null && contractResponse.getContract_usage().size() > 0)
+        {
+            List<ListContractResponse.ContractUsage> contractUsages = contractResponse.getContract_usage();
+            List<PackingResponse> packingList = new ArrayList<>();
+            for(var contractUsage: contractUsages) {
+                var packing = new PackingResponse();
+                packing.setPacks(contractUsage.getUsage() != null ? contractUsage.getUsage().toString() : null);
+                var filter_attributes = contractUsage.getFilter_params();
+                if(filter_attributes != null)
+                {
+                    if(filter_attributes.getCargo_type() != null && filter_attributes.getCargo_type().size() > 0)
+                        packing.setPacksType(filter_attributes.getCargo_type().get(0));
+                    if(filter_attributes.getCommodity() != null && filter_attributes.getCommodity().size() > 0)
+                        packing.setCommodityGroup(filter_attributes.getCommodity().get(0));
+                }
+                var meta = contractUsage.getMeta();
+                if(meta != null)
+                {
+                     var load_attributes = meta.getLoad_attributes();
+                     packing.setWeight(load_attributes.getWeight());
+                     packing.setWeightUnit(load_attributes.getWeight_uom());
+                     packing.setVolume(load_attributes.getVolume());
+                     packing.setVolumeUnit(load_attributes.getVolume_uom());
+                     packing.setIsDimension(false);
+                     if(load_attributes.getDimensions() != null)
+                     {
+                         if(load_attributes.getDimensions().getLength() != null)
+                            packing.setLength(BigDecimal.valueOf(load_attributes.getDimensions().getLength()));
+                         if(load_attributes.getDimensions().getWidth() != null)
+                             packing.setWidth(BigDecimal.valueOf(load_attributes.getDimensions().getWidth()));
+                         if(load_attributes.getDimensions().getHeight() != null)
+                             packing.setHeight(BigDecimal.valueOf(load_attributes.getDimensions().getHeight()));
+                         packing.setLengthUnit(load_attributes.getDimensions().getUom());
+                         packing.setHeightUnit(load_attributes.getDimensions().getUom());
+                         packing.setWidthUnit(load_attributes.getDimensions().getUom());
+                         packing.setIsDimension(true);
+                     }
+                     packingList.add(packing);
+                }
+            }
+            return packingList;
+        }
+        return null;
+    }
+
+    private List<ContainerResponse> createContainers(ListContractResponse.ContractResponse contractResponse)
+    {
+        if(contractResponse.getContract_usage() != null && contractResponse.getContract_usage().size() > 0) {
+            List<ListContractResponse.ContractUsage> contractUsages = contractResponse.getContract_usage();
+            List<ContainerResponse> containerList = new ArrayList<>();
+            for(var contractUsage: contractUsages)
+            {
+                ContainerResponse containerResponse = new ContainerResponse();
+                containerResponse.setContainerCount(contractUsage.getUsage());
+                var filter_attributes = contractUsage.getFilter_params();
+                if(filter_attributes != null)
+                {
+                    if(filter_attributes.getCargo_type() != null && filter_attributes.getCargo_type().size() > 0)
+                        containerResponse.setContainerCode(filter_attributes.getCargo_type().get(0));
+                    if(filter_attributes.getCommodity() != null && filter_attributes.getCommodity().size() > 0)
+                        containerResponse.setCommodityGroup(filter_attributes.getCommodity().get(0));
+                }
+                containerList.add(containerResponse);
+            }
+            return containerList;
+        }
+        return null;
+    }
 }
