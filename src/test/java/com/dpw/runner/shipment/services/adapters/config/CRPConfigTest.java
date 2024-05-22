@@ -40,7 +40,7 @@ class CRPConfigTest {
     }
 
     @Test
-    public void testRestTemplateForCRP() throws IOException {
+    void testRestTemplateForCRP() throws IOException {
         RestTemplate restTemplate = crpConfig.restTemplateForCRP();
         List<ClientHttpRequestInterceptor> interceptors = restTemplate.getInterceptors();
 

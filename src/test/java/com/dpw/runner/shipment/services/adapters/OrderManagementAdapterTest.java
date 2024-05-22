@@ -40,7 +40,6 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -105,7 +104,7 @@ class OrderManagementAdapterTest {
                 .guid(guid)
                 .build();
         response.setOrder(orderManagementDTO);
-        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange(eq("nullnull123"), eq(HttpMethod.GET), eq(null), eq(OrderManagementResponse.class));
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull123", HttpMethod.GET, null, OrderManagementResponse.class);
         when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
         List<Map<String, Object>> responseMap = new ArrayList<>();
         Map<String, Object> map = new HashMap<>();
@@ -145,7 +144,7 @@ class OrderManagementAdapterTest {
                 .guid(guid)
                 .build();
         response.setOrder(orderManagementDTO);
-        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange(eq("nullnull123"), eq(HttpMethod.GET), eq(null), eq(OrderManagementResponse.class));
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull123", HttpMethod.GET, null, OrderManagementResponse.class);
         when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
         List<Map<String, Object>> responseMap = new ArrayList<>();
         Map<String, Object> map = new HashMap<>();
@@ -174,7 +173,7 @@ class OrderManagementAdapterTest {
                 .guid(guid)
                 .build();
         response.setOrder(orderManagementDTO);
-        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange(eq("nullnull123"), eq(HttpMethod.GET), eq(null), eq(OrderManagementResponse.class));
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull123", HttpMethod.GET, null, OrderManagementResponse.class);
         when(v1Service.fetchOrganization(any())).thenThrow(new RuntimeException());
         assertThrows(RunnerException.class, () -> orderManagementAdapter.getOrder("123"));
     }
