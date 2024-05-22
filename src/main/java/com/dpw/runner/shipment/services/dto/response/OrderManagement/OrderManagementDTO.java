@@ -1,12 +1,18 @@
 package com.dpw.runner.shipment.services.dto.response.OrderManagement;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Data
 public class OrderManagementDTO implements IRunnerResponse {
     private String orderId;
