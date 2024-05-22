@@ -1456,6 +1456,9 @@ public class ShipmentService implements IShipmentService {
                 awbDao.save(awb);
             }
         }
+
+        dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, oldEntity);
+
         return syncConsole;
     }
 
