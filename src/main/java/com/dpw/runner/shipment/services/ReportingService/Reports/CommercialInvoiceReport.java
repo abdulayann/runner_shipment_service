@@ -31,7 +31,7 @@ public class CommercialInvoiceReport extends IReport{
         // Package Count, Total amount pending
         // ShipmentProducts in v1 contains this information
         CommercialInvoiceModel model = (CommercialInvoiceModel) getDocumentModel(id);
-        return jsonHelper.convertValue(model, new TypeReference<Map<String, Object>>() {});
+        return jsonHelper.convertValue(model);
     }
 
     @Override

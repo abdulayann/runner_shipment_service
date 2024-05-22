@@ -58,8 +58,7 @@ public class ContainerManifestPrint extends IReport {
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);
         Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packings);
 
-        List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<List<Map<String, Object>>>() {
-        });
+        List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS));
         if (Objects.isNull(values)) values = new ArrayList<>();
         values.forEach(v -> {
             if (v.containsKey(ReportConstants.WEIGHT))

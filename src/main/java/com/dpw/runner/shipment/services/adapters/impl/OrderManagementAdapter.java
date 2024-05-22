@@ -149,7 +149,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, List.of(orgCodes)));
         orgRequest.setCriteriaRequests(orgCriteria);
         V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-        List<Map<String, Object>> responseMap = jsonHelper.convertValue(orgResponse.entities, new TypeReference<List<Map<String, Object>>>() {});
+        List<Map<String, Object>> responseMap = jsonHelper.convertValue(orgResponse.entities);
         Map<String, Map<String, Object>> res = new HashMap<>();
         if(responseMap != null) {
             for (Map<String, Object> i : responseMap) {
