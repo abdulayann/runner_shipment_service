@@ -58,7 +58,6 @@ public class HawbReport extends IReport{
     @Autowired
     private ModelMapper modelMapper;
 
-
     @Override
     public Map<String, Object> getData(Long id) {
         HawbModel hawbModel = (HawbModel) getDocumentModel(id);
@@ -338,8 +337,8 @@ public class HawbReport extends IReport{
             if (awbGoodsDescriptionInfo != null && awbGoodsDescriptionInfo.size() > 0){
                 String finalNtrQtyGoods = NtrQtyGoods;
                 List<AwbGoodsDescriptionInfoModel> awbGoodsDescriptionInfoModel = awbGoodsDescriptionInfo.stream().map(x ->modelMapper.map(x, AwbGoodsDescriptionInfoModel.class)).toList();
-                List<Map<String,Object>> values = jsonHelper.convertValue(awbGoodsDescriptionInfoModel);
-                List<Map<String,Object>> valuesFAT = jsonHelper.convertValue(awbGoodsDescriptionInfoModel);
+                List<Map<String,Object>> values = jsonHelper.convertValue(awbGoodsDescriptionInfoModel, new TypeReference<>(){});
+                List<Map<String,Object>> valuesFAT = jsonHelper.convertValue(awbGoodsDescriptionInfoModel, new TypeReference<>(){});
                 values.forEach(value -> {
                     value.put(ReportConstants.NATURE_QLTY_OF_GOODS, finalNtrQtyGoods);
                     if(value.get(ReportConstants.RATE_CLASS) != null){

@@ -142,8 +142,8 @@ public class JsonHelper {
         return map;
     }
 
-    public <T, F> F convertValue(T fromValue) {
-        return mapper.convertValue(fromValue, new TypeReference<>(){});
+    public <T, F> F convertValue(T fromValue, TypeReference<F> toValueTypeRef) {
+        return mapper.convertValue(fromValue, toValueTypeRef);
     }
 
     public <T,F> F convertCreateValue(T object, Class<F> clazz) {
