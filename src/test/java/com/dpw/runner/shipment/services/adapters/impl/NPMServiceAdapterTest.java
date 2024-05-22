@@ -240,7 +240,7 @@ class NPMServiceAdapterTest {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new ListContractRequest()).build();
         var responseEntity = nPMServiceAdapter.fetchContract(commonRequestModel);
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     /**
@@ -383,7 +383,7 @@ class NPMServiceAdapterTest {
         when(mock.getBody()).thenReturn(listContractResponse);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new ListContractRequest()).build();
         var responseEntity = nPMServiceAdapter.fetchContractFromShipment(commonRequestModel);
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -416,7 +416,7 @@ class NPMServiceAdapterTest {
         when(mock.getBody()).thenReturn(listContractResponse);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new ListContractRequest()).build();
         var responseEntity = nPMServiceAdapter.fetchContractFromShipment(commonRequestModel);
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -447,7 +447,7 @@ class NPMServiceAdapterTest {
         when(mock.getBody()).thenReturn(listContractResponse);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new ListContractRequest()).build();
         var responseEntity = nPMServiceAdapter.fetchContractFromShipment(commonRequestModel);
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     /**
@@ -594,7 +594,7 @@ class NPMServiceAdapterTest {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new ListContractRequest()).build();
         var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     /**
@@ -741,7 +741,7 @@ class NPMServiceAdapterTest {
 
         // Arrange and Act
         var response = nPMServiceAdapter.fetchOffers(CommonRequestModel.builder().data(fetchOffersRequest).build());
-        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
@@ -769,7 +769,7 @@ class NPMServiceAdapterTest {
 
         // Arrange and Act
         var response = nPMServiceAdapter.fetchOffers(CommonRequestModel.builder().data(fetchOffersRequest).build());
-        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
@@ -800,7 +800,7 @@ class NPMServiceAdapterTest {
 
         // Arrange and Act
         var response = nPMServiceAdapter.fetchOffers(CommonRequestModel.builder().data(fetchOffersRequest).build());
-        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
@@ -817,9 +817,9 @@ class NPMServiceAdapterTest {
         when(mock.getBody()).thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
         when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
                 .thenReturn(mock);
-
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new NPMFetchOffersRequestFromUI()).build();
         // Act and Assert
-        assertThrows(NPMException.class, () -> nPMServiceAdapter.fetchOffers(CommonRequestModel.builder().data(new NPMFetchOffersRequestFromUI()).build()));
+        assertThrows(NPMException.class, () -> nPMServiceAdapter.fetchOffers(commonRequestModel));
     }
 
     /**
@@ -845,7 +845,7 @@ class NPMServiceAdapterTest {
 
         // Arrange and Act
         var response = nPMServiceAdapter.fetchOffersV8(CommonRequestModel.builder().data(fetchOffersRequest).build());
-        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
@@ -875,7 +875,7 @@ class NPMServiceAdapterTest {
 
         // Arrange and Act
         var response = nPMServiceAdapter.fetchOffersV8(CommonRequestModel.builder().data(fetchOffersRequest).build());
-        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
@@ -906,7 +906,7 @@ class NPMServiceAdapterTest {
 
         // Arrange and Act
         var response = nPMServiceAdapter.fetchOffersV8(CommonRequestModel.builder().data(fetchOffersRequest).build());
-        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
