@@ -446,7 +446,8 @@ public class ShipmentService implements IShipmentService {
                         ++container20Count;
                     } else if (container.getContainerCode().contains(Constants.Cont40)) {
                         ++container40Count;
-                    } else if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                    }
+                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
                         ++container20GPCount;
                     } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
                         ++container20RECount;
@@ -2363,10 +2364,6 @@ public class ShipmentService implements IShipmentService {
             } else {
                 UUID guid = UUID.fromString(request.getGuid());
                 shipmentDetails = shipmentDao.findByGuid(guid);
-            }
-            if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             if (!shipmentDetails.isPresent()) {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
