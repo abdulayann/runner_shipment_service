@@ -137,4 +137,11 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private String currentPartyForQuote;
+    private String destinationSalesBranch;
+    private String destinationPrimarySalesAgentEmail;
+    private String destinationSecondarySalesAgentEmail;
+    private String destinationCurrentPartyForQuote;
+    private String destinationContractId;
+    private String destinationContractType;
+    private Boolean isAutoSellRequired;
 }
