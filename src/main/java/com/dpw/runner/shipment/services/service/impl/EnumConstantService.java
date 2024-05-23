@@ -38,7 +38,7 @@ public class EnumConstantService implements IEnumConstantService {
         for (Ownership dataType : Ownership.values()) {
             enumList.add(EnumConstantResponse.builder().id(dataType.getValue()).description(dataType.getDescription()).name(dataType.name()).build());
         }
-        response.put(Constants.MASTER_LIST, enumList);
+        response.put(Constants.OWNERSHIP, enumList);
 
         enumList = new ArrayList<>();
         for (BookingStatus dataType : BookingStatus.values()) {
