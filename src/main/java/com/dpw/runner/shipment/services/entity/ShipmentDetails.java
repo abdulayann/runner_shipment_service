@@ -446,4 +446,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "current_party_for_quote")
     private String currentPartyForQuote;
+
+    @Column(name = "entity_transfer")
+    private Boolean entityTransfer;
 }

@@ -169,7 +169,8 @@ public class EntityTransferService implements IEntityTransferService {
 
         List<String> tenantName = getTenantName(successTenantIds);
         createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipId.toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, null);
-
+        if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
+            shipmentDao.saveEntityTransfer(shipId, Boolean.TRUE);
 
         SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds).build();
         return ResponseHelper.buildSuccessResponse(sendShipmentResponse);
@@ -782,6 +783,8 @@ public class EntityTransferService implements IEntityTransferService {
         for (var shipment: consolidationDetails.get().getShipmentsList()) {
             this.createAutoEvent(shipment.getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.SHIPMENT);
             createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipment.getId().toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, consolDesc);
+            if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
+                shipmentDao.saveEntityTransfer(shipment.getId(), Boolean.TRUE);
         }
         SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds).build();
         return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);

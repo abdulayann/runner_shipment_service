@@ -46,4 +46,8 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1", nativeQuery = true)
     List<ShipmentDetails> getShipmentNumberFromId(List<Long> shipmentIds);
 
+    @Modifying @Transactional
+    @Query(value = "Update shipment_details set entity_transfer = ?2 Where id = ?1", nativeQuery = true)
+    void saveEntityTransfer(Long id, Boolean entityTransfer);
+
 }

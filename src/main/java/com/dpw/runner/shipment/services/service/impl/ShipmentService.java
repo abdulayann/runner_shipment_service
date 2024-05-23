@@ -210,6 +210,8 @@ public class ShipmentService implements IShipmentService {
     private MasterDataUtils masterDataUtils;
     @Autowired
     private IAwbDao awbDao;
+    @Autowired
+    private IHblDao hblDao;
 
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
@@ -1384,6 +1386,15 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setTriangulationPartner(null);
         if(shipmentDetails.getDocumentationPartner() != null && shipmentDetails.getDocumentationPartner() == 0)
             shipmentDetails.setDocumentationPartner(null);
+
+        if(Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDraftPrinted())
+                && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+            List<Hbl> hbls = hblDao.findByShipmentId(shipmentDetails.getId());
+            if(!hbls.isEmpty()) {
+                hblDao.delete(hbls.get(0));
+            }
+            shipmentDetails.getAdditionalDetails().setDraftPrinted(false);
+        }
 
         return syncConsole;
     }
