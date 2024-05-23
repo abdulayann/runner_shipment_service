@@ -218,6 +218,8 @@ public class ShipmentModel implements IDocumentModel {
     private String voyage;
     @JsonProperty("SecurityStatus")
     private String securityStatus;
+    @JsonProperty("ContainsHazardous")
+    private Boolean containsHazardous;
 
 }
 

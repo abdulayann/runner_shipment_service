@@ -422,6 +422,9 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "aom_free_text")
     private String aomFreeText;
 
+    @Column(name = "emergency_contact_number")
+    private String emergencyContactNumber;
+
     public String getbLRemarks() {
         return bLRemarks;
     }

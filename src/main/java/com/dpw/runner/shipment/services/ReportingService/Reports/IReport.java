@@ -14,7 +14,10 @@ import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -2832,5 +2835,23 @@ public abstract class IReport {
             }
         }
 
+    }
+
+    public static void validateAirDGCheck(ShipmentModel shipmentModel) {
+        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
+                Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+           boolean dgPack = false;
+           if(shipmentModel.getPackingList() != null && !shipmentModel.getPackingList().isEmpty()) {
+               for (PackingModel packingModel: shipmentModel.getPackingList()) {
+                   if(Boolean.TRUE.equals(packingModel.getHazardous())) {
+                       dgPack = true;
+                       break;
+                   }
+               }
+           }
+           if(!dgPack) {
+               throw new ValidationException("The shipment is marked as DG but does not contain any DG packages. Please add DG packs before printing.");
+           }
+        }
     }
 }

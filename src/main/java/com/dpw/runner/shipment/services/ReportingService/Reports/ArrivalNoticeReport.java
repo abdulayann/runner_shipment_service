@@ -45,6 +45,7 @@ public class ArrivalNoticeReport extends IReport {
     public IDocumentModel getDocumentModel(Long id) {
         ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
         arrivalNoticeModel.shipmentDetails = getShipment(id);
+        validateAirDGCheck(arrivalNoticeModel.shipmentDetails);
         if(arrivalNoticeModel.shipmentDetails != null && arrivalNoticeModel.shipmentDetails.getConsolidationList() != null && !arrivalNoticeModel.shipmentDetails.getConsolidationList().isEmpty())
         {
             arrivalNoticeModel.consolidationDetails = arrivalNoticeModel.shipmentDetails.getConsolidationList().get(0);

@@ -253,6 +253,17 @@ public class ShipmentDao implements IShipmentDao {
             errors.add("Multiple consolidations are attached to the shipment, please verify.");
         }
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+
+        // Non dg Shipments can not have dg packs
+        if(!Boolean.TRUE.equals(request.getContainsHazardous()) && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+        && request.getPackingList() != null && !request.getPackingList().isEmpty() && Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag())) {
+            for (Packing packing: request.getPackingList()) {
+                if(Boolean.TRUE.equals(packing.getHazardous())) {
+                    errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
+                }
+            }
+        }
+        
         // Routings leg no can not be repeated
         if (request.getRoutingsList() != null && request.getRoutingsList().size() > 0) {
             HashSet<Long> hashSet = new HashSet<>();
