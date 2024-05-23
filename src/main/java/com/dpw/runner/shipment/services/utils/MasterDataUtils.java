@@ -64,7 +64,6 @@ public class MasterDataUtils{
         if (Objects.isNull(chargeCode) || chargeCode.isEmpty())
             return null;
         List<Object> criteria = new ArrayList<>();
-        Map<String, EntityTransferChargeType> response = new HashMap<>();
         List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CHARGE_CODE));
         String operator = Operators.IN.getValue();
         criteria.addAll(List.of(field, operator, List.of(chargeCode)));
@@ -272,7 +271,7 @@ public class MasterDataUtils{
     }
     public Map<String, EntityTransferMasterLists> fetchInBulkMasterList(MasterListRequestV2 requests) {
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
-        if(requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
+        if(requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
             log.info("Request: {} || MasterListsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
@@ -327,9 +326,7 @@ public class MasterDataUtils{
             if (Objects.isNull(unLocationsList))
                 return keyMasterDataMap;
 
-            unLocationsList.forEach(location -> {
-                keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocCode : location.LocationsReferenceGUID, location);
-            });
+            unLocationsList.forEach(location -> keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocCode : location.LocationsReferenceGUID, location));
         }
         return keyMasterDataMap;
     }
@@ -994,10 +991,6 @@ public class MasterDataUtils{
         return requests;
     }
 
-    public MasterListRequest createMasterListRequest(MasterDataType itemType, String itemValue) {
-        if (StringUtility.isEmpty(itemValue)) return null;
-        return MasterListRequest.builder().ItemType(itemType.getDescription()).ItemValue(itemValue).build();
-    }
 
     public Map<String, SalesAgentResponse> fetchInSalesAgentList(List<String> requests) {
         Map<String, SalesAgentResponse> keyMasterDataMap = new HashMap<>();
