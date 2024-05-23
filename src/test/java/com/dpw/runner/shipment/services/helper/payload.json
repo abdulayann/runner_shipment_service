@@ -337,11 +337,32 @@
       "originAirport": "Kempegowda International Airport BLR",
       "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
       "firstCarrier": "Turkish Airlines",
-      "agentCASSCode": "8975"
+      "agentCASSCode": "8975",
+      "issuingAgentName": "ABB EGYPT"
     },
     "awbRoutingInfo": [
       {
         "entityId": 1,
+        "entityType": "HAWB",
+        "byCarrier": "Turkish Airlines",
+        "flightNumber": "6457",
+        "flightDate": "2024-02-02T01:00:00",
+        "destinationPortName": "USIAH_AIR",
+        "originPortName": "INBLR_AIR",
+        "isShipmentCreated": true
+      },
+      {
+        "entityId": 2,
+        "entityType": "HAWB",
+        "byCarrier": "Turkish Airlines",
+        "flightNumber": "6457",
+        "flightDate": "2024-02-02T01:00:00",
+        "destinationPortName": "USIAH_AIR",
+        "originPortName": "INBLR_AIR",
+        "isShipmentCreated": true
+      },
+      {
+        "entityId": 3,
         "entityType": "HAWB",
         "byCarrier": "Turkish Airlines",
         "flightNumber": "6457",
@@ -357,7 +378,9 @@
       "ntrQtyGoods": "DIMS: IN \r\n5=400X300X2,1=100X200X10\r\nTOTAL VOLUMETRIC WEIGHT ",
       "currency": "EGP",
       "customsValue": 0,
-      "chargeCode": "CC"
+      "chargeCode": "CC",
+      "carriageValue": 1,
+      "insuranceAmount": 1
     },
     "awbOtherInfo": {
       "entityId": 1,
@@ -494,6 +517,31 @@
         "destinationPortName": "USIAH_AIR",
         "originPortName": "INBLR_AIR",
         "isShipmentCreated": true
+      }
+    ],
+    "awbPaymentInfo": {
+      "weightCharges": 0,
+      "totalPrepaid": 0,
+      "totalCollect": 0,
+      "dueAgentCharges": 0,
+      "dueCarrierCharges": 0,
+      "tax": 0,
+      "valuationCharge" : 0
+    },
+    "awbOtherChargesInfo": [
+      {
+        "modeOfPayment": "Collect",
+        "chargeTypeId": "VG_04Oct",
+        "rate": "233",
+        "iataDescription": "ASD",
+        "chargeBasis": 1,
+        "amount": 233,
+        "chargeDue": 2,
+        "chargeTypeDescription": " updated details 123"
+      }],
+    "awbSpecialHandlingCodesMappings": [
+      {
+        "shcId": 1234
       }
     ]
   },
