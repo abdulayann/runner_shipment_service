@@ -508,4 +508,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "disable_bl_parties_name")
     private Boolean disableBlPartiesName;
+
+    @Column(name = "air_dg_flag")
+    private Boolean airDGFlag;
 }
