@@ -74,4 +74,7 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isContractEnforced;
     private String handlingInfo;
     private Long contractEnforcedQuantityLimit;
+    private String unNumberAir;
+    private String dgClassAir;
+    private String dgClassAirDescription;
 }

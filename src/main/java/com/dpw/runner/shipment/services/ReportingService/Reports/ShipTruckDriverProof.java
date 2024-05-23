@@ -30,6 +30,7 @@ public class ShipTruckDriverProof extends IReport {
     public IDocumentModel getDocumentModel(Long id) {
         TruckDriverModel truckDriverModel = new TruckDriverModel();
         truckDriverModel.shipmentDetails = getShipment(id);
+        validateAirDGCheck(truckDriverModel.shipmentDetails);
         if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getContainersList() != null && truckDriverModel.shipmentDetails.getContainersList().size() > 0) {
             List<ShipmentContainers> shipmentContainers = new ArrayList<>();
             for(var container: truckDriverModel.shipmentDetails.getContainersList())

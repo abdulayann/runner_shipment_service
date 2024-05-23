@@ -126,4 +126,6 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean isSummaryUpdated;
     private String exemptionCodes;
     private String aomFreeText;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
 }
