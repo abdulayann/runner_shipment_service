@@ -147,6 +147,8 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Map<String, String> textData;
     private String exemptionCodes;
     private String aomFreeText;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {
