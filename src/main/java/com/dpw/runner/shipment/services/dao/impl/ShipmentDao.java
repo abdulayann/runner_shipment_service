@@ -582,4 +582,10 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.getShipmentNumberFromId(shipmentIds);
     }
 
+    @Override
+    @Transactional
+    public void saveEntityTransfer(Long id, Boolean entityTransfer){
+        shipmentRepository.saveEntityTransfer(id, entityTransfer);
+    }
+
 }
