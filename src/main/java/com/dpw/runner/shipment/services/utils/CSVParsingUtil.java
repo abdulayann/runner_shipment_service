@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Events;
@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -449,7 +450,7 @@ public class CSVParsingUtil<T> {
         return entityList;
     }
 
-    private List<T> parseExcelFileEvents(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity,
+    public List<T> parseExcelFileEvents(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity,
                                          Map<String, Set<String>> masterDataMap, Class<T> entityType) throws IOException {
         if (request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
@@ -878,8 +879,13 @@ public class CSVParsingUtil<T> {
     }
 
     public void setFieldForEvents(T entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
+        if(attributeName.equals("containerNumber"))
+            return;
+        if(attributeName.equals("publicTrackingEvent"))
+            attributeName = "isPublicTrackingEvent";
         Field field = entity.getClass().getDeclaredField(attributeName);
         field.setAccessible(true);
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
         Class<?> fieldType = field.getType();
         Object parsedValue = null;
@@ -898,7 +904,7 @@ public class CSVParsingUtil<T> {
         } else if (fieldType == ContainerStatus.class) {
             parsedValue = ContainerStatus.valueOf(attributeValue);
         } else if (fieldType == LocalDateTime.class) {
-            parsedValue = LocalDateTime.parse(attributeValue);
+            parsedValue = LocalDateTime.parse(attributeValue.trim(), formatter);
         } else {
             throw new NoSuchFieldException();
         }
