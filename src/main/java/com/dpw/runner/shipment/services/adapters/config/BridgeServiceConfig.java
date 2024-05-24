@@ -21,8 +21,10 @@ public class BridgeServiceConfig {
     private String userName;
     @Value("${bridgeService.password}")
     private String password;
-    @Value("${bridgeService.requestCode}")
-    private String requestCode;
+
+
+    @Value("${bridgeService.tactIntegrationRequestCode}")
+    private String tactIntegrationRequestCode;
 
     @Value("${bridgeService.baseUrl}")
     private String baseUrl;

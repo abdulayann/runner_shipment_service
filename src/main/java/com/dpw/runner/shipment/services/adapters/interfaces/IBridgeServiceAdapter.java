@@ -6,5 +6,5 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
 public interface IBridgeServiceAdapter {
-    ResponseEntity<IRunnerResponse> request(CommonRequestModel commonRequestModel) throws RunnerException;
+    IRunnerResponse requestTactResponse(CommonRequestModel commonRequestModel) throws RunnerException;
 }

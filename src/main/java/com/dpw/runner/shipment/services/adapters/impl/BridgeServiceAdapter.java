@@ -20,7 +20,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -40,23 +39,23 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
 
     @Override
-    public ResponseEntity<IRunnerResponse> request(CommonRequestModel commonRequestModel) throws RunnerException {
+    public IRunnerResponse requestTactResponse(CommonRequestModel commonRequestModel) throws RunnerException {
         String authToken = generateToken();
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
 
         TactBridgePayload tactBridgePayload = (TactBridgePayload) commonRequestModel.getData();
-        BridgeRequest request = BridgeRequest.builder().requestCode(bridgeServiceConfig.getRequestCode())
+        BridgeRequest request = BridgeRequest.builder().requestCode(bridgeServiceConfig.getTactIntegrationRequestCode())
             .payload(tactBridgePayload).build();
 
         HttpEntity httpEntity = new HttpEntity(jsonHelper.convertToJson(request), headers);
 
         try {
             var bridgeResponse = restTemplate.postForEntity(url, httpEntity, BridgeServiceResponse.class);
-            return ResponseHelper.buildSuccessResponse(bridgeResponse.getBody());
+            return bridgeResponse.getBody();
         }
-        catch (HttpStatusCodeException e) {
+        catch (Exception e) {
             log.error("Error while hitting bridge service request endpoint", e);
             throw new RunnerException(e.getMessage());
         }
@@ -74,7 +73,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
             var response = restTemplate.exchange(RequestEntity.post(url).body(jsonHelper.convertToJson(authLoginRequest)), AuthLoginResponse.class);
             return response.getBody().getAccessToken();
         }
-        catch (HttpStatusCodeException e) {
+        catch (Exception e) {
             log.error("Error while generating token for bridge service", e);
             throw new RunnerException(e.getMessage());
         }
