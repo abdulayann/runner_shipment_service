@@ -12,10 +12,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
-import com.dpw.runner.shipment.services.commons.responses.ApiError;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
@@ -23,7 +21,6 @@ import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
@@ -53,9 +50,6 @@ import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.github.bohnman.squiggly.Squiggly;
-import com.github.bohnman.squiggly.util.SquigglyUtils;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,13 +72,10 @@ import org.testcontainers.shaded.org.checkerframework.checker.signature.qual.Ide
 import org.testcontainers.shaded.org.checkerframework.checker.units.qual.C;
 
 import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletResponse;
 import javax.swing.text.html.HTML;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -315,7 +306,8 @@ class ShipmentServiceTest {
     @Test
     void pushShipmentDataToDependentService_success() {
         //Test
-        shipmentService.pushShipmentDataToDependentService(testShipment, false);
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
+        shipmentService.pushShipmentDataToDependentService(testShipment, false, false);
         verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
     }
 
@@ -2590,7 +2582,8 @@ class ShipmentServiceTest {
         testShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         when(trackingServiceAdapter.mapShipmentDataToTrackingServiceData(testShipment)).thenReturn(UniversalTrackingPayload.builder().bookingReferenceNumber("1").build());
         when(jsonHelper.convertToJson(any())).thenReturn("json");
-        shipmentService.pushShipmentDataToDependentService(testShipment, false);
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
+        shipmentService.pushShipmentDataToDependentService(testShipment, false, false);
         verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
     }
 
@@ -2604,7 +2597,8 @@ class ShipmentServiceTest {
         when(trackingServiceAdapter.mapShipmentDataToTrackingServiceData(testShipment)).thenReturn(UniversalTrackingPayload.builder().bookingReferenceNumber("1").build());
         when(trackingServiceAdapter.mapEventDetailsForTracking(any(), any(), any(), any())).thenReturn(UniversalTrackingPayload.UniversalEventsPayload.builder().build());
         when(jsonHelper.convertToJson(any())).thenReturn("json");
-        shipmentService.pushShipmentDataToDependentService(testShipment, false);
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
+        shipmentService.pushShipmentDataToDependentService(testShipment, false, false);
         verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
     }
 

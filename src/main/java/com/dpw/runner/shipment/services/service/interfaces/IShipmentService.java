@@ -47,7 +47,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> containerListForTI(CommonRequestModel commonRequestModel);
 
-    void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate);
+    void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate, boolean isAutoSellRequired);
 
     ResponseEntity<IRunnerResponse> fullShipmentsList(CommonRequestModel commonRequestModel);
 
