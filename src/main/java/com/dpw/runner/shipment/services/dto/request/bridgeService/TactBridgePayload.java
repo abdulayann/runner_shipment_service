@@ -12,4 +12,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TactBridgePayload implements IRunnerRequest {
     private String origin;
+    private String destination;
+    private String rateSource;
+    private String carrier;
+    private String rateType;
+    private String chargeableWeight;
+    private String weightUnit;
 }
