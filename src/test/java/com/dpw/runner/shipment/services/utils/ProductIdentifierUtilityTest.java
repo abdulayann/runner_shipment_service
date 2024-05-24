@@ -10,7 +10,6 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entity.enums.ProductType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class ProductIdentifierUtilityTest {
+class ProductIdentifierUtilityTest {
 
     @InjectMocks
     private ProductIdentifierUtility productIdentifierUtility;
@@ -67,36 +66,6 @@ public class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         List<TenantProducts> tenantProducts = productIdentifierUtility.populateEnabledTenantProducts(shipmentSettingsDetails);
         assertEquals(ProductType.Shipment_Air_IMP, tenantProducts.get(0).getProductType());
-    }
-
-    @Test
-    void getCommonSequenceNumberTest() {
-        List<TenantProducts> tenantProductsList = new ArrayList<>();
-        TenantProducts tenantProduct = new TenantProducts();
-        tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
-        tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
-        tenantProductsList.add(tenantProduct);
-        PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
-
-
-        List<ProductSequenceConfig> productSequenceConfigList = new ArrayList<>();
-        ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
-        productSequenceConfig.setTenantId(1);
-        productSequenceConfig.setSerialCounter(1);
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HAWB);
-        productSequenceConfig.setTenantProducts(tenantProduct);
-        productSequenceConfig.setPrefix("Aa");
-        productSequenceConfigList.add(productSequenceConfig);
-        PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
-
-        when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
-
-        ListCommonRequest listRequest =
-                CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
-        String seqNumber = productIdentifierUtility.GetCommonSequenceNumber(Constants.TRANSPORT_MODE_SEA, ProductProcessTypes.HAWB);
-        assertNotNull(seqNumber);
     }
 
     @Test
@@ -516,66 +485,6 @@ public class ProductIdentifierUtilityTest {
     }
 
     @Test
-    void getCommonSequenceNumberRegexTest() {
-        List<TenantProducts> tenantProductsList = new ArrayList<>();
-        TenantProducts tenantProduct = new TenantProducts();
-        tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
-        tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
-        tenantProductsList.add(tenantProduct);
-        PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
-
-
-        List<ProductSequenceConfig> productSequenceConfigList = new ArrayList<>();
-        ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
-        productSequenceConfig.setTenantId(1);
-        productSequenceConfig.setSerialCounter(1);
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HAWB);
-        productSequenceConfig.setTenantProducts(tenantProduct);
-        productSequenceConfig.setPrefix("branchCode;L1");
-        productSequenceConfigList.add(productSequenceConfig);
-        PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
-
-        when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
-
-        ListCommonRequest listRequest =
-                CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
-        String seqNumber = productIdentifierUtility.GetCommonSequenceNumber(Constants.TRANSPORT_MODE_SEA, ProductProcessTypes.HAWB);
-        assertNotNull(seqNumber);
-    }
-
-    @Test
-    void getCommonSequenceNumberRegexTransportModeTest() {
-        List<TenantProducts> tenantProductsList = new ArrayList<>();
-        TenantProducts tenantProduct = new TenantProducts();
-        tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
-        tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
-        tenantProductsList.add(tenantProduct);
-        PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
-
-
-        List<ProductSequenceConfig> productSequenceConfigList = new ArrayList<>();
-        ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
-        productSequenceConfig.setTenantId(1);
-        productSequenceConfig.setSerialCounter(1);
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HAWB);
-        productSequenceConfig.setTenantProducts(tenantProduct);
-        productSequenceConfig.setPrefix("transportmode;1");
-        productSequenceConfigList.add(productSequenceConfig);
-        PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
-
-        when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
-
-        ListCommonRequest listRequest =
-                CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
-        String seqNumber = productIdentifierUtility.GetCommonSequenceNumber(Constants.TRANSPORT_MODE_SEA, ProductProcessTypes.HAWB);
-        assertNotNull(seqNumber);
-    }
-
-    @Test
     void getCommonSequenceNumberRegexDateTest() {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
@@ -585,45 +494,49 @@ public class ProductIdentifierUtilityTest {
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
 
-
         List<ProductSequenceConfig> productSequenceConfigList = new ArrayList<>();
+
         ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
         productSequenceConfig.setTenantId(1);
         productSequenceConfig.setSerialCounter(1);
         productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HAWB);
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfig.setPrefix("date;L1");
+
+        ProductSequenceConfig productSequenceConfig2 = new ProductSequenceConfig();
+        productSequenceConfig2.setTenantId(1);
+        productSequenceConfig2.setSerialCounter(1);
+        productSequenceConfig2.setProductProcessTypes(ProductProcessTypes.HAWB);
+        productSequenceConfig2.setTenantProducts(tenantProduct);
+        productSequenceConfig2.setPrefix("seq;L1");
+
+        ProductSequenceConfig productSequenceConfig3 = new ProductSequenceConfig();
+        productSequenceConfig3.setTenantId(1);
+        productSequenceConfig3.setSerialCounter(1);
+        productSequenceConfig3.setProductProcessTypes(ProductProcessTypes.HAWB);
+        productSequenceConfig3.setTenantProducts(tenantProduct);
+        productSequenceConfig3.setPrefix("transportmode;1");
+
+        ProductSequenceConfig productSequenceConfig4 = new ProductSequenceConfig();
+        productSequenceConfig4.setTenantId(1);
+        productSequenceConfig4.setSerialCounter(1);
+        productSequenceConfig4.setProductProcessTypes(ProductProcessTypes.HAWB);
+        productSequenceConfig4.setTenantProducts(tenantProduct);
+        productSequenceConfig4.setPrefix("branchCode;L1");
+
+        ProductSequenceConfig productSequenceConfig5 = new ProductSequenceConfig();
+        productSequenceConfig5.setTenantId(1);
+        productSequenceConfig5.setSerialCounter(1);
+        productSequenceConfig5.setProductProcessTypes(ProductProcessTypes.HAWB);
+        productSequenceConfig5.setTenantProducts(tenantProduct);
+        productSequenceConfig5.setPrefix("Aa");
+
         productSequenceConfigList.add(productSequenceConfig);
-        PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
+        productSequenceConfigList.add(productSequenceConfig2);
+        productSequenceConfigList.add(productSequenceConfig3);
+        productSequenceConfigList.add(productSequenceConfig4);
+        productSequenceConfigList.add(productSequenceConfig5);
 
-        when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
-
-        ListCommonRequest listRequest =
-                CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
-        String seqNumber = productIdentifierUtility.GetCommonSequenceNumber(Constants.TRANSPORT_MODE_SEA, ProductProcessTypes.HAWB);
-        assertNotNull(seqNumber);
-    }
-
-    @Test
-    void getCommonSequenceNumberRegexSeqTest() {
-        List<TenantProducts> tenantProductsList = new ArrayList<>();
-        TenantProducts tenantProduct = new TenantProducts();
-        tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
-        tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
-        tenantProductsList.add(tenantProduct);
-        PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
-
-
-        List<ProductSequenceConfig> productSequenceConfigList = new ArrayList<>();
-        ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
-        productSequenceConfig.setTenantId(1);
-        productSequenceConfig.setSerialCounter(1);
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HAWB);
-        productSequenceConfig.setTenantProducts(tenantProduct);
-        productSequenceConfig.setPrefix("seq;L1");
-        productSequenceConfigList.add(productSequenceConfig);
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
