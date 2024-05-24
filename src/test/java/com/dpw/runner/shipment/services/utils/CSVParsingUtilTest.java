@@ -5,14 +5,12 @@ import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.ContainerEventExcelModel;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -85,6 +83,9 @@ class CSVParsingUtilTest {
     private static MultipartFile mockContainerFile;
     private static MultipartFile mockContainerInvalidFile;
     private static CSVParsingUtil<Containers> csvParsingUtilContainer;
+    private static CSVParsingUtil<Events> csvParsingUtilContainerEvents;
+
+    private static MultipartFile mockExcelFileEvents;
 
 
     @BeforeEach
@@ -95,10 +96,12 @@ class CSVParsingUtilTest {
         containerResponse = objectMapper.convertValue(jsonTestUtility.getTestContainer(), ContainerResponse.class);
         csvParsingUtil = new CSVParsingUtil<Packing>(consoleShipmentMappingDao, shipmentDao, v1Service, jsonHelper, consolidationDetailsDao);
         csvParsingUtil.executorService = Executors.newFixedThreadPool(10);
+        csvParsingUtilContainerEvents = new CSVParsingUtil<Events>(consoleShipmentMappingDao, shipmentDao, v1Service, jsonHelper, consolidationDetailsDao);
     }
 
     @BeforeAll
     static void setupBeforeAll() throws IOException {
+        mockExcelFileEvents = getFileFromResources("TestContainerEvents.xlsx");
         mockContainerFile = getFileFromResources("TestContainers.xlsx");
         mockPackingFile = getFileFromResources("TestCargoDetails.xlsx");
         mockPackingInvalidFile = getFileFromResources("TestCargoDetailsInvalid.xlsx");
@@ -195,12 +198,6 @@ class CSVParsingUtilTest {
         when(v1Service.fetchCommodityData(any())).thenReturn(V1DataResponse.builder().entities(new ArrayList<>()).build());
         CommodityResponse commodityResponse = new CommodityResponse();
 
-//        List<Object> field = new ArrayList<>(List.of("ItemType"));
-//        String operator = "=";
-//        List<Object> criteria = List.of(field, operator, MasterDataType.WEIGHT_UNIT.getId());
-//        when(v1Service.fetchMasterData(CommonV1ListRequest.builder().criteriaRequests(criteria).build())).thenReturn(V1DataResponse.builder().entities(new ArrayList<>()).build());
-//        when(jsonHelper.convertValueToList(any(ArrayList.class), eq(MasterData.class))).thenReturn(List.of(MasterData.builder().itemValue("AMM").build()));
-
         commodityResponse.setCode("1231");
         List<CommodityResponse> commodityResponseList = List.of(commodityResponse);
         when(jsonHelper.convertValueToList(any(Object.class), eq(CommodityResponse.class))).thenReturn(commodityResponseList);
@@ -213,6 +210,37 @@ class CSVParsingUtilTest {
 
         assertNotNull(result);
         assertEquals(2, result.size());
+    }
+
+    @Test
+    void testValidInput_ForContainerEvents() throws IOException {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(123L);
+        Map<UUID, Events> mapOfEntity = Map.of(
+                UUID.fromString("87930938-8fdf-42d4-a70c-204b511a1684"),jsonTestUtility.getTestEventData(),
+                UUID.fromString("cbd3bb18-bba8-46ad-85e6-4e94290fc21b"),jsonTestUtility.getTestEventData());
+
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        Map<Long, Long> undg = new HashMap<>();
+        Map<Long, String> flashpoint = new HashMap<>();
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
+        var consol = jsonTestUtility.getTestNewConsolidation();
+        consol.setContainersList(List.of(Containers.builder().containerNumber("ABCD1231").build()));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consol));
+        MDC.setContextMap(Map.of("a" , "b"));
+        List<EntityTransferDGSubstance> entityTransferDGSubstanceList = List.of(EntityTransferDGSubstance.builder().Id(2L).UNIDNo(123L).FlashPoint("FlashPoint").build());
+        CommodityResponse commodityResponse = new CommodityResponse();
+
+        commodityResponse.setCode("1231");
+        List<CommodityResponse> commodityResponseList = List.of(commodityResponse);
+
+        ShipmentDetails sd1 = jsonTestUtility.getTestShipment();
+        sd1.setShipmentId("SHP000109322");
+        sd1.setId(12L);
+        List<Events> result = (List<Events>) csvParsingUtilContainerEvents.parseExcelFile(mockExcelFileEvents, request, mapOfEntity, masterDataMap, Events.class, ContainerEventExcelModel.class, undg, flashpoint, locCodeToLocationReferenceGuidMap);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
     }
 
     @Test

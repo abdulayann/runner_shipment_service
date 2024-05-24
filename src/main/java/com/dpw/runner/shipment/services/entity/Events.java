@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @SQLDelete(sql = "UPDATE events SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class Events extends MultiTenancy {
