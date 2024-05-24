@@ -1730,7 +1730,7 @@ public class ShipmentService implements IShipmentService {
 
     public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) throws RunnerException {
         ShipmentSettingsDetails shipmentSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-        if(shipmentSettings.getShipConsolidationContainerEnabled()) {
+        if(Boolean.TRUE.equals(shipmentSettings.getShipConsolidationContainerEnabled())) {
             ConsolidationDetails consolidationDetails = new ConsolidationDetails();
             consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_DRT);
             consolidationDetails.setTransportMode(shipmentDetails.getTransportMode());
