@@ -177,21 +177,15 @@ public class PreAlertReport extends IReport {
         }
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, preAlertModel.getShipmentContainers());
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(preAlertModel.getShipmentContainers()));
-        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            UnlocationsResponse origin = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
-            if (origin != null && origin.getIataCode() != null)
-                dictionary.put(ReportConstants.ORIGIN, origin.getIataCode());
-            else
-                dictionary.put(ReportConstants.ORIGIN, null);
-        } else
+        UnlocationsResponse origin = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
+        if (origin != null && origin.getIataCode() != null)
+            dictionary.put(ReportConstants.ORIGIN, origin.getIataCode());
+        else
             dictionary.put(ReportConstants.ORIGIN, null);
-        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            UnlocationsResponse destination = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
-            if (destination != null && destination.getIataCode() != null)
-                dictionary.put(ReportConstants.DESTINATION, destination.getIataCode());
-            else
-                dictionary.put(ReportConstants.DESTINATION, null);
-        } else
+        UnlocationsResponse destination = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
+        if (destination != null && destination.getIataCode() != null)
+            dictionary.put(ReportConstants.DESTINATION, destination.getIataCode());
+        else
             dictionary.put(ReportConstants.DESTINATION, null);
         dictionary.put(JOB_NO, preAlertModel.shipmentDetails.getShipmentId());
         dictionary.put(AIRLINE, preAlertModel.shipmentDetails.getCarrierDetails().getShippingLine());
@@ -214,8 +208,8 @@ public class PreAlertReport extends IReport {
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         UnlocationsResponse pol = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getOriginPort());
         UnlocationsResponse pod = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getDestinationPort());
-        UnlocationsResponse origin = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
-        UnlocationsResponse destination = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
+        origin = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
+        destination = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
         if (pol != null) {
             dictionary.put(ReportConstants.PORT_OF_DEPARTURE, pol.getPortName());
             dictionary.put(ReportConstants.PORT_OF_DEPARTURE_COUNTRY, pol.getCountry());
