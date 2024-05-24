@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SuppressWarnings("rawtypes")
-@Generated
 public class ObjectUtility {
     private ObjectUtility(){}
 
