@@ -1792,7 +1792,7 @@ public class ShipmentService implements IShipmentService {
             var routeRequest = routings.stream().filter(x -> x.getMode().equals(shipmentDetails.getTransportMode())).findFirst();
             List<Routings> createRoutes = new ArrayList<>();
             if(routeRequest.isPresent()) {
-                createRoutes.add(convertToClass(routeRequest.get(), Routings.class));
+                createRoutes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
                 createRoutes = createConsoleRoutePayload(createRoutes);
                 consolidationDetails.setRoutingsList(createRoutes);
             }

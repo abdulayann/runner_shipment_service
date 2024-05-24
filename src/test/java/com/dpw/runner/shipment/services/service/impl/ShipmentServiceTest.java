@@ -3700,8 +3700,6 @@ class ShipmentServiceTest {
         verify(v1Service, times(1)).fetchCreditLimit(any(AddressTranslationRequest.OrgAddressCode.class));
     }
 
-
-
     @Test
     void calculateAutoUpdateWeightVolumeInShipmentP100est() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
@@ -3978,6 +3976,110 @@ class ShipmentServiceTest {
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignAllContainers(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void fetchCreditLimitResponseNull() throws RunnerException {
+        String orgCode = "ORG123";
+        String addressCode = "Default1";
+
+        V1DataResponse mockV1Response = new V1DataResponse();
+        CreditLimitResponse mockCreditLimitResponse = new CreditLimitResponse();
+        mockV1Response.setEntities(List.of(mockCreditLimitResponse));
+        when(v1Service.fetchCreditLimit(any())).thenReturn(V1DataResponse.builder().build());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchCreditLimit(orgCode, addressCode);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+    }
+
+    @Test
+    void fetchCreditLimitResponseNotNull() throws RunnerException {
+        String orgCode = "ORG123";
+        String addressCode = "Default1";
+
+        V1DataResponse mockV1Response = new V1DataResponse();
+        CreditLimitResponse mockCreditLimitResponse = new CreditLimitResponse();
+        mockV1Response.setEntities(List.of(mockCreditLimitResponse));
+        when(v1Service.fetchCreditLimit(any())).thenReturn(mockV1Response);
+        when(jsonHelper.convertValueToList(any(), eq(CreditLimitResponse.class))).thenReturn(null);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchCreditLimit(orgCode, addressCode);
+        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+    }
+
+    @Test
+    void fetchShipmentsForConsoleIdNull() throws RunnerException {
+        CommonGetRequest request = CommonGetRequest.builder().id(null).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        assertThrows(RunnerException.class, () -> {
+            shipmentService.fetchShipmentsForConsoleId(commonRequestModel);
+        });
+    }
+
+    @Test
+    void testCreateConsolidationRoutes() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
+
+        PartyRequestV2 partyRequestV2 = new PartyRequestV2();
+        partyRequestV2.setTenantId(1);
+
+        Parties parties = Parties.builder().orgCode("1").build();
+
+        when(v1Service.getDefaultOrg()).thenReturn(partyRequestV2);
+        when(modelMapper.map(any(), any())).thenReturn(parties);
+
+        doNothing().when(consolidationService).generateConsolidationNumber(any(ConsolidationDetails.class));
+        CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("DestinationPort").build();
+        Routings routings = new Routings();
+        routings.setTenantId(1);
+        routings.setMode(Constants.TRANSPORT_MODE_SEA);
+        routings.setLeg(1L);
+
+        when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .carrierDetails(carrierDetails)
+                .direction(Constants.DIRECTION_IMP)
+                .masterBill("1234")
+                .routingsList(Arrays.asList(routings))
+                .build();
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+
+        ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
+
+        assertNotNull(result);
+        assertEquals(carrierDetails, result.getCarrierDetails());
+    }
+
+    @Test
+    void calculateAutoUpdateWeightVolumeInShipmentPackingListTest() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .weightChargeableUnit(Constants.WEIGHT_UNIT_KG)
+                .volumeChargeableUnit(Constants.VOLUME_UNIT_M3)
+                .build());
+
+        AutoUpdateWtVolRequest autoUpdateWtVolRequest = new AutoUpdateWtVolRequest();
+        autoUpdateWtVolRequest.setPackingList(Arrays.asList(PackingRequest.builder().build()));
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(autoUpdateWtVolRequest).build();
+        AutoUpdateWtVolResponse autoUpdateWtVolResponse = new AutoUpdateWtVolResponse();
+
+        List<Packing> packingList = new ArrayList<>();
+        Packing packing = new Packing();
+        packing.setPacks("10");
+        packingList.add(packing);
+
+        when(jsonHelper.convertValue(autoUpdateWtVolRequest, AutoUpdateWtVolResponse.class)).thenReturn(autoUpdateWtVolResponse);
+        when(jsonHelper.convertValueToList(anyList(), eq(Packing.class))).thenReturn(packingList);
+        when(packingService.calculatePackSummary(any(), any(), any(), any())).thenReturn(new PackSummaryResponse());
+
+        assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
+        assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
     }
 
     private Runnable mockRunnable() {
