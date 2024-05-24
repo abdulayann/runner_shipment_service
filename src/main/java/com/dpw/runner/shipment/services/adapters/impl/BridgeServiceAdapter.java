@@ -53,6 +53,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
         try {
             var bridgeResponse = restTemplate.postForEntity(url, httpEntity, BridgeServiceResponse.class);
+            log.info("Received data from bridge service for tact integration");
             return bridgeResponse.getBody();
         }
         catch (Exception e) {
@@ -71,6 +72,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getAuthLoginUrl();
         try {
             var response = restTemplate.exchange(RequestEntity.post(url).body(jsonHelper.convertToJson(authLoginRequest)), AuthLoginResponse.class);
+            log.info("Received token from bridge service");
             return response.getBody().getAccessToken();
         }
         catch (Exception e) {
