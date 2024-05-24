@@ -465,9 +465,9 @@ public class CSVParsingUtil<T> {
         List<String> containerNumberList = new ArrayList<>();
         Set<String> mandatoryColumns = new HashSet<>();
         mandatoryColumns.add("eventCode");
+        mandatoryColumns.add("containerNumber");
         mandatoryColumns.add(Constants.CONTAINER_NUMBER);
 
-        int guidPos = -1;
         int containerNumberPos = -1;
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
@@ -485,9 +485,6 @@ public class CSVParsingUtil<T> {
                 }
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
                 headerSet.add(header[i]);
-                if (header[i].equalsIgnoreCase("guid")) {
-                    guidPos = i;
-                }
                 if (header[i].equalsIgnoreCase(Constants.CONTAINER_NUMBER)) {
                     containerNumberPos = i;
                 }
@@ -497,29 +494,18 @@ public class CSVParsingUtil<T> {
                 }
             }
 
-            //checking for mandatory column
             if (!mandatoryColumns.isEmpty()) {
                 throw new ValidationException(mandatoryColumns.toString() + "column(s) is missing");
             }
 
 
-            //-----fetching master data in bulk
             Map<String, Set<String>> masterListsMap = getAllMasterDataEvents(masterDataMap);
 
             if (headerSet.size() < headerRow.getLastCellNum()) {
                 throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
             }
+
             Set<String> guidSet = new HashSet<>();
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                Row row = sheet.getRow(i);
-                if (guidPos != -1) {
-                    String guidCell = getCellValueAsString(row.getCell(guidPos));
-                    if (!StringUtils.isEmpty(guidCell) && guidSet.contains(guidCell)) {
-                        throw new ValidationException(ContainerConstants.GUID_DUPLICATE + i);
-                    }
-                    guidSet.add(getCellValueAsString(row.getCell(guidPos)));
-                }
-            }
             Set<String> orderEventsDictionary = masterListsMap.get(MasterDataType.ORDER_EVENTS.getDescription());
             Set<String> existingContainerNumberSet = consol.getContainersList()
                     .stream().map(containers -> containers.getContainerNumber())
@@ -528,23 +514,7 @@ public class CSVParsingUtil<T> {
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 boolean isUpdate = false;
-                if (guidPos != -1) {
-                    String guidVal = getCellValueAsString(row.getCell(guidPos));
-                    try {
-                        if (!StringUtils.isEmpty(guidVal)) {
-                            var containerGuid = UUID.fromString(guidVal);
-                            if (mapOfEntity != null && !mapOfEntity.containsKey(containerGuid)) {
-                                throw new ValidationException(String.format(ContainerConstants.GUID_NOT_EXIST_FOR_CONSOLIDATION, i));
-                            }
-                        }
-                    } catch (Exception ex) {
-                        throw new ValidationException(ContainerConstants.GUID_NOT_VALID + i);
-                    }
-                }
-                T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
-                if (mapOfEntity != null && guidPos != -1 && mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
-                    isUpdate = true;
-                }
+                T entity = createEntityInstance(entityType);
                 for (int j = 0; j < header.length; j++) {
                     Cell cell = row.getCell(j);
                     if (cell != null) {
@@ -920,7 +890,6 @@ public class CSVParsingUtil<T> {
         var dgClassMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DG_CLASS, masterDataMap)), executorService);
         var countryCodeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.COUNTRIES, masterDataMap)), executorService);
         var packUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.PACKS_UNIT, masterDataMap)), executorService);
-//        var containerTypeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchContainerType(masterDataMap)), executorService);
         var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap, locCodeToLocationReferenceGuidMap)), executorService);
         var commodityMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchCommodityData(commodityCodesList, masterDataMap)), executorService);
 
