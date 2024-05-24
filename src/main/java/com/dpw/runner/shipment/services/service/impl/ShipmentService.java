@@ -1304,7 +1304,7 @@ public class ShipmentService implements IShipmentService {
                 if((removedConsolIds != null && !removedConsolIds.isEmpty()) || isNewConsolAttached)
                     throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
             } else {
-                if((removedConsolIds != null && !removedConsolIds.isEmpty() && Boolean.TRUE.equals(oldEntity.getConsolidationList().get(0).getHazardous()))
+                if((removedConsolIds != null && !removedConsolIds.isEmpty() && oldEntity != null && oldEntity.getConsolidationList() != null && Boolean.TRUE.equals(oldEntity.getConsolidationList().get(0).getHazardous()))
                     || (isNewConsolAttached && Boolean.TRUE.equals(consolidationDetailsRequests.get(0).getHazardous()))) {
                     throw new RunnerException("You do not have Air DG permissions to edit this as it is a part of DG Consol");
                 }
