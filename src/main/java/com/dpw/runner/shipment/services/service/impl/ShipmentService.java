@@ -95,6 +95,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
@@ -1295,6 +1296,19 @@ public class ShipmentService implements IShipmentService {
         else {
             shipmentDetails.setConsolRef(null);
             tempConsolIds = Objects.isNull(oldEntity) ? new ArrayList<>() : oldEntity.getConsolidationList().stream().map(e -> e.getId()).toList();
+        }
+
+        boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
+        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) && !dgUser) {
+            if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                if((removedConsolIds != null && !removedConsolIds.isEmpty()) || isNewConsolAttached)
+                    throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
+            } else {
+                if((removedConsolIds != null && !removedConsolIds.isEmpty() && oldEntity != null && oldEntity.getConsolidationList() != null && Boolean.TRUE.equals(oldEntity.getConsolidationList().get(0).getHazardous()))
+                    || (isNewConsolAttached && Boolean.TRUE.equals(consolidationDetailsRequests.get(0).getHazardous()))) {
+                    throw new RunnerException("You do not have Air DG permissions to edit this as it is a part of DG Consol");
+                }
+            }
         }
 
         List<PackingRequest> packingRequest = shipmentRequest.getPackingList();
