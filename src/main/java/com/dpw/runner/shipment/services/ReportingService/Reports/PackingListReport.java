@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -178,7 +179,7 @@ public class PackingListReport extends IReport {
         if(shipment.getPackingList() != null && shipment.getPackingList().size() > 0) {
             List<Map<String, Object>> values = new ArrayList<>();
             shipment.getPackingList().forEach(i ->
-                values.add(jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                values.add(jsonHelper.convertValue(i, new TypeReference<>() {}))
             );
 
             for(var v : values) {
@@ -188,9 +189,9 @@ public class PackingListReport extends IReport {
                 if (!breakFlagNetWeight && v.containsKey(ReportConstants.NET_WEIGHT) && v.get(ReportConstants.NET_WEIGHT) != null
                         && v.containsKey(ReportConstants.NET_WEIGHT_UNIT) && v.get(ReportConstants.NET_WEIGHT_UNIT) != null) {
                     if (unitOfTotalNetWeight == null) {
-                        unitOfTotalNetWeight = stringValueOf(v.get(ReportConstants.NET_WEIGHT));
+                        unitOfTotalNetWeight = stringValueOf(v.get(ReportConstants.NET_WEIGHT_UNIT));
                         totalNetWeight = totalNetWeight.add(new BigDecimal(stringValueOf(v.get(ReportConstants.NET_WEIGHT))));
-                    } else if (!unitOfTotalNetWeight.equals(stringValueOf(v.get(ReportConstants.NET_WEIGHT)))) {
+                    } else if (!unitOfTotalNetWeight.equals(stringValueOf(v.get(ReportConstants.NET_WEIGHT_UNIT)))) {
                         totalNetWeight = BigDecimal.ZERO;
                         breakFlagNetWeight = true;
                     } else {
