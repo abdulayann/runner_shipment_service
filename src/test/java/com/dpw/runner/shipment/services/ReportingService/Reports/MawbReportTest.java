@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class MawbReportTest {
+class MawbReportTest {
 
     @InjectMocks
     private MawbReport mawbReport;
@@ -91,7 +92,7 @@ public class MawbReportTest {
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(new ConsolidationModel());
         mawbReport.isDMawb = false;
-        mawbReport.getDocumentModel(123L);
+        Assertions.assertNotNull(mawbReport.getDocumentModel(123L));
     }
 
     @Test
@@ -102,11 +103,11 @@ public class MawbReportTest {
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(awbRepository.findByConsolidationId(any())).thenReturn(null);
         mawbReport.isDMawb = true;
-        mawbReport.getDocumentModel(123L);
+        Assertions.assertNotNull(mawbReport.getDocumentModel(123L));
     }
 
     @Test
     void populateDictionary() {
-        mawbReport.populateDictionary(null);
+        Assertions.assertNotNull(mawbReport.populateDictionary(null));
     }
 }

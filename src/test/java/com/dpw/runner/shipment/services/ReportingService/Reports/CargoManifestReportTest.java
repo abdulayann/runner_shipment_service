@@ -46,9 +46,10 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(MockitoExtension.class)
-public class CargoManifestReportTest {
+class CargoManifestReportTest {
     @InjectMocks
     private CargoManifestReport cargoManifestReport;
 
@@ -265,8 +266,7 @@ public class CargoManifestReportTest {
         containerMap.put(VGMWeight, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
-        cargoManifestReport.populateDictionary(cargoManifestModel);
-        assert (true);
+        assertNotNull(cargoManifestReport.populateDictionary(cargoManifestModel));
     }
 
     @Test
@@ -283,7 +283,6 @@ public class CargoManifestReportTest {
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
 
-        cargoManifestReport.getDocumentModel(123L);
-        assert (true);
+        assertNotNull(cargoManifestReport.getDocumentModel(123L));
     }
 }
