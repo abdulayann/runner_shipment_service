@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
-import com.dpw.runner.shipment.services.ReportingService.Models.ConsolidationManifestPrintModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ManifestShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -11,10 +11,12 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -51,10 +53,10 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ManifestPrintReportTest {
+class ManifestShipmentReportTest {
 
     @InjectMocks
-    private ManifestPrintReport manifestPrintReport;
+    private ManifestShipmentReport manifestShipmentReport;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -79,6 +81,9 @@ class ManifestPrintReportTest {
 
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Mock
+    private IShipmentDao shipmentDao;
 
     @BeforeAll
     static void init() throws IOException {
@@ -108,7 +113,7 @@ class ManifestPrintReportTest {
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
     }
 
-    private void populateModel(ConsolidationManifestPrintModel consolidationManifestPrintModel) {
+    private void populateModel(ManifestShipmentModel manifestShipmentModel) {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setId(123L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
@@ -205,7 +210,8 @@ class ManifestPrintReportTest {
         delivertDetails.setTransporterDetail(partiesModel);
         shipmentModel.setPickupDetails(delivertDetails);
         shipmentModel.setDeliveryDetails(delivertDetails);
-        consolidationManifestPrintModel.setShipments(Arrays.asList(shipmentModel));
+        manifestShipmentModel.setShipmentDetails(shipmentModel);
+        manifestShipmentModel.setContainers(shipmentModel.getShipmentContainersList());
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
         bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
@@ -252,79 +258,29 @@ class ManifestPrintReportTest {
         consolidationModel.setContainersList(shipmentModel.getContainersList());
         consolidationModel.setId(123L);
         consolidationModel.setShipmentsList(Arrays.asList(shipmentModel));
-        consolidationManifestPrintModel.setConsol(consolidationModel);
+        manifestShipmentModel.setConsolidationDetails(consolidationModel);
     }
 
     @Test
     void populateDictionary() {
-        ConsolidationManifestPrintModel consolidationManifestPrintModel = new ConsolidationManifestPrintModel();
-        populateModel(consolidationManifestPrintModel);
+        ManifestShipmentModel manifestShipmentModel = new ManifestShipmentModel();
+        populateModel(manifestShipmentModel);
+        manifestShipmentModel.setCarrier(new CarrierMasterData());
         mockVessel();
+
+        doReturn(manifestShipmentModel.getContainers().get(0)).when(jsonHelper).convertValue(any(ContainerModel.class), eq(ShipmentContainers.class));
 
         Map<String, Object> shipmentMao = new HashMap<>();
         shipmentMao.put(WEIGHT, BigDecimal.TEN);
         shipmentMao.put(TOTAL_PACKS, BigDecimal.TEN);
         shipmentMao.put(DESCRIPTION, "Goods Text");
-        doReturn(Arrays.asList(shipmentMao)).when(jsonHelper).convertValue(eq(consolidationManifestPrintModel.getConsol().getShipmentsList()), any(TypeReference.class));
+        doReturn(Arrays.asList(shipmentMao)).when(jsonHelper).convertValue(any(List.class), any(TypeReference.class));
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         masterDataMock();
         mockCarrier();
-        mockUnlocRow();
         mockUnloc();
-        assertNotNull(manifestPrintReport.populateDictionary(consolidationManifestPrintModel));
-    }
-
-    @Test
-    void populateDictionaryImpConsolidation() {
-        ConsolidationManifestPrintModel consolidationManifestPrintModel = new ConsolidationManifestPrintModel();
-        populateModel(consolidationManifestPrintModel);
-        ConsolidationModel consolidationModel = consolidationManifestPrintModel.getConsol();
-        AchievedQuantitiesModel achievedQuantitiesModel = new AchievedQuantitiesModel();
-        achievedQuantitiesModel.setConsolidatedVolume(BigDecimal.TEN);
-        achievedQuantitiesModel.setConsolidatedWeight(BigDecimal.TEN);
-        achievedQuantitiesModel.setConsolidationChargeQuantity(BigDecimal.TEN);
-        consolidationModel.setAchievedQuantities(achievedQuantitiesModel);
-        consolidationModel.setShipmentType(IMP);
-        consolidationModel.setContainersList(new ArrayList<>());
-        consolidationModel.setIsReceivingAgentFreeTextAddress(true);
-        consolidationModel.setIsSendingAgentFreeTextAddress(true);
-        mockVessel();
-
-        Map<String, Object> shipmentMao = new HashMap<>();
-        shipmentMao.put(WEIGHT, BigDecimal.TEN);
-        shipmentMao.put(TOTAL_PACKS, BigDecimal.TEN);
-        shipmentMao.put(DESCRIPTION, "Goods Text");
-        doReturn(Arrays.asList(shipmentMao)).when(jsonHelper).convertValue(eq(consolidationManifestPrintModel.getConsol().getShipmentsList()), any(TypeReference.class));
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        masterDataMock();
-        mockCarrier();
-        mockUnlocRow();
-        mockUnloc();
-        assertNotNull(manifestPrintReport.populateDictionary(consolidationManifestPrintModel));
-    }
-
-    @Test
-    void populateDictionaryStdConsolidation() {
-        ConsolidationManifestPrintModel consolidationManifestPrintModel = new ConsolidationManifestPrintModel();
-        populateModel(consolidationManifestPrintModel);
-        ConsolidationModel consolidationModel = consolidationManifestPrintModel.getConsol();
-        consolidationModel.setShipmentType("STD");
-        mockVessel();
-
-        Map<String, Object> shipmentMao = new HashMap<>();
-        shipmentMao.put(WEIGHT, BigDecimal.TEN);
-        shipmentMao.put(TOTAL_PACKS, BigDecimal.TEN);
-        shipmentMao.put(DESCRIPTION, "Goods Text");
-        doReturn(Arrays.asList(shipmentMao)).when(jsonHelper).convertValue(eq(consolidationManifestPrintModel.getConsol().getShipmentsList()), any(TypeReference.class));
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        masterDataMock();
-        mockCarrier();
-        mockUnlocRow();
-        mockUnloc();
-        assertNotNull(manifestPrintReport.populateDictionary(consolidationManifestPrintModel));
+        assertNotNull(manifestShipmentReport.populateDictionary(manifestShipmentModel));
     }
 
     private void masterDataMock() {
@@ -408,23 +364,14 @@ class ManifestPrintReportTest {
 
     @Test
     void getDocumentModel() {
-        ConsolidationModel consolidationModel = new ConsolidationModel();
-        consolidationModel.setId(123L);
-        consolidationModel.setPlaceOfIssue("Test");
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
-        assertNotNull(manifestPrintReport.getDocumentModel(123L));
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setCarrierDetails(new CarrierDetailModel());
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        assertNotNull(manifestShipmentReport.getDocumentModel(123L));
     }
-
-    private void mockUnlocRow() {
-        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
-        unlocationsResponse.setIataCode("Test");
-        unlocationsResponse.setName("Test");
-        unlocationsResponse.setCountry("IND");
-        unlocationsResponse.setPortName("Test");
-        when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
-    }
-
 }

@@ -167,25 +167,7 @@ public class ManifestPrintReport extends IReport {
             if (destinationUnloc != null)
                 dictionary.put(ReportConstants.DESTINATION_CODE, ReportHelper.getCityCountry(destinationUnloc.getNameWoDiacritics(), destinationUnloc.getCountry()));
         }
-
-        var listShipments = (List<ShipmentModel>) dictionary.get(ReportConstants.SHIPMENTS);
-
-        if(listShipments != null) {
-            List<Map<String, Object>> values = new ArrayList<>();
-            for (ShipmentModel shipmentModel : listShipments) {
-                values.add(jsonHelper.convertValue(shipmentModel, new TypeReference<>() {}));
-            }
-
-            values.forEach(v -> {
-                if (v.containsKey(ReportConstants.WEIGHT))
-                    v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
-                if (v.containsKey(ReportConstants.TOTAL_PACKS))
-                    v.put(ReportConstants.TOTAL_PACKS, addCommas(v.get(ReportConstants.TOTAL_PACKS).toString()));
-                if (v.containsKey(ReportConstants.DESCRIPTION))
-                    v.put(ReportConstants.DESCRIPTION, StringUtility.toUpperCase(StringUtility.convertToString(v.get(ReportConstants.DESCRIPTION))));
-            });
-            dictionary.put(ReportConstants.SHIPMENTS, values);
-        }
+        updateShipmentWeightAndPack(dictionary, v1TenantSettingsResponse);
         return dictionary;
     }
 }

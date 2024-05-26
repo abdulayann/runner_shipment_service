@@ -170,19 +170,7 @@ public class ContainerManifestPrint extends IReport {
                 dictionary.put(ReportConstants.DESTINATION_CODE, ReportHelper.getCityCountry(destinationUnloc.getNameWoDiacritics(), destinationUnloc.getCountry()));
         }
 
-        if(dictionary.get(ReportConstants.SHIPMENTS) != null) {
-            List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<>() {});
-            if (Objects.isNull(values)) values = new ArrayList<>();
-            values.forEach(v -> {
-                if (v.containsKey(ReportConstants.WEIGHT))
-                    v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(v.get(ReportConstants.WEIGHT).toString()), v1TenantSettingsResponse));
-                if (v.containsKey(ReportConstants.TOTAL_PACKS))
-                    v.put(ReportConstants.TOTAL_PACKS, ConvertToVolumeNumberFormat(new BigDecimal(v.get(ReportConstants.TOTAL_PACKS).toString()), v1TenantSettingsResponse));
-                if (v.containsKey(ReportConstants.DESCRIPTION))
-                    v.put(ReportConstants.DESCRIPTION, StringUtility.toUpperCase(StringUtility.convertToString(v.get(ReportConstants.DESCRIPTION))));
-            });
-            dictionary.put(ReportConstants.SHIPMENTS, values);
-        }
+        updateShipmentWeightAndPack(dictionary, v1TenantSettingsResponse);
         return dictionary;
     }
 }

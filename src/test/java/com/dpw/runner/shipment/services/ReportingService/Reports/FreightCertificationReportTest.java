@@ -102,14 +102,14 @@ class FreightCertificationReportTest {
     void setup() {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
-                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
+                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).EnableIGMDetails(true).build());
     }
 
     private void populateModel(FreightCertificationModel freightCertificationModel) {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setId(123L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
-        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setDirection(ReportConstants.IMP);
         shipmentModel.setFreightLocal(BigDecimal.TEN);
         shipmentModel.setFreightLocalCurrency("INR");
         shipmentModel.setFreightOverseas(BigDecimal.TEN);
@@ -166,6 +166,7 @@ class FreightCertificationReportTest {
         additionalDetailModel.setAomFreeText("Test");
         additionalDetailModel.setGoodsCO("IND");
         additionalDetailModel.setBLChargesDisplay("PPD");
+        additionalDetailModel.setIsInland(true);
         shipmentModel.setCarrierDetails(carrierDetailModel);
         shipmentModel.setAdditionalDetails(additionalDetailModel);
         shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
