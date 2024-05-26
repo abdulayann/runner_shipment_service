@@ -1915,7 +1915,7 @@ public abstract class IReport {
             BigDecimal totalWeight = BigDecimal.ZERO;
 
             for(var packing : packingList) {
-                if(packing.getWeight() != null && IsStringNullOrEmpty(packing.getWeightUnit())) {
+                if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit())) {
                     if(weightUnit == null) {
                         weightUnit = packing.getWeightUnit();
                     }
@@ -1936,11 +1936,11 @@ public abstract class IReport {
             BigDecimal totalVolume = BigDecimal.ZERO;
 
             for(var packing : packingList) {
-                if(packing.getVolume() != null && IsStringNullOrEmpty(packing.getVolumeUnit())) {
+                if(packing.getVolume() != null && !IsStringNullOrEmpty(packing.getVolumeUnit())) {
                     if(volumeUnit == null) {
                         volumeUnit = packing.getVolumeUnit();
                     }
-                    if(!Objects.equals(packing.getWeightUnit(), volumeUnit))
+                    if(!Objects.equals(packing.getVolumeUnit(), volumeUnit))
                         return res;
                     totalVolume = totalVolume.add(packing.getVolume());
                 }

@@ -2,9 +2,8 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
-import com.dpw.runner.shipment.services.ReportingService.Models.ConsolidatedPackingListModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ManifestConsolModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -12,18 +11,24 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,10 +53,10 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ConsolidatedPackingListReportTest {
+class ManifestConsolReportTest {
 
     @InjectMocks
-    private ConsolidatedPackingListReport consolidatedPackingListReport;
+    private ManifestConsolReport manifestConsolReport;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -60,7 +65,13 @@ class ConsolidatedPackingListReportTest {
     private JsonHelper jsonHelper;
 
     @Mock
+    private IV1Service v1Service;
+
+    @Mock
     private MasterDataFactory masterDataFactory;
+
+    @Mock
+    private MasterDataUtils masterDataUtils;
 
     @Mock
     private V1MasterDataImpl v1MasterData;
@@ -92,7 +103,7 @@ class ConsolidatedPackingListReportTest {
                 V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
     }
 
-    private void populateModel(ConsolidatedPackingListModel consolidatedPackingListModel) {
+    private void populateModel(ManifestConsolModel manifestConsolModel) {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setId(123L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
@@ -103,7 +114,9 @@ class ConsolidatedPackingListReportTest {
         shipmentModel.setFreightOverseasCurrency("INR");
         shipmentModel.setGoodsDescription("123");
         shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setWeightUnit("KG");
         shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setVolumeUnit("M3");
         shipmentModel.setChargable(BigDecimal.TEN);
         shipmentModel.setVolumetricWeight(BigDecimal.TEN);
         shipmentModel.setNoOfPacks(10);
@@ -199,15 +212,23 @@ class ConsolidatedPackingListReportTest {
         packingModel.setLength(BigDecimal.TEN);
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
+        packingModel.setWeight(BigDecimal.TEN);
+        packingModel.setVolume(BigDecimal.TEN);
         packingModel.setPacks("10");
+        packingModel.setWeightUnit("KG");
+        packingModel.setVolumeUnit("M3");
         packingModels.add(packingModel);
 
         PackingModel packingModel2 = new PackingModel();
         packingModel2.setLength(BigDecimal.TEN);
         packingModel2.setWidth(BigDecimal.TEN);
         packingModel2.setHeight(BigDecimal.TEN);
+        packingModel2.setWeight(BigDecimal.TEN);
+        packingModel2.setVolume(BigDecimal.TEN);
         packingModel2.setPacks("20");
         packingModels.add(packingModel2);
+        packingModel2.setWeightUnit("KG");
+        packingModel2.setVolumeUnit("M3");
         shipmentModel.setPackingList(packingModels);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
@@ -235,82 +256,150 @@ class ConsolidatedPackingListReportTest {
         consolidationModel.setContainersList(shipmentModel.getContainersList());
         consolidationModel.setId(123L);
         consolidationModel.setShipmentsList(Arrays.asList(shipmentModel));
-        consolidatedPackingListModel.setConsolidationDetails(consolidationModel);
+        manifestConsolModel.setConsolidation(consolidationModel);
+        manifestConsolModel.setShipmentDetailsList(consolidationModel.getShipmentsList());
+        manifestConsolModel.setShipmentCount(1);
+        manifestConsolModel.setContainersList(shipmentModel.getShipmentContainersList());
+        manifestConsolModel.setContainerCount(1);
+        manifestConsolModel.setCarrierMasterData(new CarrierMasterData());
     }
 
     @Test
     void populateDictionary() {
-        ConsolidatedPackingListModel consolidatedPackingListModel = new ConsolidatedPackingListModel();
-        populateModel(consolidatedPackingListModel);
-        consolidatedPackingListModel.setTenant(new TenantModel());
+        ManifestConsolModel manifestConsolModel = ManifestConsolModel.builder().build();
+        populateModel(manifestConsolModel);
+        manifestConsolModel.setHbl(new Hbl());
+        manifestConsolModel.setHblNotifyParty(new HblPartyDto());
 
-        doReturn(consolidatedPackingListModel.getConsolidationDetails().getSendingAgent()).when(jsonHelper).convertValue(consolidatedPackingListModel.getConsolidationDetails().getSendingAgent(), PartiesModel.class);
+        doReturn(manifestConsolModel.getContainersList().get(0)).when(jsonHelper).convertValue(any(ContainerModel.class), eq(ShipmentContainers.class));
 
-        Map<String, Object> packMap = new HashMap<>();
-        packMap.put(WEIGHT, BigDecimal.TEN);
-        packMap.put(NET_WEIGHT, BigDecimal.TEN);
-        packMap.put(VOLUME_WEIGHT, BigDecimal.TEN);
-        packMap.put(WEIGHT_UNIT, "KG");
-        packMap.put(VOLUME, BigDecimal.TEN);
-        packMap.put(VOLUME_UNIT, "M3");
-        packMap.put(PACKS, BigDecimal.ZERO);
-
-        List<Map<String, Object>> packListMap = new ArrayList<>();
-        packListMap.add(packMap);
-
-        packMap = new HashMap<>();
-        packMap.put(WEIGHT, BigDecimal.TEN);
-        packMap.put(NET_WEIGHT, BigDecimal.TEN);
-        packMap.put(VOLUME_WEIGHT, BigDecimal.TEN);
-        packMap.put(WEIGHT_UNIT, "G");
-        packMap.put(VOLUME, BigDecimal.TEN);
-        packMap.put(VOLUME_UNIT, "CM3");
-        packMap.put(PACKS, BigDecimal.ZERO);
-        packListMap.add(packMap);
-
-        doReturn(packListMap).when(jsonHelper).convertValue(any(HashSet.class), any(TypeReference.class));
-
-        assertNotNull(consolidatedPackingListReport.populateDictionary(consolidatedPackingListModel));
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        masterDataMock();
+        mockCarrier();
+        mockUnloc();
+        assertNotNull(manifestConsolReport.populateDictionary(manifestConsolModel));
     }
 
     @Test
-    void populateDictionaryWithConsolidationPack() {
-        ConsolidatedPackingListModel consolidatedPackingListModel = new ConsolidatedPackingListModel();
-        populateModel(consolidatedPackingListModel);
-        consolidatedPackingListModel.setTenant(new TenantModel());
-        ConsolidationModel consolidationModel = consolidatedPackingListModel.getConsolidationDetails();
-        consolidationModel.setPackingList(consolidationModel.getShipmentsList().get(0).getPackingList());
-        consolidationModel.setSendingAgent(null);
-        consolidationModel.setReceivingAgent(null);
-        consolidationModel.setReferenceNumbersList(null);
+    void populateDictionaryWithoutPack() {
+        ManifestConsolModel manifestConsolModel = ManifestConsolModel.builder().build();
+        populateModel(manifestConsolModel);
+        manifestConsolModel.setHbl(new Hbl());
+        manifestConsolModel.setHblNotifyParty(new HblPartyDto());
 
-        doReturn(consolidatedPackingListModel.getConsolidationDetails().getSendingAgent()).when(jsonHelper).convertValue(consolidatedPackingListModel.getConsolidationDetails().getSendingAgent(), PartiesModel.class);
+        ShipmentModel shipmentModel = manifestConsolModel.getShipmentDetailsList().get(0);
+        shipmentModel.setWeightUnit(null);
+        shipmentModel.setVolumeUnit(null);
+        shipmentModel.setPacksUnit(null);
+        List<PackingModel> packingModels = new ArrayList<>();
+        PackingModel packingModel = new PackingModel();
+        packingModel.setLength(BigDecimal.TEN);
+        packingModel.setWidth(BigDecimal.TEN);
+        packingModel.setHeight(BigDecimal.TEN);
+        packingModel.setWeight(BigDecimal.TEN);
+        packingModel.setVolume(BigDecimal.TEN);
+        packingModel.setPacks("10");
+        packingModel.setWeightUnit("KG");
+        packingModel.setVolumeUnit("M3");
+        packingModels.add(packingModel);
 
-        Map<String, Object> packMap = new HashMap<>();
-        packMap.put(WEIGHT, BigDecimal.TEN);
-        packMap.put(NET_WEIGHT, BigDecimal.TEN);
-        packMap.put(VOLUME_WEIGHT, BigDecimal.TEN);
-        packMap.put(WEIGHT_UNIT, "KG");
-        packMap.put(VOLUME, BigDecimal.TEN);
-        packMap.put(VOLUME_UNIT, "M3");
-        packMap.put(PACKS, BigDecimal.TEN);
+        PackingModel packingModel2 = new PackingModel();
+        packingModel2.setLength(BigDecimal.TEN);
+        packingModel2.setWidth(BigDecimal.TEN);
+        packingModel2.setHeight(BigDecimal.TEN);
+        packingModel2.setWeight(BigDecimal.TEN);
+        packingModel2.setVolume(BigDecimal.TEN);
+        packingModel2.setPacks("20");
+        packingModels.add(packingModel2);
+        packingModel2.setWeightUnit("G");
+        packingModel2.setVolumeUnit("CM3");
+        shipmentModel.setPackingList(packingModels);
+        doReturn(manifestConsolModel.getContainersList().get(0)).when(jsonHelper).convertValue(any(ContainerModel.class), eq(ShipmentContainers.class));
 
-        List<Map<String, Object>> packListMap = new ArrayList<>();
-        packListMap.add(packMap);
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        masterDataMock();
+        mockCarrier();
+        mockUnloc();
+        assertNotNull(manifestConsolReport.populateDictionary(manifestConsolModel));
+    }
 
-        packMap = new HashMap<>();
-        packMap.put(WEIGHT, BigDecimal.TEN);
-        packMap.put(NET_WEIGHT, BigDecimal.TEN);
-        packMap.put(VOLUME_WEIGHT, BigDecimal.TEN);
-        packMap.put(WEIGHT_UNIT, "KG");
-        packMap.put(VOLUME, BigDecimal.TEN);
-        packMap.put(VOLUME_UNIT, "M3");
-        packMap.put(PACKS, BigDecimal.ZERO);
-        packListMap.add(packMap);
+    private void masterDataMock() {
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new MasterData());
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
 
-        doReturn(packListMap).when(jsonHelper).convertValue(any(HashSet.class), any(TypeReference.class));
+        List<MasterData> masterDataList = new ArrayList<>();
+        MasterData masterData = new MasterData();
+        masterData.setItemType(MasterDataType.PAYMENT.getId());
+        masterData.setItemValue("PPT");
+        masterData.setItemDescription("PPT");
+        masterDataList.add(masterData);
 
-        assertNotNull(consolidatedPackingListReport.populateDictionary(consolidatedPackingListModel));
+        masterData = new MasterData();
+        masterData.setItemType(MasterDataType.SERVICE_MODE.getId());
+        masterData.setItemValue("TXT");
+        masterData.setItemDescription("TXT");
+        masterDataList.add(masterData);
+
+        masterData = new MasterData();
+        masterData.setItemType(MasterDataType.TRANSPORT_MODE.getId());
+        masterData.setItemValue(SEA);
+        masterData.setItemDescription(SEA);
+        masterDataList.add(masterData);
+
+        masterData = new MasterData();
+        masterData.setItemType(MasterDataType.CUSTOM_SHIPMENT_TYPE.getId());
+        masterData.setItemValue(EXP);
+        masterData.setItemDescription(EXP);
+        masterDataList.add(masterData);
+
+        masterData = new MasterData();
+        masterData.setItemType(MasterDataType.PACKS_UNIT.getId());
+        masterData.setItemValue("PKG");
+        masterData.setItemDescription("PKG");
+        masterDataList.add(masterData);
+
+        masterData = new MasterData();
+        masterData.setItemType(MasterDataType.VOLUME_UNIT.getId());
+        masterData.setItemValue("M3");
+        masterData.setItemDescription("M3");
+        masterDataList.add(masterData);
+
+        masterData = new MasterData();
+        masterData.setItemType(MasterDataType.WEIGHT_UNIT.getId());
+        masterData.setItemValue("KG");
+        masterData.setItemDescription("KG");
+        masterDataList.add(masterData);
+
+        masterData = new MasterData();
+        masterData.setItemType(MasterDataType.RELEASE_TYPE.getId());
+        masterData.setItemValue("ORG");
+        masterData.setItemDescription("ORG");
+        masterDataList.add(masterData);
+
+        masterData = new MasterData();
+        masterData.setItemType(MasterDataType.COUNTRIES.getId());
+        masterData.setItemValue("IND");
+        masterData.setItemDescription("IND");
+        masterDataList.add(masterData);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), MasterData.class)).thenReturn(masterDataList);
+    }
+
+    private void mockCarrier() {
+        CarrierMasterData carrierMasterData = new CarrierMasterData();
+        carrierMasterData.setIataCode("123");
+        carrierMasterData.setItemDescription("123");
+        carrierMasterData.setItemValue("Turkish Airlines");
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(carrierMasterData)).build();
+        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(carrierMasterData));
+    }
+
+    private void mockUnloc() {
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(unlocationsResponse)).build();
+        when(v1MasterData.fetchUnlocationData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), UnlocationsResponse.class)).thenReturn(Arrays.asList(unlocationsResponse));
     }
 
     @Test
@@ -318,16 +407,17 @@ class ConsolidatedPackingListReportTest {
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setId(123L);
         consolidationModel.setPlaceOfIssue("Test");
+        consolidationModel.setCarrierDetails(new CarrierDetailModel());
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
 
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-
-        assertNotNull(consolidatedPackingListReport.getDocumentModel(123L));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(SEA);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        consolidationModel.setShipmentsList(Arrays.asList(shipmentModel));
+        assertNotNull(manifestConsolReport.getDocumentModel(123L));
     }
 }
