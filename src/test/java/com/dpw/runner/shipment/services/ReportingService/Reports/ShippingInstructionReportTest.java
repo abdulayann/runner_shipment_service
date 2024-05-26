@@ -269,7 +269,7 @@ class ShippingInstructionReportTest {
         Hbl hbl = new Hbl();
         hbl.setHblData(new HblDataDto());
         when(hblRepository.findByShipmentId(any())).thenReturn(Arrays.asList(hbl));
-        shippingInstructionReport.populateDictionary(shippingInstructionModel);
+        assertNotNull(shippingInstructionReport.populateDictionary(shippingInstructionModel));
     }
 
     @Test

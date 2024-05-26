@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -120,8 +121,7 @@ public class DeliveryOrderReport extends IReport{
         if(deliveryOrderModel.getContainers() != null && deliveryOrderModel.getContainers().size() > 0) {
             List<Map<String, Object>> valuesContainer = new ArrayList<>();
             for (ShipmentContainers shipmentContainers : deliveryOrderModel.getContainers()) {
-                String shipContJson = jsonHelper.convertToJson(shipmentContainers);
-                valuesContainer.add(jsonHelper.convertJsonToMap(shipContJson));
+                valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {}));
             }
             for (Map<String, Object> v : valuesContainer) {
                 if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
