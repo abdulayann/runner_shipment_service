@@ -56,7 +56,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class ArrivalNoticeReportTest {
+class ArrivalNoticeReportTest {
 
     @InjectMocks
     private ArrivalNoticeReport arrivalNoticeReport;
