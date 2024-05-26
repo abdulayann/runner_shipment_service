@@ -62,6 +62,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -1915,7 +1916,7 @@ public abstract class IReport {
             BigDecimal totalWeight = BigDecimal.ZERO;
 
             for(var packing : packingList) {
-                if(packing.getWeight() != null && IsStringNullOrEmpty(packing.getWeightUnit())) {
+                if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit())) {
                     if(weightUnit == null) {
                         weightUnit = packing.getWeightUnit();
                     }
@@ -1936,11 +1937,11 @@ public abstract class IReport {
             BigDecimal totalVolume = BigDecimal.ZERO;
 
             for(var packing : packingList) {
-                if(packing.getVolume() != null && IsStringNullOrEmpty(packing.getVolumeUnit())) {
+                if(packing.getVolume() != null && !IsStringNullOrEmpty(packing.getVolumeUnit())) {
                     if(volumeUnit == null) {
                         volumeUnit = packing.getVolumeUnit();
                     }
-                    if(!Objects.equals(packing.getWeightUnit(), volumeUnit))
+                    if(!Objects.equals(packing.getVolumeUnit(), volumeUnit))
                         return res;
                     totalVolume = totalVolume.add(packing.getVolume());
                 }
@@ -2852,6 +2853,22 @@ public abstract class IReport {
            if(!dgPack) {
                throw new ValidationException("The shipment is marked as DG but does not contain any DG packages. Please add DG packs before printing.");
            }
+        }
+    }
+
+    public void updateShipmentWeightAndPack(Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(dictionary.get(ReportConstants.SHIPMENTS) != null) {
+            List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<>() {});
+            if (Objects.isNull(values)) values = new ArrayList<>();
+            values.forEach(v -> {
+                if (v.containsKey(ReportConstants.WEIGHT))
+                    v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(v.get(ReportConstants.WEIGHT).toString()), v1TenantSettingsResponse));
+                if (v.containsKey(ReportConstants.TOTAL_PACKS))
+                    v.put(ReportConstants.TOTAL_PACKS, ConvertToVolumeNumberFormat(new BigDecimal(v.get(ReportConstants.TOTAL_PACKS).toString()), v1TenantSettingsResponse));
+                if (v.containsKey(ReportConstants.DESCRIPTION))
+                    v.put(ReportConstants.DESCRIPTION, StringUtility.toUpperCase(StringUtility.convertToString(v.get(ReportConstants.DESCRIPTION))));
+            });
+            dictionary.put(ReportConstants.SHIPMENTS, values);
         }
     }
 }

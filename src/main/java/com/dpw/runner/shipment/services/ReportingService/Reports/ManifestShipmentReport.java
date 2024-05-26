@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -71,9 +72,7 @@ public class ManifestShipmentReport extends IReport{
         dictionary.put(ReportConstants.SHIPMENTS, listShipmentReponse);
 
         if (listShipmentReponse != null) {
-            var values = listShipmentReponse.stream()
-                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
-                    .toList();
+            List<Map<String, Object>> values = jsonHelper.convertValue(listShipmentReponse, new TypeReference<>() {});
             values.forEach(v -> {
                 if (v.containsKey(ReportConstants.WEIGHT))
                     v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
@@ -92,11 +91,8 @@ public class ManifestShipmentReport extends IReport{
             AtomicInteger totalPacks = new AtomicInteger();
             Set<String> allPackages = packings.stream().filter(x -> x.getPacksType() != null).map(PackingModel::getPacksType).collect(Collectors.toSet());
             packings.forEach(p -> {
-                try {
-                    int number = Integer.parseInt(p.getPacks());
-                    totalPacks.addAndGet(number);
-                } catch (NumberFormatException e) {
-                }
+                int number = Integer.parseInt(p.getPacks());
+                totalPacks.addAndGet(number);
             });
             dictionary.put(ReportConstants.TOTAL_PACKS, addCommas(totalPacks.get()));
             dictionary.put(ReportConstants.TOTAL_PACKS_TYPE, allPackages);

@@ -1,30 +1,32 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
-import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShippingInstructionModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,15 +45,18 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(MockitoExtension.class)
-class CargoManifestReportTest {
+class ShippingInstructionReportTest {
+
     @InjectMocks
-    private CargoManifestReport cargoManifestReport;
+    private ShippingInstructionReport shippingInstructionReport;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -60,22 +65,13 @@ class CargoManifestReportTest {
     private JsonHelper jsonHelper;
 
     @Mock
-    private ModelMapper modelMapper;
+    private IV1Service v1Service;
 
     @Mock
     private MasterDataUtils masterDataUtils;
 
     @Mock
-    private IV1Service v1Service;
-
-    @Mock
-    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
-
-    @Mock
-    private IConsolidationDetailsDao consolidationDetailsDao;
-
-    @Mock
-    private IShipmentDao shipmentDao;
+    private IHblRepository hblRepository;
 
     @Mock
     private MasterDataFactory masterDataFactory;
@@ -84,16 +80,10 @@ class CargoManifestReportTest {
     private V1MasterDataImpl v1MasterData;
 
     @Mock
-    private HblReport hblReport;
+    private ModelMapper modelMapper;
 
     @Mock
-    private V1ServiceUtil v1ServiceUtil;
-
-    @Mock
-    private IShipmentSettingsDao shipmentSettingsDao;
-
-    @Mock
-    private IAwbRepository awbRepository;
+    private IShipmentDao shipmentDao;
 
     @BeforeAll
     static void init() throws IOException {
@@ -113,22 +103,19 @@ class CargoManifestReportTest {
     void setup() {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
-                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).GSTTaxAutoCalculation(true).build());
+                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
     }
 
-    @Test
-    void populateDictionary() {
-        CargoManifestModel cargoManifestModel = new CargoManifestModel();
+    private void mockVessel() {
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new VesselsResponse());
+        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+    }
 
-        cargoManifestModel.tenantDetails =  new TenantModel();
-        cargoManifestModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-        cargoManifestModel.usersDto = UserContext.getUser();
-        cargoManifestModel.awb = new Awb();
-        AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
-        awbCargoInfo.setSci("test");
-        cargoManifestModel.awb.setAwbCargoInfo(awbCargoInfo);
-
+    private void populateModel(ShippingInstructionModel shippingInstructionModel) {
         ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setId(123L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
         shipmentModel.setDirection(ReportConstants.EXP);
         shipmentModel.setFreightLocal(BigDecimal.TEN);
@@ -153,6 +140,7 @@ class CargoManifestReportTest {
         orgData.put(FULL_NAME, "123");
         orgData.put(CONTACT_PERSON, "123");
         orgData.put(COMPANY_NAME, "123");
+        orgData.put(PartiesConstants.RAW_DATA, "Text");
         partiesModel.setOrgData(orgData);
         partiesModel.setAddressData(orgData);
 
@@ -186,22 +174,31 @@ class CargoManifestReportTest {
         shipmentModel.setCarrierDetails(carrierDetailModel);
         shipmentModel.setAdditionalDetails(additionalDetailModel);
         shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
+        shipmentModel.setServiceType("Test");
+
+        ShipmentContainers shipmentContainers = new ShipmentContainers();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerTypeCode("20GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setNoofPackages(10L);
+        shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
 
         List<ContainerModel> containerModelList = new ArrayList<>();
-        ContainerModel shipmentContainers = new ContainerModel();
-        shipmentContainers.setContainerCount(1L);
-        shipmentContainers.setContainerCode("20GP");
-        shipmentContainers.setNetWeight(BigDecimal.TEN);
-        shipmentContainers.setNoOfPackages(10L);
-        shipmentContainers.setContainerNumber("CONT000283");
-        shipmentContainers.setGrossVolume(BigDecimal.TEN);
-        shipmentContainers.setGrossVolumeUnit("M3");
-        shipmentContainers.setGrossWeight(BigDecimal.TEN);
-        shipmentContainers.setGrossWeightUnit("KG");
-        shipmentContainers.setPacksType("PKG");
-        shipmentContainers.setPacks("100");
-        containerModelList.add(shipmentContainers);
+        ContainerModel containers = new ContainerModel();
+        containers.setContainerCount(1L);
+        containers.setContainerCode("20GP");
+        containers.setNetWeight(BigDecimal.TEN);
+        containers.setNoOfPackages(10L);
+        containers.setContainerNumber("CONT000283");
+        containers.setGrossVolume(BigDecimal.TEN);
+        containers.setGrossVolumeUnit("M3");
+        containers.setGrossWeight(BigDecimal.TEN);
+        containers.setGrossWeightUnit("KG");
+        containers.setPacksType("PKG");
+        containers.setPacks("100");
+        containerModelList.add(containers);
         shipmentModel.setContainersList(containerModelList);
+        shippingInstructionModel.setContainersList(containerModelList);
 
         PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
         delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
@@ -211,78 +208,120 @@ class CargoManifestReportTest {
         delivertDetails.setTransporterDetail(partiesModel);
         shipmentModel.setPickupDetails(delivertDetails);
         shipmentModel.setDeliveryDetails(delivertDetails);
-        cargoManifestModel.shipmentDetails = shipmentModel;
+        shippingInstructionModel.setShipment(shipmentModel);
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
         bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
         shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
 
+        List<PackingModel> packingModels = new ArrayList<>();
         PackingModel packingModel = new PackingModel();
         packingModel.setLength(BigDecimal.TEN);
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
-        shipmentModel.setPackingList(Arrays.asList(packingModel));
+        packingModel.setPacks("10");
+        packingModels.add(packingModel);
 
+        PackingModel packingModel2 = new PackingModel();
+        packingModel2.setLength(BigDecimal.TEN);
+        packingModel2.setWidth(BigDecimal.TEN);
+        packingModel2.setHeight(BigDecimal.TEN);
+        packingModel2.setPacks("20");
+        packingModels.add(packingModel2);
+        shipmentModel.setPackingList(packingModels);
+    }
+
+    private void mockUnlocation() {
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
         unlocationsResponse.setIataCode("Test");
         unlocationsResponse.setName("Test");
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setPortName("Test");
         when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-
-        Parties parties = new Parties();
-        parties.setOrgCode("Test");
-        parties.setAddressCode("Test");
-        Map<String, Map<String, Object>> addressMap = new HashMap<>();
-        Map<String, Object> addressDataMap = new HashMap<>();
-        addressDataMap.put(RAKC_TYPE, ONE);
-        addressDataMap.put(KCRA_NUMBER, ONE);
-        addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
-        addressMap.put(parties.getOrgCode()+"#"+parties.getAddressCode(), addressDataMap);
-
-        Parties parties2 = new Parties();
-        parties2.setOrgCode("Test2");
-        parties2.setAddressCode("Test2");
-        addressDataMap = new HashMap<>();
-        addressDataMap.put(RAKC_TYPE, TWO);
-        addressDataMap.put(KCRA_NUMBER, TWO);
-        addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
-        addressMap.put(parties2.getOrgCode()+"#"+parties2.getAddressCode(), addressDataMap);
-
-        OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
-        orgAddressResponse.setAddresses(addressMap);
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
-        when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
-        when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
-
-        Map<String, Object> containerMap = new HashMap<>();
-        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
-        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
-        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
-        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
-
-        assertNotNull(cargoManifestReport.populateDictionary(cargoManifestModel));
     }
 
     @Test
-    void getDocumentModel() throws RunnerException {
+    void populateDictionary() {
+        ShippingInstructionModel shippingInstructionModel = ShippingInstructionModel.builder().build();
+        shippingInstructionModel.setTenant(new TenantModel());
+        populateModel(shippingInstructionModel);
+        mockVessel();
+        mockUnlocation();
+        Map<String, Object> packMap = new HashMap<>();
+        packMap.put(WEIGHT, BigDecimal.TEN);
+        packMap.put(NET_WEIGHT, BigDecimal.TEN);
+        packMap.put(VOLUME_WEIGHT, BigDecimal.TEN);
+        packMap.put(WEIGHT_UNIT, "KG");
+        packMap.put(VOLUME, BigDecimal.TEN);
+        packMap.put(VOLUME_UNIT, "M3");
+        packMap.put(PACKS, BigDecimal.TEN);
+        doReturn(packMap).when(jsonHelper).convertValue(eq(shippingInstructionModel.getShipment().getPackingList().get(0)), any(TypeReference.class));
+
+        Map<String, Object> packMap2 = new HashMap<>();
+        packMap2.put(WEIGHT, BigDecimal.TEN);
+        packMap2.put(WEIGHT_UNIT, "G");
+        packMap2.put(VOLUME, BigDecimal.TEN);
+        packMap2.put(VOLUME_UNIT, "CM3");
+        packMap2.put(PACKS, BigDecimal.TEN);
+        doReturn(packMap2).when(jsonHelper).convertValue(eq(shippingInstructionModel.getShipment().getPackingList().get(1)), any(TypeReference.class));
+
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(new HblDataDto());
+        when(hblRepository.findByShipmentId(any())).thenReturn(Arrays.asList(hbl));
+        assertNotNull(shippingInstructionReport.populateDictionary(shippingInstructionModel));
+    }
+
+    @Test
+    void populateDictionaryWithoutRawData() {
+        ShippingInstructionModel shippingInstructionModel = ShippingInstructionModel.builder().build();
+        shippingInstructionModel.setTenant(new TenantModel());
+        populateModel(shippingInstructionModel);
+        ShipmentModel shipmentModel = shippingInstructionModel.getShipment();
+        shipmentModel.setConsignee(null);
+        shipmentModel.setConsigner(null);
+        shipmentModel.getAdditionalDetails().setNotifyParty(null);
+
+        mockVessel();
+        mockUnlocation();
+        Map<String, Object> packMap = new HashMap<>();
+        packMap.put(WEIGHT, BigDecimal.TEN);
+        packMap.put(NET_WEIGHT, BigDecimal.TEN);
+        packMap.put(VOLUME_WEIGHT, BigDecimal.TEN);
+        packMap.put(WEIGHT_UNIT, "KG");
+        packMap.put(VOLUME, BigDecimal.TEN);
+        packMap.put(VOLUME_UNIT, "M3");
+        packMap.put(PACKS, BigDecimal.ZERO);
+        doReturn(packMap).when(jsonHelper).convertValue(eq(shippingInstructionModel.getShipment().getPackingList().get(0)), any(TypeReference.class));
+
+        Map<String, Object> packMap2 = new HashMap<>();
+        packMap2.put(WEIGHT, BigDecimal.TEN);
+        packMap2.put(WEIGHT_UNIT, "KG");
+        packMap2.put(VOLUME, BigDecimal.TEN);
+        packMap2.put(VOLUME_UNIT, "M3");
+        packMap2.put(PACKS, BigDecimal.ZERO);
+        doReturn(packMap2).when(jsonHelper).convertValue(eq(shippingInstructionModel.getShipment().getPackingList().get(1)), any(TypeReference.class));
+
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(new HblDataDto());
+        when(hblRepository.findByShipmentId(any())).thenReturn(Arrays.asList(hbl));
+        assertNotNull(shippingInstructionReport.populateDictionary(shippingInstructionModel));
+    }
+
+    @Test
+    void getDocumentModel() {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
-        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setTransportMode(SEA);
         shipmentModel.setDirection(EXP);
-        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-
-        assertNotNull(cargoManifestReport.getDocumentModel(123L));
+        assertNotNull(shippingInstructionReport.getDocumentModel(123L));
     }
+
 }

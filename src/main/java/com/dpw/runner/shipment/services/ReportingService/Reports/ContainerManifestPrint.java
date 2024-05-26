@@ -27,7 +27,6 @@ import java.util.*;
 public class ContainerManifestPrint extends IReport {
     @Autowired
     private JsonHelper jsonHelper;
-    private ConsolidationModel consol;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -38,7 +37,8 @@ public class ContainerManifestPrint extends IReport {
     @Override
     IDocumentModel getDocumentModel(Long id) {
         ConsolidationManifestPrintModel manifestPrintModel = new ConsolidationManifestPrintModel();
-        this.consol = getConsolidation(id);
+        ConsolidationModel consol = getConsolidation(id);
+        manifestPrintModel.setConsol(consol);
         if (consol != null)
             manifestPrintModel.setShipments(consol.getShipmentsList());
         return manifestPrintModel;
@@ -52,24 +52,13 @@ public class ContainerManifestPrint extends IReport {
         for (var shipmentDetails : manifestPrintModel.getShipments()) {
             populateShipmentFields(shipmentDetails, dictionary);
         }
+        ConsolidationModel consol = manifestPrintModel.getConsol();
+
         populateConsolidationFields(consol, dictionary);
 
         List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestPrintModel.getShipments().toArray(new ShipmentModel[0])));
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);
         Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packings);
-
-        List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<List<Map<String, Object>>>() {
-        });
-        if (Objects.isNull(values)) values = new ArrayList<>();
-        values.forEach(v -> {
-            if (v.containsKey(ReportConstants.WEIGHT))
-                v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(v.get(ReportConstants.WEIGHT).toString()), v1TenantSettingsResponse));
-            if (v.containsKey(ReportConstants.TOTAL_PACKS))
-                v.put(ReportConstants.TOTAL_PACKS, ConvertToVolumeNumberFormat(new BigDecimal(v.get(ReportConstants.TOTAL_PACKS).toString()), v1TenantSettingsResponse));
-            if (v.containsKey(ReportConstants.DESCRIPTION))
-                v.put(ReportConstants.DESCRIPTION, StringUtility.toUpperCase(StringUtility.convertToString(v.get(ReportConstants.DESCRIPTION))));
-        });
-        dictionary.put(ReportConstants.SHIPMENTS, values);
 
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedWeight() != null) {
@@ -180,6 +169,8 @@ public class ContainerManifestPrint extends IReport {
             if (destinationUnloc != null)
                 dictionary.put(ReportConstants.DESTINATION_CODE, ReportHelper.getCityCountry(destinationUnloc.getNameWoDiacritics(), destinationUnloc.getCountry()));
         }
+
+        updateShipmentWeightAndPack(dictionary, v1TenantSettingsResponse);
         return dictionary;
     }
 }

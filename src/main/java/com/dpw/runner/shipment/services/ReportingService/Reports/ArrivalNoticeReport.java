@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -80,8 +81,7 @@ public class ArrivalNoticeReport extends IReport {
         dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), v1TenantSettingsResponse.getDPWDateFormat()));
         List<Map<String, Object>> valuesContainer = new ArrayList<>();
         for (ShipmentContainers shipmentContainers : arrivalNoticeModel.getContainers()) {
-            String shipContJson = jsonHelper.convertToJson(shipmentContainers);
-            valuesContainer.add(jsonHelper.convertJsonToMap(shipContJson));
+            valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {}));
         }
         for (Map<String, Object> v : valuesContainer) {
             if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
