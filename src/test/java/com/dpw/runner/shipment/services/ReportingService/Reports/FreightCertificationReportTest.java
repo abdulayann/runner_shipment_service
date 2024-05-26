@@ -298,30 +298,8 @@ class FreightCertificationReportTest {
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         mockBill(true, false);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
-    }
-
-    @Test
-    void populateDictionaryWithoutArData() {
-        FreightCertificationModel freightCertificationModel = new FreightCertificationModel();
-        freightCertificationModel.setTenantDetails(new TenantModel());
-        freightCertificationModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-        freightCertificationModel.setUserdisplayname(UserContext.getUser().DisplayName);
-        populateModel(freightCertificationModel);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         mockBill(false, false);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
-    }
-
-    @Test
-    void populateDictionarySameCurrency() {
-        FreightCertificationModel freightCertificationModel = new FreightCertificationModel();
-        freightCertificationModel.setTenantDetails(new TenantModel());
-        freightCertificationModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-        freightCertificationModel.setUserdisplayname(UserContext.getUser().DisplayName);
-        populateModel(freightCertificationModel);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         mockBill(true, true);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
     }
