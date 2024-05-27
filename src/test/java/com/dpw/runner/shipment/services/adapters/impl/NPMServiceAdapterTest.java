@@ -577,8 +577,8 @@ class NPMServiceAdapterTest {
     void testFetchContracts5() throws RunnerException {
         NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
         List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
-        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").valid_till(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
-        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").valid_till(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").validTill(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
         contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
         npmContractsResponse.setContracts(contracts);
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");

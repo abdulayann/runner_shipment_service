@@ -181,7 +181,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 List<NPMContractsResponse.NPMContractResponse> list = npmContractsResponse.getContracts();
                 if(list != null && !list.isEmpty())
                 {
-                    list = list.stream().filter(c -> c.getValid_till() != null && LocalDateTime.now().isBefore(c.getValid_till())).toList();
+                    list = list.stream().filter(c -> c.getValidTill() != null && LocalDateTime.now().isBefore(c.getValidTill())).toList();
                     npmContractsResponse.setContracts(list);
                 }
             }

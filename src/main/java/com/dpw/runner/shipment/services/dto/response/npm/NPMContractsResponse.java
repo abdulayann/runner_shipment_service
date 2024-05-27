@@ -41,7 +41,7 @@ public class NPMContractsResponse implements IRunnerResponse {
         @JsonProperty("meta")
         private ListContractResponse.Meta meta;
         @JsonProperty("valid_till")
-        private LocalDateTime valid_till;
+        private LocalDateTime validTill;
     }
 }
 
