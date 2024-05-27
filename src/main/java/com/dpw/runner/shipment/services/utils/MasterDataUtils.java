@@ -83,21 +83,21 @@ public class MasterDataUtils{
         for (IRunnerResponse response : responseList) {
             if (response instanceof CustomerBookingResponse) {
                 CustomerBookingResponse bookingResponse = ((CustomerBookingResponse) response);
-                if (bookingResponse != null && bookingResponse.getCarrierDetails() != null) {
+                if (bookingResponse.getCarrierDetails() != null) {
                     locCodes.addAll(createInBulkUnLocationsRequest(bookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()));
                 }
             }
             else if (response instanceof ShipmentListResponse) {
                 ShipmentListResponse shipmentListResponse = (ShipmentListResponse) response;
-                if (shipmentListResponse != null && shipmentListResponse.getCarrierDetails() != null) {
+                if (shipmentListResponse.getCarrierDetails() != null) {
                     locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
                 }
-                if (shipmentListResponse != null && shipmentListResponse.getAdditionalDetails() != null)
+                if (shipmentListResponse.getAdditionalDetails() != null)
                     locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()));
             }
             else if (response instanceof ConsolidationListResponse) {
                 ConsolidationListResponse consolidationListResponse = (ConsolidationListResponse) response;
-                if (consolidationListResponse != null && consolidationListResponse.getCarrierDetails() != null) {
+                if (consolidationListResponse.getCarrierDetails() != null) {
                     locCodes.addAll(createInBulkUnLocationsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
                 }
             }
@@ -109,23 +109,23 @@ public class MasterDataUtils{
         for (IRunnerResponse response : responseList) {
             if (response instanceof CustomerBookingResponse) {
                 CustomerBookingResponse bookingResponse = ((CustomerBookingResponse) response);
-                if (bookingResponse != null && bookingResponse.getCarrierDetails() != null) {
+                if (bookingResponse.getCarrierDetails() != null)
                     bookingResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
-                }
+
             }
             else if (response instanceof ShipmentListResponse) {
                 ShipmentListResponse shipmentListResponse = (ShipmentListResponse) response;
-                if (shipmentListResponse != null && shipmentListResponse.getCarrierDetails() != null) {
+                if (shipmentListResponse.getCarrierDetails() != null)
                     shipmentListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
-                }
-                if (shipmentListResponse != null && shipmentListResponse.getAdditionalDetails() != null)
+
+                if (shipmentListResponse.getAdditionalDetails() != null)
                     shipmentListResponse.getAdditionalDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()), CacheConstants.UNLOCATIONS));
             }
             else if (response instanceof ConsolidationListResponse) {
                 ConsolidationListResponse consolidationListResponse = (ConsolidationListResponse) response;
-                if (consolidationListResponse != null && consolidationListResponse.getCarrierDetails() != null) {
+                if (consolidationListResponse.getCarrierDetails() != null)
                     consolidationListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
-                }
+
             }
         }
     }
@@ -166,11 +166,10 @@ public class MasterDataUtils{
         for (IRunnerResponse response : responseList)
             dataMap.put(((ShipmentListResponse) response).getId(), (ShipmentListResponse) response);
 
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> containerTypes = new HashSet<>();
 
         for(ShipmentDetails shipment : shipmentDetailsList) {
-            if(!Objects.isNull(shipment.getContainersList()) && !shipment.getContainersList().isEmpty())
+            if(!Objects.isNull(shipment.getContainersList()))
                 shipment.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
         }
 
@@ -201,11 +200,10 @@ public class MasterDataUtils{
         for (IRunnerResponse response : responseList)
             dataMap.put(((ConsolidationListResponse) response).getId(), (ConsolidationListResponse) response);
 
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> containerTypes = new HashSet<>();
 
         for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
-            if(!Objects.isNull(consolidationDetails.getContainersList()) && !consolidationDetails.getContainersList().isEmpty())
+            if(!Objects.isNull(consolidationDetails.getContainersList()))
                 consolidationDetails.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
         }
 
@@ -616,12 +614,8 @@ public class MasterDataUtils{
                 switch (masterDataType) {
                     case CacheConstants.UNLOCATIONS:
                         EntityTransferUnLocations object = (EntityTransferUnLocations) cache.get();
-                        if(isBooking) {
-                            fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
-                        }
-                        else {
-                            fieldNameMasterDataMap.put(key, object.lookupDesc);
-                        }
+                        if(isBooking) fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
+                        else fieldNameMasterDataMap.put(key, object.lookupDesc);
                         fieldNameMasterDataMap.put(key + Constants.COUNTRY, object.Country);
                         fieldNameMasterDataMap.put(key + Constants.NAME, object.NameWoDiacritics);
                         fieldNameMasterDataMap.put(key + Constants.CODE, object.LocCode);
@@ -1149,12 +1143,8 @@ public class MasterDataUtils{
         masterListRequests.getMasterListRequests().add(masterListRequest);
         Object masterDataList = v1Service.fetchMultipleMasterData(masterListRequests).getEntities();
         List<com.dpw.runner.shipment.services.masterdata.dto.MasterData> masterData = new ArrayList<>();
-        if (masterDataList != null) {
-            for (Object data : (ArrayList<?>) masterDataList) {
-                com.dpw.runner.shipment.services.masterdata.dto.MasterData masterDataObject = modelMapper.map(data, com.dpw.runner.shipment.services.masterdata.dto.MasterData.class);
-                masterData.add(masterDataObject);
-            }
-        }
+        if (masterDataList != null)
+            masterData = jsonHelper.convertValueToList(masterDataList, com.dpw.runner.shipment.services.masterdata.dto.MasterData.class);
         if (masterData.isEmpty())
             return null;
         return masterData.get(0);
@@ -1163,14 +1153,14 @@ public class MasterDataUtils{
     public String getVesselName(String code) {
         if (StringUtility.isEmpty(code))
             return null;
-        var resp = fetchInBulkVessels(Arrays.asList(code));
+        var resp = fetchInBulkVessels(List.of(code));
         return resp.containsKey(code) ? resp.get(code).getName() : null;
     }
 
     public String getCarrierName(String code) {
         if (StringUtility.isEmpty(code))
             return null;
-        var resp = fetchInBulkCarriers(Arrays.asList(code));
+        var resp = fetchInBulkCarriers(List.of(code));
         return resp.containsKey(code) ? resp.get(code).getItemDescription() : null;
     }
 
