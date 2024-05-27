@@ -2828,6 +2828,18 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setDocumentationPartner(null);
         if(consolidationDetails.getTriangulationPartner() != null && consolidationDetails.getTriangulationPartner() == 0)
             consolidationDetails.setTriangulationPartner(null);
+
+        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getIataTactFlag()) && oldEntity != null &&
+                (!Objects.equals(consolidationDetails.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) ||
+                        !Objects.equals(consolidationDetails.getCarrierDetails().getDestinationPort(), oldEntity.getCarrierDetails().getDestinationPort()) ||
+                        !Objects.equals(consolidationDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine()))) {
+            List<Awb> awbs = awbDao.findByConsolidationId(consolidationDetails.getId());
+            if(!awbs.isEmpty()) {
+                Awb awb = awbs.get(0);
+                awb.getAwbGoodsDescriptionInfo().forEach(x -> x.setDisableFetchRates(false));
+                awbDao.save(awb);
+            }
+        }
     }
 
     private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws RunnerException{

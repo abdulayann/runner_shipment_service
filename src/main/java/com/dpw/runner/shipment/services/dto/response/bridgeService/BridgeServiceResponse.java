@@ -11,4 +11,5 @@ public class BridgeServiceResponse implements IRunnerResponse {
     private String transactionId;
     private String requestCode;
     private Object payload;
+    private Map<String, Object> extraResponseParams;
 }

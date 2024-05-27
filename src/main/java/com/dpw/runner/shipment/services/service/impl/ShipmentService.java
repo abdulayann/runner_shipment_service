@@ -1409,6 +1409,16 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentDetails.getAdditionalDetails().setDraftPrinted(false);
         }
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && oldEntity != null && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)
+         && (!Objects.equals(shipmentDetails.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) || !Objects.equals(shipmentDetails.getCarrierDetails().getDestinationPort(), oldEntity.getCarrierDetails().getDestinationPort())
+                || !Objects.equals(shipmentDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine()))) {
+            List<Awb> awbs = awbDao.findByShipmentId(shipmentDetails.getId());
+            if(!awbs.isEmpty()) {
+                Awb awb = awbs.get(0);
+                awb.getAwbGoodsDescriptionInfo().forEach(x -> x.setDisableFetchRates(false));
+                awbDao.save(awb);
+            }
+        }
 
         return syncConsole;
     }

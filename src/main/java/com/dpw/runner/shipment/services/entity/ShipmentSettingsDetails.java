@@ -511,4 +511,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "air_dg_flag")
     private Boolean airDGFlag;
+
+    @Column(name = "iata_tact_flag")
+    private Boolean iataTactFlag;
 }
