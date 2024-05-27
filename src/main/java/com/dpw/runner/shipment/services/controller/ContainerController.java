@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -54,7 +55,7 @@ public class ContainerController {
     })
     @PostMapping(ApiConstants.API_UPLOAD)
     public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
-        if (request.getFile().isEmpty()) {
+        if (Objects.isNull(request.getFile()) || request.getFile().isEmpty()) {
             return ResponseHelper.buildFailedResponse("No File Found !");
         }
 
@@ -75,7 +76,7 @@ public class ContainerController {
     })
     @PostMapping(ApiConstants.API_UPLOAD_EVENTS)
     public ResponseEntity<IRunnerResponse> uploadEventsCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
-        if (request.getFile().isEmpty()) {
+        if (Objects.isNull(request.getFile()) || request.getFile().isEmpty()) {
             return ResponseHelper.buildFailedResponse("No File Found !");
         }
 
@@ -162,11 +163,6 @@ public class ContainerController {
         return (ResponseEntity<IRunnerResponse>) containerService.calculateAllocatedData(CommonRequestModel.buildRequest(containerRequest));
     }
 
-//    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
-//    @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_PACK_ASSIGN)
-//    public ResponseEntity<RunnerListResponse<ContainerResponse>> calculateAchievedOnPackAssign(@RequestBody ContainerPackADInShipmentRequest containerPackAssignDetachRequest) {
-//        return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchievedQuantity_onPackAssign(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
-//    }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DETACH_SUCCESSFUL, response = RunnerListResponse.class) })
     @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_PACK_DETACH)

@@ -168,4 +168,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private LocalDateTime raExpiry;
     private String transportOrderRoad;
     private Boolean disableBlPartiesName;
+    private Boolean airDGFlag;
 }

@@ -64,7 +64,6 @@ public class MasterDataUtils{
         if (Objects.isNull(chargeCode) || chargeCode.isEmpty())
             return null;
         List<Object> criteria = new ArrayList<>();
-        Map<String, EntityTransferChargeType> response = new HashMap<>();
         List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CHARGE_CODE));
         String operator = Operators.IN.getValue();
         criteria.addAll(List.of(field, operator, List.of(chargeCode)));
@@ -272,12 +271,12 @@ public class MasterDataUtils{
     }
     public Map<String, EntityTransferMasterLists> fetchInBulkMasterList(MasterListRequestV2 requests) {
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
-        if(requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
+        if(requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
             log.info("Request: {} || MasterListsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
             masterLists.forEach(masterData -> {
-                String key = masterData.ItemValue + '#' + MasterDataType.masterData(masterData.ItemType).name();
+                String key = masterData.ItemValue + '#' + (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? StringUtility.getEmptyString() : MasterDataType.masterData(masterData.ItemType).name());
                 keyMasterDataMap.put(key, masterData);
             });
         }
@@ -327,9 +326,7 @@ public class MasterDataUtils{
             if (Objects.isNull(unLocationsList))
                 return keyMasterDataMap;
 
-            unLocationsList.forEach(location -> {
-                keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocCode : location.LocationsReferenceGUID, location);
-            });
+            unLocationsList.forEach(location -> keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocCode : location.LocationsReferenceGUID, location));
         }
         return keyMasterDataMap;
     }
@@ -784,10 +781,8 @@ public class MasterDataUtils{
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.listCousinBranches(request);
 
-            List<TenantModel> tenantModelList = commonUtils.convertToList((List<?>) response.entities, TenantModel.class);
-            tenantModelList.forEach(tenantModel -> {
-                keyMasterDataMap.put(StringUtility.convertToString(tenantModel.tenantId), tenantModel);
-            });
+            List<TenantModel> tenantModelList = jsonHelper.convertValueToList(response.entities, TenantModel.class);
+            tenantModelList.forEach(tenantModel -> keyMasterDataMap.put(StringUtility.convertToString(tenantModel.tenantId), tenantModel));
         }
         return keyMasterDataMap;
     }
@@ -834,10 +829,8 @@ public class MasterDataUtils{
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchDangerousGoodData(request);
 
-            List<EntityTransferDGSubstance> dgSubstanceList = commonUtils.convertToList((List<?>) response.entities, EntityTransferDGSubstance.class);
-            dgSubstanceList.forEach(dgSubstance -> {
-                keyMasterDataMap.put(StringUtility.convertToString(dgSubstance.getId()), dgSubstance);
-            });
+            List<EntityTransferDGSubstance> dgSubstanceList = jsonHelper.convertValueToList(response.entities, EntityTransferDGSubstance.class);
+            dgSubstanceList.forEach(dgSubstance -> keyMasterDataMap.put(StringUtility.convertToString(dgSubstance.getId()), dgSubstance));
         }
         return keyMasterDataMap;
     }
@@ -880,10 +873,8 @@ public class MasterDataUtils{
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchWarehouseData(request);
-            List<WareHouseResponse> wareHousesList = commonUtils.convertToList((List<?>) response.entities, WareHouseResponse.class);
-            wareHousesList.forEach(warehouse -> {
-                keyMasterDataMap.put(StringUtility.convertToString(warehouse.getId()), warehouse);
-            });
+            List<WareHouseResponse> wareHousesList = jsonHelper.convertValueToList(response.entities, WareHouseResponse.class);
+            wareHousesList.forEach(warehouse -> keyMasterDataMap.put(StringUtility.convertToString(warehouse.getId()), warehouse));
         }
         return keyMasterDataMap;
     }
@@ -930,10 +921,9 @@ public class MasterDataUtils{
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchActivityMaster(request);
-            List<ActivityMasterResponse> activityMasterResponseList = commonUtils.convertToList((List<?>) response.entities, ActivityMasterResponse.class);
-            activityMasterResponseList.forEach(activityMaster -> {
-                keyMasterDataMap.put(activityMaster.getActivityCode(), activityMaster);
-            });
+
+            List<ActivityMasterResponse> activityMasterResponseList = jsonHelper.convertValueToList(response.entities, ActivityMasterResponse.class);
+            activityMasterResponseList.forEach(activityMaster -> keyMasterDataMap.put(activityMaster.getActivityCode(), activityMaster));
         }
         return keyMasterDataMap;
     }
@@ -994,10 +984,6 @@ public class MasterDataUtils{
         return requests;
     }
 
-    public MasterListRequest createMasterListRequest(MasterDataType itemType, String itemValue) {
-        if (StringUtility.isEmpty(itemValue)) return null;
-        return MasterListRequest.builder().ItemType(itemType.getDescription()).ItemValue(itemValue).build();
-    }
 
     public Map<String, SalesAgentResponse> fetchInSalesAgentList(List<String> requests) {
         Map<String, SalesAgentResponse> keyMasterDataMap = new HashMap<>();
@@ -1009,10 +995,9 @@ public class MasterDataUtils{
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchSalesAgentData(request);
-            List<SalesAgentResponse> salesAgentResponseList = commonUtils.convertToList((List<?>) response.entities, SalesAgentResponse.class);
-            salesAgentResponseList.forEach(salesAgentResponse -> {
-                keyMasterDataMap.put(StringUtility.convertToString(salesAgentResponse.getId()), salesAgentResponse);
-            });
+
+            List<SalesAgentResponse> salesAgentResponseList = jsonHelper.convertValueToList(response.entities, SalesAgentResponse.class);
+            salesAgentResponseList.forEach(salesAgentResponse -> keyMasterDataMap.put(StringUtility.convertToString(salesAgentResponse.getId()), salesAgentResponse));
         }
         return keyMasterDataMap;
     }
@@ -1030,7 +1015,7 @@ public class MasterDataUtils{
     }
 
     public UnlocationsResponse getUNLocRow(String UNLocCode) {
-        if(UNLocCode == null || UNLocCode.isEmpty())
+        if(StringUtility.isEmpty(UNLocCode))
             return null;
         List <Object> criteria = Arrays.asList(
                 Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
@@ -1041,36 +1026,31 @@ public class MasterDataUtils{
         V1DataResponse response = v1Service.fetchUnlocation(commonV1ListRequest);
 
         List<UnlocationsResponse> unLocationsList = jsonHelper.convertValueToList(response.entities, UnlocationsResponse.class);
-        if(unLocationsList.size() > 0)
-            return unLocationsList.get(0);
-        return null;
+        return unLocationsList.isEmpty() ? null : unLocationsList.get(0);
     }
 
     public Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
         Map<String, UnlocationsResponse> locationMap = new HashMap<>();
         if (Objects.isNull(locCodes))
             return locationMap;
-        if (locCodes.size() > 0) {
+        if (!locCodes.isEmpty()) {
             List<Object> criteria = Arrays.asList(
-                    List.of("LocationsReferenceGUID"),
+                    List.of(EntityTransferConstants.LOCATION_SERVICE_GUID),
                     "In",
                     List.of(locCodes)
             );
             CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
             V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
-                }
-            }
+            if (!Objects.isNull(unlocationsResponse))
+                unlocationsResponse.forEach(location ->  locationMap.put(location.getLocationsReferenceGUID(), location));
         }
         return locationMap;
     }
 
     public EntityTransferDGSubstance fetchDgSubstanceRow(Integer dgSubstanceId) {
         var dgSubstanceRow = new EntityTransferDGSubstance();
-        if(dgSubstanceId == null)
+        if(Objects.isNull(dgSubstanceId))
             return dgSubstanceRow;
         List<Object> criteria = Arrays.asList(List.of("Id"), "=", dgSubstanceId);
         CommonV1ListRequest listRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();

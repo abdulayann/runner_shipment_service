@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -196,8 +197,7 @@ public class ShipmentCANReport extends IReport {
         if(allBillCharges.size() > 0) {
             List<Map<String, Object>> billChargesDict = new ArrayList<>();
             for (BillChargesResponse billChargesResponse : allBillCharges) {
-                String billChargeJson = jsonHelper.convertToJson(billChargesResponse);
-                billChargesDict.add(jsonHelper.convertJsonToMap(billChargeJson));
+                billChargesDict.add(jsonHelper.convertValue(billChargesResponse, new TypeReference<>() {}));
             }
             for (Map<String, Object> v: billChargesDict) {
                 v.put(TOTAL_AMOUNT, v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null ? new BigDecimal(v.get(OVERSEAS_SELL_AMOUNT).toString()) : 0);

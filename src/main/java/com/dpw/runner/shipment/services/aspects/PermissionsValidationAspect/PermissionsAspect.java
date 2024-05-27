@@ -24,11 +24,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 @Component
 public class PermissionsAspect {
 
-    @Autowired
-    private PermissionsContext permissionsContext;
-    @Autowired
-    private EntityManager entityManager;
-
     @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(commonRequestModel)")
     public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
         if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {

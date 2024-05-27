@@ -186,4 +186,11 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
 
     private String currentPartyForQuote;
     private Map<String, Object> masterDataMap;
+    private Boolean entityTransfer;
+    private String destinationSalesBranch;
+    private String destinationPrimarySalesAgentEmail;
+    private String destinationSecondarySalesAgentEmail;
+    private String destinationCurrentPartyForQuote;
+    private String destinationContractId;
+    private String destinationContractType;
 }

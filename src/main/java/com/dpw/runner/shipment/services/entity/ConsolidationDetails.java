@@ -397,4 +397,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "efreight_status")
     @MasterData(type = MasterDataType.EFREIGHT_STATUS)
     private String efreightStatus;
+
+    @Column(name = "hazardous")
+    private Boolean hazardous;
 }

@@ -304,4 +304,6 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private String transportOrderRoad;
     @JsonProperty("DisableBlPartiesName")
     private Boolean disableBlPartiesName;
+    @JsonProperty("AirDGFlag")
+    private Boolean airDGFlag;
 }

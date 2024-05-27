@@ -82,5 +82,8 @@ public class PackingResponse implements IRunnerResponse {
     private String handlingInfo;
     private Long contractEnforcedQuantityLimit;
     private String containerDesc;
+    private String unNumberAir;
+    private String dgClassAir;
+    private String dgClassAirDescription;
 }
 

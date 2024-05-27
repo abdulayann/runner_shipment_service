@@ -25,4 +25,5 @@ public interface IShipmentDao {
     void saveJobStatus(Long id, String jobStatus);
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
     List<ShipmentDetails> getShipmentNumberFromId(List<Long> shipmentIds);
+    void saveEntityTransfer(Long id, Boolean entityTransfer);
 }

@@ -138,4 +138,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String efreightStatus;
     private AwbStatus awbStatus;
     private AwbStatus linkedHawbStatus;
+    private Boolean hazardous;
 }

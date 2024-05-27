@@ -35,6 +35,7 @@ public class AWBLabelReport extends IReport{
     IDocumentModel getDocumentModel(Long id) {
         AWbLabelModel awbLabelModel = new AWbLabelModel();
         awbLabelModel.shipment = getShipment(id);
+        validateAirDGCheck(awbLabelModel.shipment);
         awbLabelModel.tenant = getTenant();
         // TODO TenantRow required
         return awbLabelModel;

@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -230,9 +231,7 @@ public class ShippingRequestOutReport extends IReport {
             dictionary.put(ReportConstants.SHIPMENT_HASCONTAINERS, false);
         }
 
-        String jsonContainer = jsonHelper.convertToJson(dictionary.get(ReportConstants.SHIPMENT_AND_CONTAINER));
-
-        List<Map<String, Object>> valuesContainer = jsonHelper.readFromJson(jsonContainer, List.class);
+        List<Map<String, Object>> valuesContainer = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENT_AND_CONTAINER), new TypeReference<>() {});
 
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         valuesContainer.forEach(v -> {

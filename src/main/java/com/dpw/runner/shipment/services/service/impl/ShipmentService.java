@@ -95,6 +95,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
@@ -210,6 +211,8 @@ public class ShipmentService implements IShipmentService {
     private MasterDataUtils masterDataUtils;
     @Autowired
     private IAwbDao awbDao;
+    @Autowired
+    private IHblDao hblDao;
 
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
@@ -390,7 +393,7 @@ public class ShipmentService implements IShipmentService {
              */
 
             shipmentDetail = shipmentDao.save(shipmentDetail, false);
-            pushShipmentDataToDependentService(shipmentDetail, true);
+            pushShipmentDataToDependentService(shipmentDetail, true, false);
         }
 
         return response;
@@ -446,7 +449,8 @@ public class ShipmentService implements IShipmentService {
                         ++container20Count;
                     } else if (container.getContainerCode().contains(Constants.Cont40)) {
                         ++container40Count;
-                    } else if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                    }
+                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
                         ++container20GPCount;
                     } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
                         ++container20RECount;
@@ -557,7 +561,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             String transactionId = shipmentDetails.getGuid().toString();
-            pushShipmentDataToDependentService(shipmentDetails, true);
+            pushShipmentDataToDependentService(shipmentDetails, true, false);
             try {
                 shipmentDetails.setNotesList(null);
                 shipmentSync.syncFromBooking(shipmentDetails, null, notesRequest);
@@ -1150,7 +1154,7 @@ public class ShipmentService implements IShipmentService {
         // update Ata/Atd in shipment from events
         eventService.updateAtaAtdInShipment(entity.getEventsList(), entity, shipmentSettingsDetails);
         entity = shipmentDao.update(entity, false);
-        pushShipmentDataToDependentService(entity, false);
+        pushShipmentDataToDependentService(entity, false, request.getIsAutoSellRequired() == null ? false : request.getIsAutoSellRequired());
         try {
             shipmentSync.sync(entity, null, null, entity.getGuid().toString(), false);
         } catch (Exception e){
@@ -1284,6 +1288,19 @@ public class ShipmentService implements IShipmentService {
             tempConsolIds = Objects.isNull(oldEntity) ? new ArrayList<>() : oldEntity.getConsolidationList().stream().map(e -> e.getId()).toList();
         }
 
+        boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
+        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) && !dgUser) {
+            if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                if((removedConsolIds != null && !removedConsolIds.isEmpty()) || isNewConsolAttached)
+                    throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
+            } else {
+                if((removedConsolIds != null && !removedConsolIds.isEmpty() && oldEntity != null && oldEntity.getConsolidationList() != null && Boolean.TRUE.equals(oldEntity.getConsolidationList().get(0).getHazardous()))
+                    || (isNewConsolAttached && Boolean.TRUE.equals(consolidationDetailsRequests.get(0).getHazardous()))) {
+                    throw new RunnerException("You do not have Air DG permissions to edit this as it is a part of DG Consol");
+                }
+            }
+        }
+
         List<PackingRequest> packingRequest = shipmentRequest.getPackingList();
         List<ContainerRequest> containerRequest = shipmentRequest.getContainersList();
 
@@ -1373,6 +1390,15 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setTriangulationPartner(null);
         if(shipmentDetails.getDocumentationPartner() != null && shipmentDetails.getDocumentationPartner() == 0)
             shipmentDetails.setDocumentationPartner(null);
+
+        if(Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDraftPrinted())
+                && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+            List<Hbl> hbls = hblDao.findByShipmentId(shipmentDetails.getId());
+            if(!hbls.isEmpty()) {
+                hblDao.delete(hbls.get(0));
+            }
+            shipmentDetails.getAdditionalDetails().setDraftPrinted(false);
+        }
 
         return syncConsole;
     }
@@ -1601,10 +1627,10 @@ public class ShipmentService implements IShipmentService {
             createShipmentRouteInConsole(shipmentRequest);
         }
         Hbl hbl = null;
-        if(updatedContainers.size() > 0) {
+        if(updatedContainers != null && updatedContainers.size() > 0) {
             hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
         }
-        pushShipmentDataToDependentService(shipmentDetails, isCreate);
+        pushShipmentDataToDependentService(shipmentDetails, isCreate, shipmentRequest.getIsAutoSellRequired() == null ? false : shipmentRequest.getIsAutoSellRequired());
 
         ConsolidationDetails consolidationDetails = null;
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
@@ -1616,13 +1642,15 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
     }
 
-    public void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate) {
+    public void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate, boolean isAutoSellRequired) {
         try {
             if(shipmentDetails.getTenantId() == null)
                 shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
             if (IsStringNullOrEmpty(shipmentDetails.getUpdatedBy()))
                 shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentDetails, isCreate);
+            ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetails, ShipmentRequest.class);
+            shipmentRequest.setIsAutoSellRequired(isAutoSellRequired);
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentRequest, isCreate);
             log.info("Producing shipment data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         }
@@ -1706,7 +1734,7 @@ public class ShipmentService implements IShipmentService {
 
     public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) throws RunnerException {
         ShipmentSettingsDetails shipmentSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-        if(shipmentSettings.getShipConsolidationContainerEnabled()) {
+        if(Boolean.TRUE.equals(shipmentSettings.getShipConsolidationContainerEnabled())) {
             ConsolidationDetails consolidationDetails = new ConsolidationDetails();
             consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_DRT);
             consolidationDetails.setTransportMode(shipmentDetails.getTransportMode());
@@ -1768,7 +1796,7 @@ public class ShipmentService implements IShipmentService {
             var routeRequest = routings.stream().filter(x -> x.getMode().equals(shipmentDetails.getTransportMode())).findFirst();
             List<Routings> createRoutes = new ArrayList<>();
             if(routeRequest.isPresent()) {
-                createRoutes.add(convertToClass(routeRequest.get(), Routings.class));
+                createRoutes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
                 createRoutes = createConsoleRoutePayload(createRoutes);
                 consolidationDetails.setRoutingsList(createRoutes);
             }
@@ -2355,10 +2383,6 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails = shipmentDao.findByGuid(guid);
             }
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            if (!shipmentDetails.isPresent()) {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -2539,7 +2563,7 @@ public class ShipmentService implements IShipmentService {
                 syncShipment(entity, null, null, null, consolidationDetails, true);
             }
 
-            pushShipmentDataToDependentService(entity, false);
+            pushShipmentDataToDependentService(entity, false, false);
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -2569,7 +2593,7 @@ public class ShipmentService implements IShipmentService {
         }
         shipmentDetails = shipmentDao.save(shipmentDetails, false);
         shipmentSync.syncLockStatus(shipmentDetails);
-        pushShipmentDataToDependentService(shipmentDetails, false);
+        pushShipmentDataToDependentService(shipmentDetails, false, false);
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -2848,7 +2872,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             if(!dataMigration)
-                pushShipmentDataToDependentService(entity, isCreate);
+                pushShipmentDataToDependentService(entity, isCreate, false);
             ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);

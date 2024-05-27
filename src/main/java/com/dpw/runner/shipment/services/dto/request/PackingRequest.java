@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 @Data
 public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
+    private UUID guid;
     private Long consolidationId;
     private Long shipmentId;
     private Long bookingId;
@@ -72,4 +74,7 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isContractEnforced;
     private String handlingInfo;
     private Long contractEnforcedQuantityLimit;
+    private String unNumberAir;
+    private String dgClassAir;
+    private String dgClassAirDescription;
 }

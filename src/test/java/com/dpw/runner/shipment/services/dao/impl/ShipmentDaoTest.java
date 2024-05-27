@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,7 +24,6 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,12 +40,16 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
@@ -217,6 +219,7 @@ class ShipmentDaoTest {
     @Test
     void applyShipmentValidations_fails_on_multiple_consolidations_linked_to_shipment() {
         ShipmentDetails shipmentDetails = mockShipment;
+        shipmentDetails.setContainsHazardous(true);
         ConsolidationDetails linkedConsolidation = new ConsolidationDetails();
 
         shipmentDetails.setConsolidationList(List.of(linkedConsolidation, linkedConsolidation));
@@ -231,21 +234,28 @@ class ShipmentDaoTest {
 
     @Test
     void applyShipmentValidations_fails_on_duplicate_leg_numbers() throws JsonProcessingException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         ShipmentDetails shipmentDetails = mockShipment;
         Routings routing = new Routings();
         routing.setId(1L);
         routing.setLeg(1L);
         Routings duplicateRouting = jsonTestUtility.getCopyObject(routing, Routings.class);
         duplicateRouting.setId(2L);
+        Packing packing = new Packing();
+        packing.setHazardous(true);
 
         shipmentDetails.setRoutingsList(List.of(routing, duplicateRouting));
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setPackingList(List.of(packing));
 
         String errorMessage = "Leg No in routings cannot be same for two different legs";
+        String errorMessage2 = "The shipment contains DG package. Marking the shipment as non DG is not allowed";
 
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, null);
 
-        assertEquals(1, errors.size());
+        assertEquals(2, errors.size());
         assertTrue(errors.contains(errorMessage));
+        assertTrue(errors.contains(errorMessage2));
     }
 
     @Test
