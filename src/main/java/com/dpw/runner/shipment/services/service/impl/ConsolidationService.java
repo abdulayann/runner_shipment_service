@@ -2828,6 +2828,27 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setDocumentationPartner(null);
         if(consolidationDetails.getTriangulationPartner() != null && consolidationDetails.getTriangulationPartner() == 0)
             consolidationDetails.setTriangulationPartner(null);
+
+        if(checkDisableFetchConditionForAwb(consolidationDetails, oldEntity, ShipmentSettingsDetailsContext.getCurrentTenantSettings())) {
+            List<Awb> awbs = awbDao.findByConsolidationId(consolidationDetails.getId());
+            if(!awbs.isEmpty()) {
+                Awb awb = awbs.get(0);
+                awb.getAwbGoodsDescriptionInfo().forEach(x -> x.setDisableFetchRates(false));
+                awbDao.save(awb);
+            }
+        }
+    }
+
+    private boolean checkDisableFetchConditionForAwb(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity,ShipmentSettingsDetails shipmentSettingsDetails){
+        if(oldEntity == null)
+            return false;
+        if(!Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag())){
+            return false;
+        }
+        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            return false;
+        return !Objects.equals(consolidationDetails.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) || !Objects.equals(consolidationDetails.getCarrierDetails().getDestinationPort(), oldEntity.getCarrierDetails().getDestinationPort())
+                || !Objects.equals(consolidationDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine());
     }
 
     private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws RunnerException{
