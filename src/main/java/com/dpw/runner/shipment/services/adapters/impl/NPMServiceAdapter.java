@@ -175,7 +175,17 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             String url = npmBaseUrl + npmContracts;
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
-            List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(response.getBody());
+            NPMContractsResponse npmContractsResponse = response.getBody();
+            if(npmContractsResponse != null)
+            {
+                List<NPMContractsResponse.NPMContractResponse> list = npmContractsResponse.getContracts();
+                if(list != null && !list.isEmpty())
+                {
+                    list = list.stream().filter(c -> c.getValid_till() != null && LocalDateTime.now().isBefore(c.getValid_till())).toList();
+                    npmContractsResponse.setContracts(list);
+                }
+            }
+            List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(npmContractsResponse);
             return ResponseHelper.buildDependentServiceResponse(listResponse,0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
@@ -328,7 +338,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     if(locationMap.containsKey(cont.getDestination()))
                         cont.setDestination_name(locationMap.get(cont.getDestination()));
                     List<NPMContractsResponse.NPMContractResponse> list = new ArrayList<>();
-                    if(responseMap.get(cont.getParent_contract_id()) != null && responseMap.get(cont.getParent_contract_id()).size() > 0)
+                    if(responseMap.get(cont.getParent_contract_id()) != null && !responseMap.get(cont.getParent_contract_id()).isEmpty())
                         list.addAll(responseMap.get(cont.getParent_contract_id()));
                     list.add(cont);
                     responseMap.put(cont.getParent_contract_id(), list);
