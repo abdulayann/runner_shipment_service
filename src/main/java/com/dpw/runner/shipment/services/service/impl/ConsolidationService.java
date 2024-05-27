@@ -2829,10 +2829,7 @@ public class ConsolidationService implements IConsolidationService {
         if(consolidationDetails.getTriangulationPartner() != null && consolidationDetails.getTriangulationPartner() == 0)
             consolidationDetails.setTriangulationPartner(null);
 
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getIataTactFlag()) && oldEntity != null &&
-                (!Objects.equals(consolidationDetails.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) ||
-                        !Objects.equals(consolidationDetails.getCarrierDetails().getDestinationPort(), oldEntity.getCarrierDetails().getDestinationPort()) ||
-                        !Objects.equals(consolidationDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine()))) {
+        if(checkDisableFetchConditionForAwb(consolidationDetails, oldEntity, ShipmentSettingsDetailsContext.getCurrentTenantSettings())) {
             List<Awb> awbs = awbDao.findByConsolidationId(consolidationDetails.getId());
             if(!awbs.isEmpty()) {
                 Awb awb = awbs.get(0);
@@ -2840,6 +2837,16 @@ public class ConsolidationService implements IConsolidationService {
                 awbDao.save(awb);
             }
         }
+    }
+
+    private boolean checkDisableFetchConditionForAwb(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity,ShipmentSettingsDetails shipmentSettingsDetails){
+        if(oldEntity == null)
+            return false;
+        boolean isIataTactEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag());
+        boolean isTransportModeAir = Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR);
+        boolean hasPortsOrShippingLineChanged = !Objects.equals(consolidationDetails.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) || !Objects.equals(consolidationDetails.getCarrierDetails().getDestinationPort(), oldEntity.getCarrierDetails().getDestinationPort())
+                || !Objects.equals(consolidationDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine());
+        return isIataTactEnabled && isTransportModeAir && hasPortsOrShippingLineChanged;
     }
 
     private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws RunnerException{

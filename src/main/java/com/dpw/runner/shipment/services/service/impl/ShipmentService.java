@@ -1409,9 +1409,7 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentDetails.getAdditionalDetails().setDraftPrinted(false);
         }
-        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && oldEntity != null && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)
-         && (!Objects.equals(shipmentDetails.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) || !Objects.equals(shipmentDetails.getCarrierDetails().getDestinationPort(), oldEntity.getCarrierDetails().getDestinationPort())
-                || !Objects.equals(shipmentDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine()))) {
+        if(checkDisableFetchConditionForAwb(shipmentDetails, oldEntity, shipmentSettingsDetails)) {
             List<Awb> awbs = awbDao.findByShipmentId(shipmentDetails.getId());
             if(!awbs.isEmpty()) {
                 Awb awb = awbs.get(0);
@@ -1421,6 +1419,17 @@ public class ShipmentService implements IShipmentService {
         }
 
         return syncConsole;
+    }
+
+    private boolean checkDisableFetchConditionForAwb(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity,ShipmentSettingsDetails shipmentSettingsDetails){
+        if(oldEntity == null)
+            return false;
+        boolean isIataTactEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag());
+        boolean isTransportModeAir = Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR);
+        boolean isJobTypeDrt = Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT);
+        boolean hasPortsOrShippingLineChanged = !Objects.equals(shipmentDetails.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) || !Objects.equals(shipmentDetails.getCarrierDetails().getDestinationPort(), oldEntity.getCarrierDetails().getDestinationPort())
+                || !Objects.equals(shipmentDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine());
+        return isIataTactEnabled && isTransportModeAir && isJobTypeDrt && hasPortsOrShippingLineChanged;
     }
 
     private void validateBeforeSave(ShipmentDetails shipmentDetails) throws RunnerException {
