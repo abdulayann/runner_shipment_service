@@ -3,10 +3,12 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.Runner;
+import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AirMessagingLogsConstants;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -19,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesM
 import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -26,16 +29,14 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AirMessagingStatus;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
 import com.dpw.runner.shipment.services.entity.enums.ChargeTypeCode;
-import com.dpw.runner.shipment.services.entitytransfer.dto.ChargeTypeIntegrations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -108,6 +109,8 @@ class AwbServiceTest {
     private MasterDataKeyUtils masterDataKeyUtils;
     @Mock
     IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Mock
+    private BridgeServiceAdapter bridgeServiceAdapter;
     @InjectMocks
     private AwbService awbService;
 
@@ -2147,4 +2150,448 @@ class AwbServiceTest {
         assertNotNull(res);
         assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
     }
+
+    @Test
+    void testGetFetchIataRates_Success_case1() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(12.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 200);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .rates(List.of(IataTactRatesApiResponse.Rates.builder()
+                                .standardCharge(IataTactRatesApiResponse.StandardCharge.builder()
+                                        .minimumCharge(BigDecimal.valueOf(52.0))
+                                        .normalCharge(BigDecimal.valueOf(5.0))
+                                        .weightBreak(List.of(IataTactRatesApiResponse.WeightBreak.builder()
+                                                        .charge(BigDecimal.valueOf(3.0))
+                                                        .weightMeasure(BigDecimal.valueOf(100))
+                                                .build()))
+                                        .build())
+                        .build()))
+                .build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
+        RunnerResponse runnerResponse = (RunnerResponse)responseEntity.getBody();
+        IataFetchRateResponse response = (IataFetchRateResponse) runnerResponse.getData();
+        assertEquals("N", response.getRateClass());
+        assertEquals("5.0", response.getRateCharge().toString());
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_case2() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(10.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 200);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .rates(List.of(IataTactRatesApiResponse.Rates.builder()
+                        .standardCharge(IataTactRatesApiResponse.StandardCharge.builder()
+                                .minimumCharge(BigDecimal.valueOf(52.0))
+                                .normalCharge(BigDecimal.valueOf(5.0))
+                                .weightBreak(List.of(IataTactRatesApiResponse.WeightBreak.builder()
+                                        .charge(BigDecimal.valueOf(3.0))
+                                        .weightMeasure(BigDecimal.valueOf(100))
+                                        .build()))
+                                .build())
+                        .build()))
+                .build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
+        RunnerResponse runnerResponse = (RunnerResponse)responseEntity.getBody();
+        IataFetchRateResponse response = (IataFetchRateResponse) runnerResponse.getData();
+        assertEquals("M", response.getRateClass());
+        assertEquals("52.0", response.getRateCharge().toString());
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_case3() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(100.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 200);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .rates(List.of(IataTactRatesApiResponse.Rates.builder()
+                        .standardCharge(IataTactRatesApiResponse.StandardCharge.builder()
+                                .minimumCharge(BigDecimal.valueOf(52.0))
+                                .normalCharge(BigDecimal.valueOf(5.0))
+                                .weightBreak(List.of(IataTactRatesApiResponse.WeightBreak.builder()
+                                        .charge(BigDecimal.valueOf(3.0))
+                                        .weightMeasure(BigDecimal.valueOf(100))
+                                        .build()))
+                                .build())
+                        .build()))
+                .build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
+        RunnerResponse runnerResponse = (RunnerResponse)responseEntity.getBody();
+        IataFetchRateResponse response = (IataFetchRateResponse) runnerResponse.getData();
+        assertEquals("Q", response.getRateClass());
+        assertEquals("3.0", response.getRateCharge().toString());
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_case4() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 200);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .rates(List.of(IataTactRatesApiResponse.Rates.builder()
+                        .standardCharge(IataTactRatesApiResponse.StandardCharge.builder()
+                                .minimumCharge(BigDecimal.valueOf(52.0))
+                                .normalCharge(BigDecimal.valueOf(5.0))
+                                .weightBreak(List.of(IataTactRatesApiResponse.WeightBreak.builder()
+                                        .charge(BigDecimal.valueOf(3.0))
+                                        .weightMeasure(BigDecimal.valueOf(100))
+                                        .build(),
+                                        IataTactRatesApiResponse.WeightBreak.builder()
+                                                .charge(BigDecimal.valueOf(4.0))
+                                                .weightMeasure(BigDecimal.valueOf(200))
+                                                .build()))
+                                .build())
+                        .build()))
+                .build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
+        RunnerResponse runnerResponse = (RunnerResponse)responseEntity.getBody();
+        IataFetchRateResponse response = (IataFetchRateResponse) runnerResponse.getData();
+        assertEquals("Q", response.getRateClass());
+        assertEquals("3.0", response.getRateCharge().toString());
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_case5() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 200);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .rates(List.of())
+                .build();
+        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder().error("IATA did not return any value - please add the rate/ rate class manually").build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
+        assertEquals(ResponseHelper.buildSuccessResponse(iataFetchRateResponse), responseEntity);
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_Failure_Case1() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3C").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 400);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .responseType("validation-failed")
+                .errors(List.of(IataTactRatesApiResponse.Errors.builder()
+                                .parameterName("Carrier")
+                                .errorType("InvalidParameterValue")
+                        .message("Value ACC in Carrier is not valid. Please correct and try again")
+                        .build()))
+                .build();
+        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder().error("IATA did not return any value - please add the rate/ rate class manually").build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest)));
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_Failure_Case2() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 400);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .responseType("validation-failed")
+                .errors(List.of(IataTactRatesApiResponse.Errors.builder()
+                        .parameterName("Carrier")
+                        .errorType("InvalidParameterValue")
+                        .message("Value ACC in Carrier is not valid. Please correct and try again")
+                        .build()))
+                .build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest)));
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_Failure_Case3() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 500);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        assertThrows(RunnerException.class, () -> awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest)));
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_Failure_Case4() {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(null)
+                .destinationPort(null)
+                .originPort(null)
+                .flightCarrier(null)
+                .build();
+
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest)));
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_Failure_Case5() {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .build();
+
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest)));
+    }
+
+
 }

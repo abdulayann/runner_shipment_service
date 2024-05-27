@@ -3362,7 +3362,7 @@ public class AwbService implements IAwbService {
                     }
                     IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
                             .rateClass("N")
-                            .rateCharge(rate)
+                            .rateCharge(normalCharge)
                             .build();
                     return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
                 }
