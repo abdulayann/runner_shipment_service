@@ -55,6 +55,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -71,6 +73,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -2151,10 +2154,19 @@ class AwbServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
     }
 
-    @Test
-    void testGetFetchIataRates_Success_case1() throws RunnerException {
+    static Stream<Arguments> provideRequestsForValidationException() {
+        return Stream.of(
+                Arguments.of(BigDecimal.valueOf(12.0), "N", "5.0"),
+                Arguments.of(BigDecimal.valueOf(10.0), "M", "52.0"),
+                Arguments.of(BigDecimal.valueOf(100.0), "Q", "3.0")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideRequestsForValidationException")
+    void testGetFetchIataRates_Success_case1(BigDecimal chargeableWeight, String rateClass, String rateCharge) throws RunnerException {
         IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
-                .chargeableWeight(BigDecimal.valueOf(12.0))
+                .chargeableWeight(chargeableWeight)
                 .destinationPort("NAKMP_AIR")
                 .originPort("NAGOG_AIR")
                 .flightCarrier("Aegean Airlines")
@@ -2202,122 +2214,12 @@ class AwbServiceTest {
         ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
         RunnerResponse runnerResponse = (RunnerResponse)responseEntity.getBody();
         IataFetchRateResponse response = (IataFetchRateResponse) runnerResponse.getData();
-        assertEquals("N", response.getRateClass());
-        assertEquals("5.0", response.getRateCharge().toString());
+        assertEquals(rateClass, response.getRateClass());
+        assertEquals(rateCharge, response.getRateCharge().toString());
     }
 
     @Test
     void testGetFetchIataRates_Success_case2() throws RunnerException {
-        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
-                .chargeableWeight(BigDecimal.valueOf(10.0))
-                .destinationPort("NAKMP_AIR")
-                .originPort("NAGOG_AIR")
-                .flightCarrier("Aegean Airlines")
-                .build();
-        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
-        unlocationsResponse1.setIataCode("A12");
-        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
-        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
-        unlocationsResponse2.setIataCode("B34");
-        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
-        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
-
-        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
-        carriersMap.put("Aegean Airlines", carrier);
-
-        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
-        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
-        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
-        Map<String, Object> extraResponseParams = new HashMap<>();
-        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 200);
-
-        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
-                .rates(List.of(IataTactRatesApiResponse.Rates.builder()
-                        .standardCharge(IataTactRatesApiResponse.StandardCharge.builder()
-                                .minimumCharge(BigDecimal.valueOf(52.0))
-                                .normalCharge(BigDecimal.valueOf(5.0))
-                                .weightBreak(List.of(IataTactRatesApiResponse.WeightBreak.builder()
-                                        .charge(BigDecimal.valueOf(3.0))
-                                        .weightMeasure(BigDecimal.valueOf(100))
-                                        .build()))
-                                .build())
-                        .build()))
-                .build();
-
-
-        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
-                .payload(iataTactRatesApiResponse)
-                .extraResponseParams(extraResponseParams)
-                .build();
-
-        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
-        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
-        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
-        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
-        ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
-        RunnerResponse runnerResponse = (RunnerResponse)responseEntity.getBody();
-        IataFetchRateResponse response = (IataFetchRateResponse) runnerResponse.getData();
-        assertEquals("M", response.getRateClass());
-        assertEquals("52.0", response.getRateCharge().toString());
-    }
-
-    @Test
-    void testGetFetchIataRates_Success_case3() throws RunnerException {
-        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
-                .chargeableWeight(BigDecimal.valueOf(100.0))
-                .destinationPort("NAKMP_AIR")
-                .originPort("NAGOG_AIR")
-                .flightCarrier("Aegean Airlines")
-                .build();
-        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
-        unlocationsResponse1.setIataCode("A12");
-        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
-        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
-        unlocationsResponse2.setIataCode("B34");
-        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
-        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
-
-        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
-        carriersMap.put("Aegean Airlines", carrier);
-
-        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
-        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
-        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
-        Map<String, Object> extraResponseParams = new HashMap<>();
-        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 200);
-
-        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
-                .rates(List.of(IataTactRatesApiResponse.Rates.builder()
-                        .standardCharge(IataTactRatesApiResponse.StandardCharge.builder()
-                                .minimumCharge(BigDecimal.valueOf(52.0))
-                                .normalCharge(BigDecimal.valueOf(5.0))
-                                .weightBreak(List.of(IataTactRatesApiResponse.WeightBreak.builder()
-                                        .charge(BigDecimal.valueOf(3.0))
-                                        .weightMeasure(BigDecimal.valueOf(100))
-                                        .build()))
-                                .build())
-                        .build()))
-                .build();
-
-
-        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
-                .payload(iataTactRatesApiResponse)
-                .extraResponseParams(extraResponseParams)
-                .build();
-
-        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
-        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
-        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
-        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
-        ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
-        RunnerResponse runnerResponse = (RunnerResponse)responseEntity.getBody();
-        IataFetchRateResponse response = (IataFetchRateResponse) runnerResponse.getData();
-        assertEquals("Q", response.getRateClass());
-        assertEquals("3.0", response.getRateCharge().toString());
-    }
-
-    @Test
-    void testGetFetchIataRates_Success_case4() throws RunnerException {
         IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
                 .chargeableWeight(BigDecimal.valueOf(156.0))
                 .destinationPort("NAKMP_AIR")
@@ -2376,7 +2278,7 @@ class AwbServiceTest {
     }
 
     @Test
-    void testGetFetchIataRates_Success_case5() throws RunnerException {
+    void testGetFetchIataRates_Success_case3() throws RunnerException {
         IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
                 .chargeableWeight(BigDecimal.valueOf(156.0))
                 .destinationPort("NAKMP_AIR")
