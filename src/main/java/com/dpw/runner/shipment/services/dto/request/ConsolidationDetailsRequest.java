@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +24,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String transportMode;
     private String containerCategory;
     private Boolean isDomestic;
+    @JsonDeserialize(using = TrimStringDeserializer.class)
     private String mawb;
     private String serviceLevel;
     private String payment;
@@ -55,6 +58,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
+    @JsonDeserialize(using = TrimStringDeserializer.class)
     private String bol;
     private Boolean isCargoOnly;
     private Boolean isLocked;

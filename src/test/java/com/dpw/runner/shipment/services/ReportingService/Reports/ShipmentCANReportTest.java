@@ -44,13 +44,15 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class ShipmentCANReportTest {
+class ShipmentCANReportTest {
 
     @InjectMocks
     private ShipmentCANReport shipmentCANReport;
@@ -285,8 +287,7 @@ public class ShipmentCANReportTest {
         billChargeMap.put(CHARGE_TYPE_CODE, "20GP");
 
         doReturn(billChargeMap).when(jsonHelper).convertValue(eq(billChargesResponse), any(TypeReference.class));
-        shipmentCANReport.populateDictionary(shipmentCANModel);
-        assert (true);
+        assertNotNull(shipmentCANReport.populateDictionary(shipmentCANModel));
     }
 
     @Test
@@ -458,7 +459,7 @@ public class ShipmentCANReportTest {
 
         doReturn(billChargeMap).when(jsonHelper).convertValue(eq(billChargesResponse), any(TypeReference.class));
         shipmentCANReport.populateDictionary(shipmentCANModel);
-        assert (true);
+        assertNotNull(shipmentCANReport.populateDictionary(shipmentCANModel));
     }
 
     @Test
@@ -475,8 +476,7 @@ public class ShipmentCANReportTest {
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
         when(shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1))).thenReturn(Arrays.asList(ShipmentSettingsDetails.builder().build()));
-        shipmentCANReport.getDocumentModel(123L);
-        assert (true);
+        assertNotNull(shipmentCANReport.getDocumentModel(123L));
     }
 
     @Test
@@ -497,8 +497,7 @@ public class ShipmentCANReportTest {
         Awb awb = new Awb();
         awb.setAwbShipmentInfo(AwbShipmentInfo.builder().entityType(HAWB).build());
         when(awbDao.findByShipmentId(any())).thenReturn(Arrays.asList(awb));
-
-        shipmentCANReport.getDocumentModel(123L);
+        assertNotNull(shipmentCANReport.getDocumentModel(123L));
         assert (true);
     }
 }

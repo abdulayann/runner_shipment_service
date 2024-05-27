@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -39,6 +40,8 @@ public class NPMContractsResponse implements IRunnerResponse {
         private String destination_name;
         @JsonProperty("meta")
         private ListContractResponse.Meta meta;
+        @JsonProperty("valid_till")
+        private LocalDateTime validTill;
     }
 }
 

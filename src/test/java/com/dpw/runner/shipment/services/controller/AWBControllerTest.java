@@ -521,6 +521,26 @@ class AWBControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void getFetchIataRates() throws RunnerException {
+        // Mock
+        when(awbService.getFetchIataRates(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = awbController.getFetchIataRates(new IataFetchRateRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getFetchIataRates2() throws RunnerException {
+        // Mock
+        when(awbService.getFetchIataRates(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = awbController.getFetchIataRates(new IataFetchRateRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 
 
 

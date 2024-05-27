@@ -55,8 +55,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 @ExtendWith(MockitoExtension.class)
-public class HawbReportTest {
+class HawbReportTest {
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -344,7 +346,7 @@ public class HawbReportTest {
         when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
 
-        hawbReport.populateDictionary(hawbModel);
+        assertNotNull(hawbReport.populateDictionary(hawbModel));
     }
 
     @Test
@@ -513,7 +515,7 @@ public class HawbReportTest {
         when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
 
-        hawbReport.populateDictionary(hawbModel);
+        assertNotNull(hawbReport.populateDictionary(hawbModel));
     }
 
     @Test
@@ -716,7 +718,7 @@ public class HawbReportTest {
         when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
 
-        hawbReport.populateDictionary(hawbModel);
+        assertNotNull(hawbReport.populateDictionary(hawbModel));
     }
 
     @Test
@@ -726,6 +728,6 @@ public class HawbReportTest {
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(awbRepository.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
-        hawbReport.getDocumentModel(123L);
+        assertNotNull(hawbReport.getDocumentModel(123L));
     }
 }

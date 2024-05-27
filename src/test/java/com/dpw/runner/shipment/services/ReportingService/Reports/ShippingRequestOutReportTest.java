@@ -47,15 +47,14 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class ShippingRequestOutReportTest {
+class ShippingRequestOutReportTest {
 
     @InjectMocks
     private ShippingRequestOutReport shippingRequestOutReport;
@@ -273,8 +272,7 @@ public class ShippingRequestOutReportTest {
         masterDataMock();
         mockVessel();
         mockCarrier();
-        shippingRequestOutReport.populateDictionary(shippingRequestOutModel);
-        assert (true);
+        assertNotNull(shippingRequestOutReport.populateDictionary(shippingRequestOutModel));
     }
 
     @Test
@@ -433,7 +431,7 @@ public class ShippingRequestOutReportTest {
         masterDataMock();
         mockVessel();
         mockCarrier();
-        shippingRequestOutReport.populateDictionary(shippingRequestOutModel);
+        assertNotNull(shippingRequestOutReport.populateDictionary(shippingRequestOutModel));
         assert (true);
     }
 
@@ -530,7 +528,7 @@ public class ShippingRequestOutReportTest {
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
         when(shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1))).thenReturn(Arrays.asList(ShipmentSettingsDetails.builder().isShipmentLevelContainer(true).build()));
-        shippingRequestOutReport.getDocumentModel(123L);
+        assertNotNull(shippingRequestOutReport.getDocumentModel(123L));
     }
 
     @Test
@@ -633,7 +631,7 @@ public class ShippingRequestOutReportTest {
 
         mockCarrier();
         mockVessel();
-        shippingRequestOutReport.getDocumentModel(123L);
+        assertNotNull(shippingRequestOutReport.getDocumentModel(123L));
     }
 
     @Test
@@ -716,6 +714,6 @@ public class ShippingRequestOutReportTest {
 
         mockCarrier();
         mockVessel();
-        shippingRequestOutReport.getDocumentModel(123L);
+        assertNotNull(shippingRequestOutReport.getDocumentModel(123L));
     }
 }

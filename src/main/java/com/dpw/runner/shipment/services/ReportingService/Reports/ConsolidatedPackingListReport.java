@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -150,10 +151,7 @@ public class ConsolidatedPackingListReport extends IReport {
 //            String packingJson = jsonHelper.convertToJson(packingList);
 //            var values = jsonHelper.convertValue(packingJson, new TypeReference<List<Map<String, Object>>>() {});
             Set<PackingModel> packingSet = new HashSet<>(packingList);
-            var values = packingSet.stream()
-                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
-                    .toList();
-
+            List<Map<String, Object>> values = jsonHelper.convertValue(packingSet, new TypeReference<>() {});
             for (var v : values) {
                 totalPacks = sum(totalPacks, Long.parseLong(v.get(PACKS).toString()));
                 if (!breakFlagForWeight && v.get(WEIGHT) != null && v.get(WEIGHT_UNIT) != null) {

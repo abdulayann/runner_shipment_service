@@ -14,13 +14,14 @@ import java.util.Map;
 
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -1342,5 +1343,671 @@ class MasterDataUtilsTest {
         assertTrue(response.isEmpty());
     }
 
+    @Test
+    void fetchBillDataForShipments() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+
+        when(cache.get(any())).thenReturn(ShipmentBillingListResponse.BillingData::new);
+
+        masterDataUtils.fetchBillDataForShipments(List.of(completeShipment), List.of(mockShipmentListResponse));
+
+        assertTrue(isSuccess);
+
+    }
+
+    @Test
+    void fetchBillDataForShipments2() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);
+        var mockV1Response = new ShipmentBillingListResponse();
+        var mockMapData = new HashMap<String, ShipmentBillingListResponse.BillingData>();
+        mockMapData.put(StringUtility.convertToString(mockShipmentListResponse.getGuid()), new ShipmentBillingListResponse.BillingData());
+        mockV1Response.setData(mockMapData);
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+
+        when(cache.get(any())).thenReturn(null);
+
+        when(v1Service.fetchShipmentBillingData(any())).thenReturn(mockV1Response);
+        masterDataUtils.fetchBillDataForShipments(List.of(completeShipment), List.of(mockShipmentListResponse));
+
+        assertTrue(isSuccess);
+
+    }
+
+    @Test
+    void fetchBillDataForShipments3() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);
+
+        masterDataUtils.fetchBillDataForShipments(List.of(), List.of(mockShipmentListResponse));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchBillDataForShipments4() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);
+        masterDataUtils.fetchBillDataForShipments(null, List.of(mockShipmentListResponse));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void getMasterListData() {
+
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(MasterData.builder().build())).build());
+        when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(List.of(MasterData.builder().id(11).build()));
+        var responseEntity = masterDataUtils.getMasterListData(MasterDataType.COMMODITY_GROUP, "1234");
+        assertNotNull(responseEntity);
+        assertEquals(11, responseEntity.getId());
+    }
+
+    @Test
+    void getMasterListData2() {
+
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(MasterData.builder().build())).build());
+        when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(List.of());
+        var responseEntity = masterDataUtils.getMasterListData(MasterDataType.COMMODITY_GROUP, "1234");
+        assertNull(responseEntity);
+    }
+
+    @Test
+    void getMasterListData3() {
+
+        var responseEntity = masterDataUtils.getMasterListData(MasterDataType.COMMODITY_GROUP, null);
+        assertNull(responseEntity);
+    }
+
+    @Test
+    void getMasterListData4() {
+
+        var responseEntity = masterDataUtils.getMasterListData(MasterDataType.COMMODITY_GROUP, StringUtility.getEmptyString());
+        assertNull(responseEntity);
+    }
+
+    @Test
+    void getMasterListData5() {
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().build());
+        var responseEntity = masterDataUtils.getMasterListData(MasterDataType.COMMODITY_GROUP, "1234");
+        assertNull(responseEntity);
+    }
+
+    @Test
+    void getVesselName() {
+        var mockVesselGuid = UUID.randomUUID();
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferVessels.class))).thenReturn(List.of(EntityTransferVessels.builder().Guid(mockVesselGuid).Name("Mark").build()));
+        when(v1Service.fetchVesselData(any())).thenReturn(V1DataResponse.builder().build());
+
+        var responseEntity = masterDataUtils.getVesselName(mockVesselGuid.toString());
+        assertNotNull(responseEntity);
+        assertEquals("Mark", responseEntity);
+    }
+
+
+    @Test
+    void getVesselName2() {
+        var mockVesselGuid = UUID.randomUUID();
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferVessels.class))).thenReturn(List.of(EntityTransferVessels.builder().Guid(mockVesselGuid).Name("Mark").build()));
+        when(v1Service.fetchVesselData(any())).thenReturn(V1DataResponse.builder().build());
+
+        var responseEntity = masterDataUtils.getVesselName(UUID.randomUUID().toString());
+        assertNull(responseEntity);
+    }
+
+
+    @Test
+    void getVesselName3() {
+        var responseEntity = masterDataUtils.getVesselName(null);
+        assertNull(responseEntity);
+    }
+
+    @Test
+    void getCarrierName() {
+        var mockCarrierCode = "APLU";
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferCarrier.class))).thenReturn(List.of(EntityTransferCarrier.builder().ItemValue(mockCarrierCode).ItemDescription("APULU Carrier").build()));
+        when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(V1DataResponse.builder().build());
+
+        var responseEntity = masterDataUtils.getCarrierName(mockCarrierCode);
+        assertNotNull(responseEntity);
+        assertEquals("APULU Carrier", responseEntity);
+    }
+
+
+    @Test
+    void getCarrierName2() {
+        var mockCarrierCode = "APLU";
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferCarrier.class))).thenReturn(List.of(EntityTransferCarrier.builder().ItemValue(mockCarrierCode).build()));
+        when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(V1DataResponse.builder().build());
+
+        var responseEntity = masterDataUtils.getCarrierName("AAPU");
+        assertNull(responseEntity);
+    }
+
+    @Test
+    void getCarrierName3() {
+        var responseEntity = masterDataUtils.getCarrierName(null);
+        assertNull(responseEntity);
+    }
+
+    @Test
+    void fetchUnlocationByOneIdentifier() {
+        var responseEntity = masterDataUtils.fetchUnlocationByOneIdentifier(null, null);
+        assertNull(responseEntity);
+    }
+
+
+    @Test
+    void fetchUnlocationByOneIdentifier2() {
+        var mockV1Response = new UnlocationsResponse();
+        mockV1Response.setId(111);
+        mockV1Response.setName("Vancouver");
+        when(jsonHelper.convertValueToList(any(), eq(UnlocationsResponse.class))).thenReturn(List.of(mockV1Response));
+        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
+
+        var responseEntity = masterDataUtils.fetchUnlocationByOneIdentifier(EntityTransferConstants.ID, StringUtility.getRandomString(5));
+        assertNotNull(responseEntity);
+        assertEquals(List.of(mockV1Response), responseEntity);
+    }
+
+    @Test
+    void setMasterData() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+
+    @Test
+    void setMasterDat2() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS, true);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData3() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS_AWB);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData4() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferContainerType.builder().Code("20GP").Description("20 Foot").build());
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CONTAINER_TYPE);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData5() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferChargeType.builder().ChargeCode("AMS").Description("AMS Filling").build());
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CHARGE_TYPE);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData6() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("ValuenDesc").build());
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData7() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ItemDescription("ItemDescription").build());
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData8() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ItemDescription("ItemDescription").build());
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST, true);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData9() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferVessels.builder().Name("Name").build());
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.VESSELS);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData10() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferCarrier.builder().ItemDescription("DPW").build());
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CARRIER);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData11() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(TenantModel::new);
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.TENANTS);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData12() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(WareHouseResponse::new);
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.WAREHOUSES);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData13() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(ActivityMasterResponse::new);
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.ACTIVITY_TYPE);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData14() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(SalesAgentResponse::new);
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.SALES_AGENT);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData15() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCommodityType::new);
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.COMMODITY);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+
+    @Test
+    void setMasterData16() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCommodityType::new);
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, StringUtility.getRandomString(10));
+
+        assertNotNull(resonseMap);
+        assertFalse(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void setMasterData17() {
+        Cache cache = mock(Cache.class);
+        var inputFieldNameKeyMap = new HashMap<String, String>();
+        inputFieldNameKeyMap.put("field", "value");
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCurrency::new);
+
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CURRENCIES);
+
+        assertNotNull(resonseMap);
+        assertTrue(resonseMap.containsKey("field"));
+    }
+
+    @Test
+    void getChargeTypes() {
+        // Arrange
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferChargeType.class))).thenReturn(List.of(EntityTransferChargeType.builder().ChargeCode("AMS").build()));
+        when(v1Service.fetchChargeCodeData(any())).thenReturn(V1DataResponse.builder().build());
+        // Act and Assert
+        var responseEntity = masterDataUtils.getChargeTypes(List.of("AMS"));
+        assertNotNull(responseEntity);
+        assertFalse(responseEntity.isEmpty());
+    }
+
+
+    @Test
+    void getChargeTypes2() {
+        // Act and Assert
+        var responseEntity = masterDataUtils.getChargeTypes(List.of());
+        assertNull(responseEntity);
+    }
+
+    @Test
+    void getChargeTypes3() {
+        // Act and Assert
+        var responseEntity = masterDataUtils.getChargeTypes(null);
+        assertNull(responseEntity);
+    }
+
+    @Test
+    void setLocationData() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+
+        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        masterDataUtils.setLocationData(List.of(CustomerBookingResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setLocationData2() {
+        boolean isSuccess = true;
+        masterDataUtils.setLocationData(List.of(CustomerBookingResponse.builder().build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setLocationData3() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+
+        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        masterDataUtils.setLocationData(List.of(ShipmentListResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).additionalDetails(new AdditionalDetailsListResponse()).build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setLocationData4() {
+        boolean isSuccess = true;
+        masterDataUtils.setLocationData(List.of(ShipmentListResponse.builder().build()), EntityTransferConstants.UNLOCATION_CODE);
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setLocationData5() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+
+        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        masterDataUtils.setLocationData(List.of(ConsolidationListResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setLocationData6() {
+        boolean isSuccess = true;
+        masterDataUtils.setLocationData(List.of(ConsolidationListResponse.builder().build()), EntityTransferConstants.UNLOCATION_CODE);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void setLocationData7() {
+        boolean isSuccess = true;
+        masterDataUtils.setLocationData(List.of(CarrierDetailResponse.builder().build()), EntityTransferConstants.UNLOCATION_CODE);
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchVesselForList() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferVessels::new);
+
+        masterDataUtils.fetchVesselForList(List.of(ShipmentListResponse.builder().carrierDetails(CarrierDetailResponse.builder().vessel(UUID.randomUUID().toString()).build()).build()));
+
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void fetchVesselForList2() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchVesselForList(List.of(ShipmentListResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchVesselForList3() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchVesselForList(List.of(ShipmentListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchVesselForList4() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferVessels::new);
+
+        masterDataUtils.fetchVesselForList(List.of(ConsolidationListResponse.builder().carrierDetails(CarrierDetailResponse.builder().vessel(UUID.randomUUID().toString()).build()).build()));
+
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void fetchVesselForList5() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchVesselForList(List.of(ConsolidationListResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchVesselForList6() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchVesselForList(List.of(ConsolidationListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchVesselForList7() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchVesselForList(List.of(CarrierDetailResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setContainerTeuData() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferContainerType.builder().Teu(11.1).build());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferContainerType.class))).thenReturn(List.of(EntityTransferContainerType.builder().Code("20GP").ContainerType("ContainerType").build()));
+        when(v1Service.fetchContainerTypeData(any())).thenReturn(V1DataResponse.builder().build());
+
+        masterDataUtils.setContainerTeuData(List.of(completeShipment), List.of(mockShipmentListResponse));
+
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void setContainerTeuData2() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);
+        completeShipment.setContainersList(null);
+
+        masterDataUtils.setContainerTeuData(List.of(completeShipment), List.of(mockShipmentListResponse));
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setConsolidationContainerTeuData() {
+        boolean isSuccess = true;
+        var mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setContainersList(completeShipment.getContainersList());
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferContainerType.builder().Teu(11.1).build());
+
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferContainerType.class))).thenReturn(List.of(EntityTransferContainerType.builder().Code("20GP").ContainerType("ContainerType").build()));
+        when(v1Service.fetchContainerTypeData(any())).thenReturn(V1DataResponse.builder().build());
+
+        masterDataUtils.setConsolidationContainerTeuData(List.of(mockConsolidation), List.of(ConsolidationListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void setConsolidationContainerTeuData2() {
+        boolean isSuccess = true;
+        masterDataUtils.setConsolidationContainerTeuData(List.of(new ConsolidationDetails()), List.of(ConsolidationListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void getMasterDataDescription() throws RunnerException, NoSuchFieldException, ClassNotFoundException, IllegalAccessException {
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(new ShipmentSettingsDetailsResponse());
+        var response = masterDataUtils.getMasterDataDescription(new ShipmentSettingsDetails());
+
+        assertNotNull(response);
+        assertFalse(response.isEmpty());
+    }
 
 }

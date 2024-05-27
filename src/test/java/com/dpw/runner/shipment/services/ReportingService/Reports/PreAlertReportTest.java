@@ -41,11 +41,12 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class PreAlertReportTest {
+class PreAlertReportTest {
 
     @InjectMocks
     private PreAlertReport preAlertReport;
@@ -239,9 +240,7 @@ public class PreAlertReportTest {
         locationMap.put(carrierDetailModel.getDestination(), unlocationsResponse);
 
         when(masterDataUtils.getLocationData(any())).thenReturn(locationMap);
-
-        preAlertReport.populateDictionary(preAlertModel);
-        assert (true);
+        assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
     @Test
@@ -367,8 +366,7 @@ public class PreAlertReportTest {
         Map<String, Object> dictionary = new HashMap<>();
         dictionary.put("id", "123");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
-        preAlertReport.populateDictionary(preAlertModel);
-        assert (true);
+        assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
     @Test
@@ -476,9 +474,7 @@ public class PreAlertReportTest {
         Map<String, Object> dictionary = new HashMap<>();
         dictionary.put("id", "123");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
-
-        preAlertReport.populateDictionary(preAlertModel);
-        assert (true);
+        assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
     @Test
@@ -492,7 +488,6 @@ public class PreAlertReportTest {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        preAlertReport.getDocumentModel(123L);
-        assert (true);
+        assertNotNull(preAlertReport.getDocumentModel(123L));
     }
 }

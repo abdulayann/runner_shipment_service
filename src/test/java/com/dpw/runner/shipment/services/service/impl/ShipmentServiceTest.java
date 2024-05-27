@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
@@ -2276,6 +2277,52 @@ class ShipmentServiceTest {
 
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+
+        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
+        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeUpdateConsolidationListNotEmpty_success_Air() throws RunnerException {
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(1L);
+
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails2.setId(2L);
+
+        testShipment.setId(1L);
+        ShipmentDetails mockShipment = testShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setJobType(Constants.SHIPMENT_TYPE_DRT)
+                .setSourceTenantId(1L)
+                .setConsolidationList(Arrays.asList(consolidationDetails2))
+                .setContainersList(new ArrayList<>());
+        ShipmentDetails oldEntity = jsonTestUtility.getTestShipment()
+                .setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setSourceTenantId(1L)
+                .setConsolidationList(Arrays.asList(consolidationDetails2))
+                .setContainersList(new ArrayList<>());
+        oldEntity.getCarrierDetails().setShippingLine("ABC AirLine");
+        oldEntity.setId(1L);
+        mockShipment.setConsolidationList(Arrays.asList(consolidationDetails1));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).iataTactFlag(true).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
+
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
 
         when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
         when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));

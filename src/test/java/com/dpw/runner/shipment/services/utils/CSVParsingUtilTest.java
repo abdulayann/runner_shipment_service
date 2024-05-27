@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -82,9 +83,9 @@ class CSVParsingUtilTest {
     private static MultipartFile mockPackingInvalidDGSubstanceIdFile;
     private static MultipartFile mockContainerFile;
     private static MultipartFile mockContainerInvalidFile;
+    private static MultipartFile mockExcelFileEvents_missingEventCode;
     private static CSVParsingUtil<Containers> csvParsingUtilContainer;
     private static CSVParsingUtil<Events> csvParsingUtilContainerEvents;
-
     private static MultipartFile mockExcelFileEvents;
 
 
@@ -106,6 +107,7 @@ class CSVParsingUtilTest {
         mockPackingFile = getFileFromResources("TestCargoDetails.xlsx");
         mockPackingInvalidFile = getFileFromResources("TestCargoDetailsInvalid.xlsx");
         mockPackingInvalidDGSubstanceIdFile = getFileFromResources("CargoDetails_InvalidDGSubstanceId.xlsx");
+        mockExcelFileEvents_missingEventCode = getFileFromResources("TestContainerEvents_MissingEventCode.xlsx");
     }
 
     private static MultipartFile getFileFromResources(String fileName) throws IOException {
@@ -211,6 +213,62 @@ class CSVParsingUtilTest {
         assertNotNull(result);
         assertEquals(2, result.size());
     }
+    /*
+
+        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(new ArrayList<>()).build());
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocCode("Loc1");
+        unlocationsResponse.setLocationsReferenceGUID(UUID.randomUUID().toString());
+
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setLocCode("DEF");
+        unlocationsResponse2.setLocationsReferenceGUID(UUID.randomUUID().toString());
+
+
+        when(jsonHelper.convertValueToList(any(Object.class), eq(UnlocationsResponse.class))).thenReturn(List.of(unlocationsResponse, unlocationsResponse2));
+
+     */
+
+
+    @Test
+    void testInValidInput_ForPacking_InvalidOrigin_ThrowsException() throws IOException {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(123L);
+        Map<UUID, Packing> mapOfEntity = Map.of(
+                UUID.fromString("87930938-8fdf-42d4-a70c-204b511a1684"),jsonTestUtility.getTestPacking(),
+                UUID.fromString("cbd3bb18-bba8-46ad-85e6-4e94290fc21b"),jsonTestUtility.getTestPacking());
+
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        Map<Long, Long> undg = new HashMap<>();
+        Map<Long, String> flashpoint = new HashMap<>();
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
+
+        MDC.setContextMap(Map.of("a" , "b"));
+        when(v1Service.fetchDangerousGoodData(any())).thenReturn(V1DataResponse.builder().entities(new ArrayList<>()).build());
+        List<EntityTransferDGSubstance> entityTransferDGSubstanceList = List.of(EntityTransferDGSubstance.builder().Id(2L).UNIDNo(123L).FlashPoint("FlashPoint").build());
+        when(jsonHelper.convertValueToList(any(Object.class), eq(EntityTransferDGSubstance.class))).thenReturn(entityTransferDGSubstanceList);
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().shipmentId(12L).consolidationId(13L).build()));
+
+        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(new ArrayList<>()).build());
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocCode("");
+        unlocationsResponse.setLocationsReferenceGUID(UUID.randomUUID().toString());
+
+        when(jsonHelper.convertValueToList(any(Object.class), eq(UnlocationsResponse.class))).thenReturn(List.of(unlocationsResponse));
+
+
+        when(v1Service.fetchCommodityData(any())).thenReturn(V1DataResponse.builder().entities(new ArrayList<>()).build());
+        CommodityResponse commodityResponse = new CommodityResponse();
+        commodityResponse.setCode("1231");
+        List<CommodityResponse> commodityResponseList = List.of(commodityResponse);
+        when(jsonHelper.convertValueToList(any(Object.class), eq(CommodityResponse.class))).thenReturn(commodityResponseList);
+
+        ShipmentDetails sd1 = jsonTestUtility.getTestShipment();
+        sd1.setShipmentId("SHP000109322");
+        sd1.setId(12L);
+        when(shipmentDao.findAll(any(),any())).thenReturn(new PageImpl<>(List.of(sd1)));
+        assertThrows(ValidationException.class, () -> csvParsingUtil.parseExcelFilePacking(mockPackingFile, request, mapOfEntity, masterDataMap, Packing.class, undg, flashpoint, locCodeToLocationReferenceGuidMap));
+    }
 
     @Test
     void testValidInput_ForContainerEvents() throws IOException {
@@ -242,6 +300,64 @@ class CSVParsingUtilTest {
         assertNotNull(result);
         assertEquals(1, result.size());
     }
+
+    @Test
+    void testValidInput_ForContainerEvents_MissingEventCodeColumn_ThrowsException() throws IOException {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(123L);
+        Map<UUID, Events> mapOfEntity = Map.of(
+                UUID.fromString("87930938-8fdf-42d4-a70c-204b511a1684"),jsonTestUtility.getTestEventData(),
+                UUID.fromString("cbd3bb18-bba8-46ad-85e6-4e94290fc21b"),jsonTestUtility.getTestEventData());
+
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        Map<Long, Long> undg = new HashMap<>();
+        Map<Long, String> flashpoint = new HashMap<>();
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
+        var consol = jsonTestUtility.getTestNewConsolidation();
+        consol.setContainersList(List.of(Containers.builder().containerNumber("ABCD1231").build()));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consol));
+        MDC.setContextMap(Map.of("a" , "b"));
+        List<EntityTransferDGSubstance> entityTransferDGSubstanceList = List.of(EntityTransferDGSubstance.builder().Id(2L).UNIDNo(123L).FlashPoint("FlashPoint").build());
+        CommodityResponse commodityResponse = new CommodityResponse();
+
+        commodityResponse.setCode("1231");
+        List<CommodityResponse> commodityResponseList = List.of(commodityResponse);
+
+        ShipmentDetails sd1 = jsonTestUtility.getTestShipment();
+        sd1.setShipmentId("SHP000109322");
+        sd1.setId(12L);
+        assertThrows(ValidationException.class, () -> csvParsingUtilContainerEvents.parseExcelFile(mockExcelFileEvents_missingEventCode, request, mapOfEntity, masterDataMap, Events.class, ContainerEventExcelModel.class, undg, flashpoint, locCodeToLocationReferenceGuidMap));
+    }
+
+    @Test
+    void testValidInput_ForContainerEvents_MissingConsolidation_ThrowsException() throws IOException {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(123L);
+        Map<UUID, Events> mapOfEntity = Map.of(
+                UUID.fromString("87930938-8fdf-42d4-a70c-204b511a1684"),jsonTestUtility.getTestEventData(),
+                UUID.fromString("cbd3bb18-bba8-46ad-85e6-4e94290fc21b"),jsonTestUtility.getTestEventData());
+
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        Map<Long, Long> undg = new HashMap<>();
+        Map<Long, String> flashpoint = new HashMap<>();
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
+        var consol = jsonTestUtility.getTestNewConsolidation();
+        consol.setContainersList(List.of(Containers.builder().containerNumber("ABCD1231").build()));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+        MDC.setContextMap(Map.of("a" , "b"));
+        List<EntityTransferDGSubstance> entityTransferDGSubstanceList = List.of(EntityTransferDGSubstance.builder().Id(2L).UNIDNo(123L).FlashPoint("FlashPoint").build());
+        CommodityResponse commodityResponse = new CommodityResponse();
+
+        commodityResponse.setCode("1231");
+        List<CommodityResponse> commodityResponseList = List.of(commodityResponse);
+
+        ShipmentDetails sd1 = jsonTestUtility.getTestShipment();
+        sd1.setShipmentId("SHP000109322");
+        sd1.setId(12L);
+        assertThrows(ValidationException.class, () -> csvParsingUtilContainerEvents.parseExcelFile(mockExcelFileEvents_missingEventCode, request, mapOfEntity, masterDataMap, Events.class, ContainerEventExcelModel.class, undg, flashpoint, locCodeToLocationReferenceGuidMap));
+    }
+
+
 
     @Test
     void testValidInput_ForContainers() throws IOException {

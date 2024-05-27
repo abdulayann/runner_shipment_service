@@ -52,7 +52,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class HblReportTest {
+class HblReportTest {
 
     @InjectMocks
     private HblReport hblReport;
@@ -126,7 +126,7 @@ public class HblReportTest {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        hblReport.getDocumentModel(123L);
+        assertNotNull(hblReport.getDocumentModel(123L));
     }
 
     @Test
@@ -297,7 +297,7 @@ public class HblReportTest {
         when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
 
-        hblReport.getDocumentModel(123L);
+        assertNotNull(hblReport.getDocumentModel(123L));
     }
 
     @Test
@@ -436,7 +436,7 @@ public class HblReportTest {
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
-        hblReport.populateDictionary(hblModel);
+        assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
     @Test
@@ -579,7 +579,7 @@ public class HblReportTest {
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(null);
-        hblReport.populateDictionary(hblModel);
+        assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
     @Test
