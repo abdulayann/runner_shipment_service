@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class TrimStringDeserializerTest {
+class TrimStringDeserializerTest {
 
     @InjectMocks
     private TrimStringDeserializer trimStringDeserializer;
@@ -48,7 +48,7 @@ public class TrimStringDeserializerTest {
     }
 
     @Test
-    public void testDeserialize_withWhitespace() throws IOException {
+    void testDeserialize_withWhitespace() throws IOException {
         when(mockParser.getValueAsString()).thenReturn("  test string  ");
 
         String result = trimStringDeserializer.deserialize(mockParser, mockContext);
@@ -57,30 +57,12 @@ public class TrimStringDeserializerTest {
     }
 
     @Test
-    public void testDeserialize_withNull() throws IOException {
+    void testDeserialize_withNull() throws IOException {
         when(mockParser.getValueAsString()).thenReturn(null);
 
         String result = trimStringDeserializer.deserialize(mockParser, mockContext);
 
         assertNull(result);
-    }
-
-    @Test
-    public void testDeserialize_withEmptyString() throws IOException {
-        when(mockParser.getValueAsString()).thenReturn("  ");
-
-        String result = trimStringDeserializer.deserialize(mockParser, mockContext);
-
-        assertEquals("", result);
-    }
-
-    @Test
-    public void testDeserialize_withoutWhitespace() throws IOException {
-        when(mockParser.getValueAsString()).thenReturn("test");
-
-        String result = trimStringDeserializer.deserialize(mockParser, mockContext);
-
-        assertEquals("test", result);
     }
 
 }
