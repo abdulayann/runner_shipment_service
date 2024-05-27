@@ -3328,17 +3328,15 @@ public class AwbService implements IAwbService {
                 .build();
         log.info("TactPayload : "+ jsonHelper.convertToJson(tactBridgePayload));
         BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.requestTactResponse(CommonRequestModel.buildRequest(tactBridgePayload));
-        if(bridgeServiceResponse.getExtraResponseParams().containsKey("SERVICE_HTTP_STATUS_CODE")){
-            if(!Objects.equals(bridgeServiceResponse.getExtraResponseParams().get(AwbConstants.SERVICE_HTTP_STATUS_CODE).toString(), "200") &&
+        if(bridgeServiceResponse.getExtraResponseParams().containsKey(AwbConstants.SERVICE_HTTP_STATUS_CODE) && !Objects.equals(bridgeServiceResponse.getExtraResponseParams().get(AwbConstants.SERVICE_HTTP_STATUS_CODE).toString(), "200") &&
                     !Objects.equals(bridgeServiceResponse.getExtraResponseParams().get(AwbConstants.SERVICE_HTTP_STATUS_CODE).toString(), "400")){
-                throw new RunnerException("Getting error from Iata while fetching rates");
-            }
+            throw new RunnerException("Getting error from Iata while fetching rates");
         }
 
         IataTactRatesApiResponse iataTactRatesApiResponse = jsonHelper.convertValue(bridgeServiceResponse.getPayload(), IataTactRatesApiResponse.class);
         if(iataTactRatesApiResponse != null && iataTactRatesApiResponse.getResponseType() != null && Objects.equals(iataTactRatesApiResponse.getResponseType(), "validation-failed")
                 && iataTactRatesApiResponse.getErrors() != null && !iataTactRatesApiResponse.getErrors().isEmpty()){
-            List<String> errors = iataTactRatesApiResponse.getErrors().stream().map(x->x.getMessage()).collect(Collectors.toList());
+            List<String> errors = iataTactRatesApiResponse.getErrors().stream().map(IataTactRatesApiResponse.Errors::getMessage).toList();
             throw new ValidationException(String.join("\r\n", errors));
         }
 

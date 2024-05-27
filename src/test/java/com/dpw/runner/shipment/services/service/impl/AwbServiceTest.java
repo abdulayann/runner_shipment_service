@@ -2459,12 +2459,13 @@ class AwbServiceTest {
                 .payload(iataTactRatesApiResponse)
                 .extraResponseParams(extraResponseParams)
                 .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
 
         when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
         when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
         when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
-        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest)));
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
     }
 
     @Test
@@ -2506,12 +2507,13 @@ class AwbServiceTest {
                 .payload(iataTactRatesApiResponse)
                 .extraResponseParams(extraResponseParams)
                 .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
 
         when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
         when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
         when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
-        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest)));
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
     }
 
     @Test
@@ -2547,11 +2549,12 @@ class AwbServiceTest {
                 .payload(iataTactRatesApiResponse)
                 .extraResponseParams(extraResponseParams)
                 .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
 
         when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
         when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
-        assertThrows(RunnerException.class, () -> awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest)));
+        assertThrows(RunnerException.class, () -> awbService.getFetchIataRates(commonRequestModel));
     }
 
     @Test
@@ -2562,8 +2565,9 @@ class AwbServiceTest {
                 .originPort(null)
                 .flightCarrier(null)
                 .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
 
-        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest)));
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
     }
 
     @Test
@@ -2587,10 +2591,11 @@ class AwbServiceTest {
         Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
         unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
         unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
 
         when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
-        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest)));
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
     }
 
 
