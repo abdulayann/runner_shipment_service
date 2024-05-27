@@ -131,35 +131,6 @@ public class ProductIdentifierUtility {
                 .toList();
 
         if (shipmentConsoleTIRecord.size() > 0) {
-          //                    var transportMappingRepo = new
-          // TenantProductTransportMappingRepository();
-          //                    var productIds = shipmentConsoleTIRecord.stream().map(i ->
-          // i.getTenantProducts().getId()).toList();
-          //                    listRequest = constructListCommonRequest("tenantProductId",
-          // productIds, "IN");
-          //                    var transPortMappingList =
-          // transportMappingRepo.List(listRequest).Entities;
-          //                    if (transportMappingList.size() > 0) {
-          //                        var transportMappingDetailList =
-          // transportMappingList.stream().filter(x -> x.getTransportMode() ==
-          // transportMode).toList();
-          //
-          //                        if (transportMappingDetailList.size() > 0) {
-          //                            var mappedTenantProductIds =
-          // transportMappingDetailList.stream().fitler(x -> x.TenantProductId).toList();
-          //                            var matchedRecord =
-          // shipmentConsoleTIRecord.stream().filter(x ->
-          // mappedTenantProductIds.contains(x.TenantProduct)).toList();
-          //                            var CheckIfParentFound = matchedRecord.FirstOrDefault(x ->
-          // x.IsParent == true);
-          //
-          //                            if (CheckIfParentFound != null) {
-          //                                return CheckIfParentFound;
-          //                            } else {
-          //                                returnProduct = matchedRecord.FirstOrDefault();
-          //                            }
-          //                        }
-          //                    }
           var matchedRecords =
               shipmentConsoleTIRecord.stream()
                   .filter(i -> i.getTenantProducts().getTransportModes().contains(transportMode))
@@ -357,13 +328,6 @@ public class ProductIdentifierUtility {
       if (res.isPresent()) return res.get();
     }
 
-    // No relevant to shipment
-    //        for (var product : enabledTenantProducts) {
-    //            if(MatchProduct(shipment, null, product.getProductType())) {
-    //                return product;
-    //            }
-    //        }
-
     var transportAll =
         enabledTenantProducts.stream()
             .filter(p -> p.getProductType() == ProductType.Transport_All)
@@ -498,23 +462,6 @@ public class ProductIdentifierUtility {
     return null;
   }
 
-  //    private boolean MatchProduct(ShipmentDetails shipment, TransportInstructionRow transport,
-  // ProductType productType)
-  //    {
-  //        var isMatched = false;
-  //
-  //        switch (productType) {
-  //            case ProductType.Domestic_Barge -> isMatched = IsDomesticBargeBooking(shipment);
-  //            case ProductType.International_Barge -> isMatched =
-  // IsInternationalBargeBooking(shipment);
-  //            case ProductType.Ocean -> isMatched = IsOceanBooking(shipment);
-  //            case ProductType.Transport -> isMatched = IsTransportBooking(transport);
-  //            default -> {}
-  //        }
-  //
-  //        return isMatched;
-  //    }
-
   TenantProducts checkShipAllCargoTypeProduct(ShipmentDetails shipment, List<TenantProducts> enabledTenantProducts) {
     TenantProducts product = null;
     List<String> allCargoTypeProducts = new ArrayList<>();
@@ -609,27 +556,6 @@ public class ProductIdentifierUtility {
         && enabledTenantProducts.stream()
             .anyMatch(p -> p.getProductType() == ProductType.Shipment_Rail_TransShip);
   }
-
-  boolean isInvoiceAir(String TransportMode, List<TenantProducts> enabledTenantProducts) {
-    return isAir(TransportMode)
-        && enabledTenantProducts.stream()
-            .anyMatch(p -> p.getProductType() == ProductType.Bill_Air_EXIM);
-  }
-
-  boolean isInvoiceSea(String TransportMode, List<TenantProducts> enabledTenantProducts) {
-    return isSea(TransportMode)
-        && enabledTenantProducts.stream()
-            .anyMatch(p -> p.getProductType() == ProductType.Bill_Sea_EXIM);
-  }
-
-  //    Quotes not available yet
-  //    boolean isQuoteAir(QuotesRow quote){
-  //        return isAir(quote.getTransportMode());
-  //    }
-  //
-  //    boolean isQuoteSea(QuotesRow quote){
-  //        return isSea(quote.getTransportMode());
-  //    }
 
   boolean isConsolAir(ConsolidationDetails consolidationRow, List<TenantProducts> enabledTenantProducts) {
     return isAir(consolidationRow.getTransportMode())
