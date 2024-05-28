@@ -213,7 +213,7 @@ public class BookingIntegrationsUtility {
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
 
-    private List<String> createEmailIds(String primaryEmail, String secondaryEmail)
+    public List<String> createEmailIds(String primaryEmail, String secondaryEmail)
     {
         if(primaryEmail == null)
             return null;
