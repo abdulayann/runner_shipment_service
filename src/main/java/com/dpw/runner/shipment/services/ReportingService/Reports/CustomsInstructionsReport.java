@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -96,8 +97,7 @@ public class CustomsInstructionsReport extends IReport{
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, customsInstructionsModel.getShipmentContainers());
             List<Map<String, Object>> valuesContainer = new ArrayList<>();
             for (ShipmentContainers shipmentContainers : customsInstructionsModel.getShipmentContainers()) {
-                String shipContJson = jsonHelper.convertToJson(shipmentContainers);
-                valuesContainer.add(jsonHelper.convertJsonToMap(shipContJson));
+                valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {}));
             }
             for (Map<String, Object> v : valuesContainer) {
                 if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
