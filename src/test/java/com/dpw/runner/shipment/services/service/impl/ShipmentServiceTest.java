@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.config.SpringContext;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
@@ -36,6 +37,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -195,6 +197,8 @@ class ShipmentServiceTest extends CommonMocks {
     private GetNextNumberHelper getNextNumberHelper;
     @Mock
     private MasterDataHelper masterDataHelper;
+    @Mock
+    private DateTimeChangeLogService dateTimeChangeLogService;
 
     @Mock
     private RestTemplate restTemplate;
@@ -4903,4 +4907,79 @@ class ShipmentServiceTest extends CommonMocks {
         }
     }
 
+    @Test
+    void testGetDateTimeChangeUpdatesThrowsExceptionWhenShipmentIdIsNull() {
+        Long shipmentId = null;
+        assertThrows(RunnerException.class,  () -> shipmentService.getDateTimeChangeUpdates(shipmentId));
+    }
+    @Test
+    void testGetDateTimeChangeUpdatesThrowsExceptionWhenShipmentNotPresent() {
+        Long shipmentId = 1L;
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+        assertThrows(RunnerException.class,  () -> shipmentService.getDateTimeChangeUpdates(shipmentId));
+    }
+
+
+
+    @Test
+    void testGetDateTimeChangeUpdates() throws RunnerException {
+        Long shipmentId = 1L;
+
+        TrackingServiceApiResponse trackingResponse = new TrackingServiceApiResponse();
+        trackingResponse.setContainers(List.of(TrackingServiceApiResponse.Container.builder()
+            .journey(new TrackingServiceApiResponse.Journey()).build()));
+
+        LocalDateTime mockDateTime = LocalDateTime.now();
+        List<DateTimeChangeLog> shipmentDateLogs = new ArrayList<>();
+        DateTimeChangeLog ataDateTimeChangeLog = DateTimeChangeLog.builder()
+            .dateType(DateType.ATA)
+            .currentValue(LocalDateTime.now())
+            .sourceOfUpdate("Tracking Service")
+            .shipmentId(1L)
+            .build();
+        ataDateTimeChangeLog.setUpdatedAt(LocalDateTime.now().minusDays(3));
+
+        DateTimeChangeLog atdDateTimeChangeLog = DateTimeChangeLog.builder()
+            .dateType(DateType.ATD)
+            .currentValue(LocalDateTime.now())
+            .sourceOfUpdate("Tracking Service")
+            .shipmentId(1L)
+            .build();
+        atdDateTimeChangeLog.setUpdatedAt(LocalDateTime.now().minusDays(3));
+
+        DateTimeChangeLog etaDateTimeChangeLog = DateTimeChangeLog.builder()
+            .dateType(DateType.ETA)
+            .currentValue(LocalDateTime.now())
+            .sourceOfUpdate("Tracking Service")
+            .shipmentId(1L)
+            .build();
+        etaDateTimeChangeLog.setUpdatedAt(LocalDateTime.now().minusDays(3));
+
+        DateTimeChangeLog etdDateTimeChangeLog = DateTimeChangeLog.builder()
+            .dateType(DateType.ETD)
+            .currentValue(LocalDateTime.now())
+            .sourceOfUpdate("Tracking Service")
+            .shipmentId(1L)
+            .build();
+        etdDateTimeChangeLog.setUpdatedAt(LocalDateTime.now().minusDays(3));
+
+        shipmentDateLogs.addAll(List.of(ataDateTimeChangeLog, atdDateTimeChangeLog, etaDateTimeChangeLog, etdDateTimeChangeLog));
+
+        TrackingServiceApiResponse.DateAndSources dateAndSources = new TrackingServiceApiResponse.DateAndSources();
+        dateAndSources.setDateTime(mockDateTime);
+
+        trackingResponse.getContainers().get(0).getJourney().setPortOfArrivalAta(dateAndSources);
+        trackingResponse.getContainers().get(0).getJourney().setPortOfDepartureAtd(dateAndSources);
+        trackingResponse.getContainers().get(0).getJourney().setPortOfArrivalEta(dateAndSources);
+        trackingResponse.getContainers().get(0).getJourney().setPortOfDepartureEtd(dateAndSources);
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
+        when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(trackingResponse);
+        when(dateTimeChangeLogService.getDateTimeChangeLog(shipmentId)).thenReturn(shipmentDateLogs);
+
+
+        var res = shipmentService.getDateTimeChangeUpdates(shipmentId);
+
+        assertEquals(HttpStatus.OK, res.getStatusCode());
+    }
 }

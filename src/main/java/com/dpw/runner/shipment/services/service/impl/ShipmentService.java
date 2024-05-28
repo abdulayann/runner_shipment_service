@@ -4173,13 +4173,9 @@ public class ShipmentService implements IShipmentService {
             throw new RunnerException("No shipment present for provided id");
 
         ShipmentDetails shipment = optional.get();
-        
 
-        // Replace w/ api call from trackingServiceAdapter
         TrackingServiceApiResponse trackingResponse = trackingServiceAdapter.fetchTrackingData(
             TrackingRequest.builder().referenceNumber(shipment.getShipmentId()).build());
-        trackingResponse.setContainers(List.of(TrackingServiceApiResponse.Container.builder()
-            .journey(new TrackingServiceApiResponse.Journey()).build()));
 
         LocalDateTime trackingAta = null;
         LocalDateTime trackingAtd = null;

@@ -68,10 +68,10 @@ public class TrackingServiceApiResponse {
         private Object destinationHub;
         private Object placeOfOriginEtd;
         private Object placeOfOriginAtd;
-        private PortOfDepartureEtd portOfDepartureEtd;
-        private PortOfArrivalAtd portOfDepartureAtd;
-        private PortOfArrivalEta portOfArrivalEta;
-        private PortOfArrivalAta portOfArrivalAta;
+        private DateAndSources portOfDepartureEtd;
+        private DateAndSources portOfDepartureAtd;
+        private DateAndSources portOfArrivalEta;
+        private DateAndSources portOfArrivalAta;
         private Object placeOfDestinationEta;
         private Object placeOfDestinationAta;
         private Object originHubEtd;

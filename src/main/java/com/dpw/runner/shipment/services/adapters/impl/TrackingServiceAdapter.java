@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -11,9 +12,13 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiRequest;
+import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
@@ -22,18 +27,27 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
@@ -74,6 +88,14 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Autowired
     private IV1Service v1Service;
 
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Value("${trackingService.apiKey}")
+    private String trackingServiceApiKey;
+
+    @Value("${trackingService.newFlowEndpoint.url}")
+    private String trackingServiceNewFlowEndpoint;
 
     @Override
     public UniversalTrackingPayload.UniversalEventsPayload mapEventDetailsForTracking(String bookingReferenceNumber, String referenceNumberType, String runnerReferenceNumber, List<Events> events) {
@@ -436,4 +458,71 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         }
         return locationMap;
     }
+
+    @Override
+    public TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException {
+        var headers = new HttpHeaders();
+        headers.add(ApiConstants.X_API_KEY, trackingServiceApiKey);
+        var httpEntity = new HttpEntity<>(List.of(TrackingServiceApiRequest.builder().shipmentReference(request.getReferenceNumber()).build()), headers);
+
+        try {
+            var response = restTemplate.postForEntity(trackingServiceNewFlowEndpoint, httpEntity, TrackingServiceApiResponse.class);
+            return response.getBody();
+        } catch (Exception e){
+            log.error("Error while calling tracking endpoint ", e);
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    public List<Events> getTrackingEvents(String referenceNumber) throws RunnerException {
+        try {
+            var res = fetchTrackingData(TrackingRequest.builder().referenceNumber(referenceNumber).build());
+            ConcurrentLinkedQueue<Events> eventsRows = new ConcurrentLinkedQueue<>();
+            ForkJoinPool customThreadPool = new ForkJoinPool(4);
+
+            try {
+                if(res.getContainers() != null) {
+                    customThreadPool.submit(() ->
+                        res.getContainers().parallelStream().forEach(container -> {
+                            if (container == null || container.getEvents() == null || container.getPlaces() == null) return;
+
+                            List<Events> rows = container.getEvents().stream()
+                                .filter(Objects::nonNull)
+                                .flatMap(ce -> container.getPlaces().stream()
+                                    .filter(pl -> pl != null && ce.getLocation() != null && ce.getLocation().equals(pl.getId()))
+                                    .flatMap(pl -> {
+                                        List<TrackingServiceApiResponse.Source> sources = ce.getActualEventTime() == null ? (ce.getProjectedEventTime() == null ? null : ce.getProjectedEventTime().getSources()) : ce.getActualEventTime().getSources();
+                                        if (sources == null) return Stream.empty();
+                                        return sources.stream()
+                                            .filter(Objects::nonNull)
+                                            .map(src -> Events.builder()
+                                                .latitude(pl.getLatitude())
+                                                .longitude(pl.getLongitude())
+                                                .placeDescription(pl.getFormattedDescription())
+                                                .placeName(pl.getName())
+                                                .actual(ce.getActualEventTime() != null ? ce.getActualEventTime().getDateTime() : null)
+                                                .estimated(ce.getProjectedEventTime() != null ? ce.getProjectedEventTime().getDateTime() : null)
+                                                .source(src.getSource())
+                                                .eventCode(ce.getEventType())
+                                                .description(ce.getDescriptionFromSource())
+                                                .build()
+                                            );
+                                    })
+                                ).collect(Collectors.toList());
+
+                            eventsRows.addAll(rows);
+                        })
+                    ).join();
+                }
+            } finally {
+                customThreadPool.shutdown();
+            }
+
+            return eventsRows.stream().toList();
+
+        } catch (RunnerException e) {
+            throw e;
+        }
+    }
+
 }
