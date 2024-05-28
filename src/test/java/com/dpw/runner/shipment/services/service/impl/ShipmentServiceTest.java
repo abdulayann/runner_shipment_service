@@ -51,6 +51,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,9 +77,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.*;
@@ -189,6 +188,8 @@ class ShipmentServiceTest {
     @Captor
     private ArgumentCaptor<Workbook> workbookCaptor;
 
+    private ExecutorService executorService;
+
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -206,12 +207,18 @@ class ShipmentServiceTest {
         UserContext.setUser(mockUser);
     }
 
+    @AfterEach
+    void tearDown() {
+        shipmentService.executorService.shutdown();
+    }
+
     @BeforeEach
     void setup() {
         testShipment = jsonTestUtility.getTestShipment();
         testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
+        shipmentService.executorService = Executors.newFixedThreadPool(2);
     }
 
     @Test

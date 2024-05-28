@@ -48,10 +48,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.models.Response;
 import org.checkerframework.checker.units.qual.C;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -70,6 +67,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -140,6 +138,12 @@ class AwbServiceTest {
         testHawb = jsonTestUtility.getTestHawb();
         testDmawb = jsonTestUtility.getTestDmawb();
         testMawb = jsonTestUtility.getTestMawb();
+        awbService.executorService = Executors.newFixedThreadPool(2);
+    }
+
+    @AfterEach
+    void tearDown() {
+        awbService.executorService.shutdown();
     }
 
     @Test

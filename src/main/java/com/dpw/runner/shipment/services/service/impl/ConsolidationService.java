@@ -119,7 +119,8 @@ import static java.util.stream.Collectors.toMap;
 @Slf4j
 public class ConsolidationService implements IConsolidationService {
 
-    ExecutorService executorService = Executors.newFixedThreadPool(10);
+    @Autowired
+    ExecutorService executorService;
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
