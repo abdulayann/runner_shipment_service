@@ -701,6 +701,14 @@ public class AwbService implements IAwbService {
                 } catch (Exception ignored) {}
             }
             generateDefaultAwbInformation(awbShipmentInfo, res);
+            String error = null;
+            if(res.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB) || res.getAwbShipmentInfo().getEntityType().equals(Constants.DMAWB)){
+                ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+                Boolean isRatesAvailable = awbShipmentInfo.getAwbGoodsDescriptionInfo().stream().anyMatch(x -> x.getRateCharge() != null);
+                if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && Boolean.TRUE.equals(awbShipmentInfo.getEnableFetchRatesWarning()) && Boolean.TRUE.equals(isRatesAvailable)){
+                    error = "The Port/ Carrier details are changed - You need to fetch the new TACT Rates.";
+                }
+            }
             if(res.getAwbShipmentInfo().getEntityType().equals("MAWB")) {
                 try {
                     res.setErrors(validateMawb(awbShipmentInfo));
@@ -708,6 +716,8 @@ public class AwbService implements IAwbService {
                     throw new RuntimeException(e);
                 }
             }
+            if(error != null)
+                res.setErrors(res.getErrors()!=null ? String.join("\r\n", res.getErrors(), error): error);
             responseList.add(res);
         });
         return responseList;
@@ -3099,11 +3109,6 @@ public class AwbService implements IAwbService {
                 errors.add("Additional Shipments have been attached, please reset data as required.");
                 break;
             }
-        }
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-        Boolean isRatesAvailable = awb.getAwbGoodsDescriptionInfo().stream().anyMatch(x -> x.getRateCharge() != null);
-        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && Boolean.TRUE.equals(awb.getEnableFetchRatesWarning()) && Boolean.TRUE.equals(isRatesAvailable)){
-            errors.add("The Port/ Carrier details are changed - You need to fetch the new TACT Rates.");
         }
 
         if(!allHawbsGenerated)
