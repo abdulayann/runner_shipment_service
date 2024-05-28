@@ -152,12 +152,4 @@ public class AwbSync implements IAwbSync {
         return linkedHawb;
     }
 
-    private void sendEmail(Awb awb, V1DataSyncResponse response, String message) {
-        try {
-            emailServiceUtility.sendEmailForSyncEntity(String.valueOf(awb.getId()), String.valueOf(awb.getGuid()),
-                    "Awb", String.format("%s%s",response.getError().toString(), message));
-        } catch (Exception ex) {
-            log.error("Not able to send email for sync failure for AWB: " + ex.getMessage());
-        }
-    }
 }

@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.ArrivalDepartureDetails;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomConsolidationRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationReverseSync;
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import java.util.Objects;
 
 @Service
 @Slf4j
+@Generated
 public class ConsolidationReverseSync implements IConsolidationReverseSync {
 
     @Autowired
