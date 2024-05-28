@@ -3101,7 +3101,8 @@ public class AwbService implements IAwbService {
             }
         }
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && Boolean.TRUE.equals(awb.getEnableFetchRatesWarning())){
+        Boolean isRatesAvailable = awb.getAwbGoodsDescriptionInfo().stream().anyMatch(x -> x.getRateCharge() != null);
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && Boolean.TRUE.equals(awb.getEnableFetchRatesWarning()) && Boolean.TRUE.equals(isRatesAvailable)){
             errors.add("The Port/ Carrier details are changed - You need to fetch the new TACT Rates.");
         }
 

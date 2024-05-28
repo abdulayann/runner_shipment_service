@@ -169,4 +169,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private String transportOrderRoad;
     private Boolean disableBlPartiesName;
     private Boolean airDGFlag;
+    private Boolean iataTactFlag;
 }
