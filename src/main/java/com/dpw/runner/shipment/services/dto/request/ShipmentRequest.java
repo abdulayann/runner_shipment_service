@@ -56,6 +56,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     @JsonDeserialize(using = TrimStringDeserializer.class)
     private String houseBill;
     private Long id;
+    private Integer tenantId;
     private String incoterms;
     private String innerPackUnit;
     private Integer innerPacks;

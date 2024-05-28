@@ -30,6 +30,7 @@ import java.util.UUID;
 @Data
 public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long id;
+    private Integer tenantId;
     private UUID guid;
     private String houseBill;
     private String transportMode;
