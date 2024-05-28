@@ -90,4 +90,7 @@ public class Awb extends MultiTenancy {
 
     @Column(name = "user_display_name")
     private String userDisplayName;
+
+    @Column(name = "enable_fetch_rates_warning")
+    private Boolean enableFetchRatesWarning;
 }

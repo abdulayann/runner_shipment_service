@@ -2834,6 +2834,7 @@ public class ConsolidationService implements IConsolidationService {
             if(!awbs.isEmpty()) {
                 Awb awb = awbs.get(0);
                 awb.getAwbGoodsDescriptionInfo().forEach(x -> x.setDisableFetchRates(false));
+                awb.setEnableFetchRatesWarning(true);
                 awbDao.save(awb);
             }
         }

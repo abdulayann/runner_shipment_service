@@ -3100,6 +3100,10 @@ public class AwbService implements IAwbService {
                 break;
             }
         }
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && Boolean.TRUE.equals(awb.getEnableFetchRatesWarning())){
+            errors.add("The Port/ Carrier details are changed - You need to fetch the new TACT Rates.");
+        }
 
         if(!allHawbsGenerated)
             throw new RunnerException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
@@ -3151,7 +3155,6 @@ public class AwbService implements IAwbService {
         List<Awb> awbList = null;
         StringBuilder responseStatusMessage = new StringBuilder();
         Boolean fnMstatus = false;
-
         if(shipmentId.isPresent()) {
             awbList = awbDao.findByShipmentId(shipmentId.get());
         }
