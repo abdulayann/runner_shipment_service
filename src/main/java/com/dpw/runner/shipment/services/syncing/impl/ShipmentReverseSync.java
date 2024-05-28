@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrE
 
 @Service
 @Slf4j
+@Generated
 public class ShipmentReverseSync implements IShipmentReverseSync {
 
     @Autowired

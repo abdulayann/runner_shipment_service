@@ -70,11 +70,6 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setHblLock(convertToList(List.of(req.getHblLockSettings()), HblLockDto.class));
         syncRequest.setHawbLock(convertToList(List.of(req.getHawbLockSettings()), HawbLockDto.class));
         syncRequest.setMawbLock(convertToList(List.of(req.getMawbLockSettings()), MawbLockDto.class));
-//        syncRequest.setTenantProducts(convertToList(req.getTenantProducts(), TenantProductsDto.class)); // Removing for now as tenant products and product sequence should not sync from v2 to v1
-//        if(req.getProductSequenceConfig() != null) {
-//            syncRequest.setProductSequenceConfig(req.getProductSequenceConfig().stream()
-//                    .map(this::mapProductSequenceConfig).toList());
-//        }
 
         syncRequest.setShipmentImportApproverRole(req.getShipmentConsoleImportApproverRole());
         syncRequest.setIsLowMarginApprovalRequired(req.getLowMarginApproval());
@@ -104,8 +99,6 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     }
 
     private ProductSequenceConfigDto mapProductSequenceConfig(ProductSequenceConfig req) {
-        if(req == null)
-            return null;
 
         var res = modelMapper.map(req, ProductSequenceConfigDto.class);
         res.setTenantProductObj(modelMapper.map(req.getTenantProducts(), TenantProductsDto.class));
