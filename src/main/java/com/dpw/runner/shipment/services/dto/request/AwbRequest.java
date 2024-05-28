@@ -37,5 +37,4 @@ public class AwbRequest implements IRunnerRequest {
     private List<String> shcIdList;
     private AwbStatus airMessageStatus;
     private AwbStatus linkedHawbAirMessageStatus;
-    private Boolean enableFetchRatesWarning;
 }

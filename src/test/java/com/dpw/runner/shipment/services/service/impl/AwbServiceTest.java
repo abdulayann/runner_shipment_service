@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AirMessagingStatus;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
 import com.dpw.runner.shipment.services.entity.enums.ChargeTypeCode;
+import com.dpw.runner.shipment.services.entity.enums.RateClass;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -2156,15 +2157,15 @@ class AwbServiceTest {
 
     static Stream<Arguments> provideRequestsForValidationException() {
         return Stream.of(
-                Arguments.of(BigDecimal.valueOf(12.0), "N", "5.0"),
-                Arguments.of(BigDecimal.valueOf(10.0), "M", "52.0"),
-                Arguments.of(BigDecimal.valueOf(100.0), "Q", "3.0")
+                Arguments.of(BigDecimal.valueOf(12.0), RateClass.N.getId(), "5.0"),
+                Arguments.of(BigDecimal.valueOf(10.0), RateClass.M.getId(), "52.0"),
+                Arguments.of(BigDecimal.valueOf(100.0), RateClass.Q.getId(), "3.0")
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideRequestsForValidationException")
-    void testGetFetchIataRates_Success_case1(BigDecimal chargeableWeight, String rateClass, String rateCharge) throws RunnerException {
+    void testGetFetchIataRates_Success_case1(BigDecimal chargeableWeight, int rateClass, String rateCharge) throws RunnerException {
         IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
                 .chargeableWeight(chargeableWeight)
                 .destinationPort("NAKMP_AIR")
@@ -2273,7 +2274,7 @@ class AwbServiceTest {
         ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
         RunnerResponse runnerResponse = (RunnerResponse)responseEntity.getBody();
         IataFetchRateResponse response = (IataFetchRateResponse) runnerResponse.getData();
-        assertEquals("Q", response.getRateClass());
+        assertEquals(RateClass.Q.getId(), response.getRateClass());
         assertEquals("3.0", response.getRateCharge().toString());
     }
 

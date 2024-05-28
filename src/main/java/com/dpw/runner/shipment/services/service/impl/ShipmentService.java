@@ -1413,8 +1413,10 @@ public class ShipmentService implements IShipmentService {
             List<Awb> awbs = awbDao.findByShipmentId(shipmentDetails.getId());
             if(!awbs.isEmpty()) {
                 Awb awb = awbs.get(0);
-                awb.getAwbGoodsDescriptionInfo().forEach(x -> x.setDisableFetchRates(false));
-                awb.setEnableFetchRatesWarning(true);
+                awb.getAwbGoodsDescriptionInfo().forEach(x -> {
+                    x.setDisableFetchRates(false);
+                    x.setEnableFetchRatesWarning(true);
+                });
                 awbDao.save(awb);
             }
         }
