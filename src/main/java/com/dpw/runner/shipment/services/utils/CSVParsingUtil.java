@@ -70,15 +70,17 @@ public class CSVParsingUtil<T> {
 
     private final Set<String> hiddenFields = Set.of("pickupAddress",
             "deliveryAddress", "eventsList", "packsList", "shipmentsList", "bookingCharges");
-    ExecutorService executorService = Executors.newFixedThreadPool(2);
+
+    ExecutorService executorService;
 
     @Autowired
-    public CSVParsingUtil(ConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IV1Service v1Service, JsonHelper jsonHelper, IConsolidationDetailsDao consolidationDetailsDao) {
+    public CSVParsingUtil(ConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IV1Service v1Service, JsonHelper jsonHelper, IConsolidationDetailsDao consolidationDetailsDao, ExecutorService executorService) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.shipmentDao = shipmentDao;
         this.v1Service = v1Service;
         this.jsonHelper = jsonHelper;
         this.consolidationDetailsDao = consolidationDetailsDao;
+        this.executorService = executorService;
     }
 
     public List<String> getHeadersForContainer() {

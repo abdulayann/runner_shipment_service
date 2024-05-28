@@ -80,6 +80,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.*;
@@ -238,6 +239,12 @@ class ConsolidationServiceTest {
         testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
         testConsolResponse = modelMapperTest.map(testConsol , ConsolidationDetailsResponse.class);
         testConsolRequest = modelMapperTest.map(testConsol , ConsolidationDetailsRequest.class);
+        consolidationService.executorService = Executors.newFixedThreadPool(2);
+    }
+
+    @AfterEach
+    void tearDown() {
+        consolidationService.executorService.shutdown();
     }
 //    @AfterEach
 //    void tearDown() {

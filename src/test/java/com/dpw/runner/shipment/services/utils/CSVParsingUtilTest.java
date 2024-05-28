@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,10 +42,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CSVParsingUtilTest {
@@ -94,11 +98,17 @@ class CSVParsingUtilTest {
     void setUp() throws IOException {
         objectMapper = JsonTestUtility.getMapper();
         jsonTestUtility = new JsonTestUtility();
-        csvParsingUtilContainer = new CSVParsingUtil<Containers>(consoleShipmentMappingDao, shipmentDao, v1Service, jsonHelper, consolidationDetailsDao);
+        csvParsingUtilContainer = new CSVParsingUtil<Containers>(consoleShipmentMappingDao, shipmentDao, v1Service, jsonHelper, consolidationDetailsDao, Executors.newFixedThreadPool(2));
         containerResponse = objectMapper.convertValue(jsonTestUtility.getTestContainer(), ContainerResponse.class);
-        csvParsingUtil = new CSVParsingUtil<Packing>(consoleShipmentMappingDao, shipmentDao, v1Service, jsonHelper, consolidationDetailsDao);
-//        csvParsingUtil.executorService = Executors.newFixedThreadPool(10);
-        csvParsingUtilContainerEvents = new CSVParsingUtil<Events>(consoleShipmentMappingDao, shipmentDao, v1Service, jsonHelper, consolidationDetailsDao);
+        csvParsingUtil = new CSVParsingUtil<Packing>(consoleShipmentMappingDao, shipmentDao, v1Service, jsonHelper, consolidationDetailsDao, Executors.newFixedThreadPool(2));
+        csvParsingUtilContainerEvents = new CSVParsingUtil<Events>(consoleShipmentMappingDao, shipmentDao, v1Service, jsonHelper, consolidationDetailsDao, Executors.newFixedThreadPool(2));
+    }
+
+    @AfterEach
+    void tearDown() {
+        csvParsingUtil.executorService.shutdown();
+        csvParsingUtilContainer.executorService.shutdown();
+        csvParsingUtilContainerEvents.executorService.shutdown();
     }
 
     @BeforeAll

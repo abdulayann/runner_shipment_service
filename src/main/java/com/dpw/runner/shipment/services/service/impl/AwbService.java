@@ -149,7 +149,8 @@ public class AwbService implements IAwbService {
     @Autowired
     private IAirMessagingLogsService airMessagingLogsService;
 
-    ExecutorService executorService = Executors.newFixedThreadPool(10);
+    @Autowired
+    ExecutorService executorService;
 
 
 
