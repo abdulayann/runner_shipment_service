@@ -31,4 +31,5 @@ public interface IAwbService {
     ResponseEntity<IRunnerResponse> validateIataAgent(Boolean fromShipment);
     Awb getMawnLinkPacks(Awb awb);
     ResponseEntity<IRunnerResponse> getFnmStatusMessage(Optional<Long> shipmentId, Optional<Long> consolidaitonId);
+    ResponseEntity<IRunnerResponse> getFetchIataRates(CommonRequestModel commonRequestModel) throws RunnerException;
 }

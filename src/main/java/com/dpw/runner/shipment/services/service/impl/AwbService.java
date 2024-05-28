@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -14,12 +15,11 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.request.AwbRequest;
-import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
-import com.dpw.runner.shipment.services.dto.request.FetchAwbListRequest;
-import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.dto.request.bridgeService.TactBridgePayload;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
@@ -37,9 +37,9 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.SaveStatus;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
@@ -52,7 +52,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -76,7 +75,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
 @SuppressWarnings("ALL")
@@ -143,6 +141,8 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private MasterDataUtils masterDataUtils;
+    @Autowired
+    private BridgeServiceAdapter bridgeServiceAdapter;
 
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
@@ -3101,6 +3101,10 @@ public class AwbService implements IAwbService {
                 break;
             }
         }
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && Boolean.TRUE.equals(awb.getEnableFetchRatesWarning())){
+            errors.add("The Port/ Carrier details are changed - You need to fetch the new TACT Rates.");
+        }
 
         if(!allHawbsGenerated)
             throw new RunnerException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
@@ -3152,7 +3156,6 @@ public class AwbService implements IAwbService {
         List<Awb> awbList = null;
         StringBuilder responseStatusMessage = new StringBuilder();
         Boolean fnMstatus = false;
-
         if(shipmentId.isPresent()) {
             awbList = awbDao.findByShipmentId(shipmentId.get());
         }
@@ -3276,6 +3279,118 @@ public class AwbService implements IAwbService {
 
         fnmStatusMessageResponse.setFnmStatus(fnmStatus);
         fnmStatusMessageResponse.setResponse(responseStatusMessage.toString());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getFetchIataRates(CommonRequestModel commonRequestModel) throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = (IataFetchRateRequest) commonRequestModel.getData();
+        List<String> emptyFieldsError = new ArrayList<>();
+        if(iataFetchRateRequest.getFlightCarrier() == null || iataFetchRateRequest.getFlightCarrier().isEmpty()){
+            emptyFieldsError.add("Fligt Carrier");
+        }
+        if(iataFetchRateRequest.getChargeableWeight() == null){
+            emptyFieldsError.add("Chargeable Weight");
+        }
+        if(iataFetchRateRequest.getOriginPort() == null || iataFetchRateRequest.getOriginPort().isEmpty()){
+            emptyFieldsError.add("Origin Airport");
+        }
+        if(iataFetchRateRequest.getDestinationPort() == null || iataFetchRateRequest.getDestinationPort().isEmpty()){
+            emptyFieldsError.add("Destination Airport");
+        }
+        if(!emptyFieldsError.isEmpty()){
+            String errorString = String.join(", ", emptyFieldsError);
+            throw new ValidationException("Please add " + errorString + " and retry");
+        }
+        List<String> unlocoRequests = new ArrayList<>(List.of(iataFetchRateRequest.getOriginPort(), iataFetchRateRequest.getDestinationPort()));
+        List<String> carrierRequests = new ArrayList<>(List.of(iataFetchRateRequest.getFlightCarrier()));
+
+        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
+        Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
+        String origin = unlocationsMap.containsKey(iataFetchRateRequest.getOriginPort())? unlocationsMap.get(iataFetchRateRequest.getOriginPort()).getIataCode() : null;
+        String destination = unlocationsMap.containsKey(iataFetchRateRequest.getDestinationPort())? unlocationsMap.get(iataFetchRateRequest.getDestinationPort()).getIataCode(): null;
+        String carrier = carriersMap.containsKey(iataFetchRateRequest.getFlightCarrier())? carriersMap.get(iataFetchRateRequest.getFlightCarrier()).IATACode : null;
+        List<String> emptyIataError = new ArrayList<>();
+        if (origin == null || origin.isEmpty()) {
+            emptyIataError.add("Origin Airport");
+        }
+        if (destination == null || destination.isEmpty()){
+            emptyIataError.add("Destination Airport");
+        }
+        if (carrier == null || carrier.isEmpty()) {
+            emptyIataError.add("Fligt Carrier");
+        }
+        if(!emptyIataError.isEmpty()) {
+            throw new ValidationException("Please add IataCode in the follwing fields " + String.join(", ", emptyIataError) + " and retry");
+        }
+
+        TactBridgePayload tactBridgePayload = TactBridgePayload.builder()
+                .origin(origin)
+                .destination(destination)
+                .carrier(carrier)
+                .rateSource("GS")
+                .rateType("CAR")
+                .build();
+        log.info("TactPayload : "+ jsonHelper.convertToJson(tactBridgePayload));
+        BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.requestTactResponse(CommonRequestModel.buildRequest(tactBridgePayload));
+        if(bridgeServiceResponse.getExtraResponseParams().containsKey(AwbConstants.SERVICE_HTTP_STATUS_CODE) && !Objects.equals(bridgeServiceResponse.getExtraResponseParams().get(AwbConstants.SERVICE_HTTP_STATUS_CODE).toString(), "200") &&
+                    !Objects.equals(bridgeServiceResponse.getExtraResponseParams().get(AwbConstants.SERVICE_HTTP_STATUS_CODE).toString(), "400")){
+            throw new RunnerException("Getting error from Iata while fetching rates");
+        }
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = jsonHelper.convertValue(bridgeServiceResponse.getPayload(), IataTactRatesApiResponse.class);
+        if(iataTactRatesApiResponse != null && iataTactRatesApiResponse.getResponseType() != null && Objects.equals(iataTactRatesApiResponse.getResponseType(), "validation-failed")
+                && iataTactRatesApiResponse.getErrors() != null && !iataTactRatesApiResponse.getErrors().isEmpty()){
+            List<String> errors = iataTactRatesApiResponse.getErrors().stream().map(IataTactRatesApiResponse.Errors::getMessage).toList();
+            throw new ValidationException(String.join("\r\n", errors));
+        }
+
+        if(iataTactRatesApiResponse != null && iataTactRatesApiResponse.getRates() != null && !iataTactRatesApiResponse.getRates().isEmpty()){
+            IataTactRatesApiResponse.StandardCharge standardCharge = iataTactRatesApiResponse.getRates().get(0).getStandardCharge();
+            if(standardCharge.getWeightBreak() != null && !standardCharge.getWeightBreak().isEmpty()){
+                Map<BigDecimal, BigDecimal> weightBreakMap = standardCharge.getWeightBreak().stream().collect(Collectors.toMap(IataTactRatesApiResponse.WeightBreak::getWeightMeasure, IataTactRatesApiResponse.WeightBreak::getCharge));
+                List<BigDecimal> weightList = standardCharge.getWeightBreak().stream().map(IataTactRatesApiResponse.WeightBreak::getWeightMeasure).sorted().toList();
+                BigDecimal minimumCharge = standardCharge.getMinimumCharge();
+                BigDecimal normalCharge = standardCharge.getNormalCharge();
+                BigDecimal minWeightValue = weightList.get(0);
+                BigDecimal chargeableWeight = iataFetchRateRequest.getChargeableWeight();
+                if(chargeableWeight.compareTo(minWeightValue) < 0) {
+                    BigDecimal rate = chargeableWeight.multiply(normalCharge);
+                    if(rate.compareTo(minimumCharge) < 0){
+                        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
+                                .rateClass("M")
+                                .rateCharge(minimumCharge)
+                                .build();
+                        return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
+                    }
+                    IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
+                            .rateClass("N")
+                            .rateCharge(normalCharge)
+                            .build();
+                    return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
+                }
+                int size = weightList.size();
+                for(int i = 0; i < size; i++) {
+                    if(i == (size-1) && chargeableWeight.compareTo(weightList.get(i)) >= 0){
+                        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
+                                .rateClass("Q")
+                                .rateCharge(weightBreakMap.get(weightList.get(i)))
+                                .build();
+                        return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
+                    }
+                    if(chargeableWeight.compareTo(weightList.get(i)) >= 0 &&
+                            chargeableWeight.compareTo(weightList.get(i + 1)) < 0){
+                        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
+                                .rateClass("Q")
+                                .rateCharge(weightBreakMap.get(weightList.get(i)))
+                                .build();
+                        return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
+                    }
+                }
+            }
+        }
+
+        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder().error("IATA did not return any value - please add the rate/ rate class manually").build();
+        return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
     }
 
 }

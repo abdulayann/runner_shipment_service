@@ -5,7 +5,10 @@ import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -21,7 +24,6 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
-import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -106,10 +108,6 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private void onSave(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean fromV1Sync) {
-        if(!StringUtil.isNullOrEmpty(consolidationDetails.getMawb()))
-            consolidationDetails.setMawb(consolidationDetails.getMawb().trim());
-        if(!StringUtil.isNullOrEmpty(consolidationDetails.getBol()))
-            consolidationDetails.setBol(consolidationDetails.getBol().trim());
         errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));

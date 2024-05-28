@@ -306,4 +306,6 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private Boolean disableBlPartiesName;
     @JsonProperty("AirDGFlag")
     private Boolean airDGFlag;
+    @JsonProperty("IataTactFlag")
+    private Boolean iataTactFlag;
 }

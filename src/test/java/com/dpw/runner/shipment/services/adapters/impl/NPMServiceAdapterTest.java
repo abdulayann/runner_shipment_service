@@ -41,6 +41,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -576,6 +577,8 @@ class NPMServiceAdapterTest {
     void testFetchContracts5() throws RunnerException {
         NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
         List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").validTill(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
         contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
         npmContractsResponse.setContracts(contracts);
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
