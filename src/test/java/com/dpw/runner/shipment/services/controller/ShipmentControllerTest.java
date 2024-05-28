@@ -964,4 +964,24 @@ class ShipmentControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void getDateTimeChanges() throws RunnerException {
+        // Mock
+        when(shipmentService.getDateTimeChangeUpdates(anyLong())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.getDateTimeChanges(123L);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getDateTimeChangesFails() throws RunnerException {
+        // Mock
+        when(shipmentService.getDateTimeChangeUpdates(anyLong())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentController.getDateTimeChanges(123L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }
