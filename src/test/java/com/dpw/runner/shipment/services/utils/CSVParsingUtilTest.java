@@ -46,8 +46,7 @@ import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -130,7 +129,7 @@ class CSVParsingUtilTest {
         mockExcelFileEvents_missingEventCode = getFileFromResources("TestContainerEvents_MissingEventCode.xlsx");
     }
 
-    private static MultipartFile getFileFromResources(String fileName) throws IOException {
+    static MultipartFile getFileFromResources(String fileName) throws IOException {
         try (InputStream is = CSVParsingUtilTest.class.getClassLoader().getResourceAsStream(fileName)) {
             if (is == null) {
                 throw new IOException("File not found: " + fileName);

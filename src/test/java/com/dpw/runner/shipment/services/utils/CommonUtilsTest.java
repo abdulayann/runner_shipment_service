@@ -5,14 +5,12 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
 import com.itextpdf.text.pdf.*;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -241,15 +239,6 @@ class CommonUtilsTest {
         assertEquals("[invalid value : error message]", errorMessage);
     }
 
-    @Test
-    @Disabled
-    void inWords_ValidInput_ReturnsWords() {
-        Long num = 456789L;
-
-        String words = CommonUtils.inWords(num);
-
-        assertEquals("Four Lakh Fifty Six Thousand Seven Hundred Eighty Nine", words);
-    }
 
     @Test
     void inWords_ValidInput_ReturnsOverflow() {
@@ -377,17 +366,6 @@ class CommonUtilsTest {
         assertEquals("converted", result);
     }
 
-    @Test
-    @Disabled
-    void testConvertToDtoList() {
-        List<Object> lst = List.of(new Object(), new Object());
-        ObjectMapper mapper = mock(ObjectMapper.class);
-        when(mapper.convertValue(any(), eq(IRunnerResponse.class))).thenReturn(mock(IRunnerResponse.class));
-
-        List<IRunnerResponse> result = CommonUtils.convertToDtoList(lst, IRunnerResponse.class);
-
-        assertEquals(lst.size(), result.size());
-    }
 
     @Test
     void testConvertToEntityList() {
@@ -398,54 +376,6 @@ class CommonUtilsTest {
         List<MultiTenancy> result = commonUtils.convertToEntityList(lst, MultiTenancy.class);
 
         assertEquals(lst.size(), result.size());
-    }
-
-    @Test
-    @Disabled
-    void testConvertToEntityListWithCreateFlag() {
-        List<Object> lst = List.of(new Object(), new Object());
-        ObjectMapper mapper = mock(ObjectMapper.class);
-        CommonUtils commonUtils1 = new CommonUtils(mapper);
-        when(mapper.convertValue(any(), eq(MultiTenancy.class))).thenReturn(mock(MultiTenancy.class));
-        when(jsonHelper.convertCreateValue(any(), eq(MultiTenancy.class))).thenReturn(mock(MultiTenancy.class));
-
-        List<MultiTenancy> result = commonUtils1.convertToEntityList(lst, MultiTenancy.class, true);
-
-        assertEquals(lst.size(), result.size());
-    }
-
-    @Test
-    @Disabled
-    void testConvertToCreateEntityList() {
-        List<Object> lst = List.of(new Object(), new Object());
-        when(jsonHelper.convertCreateValue(any(), eq(MultiTenancy.class))).thenReturn(mock(MultiTenancy.class));
-
-        List<MultiTenancy> result = commonUtils.convertToCreateEntityList(lst, MultiTenancy.class);
-
-        assertEquals(lst.size(), result.size());
-    }
-
-    @Test
-    @Disabled
-    void testConvertToList() {
-        List<Object> lst = List.of(new Object(), new Object());
-        when(modelMapper.map(any(), eq(String.class))).thenReturn("mapped");
-
-        List<String> result = commonUtils.convertToList(lst, String.class);
-
-        assertEquals(lst.size(), result.size());
-    }
-
-
-    @Test
-    @Disabled
-    void testConvertToCreateClass() {
-        Object obj = new Object();
-        when(jsonHelper.convertCreateValue(obj, String.class)).thenReturn("created");
-
-        String result = commonUtils.convertToCreateClass(obj, String.class);
-
-        assertEquals("created", result);
     }
 
     @Test
