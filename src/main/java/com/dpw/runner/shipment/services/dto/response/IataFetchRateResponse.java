@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Builder
 public class IataFetchRateResponse implements IRunnerResponse {
-    private String rateClass;
+    private int rateClass;
     private BigDecimal rateCharge;
     private String error;
 }

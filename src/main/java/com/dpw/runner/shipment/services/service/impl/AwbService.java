@@ -702,6 +702,14 @@ public class AwbService implements IAwbService {
                 } catch (Exception ignored) {}
             }
             generateDefaultAwbInformation(awbShipmentInfo, res);
+            String error = null;
+            if(res.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB) || res.getAwbShipmentInfo().getEntityType().equals(Constants.DMAWB)){
+                ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+                Boolean fetchRatesWarning = awbShipmentInfo.getAwbGoodsDescriptionInfo().stream().anyMatch(x -> x.getRateCharge() != null && Boolean.TRUE.equals(x.getEnableFetchRatesWarning()));
+                if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && Boolean.TRUE.equals(fetchRatesWarning)){
+                    error = "The Port/ Carrier details are changed - You need to fetch the new TACT Rates.";
+                }
+            }
             if(res.getAwbShipmentInfo().getEntityType().equals("MAWB")) {
                 try {
                     res.setErrors(validateMawb(awbShipmentInfo));
@@ -709,6 +717,8 @@ public class AwbService implements IAwbService {
                     throw new RuntimeException(e);
                 }
             }
+            if(error != null)
+                res.setErrors(res.getErrors()!=null ? String.join("\r\n", res.getErrors(), error): error);
             responseList.add(res);
         });
         return responseList;
@@ -3101,11 +3111,6 @@ public class AwbService implements IAwbService {
                 break;
             }
         }
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-        Boolean isRatesAvailable = awb.getAwbGoodsDescriptionInfo().stream().anyMatch(x -> x.getRateCharge() != null);
-        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && Boolean.TRUE.equals(awb.getEnableFetchRatesWarning()) && Boolean.TRUE.equals(isRatesAvailable)){
-            errors.add("The Port/ Carrier details are changed - You need to fetch the new TACT Rates.");
-        }
 
         if(!allHawbsGenerated)
             throw new RunnerException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
@@ -3358,13 +3363,13 @@ public class AwbService implements IAwbService {
                     BigDecimal rate = chargeableWeight.multiply(normalCharge);
                     if(rate.compareTo(minimumCharge) < 0){
                         IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
-                                .rateClass("M")
+                                .rateClass(RateClass.M.getId())
                                 .rateCharge(minimumCharge)
                                 .build();
                         return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
                     }
                     IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
-                            .rateClass("N")
+                            .rateClass(RateClass.N.getId())
                             .rateCharge(normalCharge)
                             .build();
                     return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
@@ -3373,7 +3378,7 @@ public class AwbService implements IAwbService {
                 for(int i = 0; i < size; i++) {
                     if(i == (size-1) && chargeableWeight.compareTo(weightList.get(i)) >= 0){
                         IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
-                                .rateClass("Q")
+                                .rateClass(RateClass.Q.getId())
                                 .rateCharge(weightBreakMap.get(weightList.get(i)))
                                 .build();
                         return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
@@ -3381,7 +3386,7 @@ public class AwbService implements IAwbService {
                     if(chargeableWeight.compareTo(weightList.get(i)) >= 0 &&
                             chargeableWeight.compareTo(weightList.get(i + 1)) < 0){
                         IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
-                                .rateClass("Q")
+                                .rateClass(RateClass.Q.getId())
                                 .rateCharge(weightBreakMap.get(weightList.get(i)))
                                 .build();
                         return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
