@@ -91,7 +91,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -368,7 +367,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry(Constants.FLIGHT_NUMBER, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.FLIGHT_NUMBER).build()),
             Map.entry("consolidationId", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_LIST).dataType(Long.class).fieldName("id").build()),
             Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("voyageOrFlightNumber").build()),
-            Map.entry("shipperRef", RunnerEntityMapping.builder().tableName(Constants.PICKUP_DETAILS).dataType(String.class).fieldName("shipperRef").build())
+            Map.entry("shipperRef", RunnerEntityMapping.builder().tableName(Constants.PICKUP_DETAILS).dataType(String.class).fieldName("shipperRef").build()),
+            Map.entry("containsHazardous", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).build())
     );
 
     @Override
@@ -3530,6 +3530,9 @@ public class ShipmentService implements IShipmentService {
             CommonUtils.andCriteria(Constants.DIRECTION, "", Constants.IS_NULL, defaultRequest);
         CommonUtils.andCriteria(Constants.STATUS, 2, "!=", defaultRequest);
         CommonUtils.andCriteria(Constants.STATUS, 3, "!=", defaultRequest);
+        boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
+        if(checkForNonDGConsole_AirDgFlag_NonDGUser(dgUser, consolidationDetails))
+            CommonUtils.andCriteria("containsHazardous", false, "!=", defaultRequest);
         List<FilterCriteria> criterias = defaultRequest.getFilterCriteria();
         List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
         Criteria criteria = Criteria.builder().fieldName(Constants.TRANSPORT_MODE).operator("!=").value(Constants.TRANSPORT_MODE_AIR).build();
@@ -3632,6 +3635,16 @@ public class ShipmentService implements IShipmentService {
         return defaultRequest;
     }
 
+    private boolean checkForNonDGConsole_AirDgFlag_NonDGUser(boolean dgUser, ConsolidationDetails consolidationDetails) {
+        if(!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()))
+            return false;
+        if(!Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()))
+            return false;
+        if(Boolean.TRUE.equals(consolidationDetails.getHazardous()))
+            return false;
+        return !dgUser;
+    }
+
     /**
      * back flows data of the current updated shipment to all its sibling shipments attached to the common console
      * @param current_shipment
@@ -3648,6 +3661,7 @@ public class ShipmentService implements IShipmentService {
                 throw new RunnerException("EFreight status can only be EAW as Consolidation EFrieght Status is EAW");
             }
         }
+        boolean makeConsoleDG = checkForDGShipment_AirDgFlag(shipment);
         if(linkedConsol != null && (oldEntity == null || !Objects.equals(shipment.getMasterBill(),oldEntity.getMasterBill()) ||
                 !Objects.equals(shipment.getDirection(),oldEntity.getDirection()) ||
                 (shipment.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
@@ -3665,6 +3679,10 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
             consolidationDetails.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
             consolidationDetails.setShipmentType(shipment.getDirection());
+            if(makeConsoleDG) {
+                makeConsoleDG = false;
+                consolidationDetails.setHazardous(true);
+            }
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().filter(c -> !Objects.equals(c.getShipmentId(), shipment.getId()))
                         .map(i -> i.getShipmentId()).toList();
@@ -3691,7 +3709,21 @@ public class ShipmentService implements IShipmentService {
             }
             return consolidationDetails;
         }
+        else if(makeConsoleDG) {
+            consolidationDetails = consolidationDetailsDao.findById(consolidationList.get(0).getId()).get();
+            consolidationDetails.setHazardous(true);
+            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
+            return consolidationDetails;
+        }
         return null;
+    }
+
+    private boolean checkForDGShipment_AirDgFlag(ShipmentDetails shipment) {
+        if(!Constants.TRANSPORT_MODE_AIR.equals(shipment.getTransportMode()))
+            return false;
+        if(!Boolean.TRUE.equals(shipment.getContainsHazardous()))
+            return false;
+        return Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag());
     }
 
     @Override

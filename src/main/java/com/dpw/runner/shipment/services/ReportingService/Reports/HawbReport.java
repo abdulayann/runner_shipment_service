@@ -70,6 +70,7 @@ public class HawbReport extends IReport{
         hawbModel.usersDto = UserContext.getUser();
         hawbModel.shipmentDetails = getShipment(id);
         validateAirDGCheck(hawbModel.shipmentDetails);
+        validateAirDGCheckShipments(hawbModel.shipmentDetails);
         if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
         {
             hawbModel.setConsolidationDetails(hawbModel.shipmentDetails.getConsolidationList().get(0));

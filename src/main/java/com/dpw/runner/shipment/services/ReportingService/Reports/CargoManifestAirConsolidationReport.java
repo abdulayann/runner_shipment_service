@@ -68,6 +68,7 @@ public class CargoManifestAirConsolidationReport extends IReport{
     IDocumentModel getDocumentModel(Long id) throws RunnerException {
         CargoManifestAirConsolidationModel cargoManifestAirConsolidationModel = new CargoManifestAirConsolidationModel();
         cargoManifestAirConsolidationModel.setConsolidationModel(getConsolidation(id));
+        validateAirDGCheckConsolidations(cargoManifestAirConsolidationModel.getConsolidationModel());
         cargoManifestAirConsolidationModel.setTenantModel(getTenant());
         cargoManifestAirConsolidationModel.setShipmentModelList(new ArrayList<>());
         cargoManifestAirConsolidationModel.setAwbList(new ArrayList<>());

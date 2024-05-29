@@ -100,7 +100,7 @@ class ConsolidationDaoTest {
         var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
         PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
         UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
     }
 
     @Test
@@ -138,6 +138,68 @@ class ConsolidationDaoTest {
     @Test
     void testSave_Failure_Air_Validations1() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
+        var spyService = Mockito.spy(consolidationsDao);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
+    }
+
+    @Test
+    void testSave_Failure_Air_Validations1_NullPacks() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setPackingList(null);
+        consolidationDetails.setShipmentsList(List.of(jsonTestUtility.getTestShipment()));
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
+        var spyService = Mockito.spy(consolidationsDao);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
+    }
+
+    @Test
+    void testSave_Failure_Air_Validations1_NullPacks_HazardousShipment() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setPackingList(null);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+        shipmentDetails.setContainsHazardous(true);
+        consolidationDetails.setShipmentsList(List.of(shipmentDetails));
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
+        var spyService = Mockito.spy(consolidationsDao);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
+    }
+
+    @Test
+    void testSave_Failure_Air_Validations_HazFalse() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
+        var spyService = Mockito.spy(consolidationsDao);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
+    }
+
+    @Test
+    void testSave_Failure_Air_Validations_HazFalse_HazardousPack() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
+        consolidationDetails.getPackingList().get(0).setHazardous(true);
+        var spyService = Mockito.spy(consolidationsDao);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
+    }
+
+    @Test
+    void testSave_Failure_Air_Validations_HazTrue() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setHazardous(true);
         consolidationDetails.setId(null);
         consolidationDetails.setGuid(null);
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());

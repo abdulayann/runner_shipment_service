@@ -87,6 +87,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
@@ -769,6 +770,10 @@ public abstract class IReport {
         if (!Objects.isNull(shipment.getNoOfPacks()))
             dictionary.put(ReportConstants.NO_OF_PACKAGES_ALIAS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
         populateIGMInfo(shipment, dictionary);
+        if(Boolean.TRUE.equals(shipment.getContainsHazardous())) {
+            dictionary.put(IsDG, true);
+            dictionary.put(DGEmergencyContact, shipment.getAdditionalDetails().getEmergencyContactNumber());
+        }
     }
 
     public Map<String, Object> populateHAWBAndSecurityData(List<ShipmentModel> shipmentModelList, List<Awb> awbList, Map<String, Object> dictionary, boolean isSecurity, boolean isShipperAndConsignee, boolean fromConsolidation) {
@@ -1266,6 +1271,10 @@ public abstract class IReport {
             }
         }
         populateUserFields(UserContext.getUser(), dictionary);
+        if(Boolean.TRUE.equals(consolidation.getHazardous())) {
+            dictionary.put(IsDG, true);
+            dictionary.put(DGEmergencyContact, consolidation.getEmergencyContactNumber());
+        }
     }
 
     public void populateBlFields(Hbl hbl, Map<String, Object> dictionary)
@@ -2314,6 +2323,10 @@ public abstract class IReport {
                 dict.put(CLASS_DIVISION, dgSubstanceRow.ClassDivision);
                 dict.put(UNID_NO, pack.getUNDGContact());
                 dict.put(DANGEROUS_GOODS, "HAZARDOUS");
+                dict.put(IsDG, true);
+                dict.put(AirUNNumber, pack.getUnNumberAir());
+                dict.put(AirDGClass, pack.getDgClassAir());
+                dict.put(AirDGClassDescription, pack.getDgClassAirDescription());
             } else {
                 dict.put(DG_SUBSTANCE, "");
                 dict.put(DG_CLASS, "");
@@ -2853,6 +2866,24 @@ public abstract class IReport {
            if(!dgPack) {
                throw new ValidationException("The shipment is marked as DG but does not contain any DG packages. Please add DG packs before printing.");
            }
+        }
+    }
+
+    public static void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
+        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
+                Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
+            if(!dgUser)
+                throw new ValidationException("You do not have permission to print the freight documents.");
+        }
+    }
+
+    public static void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
+        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
+                Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
+            if(!dgUser)
+                throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }
 

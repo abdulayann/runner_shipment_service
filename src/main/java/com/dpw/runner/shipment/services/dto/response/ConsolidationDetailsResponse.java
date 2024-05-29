@@ -139,4 +139,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private AwbStatus awbStatus;
     private AwbStatus linkedHawbStatus;
     private Boolean hazardous;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
 }

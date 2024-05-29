@@ -38,6 +38,7 @@ public class PickupOrderReport extends IReport {
         pickUpOrderReportModel.hblModel.isHbl = false;
         if (pickUpOrderReportModel.hblModel.shipment != null && pickUpOrderReportModel.hblModel.shipment.getPickupDetails() != null)
             pickUpOrderReportModel.pickUpTransportAddress = pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getTransporterDetail();
+        validateAirDGCheckShipments(pickUpOrderReportModel.hblModel.getShipment());
         return pickUpOrderReportModel;
     }
 
