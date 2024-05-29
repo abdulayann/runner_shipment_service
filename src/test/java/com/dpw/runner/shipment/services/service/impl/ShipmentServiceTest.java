@@ -268,6 +268,29 @@ class ShipmentServiceTest {
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
+    @Test
+    void completeUpdate_Failure() throws RunnerException {
+        testShipment.setId(1L);
+        ShipmentDetails mockShipment = testShipment;
+        testShipment.setDirection(Constants.DIRECTION_EXP);
+        testShipment.getAdditionalDetails().setPrintedOriginal(true);
+        testShipment.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        testShipment.setConsolidationList(new ArrayList<>()).setContainersList(new ArrayList<>());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetails oldEntity = jsonTestUtility.getTestShipment();
+        oldEntity.setId(1L);
+        oldEntity.setConsolidationList(new ArrayList<>()).setContainersList(new ArrayList<>());
+
+        // Mock
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        // Test
+        assertThrows(ValidationException.class, () -> shipmentService.completeUpdate(commonRequestModel));
+    }
+
 
     @Test
     void toggleLock_lock() throws RunnerException {
