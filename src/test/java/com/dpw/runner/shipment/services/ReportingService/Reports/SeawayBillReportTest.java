@@ -2,7 +2,8 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
-import com.dpw.runner.shipment.services.ReportingService.Models.ConsolidatedPackingListModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -10,19 +11,17 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
-import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,7 +39,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -48,28 +46,30 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ConsolidatedPackingListReportTest {
-
+class SeawayBillReportTest {
     @InjectMocks
-    private ConsolidatedPackingListReport consolidatedPackingListReport;
+    private SeawayBillReport seawayBillReport;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
 
     @Mock
-    private JsonHelper jsonHelper;
-
-    @Mock
-    private MasterDataFactory masterDataFactory;
-
-    @Mock
-    private V1MasterDataImpl v1MasterData;
-
-    @Mock
     private ModelMapper modelMapper;
 
     @Mock
-    private IConsolidationDetailsDao consolidationDetailsDao;
+    private V1ServiceUtil v1ServiceUtil;
+
+    @Mock
+    private HblReport hblReport;
+
+    @Mock
+    private JsonHelper jsonHelper;
+
+    @Mock
+    private IShipmentDao shipmentDao;
+
+    @Mock
+    private IHblDao hblDao;
 
     @BeforeAll
     static void init() throws IOException {
@@ -92,7 +92,7 @@ class ConsolidatedPackingListReportTest {
                 V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
     }
 
-    private void populateModel(ConsolidatedPackingListModel consolidatedPackingListModel) {
+    private void populateModel(SeawayBillModel seawayBillModel) {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setId(123L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
@@ -119,6 +119,7 @@ class ConsolidatedPackingListReportTest {
         Map<String, Object> orgData = new HashMap<>();
         orgData.put(FULL_NAME, "123");
         orgData.put(CONTACT_PERSON, "123");
+        orgData.put(COMPANY_NAME, "123");
         orgData.put(ADDRESS1, "123");
         orgData.put(ADDRESS2, "123");
         orgData.put(CITY, "123");
@@ -183,7 +184,6 @@ class ConsolidatedPackingListReportTest {
         containers.setPacksType("PKG");
         containers.setPacks("100");
         containerModelList.add(containers);
-        shipmentModel.setContainersList(containerModelList);
 
         PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
         delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
@@ -193,6 +193,7 @@ class ConsolidatedPackingListReportTest {
         delivertDetails.setTransporterDetail(partiesModel);
         shipmentModel.setPickupDetails(delivertDetails);
         shipmentModel.setDeliveryDetails(delivertDetails);
+        seawayBillModel.setShipment(shipmentModel);
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
         bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
@@ -217,6 +218,7 @@ class ConsolidatedPackingListReportTest {
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
         referenceNumbersModel.setType(INVNO);
         shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
+
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setPayment("PPM");
         consolidationModel.setReceivingAgent(partiesModel);
@@ -224,7 +226,6 @@ class ConsolidatedPackingListReportTest {
         consolidationModel.setCarrierDetails(carrierDetailModel);
         ArrivalDepartureDetailsModel arrivalDepartureDetailsModel = new ArrivalDepartureDetailsModel();
         arrivalDepartureDetailsModel.setCTOId(partiesModel);
-        arrivalDepartureDetailsModel.setLastForeignPort(UUID.randomUUID().toString());
         consolidationModel.setArrivalDetails(arrivalDepartureDetailsModel);
         partiesModel = new PartiesModel();
         partiesModel.setType("Notify Party 1");
@@ -234,104 +235,99 @@ class ConsolidatedPackingListReportTest {
         partiesModel.setAddressData(orgData);
         consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
         consolidationModel.setReferenceNumbersList(shipmentModel.getReferenceNumbersList());
-        consolidationModel.setShipmentType(EXP);
-        consolidationModel.setDepartureDetails(arrivalDepartureDetailsModel);
-        consolidationModel.setContainersList(shipmentModel.getContainersList());
-        consolidationModel.setId(123L);
-        consolidationModel.setShipmentsList(Arrays.asList(shipmentModel));
-        consolidatedPackingListModel.setConsolidationDetails(consolidationModel);
+        seawayBillModel.setConsolidation(consolidationModel);
+    }
+
+    private Hbl populateHbl(){
+        Hbl hbl = new Hbl();
+        HblDataDto hblDataDto = new HblDataDto();
+        hblDataDto.setCargoGrossVolumeUnit("M3");
+        hblDataDto.setCargoGrossWeightUnit("KG");
+        hblDataDto.setPackageCount(10);
+        hbl.setHblData(hblDataDto);
+        return hbl;
     }
 
     @Test
     void populateDictionary() {
-        ConsolidatedPackingListModel consolidatedPackingListModel = new ConsolidatedPackingListModel();
-        populateModel(consolidatedPackingListModel);
-        consolidatedPackingListModel.setTenant(new TenantModel());
+        SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
+        seawayBillModel.setBlObject(populateHbl());
+        seawayBillModel.setTenant(new TenantModel());
+        seawayBillModel.setShipmentSettingsDetails(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
+        populateModel(seawayBillModel);
 
-        doReturn(consolidatedPackingListModel.getConsolidationDetails().getSendingAgent()).when(jsonHelper).convertValue(consolidatedPackingListModel.getConsolidationDetails().getSendingAgent(), PartiesModel.class);
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TareWeight, BigDecimal.TEN);
+        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.NOOF_PACKAGES, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.GROSS_VOLUME_ALIAS, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.BL_GROSS_VOLUME_ALIAS, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.BL_GROSS_WEIGHT_ALIAS, BigDecimal.TEN);
 
-        Map<String, Object> packMap = new HashMap<>();
-        packMap.put(WEIGHT, BigDecimal.TEN);
-        packMap.put(NET_WEIGHT, BigDecimal.TEN);
-        packMap.put(VOLUME_WEIGHT, BigDecimal.TEN);
-        packMap.put(WEIGHT_UNIT, "KG");
-        packMap.put(VOLUME, BigDecimal.TEN);
-        packMap.put(VOLUME_UNIT, "M3");
-        packMap.put(PACKS, BigDecimal.ZERO);
+        doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
 
-        List<Map<String, Object>> packListMap = new ArrayList<>();
-        packListMap.add(packMap);
+        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, Object> chargeMap = new HashMap<>();
+        chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
+        dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
+        when(hblReport.getData(any())).thenReturn(dictionary);
 
-        packMap = new HashMap<>();
-        packMap.put(WEIGHT, BigDecimal.TEN);
-        packMap.put(NET_WEIGHT, BigDecimal.TEN);
-        packMap.put(VOLUME_WEIGHT, BigDecimal.TEN);
-        packMap.put(WEIGHT_UNIT, "G");
-        packMap.put(VOLUME, BigDecimal.TEN);
-        packMap.put(VOLUME_UNIT, "CM3");
-        packMap.put(PACKS, BigDecimal.ZERO);
-        packListMap.add(packMap);
-
-        doReturn(packListMap).when(jsonHelper).convertValue(any(HashSet.class), any(TypeReference.class));
-
-        assertNotNull(consolidatedPackingListReport.populateDictionary(consolidatedPackingListModel));
+        assertNotNull(seawayBillReport.populateDictionary(seawayBillModel));
     }
 
     @Test
-    void populateDictionaryWithConsolidationPack() {
-        ConsolidatedPackingListModel consolidatedPackingListModel = new ConsolidatedPackingListModel();
-        populateModel(consolidatedPackingListModel);
-        consolidatedPackingListModel.setTenant(new TenantModel());
-        ConsolidationModel consolidationModel = consolidatedPackingListModel.getConsolidationDetails();
-        consolidationModel.setPackingList(consolidationModel.getShipmentsList().get(0).getPackingList());
-        consolidationModel.setSendingAgent(null);
-        consolidationModel.setReceivingAgent(null);
-        consolidationModel.setReferenceNumbersList(null);
+    void populateDictionaryWithDisbalePartyTrue() {
+        SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
+        seawayBillModel.setBlObject(populateHbl());
+        seawayBillModel.setTenant(new TenantModel());
+        seawayBillModel.setShipmentSettingsDetails(ShipmentSettingsDetails.builder().disableBlPartiesName(true).build());
+        populateModel(seawayBillModel);
 
-        doReturn(consolidatedPackingListModel.getConsolidationDetails().getSendingAgent()).when(jsonHelper).convertValue(consolidatedPackingListModel.getConsolidationDetails().getSendingAgent(), PartiesModel.class);
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TareWeight, BigDecimal.TEN);
+        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.NOOF_PACKAGES, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.GROSS_VOLUME_ALIAS, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.BL_GROSS_VOLUME_ALIAS, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.BL_GROSS_WEIGHT_ALIAS, BigDecimal.TEN);
 
-        Map<String, Object> packMap = new HashMap<>();
-        packMap.put(WEIGHT, BigDecimal.TEN);
-        packMap.put(NET_WEIGHT, BigDecimal.TEN);
-        packMap.put(VOLUME_WEIGHT, BigDecimal.TEN);
-        packMap.put(WEIGHT_UNIT, "KG");
-        packMap.put(VOLUME, BigDecimal.TEN);
-        packMap.put(VOLUME_UNIT, "M3");
-        packMap.put(PACKS, BigDecimal.TEN);
+        doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
 
-        List<Map<String, Object>> packListMap = new ArrayList<>();
-        packListMap.add(packMap);
+        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, Object> chargeMap = new HashMap<>();
+        chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
+        dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
+        when(hblReport.getData(any())).thenReturn(dictionary);
 
-        packMap = new HashMap<>();
-        packMap.put(WEIGHT, BigDecimal.TEN);
-        packMap.put(NET_WEIGHT, BigDecimal.TEN);
-        packMap.put(VOLUME_WEIGHT, BigDecimal.TEN);
-        packMap.put(WEIGHT_UNIT, "KG");
-        packMap.put(VOLUME, BigDecimal.TEN);
-        packMap.put(VOLUME_UNIT, "M3");
-        packMap.put(PACKS, BigDecimal.ZERO);
-        packListMap.add(packMap);
-
-        doReturn(packListMap).when(jsonHelper).convertValue(any(HashSet.class), any(TypeReference.class));
-
-        assertNotNull(consolidatedPackingListReport.populateDictionary(consolidatedPackingListModel));
+        assertNotNull(seawayBillReport.populateDictionary(seawayBillModel));
     }
 
     @Test
     void getDocumentModel() {
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(SEA);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setPickupDetails(new PickupDeliveryDetailsModel());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setId(123L);
         consolidationModel.setPlaceOfIssue("Test");
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-
-        assertNotNull(consolidatedPackingListReport.getDocumentModel(123L));
+        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        HblModel hblModel = new HblModel();
+        hblModel.setShipment(shipmentModel);
+        when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
+        assertNotNull(seawayBillReport.getDocumentModel(123L));
     }
 }
