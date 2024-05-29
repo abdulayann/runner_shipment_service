@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -111,7 +112,7 @@ class HblReportTest {
     void setup() {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
-                V1TenantSettingsResponse.builder().P100Branch(false).build());
+                V1TenantSettingsResponse.builder().P100Branch(false).WVDigitGrouping(2).WVGroupingNumber(GroupingNumber.DotAndComma.getValue()).build());
     }
 
     @Test
@@ -222,6 +223,8 @@ class HblReportTest {
         hblContainerDto = new HblContainerDto();
         hblContainerDto.setContainerType("20GP");
         hblContainerDto.setContainerNumber("CONT000284");
+        hblContainerDto.setContainerGrossWeight(BigDecimal.TEN);
+        hblContainerDto.setContainerGrossVolume(BigDecimal.TEN);
         hblContainerDtos.add(hblContainerDto);
 
         hbl.setHblContainer(hblContainerDtos);

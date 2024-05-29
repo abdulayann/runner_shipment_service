@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.DeliveryOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.adapters.impl.NPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -13,8 +14,11 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -24,6 +28,8 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -100,6 +106,14 @@ class DeliveryOrderReportTest {
     @Mock
     private IHblDao hblDao;
 
+    @Mock
+    private NPMServiceAdapter npmServiceAdapter;
+
+    private static final String LOC_CODE = "TEST";
+    private static final String ORG_CODE = "ORG_TEST";
+    private static final String ADDRESS_CODE = "ADDRESS_TEST";
+
+
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
@@ -108,6 +122,7 @@ class DeliveryOrderReportTest {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setEnableTimeZone(false);
+        mockUser.setLanguageCode("EN");
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
     }
@@ -149,8 +164,8 @@ class DeliveryOrderReportTest {
         shipmentModel.setHouseBill("hsnn1234");
 
         PartiesModel partiesModel = new PartiesModel();
-        partiesModel.setOrgCode("Test");
-        partiesModel.setAddressCode("Test");
+        partiesModel.setOrgCode(ORG_CODE);
+        partiesModel.setAddressCode(ADDRESS_CODE);
         partiesModel.setType(CUSTOM_HOUSE_AGENT);
         Map<String, Object> orgData = new HashMap<>();
         orgData.put(FULL_NAME, "123");
@@ -165,14 +180,15 @@ class DeliveryOrderReportTest {
         shipmentModel.setClient(partiesModel);
 
         CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
-        carrierDetailModel.setOrigin("test");
-        carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setOrigin(LOC_CODE);
+        carrierDetailModel.setOriginPort(LOC_CODE);
         carrierDetailModel.setEta(LocalDateTime.now());
         carrierDetailModel.setEtd(LocalDateTime.now());
         carrierDetailModel.setAtd(LocalDateTime.now());
         carrierDetailModel.setVessel(UUID.randomUUID().toString());
         carrierDetailModel.setAta(LocalDateTime.now());
-        carrierDetailModel.setDestinationPort(UUID.randomUUID().toString());
+        carrierDetailModel.setDestinationPort(LOC_CODE);
+        carrierDetailModel.setDestination(LOC_CODE);
         carrierDetailModel.setShippingLine("MAERSK");
 
         AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
@@ -194,12 +210,29 @@ class DeliveryOrderReportTest {
         shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
         shipmentModel.setServiceType("Test");
 
+        List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
         ShipmentContainers shipmentContainers = new ShipmentContainers();
         shipmentContainers.setContainerCount(1L);
         shipmentContainers.setContainerTypeCode("20GP");
         shipmentContainers.setNetWeight(BigDecimal.TEN);
         shipmentContainers.setNoofPackages(10L);
-        shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
+        shipmentContainersList.add(shipmentContainers);
+
+        shipmentContainers = new ShipmentContainers();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerTypeCode("40GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setNoofPackages(10L);
+        shipmentContainersList.add(shipmentContainers);
+
+        shipmentContainers = new ShipmentContainers();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerTypeCode("40GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setNoofPackages(10L);
+        shipmentContainersList.add(shipmentContainers);
+
+        shipmentModel.setShipmentContainersList(shipmentContainersList);
         deliveryOrderModel.setContainers(shipmentModel.getShipmentContainersList());
 
         List<ContainerModel> containerModelList = new ArrayList<>();
@@ -259,7 +292,11 @@ class DeliveryOrderReportTest {
         consolidationModel.setCarrierDetails(carrierDetailModel);
         ArrivalDepartureDetailsModel arrivalDepartureDetailsModel = new ArrivalDepartureDetailsModel();
         arrivalDepartureDetailsModel.setCTOId(partiesModel);
+        arrivalDepartureDetailsModel.setContainerYardId(partiesModel);
         consolidationModel.setArrivalDetails(arrivalDepartureDetailsModel);
+        consolidationModel.setDepartureDetails(arrivalDepartureDetailsModel);
+        consolidationModel.setCreditor(partiesModel);
+        consolidationModel.setAllocations(new AllocationsModel());
         partiesModel = new PartiesModel();
         partiesModel.setType("Notify Party 1");
         orgData = new HashMap<>();
@@ -276,8 +313,12 @@ class DeliveryOrderReportTest {
         HblDataDto hblDataDto = new HblDataDto();
         hblDataDto.setCargoGrossVolumeUnit("M3");
         hblDataDto.setCargoGrossWeightUnit("KG");
+        hblDataDto.setCargoDescription("Test");
+        hblDataDto.setHouseBill("Test");
+        hblDataDto.setPlaceOfReceipt("Test");
         hblDataDto.setPackageCount(10);
         hbl.setHblData(hblDataDto);
+        hbl.setHblNotifyParty(Arrays.asList(new HblPartyDto()));
         return hbl;
     }
 
@@ -307,10 +348,18 @@ class DeliveryOrderReportTest {
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
+
+        AddressTranslationListResponse addressTranslationListResponse = new AddressTranslationListResponse();
+        AddressTranslationListResponse.AddressTranslationResponse addressTranslationResponse =  new AddressTranslationListResponse.AddressTranslationResponse();
+        addressTranslationResponse.setOrgCode(ORG_CODE);
+        addressTranslationResponse.setAddressCode(ADDRESS_CODE);
+        addressTranslationListResponse.setAddressTranslationList(Arrays.asList(addressTranslationResponse));
+        when(v1Service.getAddressTranslation(any())).thenReturn(addressTranslationListResponse);
+
     }
 
     @Test
-    void populateDictionary() {
+    void populateDictionary() throws RunnerException {
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.setUsersDto(UserContext.getUser());
         deliveryOrderModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
@@ -333,11 +382,12 @@ class DeliveryOrderReportTest {
         mockRakc(deliveryOrderModel.shipmentDetails);
         mockBill();
         mockUnloc();
+        mockUnlocation();
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
     }
 
     @Test
-    void populateDictionaryWithouConsolidation() {
+    void populateDictionaryWithouConsolidation() throws RunnerException {
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.setUsersDto(UserContext.getUser());
         deliveryOrderModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
@@ -367,11 +417,13 @@ class DeliveryOrderReportTest {
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
     }
 
-    private void mockBill() {
+    private void mockBill() throws RunnerException {
         List<BillingResponse> billingResponseList = Arrays.asList(new BillingResponse());
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(billingResponseList).build();
         when(v1MasterData.fetchBillingList(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class)).thenReturn(billingResponseList);
+
+        List<BillChargesResponse> billChargesResponseList = new ArrayList<>();
         BillChargesResponse billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
@@ -379,10 +431,64 @@ class DeliveryOrderReportTest {
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("PPD");
         billChargesResponse.setChargeTypeCode("AGENT");
+        billChargesResponseList.add(billChargesResponse);
 
-        List<BillChargesResponse> billChargesResponseList = Arrays.asList(billChargesResponse);
+        billChargesResponse = new BillChargesResponse();
+        billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
+        billChargesResponse.setLocalTax(BigDecimal.TEN);
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setLocalCostCurrency("INR");
+        billChargesResponse.setPaymentType("CPP");
+        billChargesResponse.setChargeTypeCode("AGENT");
+        billChargesResponseList.add(billChargesResponse);
+
+        billChargesResponse = new BillChargesResponse();
+        billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
+        billChargesResponse.setLocalTax(BigDecimal.TEN);
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setLocalCostCurrency("INR");
+        billChargesResponse.setPaymentType("CAL");
+        billChargesResponse.setChargeTypeCode("AGENT");
+        billChargesResponseList.add(billChargesResponse);
+
+        billChargesResponse = new BillChargesResponse();
+        billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
+        billChargesResponse.setLocalTax(BigDecimal.TEN);
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setLocalCostCurrency("INR");
+        billChargesResponse.setPaymentType("SHW");
+        billChargesResponse.setChargeTypeCode("AGENT");
+        billChargesResponseList.add(billChargesResponse);
+
+        billChargesResponse = new BillChargesResponse();
+        billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
+        billChargesResponse.setLocalTax(BigDecimal.TEN);
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setLocalCostCurrency("INR");
+        billChargesResponse.setPaymentType("ALL");
+        billChargesResponse.setChargeTypeCode("AGENT");
+        billChargesResponseList.add(billChargesResponse);
+
+        billChargesResponse = new BillChargesResponse();
+        billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
+        billChargesResponse.setLocalTax(BigDecimal.TEN);
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setLocalCostCurrency("INR");
+        billChargesResponse.setPaymentType("CCL");
+        billChargesResponse.setChargeTypeCode("AGENT");
+        billChargesResponseList.add(billChargesResponse);
+
         dependentServiceResponse = DependentServiceResponse.builder().data(billChargesResponseList).build();
         when(v1MasterData.fetchBillChargesList(any())).thenReturn(dependentServiceResponse);
+
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put(CHARGE_TYPE_CODE, "AGENT CHARGE");
+        doReturn(dataMap).when(jsonHelper).convertValue(any(BillChargesResponse.class), any(TypeReference.class));
+
+        NPMFetchLangChargeCodeResponse npmFetchLangChargeCodeResponse = new NPMFetchLangChargeCodeResponse();
+        npmFetchLangChargeCodeResponse.setTranslation("AGENT CHARGE");
+        when(npmServiceAdapter.fetchMultiLangChargeCode(any())).thenReturn(npmFetchLangChargeCodeResponse);
+
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class)).thenReturn(billChargesResponseList);
     }
 
@@ -453,9 +559,11 @@ class DeliveryOrderReportTest {
         carrierMasterData.setIataCode("123");
         carrierMasterData.setItemDescription("123");
         carrierMasterData.setItemValue("Turkish Airlines");
+        carrierMasterData.setDefaultOrgId(1);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(carrierMasterData)).build();
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(carrierMasterData));
+        when(masterDataUtils.fetchOrganizations(any(), any())).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
     }
 
     private void mockUnloc() {
@@ -463,6 +571,18 @@ class DeliveryOrderReportTest {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(unlocationsResponse)).build();
         when(v1MasterData.fetchUnlocationData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), UnlocationsResponse.class)).thenReturn(Arrays.asList(unlocationsResponse));
+    }
+
+    private void mockUnlocation() {
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setIataCode("Test");
+        unlocationsResponse.setName("Test");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponse.setPortName("Test");
+        unlocationsResponse.setAirPortName("Test");
+        Map<String, UnlocationsResponse>  locationMap = new HashMap<>();
+        locationMap.put(LOC_CODE, unlocationsResponse);
+        when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>(locationMap));
     }
 
     @Test
