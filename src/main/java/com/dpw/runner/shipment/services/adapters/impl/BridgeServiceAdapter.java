@@ -53,7 +53,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
         try {
             var bridgeResponse = restTemplate.postForEntity(url, httpEntity, BridgeServiceResponse.class);
-            log.info("Received data from bridge service for tact integration");
+            log.info("Received data from bridge service for tact integration: " + jsonHelper.convertToJson(bridgeResponse));
             return bridgeResponse.getBody();
         }
         catch (Exception e) {
