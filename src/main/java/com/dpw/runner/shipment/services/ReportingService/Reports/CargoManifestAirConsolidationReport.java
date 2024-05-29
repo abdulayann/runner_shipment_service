@@ -36,7 +36,6 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Component
-@Data
 @Slf4j
 public class CargoManifestAirConsolidationReport extends IReport{
 
@@ -111,5 +110,17 @@ public class CargoManifestAirConsolidationReport extends IReport{
         try{ dictionary.put(RECEIVING_AGENT_NAME, cargoManifestAirConsolidationModel.getConsolidationModel().getReceivingAgent().getOrgData().get(FULL_NAME)); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
         try{ dictionary.put(RECEIVING_AGENT_ADDRESS, getOrgAddress(cargoManifestAirConsolidationModel.getConsolidationModel().getReceivingAgent())); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
         return dictionary;
+    }
+
+    public void setShipIds(List<Long> shipIds) {
+        this.shipIds = shipIds;
+    }
+
+    public void setShipperAndConsignee(boolean shipperAndConsignee) {
+        isShipperAndConsignee = shipperAndConsignee;
+    }
+
+    public void setSecurityData(boolean securityData) {
+        isSecurityData = securityData;
     }
 }
