@@ -1986,7 +1986,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
             ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-            if(Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers()) && consolidationDetails.get().getContainersList() != null && consolidationDetails.get().getContainersList().size() > 0) {
+            if(Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers()) && consolidationDetails.get().getContainersList() != null && !consolidationDetails.get().getContainersList().isEmpty()) {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
             }
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
@@ -2019,7 +2019,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             log.info("Consolidation details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-            if(Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers()) && consolidationDetails.get().getContainersList() != null && consolidationDetails.get().getContainersList().size() > 0) {
+            if(Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers()) && consolidationDetails.get().getContainersList() != null && !consolidationDetails.get().getContainersList().isEmpty()) {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
             }
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
