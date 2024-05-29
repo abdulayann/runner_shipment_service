@@ -46,11 +46,7 @@ public class AuthFilter extends OncePerRequestFilter {
     @Autowired
     IShipmentSettingsDao shipmentSettingsDao;
     @Autowired
-    private ModelMapper modelMapper;
-    @Autowired
     private TenantSettingsService tenantSettingsService;
-
-    private static final String VALIDATION_ERROR = "Failed to Validate Auth Token";
 
     private final String[] ignoredPaths = new String[]{"/actuator/**",
             "/v2/api-docs",
@@ -145,7 +141,7 @@ public class AuthFilter extends OncePerRequestFilter {
 
     }
 
-    public Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
+    private Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
         List<GrantedAuthority> authorities = new ArrayList<>();
         if(!permissions.isEmpty()) {
             for (String privilege : permissions) {
@@ -155,30 +151,6 @@ public class AuthFilter extends OncePerRequestFilter {
         return authorities;
     }
 
-    private static String getFullURL(HttpServletRequest request) {
-        StringBuilder requestURL = new StringBuilder(request.getRequestURI());
-        String queryString = request.getQueryString();
-        if (queryString == null) {
-            return requestURL.toString();
-        } else {
-            return requestURL.append('?').append(queryString).toString();
-        }
-    }
-
-    public void writeUnauthorizedResponse(HttpServletResponse res, String errormessage) throws IOException {
-        log.info(errormessage);
-        res.setContentType(APPLICATION_JSON);
-        res.setStatus(HttpStatus.UNAUTHORIZED.value());
-        //res.getWriter().write(filterLevelException(new UnAuthorizedException(errormessage)));
-    }
-
-//    private String filterLevelException(Exception er) throws IOException {
-//        BaseResponse baseResponse = new BaseResponse();
-//        baseResponse.setError(null);
-//        baseResponse.setSuccess(false);
-//        baseResponse.setErrorMessage(er.getMessage());
-//        return new ObjectMapper().writeValueAsString(baseResponse);
-//    }
     private ShipmentSettingsDetails getTenantSettings() {
         Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
         return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
