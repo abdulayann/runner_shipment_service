@@ -36,5 +36,6 @@ public class AwbGoodsDescriptionInfo implements Serializable {
     private List<AwbPackingInfo> awbPackingInfo;
     private Boolean isShipmentCreated;
     private Boolean disableFetchRates;
+    private Boolean disableRates;
     private Boolean enableFetchRatesWarning;
 }
