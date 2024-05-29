@@ -38,7 +38,7 @@ public class UnitConversionUtility {
         }
     }
 
-    private static Unit<?> getUnitType(String type, String unitSymbol) {
+    static Unit<?> getUnitType(String type, String unitSymbol) {
         switch (type) {
             case Constants.MASS:
                 return getWeightUnitForSymbol(unitSymbol);
@@ -51,7 +51,7 @@ public class UnitConversionUtility {
         }
     }
 
-    private static Unit<?> getLengthUnitForSymbol(String unitSymbol) {
+    static Unit<?> getLengthUnitForSymbol(String unitSymbol) {
         switch (unitSymbol) {
             case Constants.METRE:
                 return Units.METRE;
@@ -114,7 +114,7 @@ public class UnitConversionUtility {
         }
     }
 
-    private static Unit<?> getWeightUnitForSymbol(String unitSymbol) {
+    static Unit<?> getWeightUnitForSymbol(String unitSymbol) {
         switch (unitSymbol) {
             case Constants.WEIGHT_UNIT_KG:
                 return MetricPrefix.KILO(Units.GRAM);
@@ -162,7 +162,7 @@ public class UnitConversionUtility {
         }
     }
 
-    private static Unit<?> getVolumeUnitForSymbol(String unitSymbol) {
+    static Unit<?> getVolumeUnitForSymbol(String unitSymbol) {
         switch (unitSymbol) {
             case Constants.VOLUME_UNIT_M3:
             case Constants.VOLUME_UNIT_Stere:
