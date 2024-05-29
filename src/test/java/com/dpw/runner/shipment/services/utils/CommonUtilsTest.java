@@ -246,7 +246,7 @@ class CommonUtilsTest {
 
         String words = CommonUtils.inWords(num);
 
-        assertEquals("Four Lakh Fifty Six Thousand Seven Hundred Eighty Nine", words);
+        assertEquals("Four Lakh Fifty Six Thousand Seven Hundred and Eighty Nine", words);
     }
 
     @Test
