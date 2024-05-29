@@ -37,10 +37,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -317,5 +314,87 @@ class ConsolidationDaoTest {
         assertEquals(ConsolidationNumber, response);
     }
 
+    @Test
+    void testUpdateMawbExp() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType("EXP");
 
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        doReturn(consolidationDetails).when(consolidationRepository).save(any());
+        doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
+
+        ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
+        assertEquals(consolidationDetails, responseEntity);
+    }
+
+    @Test
+    void testUpdateMawbInvalidMawb() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setMawb("mawb");
+        consolidationDetails.setShipmentType("IMP");
+
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        assertThrows(ValidationException.class, () -> {
+            spyService.update(consolidationDetails, false);
+        });
+
+    }
+
+    @Test
+    void testUpdateMawbValidMawbCarrierImp() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setMawb("MAST77777770");
+        consolidationDetails.setShipmentType("IMP");
+
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        doReturn(consolidationDetails).when(consolidationRepository).save(any());
+
+        ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
+        assertEquals(consolidationDetails, responseEntity);
+    }
+
+    @Test
+    void testUpdateMawbValidMawbCarrierResponseNull() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setMawb("MAST77777770");
+        consolidationDetails.setShipmentType("IMP");
+        consolidationDetails.getCarrierDetails().setShippingLine(null);
+
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+
+        when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(CarrierResponse.class))).thenReturn(null);
+
+        assertThrows(ValidationException.class, () -> {
+            spyService.update(consolidationDetails, false);
+        });
+    }
+
+    @Test
+    void testUpdateMawbValidMawbCarrierResponseNotNull() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setMawb("MAST77777770");
+        consolidationDetails.setShipmentType("EXP");
+        consolidationDetails.getCarrierDetails().setShippingLine(null);
+
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+
+        when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(CarrierResponse.class))).thenReturn(Arrays.asList(CarrierResponse.builder().build()));
+        doReturn(new PageImpl<>(List.of(MawbStocksLink.builder().status("Consumed").build()))).when(mawbStocksLinkDao).findAll(any(), any());
+
+        assertThrows(ValidationException.class, () -> {
+            spyService.update(consolidationDetails, false);
+        });
+    }
 }
