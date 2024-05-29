@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -72,6 +73,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -220,6 +222,11 @@ public class PackingService implements IPackingService {
             , int row, Packing packingRow) {
         Boolean isHazardous = packingRow.getHazardous();
         if (isHazardous != null && isHazardous) {
+
+                boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
+                if(!dgUser)
+                    throw new ValidationException("You do not have Air DG permissions for this.");
+
                 // DG CLASS(HAZARDOUS CLASS)
                 if (!StringUtils.isEmpty(packingRow.getDGClass())) {
                     String dgClass = packingRow.getDGClass();

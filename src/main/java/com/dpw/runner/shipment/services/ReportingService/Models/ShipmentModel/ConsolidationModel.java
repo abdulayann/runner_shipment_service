@@ -224,4 +224,8 @@ public class ConsolidationModel implements IDocumentModel {
     private List<Long> shipmentIds;
     @JsonProperty("ConsolidationAddresses")
     private List<PartiesModel> consolidationAddresses;
+    @JsonProperty("Hazardous")
+    private Boolean hazardous;
+    @JsonProperty("EmergencyContactNumber")
+    private String emergencyContactNumber;
 }

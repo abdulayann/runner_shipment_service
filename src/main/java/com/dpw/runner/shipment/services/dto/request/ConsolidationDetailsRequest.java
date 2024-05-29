@@ -122,4 +122,6 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private UUID sourceGuid;
     private String efreightStatus;
     private Boolean hazardous;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
 }

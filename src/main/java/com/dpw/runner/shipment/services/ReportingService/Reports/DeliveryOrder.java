@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.Collections;
 import java.util.Map;
 
 public class DeliveryOrder extends IReport {
@@ -13,6 +13,7 @@ public class DeliveryOrder extends IReport {
 
     @Override
     public Map<String, Object> getData(Long id) {
+        hblReport.setFromDeliveryReport(true);
         return hblReport.getData(id);
     }
 

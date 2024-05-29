@@ -102,7 +102,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -678,14 +677,36 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        updateLinkedShipmentData(consol.get(), null, true);
+        ConsolidationDetails consolidationDetails = consol.get();
+        if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails)) {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "in");
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+            Page<ShipmentDetails> shipments = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            if(shipments != null && !shipments.isEmpty()) {
+                for (ShipmentDetails shipmentDetails: shipments.getContent()) {
+                    if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                        consolidationDetails.setHazardous(true);
+                        consolidationDetailsDao.update(consolidationDetails, false);
+                    }
+                }
+            }
+        }
+        updateLinkedShipmentData(consolidationDetails, null, true);
         try {
-            consolidationSync.sync(consol.get(), StringUtility.convertToString(consol.get().getGuid()), false);
+            consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
         }
         catch (Exception e) {
             log.error("Error Syncing Consol");
         }
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
+        if(!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()))
+            return false;
+        if(!Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()))
+            return false;
+        return !Boolean.TRUE.equals(consolidationDetails.getHazardous());
     }
 
     @Transactional
@@ -3047,6 +3068,7 @@ public class ConsolidationService implements IConsolidationService {
                 .mawb(isMawb ? shipment.getMasterBill() : null)
                 .createdBy(UserContext.getUser().getUsername())
                 .modeOfBooking(StringUtils.equals(transportMode, Constants.TRANSPORT_MODE_SEA) ? Constants.INTTRA : null)
+                .hazardous(shipment.getContainsHazardous())
                 //.isLinked(true)
                 .build();
 
