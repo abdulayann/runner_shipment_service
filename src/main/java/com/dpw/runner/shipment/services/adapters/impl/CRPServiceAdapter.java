@@ -46,7 +46,7 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
         ResponseEntity<?> responseEntity;
         try {
             responseEntity = restTemplate.exchange(RequestEntity.get(URI.create(url)).build(), Object.class);
-        }  catch (HttpClientErrorException.NotFound ex) {
+        }  catch (HttpClientErrorException ex) {
             responseEntity = ResponseHelper.buildSuccessResponse();
         }
         log.info("Retrieve CRP: with response: {}", responseEntity);
@@ -61,7 +61,7 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
         ResponseEntity<?> responseEntity;
         try {
             responseEntity = restTemplate.exchange(RequestEntity.get(URI.create(url)).build(), Object.class);
-        } catch (HttpClientErrorException.NotFound ex) {
+        } catch (HttpClientErrorException ex) {
             responseEntity = ResponseHelper.buildSuccessResponse();
         }
         log.info("List CRP: with response: {}", responseEntity);
