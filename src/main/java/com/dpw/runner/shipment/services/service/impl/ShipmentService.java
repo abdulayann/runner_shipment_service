@@ -1410,6 +1410,9 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentDetails.getAdditionalDetails().setDraftPrinted(false);
         }
+        if(checkOriginalPrintedForJobTypeChange(shipmentDetails, oldEntity)){
+            throw new ValidationException("Consolidation type cannot be changed as the original BL has been generated for this shipment.");
+        }
         if(checkDisableFetchConditionForAwb(shipmentDetails, oldEntity, shipmentSettingsDetails)) {
             List<Awb> awbs = awbDao.findByShipmentId(shipmentDetails.getId());
             if(!awbs.isEmpty()) {
@@ -1421,8 +1424,19 @@ public class ShipmentService implements IShipmentService {
                 awbDao.save(awb);
             }
         }
-
         return syncConsole;
+    }
+
+    private boolean checkOriginalPrintedForJobTypeChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if(oldEntity == null)
+            return false;
+        if(!Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_SEA))
+            return false;
+        if(!Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP))
+            return false;
+        if(!Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPrintedOriginal()))
+            return false;
+        return !Objects.equals(shipmentDetails.getJobType(), oldEntity.getJobType());
     }
 
     private boolean checkDisableFetchConditionForAwb(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity,ShipmentSettingsDetails shipmentSettingsDetails){
@@ -2804,6 +2818,10 @@ public class ShipmentService implements IShipmentService {
             entity.setContainersList(updatedContainers);
             String operation = DBOperationType.CREATE.name();
             String oldEntityJsonString = null;
+
+            if(entity.getSourceGuid() != null && entity.getGuid() != null && !Objects.equals(entity.getSourceGuid(), entity.getGuid())){
+                entity.setEntityTransfer(true);
+            }
             if(id == null) {
                 entity = shipmentDao.save(entity, true);
                 id = entity.getId();
@@ -3128,6 +3146,9 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setSourceGuid(null);
             cloneShipmentDetails.setClonedGuid(shipmentDetails.get().getGuid());
             cloneShipmentDetails.setContractId(null);
+            cloneShipmentDetails.getAdditionalDetails().setDraftPrinted(null);
+            cloneShipmentDetails.getAdditionalDetails().setPrintedOriginal(null);
+            cloneShipmentDetails.getAdditionalDetails().setSurrenderPrinted(null);
             cloneShipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
