@@ -342,8 +342,8 @@ class EventDaoTest {
 
     @Test
     void createEventForAirMessagingStatus() {
-        doNothing().when(eventRepository).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), 1L, "type", "code", "desc", LocalDateTime.now(), LocalDateTime.now(),  "source", 1, "status", LocalDateTime.now(), LocalDateTime.now());
+        verify(eventRepository, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -359,6 +359,7 @@ class EventDaoTest {
         when(queryMock.setParameter(anyInt(), any())).thenReturn(queryMock);
 
         eventDao.createEventForAirMessagingEvent(events);
+        verify(queryMock, times(1)).executeUpdate();
     }
 
     @Test

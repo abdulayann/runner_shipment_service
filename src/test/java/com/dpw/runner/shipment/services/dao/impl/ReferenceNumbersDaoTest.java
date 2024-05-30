@@ -356,7 +356,9 @@ class ReferenceNumbersDaoTest {
         );
         when(referenceNumbersRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThrows(RunnerException.class,() -> referenceNumbersDao.updateEntityFromConsole(referenceNumbersRequests, consolidationId, Collections.emptyList()));//        assertThrows(DataRetrievalFailureException.class, () -> referenceNumbersDao.saveEntityFromConsole(referenceNumbersRequests, consolidationId));
+        assertThrows(RunnerException.class, () -> {
+            referenceNumbersDao.updateEntityFromConsole(referenceNumbersRequests, consolidationId, Collections.emptyList());
+        });
     }
 
     @Test
@@ -366,7 +368,9 @@ class ReferenceNumbersDaoTest {
         List<ReferenceNumbers> referenceNumbersList = Arrays.asList(referenceNumbers);
 
         when(referenceNumbersRepository.findById(any())).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class,() -> referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L));
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L);
+        });
     }
 
     @Test
@@ -374,7 +378,9 @@ class ReferenceNumbersDaoTest {
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();
         referenceNumbers.setId(1L);
         List<ReferenceNumbers> referenceNumbersList = Arrays.asList(referenceNumbers);
-        assertThrows(DataRetrievalFailureException.class,() -> referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L, new HashMap<>()));
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L, new HashMap<>());
+        });
     }
 
     @Test
