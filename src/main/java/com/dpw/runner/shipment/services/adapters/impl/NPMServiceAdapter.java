@@ -771,7 +771,6 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             List<PackingResponse> packingList = new ArrayList<>();
             for(var contractUsage: contractUsages) {
                 var packing = new PackingResponse();
-                packing.setPacks(contractUsage.getUsage() != null ? contractUsage.getUsage().toString() : null);
                 var filter_attributes = contractUsage.getFilter_params();
                 if(filter_attributes != null)
                 {
@@ -784,6 +783,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 if(meta != null)
                 {
                      var load_attributes = meta.getLoad_attributes();
+                     packing.setPacks(load_attributes.getQuantity() != null ? load_attributes.getQuantity().toString() : null);
                      packing.setWeight(load_attributes.getWeight());
                      packing.setWeightUnit(load_attributes.getWeight_uom());
                      packing.setVolume(load_attributes.getVolume());
