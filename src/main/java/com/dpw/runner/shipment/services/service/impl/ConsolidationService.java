@@ -680,15 +680,12 @@ public class ConsolidationService implements IConsolidationService {
         ConsolidationDetails consolidationDetails = consol.get();
         if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails)) {
             ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "in");
+            listCommonRequest = andCriteria("containsHazardous", true, "=", listCommonRequest);
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
             Page<ShipmentDetails> shipments = shipmentDao.findAll(pair.getLeft(), pair.getRight());
             if(shipments != null && !shipments.isEmpty()) {
-                for (ShipmentDetails shipmentDetails: shipments.getContent()) {
-                    if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
-                        consolidationDetails.setHazardous(true);
-                        consolidationDetailsDao.update(consolidationDetails, false);
-                    }
-                }
+                consolidationDetails.setHazardous(true);
+                consolidationDetailsDao.update(consolidationDetails, false);
             }
         }
         updateLinkedShipmentData(consolidationDetails, null, true);
