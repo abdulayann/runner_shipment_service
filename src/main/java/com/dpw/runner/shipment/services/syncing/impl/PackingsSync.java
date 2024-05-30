@@ -49,18 +49,7 @@ public class PackingsSync implements IPackingsSync {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private EmailServiceUtility emailServiceUtility;
-
-    @Autowired
-    private IV1Service v1Service;
-    @Autowired
     private ISyncService syncService;
-
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
-            .maxAttempts(3)
-            .fixedBackoff(1000)
-            .retryOn(Exception.class)
-            .build();
 
     @Override
     public ResponseEntity<?> sync(List<Packing> packingList, String transactionId) {

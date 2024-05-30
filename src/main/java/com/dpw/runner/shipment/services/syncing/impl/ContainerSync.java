@@ -33,33 +33,12 @@ import java.util.UUID;
 public class ContainerSync implements IContainerSync {
 
     @Autowired
-    ModelMapper modelMapper;
-
-    @Autowired
     JsonHelper jsonHelper;
-
-    @Autowired
-    RestTemplate restTemplate;
-
-    @Autowired
-    private IV1Service v1Service;
-
-    @Autowired
-    private EmailServiceUtility emailServiceUtility;
 
     @Autowired
     private SyncEntityConversionService syncEntityConversionService;
     @Autowired
     private ISyncService syncService;
-
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
-            .maxAttempts(3)
-            .fixedBackoff(1000)
-            .retryOn(Exception.class)
-            .build();
-
-    @Value("${v1service.url.base}${v1service.url.bulkContainerSync}")
-    private String BULK_CONTAINER_SYNC_URL;
 
     @Override
     @Async("asyncExecutor")

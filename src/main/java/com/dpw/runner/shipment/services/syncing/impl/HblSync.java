@@ -39,33 +39,15 @@ public class HblSync implements IHblSync {
     private IShipmentDao shipmentDao;
 
     @Autowired
-    RestTemplate restTemplate;
-
-    @Autowired
     ModelMapper modelMapper;
-    @Autowired
-    private IV1Service v1Service;
 
-    @Autowired
-    private EmailServiceUtility emailServiceUtility;
-    @Autowired
-    private CommonUtils commonUtils;
     @Autowired
     private ISyncService syncService;
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
-            .maxAttempts(3)
-            .fixedBackoff(1000)
-            .retryOn(Exception.class)
-            .build();
-
-    @Value("${v1service.url.base}${v1service.url.hblSync}")
-    private String HBL_V1_SYNC_URL;
 
     @Override
     public ResponseEntity<?> sync(Hbl hbl, String transactionId) {
-        HblRequestV2 hblRequest = new HblRequestV2();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
-        hblRequest = convertEntityToDto(hbl);
+        HblRequestV2 hblRequest = convertEntityToDto(hbl);
         hblRequest.setShipmentGuid(shipmentDetails.get().getGuid());
         if(hblRequest.getContainers() != null && hblRequest.getContainers().size() > 0) {
             for (HblContainerRequestV2 hblContainerRequestV2: hblRequest.getContainers()) {
