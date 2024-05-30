@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services.dto.request.crp;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Getter
@@ -24,7 +24,7 @@ public class CRPListRequest  implements IRunnerRequest {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    private static class Pageable {
+    private static class Pageable implements Serializable {
         private int page;
         private int size;
         private List<String> sort;

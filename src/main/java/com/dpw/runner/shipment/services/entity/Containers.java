@@ -3,12 +3,12 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
-import com.dpw.runner.shipment.services.utils.UnlocationData;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -53,6 +53,7 @@ public class Containers extends MultiTenancy {
     private String sealNumber;
 
     @Column(name = "description_of_goods")
+    @Size(max = 2048, message = "max size is 2048 for description_of_goods")
     private String descriptionOfGoods;
 
     @Column(name = "no_of_packages")
@@ -62,18 +63,21 @@ public class Containers extends MultiTenancy {
     private BigDecimal netWeight;
 
     @Column(name = "net_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String netWeightUnit;
 
     @Column(name = "gross_weight")
     private BigDecimal grossWeight;
 
     @Column(name = "gross_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String grossWeightUnit;
 
     @Column(name = "measurement")
     private BigDecimal measurement;
 
     @Column(name = "measurement_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String measurementUnit;
 
     @Column(name = "commodity_code")
@@ -115,12 +119,14 @@ public class Containers extends MultiTenancy {
     private String containerStuffingLocation;
 
     @Column(name = "container_comments")
+    @Size(max = 255, message = "max size is 255 for container_comments")
     private String containerComments;
 
     @Column(name = "gross_volume")
     private BigDecimal grossVolume;
 
     @Column(name = "gross_volume_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String grossVolumeUnit;
 
     @Column(name = "is_reefer")
@@ -130,12 +136,14 @@ public class Containers extends MultiTenancy {
     private BigDecimal minTemp;
 
     @Column(name = "min_temp_unit_id")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String minTempUnit;
 
     @Column(name = "max_temp")
     private BigDecimal maxTemp;
 
     @Column(name = "max_temp_unit")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String maxTempUnit;
 
     @Column(name = "hbl_delivery_mode")
@@ -160,6 +168,7 @@ public class Containers extends MultiTenancy {
     private BigDecimal tareWeight;
 
     @Column(name = "tare_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String tareWeightUnit;
 
     @Column(name = "serial_number")
@@ -200,6 +209,7 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "inner_package_measurement_unit")
     @Size(max=50, message = "max size is 50 for inner_package_measurement_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String innerPackageMeasurementUnit;
 
     @Column(name = "pacr_number")
@@ -209,6 +219,7 @@ public class Containers extends MultiTenancy {
     private BigDecimal chargeable;
 
     @Column(name = "chargeable_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     @Size(max=3, message = "max size is 3 for chargeable_unit")
     private String chargeableUnit;
 
@@ -234,6 +245,7 @@ public class Containers extends MultiTenancy {
     private BigDecimal allocatedWeight;
 
     @Column(name = "allocated_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     @Size(max=4, message = "max size is 4 for allocated_weight_unit")
     private String allocatedWeightUnit;
 
@@ -241,12 +253,14 @@ public class Containers extends MultiTenancy {
     private BigDecimal allocatedVolume;
 
     @Column(name = "allocated_volume_unit_id")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String allocatedVolumeUnit;
 
     @Column(name = "achieved_weight")
     private BigDecimal achievedWeight;
 
     @Column(name = "achieved_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     @Size(max=4, message = "max size is 4 for achieved_weight_unit")
     private String achievedWeightUnit;
 
@@ -254,6 +268,7 @@ public class Containers extends MultiTenancy {
     private BigDecimal achievedVolume;
 
     @Column(name = "achieved_volume_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     @Size(max=4, message = "max size is 4 achieved_volume_unit")
     private String achievedVolumeUnit;
 
@@ -271,8 +286,9 @@ public class Containers extends MultiTenancy {
     @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
     private Parties deliveryAddress;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'CONTAINERS'")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "entity_id")
+    @Where(clause = "entity_type = 'CONTAINER'")
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "containerId")
@@ -306,4 +322,23 @@ public class Containers extends MultiTenancy {
     @Column(name = "handling_info")
     @Size(max=2500, message = "max size is 2500 for handling_info")
     private String handlingInfo;
+
+    @Column(name = "is_part")
+    private Boolean isPart;
+
+    @Column(name = "is_attached")
+    private Boolean isAttached;
+
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "container_id")
+    private List<TruckDriverDetails> truckingDetails;
+
+    @Column(name = "invoice_number")
+    private String invoiceNumber;
+
+    @Column(name = "invoice_currency")
+    private String invoiceCurrency;
+
+    @Column(name = "invoice_value")
+    private BigDecimal invoiceValue;
 }

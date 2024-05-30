@@ -1,0 +1,32 @@
+trigger:
+
+- development
+- master
+- Release-v*
+resources:
+  repositories:
+  - repository: baseline_project_repo
+    name: DevOps/_git/devops-common-utils
+    type: git
+    ref: main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- checkout: self   #my_current_repo 
+  path: s
+  displayName: Checking out my_current_repo
+- checkout: baseline_project_repo
+  displayName: Cheking baseline_project_repo
+
+- template: /pipelines/sonar/java_sonar_template.yaml@baseline_project_repo
+  parameters:
+    projectName: DTLP
+    organization: dpwhotfsonline
+    productName: runner
+    serviceConnection: SonarQube Connection
+    javaVersion: "1.17"
+    repoName: runner_shipment_service
+    mavenPath: pom.xml
+    exclusion: '**/*.bin,Devops_Scripts/**'

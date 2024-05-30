@@ -5,6 +5,8 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,4 +24,11 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
     }
 
     Optional<CustomerBooking> findByBookingNumber(String bookingNumber);
+    @Modifying
+    @Query(value = "Update customer_booking set is_platform_booking_created = ?2 Where id = ?1", nativeQuery = true)
+    int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated);
+
+    @Modifying
+    @Query(value = "Update customer_booking set is_bill_created = ?2 Where id = ?1", nativeQuery = true)
+    int updateBillingStatus(Long id, Boolean isBillCreated);
 }

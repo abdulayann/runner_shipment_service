@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -12,7 +14,8 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class AwbPaymentInfo {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AwbPaymentInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private BigDecimal weightCharges;

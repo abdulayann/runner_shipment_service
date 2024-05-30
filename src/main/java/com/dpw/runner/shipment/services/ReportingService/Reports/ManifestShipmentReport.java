@@ -5,16 +5,17 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ManifestShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.nimbusds.jose.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Component
 public class ManifestShipmentReport extends IReport{
@@ -35,11 +36,11 @@ public class ManifestShipmentReport extends IReport{
         {
             manifestShipmentModel.consolidationDetails = manifestShipmentModel.shipmentDetails.getConsolidationList().get(0);
         }
-        manifestShipmentModel.containers = new ArrayList<>();
+        manifestShipmentModel.setContainers(new ArrayList<>());
         if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getContainersList() != null)
         {
             for(ContainerModel container : manifestShipmentModel.shipmentDetails.getContainersList())
-                manifestShipmentModel.containers.add(getShipmentContainer(container));
+                manifestShipmentModel.getContainers().add(getShipmentContainer(container));
         }
         if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getCarrierDetails() != null) {
             manifestShipmentModel.carrier = getCarrier(manifestShipmentModel.shipmentDetails.getCarrierDetails().getShippingLine());
@@ -51,8 +52,9 @@ public class ManifestShipmentReport extends IReport{
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ManifestShipmentModel manifestShipmentModel = (ManifestShipmentModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
-        populateShipmentFields(manifestShipmentModel.shipmentDetails, false, dictionary);
+        populateShipmentFields(manifestShipmentModel.shipmentDetails, dictionary);
         populateConsolidationFields(manifestShipmentModel.consolidationDetails, dictionary);
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
 
         List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestShipmentModel.shipmentDetails));
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);
@@ -61,7 +63,7 @@ public class ManifestShipmentReport extends IReport{
         if (manifestShipmentModel.shipmentDetails != null) {
             dictionary.put(ReportConstants.OBJECT_TYPE, manifestShipmentModel.shipmentDetails.getTransportMode());
         }
-        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(manifestShipmentModel.containers));
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(manifestShipmentModel.getContainers()));
 
         dictionary.put(ReportConstants.SHIPMENT_AND_CONTAINER, getShipmentAndContainerResponse(List.of(manifestShipmentModel.shipmentDetails)));
         var listShipmentReponse = getShipmentResponse(List.of(manifestShipmentModel.shipmentDetails));
@@ -73,7 +75,7 @@ public class ManifestShipmentReport extends IReport{
                     .toList();
             values.forEach(v -> {
                 if (v.containsKey(ReportConstants.WEIGHT))
-                    v.put(ReportConstants.WEIGHT, addCommas(v.get(ReportConstants.WEIGHT).toString()));
+                    v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
                 if (v.containsKey(ReportConstants.TOTAL_PACKS))
                     v.put(ReportConstants.TOTAL_PACKS, addCommas(v.get(ReportConstants.TOTAL_PACKS).toString()));
             });
@@ -83,6 +85,20 @@ public class ManifestShipmentReport extends IReport{
         if (manifestShipmentModel.carrier != null) {
             dictionary.put(ReportConstants.CARRIER_NAME, manifestShipmentModel.carrier.getItemDescription());
             dictionary.put(ReportConstants.FLIGHT_CARRIER, manifestShipmentModel.carrier.getItemDescription());
+        }
+
+        if (packings != null && !packings.isEmpty()) {
+            AtomicInteger totalPacks = new AtomicInteger();
+            Set<String> allPackages = packings.stream().filter(x -> x.getPacksType() != null).map(PackingModel::getPacksType).collect(Collectors.toSet());
+            packings.forEach(p -> {
+                try {
+                    int number = Integer.parseInt(p.getPacks());
+                    totalPacks.addAndGet(number);
+                } catch (NumberFormatException e) {
+                }
+            });
+            dictionary.put(ReportConstants.TOTAL_PACKS, addCommas(totalPacks.get()));
+            dictionary.put(ReportConstants.TOTAL_PACKS_TYPE, allPackages);
         }
         dictionary.put(ReportConstants.TOTAL_WEIGHT, addCommas(weightAndUnit.getLeft()));
         dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());

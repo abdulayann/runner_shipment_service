@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 public class DaoConstants {
 
+    private DaoConstants(){}
     public static final String DAO_ENTITY_ALREADY_EXISTS = "Data already exists.";
 
     public static final String DAO_GENERIC_CREATE_EXCEPTION_MSG = "Error occurred while trying to create the object. Exception raised is: ";

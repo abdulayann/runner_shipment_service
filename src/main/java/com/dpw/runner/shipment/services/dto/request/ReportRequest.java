@@ -2,8 +2,12 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Getter;
+import lombok.Setter;
+
+import java.util.List;
 
 @Getter
+@Setter
 public class ReportRequest implements IRunnerRequest {
     String reportInfo;
     String reportKey;
@@ -24,4 +28,11 @@ public class ReportRequest implements IRunnerRequest {
     String multiTemplateCode = null;
     String requestSource = null;
     String noOfCopies = null;
+    boolean fromShipment;
+    boolean fromConsolidation;
+    Boolean pushAwbEvent;
+    Boolean printWithoutTranslation;
+    List<Long> shipmentIds;
+    boolean isShipperAndConsignee;
+    boolean isSecurityData;
 }

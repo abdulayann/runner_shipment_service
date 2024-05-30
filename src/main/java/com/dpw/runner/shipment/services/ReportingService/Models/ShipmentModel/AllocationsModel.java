@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,7 +15,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class AllocationsModel {
+public class AllocationsModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("Guid")
@@ -22,6 +25,7 @@ public class AllocationsModel {
     @JsonProperty("Hazardous")
     private Boolean hazardous;
     @JsonProperty("CutoffDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime cutoffDate;
     @JsonProperty("IsTemperatureControlled")
     private Boolean isTemperatureControlled;

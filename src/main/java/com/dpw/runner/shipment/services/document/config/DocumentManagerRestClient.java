@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.document.request.documentmanager.Documen
 import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,10 +52,9 @@ public class DocumentManagerRestClient {
         return headers;
     }
 
-    public DocumentManagerResponse<DocumentManagerDataResponse> temporaryFileUpload(String token, DocumentManagerTempFileUploadRequest request) {
-        HttpHeaders headers = getHttpHeaders(token);
+    public DocumentManagerResponse<DocumentManagerDataResponse> temporaryFileUpload(DocumentManagerTempFileUploadRequest request) {
 
-        HttpEntity<DocumentManagerTempFileUploadRequest> requestEntity = new HttpEntity<>(request, headers);
+        HttpEntity<DocumentManagerTempFileUploadRequest> requestEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
 
         String url = baseUrl + "/files-management/v2/addTemporaryFile";
 
@@ -69,10 +69,9 @@ public class DocumentManagerRestClient {
         return responseEntity.getBody();
     }
 
-    public DocumentManagerResponse<DocumentManagerDataResponse> saveFile(String token, DocumentManagerSaveFileRequest request) {
-        HttpHeaders headers = getHttpHeaders(token);
+    public DocumentManagerResponse<DocumentManagerDataResponse> saveFile(DocumentManagerSaveFileRequest request) {
 
-        HttpEntity<DocumentManagerSaveFileRequest> requestEntity = new HttpEntity<>(request, headers);
+        HttpEntity<DocumentManagerSaveFileRequest> requestEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
 
         String url = baseUrl + "/files-management/v2/saveFile";
 

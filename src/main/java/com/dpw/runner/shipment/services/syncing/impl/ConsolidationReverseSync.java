@@ -1,30 +1,29 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.ArrivalDepartureDetails;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomConsolidationRequest;
-import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationReverseSync;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -34,26 +33,33 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     ModelMapper modelMapper;
 
     @Autowired
-    private IConsolidationService consolidationService;
-    @Lazy
+    JsonHelper jsonHelper;
+
     @Autowired
-    private ISyncQueueService syncQueueService;
+    private IConsolidationService consolidationService;
+
     @Autowired
     private SyncConfig syncConfig;
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
 
     @Override
-    public ResponseEntity<?> reverseSync(CommonRequestModel request_, boolean checkForSync) {
-        CustomConsolidationRequest request = (CustomConsolidationRequest) request_.getData();
+    public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync, boolean dataMigration) {
+        CustomConsolidationRequest request = (CustomConsolidationRequest) commonRequestModel.getData();
         ConsolidationDetailsRequest response = new ConsolidationDetailsRequest();
         String responseMsg;
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.CONSOLIDATION, StringUtility.convertToString(request.getGuid()), request);
+                return new ResponseEntity<>(HttpStatus.OK);
             }
             response = modelMapper.map(request, ConsolidationDetailsRequest.class);
 
-            response.setLockedBy(request.getLockedByUser());
+            response.setCreditor(mapPartyObjectWithFreetext(request.getCreditor(), request.getIsCreditorFreeTextAddress(), request.getCreditorFreeTextAddress()));
+            response.setReceivingAgent(mapPartyObjectWithFreetext(request.getReceivingAgent(), request.getIsReceivingAgentFreeTextAddress(), request.getReceivingAgentFreeTextAddress()));
+            response.setSendingAgent(mapPartyObjectWithFreetext(request.getSendingAgent(), request.getIsSendingAgentFreeTextAddress(), request.getSendingAgentFreeTextAddress()));
 
+            response.setLockedBy(request.getLockedByUser());
+            response.setMsnNumber(request.getMsnNumberStr());
             response.setShipmentType(request.getShipmentType());
             response.setCoLoadBookingReference(request.getCoLoadBookingRef());
             response.setConsolidationType(request.getType());
@@ -70,14 +76,17 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             response.setPlaceOfIssue(request.getPlaceOfIssueString());
 
             mapReverseArrivalDepartureDetails(response, request);
-            mapReverseTruckDriverDetail(response, request);
-            mapReversePackings(response, request);
+            response.setPackingList(jsonHelper.convertValueToList(syncEntityConversionService.packingsV1ToV2(request.getPackingList()), PackingRequest.class));
+            response.setRoutingsList(jsonHelper.convertValueToList(syncEntityConversionService.routingsV1ToV2(request.getRoutingsList()), RoutingsRequest.class));
             mapReverseJobs(response, request);
+            response.setContainersList(jsonHelper.convertValueToList(syncEntityConversionService.containersV1ToV2(request.getContainersList()), ContainerRequest.class));
+            response.setConsolidationAddresses(jsonHelper.convertValueToList(syncEntityConversionService.addressesV1ToV2(request.getConsolidationAddresses()), PartiesRequest.class));
             response.setFileRepoList(convertToList(request.getDocsList(), FileRepoRequest.class));
 
             mapReverseShipmentGuids(response, request);
             response.setGuid(request.getGuid());
-            return consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(response));
+            response.setSourceGuid(request.getSourceGuid());
+            return consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(response), dataMigration, request.getCreatedBy(), request.getCreatedDate());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
@@ -95,7 +104,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                     p.setGuid(item);
                     return p;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setShipmentsList(req);
     }
 
@@ -111,38 +120,8 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                         modelMapper.map(item.getEvents(), p.getEventsList());
                     return p;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setJobsList(req);
-    }
-
-    private void mapReversePackings(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null || request.getPackingList() == null)
-            return;
-        List<PackingRequest> req = request.getPackingList().stream()
-                .map(item -> {
-                    PackingRequest p;
-                    p = modelMapper.map(item, PackingRequest.class);
-                    p.setOrigin(item.getOriginName());
-                    return p;
-                })
-                .collect(Collectors.toList());
-        response.setPackingList(req);
-    }
-
-    private void mapReverseTruckDriverDetail(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null || request.getTruckDriverDetail() == null)
-            return;
-        List<TruckDriverDetailsRequest> req = request.getTruckDriverDetail().stream()
-                .map(item -> {
-                    TruckDriverDetailsRequest t;
-                    t = modelMapper.map(item, TruckDriverDetailsRequest.class);
-                    t.setTransporterName(item.getTransporterNameOrg());
-                    //ENUM
-                    t.setTransporterType(Ownership.valueOf(item.getTransporterTypeString()));
-                    return t;
-                })
-                .collect(Collectors.toList());
-        response.setTruckDriverDetails(req);
     }
 
     private void mapReverseCarrierDetails(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
@@ -157,6 +136,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         response.getCarrierDetails().setShippingLine(request.getCarrier());
         response.getCarrierDetails().setGuid(null);
         response.getCarrierDetails().setId(null);
+        response.getCarrierDetails().setVoyage(request.getVoyageNumber());
     }
 
     private void mapReverseAchievedQuantities(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
@@ -232,12 +212,25 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         response_.setDepartureDetails(response2);
     }
 
+    private PartiesRequest mapPartyObjectWithFreetext(PartyRequestV2 sourcePartyObject, Boolean isFreeText, String freeTextAddress) {
+        if(sourcePartyObject == null)
+            return null;
+        PartiesRequest parties = modelMapper.map(sourcePartyObject, PartiesRequest.class);
+        if(isFreeText != null && isFreeText) {
+            parties.setIsAddressFreeText(true);
+            if(parties.getAddressData() == null)
+                parties.setAddressData(new HashMap<>());
+            parties.getAddressData().put(PartiesConstants.RAW_DATA, freeTextAddress);
+        }
+        return parties;
+    }
+
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
         if(lst == null)
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {

@@ -15,8 +15,10 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
 
     @JsonProperty("Guid")
     private UUID Guid;
+    @JsonProperty("SourceGuid")
+    private UUID SourceGuid;
     @JsonProperty("ConsolidationGuids")
-    public List<UUID> ConsolidationGuids;
+    private List<UUID> ConsolidationGuids;
     @JsonProperty("HouseBill")
     private String HouseBill;
     @JsonProperty("TransportMode")
@@ -96,11 +98,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String OnBoard;
     @JsonProperty("Phase")
     private String Phase;
-
-    @JsonProperty("PlaceofIssue")
-    private Long PlaceofIssue;
-    @JsonProperty("PlaceofSupply")
-    private Long PlaceofSupply;
     @JsonProperty("ReleaseType")
     private String ReleaseType;
     @JsonProperty("ScreeningStatus")
@@ -118,6 +115,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private LocalDateTime CustomsNoIssueDate;
     @JsonProperty("DateofIssue")
     private LocalDateTime DateofIssue;
+    @JsonProperty("IssueDate")
+    private LocalDateTime IssueDate;
     @JsonProperty("ExpiryDate")
     private LocalDateTime ExpiryDate;
     @JsonProperty("OnBoardDate")
@@ -131,12 +130,28 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private BigDecimal insuranceValue;
     @JsonProperty("InsuranceValueCurrency")
     private String InsuranceValueCurrency;
+    @JsonProperty("IsConsignerFreeTextAddress")
+    private Boolean IsConsignerFreeTextAddress;
+    @JsonProperty("ConsignerFreeTextAddress")
+    private String ConsignerFreeTextAddress;
+    @JsonProperty("IsConsigneeFreeTextAddress")
+    private Boolean IsConsigneeFreeTextAddress;
+    @JsonProperty("ConsigneeFreeTextAddress")
+    private String ConsigneeFreeTextAddress;
+    @JsonProperty("IsNotifyPartyFreeTextAddress")
+    private Boolean IsNotifyPartyFreeTextAddress;
+    @JsonProperty("NotifyPartyFreeTextAddress")
+    private String NotifyPartyFreeTextAddress;
 
     // %%%%%%%%%%%%%% Custom shipment properties from here %%%%%%%%%%%%%%%%
 
     //Carrier details here
     @JsonProperty("PaidPlaceName")
     private String PaidPlaceName;
+    @JsonProperty("PlaceOfIssueName")
+    private String PlaceOfIssueName;
+    @JsonProperty("PlaceOfSupplyName")
+    private String PlaceOfSupplyName;
     @JsonProperty("AircraftRegistration")
     private String AircraftRegistration;
     @JsonProperty("AircraftType")
@@ -149,6 +164,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String Destination;
     @JsonProperty("FlightNumber")
     private String FlightNumber;
+    @JsonProperty("FlightStatus")
+    private String flightStatus;
     @JsonProperty("JourneyNumber")
     private String JourneyNumber;
     @JsonProperty("JourneyRefNumber")
@@ -177,26 +194,26 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private BigDecimal AssessValue;
     @JsonProperty("Betype")
     private String Betype;
-    @JsonProperty("BlchargesDisplay")
-    private String BlchargesDisplay;//TODO : REMOVE
-    @JsonProperty("BlexporterShipment")
-    private String BlexporterShipment;
+    @JsonProperty("ChargesApply")
+    private String ChargesApply;
+    @JsonProperty("ExporterStmt")
+    private String ExporterStmt;
     @JsonProperty("Boedate")
     private LocalDateTime Boedate;
     @JsonProperty("Boenumber")
     private String Boenumber;
     @JsonProperty("BondedWarehouseId")
-    private Long BondedWarehouseId; //int64
+    private Long BondedWarehouseId;
     @JsonProperty("BorrowedFrom")
     private PartyRequestV2 BorrowedFrom;
     @JsonProperty("BranchSINumber")
     private String BranchSINumber;
     @JsonProperty("ChajobNumber")
     private String ChajobNumber;
-    @JsonProperty("Cifvalue")
-    private Long Cifvalue; //int64
+    @JsonProperty("CIFValue")
+    private BigDecimal cIFValue;
     @JsonProperty("Copy")
-    private Long Copy; //int64
+    private Integer copy;
     @JsonProperty("CustomCity")
     private String CustomCity;
     @JsonProperty("CustomHouse")
@@ -204,8 +221,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("CustomLocation")
     private String CustomLocation;
 
-    @JsonProperty("DateOfReceipt")
-    private LocalDateTime DateOfReceipt;
+    @JsonProperty("DateofReceipt")
+    private LocalDateTime DateofReceipt;
     @JsonProperty("DraftPrinted")
     private boolean DraftPrinted;
 
@@ -216,7 +233,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("ExternalNotes")
     private String ExternalNotes;
     @JsonProperty("FreeDays")
-    private Long FreeDays; //int64
+    private BigDecimal freeDays;
     @JsonProperty("GoodsCO")
     private String GoodsCO;
     @JsonProperty("HsnNumber")
@@ -256,7 +273,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("NotifyParty")
     private PartyRequestV2 NotifyParty;
     @JsonProperty("Original")
-    private Long Original; //int64
+    private Integer original;
     @JsonProperty("OwnershipString")
     private String OwnershipString;
     @JsonProperty("OwnershipName")
@@ -300,7 +317,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("TraderOrSupplierParty")
     private PartyRequestV2 TraderOrSupplierParty;
     @JsonProperty("WarehouseId")
-    private Long WarehouseId; //int64
+    private Long WarehouseId;
     @JsonProperty("Wblprinted")
     private boolean Wblprinted;
     // ---- Additional Details ends here
@@ -377,8 +394,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
 
     @JsonProperty("PaymentTerms")
     private String PaymentTerms;
-    @JsonProperty("PrevShipmentStatus")
-    private Integer PrevShipmentStatus;
     @JsonProperty("ReceivingBranch")
     private Integer ReceivingBranch;
 
@@ -441,6 +456,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private PickupDeliveryDetailsRequestV2 DeliveryDetails;
     @JsonProperty("NotesList")
     private List<NoteRequestV2> NotesList;
+    @JsonProperty("CustomerBookingNotesList")
+    private List<NoteRequestV2> CustomerBookingNotesList;
     @JsonProperty("ELDetails")
     private List<ElDetailsRequestV2> ELDetails;
     @JsonProperty("EventsList")
@@ -468,4 +485,60 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private LocalDateTime VesselBerthingDate;
     @JsonProperty("FmcTlcId")
     private String FmcTlcId;
+    @JsonProperty("DeletedContGuids")
+    private List<UUID> DeletedContGuids;
+    @JsonProperty("BLTermsandConditionsId")
+    private String BLTermsandConditionsId;
+    @JsonProperty("BlComments")
+    private String BlComments;
+    @JsonProperty("CargoTerms")
+    private String CargoTerms;
+    @JsonProperty("CargoTermsDescription")
+    private String CargoTermsDescription;
+    @JsonProperty("BLRemarks")
+    private String BLRemarks;
+    @JsonProperty("BLRemarksDescription")
+    private String BLRemarksDescription;
+    @JsonProperty("Summary")
+    private String Summary;
+    @JsonProperty("IsSummaryUpdated")
+    private Boolean IsSummaryUpdated;
+    @JsonProperty("JobStatus")
+    private String JobStatus;
+    @JsonProperty("ConsigneeDpsAddressId")
+    private Long ConsigneeDpsAddressId;
+    @JsonProperty("ClientDpsAddressId")
+    private Long ClientDpsAddressId;
+    @JsonProperty("ConsignorDpsAddressId")
+    private Long ConsignorDpsAddressId;
+    @JsonProperty("NotifyPartyDpsAddressId")
+    private Long NotifyPartyDpsAddressId;
+    @JsonProperty("ClientCountryFilter")
+    private String ClientCountryFilter;
+    @JsonProperty("ConsignorCountryFilter")
+    private String ConsignorCountryFilter;
+    @JsonProperty("ConsigneeCountryFilter")
+    private String ConsigneeCountryFilter;
+    @JsonProperty("NotifyPartyCountryFilter")
+    private String NotifyPartyCountryFilter;
+    @JsonProperty("ContractId")
+    private String ContractId;
+    @JsonProperty("ContractType")
+    private String ContractType;
+    @JsonProperty("EntryRefNo")
+    private String EntryRefNo;
+    @JsonProperty("CreatedDate")
+    private LocalDateTime CreatedDate;
+    @JsonProperty("CustomerCategoryString")
+    private String CustomerCategoryString;
+    @JsonProperty("PrimarySalesAgentEmail")
+    private String primarySalesAgentEmail;
+    @JsonProperty("SecondarySalesAgentEmail")
+    private String secondarySalesAgentEmail;
+    @JsonProperty("Custom_DeclType")
+    private String custom_DeclType;
+    @JsonProperty("ContainsHazardous")
+    private Boolean ContainsHazardous;
+    @JsonProperty("ChangeLogs")
+    private List<AuditLogRequestV2> ChangeLogs;
 }

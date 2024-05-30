@@ -1,16 +1,9 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,7 +24,7 @@ public class PlatformToRunnerCustomerBookingResponse implements IRunnerResponse 
     @NoArgsConstructor
     @AllArgsConstructor
     @Data
-    public static class ReferenceNumbersGuidMapResponse {
+    public static class ReferenceNumbersGuidMapResponse implements IRunnerResponse {
         private String reference_id;
         private UUID guid;
     }

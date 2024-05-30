@@ -1,22 +1,18 @@
 package com.dpw.runner.shipment.services.service_bus;
 
 import com.azure.messaging.servicebus.*;
-import com.azure.messaging.servicebus.administration.models.QueueRuntimeProperties;
-import com.azure.messaging.servicebus.administration.models.SubscriptionRuntimeProperties;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -45,19 +41,20 @@ public class SBUtilsImpl implements ISBUtils {
 
             // The batch is full, so we create a new batch and send the batch.
             senderClient.sendMessages(messageBatch);
-            System.out.println("Sent a batch of messages to the topic: " + topicName);
+            log.info("Sent a batch of messages to the topic: " + topicName);
 
             // create a new batch
             messageBatch = senderClient.createMessageBatch();
 
             // Add that message that we couldn't before.
             if (!messageBatch.tryAddMessage(message)) {
-                System.err.printf("Message is too large for an empty batch. Skipping. Max size: %s.", messageBatch.getMaxSizeInBytes());
+                log.error("ERROR | Message is too large for an empty batch. Skipping. Max size: {}.", messageBatch.getMaxSizeInBytes());
             }
         }
         if (messageBatch.getCount() > 0) {
+            var messagesList = messages.stream().map(c -> StringUtility.convertToString(c.getBody())).toList();
             senderClient.sendMessages(messageBatch);
-            System.out.println("Sent a batch of messages to the topic: " + topicName);
+            log.info("Sent a batch of messages to the topic: {} with messages: {}" , topicName, String.join(", ", messagesList));
         }
         //close the client
         senderClient.close();

@@ -1,12 +1,17 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.syncing.Entity.AuditLogRequestV2;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -14,52 +19,67 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public interface IShipmentService extends ICommonService {
-    List<ShipmentDetails> createTestShipment(Integer count);
+    List<ShipmentDetails> createTestShipment(Integer count) throws RunnerException;
 
-    ResponseEntity<?> fetchShipments(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchShipments(CommonRequestModel commonRequestModel);
 
     void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException;
 
-    CompletableFuture<ResponseEntity<?>> retrieveByIdAsync(CommonRequestModel commonRequestModel);
+    CompletableFuture<ResponseEntity<IRunnerResponse>> retrieveByIdAsync(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;
+    ResponseEntity<IRunnerResponse> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;
 
-    ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException;
 
-    ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> syncShipmentAuditLogsToService(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map) throws Exception;
+    ResponseEntity<IRunnerResponse> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes, boolean dataMigration, List<AuditLogRequestV2> auditLogRequestV2, String createdBy) throws RunnerException;
 
-    ResponseEntity<?> cloneShipment(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> cloneShipment(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> transportInstructionList(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> transportInstructionList(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> containerListForTI(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> containerListForTI(CommonRequestModel commonRequestModel);
 
-    void afterSave(ShipmentDetails shipmentDetails, boolean isCreate);
+    void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate);
 
-    ResponseEntity<?> fullShipmentsList(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fullShipmentsList(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception;
+    ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException;
 
-    ResponseEntity<?> assignShipmentContainers(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> assignShipmentContainers(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> assignAllContainers(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> retrieveByOrderId(String orderId);
+    ResponseEntity<IRunnerResponse> retrieveByOrderId(String orderId) throws RunnerException;
 
-    ResponseEntity<?> generateCustomHouseBLNumber();
+    ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException;
 
-    ResponseEntity<?> getShipmentFromConsol(Long consolidationId);
+    ResponseEntity<IRunnerResponse> getShipmentFromConsol(Long consolidationId, String bookingNumber);
 
-    ResponseEntity<?> getDefaultShipment();
+    ResponseEntity<IRunnerResponse> getDefaultShipment();
 
-    ResponseEntity<?> attachListShipment(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> attachListShipment(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> getMasterDataMappings();
+    ResponseEntity<IRunnerResponse> getMasterDataMappings();
 
-    ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws RunnerException;
     
-    ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception;
-    ResponseEntity<?> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> calculateWtVolInShipmentOnChanges(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel);
+    String generateCustomHouseBL(ShipmentDetails shipmentDetails);
+    ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> fetchActiveInvoices(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> showAssignAllContainers(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchCreditLimit(String orgCode, String addressCode) throws RunnerException;
+    void updateDateAndStatus(Long id, LocalDateTime date, Integer status) throws RunnerException;
+    ResponseEntity<IRunnerResponse> fetchEmails(Long shipmentId, Long consolidationId);
+    ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(CommonRequestModel commonRequestModel);
+
 }

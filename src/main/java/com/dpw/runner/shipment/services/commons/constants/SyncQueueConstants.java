@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class SyncQueueConstants {
+    private SyncQueueConstants(){}
 
     public static final String SYNC_API_HANDLE = "api/v2/sync";
 

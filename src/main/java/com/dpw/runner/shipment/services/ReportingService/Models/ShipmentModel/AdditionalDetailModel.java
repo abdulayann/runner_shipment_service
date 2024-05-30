@@ -1,25 +1,31 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class AdditionalDetailModel {
+public class AdditionalDetailModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("CustomsNoIssueDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime customsNoIssueDate;
     @JsonProperty("ExpiryDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime expiryDate;
     @JsonProperty("Inspection")
     private String inspection;
@@ -62,6 +68,7 @@ public class AdditionalDetailModel {
     @JsonProperty("AndesStatus")
     private AndesStatus andesStatus;
     @JsonProperty("AndesResponseDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime andesResponseDate;
     @JsonProperty("AndesStatusResponseText")
     private String andesStatusResponseText;
@@ -82,10 +89,13 @@ public class AdditionalDetailModel {
     @JsonProperty("HsnNumber")
     private Long hsnNumber;
     @JsonProperty("IGMFileDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime IGMFileDate;
     @JsonProperty("IGMInwardDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime IGMInwardDate;
     @JsonProperty("InwardDateAndTime")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime inwardDateAndTime;
     @JsonProperty("LineNumber")
     private Long lineNumber;
@@ -96,6 +106,7 @@ public class AdditionalDetailModel {
     @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
     @JsonProperty("SMTPIGMDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime SMTPIGMDate;
     @JsonProperty("IsInland")
     private Boolean isInland;
@@ -122,6 +133,7 @@ public class AdditionalDetailModel {
     @JsonProperty("SupplierInvoiceNumber")
     private String supplierInvoiceNumber;
     @JsonProperty("SupplierInvoiceDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime supplierInvoiceDate;
     @JsonProperty("InvoiceValue")
     private BigDecimal invoiceValue;
@@ -142,6 +154,7 @@ public class AdditionalDetailModel {
     @JsonProperty("OnBoard")
     private String onBoard;
     @JsonProperty("OnBoardDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime onBoardDate;
     @JsonProperty("DeliveryMode")
     private String deliveryMode;
@@ -154,7 +167,7 @@ public class AdditionalDetailModel {
     @JsonProperty("BLExporterShipment")
     private String BLExporterShipment;
     @JsonProperty("ScreeningStatus")
-    private String screeningStatus;
+    private List<String> screeningStatus;
     @JsonProperty("PaidPlace")
     private String paidPlace;
     @JsonProperty("PlaceOfIssue")
@@ -162,14 +175,17 @@ public class AdditionalDetailModel {
     @JsonProperty("PlaceOfSupply")
     private String placeOfSupply;
     @JsonProperty("DateOfIssue")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime dateOfIssue;
     @JsonProperty("DateOfReceipt")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime dateOfReceipt;
     @JsonProperty("GoodsCO")
     private String goodsCO;
     @JsonProperty("BOENumber")
     private String BOENumber;
     @JsonProperty("BOEDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime BOEDate;
     @JsonProperty("PrintedOriginal")
     private Boolean printedOriginal;
@@ -199,4 +215,10 @@ public class AdditionalDetailModel {
     private PartiesModel sendingAgent;
     @JsonProperty("ReceivingAgent")
     private PartiesModel receivingAgent;
+    private String agentReference;
+    private String cargoTermsDescription;
+    private String bLRemarks;
+    private String bLRemarksDescription;
+    private String exemptionCodes;
+    private String aomFreeText;
 }

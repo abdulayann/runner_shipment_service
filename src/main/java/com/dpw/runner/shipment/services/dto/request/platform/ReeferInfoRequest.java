@@ -1,8 +1,15 @@
 package com.dpw.runner.shipment.services.dto.request.platform;
 
-public class ReeferInfoRequest {
-    private int temperature;
-    private int ventilation;
-    private int humidity;
+import lombok.Builder;
+import lombok.Data;
+
+import java.io.Serializable;
+
+@Data
+@Builder
+public class ReeferInfoRequest implements Serializable {
+    private Integer temperature;
+    private Integer ventilation;
+    private Integer humidity;
 
 }

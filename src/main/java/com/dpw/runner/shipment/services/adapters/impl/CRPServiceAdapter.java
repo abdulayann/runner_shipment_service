@@ -2,8 +2,12 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.response.RunnerResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -35,9 +39,9 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
         this.crpServiceListUrl = crpServiceListUrl;
     }
 
-    public ResponseEntity<?> retrieveCRPService(CommonRequestModel requestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> retrieveCRPService(CommonRequestModel requestModel) throws RunnerException {
         CRPRetrieveRequest request = (CRPRetrieveRequest) requestModel.getData();
-        String url = crpServiceRetrieveUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replaceAll(" ", ""));
+        String url = crpServiceRetrieveUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replace(" ", ""));
         log.info("Retrieve CRP: with request: {}", request.toString());
         ResponseEntity<?> responseEntity;
         try {
@@ -49,10 +53,10 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }
 
-    public ResponseEntity<?> listCRPService(CommonRequestModel requestModel) throws Exception {
+    public ResponseEntity<IRunnerResponse> listCRPService(CommonRequestModel requestModel) throws RunnerException {
         CRPListRequest request = (CRPListRequest) requestModel.getData();
         log.info("List CRP: with request: {}", request.toString());
-        String url = crpServiceListUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replaceAll(" ", "%20")) + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : StringUtility.getEmptyString());
+        String url = crpServiceListUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replace(" ", "%20")) + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : StringUtility.getEmptyString());
         log.info("List CRP: To Url: {}", url);
         ResponseEntity<?> responseEntity;
         try {

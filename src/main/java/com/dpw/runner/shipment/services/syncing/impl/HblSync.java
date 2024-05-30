@@ -1,23 +1,24 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -47,8 +48,10 @@ public class HblSync implements IHblSync {
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
-
-
+    @Autowired
+    private CommonUtils commonUtils;
+    @Autowired
+    private ISyncService syncService;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -59,8 +62,7 @@ public class HblSync implements IHblSync {
     private String HBL_V1_SYNC_URL;
 
     @Override
-    @Async
-    public ResponseEntity<?> sync(Hbl hbl) {
+    public ResponseEntity<?> sync(Hbl hbl, String transactionId) {
         HblRequestV2 hblRequest = new HblRequestV2();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
         hblRequest = convertEntityToDto(hbl);
@@ -72,28 +74,13 @@ public class HblSync implements IHblSync {
             }
         }
         String finalHbl = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(hblRequest).module(SyncingConstants.HBL).build());
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalHbl);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(hbl.getId()),
-                            String.valueOf(hbl.getGuid()),
-                            "HBL", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for HBL: " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
+        syncService.pushToKafka(finalHbl, StringUtility.convertToString(hbl.getId()), StringUtility.convertToString(hbl.getGuid()), "HBL", transactionId);
         return ResponseHelper.buildSuccessResponse(modelMapper.map(finalHbl, HblDataRequestV2.class));
     }
 
     private HblRequestV2 convertEntityToDto(Hbl hbl) {
         HblRequestV2 response = jsonHelper.convertValue(hbl.getHblData(), HblRequestV2.class);
+        response.setGuid(hbl.getGuid());
         response.setCargoes(convertToList(hbl.getHblCargo(), HblCargoRequestV2.class));
         response.setContainers(convertToList(hbl.getHblContainer(), HblContainerRequestV2.class));
         response.setNotifyParties(convertToList(hbl.getHblNotifyParty(), HblPartyRequestV2.class));
@@ -105,6 +92,6 @@ public class HblSync implements IHblSync {
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 }

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -50,7 +51,7 @@ public class ExcelUtils {
     public String writeWorkbook(Workbook workbook) {
         String tempFileName = "";
         try {
-            tempFileName = System.currentTimeMillis() + ".xlsx";
+            tempFileName = System.currentTimeMillis() + Constants.XLSX;
             FileOutputStream fileOutputStream = new FileOutputStream(tempFileName);
             workbook.write(fileOutputStream);
             workbook.close();
@@ -75,6 +76,14 @@ public class ExcelUtils {
             columnCount.updateAndGet(v -> v + 1);
             createCell(sheet, firstRow, columnCount.get(), key, headerStyle);
         });
+    }
+
+    public void writeSimpleHeader(XSSFWorkbook workbook, Set<String> columnHeaders, XSSFSheet sheet) {
+        Row row = sheet.createRow(0);
+        int i = 0;
+        for (var c : columnHeaders) {
+            row.createCell(i++).setCellValue(c);
+        }
     }
 
     public XSSFSheet createSheet(XSSFWorkbook workbook, String sheetName) {
@@ -108,7 +117,7 @@ public class ExcelUtils {
         return new XSSFWorkbook();
     }
 
-    public Resource getResource(XSSFWorkbook workbook) {
+    public Resource getResource(XSSFWorkbook workbook) throws RunnerException {
         Resource fileResource;
         try {
             String tempFile = writeWorkbook(workbook);
@@ -124,7 +133,7 @@ public class ExcelUtils {
         return fileResource;
     }
 
-    public Resource createExcelAsResource(List<Map<String, Object>> listAsMap, Map<String, String> columnHeadersToFieldName, String sheetName) {
+    public Resource createExcelAsResource(List<Map<String, Object>> listAsMap, Map<String, String> columnHeadersToFieldName, String sheetName) throws RunnerException {
         XSSFWorkbook workbook = createWorkBook();
         XSSFSheet sheet = createSheet(workbook, sheetName);
         writeHeader(workbook, columnHeadersToFieldName.keySet(), sheet);

@@ -1,29 +1,53 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-
+@Component
+@Slf4j
 public class V1ServiceUtil {
+    @Autowired
+    INotesDao notesDao;
+    @Autowired
+    IV1Service v1Service;
+    @Autowired
+    JsonHelper jsonHelper;
 
-    public static CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
+    public CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         return CreateBookingModuleInV1.builder()
                 .IsP100Booking(Boolean.TRUE)
                 .Entity(createEntity(customerBooking, isShipmentEnabled, isBillingEnabled))
-                .ShipmentGuid(shipmentGuid != null ? shipmentGuid.toString() : null)
+                .ShipmentGuid(StringUtility.convertToString(shipmentGuid))
                 .build();
     }
 
-    private static CreateBookingModuleInV1.BookingEntity createEntity(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled) {
+    private CreateBookingModuleInV1.BookingEntity createEntity(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled) {
         var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
+        List<Notes> notes = notesDao.findByEntityIdAndEntityType(customerBooking.getId(), "CustomerBooking");
         return CreateBookingModuleInV1.BookingEntity.builder()
                 .Voyage(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getVoyage() : null)
                 .ContractId(customerBooking.getContractId())
@@ -64,31 +88,45 @@ public class V1ServiceUtil {
                 .BookingType(CustomerBookingConstants.ONLINE)
                 .Status(CustomerBookingConstants.ONE)
                 .FmcTlcId(customerBooking.getFmcTlcId())
+                .ClientCountryFilter(customerBooking.getClientCountry())
+                .ConsignorCountryFilter(customerBooking.getConsignorCountry())
+                .ConsigneeCountryFilter(customerBooking.getConsigneeCountry())
+                .NotifyPartyCountryFilter(customerBooking.getNotifyPartyCountry())
+                .SalesBranch(customerBooking.getSalesBranch())
+                .PrimarySalesAgentEmail(customerBooking.getPrimarySalesAgentEmail())
+                .SecondarySalesAgentEmail(customerBooking.getSecondarySalesAgentEmail())
                 .QuoteContainers(createContainers(customerBooking.getContainersList()))
                 .RoutingList(createRoutingList(customerBooking.getRoutingList()))
-                .Documents(createDocuments(customerBooking.getFileRepoList()))
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
                 .OrgDetails(null)
                 .BillCharges(createQuoteCharges(customerBooking.getBookingCharges()))
+                .CustomerBookingNoteList(createNotes(notes))
+                .LastTransactionLoadJson(getLastLoadJson(customerBooking.getContainersList()))
                 .build();
     }
 
+    private  static List<CreateBookingModuleInV1.BookingEntity.Notes> createNotes(List<Notes>notes){
+        if (notes == null) return null;
+        return notes.stream().filter(Objects::nonNull).map(note ->
+                CreateBookingModuleInV1.BookingEntity.Notes.builder()
+                        .AssignedTo(note.getAssignedTo())
+                        .Label(note.getLabel())
+                        .Text(note.getText())
+                        .InsertUserDisplayName(note.getCreatedBy())
+                        .IsPublic(note.getIsPublic())
+                        .InsertDate(note.getCreatedAt() != null ? DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_TIME_FORMAT).format(note.getCreatedAt()) : null)
+                        .build()).toList();
+    }
     private static List<CreateBookingModuleInV1.BookingEntity.BillCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
         if (bookingCharges == null) return null;
         return bookingCharges.stream().filter(Objects::nonNull).map(bc ->
                 CreateBookingModuleInV1.BookingEntity.BillCharge.builder()
                         .OverseasSellCurrency(bc.getOverseasSellCurrency())
                         .ChargeTypeCode(bc.getChargeType())
-                        .CostExchange(bc.getCostExchange())
-                        .EstimatedCost(bc.getEstimatedCost())
                         .EstimatedRevenue(bc.getEstimatedRevenue())
-                        .LocalCostAmount(bc.getLocalCostAmount())
-                        .LocalCostCurrency(bc.getLocalCostCurrency())
                         .LocalSellAmount(bc.getLocalSellAmount())
                         .LocalSellCurrency(bc.getLocalSellCurrency())
                         .NoGST(bc.getNoGST())
-                        .OverseasCostCurrency(bc.getOverseasCostCurrency())
-                        .OverseasCostAmount(bc.getOverseasCostAmount())
                         .OverseasSellAmount(bc.getOverseasSellAmount())
                         .SellExchange(bc.getSellExchange() != null && !bc.getSellExchange().equals(BigDecimal.ZERO)? BigDecimal.ONE.divide(bc.getSellExchange(),15, RoundingMode.HALF_UP) : bc.getSellExchange())
                         .TaxPercentage(bc.getTaxPercentage())
@@ -99,24 +137,16 @@ public class V1ServiceUtil {
                         .TaxType2(bc.getTaxType2())
                         .TaxType3(bc.getTaxType3())
                         .TaxType4(bc.getTaxType4())
-                        .CostTaxType4(bc.getCostTaxType4())
-                        .CostTaxType3(bc.getCostTaxType3())
-                        .CostTaxType2(bc.getCostTaxType2())
-                        .CostTaxType1(bc.getCostTaxType1())
-                        .CostLineTotal(bc.getCostLineTotal())
-                        .CostLocalTax(bc.getCostLocalTax())
-                        .CostOverseasTax(bc.getCostOverseasTax())
-                        .CostTaxPercentage(bc.getCostTaxPercentage())
-                        .CurrentCostRate(bc.getCurrentCostRate())
                         .CurrentSellRate(bc.getCurrentSellRate())
                         .SellRateCurrency(bc.getSellRateCurrency())
-                        .CostRateCurrency(bc.getCostRateCurrency())
                         .LocalTax(bc.getLocalTax())
                         .DebtorCode(bc.getDebtor() != null ? bc.getDebtor().getOrgCode() : null)
                         .CreditorCode(bc.getCreditor() != null ? bc.getCreditor().getOrgCode() : null)
                         .DebitorAddressCode(bc.getDebtor() != null ? bc.getDebtor().getAddressCode() : null)
                         .CreditorAddressCode(bc.getCreditor() != null ? bc.getCreditor().getAddressCode() : null)
                         .PerMeasurementBasis(bc.getMeasurementBasis())
+                        .MeasurementsUnit(bc.getMeasurementUnit())
+                        .TotalUnitsCount(bc.getTotalUnitCount())
                         .build()).collect(Collectors.toList());
     }
 
@@ -124,73 +154,7 @@ public class V1ServiceUtil {
         if (bc.getContainersList() == null)
             return new ArrayList<>();
         return bc.getContainersList().stream().filter(Objects::nonNull)
-                .map(container -> container.getGuid()).collect(Collectors.toList());
-    }
-
-    private static List<CreateBookingModuleInV1.BookingEntity.OrgDetail> createOrgDetails(CustomerBooking customerBooking) {
-        if (customerBooking == null)
-            return null;
-        List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText() | customerBooking.getIsConsigneeAddressFreeText());
-        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText() | customerBooking.getIsConsignorAddressFreeText());
-        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText() | customerBooking.getIsNotifyPartyAddressFreeText());
-        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText() | customerBooking.getIsCustomerAddressFreeText());
-        Set<CreateBookingModuleInV1.BookingEntity.OrgDetail> hs = new HashSet<>();
-        if (customerBooking.getBookingCharges() != null) {
-            for (var bc : customerBooking.getBookingCharges()) {
-                var creditor = convertParty(bc.getCreditor(), false);
-                var debtor = convertParty(bc.getDebtor(), true);
-                if (creditor != null)
-                    list.add(creditor);
-                if (debtor != null)
-                    list.add(debtor);
-            }
-        }
-        if (consignee != null)
-            list.add(consignee);
-        if (consignor != null)
-            list.add(consignor);
-        if (notify != null)
-            list.add(notify);
-        if (customer != null)
-            list.add(customer);
-        return list;
-    }
-
-    private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party, Boolean isFreeText) {
-        if (Objects.isNull(party) || Objects.isNull(isFreeText) || isFreeText || Objects.isNull(party.getOrgCode()) || Objects.isNull(party.getAddressCode()))
-            return null;
-        var addressData = party.getAddressData();
-        var orgData = party == null || party.getOrgData() == null ? Collections.emptyMap() : party.getOrgData();
-        return CreateBookingModuleInV1.BookingEntity.OrgDetail.builder()
-                .OrgSource(PartiesConstants.API)
-                .OrganizationCode(party != null ? party.getOrgCode() : null)
-                .FullName((String) orgData.get(PartiesConstants.FULLNAME))
-                .Address1((String) orgData.get(PartiesConstants.ADDRESS1))
-                .Address2((String) orgData.get(PartiesConstants.ADDRESS2))
-                .Addresses(List.of(CreateBookingModuleInV1.BookingEntity.OrgDetail.OrgDetailAddress.builder()
-                        .CompanyName((String) orgData.get(PartiesConstants.FULLNAME))
-                        .AddressShortCode((String) addressData.get("AddressShortCode"))
-                        .Address1((String) orgData.get(PartiesConstants.ADDRESS1))
-                        .SiteIdentifier((String) addressData.get(PartiesConstants.SITE_IDENTIFIER))
-                        .Country(addressData.containsKey("Country") ? (String) addressData.get("Country") :
-                                (String) orgData.get(PartiesConstants.COUNTRY)).build()))
-                .Country((String) orgData.get(PartiesConstants.COUNTRY))
-                .CityCode((String) orgData.get(PartiesConstants.CITY_CODE))
-                .State((String) orgData.get(PartiesConstants.STATE))
-                .ZipPostCode((String) orgData.get(PartiesConstants.ZIP_POST_CODE))
-                .UnlocoCode((String) orgData.get(PartiesConstants.UNLOCO_CODE))
-                .CurrencyCode((String) orgData.get(PartiesConstants.CURRENCY_CODE))
-                .Phone((String) orgData.get(PartiesConstants.PHONE))
-                .Mobile((String) orgData.get(PartiesConstants.MOBILE))
-                .Fax((String) orgData.get(PartiesConstants.FAX))
-                .Email((String) orgData.get(PartiesConstants.EMAIL))
-                .ActiveClient(Boolean.TRUE)
-                .DefaultAddressSiteIdentifier(PartiesConstants.SITE)
-                .Receivables(Boolean.TRUE)
-                .Consigner(Boolean.TRUE)
-                .Consignee(Boolean.TRUE)
-                .build();
+                .map(container -> container.getGuid()).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.LooseCargo> createLooseCarges(List<Packing> packingList) {
@@ -216,19 +180,7 @@ public class V1ServiceUtil {
                         .CommodityGroup(packing.getCommodityGroup())
                         .HazardousCheckBox(packing.getHazardous())
                         .HsCode(packing.getHSCode())
-                        .build()).collect(Collectors.toList());
-    }
-
-    private static List<CreateBookingModuleInV1.BookingEntity.Document> createDocuments(List<FileRepo> fileRepoList) {
-        if (fileRepoList == null)
-            return null;
-        return fileRepoList.stream().filter(Objects::nonNull).map(fileRepo -> CreateBookingModuleInV1.BookingEntity.Document.builder()
-                .ClientEnabled(fileRepo.getClientEnabled())
-                .DocType(fileRepo.getDocType())
-                .Path(fileRepo.getPath())
-                .FileName(fileRepo.getFileName())
-                .EventCode(fileRepo.getEventCode())
-                .build()).collect(Collectors.toList());
+                        .build()).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.Routing> createRoutingList(List<Routings> routingList) {
@@ -242,7 +194,7 @@ public class V1ServiceUtil {
                         .PolCode(routings.getPol())
                         .PodCode(routings.getPod())
                         .build()
-        ).collect(Collectors.toList());
+        ).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.QuoteContainer> createContainers(List<Containers> containersList) {
@@ -258,7 +210,113 @@ public class V1ServiceUtil {
                         .WeightUnit(container.getGrossWeightUnit())
                         .ReferenceGuid(container.getGuid())
                         .build()
-        ).collect(Collectors.toList());
+        ).toList();
+    }
+
+    public CheckCreditLimitFromV1Response validateCreditLimit(Parties client, String restrictedItem, UUID shipmentGuid, Boolean taskCreation) {
+        try {
+            CheckCreditLimitFromV1Response creditLimitResponse = CheckCreditLimitFromV1Response.builder().isValid(true).build();
+            if(Boolean.FALSE.equals(TenantSettingsDetailsContext.getCurrentTenantSettings().getEnableCreditLimitManagement())){
+                return creditLimitResponse;
+            }
+            Integer clientId = null;
+            Integer clientAddressId = null;
+            if(client.getOrgData().containsKey("Id"))
+                clientId = (Integer) client.getOrgData().get("Id");
+            if(client.getAddressData().containsKey("Id"))
+                clientAddressId = (Integer)client.getAddressData().get("Id");
+            CreditLimitValidateResponse response = v1Service.checkCreditLimit(CreditLimitValidateRequest.builder()
+                    .restrictedItem(restrictedItem)
+                    .clientId(clientId)
+                    .clientAddressId(clientAddressId)
+                    .shipmentGuid(StringUtility.convertToString(shipmentGuid))
+                    .taskCreation(taskCreation)
+                    .build());
+            if (!response.getIsValid()){
+                if(response.getTaskRequiredMessage() != null){
+                    creditLimitResponse.setIsValid(response.getIsValid());
+                    creditLimitResponse.setTaskRequiredMessage(response.getTaskRequiredMessage());
+                    creditLimitResponse.setMessage(response.getMessage());
+                    return creditLimitResponse;
+                }
+                log.error(response.getMessage() + " " + response.getError());
+                throw new ValidationException(response.getMessage());
+            }
+            return creditLimitResponse;
+        } catch (V1ServiceException ex) {
+            log.error(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
+            throw new ValidationException(ex.getMessage());
+        } catch (Exception ex) {
+            log.error(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
+            throw new ValidationException(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
+        }
+    }
+
+    public ResponseEntity<IRunnerResponse> fetchEmailIdsForShipment(ShipmentDetails shipmentDetail) {
+        Set<String> emailSet = new HashSet<>();
+        OrgAddressResponse response = fetchOrgInfoFromV1(Arrays.asList(shipmentDetail.getClient(), shipmentDetail.getConsignee(), shipmentDetail.getConsigner()));
+        setEmails(shipmentDetail.getClient(), emailSet, response.getOrganizations(), response.getAddresses());
+        if (Objects.equals(shipmentDetail.getDirection(), Constants.DIRECTION_IMP))
+            setEmails(shipmentDetail.getConsignee(), emailSet, response.getOrganizations(), response.getAddresses());
+        else
+            setEmails(shipmentDetail.getConsigner(), emailSet, response.getOrganizations(), response.getAddresses());
+        return ResponseHelper.buildSuccessResponse(String.join(";", emailSet.stream().filter(StringUtility::isNotEmpty).toList()));
+    }
+
+    public ResponseEntity<IRunnerResponse> fetchEmailIdsForConsolidation(ConsolidationDetails consolidationDetail) {
+        Set<String> emailSet = new HashSet<>();
+        OrgAddressResponse response = fetchOrgInfoFromV1(Arrays.asList(consolidationDetail.getSendingAgent(), consolidationDetail.getReceivingAgent()));
+        if (Objects.equals(consolidationDetail.getShipmentType(), Constants.DIRECTION_IMP))
+            setEmails(consolidationDetail.getReceivingAgent(), emailSet, response.getOrganizations(), response.getAddresses());
+        else
+            setEmails(consolidationDetail.getSendingAgent(), emailSet, response.getOrganizations(), response.getAddresses());
+        return ResponseHelper.buildSuccessResponse(String.join(";", emailSet.stream().filter(StringUtility::isNotEmpty).toList()));
+    }
+
+    private void setEmails(Parties party, Set<String> emailSet, Map<String, Map<String, Object>> organizations, Map<String, Map<String, Object>> addresses) {
+        if (Objects.isNull(party) || Objects.isNull(party.getOrgCode()))
+            return;
+
+        if (organizations.containsKey(party.getOrgCode()) && organizations.get(party.getOrgCode()).containsKey(PartiesConstants.EMAIL))
+            emailSet.add(StringUtility.convertToString(organizations.get(party.getOrgCode()).get(PartiesConstants.EMAIL)));
+
+        String key = party.getOrgCode() + "#" + party.getAddressCode();
+        if (addresses.get(key) != null && addresses.get(key).containsKey(PartiesConstants.EMAIL) )
+            emailSet.add(StringUtility.convertToString(addresses.get(key).get(PartiesConstants.EMAIL)));
+
+    }
+
+    private AddressTranslationRequest.OrgAddressCode createV1OrgRequest(Parties parties) {
+        if (Objects.isNull(parties) || Objects.isNull(parties.getOrgCode()) || Objects.isNull(parties.getAddressCode()))
+            return null;
+        return AddressTranslationRequest.OrgAddressCode.builder().OrgCode(parties.getOrgCode()).AddressCode(parties.getAddressCode()).build();
+    }
+
+    public OrgAddressResponse fetchOrgInfoFromV1(List<Parties> parties) {
+        var orgRequest = new ArrayList<AddressTranslationRequest.OrgAddressCode>();
+        parties.forEach(p -> {
+            orgRequest.add(createV1OrgRequest(p));
+        });
+        return v1Service.fetchOrgAddresses(AddressTranslationRequest.builder().OrgAddressCodeList(orgRequest.stream().filter(Objects::nonNull).toList()).build());
+    }
+
+    private String getLastLoadJson(List<Containers> containersList) {
+        if (Objects.isNull(containersList))
+            return null;
+        var list = new ArrayList<CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails>();
+        containersList.forEach(c -> {
+            var _current = new CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails();
+            _current.setLoadKey(generateLoadKeyForContainer(c));
+            _current.setLoadQuantity(Objects.isNull(c.getContainerCount()) ? 1 : c.getContainerCount().intValue());
+            list.add(_current);
+        });
+        return jsonHelper.convertToJson(list);
+    }
+
+    private String generateLoadKeyForContainer(Containers container) {
+        return StringUtility.convertToString(container.getGuid()) + "#"
+                + (StringUtility.isNotEmpty(container.getContainerCode()) ? container.getContainerCode() : NPMConstants.ANY) + "#"
+                + (StringUtility.isNotEmpty(container.getCommodityGroup()) ? container.getCommodityGroup() : NPMConstants.FAK);
     }
 
 }

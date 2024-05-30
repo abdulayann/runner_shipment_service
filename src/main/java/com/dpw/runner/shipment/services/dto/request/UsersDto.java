@@ -1,9 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -15,8 +13,10 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
+@Builder
 public class UsersDto implements Serializable {
-
+    private static final long serialVersionUID = 1L;
     private Integer Id;
     public String Username;
     public String DisplayName;
@@ -54,7 +54,8 @@ public class UsersDto implements Serializable {
     public Boolean QuoteNumberLock;
     public String QuotePrefix;
     public Boolean OrgCodeLock ;
-    public Map<String, Boolean> Permissions;
+    @JsonProperty("Permissions")
+    private Map<String, Boolean> Permissions;
     public String EmployeeToken;
     public List<String> userAllowedPermissions;
     public HashSet<String> customeTenantCountry;
@@ -82,5 +83,6 @@ public class UsersDto implements Serializable {
     public String AgentIATACode;
     public String AgentCASSCode;
     public Integer SyncTenantId;
+    public String LanguageCode;
 
 }

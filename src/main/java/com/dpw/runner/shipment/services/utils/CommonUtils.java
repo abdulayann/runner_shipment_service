@@ -1,35 +1,45 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
+import net.sourceforge.barbecue.Barcode;
+import net.sourceforge.barbecue.BarcodeException;
+import net.sourceforge.barbecue.BarcodeFactory;
+import net.sourceforge.barbecue.BarcodeImageHandler;
+import net.sourceforge.barbecue.output.OutputException;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionSystemException;
 
 import javax.imageio.ImageIO;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @Component
@@ -42,6 +52,8 @@ public class CommonUtils {
 
     @Autowired
     private JsonHelper jsonHelper;
+    @Autowired
+    public ExecutorService syncExecutorService;
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
@@ -62,6 +74,13 @@ public class CommonUtils {
 
         barcodeGenerator.generateBarcode(canvas, barcodeText);
         return canvas.getBufferedImage();
+    }
+
+    public static byte[] generateBarcodeImage(String barcodeText) throws BarcodeException, OutputException {
+        Barcode barcode = BarcodeFactory.createCode128(barcodeText);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        BarcodeImageHandler.writePNG(barcode, outputStream);
+        return outputStream.toByteArray();
     }
 
     public static ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator) {
@@ -156,19 +175,25 @@ public class CommonUtils {
     public static <T,P extends IRunnerResponse > List<P> convertToDtoList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    public static <T,P extends MultiTenancy> List<P> convertToEntityList(final List<T> lst, Class<P> clazz) {
+    public <T,P extends MultiTenancy> List<P> convertToEntityList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    public <T,P extends MultiTenancy> List<P> convertToEntityList(final List<T> lst, Class<P> clazz, Boolean isCreate) {
+        return  lst.stream()
+                .map(item -> isCreate ? this.convertToCreateClass(item, clazz) : convertToClass(item, clazz))
+                .toList();
     }
 
     public <T,P extends MultiTenancy> List<P> convertToCreateEntityList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> this.convertToCreateClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
@@ -176,7 +201,7 @@ public class CommonUtils {
             return null;
         return  lst.stream()
                 .map(item -> convertToClassModelMapper(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private  <T,P> P convertToClassModelMapper(T obj, Class<P> clazz) {
@@ -263,7 +288,7 @@ public class CommonUtils {
         dc.restoreState();
     }
 
-    public static byte[] AddWatermark(byte[] bytes, BaseFont bf, String watermark) throws IOException, DocumentException {
+    public static byte[] addWatermarkToPdfBytes(byte[] bytes, BaseFont bf, String watermark) throws IOException, DocumentException {
         OutputStream ms = new ByteArrayOutputStream(10 * 1024);
         PdfReader reader = new PdfReader(bytes);
         PdfStamper stamper = new PdfStamper(reader, ms);
@@ -311,5 +336,60 @@ public class CommonUtils {
           default -> e.getMessage();
         };
         return responseMessage;
+    }
+
+    public static String getConstrainViolationErrorMessage(Exception e) {
+        String errorMessage = "";
+        Set<ConstraintViolation<?>> set = ((ConstraintViolationException) e).getConstraintViolations();
+        List<String> errors = set.stream().map(i -> String.format("%s : %s",i.getInvalidValue(), i.getMessage())).toList();
+        errorMessage = errors.toString();
+        return errorMessage;
+    }
+
+    public static String inWords(Long num) {
+        String[] a = {"", "One ", "Two ", "Three ", "Four ", "Five ", "Six ", "Seven ", "Eight ", "Nine ", "Ten ",
+                "Eleven ", "Twelve ", "Thirteen ", "Fourteen ", "Fifteen ", "Sixteen ", "Seventeen ", "Eighteen ",
+                "Nineteen "};
+        String[] b = {"", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"};
+
+        if (num > 999999999) {
+            return "overflow";
+        }
+
+        String numStr = String.format("%09d", num);
+        int[] n = {
+                Integer.parseInt(numStr.substring(0, 2)), // Crore
+                Integer.parseInt(numStr.substring(2, 4)), // Lakh
+                Integer.parseInt(numStr.substring(4, 6)), // Thousand
+                Integer.parseInt(numStr.substring(6, 7)), // Hundred
+                Integer.parseInt(numStr.substring(7, 9))  // Tens and Ones
+        };
+
+        StringBuilder str = new StringBuilder();
+
+        str.append((n[0] != 0) ? (!a[n[0]].equals("") ? a[n[0]] : b[n[0] / 10] + " " + a[n[0] % 10]) + "Crore " : "");
+        str.append((n[1] != 0) ? (!a[n[1]].equals("") ? a[n[1]] : b[n[1] / 10] + " " + a[n[1] % 10]) + "Lakh " : "");
+        str.append((n[2] != 0) ? (!a[n[2]].equals("") ? a[n[2]] : b[n[2] / 10] + " " + a[n[2] % 10]) + "Thousand " : "");
+        str.append((n[3] != 0) ? (!a[n[3]].equals("") ? a[n[3]] : b[n[3] / 10] + " " + a[n[3] % 10]) + "Hundred " : "");
+        str.append((n[4] != 0) ? ((str.length() != 0) ? "and " : "") +
+                (!a[n[4]].equals("") ? a[n[4]] : b[n[4] / 10] + " " + a[n[4] % 10]) + " " : "");
+
+        return str.toString().trim();
+    }
+
+    public static <T> Iterable<T> emptyIfNull(Iterable<T> iterable) {
+        return iterable == null ? Collections.<T>emptyList() : iterable;
+    }
+
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        UsersDto user = UserContext.getUser();
+        return () -> {
+            MDC.setContextMap(mdc);
+            RequestAuthContext.setAuthToken(token);
+            UserContext.setUser(user);
+            runnable.run();
+        };
     }
 }

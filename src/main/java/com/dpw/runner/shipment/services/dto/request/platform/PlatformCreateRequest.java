@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request.platform;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -30,5 +31,6 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     private RouteRequest route;
     private List<ChargesRequest> charges;
     private List<OrgRequest> bill_to_party;
-
+    private String parent_contract_id;
+    private ListContractResponse.BranchInfo branch_info;
 }

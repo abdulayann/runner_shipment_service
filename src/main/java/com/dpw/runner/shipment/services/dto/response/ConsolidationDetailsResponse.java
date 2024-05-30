@@ -1,8 +1,11 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -52,6 +55,9 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private LocalDateTime bookingCutoff;
     private LocalDateTime shipInstructionCutoff;
     private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime latestFullEquDeliveredToCarrier;
+    private LocalDateTime earliestDropOffFullEquToCarrier;
+    private LocalDateTime earliestEmptyEquPickUp;
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
@@ -116,14 +122,20 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private List<PartiesResponse> consolidationAddresses;
     private String bookingStatus;
     private String bookingNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
     private String carrierBookingRef;
-    public Map<String, String> masterData;
-    public Map<String, String> unlocationData;
-    public Map<String, String> currenciesMasterData;
-    public Map<String, String> tenantIdsData;
-    public Map<String, String> textData;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> currenciesMasterData;
+    private Map<String, String> tenantIdsData;
+    private Map<String, String> textData;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
     private String modeOfBooking;
+    private Boolean autoUpdateGoodsDesc;
+    private UUID sourceGuid;
+    private String efreightStatus;
+    private AwbStatus awbStatus;
+    private AwbStatus linkedHawbStatus;
 }

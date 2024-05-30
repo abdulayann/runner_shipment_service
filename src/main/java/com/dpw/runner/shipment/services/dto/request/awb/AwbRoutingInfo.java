@@ -1,8 +1,13 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
@@ -11,10 +16,10 @@ import java.time.LocalDateTime;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class AwbRoutingInfo {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AwbRoutingInfo implements Serializable {
     private Long entityId;
     private String entityType;
-    //TODO- LocCode
     private String origin;
     private String destination;
     private String  byCarrier;
@@ -22,7 +27,9 @@ public class AwbRoutingInfo {
     private LocalDateTime flightDate;
     private String departureAirport;
     private String destinationAirport;
+    @UnlocationData
     private String destinationPortName;
+    @UnlocationData
     private String originPortName;
     private Boolean isShipmentCreated;
 }

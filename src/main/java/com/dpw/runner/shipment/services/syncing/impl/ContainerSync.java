@@ -2,8 +2,10 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
@@ -22,8 +24,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @Slf4j
@@ -45,6 +47,11 @@ public class ContainerSync implements IContainerSync {
     @Autowired
     private EmailServiceUtility emailServiceUtility;
 
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
+    @Autowired
+    private ISyncService syncService;
+
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -57,28 +64,12 @@ public class ContainerSync implements IContainerSync {
     @Override
     @Async("asyncExecutor")
     public ResponseEntity<?> sync(List<Containers> containers, Long consolidationId, Long shipmentId) {
-        List<ContainerRequestV2> requestV2List = new ArrayList<>();
-        for (var container : containers) {
-            requestV2List.add(modelMapper.map(container, ContainerRequestV2.class));
-        }
+        List<ContainerRequestV2> requestV2List = syncEntityConversionService.containersV2ToV1(containers);
         BulkContainerRequestV2 containerRequestV2 = BulkContainerRequestV2.builder()
                 .bulkContainers(requestV2List).ConsolidationId(consolidationId).ShipmentId(shipmentId).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.BULK_CONTAINERS).build());
-        var resp = retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(containers.stream().map(x -> x.getId()).toList().toString()),
-                            String.valueOf(containers.stream().map(x -> x.getGuid()).toList().toString()),
-                            "bulk containers", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for bulk containers: " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
-        return ResponseHelper.buildSuccessResponse(resp);
+        syncService.pushToKafka(finalCs, containers.stream().map(BaseEntity::getId).toList().toString(), containers.stream().map(BaseEntity::getGuid).toList().toString(), "Bulk Containers", UUID.randomUUID().toString());
+        return ResponseHelper.buildSuccessResponse(true);
     }
 
 }

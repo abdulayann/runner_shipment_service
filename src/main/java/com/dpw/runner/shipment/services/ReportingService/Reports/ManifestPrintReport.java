@@ -7,9 +7,12 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -45,46 +48,49 @@ public class ManifestPrintReport extends IReport {
         ConsolidationManifestPrintModel manifestPrintModel = (ConsolidationManifestPrintModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         for (var shipmentDetails : manifestPrintModel.getShipments()) {
-            populateShipmentFields(shipmentDetails, false, dictionary);
+            populateShipmentFields(shipmentDetails, dictionary);
         }
         populateConsolidationFields(consol, dictionary);
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
 
         List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestPrintModel.getShipments().toArray(new ShipmentModel[0])));
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);
         Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packings);
 
         var listShipments = (List<ShipmentModel>) dictionary.get(ReportConstants.SHIPMENTS);
-//        List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<List<Map<String, Object>>>() {
-//        });
 
-        var values = listShipments.stream()
-                .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
-                .toList();
+        if(listShipments != null) {
+            var values = listShipments.stream()
+                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                    .toList();
 
-        if (Objects.isNull(values)) values = new ArrayList<>();
-        values.forEach(v -> {
-            if (v.containsKey(ReportConstants.WEIGHT))
-                v.put(ReportConstants.WEIGHT, addCommas(v.get(ReportConstants.WEIGHT).toString()));
-            if (v.containsKey(ReportConstants.TOTAL_PACKS))
-                v.put(ReportConstants.TOTAL_PACKS, addCommas(v.get(ReportConstants.TOTAL_PACKS).toString()));
-        });
-        dictionary.put(ReportConstants.SHIPMENTS, values);
+            if (Objects.isNull(values)) values = new ArrayList<>();
+            values.forEach(v -> {
+                if (v.containsKey(ReportConstants.WEIGHT))
+                    v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
+                if (v.containsKey(ReportConstants.TOTAL_PACKS))
+                    v.put(ReportConstants.TOTAL_PACKS, addCommas(v.get(ReportConstants.TOTAL_PACKS).toString()));
+                if (v.containsKey(ReportConstants.DESCRIPTION))
+                    v.put(ReportConstants.DESCRIPTION, StringUtility.toUpperCase(StringUtility.convertToString(v.get(ReportConstants.DESCRIPTION))));
+            });
+            dictionary.put(ReportConstants.SHIPMENTS, values);
+        }
 
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedWeight() != null) {
-            dictionary.put(ReportConstants.PWEIGHT_UNIT, consol.getAchievedQuantities().getConsolidatedWeight() + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
+            dictionary.put(ReportConstants.PWEIGHT_UNIT, ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidatedWeight(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
         } else {
             dictionary.put(ReportConstants.PWEIGHT_UNIT, StringUtil.EMPTY_STRING);
         }
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedVolume() != null) {
-            dictionary.put(ReportConstants.PVOLUME_UNIT, consol.getAchievedQuantities().getConsolidatedVolume() + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
+            dictionary.put(ReportConstants.PVOLUME_UNIT, ConvertToVolumeNumberFormat(consol.getAchievedQuantities().getConsolidatedVolume(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
         } else {
             dictionary.put(ReportConstants.PVOLUME_UNIT, StringUtil.EMPTY_STRING);
         }
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidationChargeQuantity() != null) {
-            dictionary.put(ReportConstants.PCHARGE_UNIT, consol.getAchievedQuantities().getConsolidationChargeQuantity() + " " + consol.getAchievedQuantities().getConsolidationChargeQuantityUnit());
+            dictionary.put(ReportConstants.PCHARGE_UNIT, ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidationChargeQuantity(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidationChargeQuantityUnit());
         } else {
             dictionary.put(ReportConstants.PCHARGE_UNIT, StringUtil.EMPTY_STRING);
         }
@@ -114,38 +120,40 @@ public class ManifestPrintReport extends IReport {
 
         var exportAgentAddress = ReportHelper.getOrgAddress(consol.getSendingAgent());
         var importAgentAddress = ReportHelper.getOrgAddress(consol.getReceivingAgent());
-        var ctoAddress = ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
-        List<String> exportAgentFreeTextAddress = new ArrayList<>();
-        List<String> importAgentFreeTextAddress = new ArrayList<>();
+        var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList<>() : ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
+        List<String> exportAgentFreeTextAddress;
+        List<String> importAgentFreeTextAddress;
 
-        if (consol.getIsSendingAgentFreeTextAddress()) {
+        if (consol.getIsSendingAgentFreeTextAddress() != null && consol.getIsSendingAgentFreeTextAddress()) {
             exportAgentFreeTextAddress = ReportHelper.getAddressList(consol.getSendingAgentFreeTextAddress());
         } else {
-            exportAgentFreeTextAddress = ReportHelper.getAddressList(consol.getReceivingAgentFreeTextAddress());
+            exportAgentFreeTextAddress = exportAgentAddress;
         }
 
-        if (consol.getIsReceivingAgentFreeTextAddress()) {
+        if (consol.getIsReceivingAgentFreeTextAddress() != null && consol.getIsReceivingAgentFreeTextAddress()) {
             importAgentFreeTextAddress = ReportHelper.getAddressList(consol.getReceivingAgentFreeTextAddress());
         } else {
             importAgentFreeTextAddress = importAgentAddress;
         }
 
-        if (consol.getShipmentType() == "EXP") {
+        if (consol.getShipmentType().equalsIgnoreCase("EXP")) {
             dictionary.put(ReportConstants.EXPORT_AGENT, exportAgentAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT, importAgentAddress);
             dictionary.put(ReportConstants.EXPORT_AGENT_FREETEXT, exportAgentFreeTextAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT_FREETEXT, importAgentFreeTextAddress);
-            UnlocationsResponse arrival = getUNLocRow(consol.getArrivalDetails().getLastForeignPort());
+            UnlocationsResponse arrival = consol.getArrivalDetails() == null ? null : getUNLocRow(consol.getArrivalDetails().getLastForeignPort());
             if (arrival != null)
                 dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, ReportHelper.getCityCountry(arrival.getNameWoDiacritics(), arrival.getCountry()));
 
-        } else if (consol.getShipmentType() == "IMP") {
+        } else if (consol.getShipmentType().equalsIgnoreCase("IMP")) {
             dictionary.put(ReportConstants.EXPORT_AGENT, importAgentAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT, exportAgentAddress);
             dictionary.put(ReportConstants.EXPORT_AGENT_FREETEXT, importAgentFreeTextAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT_FREETEXT, exportAgentFreeTextAddress);
-            UnlocationsResponse depart = getUNLocRow(consol.getDepartureDetails().getLastForeignPort());
-            dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, ReportHelper.getCityCountry(depart.getNameWoDiacritics(), depart.getCountry()));
+            UnlocationsResponse depart = consol.getDepartureDetails() == null ? null : getUNLocRow(consol.getDepartureDetails().getLastForeignPort());
+            if(depart != null) {
+                dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, ReportHelper.getCityCountry(depart.getNameWoDiacritics(), depart.getCountry()));
+            }
         } else {
             dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, StringUtils.EMPTY);
         }

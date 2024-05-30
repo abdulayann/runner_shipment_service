@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @Slf4j
@@ -36,5 +37,10 @@ public class MawbStocksDao implements IMawbStocksDao {
     @Override
     public void delete(MawbStocks mawbStocks) {
         mawbStocksRepository.delete(mawbStocks);
+    }
+
+    @Override
+    public Optional<MawbStocks> findByGuid(UUID guid) {
+        return mawbStocksRepository.findByGuid(guid);
     }
 }

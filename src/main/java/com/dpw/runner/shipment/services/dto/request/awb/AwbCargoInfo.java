@@ -1,8 +1,11 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 @Data
@@ -11,7 +14,8 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AwbCargoInfo {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AwbCargoInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private String accountingInfo;
@@ -23,6 +27,7 @@ public class AwbCargoInfo {
     private String shippingInformationOther;
     private String sci;
     private String currency;
+    @DedicatedMasterData
     private String chargeCode;
     private BigDecimal carriageValue;
     private BigDecimal customsValue;

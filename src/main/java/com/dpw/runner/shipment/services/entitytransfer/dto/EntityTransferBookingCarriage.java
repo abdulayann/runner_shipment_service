@@ -21,7 +21,7 @@ public class EntityTransferBookingCarriage implements IEntityTranferBaseEntity {
     public String carriageType;
     public String carriageMode;
     public Long vesselId;
-    public Map<String, EntityTransferMasterLists> masterData;
-    public Map<String, EntityTransferUnLocations> unlocationData;
-    public Map<String, EntityTransferVessels> vesselsMasterData;
+    private Map<String, EntityTransferMasterLists> masterData;
+    private Map<String, EntityTransferUnLocations> unlocationData;
+    private Map<String, EntityTransferVessels> vesselsMasterData;
 }

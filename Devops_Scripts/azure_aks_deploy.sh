@@ -14,6 +14,7 @@ MAX_MEM=$maxMem
 prod_namespace="runner-shipment-service-production"
 deployment_name="runner-shipment-service-deployment"
 HPA_NAME="runner-shipment-service-hpa"
+USER_ASSIGNED_IDENTITY_ID=$user_identity_id
 
 source_path="${PWD}/_runner_shipment_service/runner-shipment-service"
 k8s_resource_path="${source_path}/Devops_Scripts/K8"
@@ -22,6 +23,7 @@ app_service_yaml_path="$k8s_resource_path/app_service.yml"
 app_ingress_yaml_path="$k8s_resource_path/app_ingress.yml"
 app_config_yaml_path="$k8s_resource_path/app_config.yml"
 app_hpa_yaml_path="$k8s_resource_path/app-hpa.yaml"
+secretproviderclass_yaml_path="${source_path}/Devops_Scripts/configs/${env_Name}/secretproviderclass.yaml"
 
 #Replace vars in Ingress
 sed -i "s/NAMESPACE_NAME/$namespace/g" $app_ingress_yaml_path
@@ -47,6 +49,8 @@ sed -i "s/LATEST_IMAGE/$buildID/g" $app_deployment_yaml_path
 sed -i "s/REPLICA_COUNT/$replica_count/g" $app_deployment_yaml_path
 sed -i "s/HEAP_MIN/$HEAP_MIN/g" $app_deployment_yaml_path
 sed -i "s/HEAP_MAX/$HEAP_MAX/g" $app_deployment_yaml_path
+sed -i "s/JVM_ALG/$JVM_ALG/g" $app_deployment_yaml_path
+sed -i "s/ENV_NAME/$env_Name/g" $app_deployment_yaml_path
 
 # replace HPA variables
 sed -i "s/\$HPA_NAME/${HPA_NAME}/g" $app_hpa_yaml_path
@@ -59,6 +63,10 @@ sed -i "s/\$STABLE_SEC/${STABLE_SEC}/g" $app_hpa_yaml_path
 sed -i "s/\$SCALE_UP_COUNT/${SCALE_UP_COUNT}/g" $app_hpa_yaml_path
 sed -i "s/\$SCALE_UP_SEC/${SCALE_UP_SEC}/g" $app_hpa_yaml_path
 
+# replace secretproviderclass variables
+sed -i "s/\$USER_ASSIGNED_IDENTITY_ID/${USER_ASSIGNED_IDENTITY_ID}/g" $secretproviderclass_yaml_path
+sed -i "s/\$NAMESPACE_NAME/${namespace}/g" $secretproviderclass_yaml_path
+
 #Displaying file updates
 echo "*****App Deployment*****"
 cat $app_deployment_yaml_path ; echo
@@ -70,6 +78,8 @@ echo "*****Configmap*****"
 cat $app_config_yaml_path ; echo
 echo "*****HPA*****"
 cat $app_hpa_yaml_path ; echo
+echo "*****Secret Provider Class*****"
+cat $secretproviderclass_yaml_path ; echo
 
 #Kube configs
 kubectl_prod="kubectl --kubeconfig ${temp_dir}/kubeconfig_prod"
@@ -127,6 +137,15 @@ else
     exit 1
 fi
 
+#KV
+${kubectl_current} apply -f "$secretproviderclass_yaml_path"
+if [[ $? -eq 0 ]]; then
+    echo "*****KV configure success !!!*****"
+else
+    echo "*****KV configure fail !!!*****"
+    exit 1
+fi
+
 #Deployment
 ${kubectl_current} apply -f "$app_deployment_yaml_path"
 ${kubectl_current} rollout status deployment.apps/$deployment_name --namespace $namespace
@@ -136,3 +155,6 @@ else
     echo "*****App Deployment fail !!!*****"
     exit 1
 fi
+service_yaml_path="${PWD}/_runner_shipment_service/runner-shipment-service/Devops_Scripts/service-values.yaml"
+values=$(grep ":" "$service_yaml_path" | awk -F ": " '{print $1"="$2}')
+${kubectl_current} label --overwrite namespace $namespace $values

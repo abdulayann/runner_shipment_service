@@ -14,10 +14,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
 
     @JsonProperty("Guid")
     private UUID Guid;
-    @JsonProperty("EntityType")
-    private String EntityType;
-    @JsonProperty("EntityID")
-    private Long EntityId;
     @JsonProperty("AchievedVolume")
     private BigDecimal AchievedVolume;
     @JsonProperty("AchievedVolumeUnit")
@@ -44,8 +40,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private String ChargeableUnit;
     @JsonProperty("CommodityCode")
     private String CommodityCode;
-    @JsonProperty("ConsolidationId")
-    private Long ConsolidationId;
     @JsonProperty("ContainerCode")
     private String ContainerCode;
     @JsonProperty("ContainerComments")
@@ -170,4 +164,18 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private UUID ConsolidationGuid;
     @JsonProperty("HandlingInfo")
     private String handlingInfo;
+    @JsonProperty("IsPart")
+    private Boolean IsPart;
+    @JsonProperty("IsAttached")
+    private Boolean IsAttached;
+//    @JsonProperty("TruckingDetails") // removing truck from container sync for now
+//    private List<TruckDriverDetailsRequestV2> TruckingDetails;
+    @JsonProperty("CommodityGroup")
+    private String CommodityGroup;
+    @JsonProperty("InvoiceNumber")
+    private String InvoiceNumber;
+    @JsonProperty("InvoiceCurrency")
+    private String InvoiceCurrency;
+    @JsonProperty("InvoiceValue")
+    private BigDecimal InvoiceValue;
 }

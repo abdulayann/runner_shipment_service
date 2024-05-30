@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +14,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ArrivalDepartureDetailsModel {
+public class ArrivalDepartureDetailsModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("Guid")
@@ -35,7 +38,9 @@ public class ArrivalDepartureDetailsModel {
     @JsonProperty("Type")
     private String type;
     @JsonProperty("FirstForeignPortArrivalDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime firstForeignPortArrivalDate;
     @JsonProperty("LastForeignPortDepartureDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime lastForeignPortDepartureDate;
 }

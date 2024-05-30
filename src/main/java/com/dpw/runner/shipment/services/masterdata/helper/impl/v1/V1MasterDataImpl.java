@@ -3,24 +3,37 @@ package com.dpw.runner.shipment.services.masterdata.helper.impl.v1;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.FlightScheduleRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
 public class V1MasterDataImpl implements IMasterDataService {
 
+    public static final String ARRIVAL_ESTIMATED_RUNWAY = "ArrivalEstimatedRunway";
+    public static final String DEPARTURE_ESTIMATED_RUNWAY = "DepartureEstimatedRunway";
+
+    private final IV1Service v1Service;
+
+    private final JsonHelper jsonHelper;
+
     @Autowired
-    private IV1Service v1Service;
+    public V1MasterDataImpl(IV1Service v1Service, JsonHelper jsonHelper){
+        this.v1Service = v1Service;
+        this.jsonHelper = jsonHelper;
+    }
 
     @Override
     public DependentServiceResponse fetchMasterData(Object request) {
@@ -347,7 +360,30 @@ public class V1MasterDataImpl implements IMasterDataService {
 
     @Override
     public DependentServiceResponse importFlightSchedules(Object request) {
-        V1DataResponse v1DataResponse = v1Service.importFlightSchedules(request);
+        FlightScheduleRequest flightScheduleRequest = jsonHelper.convertValue(request, FlightScheduleRequest.class);
+        if(flightScheduleRequest != null && flightScheduleRequest.getEqualityFilter() != null) {
+            if(flightScheduleRequest.getEqualityFilter().containsKey(ARRIVAL_ESTIMATED_RUNWAY) && StringUtility.isNotEmpty(flightScheduleRequest.getEqualityFilter().get(ARRIVAL_ESTIMATED_RUNWAY))) {
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(flightScheduleRequest.getEqualityFilter().get(ARRIVAL_ESTIMATED_RUNWAY), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    flightScheduleRequest.getEqualityFilter().put(ARRIVAL_ESTIMATED_RUNWAY, dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                } catch (Exception e) {
+                }
+            }
+            if(flightScheduleRequest.getEqualityFilter().containsKey(DEPARTURE_ESTIMATED_RUNWAY) && StringUtility.isNotEmpty(flightScheduleRequest.getEqualityFilter().get(DEPARTURE_ESTIMATED_RUNWAY))) {
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(flightScheduleRequest.getEqualityFilter().get(DEPARTURE_ESTIMATED_RUNWAY), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    flightScheduleRequest.getEqualityFilter().put(DEPARTURE_ESTIMATED_RUNWAY, dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                } catch (Exception e) {
+                }
+            }
+        }
+        V1DataResponse v1DataResponse = v1Service.importFlightSchedules(flightScheduleRequest);
+
+        if(v1DataResponse.getEntities() != null) {
+            List<FlightScheduleResponse> flightScheduleResponses = jsonHelper.convertValueToList(v1DataResponse.getEntities(), FlightScheduleResponse.class);
+            v1DataResponse.entities = flightScheduleResponses;
+        }
+
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
@@ -466,6 +502,13 @@ public class V1MasterDataImpl implements IMasterDataService {
         V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(request);
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
+    public DependentServiceResponse getDefaultOrg(Object request) {
+        PartyRequestV2 partyRequestV2 = v1Service.getDefaultOrg();
+        return DependentServiceResponse.builder().success(true)
+                .data(partyRequestV2).build();
     }
 
 }

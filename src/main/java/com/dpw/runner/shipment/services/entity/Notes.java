@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.utils.ExcludeAuditLog;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -31,9 +32,11 @@ public class Notes extends MultiTenancy {
     @Column(name = "assigned_to")
     private String assignedTo;
 
+    @ExcludeAuditLog
     @Column(name = "entity_id")
     private Long entityId;
 
+    @ExcludeAuditLog
     @Column(name = "entity_type")
     private String entityType;
 

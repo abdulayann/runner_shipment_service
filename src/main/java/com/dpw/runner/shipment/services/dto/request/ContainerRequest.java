@@ -102,4 +102,10 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private Long contractEnforcedQuantityLimit;
     private String ownType;
     private String handlingInfo;
+    private Boolean isPart;
+    private Boolean isAttached;
+//    private List<TruckDriverDetailsRequest> truckingDetails;
+    private String invoiceNumber;
+    private String invoiceCurrency;
+    private BigDecimal invoiceValue;
 }

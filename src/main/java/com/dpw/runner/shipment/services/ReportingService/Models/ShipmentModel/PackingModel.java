@@ -5,12 +5,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class PackingModel {
+public class PackingModel implements Serializable {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("ConsolidationId")
@@ -43,6 +44,8 @@ public class PackingModel {
     private String origin;
     @JsonProperty("Commodity")
     private String commodity;
+    @JsonProperty("CommodityGroup")
+    private String commodityGroup;
     @JsonProperty("PackingOrder")
     private String packingOrder;
     @JsonProperty("Length")

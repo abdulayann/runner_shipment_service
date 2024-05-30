@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -26,4 +27,7 @@ public class TruckDriverDetailsRequest extends CommonRequest implements IRunnerR
     private Long containerId;
     private Long consolidationId;
     private String selfTransporterName;
+    private String remarks;
+    private String truckStatus;
+    private Parties thirdPartyTransporter;
 }

@@ -49,6 +49,7 @@ public class Routings extends MultiTenancy {
 
     @Column(name = "vessel_name")
     @Size(max=2048, message = "max size is 2048 for vessel_name")
+    @DedicatedMasterData(type = Constants.VESSEL_MASTER_DATA)
     private String vesselName;
 
     @Column(name = "pol")
@@ -95,14 +96,23 @@ public class Routings extends MultiTenancy {
     @Column(name = "route_leg_id")
     private Long routeLegId;
 
-    @Column(name = "vessel_id")
-    private Long vesselId;
-
     @Column(name = "transit_days")
     private Long transitDays;
 
     @Column(name = "carrier")
     @DedicatedMasterData(type = Constants.CARRIER_MASTER_DATA)
     private String carrier;
+
+    @Column(name = "truck_reference_number")
+    private String truckReferenceNumber;
+
+    @Column(name = "carrier_country")
+    @Size(max = 32, message = "max size is 32 for carrier_country")
+    @MasterData(type = MasterDataType.COUNTRIES)
+    private String carrierCountry;
+
+    public boolean getIsDomestic() {
+        return isDomestic;
+    }
 }
 

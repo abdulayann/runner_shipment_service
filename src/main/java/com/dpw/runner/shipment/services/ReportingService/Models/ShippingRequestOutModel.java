@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -29,13 +28,12 @@ public class ShippingRequestOutModel implements IDocumentModel {
     private UnlocationsResponse dischargePort;
     private TenantModel tenant;
     private UsersDto user;
-    private List<ContainerModel> consolContainers;
+    private List<ShipmentContainers> consolContainers;
     private VesselsResponse vessel;
     private CarrierMasterData carrier;
     private String serviceMode;
     @JsonProperty("ShipmentAndContainer")
     private List<ShipmentAndContainerResponse> ShipmentAndContainer;
     private List<ShipmentModel> shipmentList;
-    private List<ShipmentContainers> commonContainers;
-    private List<PackingModel> shipmentPacking;
+    private List<ContainerModel> commonContainers;
 }

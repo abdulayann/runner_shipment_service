@@ -20,4 +20,5 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
         return findOne(spec);
     }
     List<Containers> findByConsolidationId(Long consolidationId);
+    void deleteById(Long id);
 }

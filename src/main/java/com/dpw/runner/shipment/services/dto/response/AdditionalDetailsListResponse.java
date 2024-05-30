@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -95,4 +96,5 @@ public class AdditionalDetailsListResponse implements IRunnerResponse {
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
     private PartiesResponse notifyParty;
+    private Map<String, String> unlocationData;
 }

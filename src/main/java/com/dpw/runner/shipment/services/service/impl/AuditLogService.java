@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AuditLogConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
@@ -8,32 +11,33 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.AuditLogResponse;
-import com.dpw.runner.shipment.services.entity.AuditLog;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.DateUtils;
 import com.dpw.runner.shipment.services.utils.ExcelUtils;
+import com.dpw.runner.shipment.services.utils.ExcludeAuditLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Triple;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.*;
@@ -42,10 +46,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -53,7 +57,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 @Service
 public class AuditLogService implements IAuditLogService {
-    private static final Set<Class<?>> annotationClassList = new HashSet<>(Arrays.asList(Id.class, OneToMany.class, ManyToOne.class, ManyToMany.class));
+    private static final Set<Class<?>> annotationClassList = new HashSet<>(Arrays.asList(Id.class, OneToMany.class, ManyToOne.class, ManyToMany.class, ExcludeAuditLog.class));
 
     public static Map<String, String> COLUMN_HEADERS_TO_FIELD_NAME = null;
 
@@ -62,12 +66,13 @@ public class AuditLogService implements IAuditLogService {
         COLUMN_HEADERS_TO_FIELD_NAME.put("Module", "moduleTypeCode");
         COLUMN_HEADERS_TO_FIELD_NAME.put("Module id", "moduleId");
         COLUMN_HEADERS_TO_FIELD_NAME.put("Field Name", "fieldName");
-        COLUMN_HEADERS_TO_FIELD_NAME.put("Old value", "oldValue");
-        COLUMN_HEADERS_TO_FIELD_NAME.put("New value", "newValue");
-        COLUMN_HEADERS_TO_FIELD_NAME.put("User Name", "createdBy");
-        COLUMN_HEADERS_TO_FIELD_NAME.put("Changed Date", "createdAt");
+        COLUMN_HEADERS_TO_FIELD_NAME.put("Old value", AuditLogConstants.OLD_VALUE);
+        COLUMN_HEADERS_TO_FIELD_NAME.put("New value", AuditLogConstants.NEW_VALUE);
+        COLUMN_HEADERS_TO_FIELD_NAME.put("User Name", Constants.CREATED_BY);
+        COLUMN_HEADERS_TO_FIELD_NAME.put("Changed Date", Constants.CREATED_AT);
     }
 
+    public ExecutorService executorService = Executors.newFixedThreadPool(10);
     @Autowired
     private IAuditLogDao auditLogDao;
 
@@ -76,8 +81,10 @@ public class AuditLogService implements IAuditLogService {
 
     @Autowired
     private ExcelUtils excelUtils;
+    @Autowired
+    private CommonUtils commonUtils;
 
-    public Resource downloadExcel(CommonRequestModel commonRequestModel) {
+    public Resource downloadExcel(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
             var triplet = fetchList(commonRequestModel);
@@ -88,19 +95,19 @@ public class AuditLogService implements IAuditLogService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw e;
+            throw new RunnerException(responseMsg);
         }
     }
 
-    private List<Map<String, Object>> getData(List<IRunnerResponse> auditLogResponses) {
+    public List<Map<String, Object>> getData(List<IRunnerResponse> auditLogResponses) {
         List<Map<String, Object>> result = new ArrayList<>();
         for (IRunnerResponse item : auditLogResponses) {
             AuditLogResponse ct = (AuditLogResponse) item;
             Map<String, Object> asMap = new HashMap<>();
             asMap.put("moduleTypeCode", ct.getEntity());
             asMap.put("moduleId", ct.getEntityId().toString());
-            asMap.put("createdBy", ct.getCreatedBy());
-            asMap.put("createdAt", DateUtils.getDateAsString(ct.getCreatedAt()));
+            asMap.put(Constants.CREATED_BY, ct.getCreatedBy());
+            asMap.put(Constants.CREATED_AT, DateUtils.getDateAsString(ct.getCreatedAt()));
             //field name, old value, new value
             JsonNode nodeChanges = jsonHelper.convertValue(ct.getChanges(), JsonNode.class);
             Iterator<String> fieldNames = nodeChanges.fieldNames();
@@ -109,17 +116,19 @@ public class AuditLogService implements IAuditLogService {
                 clone.putAll(asMap);
                 String field = fieldNames.next();
                 clone.put("fieldName", field);
-                clone.put("oldValue", nodeChanges.get(field).get("oldValue").asText());
-                clone.put("newValue", nodeChanges.get(field).get("newValue").asText());
+                clone.put(AuditLogConstants.OLD_VALUE, nodeChanges.get(field).get(AuditLogConstants.OLD_VALUE).asText());
+                clone.put(AuditLogConstants.NEW_VALUE, nodeChanges.get(field).get(AuditLogConstants.NEW_VALUE).asText());
                 result.add(clone);
             }
         }
         return result;
     }
 
-    public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException {
+    public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException, RunnerException {
+        String skipAuditLog = MDC.get("skip-audit-log");
+        if(skipAuditLog != null && skipAuditLog.equals("true"))
+            return;
         validateRequest(auditLogMetaData);
-
         AuditLog auditLog = new AuditLog();
         auditLog.setOperation(auditLogMetaData.getOperation());
         auditLog.setParentType(auditLogMetaData.getParent());
@@ -128,15 +137,24 @@ public class AuditLogService implements IAuditLogService {
         String ops = auditLogMetaData.getOperation();
 
         if (ops.equals(DBOperationType.CREATE.name())) {
-            auditLog.setChanges(getChanges(auditLogMetaData.getNewData(), null, ops));
+            Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
+            if(auditLogChangesMap.size() > 0)
+                addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData());
+            auditLog.setChanges(auditLogChangesMap);
             auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
             auditLog.setEntityId(getEntityId(auditLogMetaData.getNewData()));
         } else if (ops.equals(DBOperationType.UPDATE.name())) {
-            auditLog.setChanges(getChanges(auditLogMetaData.getNewData(), auditLogMetaData.getPrevData(), ops));
+            Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), auditLogMetaData.getPrevData(), ops);
+            if(auditLogChangesMap.size() > 0)
+                addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), auditLogMetaData.getNewData());
+            auditLog.setChanges(auditLogChangesMap);
             auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
             auditLog.setEntityId(getEntityId(auditLogMetaData.getNewData()));
         } else if (ops.equals(DBOperationType.DELETE.name())) {
-            auditLog.setChanges(getChanges(null, auditLogMetaData.getPrevData(), ops));
+            Map<String, AuditLogChanges> auditLogChangesMap = getChanges(null, auditLogMetaData.getPrevData(), ops);
+            if(auditLogChangesMap.size() > 0)
+                addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), null);
+            auditLog.setChanges(auditLogChangesMap);
             auditLog.setEntity(auditLogMetaData.getPrevData().getClass().getSimpleName());
             auditLog.setEntityId(getEntityId(auditLogMetaData.getPrevData()));
         } else {
@@ -147,7 +165,24 @@ public class AuditLogService implements IAuditLogService {
         auditLogDao.save(auditLog);
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public void addBaseEntityFields(Map<String, AuditLogChanges> auditLogChangesMap, BaseEntity oldEntity, BaseEntity newEntity)
+    {
+        if(newEntity == null)
+            return;
+        if(oldEntity == null)
+        {
+            auditLogChangesMap.put(Constants.CREATED_AT, createAuditLogChangesObject(Constants.CREATED_AT, LocalDateTime.now().toString(), null));
+            auditLogChangesMap.put(Constants.CREATED_BY, createAuditLogChangesObject(Constants.CREATED_BY, UserContext.getUser().Username, null));
+        }
+        else
+        {
+            auditLogChangesMap.put("updatedAt", createAuditLogChangesObject("updatedAt", LocalDateTime.now().toString(), oldEntity.getUpdatedAt() != null ? oldEntity.getUpdatedAt().toString() : null));
+            if(!Objects.equals(UserContext.getUser().Username, oldEntity.getUpdatedBy()))
+                auditLogChangesMap.put("updatedBy", createAuditLogChangesObject("updatedBy", UserContext.getUser().Username, oldEntity.getUpdatedBy()));
+        }
+    }
+
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             var triplet = fetchList(commonRequestModel);
@@ -163,7 +198,7 @@ public class AuditLogService implements IAuditLogService {
         }
     }
 
-    private Triple<List<IRunnerResponse>, Integer, Long> fetchList(CommonRequestModel commonRequestModel) {
+    public Triple<List<IRunnerResponse>, Integer, Long> fetchList(CommonRequestModel commonRequestModel) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is empty for audit log list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -178,20 +213,20 @@ public class AuditLogService implements IAuditLogService {
         );
     }
 
-    private Long getEntityId(BaseEntity entity) throws NoSuchFieldException, IllegalAccessException {
+    public Long getEntityId(BaseEntity entity) throws NoSuchFieldException, IllegalAccessException {
         Field f = entity.getClass().getSuperclass().getSuperclass().getDeclaredField("id");
         f.setAccessible(true);
 
         return (Long) f.get(entity);
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(final List<AuditLog> list) {
+    public List<IRunnerResponse> convertEntityListToDtoList(final List<AuditLog> list) {
         return list.stream()
                 .map(this::convertEntityToDto)
                 .collect(Collectors.toList());
     }
 
-    private AuditLogResponse convertEntityToDto(AuditLog auditLog) {
+    public AuditLogResponse convertEntityToDto(AuditLog auditLog) {
         // return jsonHelper.convertValue(auditLog, AuditLogResponse.class);
         AuditLogResponse response = new AuditLogResponse();
         response.setId(auditLog.getId());
@@ -206,7 +241,7 @@ public class AuditLogService implements IAuditLogService {
         List<AuditLogChanges> changes = new ArrayList<>();
         for (Map.Entry<String, AuditLogChanges> entry : auditLog.getChanges().entrySet()) {
             AuditLogChanges auditChange = entry.getValue();
-            auditChange.setFieldName(entry.getKey());
+            auditChange.setFieldName(replaceFieldNames(auditLog, entry.getKey()));
             changes.add(entry.getValue());
         }
 
@@ -214,7 +249,60 @@ public class AuditLogService implements IAuditLogService {
         return response;
     }
 
-    private void validateRequest(AuditLogMetaData auditLogMetaData) {
+    public String replaceFieldNames(AuditLog auditLog, String key){
+        if(Objects.equals(auditLog.getParentType(), ShipmentDetails.class.getSimpleName())) {
+            if (Objects.equals(auditLog.getEntity(), ShipmentDetails.class.getSimpleName())) {
+                if (AuditLogConstants.ShipmentsFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.ShipmentsFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Containers.class.getSimpleName())) {
+                if (AuditLogConstants.ContainerFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.ContainerFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Packing.class.getSimpleName())) {
+                if (AuditLogConstants.PackingFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.PackingFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Routings.class.getSimpleName())) {
+                if (AuditLogConstants.RoutingsFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.RoutingsFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Notes.class.getSimpleName())) {
+                if (AuditLogConstants.NotesFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.NotesFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), BookingCarriage.class.getSimpleName())) {
+                if (AuditLogConstants.BookingCarriageFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.BookingCarriageFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Events.class.getSimpleName())) {
+                if (AuditLogConstants.EventsFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.EventsFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), ReferenceNumbers.class.getSimpleName())) {
+                if (AuditLogConstants.ReferenceNumbersFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.ReferenceNumbersFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Parties.class.getSimpleName())) {
+                if (AuditLogConstants.PartiesFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.PartiesFieldNameToDisplayNameMap.get(key);
+                }
+            }
+            else if(Objects.equals(auditLog.getEntity(), ServiceDetails.class.getSimpleName())) {
+                if (AuditLogConstants.ServiceDetailsFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.ServiceDetailsFieldNameToDisplayNameMap.get(key);
+                }
+            }
+            else if(Objects.equals(auditLog.getEntity(), TruckDriverDetails.class.getSimpleName())) {
+                if (AuditLogConstants.TruckDriverDetailsFieldNameToDisplayName.containsKey(key)) {
+                    return AuditLogConstants.TruckDriverDetailsFieldNameToDisplayName.get(key);
+                }
+            }
+        }
+        return key;
+    }
+
+    private void validateRequest(@NotNull AuditLogMetaData auditLogMetaData) throws RunnerException {
         if (ObjectUtils.isEmpty(auditLogMetaData.getParent()) || ObjectUtils.isEmpty(auditLogMetaData.getParentId())) {
             throw new RunnerException("Parent or parent id is missing");
         } else if (ObjectUtils.isEmpty(auditLogMetaData.getNewData()) && ObjectUtils.isEmpty(auditLogMetaData.getPrevData())) {
@@ -222,7 +310,7 @@ public class AuditLogService implements IAuditLogService {
         }
     }
 
-    private Map<String, AuditLogChanges> getChanges(BaseEntity newEntity, BaseEntity prevEntity, String operation) throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+    public Map<String, AuditLogChanges> getChanges(BaseEntity newEntity, BaseEntity prevEntity, String operation) throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         List<Field> fields = null;
         if(newEntity == null && prevEntity == null)
             return new HashMap<>();
@@ -232,7 +320,7 @@ public class AuditLogService implements IAuditLogService {
             fields = getListOfAllFields(prevEntity);
         }
         Map<String, AuditLogChanges> fieldValueMap = new HashMap<>();
-        fields = fields.stream().filter(field -> !filterFieldBasedOnAnnotation(field)).collect(Collectors.toList());
+        fields = fields.stream().filter(field -> !filterFieldBasedOnAnnotation(field)).toList();
         for (Field field : fields) {
 
             String fieldName = field.getName();
@@ -276,7 +364,9 @@ public class AuditLogService implements IAuditLogService {
                 try{
                     temp  = PropertyUtils.getProperty(newEntity, fieldName);
                     prevTemp = PropertyUtils.getProperty(prevEntity, fieldName);
-                } catch(NoSuchMethodException e){}
+                } catch(NoSuchMethodException e){
+                    log.error(e.getMessage());
+                }
 
                 if (field.getType() == LocalDateTime.class && !ObjectUtils.isEmpty(temp)) {
                     newValue = temp.toString();
@@ -332,8 +422,6 @@ public class AuditLogService implements IAuditLogService {
                 }
                 if(Arrays.stream(field.getDeclaredAnnotations()).anyMatch(annotation -> annotation.annotationType() == OneToOne.class))
                 {
-//                    fieldValueMap.putAll(getChanges(null, (BaseEntity) prevTemp, DBOperationType.DELETE.name()));
-                    // Handle related entities (one-to-one or one-to-many relationships)
                     Map<String, AuditLogChanges> childChanges = getChanges(null, (BaseEntity) prevTemp, DBOperationType.DELETE.name());
 
                     // Prefix the property names with the entity name
@@ -350,10 +438,9 @@ public class AuditLogService implements IAuditLogService {
         }
 
         return fieldValueMap;
-        // return fieldValueMap.toString();
     }
 
-    private List<Field> getListOfAllFields(BaseEntity newEntity) {
+    public List<Field> getListOfAllFields(BaseEntity newEntity) {
         List<Field> privateFields = new ArrayList<>();
         Field[] allFields = newEntity.getClass().getDeclaredFields();
         for (Field field : allFields) {
@@ -365,11 +452,11 @@ public class AuditLogService implements IAuditLogService {
         return privateFields;
     }
 
-    private boolean filterFieldBasedOnAnnotation(Field field) {
+    public boolean filterFieldBasedOnAnnotation(Field field) {
         return Arrays.stream(field.getDeclaredAnnotations()).anyMatch(annotation -> annotationClassList.contains(annotation.annotationType()));
     }
 
-    private AuditLogChanges createAuditLogChangesObject(String fieldName, Object newValue, Object oldValue) {
+    public AuditLogChanges createAuditLogChangesObject(String fieldName, Object newValue, Object oldValue) {
         return AuditLogChanges.builder()
                 .fieldName(fieldName)
                 .newValue(newValue)
@@ -377,7 +464,7 @@ public class AuditLogService implements IAuditLogService {
                 .build();
     }
 
-    private static <T extends Comparable<T>> int compareTo(final T c1, final T c2) {
+    public static <T extends Comparable<T>> int compareTo(final T c1, final T c2) {
         final boolean f1, f2;
         return (f1 = c1 == null) ^ (f2 = c2 == null) ? f1 ? -1 : 1 : f1 && f2 ? 0 : c1.compareTo(c2);
     }

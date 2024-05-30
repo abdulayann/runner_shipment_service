@@ -1,8 +1,11 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
@@ -11,11 +14,13 @@ import java.time.LocalDateTime;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class AwbOtherInfo {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AwbOtherInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private String shipper;
     private String carrier;
+    @UnlocationData
     private String executedAt;
     private LocalDateTime executedOn;
 }

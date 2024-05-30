@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -48,6 +49,9 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private LocalDateTime bookingCutoff;
     private LocalDateTime shipInstructionCutoff;
     private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime latestFullEquDeliveredToCarrier;
+    private LocalDateTime earliestDropOffFullEquToCarrier;
+    private LocalDateTime earliestEmptyEquPickUp;
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
@@ -110,4 +114,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private List<PartiesRequest> consolidationAddresses;
     private String carrierBookingRef;
     private String modeOfBooking;
+    private Boolean autoUpdateGoodsDesc;
+    private UUID sourceGuid;
+    private String efreightStatus;
 }

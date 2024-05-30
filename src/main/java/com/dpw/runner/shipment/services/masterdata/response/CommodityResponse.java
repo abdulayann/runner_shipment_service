@@ -11,4 +11,7 @@ public class CommodityResponse {
     private String code;
     @JsonProperty("Description")
     private String description;
+    @JsonProperty("CommodityDescriptionWithHSCode")
+    private String commodityDescriptionWithHSCode;
+
 }

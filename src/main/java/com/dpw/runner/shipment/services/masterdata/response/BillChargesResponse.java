@@ -31,4 +31,14 @@ public class BillChargesResponse {
     private BigDecimal taxType4;
     @JsonProperty("PaymentType")
     private String paymentType;
+    @JsonProperty("ChargeTypeCode")
+    private String chargeTypeCode;
+    @JsonProperty("ChargeTypeDescription")
+    private String chargeTypeDescription;
+    @JsonProperty("LocalTax")
+    private BigDecimal localTax;
+    @JsonProperty("MeasurementBasis")
+    private String measurementBasis;
+    @JsonProperty("LocalCostCurrency")
+    private String localCostCurrency;
 }

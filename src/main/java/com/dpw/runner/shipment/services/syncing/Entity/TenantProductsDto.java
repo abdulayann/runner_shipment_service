@@ -6,9 +6,12 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public class TenantProductsDto implements IRunnerRequest {
+    @JsonProperty("Guid")
+    private UUID Guid;
     @JsonProperty("ProductType")
     private String ProductType;
     @JsonProperty("Alias")
@@ -19,7 +22,8 @@ public class TenantProductsDto implements IRunnerRequest {
     private Boolean Enabled;
     @JsonProperty("EnableGrouping")
     private Boolean EnableGrouping;
-
+    @JsonProperty("IsCommonSequence")
+    private Boolean IsCommonSequence;
     @JsonProperty("TransportModes")
     private List<String> TransportModes = new ArrayList<>();
 }

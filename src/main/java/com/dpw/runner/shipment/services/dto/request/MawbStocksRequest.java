@@ -29,7 +29,7 @@ public class MawbStocksRequest extends CommonRequest implements IRunnerRequest {
     private Long startNumber;
     private String from;
     private String to;
-    private long borrowedFrom;
+    private String borrowedFrom;
     private String borrowedFromFullName;
     private List<MawbStocksLinkRequest> mawbStocksLinkRows;
 }

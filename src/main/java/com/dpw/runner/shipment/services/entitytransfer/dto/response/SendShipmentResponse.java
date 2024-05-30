@@ -12,6 +12,6 @@ import java.util.List;
 @NoArgsConstructor
 @ToString
 public class SendShipmentResponse implements IRunnerResponse {
-    List<Integer> successTenantIds;
-    EntityTransferShipmentDetails entityTransferShipmentDetails;
+    private List<Integer> successTenantIds;
+    private EntityTransferShipmentDetails entityTransferShipmentDetails;
 }

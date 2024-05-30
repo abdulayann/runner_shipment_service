@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.requests;
 
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Getter
@@ -10,7 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class FilterCriteria {
+public class FilterCriteria implements Serializable {
 
     private Criteria criteria;
     private String logicOperator;

@@ -15,5 +15,5 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EnumResponse implements IRunnerResponse {
-    Map<String, List<EnumConstantResponse>> dataMap;
+    private Map<String, List<EnumConstantResponse>> dataMap;
 }

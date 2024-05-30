@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class TruckDriverDetailsConstants {
+    private TruckDriverDetailsConstants(){}
 
     public static final String TRUCK_DRIVER_DETAILS_API_HANDLE = "/api/v2/truck-driver-details";
     public static final String TRUCK_DRIVER_DETAILS_CREATE_SUCCESSFUL = "Successful Truck Driver Details Creation";

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class BookingCarriageModel {
+public class BookingCarriageModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("ShipmentId")
@@ -19,7 +20,7 @@ public class BookingCarriageModel {
     private String portOfLoading;
     @JsonProperty("PortOfDischarge")
     private String portOfDischarge;
-    @JsonProperty("Eta")
+    @JsonProperty("Eta") //TODO - check if annotation is needed or not
     private LocalDateTime eta;
     @JsonProperty("Etd")
     private LocalDateTime etd;

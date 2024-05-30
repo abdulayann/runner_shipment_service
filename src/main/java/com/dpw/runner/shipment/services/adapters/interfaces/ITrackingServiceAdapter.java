@@ -17,7 +17,7 @@ public interface ITrackingServiceAdapter {
     boolean checkIfConsolContainersExist(ConsolidationDetails consolidationDetails);
     UniversalTrackingPayload mapConsoleDataToTrackingServiceData(ConsolidationDetails consolidationDetails);
     UniversalTrackingPayload mapShipmentDataToTrackingServiceData(ShipmentDetails shipmentDetails);
-    List<Events> getAllEvents(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails);
+    List<Events> getAllEvents(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String refNumber);
     UniversalTrackingPayload.UniversalEventsPayload mapEventDetailsForTracking(String bookingReferenceNumber, String referenceNumberType, String runnerReferenceNumber, List<Events> events);
 
 }

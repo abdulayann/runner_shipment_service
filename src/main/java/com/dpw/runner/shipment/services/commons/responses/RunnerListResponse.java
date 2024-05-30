@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RunnerListResponse<T extends IRunnerResponse> {
+public class RunnerListResponse<T extends IRunnerResponse> implements IRunnerResponse{
     private boolean success;
     private String requestId;
     private List<? extends T> data;

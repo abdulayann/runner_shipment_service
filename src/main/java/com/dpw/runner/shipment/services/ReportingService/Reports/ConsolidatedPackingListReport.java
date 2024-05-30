@@ -6,16 +6,20 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 import static java.lang.Long.sum;
 
 @Component
@@ -57,9 +61,9 @@ public class ConsolidatedPackingListReport extends IReport {
     @Override
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ConsolidatedPackingListModel cplData = (ConsolidatedPackingListModel) documentModel;
-        String json = jsonHelper.convertToJson(cplData.getConsolidationDetails());
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(cplData.getConsolidationDetails(), GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
 
         List<String> exporter = getOrgAddressWithPhoneEmail(jsonHelper.convertValue(
                 cplData.getConsolidationDetails().getSendingAgent(), PartiesModel.class
@@ -89,31 +93,24 @@ public class ConsolidatedPackingListReport extends IReport {
         dictionary.put(EXPORTER, exporter);
         dictionary.put(CONSIGNEE, consignee);
 
-        if (cplData.getConsolidationDetails().getIsSendingAgentFreeTextAddress()) {
-            dictionary.put(EXPORT_AGENT_FREETEXT, getAddressList(cplData.getConsolidationDetails().getReceivingAgentFreeTextAddress()));
+        PartiesModel sendingAgent = cplData.getConsolidationDetails().getSendingAgent();
+        if (sendingAgent != null && sendingAgent.getAddressData() != null && sendingAgent.getAddressData().containsKey(PartiesConstants.RAW_DATA)) {
+            dictionary.put(EXPORT_AGENT_FREETEXT, getAddressList(StringUtility.convertToString(sendingAgent.getAddressData().get(PartiesConstants.RAW_DATA))));
         } else {
             dictionary.put(EXPORT_AGENT_FREETEXT, exporter);
         }
+        if (sendingAgent != null && sendingAgent.getOrgData() != null)
+            dictionary.put(EXPORTER_TAX_ID, sendingAgent.getOrgData().get(TENANT_VATREGNUMBER));
 
-        if (cplData.getConsolidationDetails().getIsReceivingAgentFreeTextAddress()) {
-            dictionary.put(IMPORT_AGENT_FREETEXT, getAddressList(cplData.getConsolidationDetails().getReceivingAgentFreeTextAddress()));
+        PartiesModel receivingAgent = cplData.getConsolidationDetails().getReceivingAgent();
+        if (receivingAgent != null && receivingAgent.getAddressData() != null && receivingAgent.getAddressData().containsKey(PartiesConstants.RAW_DATA)) {
+            dictionary.put(IMPORT_AGENT_FREETEXT, getAddressList(StringUtility.convertToString(receivingAgent.getAddressData().get(PartiesConstants.RAW_DATA))));
         } else {
             dictionary.put(IMPORT_AGENT_FREETEXT, consignee);
         }
 
-        var exportOrgData = cplData.getConsolidationDetails().getSendingAgent().getOrgData();
-        if(exportOrgData != null){
-            dictionary.put(EXPORTER_TAX_ID, exportOrgData.get(TENANT_VATREGNUMBER));
-        }else {
-            dictionary.put(EXPORTER_TAX_ID, null);
-        }
-
-        var consigneeOrgData = cplData.getConsolidationDetails().getReceivingAgent().getOrgData();
-        if(consigneeOrgData != null){
-            dictionary.put(CONSIGNEE_TAX_ID, consigneeOrgData.get(TENANT_VATREGNUMBER));
-        }else {
-            dictionary.put(CONSIGNEE_TAX_ID, null);
-        }
+        if (receivingAgent != null && receivingAgent.getOrgData() != null)
+            dictionary.put(CONSIGNEE_TAX_ID, receivingAgent.getOrgData().get(TENANT_VATREGNUMBER));
 
         var etd = cplData.getConsolidationDetails().getCarrierDetails().getEtd();
 
@@ -135,7 +132,9 @@ public class ConsolidatedPackingListReport extends IReport {
         dictionary.put(PURCHASE_ORDER_NUMBER, cplData.getConsolidationDetails().getReferenceNumber());
         dictionary.put(PAYMENT_TERMS, cplData.getConsolidationDetails().getPayment());
 
-        List<PackingModel> packingList = cplData.getConsolidationDetails().getPackingList();
+        List<PackingModel> packingList = new ArrayList<>();
+        if(cplData.getConsolidationDetails().getPackingList() != null)
+            packingList.addAll(cplData.getConsolidationDetails().getPackingList());
         long totalPacks = 0L;
         BigDecimal totalWeight = BigDecimal.ZERO;
         String unitOfTotalWeight = null;
@@ -143,13 +142,15 @@ public class ConsolidatedPackingListReport extends IReport {
         List<ShipmentModel> shipments = cplData.getConsolidationDetails().getShipmentsList();
 
         for (var shipment : shipments){
-            packingList.addAll(shipment.getPackingList());
+            if(shipment.getPackingList() != null)
+                packingList.addAll(shipment.getPackingList());
         }
 
-        if(packingList != null) {
+        if(packingList.size() > 0) {
 //            String packingJson = jsonHelper.convertToJson(packingList);
 //            var values = jsonHelper.convertValue(packingJson, new TypeReference<List<Map<String, Object>>>() {});
-            var values = packingList.stream()
+            Set<PackingModel> packingSet = new HashSet<>(packingList);
+            var values = packingSet.stream()
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                     .toList();
 
@@ -158,16 +159,16 @@ public class ConsolidatedPackingListReport extends IReport {
                 if (!breakFlagForWeight && v.get(WEIGHT) != null && v.get(WEIGHT_UNIT) != null) {
                     if (unitOfTotalWeight == null) {
                         unitOfTotalWeight = v.get(WEIGHT_UNIT).toString();
-                        totalWeight = totalWeight.add(BigDecimal.valueOf((double) v.get(WEIGHT)));
+                        totalWeight = totalWeight.add(v.get(WEIGHT) != null ? new BigDecimal(stringValueOf(v.get(WEIGHT))) : BigDecimal.ZERO);
                     } else if (!unitOfTotalWeight.equals(v.get(WEIGHT_UNIT).toString())) {
                         totalWeight = BigDecimal.ZERO;
                         breakFlagForWeight = true;
                     }
                     else
-                        totalWeight = totalWeight.add(BigDecimal.valueOf((double) v.get(WEIGHT)));
+                        totalWeight = totalWeight.add(v.get(WEIGHT) != null ? new BigDecimal(stringValueOf(v.get(WEIGHT))) : BigDecimal.ZERO);
                 }
                 if(v.get(WEIGHT) != null)
-                    v.put(WEIGHT, twoDecimalPlacesFormat(v.get(WEIGHT).toString()));
+                    v.put(WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
             }
             dictionary.put(ITEMS ,values);
         }
@@ -181,7 +182,7 @@ public class ConsolidatedPackingListReport extends IReport {
       dictionary.put(TOTAL_WEIGHT, null);
       dictionary.put(UOTW, null);
     } else {
-        dictionary.put(TOTAL_WEIGHT, twoDecimalPlacesFormat(totalWeight.toString()));
+        dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
         dictionary.put(UOTW, unitOfTotalWeight);
     }
 

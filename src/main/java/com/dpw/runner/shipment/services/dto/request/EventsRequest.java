@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -29,4 +30,12 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private String placeName;
     private String source;
     private Long tenantId;
+    private String status;
+    private Integer pieces;
+    private Integer totalPieces;
+    private BigDecimal weight;
+    private BigDecimal totalWeight;
+    private Boolean isPartial;
+    private LocalDateTime receivedDate;
+    private LocalDateTime scheduledDate;
 }

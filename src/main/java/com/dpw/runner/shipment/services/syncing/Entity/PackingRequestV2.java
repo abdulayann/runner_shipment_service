@@ -19,8 +19,6 @@ public class PackingRequestV2 implements IRunnerRequest {
     private String ChargeableUnit;
     @JsonProperty("CommodityCode")
     private String CommodityCode;
-    @JsonProperty("CommodityId")
-    private Long CommodityId;
     @JsonProperty("ConsolidationId")
     private Long ConsolidationId;
     @JsonProperty("ContainerNumber")
@@ -29,12 +27,12 @@ public class PackingRequestV2 implements IRunnerRequest {
     private String CountryCode;
     @JsonProperty("CustomsReleaseCode")
     private String CustomsReleaseCode;
-    @JsonProperty("Dgclass")
-    private String Dgclass;
-    @JsonProperty("DggoodsId")
-    private Long DggoodsId;
-    @JsonProperty("DgsubstanceId")
-    private Long DgsubstanceId;
+    @JsonProperty("DGClass")
+    private String DGClass;
+    @JsonProperty("DGGoodsId")
+    private Long DGGoodsId;
+    @JsonProperty("DGSubstanceId")
+    private Integer DGSubstanceId;
     @JsonProperty("FlashPoint")
     private String FlashPoint;
     @JsonProperty("GoodsDescription")
@@ -45,8 +43,8 @@ public class PackingRequestV2 implements IRunnerRequest {
     private BigDecimal Height;
     @JsonProperty("HeightUnit")
     private String HeightUnit;
-    @JsonProperty("HsCode")
-    private String HsCode;
+    @JsonProperty("HSCode")
+    private String HSCode;
     @JsonProperty("InnerPackageNumber")
     private String InnerPackageNumber;
     @JsonProperty("InnerPackageType")
@@ -93,8 +91,8 @@ public class PackingRequestV2 implements IRunnerRequest {
     private String ShipmentNumber;
     @JsonProperty("TransportMode")
     private String TransportMode;
-    @JsonProperty("Undgcontact")
-    private String Undgcontact;
+    @JsonProperty("UNDGContact")
+    private String UNDGContact;
     @JsonProperty("VinNumber")
     private String VinNumber;
     @JsonProperty("Volume")
@@ -117,4 +115,8 @@ public class PackingRequestV2 implements IRunnerRequest {
     private UUID ShipmentGuid;
     @JsonProperty("ConsolidationGuid")
     private UUID ConsolidationGuid;
+    @JsonProperty("HandlingInfo")
+    private String HandlingInfo;
+    @JsonProperty("CommodityGroup")
+    private String commodityGroup;
 }

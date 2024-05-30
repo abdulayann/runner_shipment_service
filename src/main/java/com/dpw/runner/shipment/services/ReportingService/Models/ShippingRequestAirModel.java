@@ -9,5 +9,5 @@ import java.util.List;
 @Data
 public class ShippingRequestAirModel implements IDocumentModel{
     public ShipmentModel shipment;
-    public List<PackingModel> shipmentPacking;
+    private List<PackingModel> shipmentPacking;
 }

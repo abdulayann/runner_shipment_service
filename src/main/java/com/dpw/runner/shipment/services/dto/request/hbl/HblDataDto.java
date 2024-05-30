@@ -83,4 +83,5 @@ public class HblDataDto {
     private String incoTermPlace;
     private Integer quantity;
     private String blRemarksDescription;
+    private String blRemark;
 }

@@ -15,6 +15,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "consolidation_details")
@@ -138,6 +139,15 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "hazardous_booking_cutoff")
     private LocalDateTime hazardousBookingCutoff;
 
+    @Column(name = "latest_full_equ_delivered_to_carrier")
+    private LocalDateTime latestFullEquDeliveredToCarrier;
+
+    @Column(name = "earliest_drop_off_full_equ_to_carrier")
+    private LocalDateTime earliestDropOffFullEquToCarrier;
+
+    @Column(name = "earliest_empty_equ_pick_up")
+    private LocalDateTime earliestEmptyEquPickUp;
+
     @Column(name = "volume_utilization")
     private String volumeUtilization;
 
@@ -149,6 +159,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String shipmentType;
 
     @Column(name = "bol")
+    @Size(max=20, message = "max size is 20 for bol")
     private String bol;
 
     @Column(name = "is_cargo_only")
@@ -326,13 +337,13 @@ public class ConsolidationDetails extends MultiTenancy {
     private List<Routings> routingsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy =  "consolidationId")
-    @JsonIgnoreProperties("shipmentsList")
+    @JsonIgnoreProperties(value = "shipmentsList", allowSetters = true)
     @BatchSize(size = 50)
     private List<Containers> containersList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
-    @BatchSize(size = 50)
-    private List<TruckDriverDetails> truckDriverDetails;
+//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
+//    @BatchSize(size = 50)
+//    private List<TruckDriverDetails> truckDriverDetails;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)
@@ -352,7 +363,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @JoinTable(name = "console_shipment_mapping",
             joinColumns = @JoinColumn(name = "consolidation_id"),
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
-    @JsonIgnoreProperties("consolidationList")
+    @JsonIgnoreProperties(value = "consolidationList", allowSetters = true)
     @BatchSize(size = 50)
     private List<ShipmentDetails> shipmentsList;
 
@@ -369,4 +380,21 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max = 64, message = "max size is 64 for mode_of_booking")
     @MasterData(type = MasterDataType.MODE_OF_BOOKING)
     private String modeOfBooking;
+
+    @Column(name = "auto_update_goods_desc")
+    private Boolean autoUpdateGoodsDesc;
+
+    @Column(name = "source_guid")
+    private UUID sourceGuid;
+    @Column(name = "booking_id")
+    private String bookingId;
+    @Column(name = "booking_status")
+    private String bookingStatus;
+    @Column(name = "booking_number")
+    private String bookingNumber;
+
+    @Size(max=3, message = "max size is 3 for efreight_status")
+    @Column(name = "efreight_status")
+    @MasterData(type = MasterDataType.EFREIGHT_STATUS)
+    private String efreightStatus;
 }

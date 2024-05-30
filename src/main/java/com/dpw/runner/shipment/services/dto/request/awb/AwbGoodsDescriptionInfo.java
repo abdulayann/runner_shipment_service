@@ -1,8 +1,12 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -13,11 +17,13 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class AwbGoodsDescriptionInfo {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AwbGoodsDescriptionInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private Integer piecesNo;
     private BigDecimal grossWt;
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String grossWtUnit;
     private Integer rateClass;
     private Integer commodityItemNo;

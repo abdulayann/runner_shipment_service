@@ -8,6 +8,7 @@ import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import javax.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -67,4 +68,28 @@ public class Events extends MultiTenancy {
 
     @Column(name = "event_estimate_update_reasons")
     private String event_estimate_update_reasons;
+
+    @Column(name = "status")
+    private String status;
+
+    @Column(name = "pieces")
+    private Integer pieces;
+
+    @Column(name = "total_pieces")
+    private Integer totalPieces;
+
+    @Column(name = "weight")
+    private BigDecimal weight;
+
+    @Column(name = "total_weight")
+    private BigDecimal totalWeight;
+
+    @Column(name = "is_partial")
+    private Boolean isPartial;
+
+    @Column(name = "received_date")
+    private LocalDateTime receivedDate;
+
+    @Column(name = "scheduled_date")
+    private LocalDateTime scheduledDate;
 }

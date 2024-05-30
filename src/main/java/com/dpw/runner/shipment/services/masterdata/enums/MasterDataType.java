@@ -138,7 +138,7 @@ public enum MasterDataType {
     BL_CARGO_TERMS(140, "BLCargoTerms"),
     BL_REMARKS(141, "BLRemarks"),
     CONSOLIDATION_CHECK_ORDER(142, "ConsolidationCheckOrder"),
-    CONSOL_CHECK_ETD_ETD_THRESHOLD(143,"ConsolcheckETDETDThreshold"),
+    CONSOL_CHECK_ETD_ETD_THRESHOLD(143, "ConsolcheckETDETDThreshold"),
     AUTO_ATTACH_TRANSPORT(144, "AUTOATTACHTRANSPORT"),
     COMMODITY_GROUP(145, "CommodityGroup"),
     BILL_CHARGES_TEMPLATE(146, "BillChargesTemplate"),
@@ -147,7 +147,10 @@ public enum MasterDataType {
     SI_EVENTS(149, "SIEvents"),
     VGM_EVENTS(150, "VGM Events"),
     HAWB_CARRIER_AGENT(151, "HAWBCarrier/Agent"),
-    MAWB_CARRIER_AGENT(152, "MAWBCarrier/Agent");
+    MAWB_CARRIER_AGENT(152, "MAWBCarrier/Agent"),
+    SALES_AGENT_MASTER(1014, "SalesAgentMaster"),
+    SECURITY_STATUS(159, "SecurityStatus"),
+    EXEMPTION_CODES(160, "ExemptionCodes");
 
     private int id;
     private String description;

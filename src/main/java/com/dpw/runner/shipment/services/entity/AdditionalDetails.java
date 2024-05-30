@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -16,6 +17,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "shipment_additional_details")
@@ -37,21 +39,25 @@ public class AdditionalDetails extends MultiTenancy {
     private LocalDateTime expiryDate;
 
     @Size(max=3, message = "max size is 3 for inspection")
+    @Column(name = "inspection")
     private String inspection;
 
     @Size(max=3, message = "max size is 3 for airway_bill_dims")
     @Column(name = "airway_bill_dims")
+    @MasterData(type = MasterDataType.AIRWAY_BILL_DIMS)
     private String airwayBillDims;
 
     @Column(name = "shipper_cod")
     private BigDecimal shipperCOD;
 
     @Column(name = "shipper_cod_pm")
-    @Size(max=3, message = "max size is 3 for shipper_cod_pm")
+    @Size(max = 3, message = "max size is 3 for shipper_cod_pm")
+    @MasterData(type = MasterDataType.SHIPPER_COD_TYPE)
     private String shipperCODPM;
 
     @Size(max=3, message = "max size is 3 for phase")
     @Column(name = "phase")
+    @MasterData(type = MasterDataType.PHASE)
     private String phase;
 
     @Column(name = "spot_rate")
@@ -59,10 +65,12 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Size(max=3, message = "max size is 3 for spot_rate_type")
     @Column(name = "spot_rate_type")
+    @MasterData(type = MasterDataType.SPOT_RATE_TYPE)
     private String spotRateType;
 
     @Size(max=3, message = "max size is 3 for efreight_status")
     @Column(name = "efreight_status")
+    @MasterData(type = MasterDataType.EFREIGHT_STATUS)
     private String efreightStatus;
 
     @Column(name = "import_export_shipment_lock")
@@ -158,9 +166,11 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Size(max=10, message = "max size is 10 for smtp_igm_number")
     @Column(name = "smtp_igm_number")
+    @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
 
     @Column(name = "smtp_igm_date")
+    @JsonProperty("SMTPIGMDate")
     private LocalDateTime SMTPIGMDate;
 
     @Column(name = "is_inland")
@@ -265,9 +275,11 @@ public class AdditionalDetails extends MultiTenancy {
     private String BLExporterShipment;
 
     @Column(name = "screening_status")
-    @Size(max=3, message = "max size is 3 for screening_status")
-    @MasterData(type = MasterDataType.SCREENING_STATUS)
-    private String screeningStatus;
+    @Size(max=50, message = "max size is 50 for screening_status")
+    //@MasterData(type = MasterDataType.SCREENING_STATUS)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "screening_status", joinColumns = @JoinColumn(name = "shipment_additional_details_id"))
+    private List<String> screeningStatus;
 
     @Column(name = "paid_place")
     @UnlocationData
@@ -368,4 +380,61 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "agent_reference")
     private String agentReference;
+
+    @Column(name = "bl_terms_and_conditions_id")
+    @MasterData(type = MasterDataType.BL_TERMS_AND_CONDITIONS)
+    @Size(max=16, message = "max size is 16 for bl_terms_and_conditions_id")
+    private String bLTermsandConditionsId;
+
+    @Column(name = "bl_comments")
+    @Size(max=2500, message = "max size is 2500 for bl_comments")
+    private String blComments;
+
+    @Column(name = "cargo_terms")
+    @MasterData(type = MasterDataType.BL_CARGO_TERMS)
+    @Size(max=16, message = "max size is 16 for cargo_terms")
+    private String cargoTerms;
+
+    @Column(name = "cargo_terms_description")
+    @Size(max=2500, message = "max size is 2500 for cargo_terms_description")
+    private String cargoTermsDescription;
+
+    @Column(name = "bl_remarks")
+    @MasterData(type = MasterDataType.BL_REMARKS)
+    @Size(max=16, message = "max size is 16 for bl_remarks")
+    private String bLRemarks;
+
+    @Column(name = "bl_remarks_description")
+    @Size(max=2500, message = "max size is 2500 for bl_remarks_description")
+    private String bLRemarksDescription;
+
+    @Column(name = "summary")
+    @Size(max = 2048, message = "max size is 2048 for summary")
+    private String summary;
+
+    @Column(name = "is_summary_updated")
+    private Boolean isSummaryUpdated;
+
+    @Column(name = "exemption_codes")
+    @MasterData(type = MasterDataType.EXEMPTION_CODES)
+    private String exemptionCodes;
+
+    @Column(name = "aom_free_text")
+    private String aomFreeText;
+
+    public String getbLRemarks() {
+        return bLRemarks;
+    }
+
+    public String getbLRemarksDescription() {
+        return bLRemarksDescription;
+    }
+
+    public Parties geteTailor() {
+        return eTailor;
+    }
+
+    public String getbLTermsandConditionsId() {
+        return bLTermsandConditionsId;
+    }
 }

@@ -2,8 +2,13 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
+import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -45,14 +50,19 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String assignedTo;
     private String additionalTerms;
     private String goodsDescription;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal weight;
     private String weightUnit;
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal volume;
     private String volumeUnit;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal volumetricWeight;
     private String volumetricWeightUnit;
+    @JsonSerialize(using = DecimalPlaceValueSerializer.class)
     private BigDecimal chargable;
     private String chargeableUnit;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal netWeight;
     private String netWeightUnit;
     private Integer noOfPacks;
@@ -116,19 +126,19 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long container40GPCount;
     private Long container40RECount;
     private String jobStatus;
-    public Map<String, String> masterData;
-    public Map<String, String> unlocationData;
-    public Map<String, String> currenciesMasterData;
-    public Map<String, String> tenantIdsData;
-    public BigDecimal goodsValue;
-    public String goodsValueCurrency;
-    public BigDecimal insuranceValue;
-    public String InsuranceValueCurrency;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> currenciesMasterData;
+    private Map<String, String> tenantIdsData;
+    private BigDecimal goodsValue;
+    private String goodsValueCurrency;
+    private BigDecimal insuranceValue;
+    private String InsuranceValueCurrency;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
     private List<PartiesResponse> shipmentAddresses;
-    public List<AuditLogResponse> logsList;
+    private List<AuditLogResponse> logsList;
     private String flightStatus;
     private Boolean containsHazardous;
     private String fmcTlcId;
@@ -139,7 +149,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String createdBy;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
-    public Map<String, String> textData;
+    private Map<String, String> textData;
+    private List<NotesResponse> customerBookingNotesList;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {
@@ -151,4 +162,27 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime createdAt;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime updatedAt;
+
+    private CustomerCategoryRates customerCategory;
+    private String contractId;
+    private String contractType;
+    private String clientCountry;
+    private String consignorCountry;
+    private String consigneeCountry;
+    private String notifyPartyCountry;
+    private String salesBranch;
+    private String primarySalesAgentEmail;
+    private String secondarySalesAgentEmail;
+    private UUID sourceGuid;
+    private UUID clonedGuid;
+    private Long consigneeDpsAddressId;
+    private Long clientDpsAddressId;
+    private Long consignorDpsAddressId;
+    private Long notifyPartyDpsAddressId;
+    private Long shipmentCount;
+    private LocalDateTime bookingCreatedDate;
+    private String securityStatus;
+    private AwbStatus awbStatus;
+
+    private String currentPartyForQuote;
 }

@@ -168,6 +168,12 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "shipment_entity_id")
     private String shipmentEntityId;
 
+    @Column(name = "shipment_entity_id_v2")
+    private String shipmentEntityIdV2;
+
+    @Column(name = "shipment_guid")
+    private String shipmentGuid;
+
 //    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
 //    @Where(clause = "entity = 'CustomerBooking'")
 //    private List<AuditLog> logsList;
@@ -198,4 +204,41 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "shipment_created_date")
     private LocalDateTime shipmentCreatedDate;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "client_country")
+    private String clientCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "consignor_country")
+    private String consignorCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "consignee_country")
+    private String consigneeCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "notify_party_country")
+    private String notifyPartyCountry;
+
+    @Column(name = "parent_contract_id")
+    private String parentContractId;
+
+    @Column(name = "primary_sales_agent_email")
+    private String primarySalesAgentEmail;
+
+    @Column(name = "secondary_sales_agent_email")
+    private String secondarySalesAgentEmail;
+
+    @Column(name = "sales_branch")
+    private String salesBranch;
+
+    @Column(name = "is_notify_consignee_equal")
+    private Boolean isNotifyConsigneeEqual;
+
+    @Column(name = "is_bill_created")
+    private Boolean isBillCreated;
+
+    @Column(name = "current_party_for_quote")
+    private String currentPartyForQuote;
 }

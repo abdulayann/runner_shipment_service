@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -23,6 +24,7 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private String vesselName;
     private String pol;
     private String pod;
+    @JsonProperty("domestic")
     private boolean isDomestic;
     private LocalDateTime eta;
     private LocalDateTime etd;
@@ -37,7 +39,12 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private String entityType;
     private Long entityId;
     private Long routeLegId;
-    private Long vesselId;
     private Long transitDays;
     private String carrier;
+    private String truckReferenceNumber;
+    private String carrierCountry;
+    
+    public void setIsDomestic(boolean isDomestic) {
+        this.isDomestic = isDomestic;
+    }
 }

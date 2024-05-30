@@ -30,38 +30,38 @@ public class IntegrationResponseService implements IIntegrationResponseService {
 
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         return null;
     }
 
 
     @Override
-    public ResponseEntity<?> fetchIntegrationResponses(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchIntegrationResponses(CommonRequestModel commonRequestModel) {
         IntegrationResponseRequest request = (IntegrationResponseRequest) commonRequestModel.getData();
         List<IntegrationResponse> responses = integrationResponseDao.getIntegrationResponses(request);
 

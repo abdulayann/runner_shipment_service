@@ -27,4 +27,6 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
         Specification<Packing> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
         return findOne(spec);
     }
+
+    List<Packing> findByConsolidationId(Long consolidationId);
 }

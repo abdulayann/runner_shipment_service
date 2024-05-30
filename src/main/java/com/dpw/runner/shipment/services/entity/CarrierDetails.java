@@ -4,11 +4,13 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.dpw.runner.shipment.services.utils.ExcludeAuditLog;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -43,6 +45,7 @@ public class CarrierDetails extends MultiTenancy {
     private String vessel;
 
     @Column(name = "voyage")
+    @Size(max = 20, message = "max size is 20 for voyage")
     private String voyage;
 
     @Column(name = "flight_number")
@@ -100,4 +103,13 @@ public class CarrierDetails extends MultiTenancy {
 
     @Column(name = "vessel_berthing_date")
     private LocalDateTime vesselBerthingDate;
+
+    @ExcludeAuditLog
+    @Formula( "CONCAT_WS( ' ', voyage, flight_number ) " )
+    private String voyageOrFlightNumber;
+
+    @Column(name = "carrier_country")
+    @Size(max = 32, message = "max size is 32 for carrier_country")
+    @MasterData(type = MasterDataType.COUNTRIES)
+    private String carrierCountry;
 }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -63,6 +64,13 @@ public class CreateBookingModuleInV1 {
         private String BookingType;
         private String Status;
         private String FmcTlcId;
+        private String ClientCountryFilter;
+        private String ConsignorCountryFilter;
+        private String ConsigneeCountryFilter;
+        private String NotifyPartyCountryFilter;
+        private String SalesBranch;
+        private String PrimarySalesAgentEmail;
+        private String SecondarySalesAgentEmail;
 
         private List<QuoteContainer> QuoteContainers;
         private List<Routing> RoutingList;
@@ -70,6 +78,8 @@ public class CreateBookingModuleInV1 {
         private List<LooseCargo> Loosecargos;
         private List<OrgDetail> OrgDetails;
         private List<BillCharge> BillCharges;
+        private List<Notes> CustomerBookingNoteList;
+        private String LastTransactionLoadJson;
 
         @Data
         @Builder
@@ -118,7 +128,21 @@ public class CreateBookingModuleInV1 {
             private String DebitorAddressCode;
             private String CreditorAddressCode;
             private String PerMeasurementBasis;
+            private BigDecimal TotalUnitsCount;
+            private String MeasurementsUnit;
+        }
 
+        @Data
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class Notes{
+            private String Text;
+            private String InsertUserDisplayName;
+            private Boolean IsPublic;
+            private String Label;
+            private String AssignedTo;
+            private String InsertDate;
         }
 
         @Data
@@ -228,6 +252,15 @@ public class CreateBookingModuleInV1 {
                 private String Mobile;
                 private String Email;
             }
+        }
+
+        @Data
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class LastTransactionLoadDetails {
+            private String LoadKey;
+            private Integer LoadQuantity;
         }
     }
 }

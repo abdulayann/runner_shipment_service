@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ViewsConstants {
+    private ViewsConstants(){}
     public static final String VIEW_API_HANDLE = "/api/v2/views";
 
     public static final String VIEW_CREATE_SUCCESSFUL = "Successful View Data Creation";
@@ -16,5 +17,6 @@ public class ViewsConstants {
     public static final String VIEW_ID = "View Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
+    public static final String VIEWS_RETRIEVE_BY_ID_ERROR = "View is null for Id {} with Request Id {}";
 
 }

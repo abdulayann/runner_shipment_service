@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 public class HblConstants {
 
+    private HblConstants(){}
     public static final String HBL_API_HANDLE = "api/v2/hbl";
     public static final String HBL_CREATE_SUCCESS = "HBL created successfully !";
     public static final String HBL_UPDATE_SUCCESS = "HBL updated successfully !";

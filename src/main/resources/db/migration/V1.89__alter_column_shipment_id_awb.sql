@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS awb
+    ALTER COLUMN shipment_id DROP NOT NULL;

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -19,10 +20,11 @@ public class KafkaProducer {
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
 
+    @Async
     public <T> void produceToKafka(T payload, String senderQueue, String transactionId) {
         log.info("Processing result to kafka queue - " + senderQueue);
         try {
-            log.info("request payload to kafka: " + objectMapper.writeValueAsString(payload));
+            log.info("request payload to kafka: with transactionId {} and payload {}" , transactionId,  objectMapper.writeValueAsString(payload));
         } catch (JsonProcessingException e) {
             log.error("Error while converting data, unable to convert object to json due to: "+ e.getMessage());
         }

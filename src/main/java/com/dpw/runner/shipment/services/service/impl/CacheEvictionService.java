@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.CacheRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.CacheEvictionException;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
@@ -24,7 +25,7 @@ public class CacheEvictionService {
 
     @PostConstruct
     public void setKey() {
-        this.baseKey = keyGenerator.cacheBaseKey().toString();
+        this.baseKey = StringUtility.convertToString(keyGenerator.cacheBaseKey());
     }
 
     public void clearAllCache() {

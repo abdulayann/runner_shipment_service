@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class PartiesConstants {
+    private PartiesConstants(){}
     public static final String PARTIES_API_HANDLE = "/api/v2/parties";
     public static final String PARTIES_CREATE_SUCCESSFUL = "Successful Parties  Creation";
 
@@ -27,6 +28,7 @@ public class PartiesConstants {
     public static final String COMPANY_NAME = "CompanyName";
     public static final String PIN_CODE = "PinCode";
     public static final String CONTACT_NUMBER = "ContactNumber";
+    public static final String CONTACT_PHONE = "ContactPhone";
     public static final String EMAIL = "Email";
     public static final String MOBILE = "Mobile";
     public static final String PHONE = "Phone";
@@ -53,4 +55,6 @@ public class PartiesConstants {
     public static final String FAX = "Fax";
     public static final String SITE = "site";
     public static final String API = "API";
+    public static final String KC_RA_NUMBER = "KCRANumber";
+    public static final String KC_RA_EXPIRY = "KCRAExpiry";
 }

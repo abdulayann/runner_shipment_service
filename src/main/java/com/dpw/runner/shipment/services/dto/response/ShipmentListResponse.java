@@ -88,7 +88,6 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Long container20RECount;
     private Long container40GPCount;
     private Long container40RECount;
-    private String jobStatus;
     private Set<String> containerNumbers;
     private PickupDeliveryDetailsListResponse pickupDetails;
     private PickupDeliveryDetailsListResponse deliveryDetails;
@@ -116,4 +115,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private BigDecimal totalPostedProfitPercent;
     private String wayBillNumber;
     private String orderManagementNumber;
+    private String jobStatus;
 }

@@ -1,0 +1,1 @@
+update shipment_additional_details set original = null, copy = null where original = 0 and copy = 0;

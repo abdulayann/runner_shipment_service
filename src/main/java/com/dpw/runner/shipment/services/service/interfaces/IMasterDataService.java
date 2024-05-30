@@ -1,118 +1,120 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface IMasterDataService extends ICommonService{
-    ResponseEntity<?> createCarrier(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createCarrier(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateCarrier(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateCarrier(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listCarrier(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listCarrier(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createContainerType(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createContainerType(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateContainerType(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateContainerType(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listContainerType(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listContainerType(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createVessel(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createVessel(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateVessel(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateVessel(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listVessel(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listVessel(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createRoutingMaster(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createRoutingMaster(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateRoutingMaster(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateRoutingMaster(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listRoutingMaster(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listRoutingMaster(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createCurrencies(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createCurrencies(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateCurrencies(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateCurrencies(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listCurrencies(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listCurrencies(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createDangerousGood(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createDangerousGood(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateDangerousGood(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateDangerousGood(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listDangerousGood(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listDangerousGood(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createWarehouse(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createWarehouse(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateWarehouse(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateWarehouse(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listWarehouse(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listWarehouse(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createPorts(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createPorts(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updatePorts(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updatePorts(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listPorts(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listPorts(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createCommodity(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createCommodity(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateCommodity(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateCommodity(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listCommodity(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listCommodity(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createSalesAgent(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createSalesAgent(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateSalesAgent(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateSalesAgent(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listSalesAgent(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listSalesAgent(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createOrganization(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createOrganization(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateOrganization(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateOrganization(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listOrganization(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listOrganization(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createUnlocation(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createUnlocation(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateUnlocation(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateUnlocation(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listUnlocation(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listUnlocation(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listUsers(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listUsers(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> createGridColorCode(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> createGridColorCode(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> updateGridColorCode(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> updateGridColorCode(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listGridColorCode(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listGridColorCode(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listCousinBranches(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> listCousinBranchesWithoutCurrent(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listCousinBranches(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listCousinBranchesWithoutCurrent(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> importFlightSchedules(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> importFlightSchedules(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> fetchFlightStatus(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchFlightStatus(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> importSailingSchedules(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> importSailingSchedules(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listSailingSchedule(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listSailingSchedule(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> addressList(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> addressList(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> tenantNameByTenantId(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> tenantNameByTenantId(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> fetchUnlocationOriginAndDestinationList(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchUnlocationOriginAndDestinationList(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> fetchListUnlocationTransportModeBased(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchListUnlocationTransportModeBased(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> fetchActivityMaster(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchActivityMaster(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> retrieveTenantSettings();
+    ResponseEntity<IRunnerResponse> retrieveTenantSettings();
 
-    ResponseEntity<?> retrieveTenant();
+    ResponseEntity<IRunnerResponse> retrieveTenant();
 
-    ResponseEntity<?> listOwnType(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listOwnType(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> listCarrierFilter(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> listRoles(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> fetchChargeTypes(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listCarrierFilter(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listRoles(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchChargeTypes(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> getDefaultOrg(CommonRequestModel commonRequestModel);
 }

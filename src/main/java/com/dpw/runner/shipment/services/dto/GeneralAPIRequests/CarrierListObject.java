@@ -8,4 +8,5 @@ import lombok.Setter;
 public class CarrierListObject {
     private String type;
     private Object listObject;
+    private Boolean isList;
 }

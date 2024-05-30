@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -147,4 +148,14 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Integer restrictBlApprovalRole;
     private Boolean eManifest;
     private String isfFileMainPage;
+    private String cancelledBLSuffix;
+    private Integer volumeDecimalPlace;
+    private Integer weightDecimalPlace;
+    private Boolean restrictBLEdit;
+    private Boolean restrictAWBEdit;
+    private Boolean regulatedAgent;
+    private String raNumber;
+    private LocalDateTime raExpiry;
+    private String transportOrderRoad;
+    private Boolean disableBlPartiesName;
 }

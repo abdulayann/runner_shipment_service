@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 
 public class MasterDataConstants {
+    private MasterDataConstants(){}
     public static final String MASTER_DATA_API_HANDLE = "/api/v2/master-data";
 
     public static final String CARRIER = "/carrier";
@@ -39,4 +40,11 @@ public class MasterDataConstants {
     public static final String LIST_MAIN_PAGE_TEMPLATE = "/main-page-template";
     public static final String LIST_ROLES = "/role/list";
     public static final String LIST_CHARGE_TYPES = "/chargeCode/list";
+    public static final String DEFAULT_ORG = "/getDefaultOrg";
+
+    public static final String ITEM_TYPE = "ItemType";
+    public static final String ITEM_VALUE = "ItemValue";
+    public static final String ITEM_DESCRIPTION = "ItemDescription";
+    public static final String VALUE_N_DESC = "ValuenDesc";
+    public static final String CASCADE = "Cascade";
 }
