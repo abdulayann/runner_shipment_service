@@ -51,33 +51,16 @@ public class ShipmentSync implements IShipmentSync {
     @Autowired
     JsonHelper jsonHelper;
     @Autowired
-    RestTemplate restTemplate;
-    @Autowired
     IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
-    @Autowired
-    IShipmentDao shipmentDao;
-    @Autowired
-    private IV1Service v1Service;
+
     @Autowired
     private V1AuthHelper v1AuthHelper;
 
     @Autowired
-    private EmailServiceUtility emailServiceUtility;
-
-    @Autowired
     private SyncEntityConversionService syncEntityConversionService;
-    @Autowired
-    private CommonUtils commonUtils;
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
-            .maxAttempts(3)
-            .fixedBackoff(1000)
-            .retryOn(Exception.class)
-            .build();
 
-    @Value("${v1service.url.base}${v1service.url.shipmentSync}")
-    private String SHIPMENT_V1_SYNC_URL;
     @Autowired
     private ISyncService syncService;
     @Autowired
@@ -161,7 +144,7 @@ public class ShipmentSync implements IShipmentSync {
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
         cs.setWeightVolumeUnit(sd.getVolumetricWeightUnit());
-        if(sd.getConsignee() != null && sd.getConsignee().getIsAddressFreeText() != null && sd.getConsignee().getIsAddressFreeText()){
+        if(sd.getConsignee() != null && Boolean.TRUE.equals(sd.getConsignee().getIsAddressFreeText())){
             cs.setIsConsigneeFreeTextAddress(true);
 
             var rawData = sd.getConsignee().getAddressData() != null ? sd.getConsignee().getAddressData().get(PartiesConstants.RAW_DATA): null;
@@ -170,7 +153,7 @@ public class ShipmentSync implements IShipmentSync {
         }
         else cs.setIsConsigneeFreeTextAddress(false);
 
-        if(sd.getConsigner() != null && sd.getConsigner().getIsAddressFreeText() != null && sd.getConsigner().getIsAddressFreeText()){
+        if(sd.getConsigner() != null && Boolean.TRUE.equals(sd.getConsigner().getIsAddressFreeText())){
             cs.setIsConsignerFreeTextAddress(true);
             var rawData = sd.getConsigner().getAddressData() != null ? sd.getConsigner().getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData!=null)
@@ -178,7 +161,7 @@ public class ShipmentSync implements IShipmentSync {
         }
         else  cs.setIsConsignerFreeTextAddress(false);
 
-        if(sd.getAdditionalDetails() != null && sd.getAdditionalDetails().getNotifyParty() != null && sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText() != null && sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText()){
+        if(sd.getAdditionalDetails() != null && sd.getAdditionalDetails().getNotifyParty() != null && Boolean.TRUE.equals(sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText())){
             cs.setIsNotifyPartyFreeTextAddress(true);
             var rawData = sd.getAdditionalDetails().getNotifyParty().getAddressData() != null ? sd.getAdditionalDetails().getNotifyParty().getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData!=null)
@@ -250,7 +233,7 @@ public class ShipmentSync implements IShipmentSync {
                     TruckDriverDetailsRequestV2 t;
                     t = modelMapper.map(item, TruckDriverDetailsRequestV2.class);
                     if(item.getTransporterType() != null)
-                        t.setTransporterTypeString(item.getTransporterType().toString());
+                        t.setTransporterTypeString(StringUtility.convertToString(item.getTransporterType()));
                     t.setConsolidationGuid(finalConsolGuid);
                     t.setShipmentGuid(sd.getGuid());
                     if(item.getContainerId() != null && finalMap.containsKey(item.getContainerId()))
