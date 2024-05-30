@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -20,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -29,6 +31,7 @@ import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
+import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -43,6 +46,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -93,6 +98,20 @@ class ArrivalNoticeReportTest {
 
     @Mock
     private IHblDao hblDao;
+
+    @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private Cache cache;
+
+    @Mock
+    private Cache.ValueWrapper valueWrapper;
+
+    @Mock
+    private CustomKeyGenerator keyGenerator;
+
+    private static final String DG_CLASS_VALUE = "DG";
 
     @BeforeAll
     static void init() throws IOException {
@@ -208,6 +227,10 @@ class ArrivalNoticeReportTest {
         containers.setGrossWeightUnit("KG");
         containers.setPacksType("PKG");
         containers.setPacks("100");
+        containers.setDgClass(DG_CLASS_VALUE);
+        containers.setTareWeight(BigDecimal.TEN);
+        containers.setCommodityCode("BAG");
+        containers.setCommodityGroup("BAG");
         containerModelList.add(containers);
         shipmentModel.setContainersList(containerModelList);
 
@@ -318,10 +341,22 @@ class ArrivalNoticeReportTest {
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+
+        Map<String, EntityTransferMasterLists> dataMap = new HashMap<>();
+        EntityTransferMasterLists entityTransferMasterLists = new EntityTransferMasterLists();
+        entityTransferMasterLists.setValuenDesc("Test");
+        dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
+        dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
+        when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+
         masterDataMock();
         mockCarrier();
         mockRakc(arrivalNoticeModel.shipmentDetails);
         mockBill();
+        mockCommodity();
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 
@@ -345,10 +380,23 @@ class ArrivalNoticeReportTest {
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+
+        when(cacheManager.getCache(any())).thenReturn(cache);
+
+        Map<String, EntityTransferMasterLists> dataMap = new HashMap<>();
+        EntityTransferMasterLists entityTransferMasterLists = new EntityTransferMasterLists();
+        entityTransferMasterLists.setValuenDesc("Test");
+        dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
+        dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
+        when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+        when(cache.get(any())).thenReturn(valueWrapper);
+        when(valueWrapper.get()).thenReturn(entityTransferMasterLists);
+
         masterDataMock();
         mockCarrier();
         mockRakc(arrivalNoticeModel.shipmentDetails);
         mockBill();
+        mockCommodity();
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 
@@ -439,6 +487,16 @@ class ArrivalNoticeReportTest {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(carrierMasterData)).build();
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(carrierMasterData));
+    }
+
+    private void mockCommodity() {
+        CommodityResponse commodityResponse = new CommodityResponse();
+        commodityResponse.setCode("123");
+        commodityResponse.setCommodityDescriptionWithHSCode("123");
+        commodityResponse.setDescription("Turkish Airlines");
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(commodityResponse)).build();
+        when(v1MasterData.fetchCommodityData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CommodityResponse.class)).thenReturn(Arrays.asList(commodityResponse));
     }
 
     @Test
