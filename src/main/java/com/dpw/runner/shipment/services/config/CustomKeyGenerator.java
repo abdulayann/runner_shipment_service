@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.config;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,12 @@ public class CustomKeyGenerator implements KeyGenerator {
 
             case CacheConstants.GET_USER_BY_TOKEN:
                 keyBuilder.append(CacheConstants.USER_DEFINITION)
-                        .append(params[0].toString());
+                        .append(StringUtility.convertToString(params[0]));
+                break;
+
+            case CacheConstants.GET_TENANT_SETTINGS:
+                keyBuilder.append(CacheConstants.TENANT_SETTINGS)
+                        .append(StringUtility.convertToString(params[0]));
                 break;
 
             default:

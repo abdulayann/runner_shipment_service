@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,14 +15,14 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity {
+public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, Serializable {
     private UUID guid;
     public EntityTransferCarrierDetails carrierDetails;
     public String houseBill;
     public String transportMode;
     public String direction;
     public String shipmentType;
-    public List<EntityTransferContainers> containersList;
+    private List<EntityTransferContainers> containersList;
     public Integer status;
     public String source;
     public String jobType;
@@ -37,11 +38,11 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity {
     public String assignedTo;
     public String additionalTerms;
     public String goodsDescription;
-    public List<EntityTransferBookingCarriage> bookingCarriagesList;
-    public List<EntityTransferFileRepo> fileRepoList;
-    public List<EntityTransferPacking> packingList;
-    public List<EntityTransferReferenceNumbers> referenceNumbersList;
-    public List<EntityTransferServiceDetails> servicesList;
+    private List<EntityTransferBookingCarriage> bookingCarriagesList;
+    private List<EntityTransferFileRepo> fileRepoList;
+    private List<EntityTransferPacking> packingList;
+    private List<EntityTransferReferenceNumbers> referenceNumbersList;
+    private List<EntityTransferServiceDetails> servicesList;
     public BigDecimal weight;
     public String weightUnit;
     public BigDecimal volume;
@@ -83,9 +84,9 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity {
     public EntityTransferParties client;
     public EntityTransferParties consigner;
     public EntityTransferParties consignee;
-    public Map<String, EntityTransferMasterLists> masterData;
-    public Map<String, EntityTransferUnLocations> unlocationData;
-    public Map<String, EntityTransferUser> userMasterData;
-    public Map<String, EntityTransferCurrency> currenciesMasterData;
+    private Map<String, EntityTransferMasterLists> masterData;
+    private Map<String, EntityTransferUnLocations> unlocationData;
+    private Map<String, EntityTransferUser> userMasterData;
+    private Map<String, EntityTransferCurrency> currenciesMasterData;
 
 }

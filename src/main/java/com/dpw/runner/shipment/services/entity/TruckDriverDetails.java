@@ -2,6 +2,9 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.OrganizationData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -18,6 +21,7 @@ import javax.validation.constraints.Size;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @SQLDelete(sql = "UPDATE truck_driver_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class TruckDriverDetails extends MultiTenancy {
@@ -30,6 +34,11 @@ public class TruckDriverDetails extends MultiTenancy {
     private Ownership transporterType;
 
     // String field in the database, selection of organisation on UI
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "third_party_transporter", referencedColumnName = "id")
+    @OrganizationData
+    private Parties thirdPartyTransporter;
+
     @Column(name = "transporter_name")
     private String transporterName;
 
@@ -50,6 +59,7 @@ public class TruckDriverDetails extends MultiTenancy {
 
     @Column(name = "truck_or_trailer_type_id")
     @Size(max=50, message = "max size is 50 for truck_or_trailer_type_id")
+    @MasterData(type = MasterDataType.TRUCK_TYPE)
     private String truckOrTrailerType;
 
     @Column(name = "container_type_code")
@@ -64,4 +74,10 @@ public class TruckDriverDetails extends MultiTenancy {
 
     @Column(name = "self_transporter_name")
     private String selfTransporterName;
+
+    @Column(name = "remarks")
+    private String remarks;
+
+    @Column(name = "truck_status")
+    private String truckStatus;
 }

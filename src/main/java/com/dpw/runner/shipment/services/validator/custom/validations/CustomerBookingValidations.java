@@ -15,11 +15,13 @@ import java.util.Objects;
 public class CustomerBookingValidations {
 
     public void onSave(CustomerBooking oldEntity, CustomerBooking newEntity) {
-        if (!Objects.isNull(oldEntity)) {
-            if (!Objects.equals(oldEntity.getBookingNumber(), newEntity.getBookingNumber())) {
-                log.error("Updating Booking number from {} to {} is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber());
-                throw new ValidationException(String.format("Updating Booking number from: %s to: %s is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber()));
-            }
+        if (!Objects.isNull(oldEntity) && !Objects.equals(oldEntity.getBookingNumber(), newEntity.getBookingNumber())) {
+            log.error("Updating Booking number from {} to {} is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber());
+            throw new ValidationException(String.format("Updating Booking number from: %s to: %s is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber()));
+        }
+        if(!Objects.isNull(newEntity.getConsignee()) && !Objects.isNull(newEntity.getConsignor())){
+            if(newEntity.getConsignee().getOrgCode() != null && newEntity.getConsignor().getOrgCode() != null && newEntity.getConsignor().getOrgCode().equals(newEntity.getConsignee().getOrgCode()))
+                throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
         }
         // FCL
         switch (newEntity.getBookingStatus()) {
@@ -39,6 +41,8 @@ public class CustomerBookingValidations {
                 this.validateOnPendingForCreditCheck(newEntity);
                 this.validateOnReadyForShipment(newEntity);
                 break;
+            case CANCELLED:
+                break;
         }
     }
 
@@ -52,6 +56,12 @@ public class CustomerBookingValidations {
 
         if (Objects.isNull(entity.getServiceMode()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Service mode"));
+
+        if (Objects.isNull(entity.getCarrierDetails().getOriginPort()))
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POL"));
+
+        if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()))
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POD"));
 
         if (Objects.isNull(entity.getBookingCharges()) || entity.getBookingCharges().isEmpty())
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Bill charge"));
@@ -74,14 +84,14 @@ public class CustomerBookingValidations {
         if (Objects.isNull(entity.getCarrierDetails().getDestination()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Destination"));
 
-        if (Objects.isNull(entity.getCarrierDetails().getOriginPort()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POL"));
-
-        if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POD"));
-
         if (Objects.isNull(entity.getTransportType()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Transport Mode"));
+
+        if (Objects.isNull(entity.getCarrierDetails().getOriginPort()) && !Objects.equals(entity.getTransportType(), Constants.TRANSPORT_MODE_AIR))
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POL"));
+
+        if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()) && !Objects.equals(entity.getTransportType(), Constants.TRANSPORT_MODE_AIR))
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POD"));
 
         if (Objects.isNull(entity.getCargoType()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Cargo Type"));

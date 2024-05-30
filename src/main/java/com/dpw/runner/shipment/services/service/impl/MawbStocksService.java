@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MawbStocksConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -9,13 +10,21 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
+import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
+import com.dpw.runner.shipment.services.syncing.Entity.MawbStocksV2;
+import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
+import com.dpw.runner.shipment.services.syncing.interfaces.IMawbStockSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,8 +57,14 @@ public class MawbStocksService implements IMawbStocksService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    IMawbStockSync mawbStockSync;
+
+    @Autowired
+    SyncEntityConversionService syncEntityConversionService;
+
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         MawbStocksRequest request = null;
         request = (MawbStocksRequest) commonRequestModel.getData();
@@ -65,18 +80,22 @@ public class MawbStocksService implements IMawbStocksService {
 
         try {
            mawbStocks = mawbStocksDao.save(mawbStocks);
-            log.info("MAWB stocks created successfully for Id {} with Request Id {}", mawbStocks.getId(), LoggerHelper.getRequestIdFromMDC());
+           request.setId(mawbStocks.getId());
+           var stockLinks = this.mawbStocksLinkBulkUpdate(request);
+           mawbStocks.setMawbStocksLinkRows(stockLinks);
+           log.info("MAWB stocks created successfully for Id {} with Request Id {}", mawbStocks.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+        callV1Sync(mawbStocks);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         MawbStocksRequest request = (MawbStocksRequest) commonRequestModel.getData();
         if (request == null) {
@@ -89,7 +108,7 @@ public class MawbStocksService implements IMawbStocksService {
         long id = request.getId();
         Optional<MawbStocks> oldEntity = mawbStocksDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("MAWB Stocks is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(MawbStocksConstants.MAWB_STOCKS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -103,10 +122,11 @@ public class MawbStocksService implements IMawbStocksService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+        callV1Sync(mawbStocks);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -131,7 +151,7 @@ public class MawbStocksService implements IMawbStocksService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -154,7 +174,7 @@ public class MawbStocksService implements IMawbStocksService {
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -168,7 +188,7 @@ public class MawbStocksService implements IMawbStocksService {
 
             Optional<MawbStocks> mawbStocks = mawbStocksDao.findById(id);
             if (!mawbStocks.isPresent()) {
-                log.debug("MAWB Stocks is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(MawbStocksConstants.MAWB_STOCKS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             mawbStocksDao.delete(mawbStocks.get());
@@ -182,7 +202,7 @@ public class MawbStocksService implements IMawbStocksService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -195,13 +215,13 @@ public class MawbStocksService implements IMawbStocksService {
             long id = request.getId();
             Optional<MawbStocks> mawbStocks = mawbStocksDao.findById(id);
             if (!mawbStocks.isPresent()) {
-                log.debug("MAWB Stocks is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(MawbStocksConstants.MAWB_STOCKS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("MAWB Stocks details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             MawbStocksResponse response = convertEntityToDto(mawbStocks.get());
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(response);
             else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -211,20 +231,126 @@ public class MawbStocksService implements IMawbStocksService {
         }
     }
 
+    public ResponseEntity<IRunnerResponse> getNextMawbNumberByCarrier(String airLinePrefix, String borrowedFrom){
+        ListCommonRequest listCommonRequest;
+        if (StringUtility.isEmpty(borrowedFrom))
+            listCommonRequest = CommonUtils.andCriteria("borrowedFrom", null, "ISNULL", null);
+        else
+            listCommonRequest = CommonUtils.andCriteria("borrowedFrom", borrowedFrom, "=", null);
+        CommonUtils.andCriteria("id", 0, ">", listCommonRequest);
+        CommonUtils.andCriteria("consolidationId", null, "ISNULL", listCommonRequest);
+        CommonUtils.andCriteria("availableCount", "0", ">", listCommonRequest);
+        CommonUtils.andCriteria("airLinePrefix", airLinePrefix.toLowerCase(), "=", listCommonRequest);
+
+        Pair<Specification<MawbStocks>, Pageable> tuple = fetchData(listCommonRequest, MawbStocks.class);
+        Page<MawbStocks> mawbStocksPage = mawbStocksDao.findAll(tuple.getLeft(), tuple.getRight());
+        if(!mawbStocksPage.getContent().isEmpty()){
+            return ResponseHelper.buildSuccessResponse(NextMawbCarrierResponse.builder().nextMawbNumber(mawbStocksPage.getContent().get(0).getNextMawbNumber()).build());
+        }
+        return ResponseHelper.buildSuccessResponse(NextMawbCarrierResponse.builder().nextMawbNumber(null).build());
+    }
+
+    private List<MawbStocksLink> mawbStocksLinkBulkUpdate(MawbStocksRequest mawbStocksRequest) throws ValidationException {
+        int count =  Integer.parseInt(mawbStocksRequest.getAvailableCount());
+        List<MawbStocksLink> requestlist = new ArrayList<>();
+
+        List<String> nums = new ArrayList<>();
+        String startingNum = mawbStocksRequest.getMawbNumber();
+        for (int i = 0; i < count; i++) {
+            int val = (Integer.parseInt(startingNum) + i) % 7;
+            String stNum = Integer.parseInt(startingNum) + i + "" + val;
+            int appendLeadingZeros = 8 - stNum.length();
+            for (int ind = 0; ind < appendLeadingZeros; ind++) {
+                stNum = "0" + stNum;
+            }
+            nums.add(stNum);
+        }
+        List<String> mawbNumbers = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            MawbStocksLink mawbStocksLink = new MawbStocksLink();
+            mawbStocksLink.setParentId(mawbStocksRequest.getId());
+            mawbStocksLink.setSeqNumber(Long.toString(Long.parseLong(mawbStocksRequest.getMawbNumber())  + i));
+            var leadingZerosForSeqNumber = 7 - mawbStocksLink.getSeqNumber().length();
+            for(int itr = 0; itr<leadingZerosForSeqNumber;itr++){
+                mawbStocksLink.setSeqNumber("0" + mawbStocksLink.getSeqNumber());
+            }
+            mawbStocksLink.setMawbNumber((mawbStocksRequest.getPrefix() + "-" + nums.get(i)));
+            mawbNumbers.add(mawbStocksLink.getMawbNumber());
+            mawbStocksLink.setStatus("Unused");
+            requestlist.add(mawbStocksLink);
+        }
+
+        beforeSave(mawbStocksRequest, mawbNumbers);
+
+        for (MawbStocksLink request:requestlist) {
+            mawbStocksLinkDao.save(request);
+        }
+
+        return requestlist;
+    }
+
     private MawbStocksResponse convertEntityToDto(MawbStocks mawbStocks) {
         return jsonHelper.convertValue(mawbStocks, MawbStocksResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<MawbStocks> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(mawbStocks -> {
-            responseList.add(convertEntityToDto(mawbStocks));
-        });
+        lst.forEach(mawbStocks -> responseList.add(convertEntityToDto(mawbStocks)));
         return responseList;
     }
 
     private MawbStocks convertRequestToEntity(MawbStocksRequest request) {
         return jsonHelper.convertValue(request, MawbStocks.class);
+    }
+
+    private void callV1Sync(MawbStocks mawbStocks) {
+        try {
+            mawbStockSync.sync(mawbStocks);
+        }
+        catch (Exception error) {
+            log.error("error while performing syncing MAWB_STOCKS : ",  error.getMessage());
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> createV1MawbStocks(CommonRequestModel commonRequestModel, Boolean checkForSync) throws RunnerException {
+        MawbStocks mawbStocks = null;
+        try {
+            MawbStocksV2 mawbStocksV2 = (MawbStocksV2) commonRequestModel.getData();
+            Optional<MawbStocks> optional = mawbStocksDao.findByGuid(mawbStocksV2.getGuid());
+            mawbStocks = syncEntityConversionService.mawbStocksV1ToV2(mawbStocksV2);
+            if(optional.isPresent()) {
+                var mawbStockId = optional.get().getId();
+                mawbStocks.setId(mawbStockId);
+                mawbStocksLinkDao.deleteByParentId(mawbStockId);
+            }
+            List<MawbStocksLink> mawbStocksLinks = mawbStocks.getMawbStocksLinkRows() != null ? mawbStocks.getMawbStocksLinkRows() : new ArrayList<>();
+            mawbStocksDao.save(mawbStocks);
+            for(var stockLink : mawbStocksLinks) {
+                stockLink.setParentId(mawbStocks.getId());
+                mawbStocksLinkDao.save(stockLink);
+            }
+        }
+        catch(Exception e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
+        return (ResponseEntity<IRunnerResponse>) ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
+    }
+
+    private void beforeSave(MawbStocksRequest mawbStocks, List<String> mawbNumbers) throws ValidationException {
+        if(isValidMawb(mawbStocks.getFrom()) && isValidMawb(mawbStocks.getTo())) {
+            Long count = mawbStocksLinkDao.validateDuplicateMawbNumber(mawbNumbers);
+            if(count > 0) {
+                throw new ValidationException(MawbStocksConstants.DUPLICATE_MAWB_STOCK_VALIDATION);
+            }
+        }
+    }
+
+    private boolean isValidMawb(String mawb) {
+        if(!StringUtility.isEmpty(mawb) && mawb.contains("-") && (mawb.length() - mawb.indexOf("-") == 9))
+            return true;
+        return false;
     }
 
 //    private void setManyToOneRelationships(MawbStocks mawbStocks){

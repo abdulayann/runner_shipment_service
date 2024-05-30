@@ -1,16 +1,18 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.requests.Criteria;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplateDao;
 import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.repository.interfaces.IHblTermsConditionTemplateRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ObjectUtility;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -19,10 +21,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -78,7 +79,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
     }
 
     @Override
-    public List<HblTermsConditionTemplate> updateEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint) throws Exception {
+    public List<HblTermsConditionTemplate> updateEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint) throws RunnerException {
         String responseMsg;
         List<HblTermsConditionTemplate> responseHblTermsConditionTemplate = new ArrayList<>();
         try {
@@ -86,16 +87,13 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
             ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsId, "=");
             Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
             Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, HblTermsConditionTemplate> hashMap = hblTermsConditionTemplates.stream()
+            List<HblTermsConditionTemplate> hashMap = hblTermsConditionTemplates.stream()
                     .filter(e -> e.getIsFrontPrint() == isFrontPrint)
-                    .collect(Collectors.toMap(HblTermsConditionTemplate::getId, Function.identity()));
+                    .toList();
             List<HblTermsConditionTemplate> hblTermsConditionTemplatesRequestList = new ArrayList<>();
             if (hblTermsConditionTemplateList != null && hblTermsConditionTemplateList.size() != 0) {
                 for (HblTermsConditionTemplate request : hblTermsConditionTemplateList) {
                     Long id = request.getId();
-                    if (id != null) {
-                        hashMap.remove(id);
-                    }
                     hblTermsConditionTemplatesRequestList.add(request);
                 }
                 responseHblTermsConditionTemplate = saveEntityFromSettings(hblTermsConditionTemplatesRequestList, shipmentSettingsId, isFrontPrint);
@@ -106,14 +104,14 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
-    private void deleteHblTermsConditionTemplate(Map<Long, HblTermsConditionTemplate> hashMap) {
+    private void deleteHblTermsConditionTemplate(List<HblTermsConditionTemplate> hblTermsConditionTemplates) {
         String responseMsg;
         try {
-            hashMap.values().forEach(this::delete);
+            hblTermsConditionTemplates.forEach(this::delete);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -121,17 +119,36 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
         }
     }
 
-    public HblTermsConditionTemplate getTemplateCode(String templateCode, boolean pageType, String printType)
-    {
 
+    public HblTermsConditionTemplate getTemplateCode(String templateCode, Boolean pageType, String printType) {
+        FilterCriteria customCriteria = FilterCriteria.builder()
+                .innerFilter(Arrays.asList(FilterCriteria.builder()
+                                .criteria(Criteria.builder()
+                                        .fieldName("typeOfHblPrint")
+                                        .operator("=")
+                                        .value(StringUtils.isEmpty(printType) ? TypeOfHblPrint.All.name() : printType)
+                                        .build()).build(),
+                        FilterCriteria.builder()
+                                .logicOperator("OR")
+                                .criteria(Criteria.builder()
+                                        .fieldName("typeOfHblPrint")
+                                        .operator("=")
+                                        .value(TypeOfHblPrint.All.name())
+                                        .build())
+                                .build()))
+                .build();
+        customCriteria.setLogicOperator("and");
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria("templateCode", templateCode, "=", null);
         CommonUtils.andCriteria("isFrontPrint", pageType, "=", listCommonRequest);
-        CommonUtils.andCriteria("typeOfHblPrint", StringUtility.isNotEmpty(printType) ? printType : TypeOfHblPrint.All.name(), "=", listCommonRequest);
+        listCommonRequest.getFilterCriteria().get(0).getInnerFilter().add(customCriteria);
+
         Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
         Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
-        if(hblTermsConditionTemplates.getContent().size()>0) {
+
+        if (hblTermsConditionTemplates.getContent().size() > 0) {
             return hblTermsConditionTemplates.getContent().get(0);
         }
-        return null;
+
+        return new HblTermsConditionTemplate();
     }
 }

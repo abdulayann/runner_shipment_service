@@ -5,11 +5,13 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @ApiModel("Shipment Additional Details Request Model")
@@ -57,7 +59,9 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Long lineNumber;
     private Long subLineNumber;
     private Long localLineNumber;
+    @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
+    @JsonProperty("SMTPIGMDate")
     private LocalDateTime SMTPIGMDate;
     private Boolean isInland;
     private Ownership ownership;
@@ -87,7 +91,7 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Integer copy;
     private String BLChargesDisplay;
     private String BLExporterShipment;
-    private String screeningStatus;
+    private List<String> screeningStatus;
     private String paidPlace;
     private String placeOfIssue;
     private String placeOfSupply;
@@ -112,4 +116,14 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private PartiesRequest receivingAgent;
     private String customDeclType;
     private String agentReference;
+    private String bLTermsandConditionsId;
+    private String blComments;
+    private String cargoTerms;
+    private String cargoTermsDescription;
+    private String bLRemarks;
+    private String bLRemarksDescription;
+    private String summary;
+    private Boolean isSummaryUpdated;
+    private String exemptionCodes;
+    private String aomFreeText;
 }

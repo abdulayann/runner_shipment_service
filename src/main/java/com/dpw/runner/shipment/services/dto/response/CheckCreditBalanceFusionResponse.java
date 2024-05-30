@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
@@ -22,7 +23,7 @@ public class CheckCreditBalanceFusionResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class FusionData {
+    public static class FusionData implements Serializable {
         @JsonProperty("CallingSystem")
         private String callingSystem;
         @JsonProperty("BusinessUnit")

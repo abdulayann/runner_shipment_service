@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 public class CustomerBookingConstants {
 
-
+    private CustomerBookingConstants(){}
     public static final String DATE_FORMAT = "yyyy/MM/dd";
     public static String ONE = "1";
     public static final String Customer_Booking_API_HANDLE = "/api/v2/customer-booking";
@@ -12,6 +12,7 @@ public class CustomerBookingConstants {
     public static final String CRP_LIST = "/external/crp-list";
     public static final String CRP_RETRIEVE = "/external/crp-retrieve";
     public static final String FUSION_CHECK_CREDIT_LIMIT = "/external/fusion-credit-limit";
+    public static final String RETRY_FOR_BILLING = "/retry/bill";
     public static final String LIST_SUCCESSFUL = "Successful CRP List";
     public static final String RETRIEVE_SUCCESSFUL = "Successfully retrieved data";
     public static final String CREDIT_LIMIT_RETRIEVE_SUCCESSFUL = "Successfully retrieved credit limit";
@@ -38,5 +39,8 @@ public class CustomerBookingConstants {
     public static final String GCR_FUSION = "GCR";
 
     public static final String IMMEDIATE= "IMMEDIATE";
+    public static final String DATE_TIME_FORMAT = "yyyy/MM/dd'T'hh:mm:ss";
+
+    public static final String BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR = "Booking Details is null for Id {} with Request Id {}";
 
 }

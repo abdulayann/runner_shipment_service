@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -27,6 +28,7 @@ public class RoutingsResponse implements IRunnerResponse {
     private String vesselName;
     private String pol;
     private String pod;
+    @JsonProperty("domestic")
     private boolean isDomestic;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime eta;
@@ -36,7 +38,7 @@ public class RoutingsResponse implements IRunnerResponse {
     private LocalDateTime ata;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime atd;
-    private Long consolidation_id;
+    private Long consolidationId;
     private Boolean isLinked;
     private String voyage;
     private String aircraftRegistration;
@@ -45,10 +47,15 @@ public class RoutingsResponse implements IRunnerResponse {
     private String entityType;
     private Long entityId;
     private Long routeLegId;
-    private Long vesselId;
     private Long transitDays;
     private String carrier;
-    public Map<String, String> unlocationData;
-    public Map<String, String> masterData;
-    public Map<String, String> carrierMasterData;
+    private String truckReferenceNumber;
+    private String carrierCountry;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> carrierMasterData;
+
+    public void setIsDomestic(boolean isDomestic) {
+        this.isDomestic = isDomestic;
+    }
 }

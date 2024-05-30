@@ -1,10 +1,18 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingInstructionModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +31,8 @@ public class ShippingInstructionReport extends IReport{
 
     @Autowired
     JsonHelper jsonHelper;
+    @Autowired
+    private IHblRepository hblRepository;
     @Override
     public Map<String, Object> getData(Long id) {
         ShippingInstructionModel shippingInstructionModel = (ShippingInstructionModel) getDocumentModel(id);
@@ -88,19 +98,24 @@ public class ShippingInstructionReport extends IReport{
         dictionary.put(MBL_NUMBER, model.getShipment().getMasterBill());
         dictionary.put(HBL_NUMBER, model.getShipment().getHouseBill());
         if (model.getShipment() != null && model.getShipment().getCarrierDetails() != null && model.getShipment().getCarrierDetails().getOrigin() != null) {
-            var unlocRow = ReportHelper.getUNLocRow(model.getShipment().getCarrierDetails().getOrigin());
+            var unlocRow = getUNLocRow(model.getShipment().getCarrierDetails().getOrigin());
             dictionary.put(POR, unlocRow != null ? unlocRow
                     .getNameWoDiacritics() : null);
         }
         if (model.getShipment() != null && model.getShipment().getCarrierDetails() != null) {
-            dictionary.put(POL, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getOriginPort()));
-            dictionary.put(POD, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
-            dictionary.put(POFD, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestination()));
-            dictionary.put(PO_DELIVERY, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
+            dictionary.put(POL, getPortDetails(model.getShipment().getCarrierDetails().getOriginPort()));
+            dictionary.put(POD, getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
+            dictionary.put(POFD, getPortDetails(model.getShipment().getCarrierDetails().getDestination()));
+            dictionary.put(PO_DELIVERY, getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
             String formatPattern = "dd/MMM/y";
+            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+            if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
+                formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
             dictionary.put(ETD, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEtd(), formatPattern));
             dictionary.put(ETA, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEta(), formatPattern));
-            dictionary.put(VESSEL_NAME, model.getShipment().getCarrierDetails().getVessel());
+            VesselsResponse vesselsResponse = getVesselsData(model.getShipment().getCarrierDetails().getVessel());
+            if(vesselsResponse != null)
+                dictionary.put(ReportConstants.VESSEL_NAME, vesselsResponse.getName());
             dictionary.put(VOYAGE, model.getShipment().getCarrierDetails().getVoyage());
             dictionary.put(FLIGHT_NUMBER, model.getShipment().getCarrierDetails().getFlightNumber());
         }
@@ -108,12 +123,10 @@ public class ShippingInstructionReport extends IReport{
         dictionary.put(PPCC, model.getShipment().getPaymentTerms());
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
 
-//        dictionary.put(CARRIER, model.getShipment())
 
         dictionary.put(JOB_NUMBER, model.getShipment().getShipmentId());
         dictionary.put(TRANSPORT_MODE, model.getShipment().getTransportMode());
         dictionary.put(SHIPMENT_TYPE, model.getShipment().getShipmentType());
-//        dictionary.put(SUMMARY, model.getShipment().getSummary());
 
         long totalPacks = 0L;
         BigDecimal totalVolume = BigDecimal.ZERO;
@@ -122,10 +135,9 @@ public class ShippingInstructionReport extends IReport{
         BigDecimal totalWeight = BigDecimal.ZERO;
         String unitOfTotalWeight = null;
         boolean breakFlagForWeight = false;
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
 
         if (model.getShipment().getPackingList() != null) {
-//            String packingJson = jsonHelper.convertToJson(model.getShipment().getPackingList());
-//            var values = jsonHelper.convertValue(packingJson, new TypeReference<List<Map<String, Object>>>() {});
             var values = model.getShipment().getPackingList().stream()
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                     .toList();
@@ -136,43 +148,45 @@ public class ShippingInstructionReport extends IReport{
                 if (!breakFlagForVolume && v.get(VOLUME) != null && v.get(VOLUME_UNIT) != null) {
                     if (unitOfTotalVolume == null) {
                         unitOfTotalVolume = v.get(VOLUME_UNIT).toString();
-                        totalVolume = totalVolume.add(BigDecimal.valueOf((double) v.get(VOLUME)));
+                        totalVolume = totalVolume.add(BigDecimal.valueOf(Double.parseDouble(StringUtility.convertToString(v.get(VOLUME)))));
                     } else if (!unitOfTotalVolume.equals(v.get(VOLUME_UNIT).toString())) {
                         totalVolume = BigDecimal.ZERO;
                         breakFlagForVolume = true;
                     } else
-                        totalVolume = totalVolume.add(BigDecimal.valueOf((double) v.get(VOLUME)));
+                        totalVolume = totalVolume.add(BigDecimal.valueOf(Double.parseDouble(StringUtility.convertToString(v.get(VOLUME)))));
                 }
 
                 if (!breakFlagForWeight && v.get(WEIGHT) != null && v.get(WEIGHT_UNIT) != null)
                 {
                     if(unitOfTotalWeight == null) {
                         unitOfTotalWeight = v.get(WEIGHT_UNIT).toString();
-                        totalWeight = totalWeight.add(BigDecimal.valueOf((double) v.get(WEIGHT)));
+                        totalWeight = totalWeight.add(BigDecimal.valueOf(Double.valueOf(v.get(WEIGHT).toString())));
                     }
                     else if(!unitOfTotalWeight.equals(v.get(WEIGHT_UNIT).toString())) {
                         totalWeight = BigDecimal.ZERO;
                         breakFlagForWeight = true;
                     }
                     else
-                        totalWeight = totalWeight.add(BigDecimal.valueOf((double) v.get(WEIGHT)));
+                        totalWeight = totalWeight.add(BigDecimal.valueOf(Double.valueOf(v.get(WEIGHT).toString())));
                 }
 
                 if(v.get(VOLUME) != null)
-                    v.put(VOLUME, twoDecimalPlacesFormat(v.get(VOLUME).toString()));
+                    v.put(VOLUME, ConvertToVolumeNumberFormat(v.get(VOLUME), v1TenantSettingsResponse));
                 if(v.get(WEIGHT) != null)
-                    v.put(WEIGHT, twoDecimalPlacesFormat(v.get(WEIGHT).toString()));
+                    v.put(WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
                 if(v.get(NET_WEIGHT) != null)
-                    v.put(NET_WEIGHT, twoDecimalPlacesFormat(v.get(NET_WEIGHT).toString()));
+                    v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
                 if(v.get(VOLUME_WEIGHT) != null)
-                    v.put(VOLUME_WEIGHT, twoDecimalPlacesFormat(v.get(VOLUME_WEIGHT).toString()));
+                    v.put(VOLUME_WEIGHT, ConvertToWeightNumberFormat(v.get(VOLUME_WEIGHT).toString(), v1TenantSettingsResponse));
+                if(v.get(PACKS) != null)
+                    v.put(PACKS, GetDPWWeightVolumeFormat(new BigDecimal(v.get(PACKS).toString()), 0, v1TenantSettingsResponse));
             }
 
             dictionary.put(ITEMS ,values);
         }
 
         if(totalPacks != 0)
-            dictionary.put(TOTAL_PACKS, totalPacks);
+            dictionary.put(TOTAL_PACKS, GetDPWWeightVolumeFormat(new BigDecimal(totalPacks), 0, v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_PACKS, null);
 
@@ -180,7 +194,7 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(TOTAL_VOLUME, null);
             dictionary.put(UOTV, null);
         } else {
-            dictionary.put(TOTAL_VOLUME, twoDecimalPlacesFormat(totalVolume.toString()));
+            dictionary.put(TOTAL_VOLUME, ConvertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse));
             dictionary.put(UOTV, unitOfTotalVolume);
         }
 
@@ -188,7 +202,7 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(TOTAL_WEIGHT, null);
             dictionary.put(UOTW, null);
         } else {
-            dictionary.put(TOTAL_WEIGHT, twoDecimalPlacesFormat(totalWeight.toString()));
+            dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
             dictionary.put(UOTW, unitOfTotalWeight);
         }
 
@@ -205,5 +219,15 @@ public class ShippingInstructionReport extends IReport{
         AddBlDetails(dictionary, model.getShipment().getId());
 
         return dictionary;
+    }
+
+    public void AddBlDetails(Map<String, Object> dictionary, Long shipmentId) {
+        List<Hbl> hbl = hblRepository.findByShipmentId(shipmentId);
+        if(hbl != null && hbl.size() > 0){
+            dictionary.put(ReportConstants.BL_CARGO_TERMS_DESCRIPTION,
+                    hbl.get(0).getHblData().getCargoTermsDescription());
+            dictionary.put(ReportConstants.BL_REMARKS_DESCRIPTION,
+                    hbl.get(0).getHblData().getBlRemarksDescription());
+        }
     }
 }

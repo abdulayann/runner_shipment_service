@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tec.units.ri.unit.MetricPrefix;
@@ -11,14 +12,20 @@ import javax.measure.Unit;
 import javax.measure.UnitConverter;
 import java.math.BigDecimal;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 @Slf4j
 @Component
 public class UnitConversionUtility {
-    public static Number convertUnit(String type, BigDecimal value, String fromUnit, String toUnit) throws Exception {
+    private UnitConversionUtility(){}
+    public static Number convertUnit(String type, BigDecimal value, String fromUnit, String toUnit) throws RunnerException {
         String responseMsg;
         try {
             if(value == null)
                 return 0;
+            if(IsStringNullOrEmpty(fromUnit) || IsStringNullOrEmpty(toUnit)) {
+                return value;
+            }
             Unit<?> sourceUnit = getUnitType(type, fromUnit);
             Unit<?> targetUnit = getUnitType(type, toUnit);
             UnitConverter converter = sourceUnit.getConverterToAny(targetUnit);
@@ -27,7 +34,7 @@ public class UnitConversionUtility {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
@@ -54,6 +61,54 @@ public class UnitConversionUtility {
                 return MetricPrefix.DECI(Units.METRE);
             case Constants.INCH:
                 return Units.METRE.multiply(0.0254);
+            case Constants.ANGSTROM:
+                return Units.METRE.multiply(1E-10);
+            case Constants.ASTRONOMICAL_UNIT:
+                return Units.METRE.multiply(1.49598E11);
+            case Constants.CENTILEAGUE:
+                return Units.METRE.multiply(0.000254);
+            case Constants.KILOMETER:
+                return Units.METRE.multiply(1000);
+            case Constants.ELL:
+                return Units.METRE.multiply(1.143);
+            case Constants.EXAMETER:
+                return Units.METRE.multiply(4.2323E-03);
+            case Constants.FATHOM:
+                return Units.METRE.multiply(1.8288);
+            case Constants.FURLONG:
+                return Units.METRE.multiply(201.168);
+            case Constants.FOOT, Constants.FOOT_FT:
+                return Units.METRE.multiply(0.3048);
+            case Constants.LI:
+                return Units.METRE.multiply(5556);
+            case Constants.LIGHT_YEAR:
+                return Units.METRE.multiply(9.46055E+15);
+            case Constants.MICRO_METER:
+                return Units.METRE.multiply(1E-6);
+            case Constants.MIL:
+                return Units.METRE.multiply(0.0000254);
+            case Constants.MILLIMETER:
+                return Units.METRE.multiply(0.001);
+            case Constants.NANOMETER:
+                return Units.METRE.multiply(1E-9);
+            case Constants.NAUTICAL_MILE:
+                return Units.METRE.multiply(1852);
+            case Constants.MICROINCH:
+                return Units.METRE.multiply(1E-12);
+            case Constants.MILLIINCH:
+                return Units.METRE.multiply(0.0003514598);
+            case Constants.PARSEC:
+                return Units.METRE.multiply(3.08374E+16);
+            case Constants.PICA:
+                return Units.METRE.multiply(4.217518E-03);
+            case Constants.PICOMETER:
+                return Units.METRE.multiply(1E-12);
+            case Constants.POINT:
+                return Units.METRE.multiply(0.0003514598);
+            case Constants.ROD:
+                return Units.METRE.multiply(5.0292);
+            case Constants.YARD:
+                return Units.METRE.multiply(0.9144);
             default:
                 throw new IllegalArgumentException(DaoConstants.DAO_UNKNOWN_UNIT + unitSymbol);
         }

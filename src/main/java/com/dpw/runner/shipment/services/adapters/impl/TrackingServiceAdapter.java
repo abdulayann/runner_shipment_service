@@ -3,28 +3,40 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
 @Slf4j
@@ -58,6 +70,9 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Autowired
     private ISBUtils sbUtils;
 
+    @Autowired
+    private IV1Service v1Service;
+
 
     @Override
     public UniversalTrackingPayload.UniversalEventsPayload mapEventDetailsForTracking(String bookingReferenceNumber, String referenceNumberType, String runnerReferenceNumber, List<Events> events) {
@@ -88,6 +103,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     @Override
+    @Async
     public void publishUpdatesToTrackingServiceQueue(String jsonBody, Boolean isTrackingEvents) {
         if(isTrackingEvents){
           // Publish to EventsMessage Topic
@@ -173,26 +189,55 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Override
     public UniversalTrackingPayload mapShipmentDataToTrackingServiceData(ShipmentDetails shipmentDetails) {
         UniversalTrackingPayload trackingPayload = null;
-        ConsolidationDetails consol = getConsolidationFromShipment(shipmentDetails.getId(), TenantContext.getCurrentTenant());
+        ConsolidationDetails consol = getConsolidationFromShipment(shipmentDetails.getId());
         trackingPayload = mapDetailsToTSData(consol, shipmentDetails, true);
         log.info("Shipment Tracking Update: {}", trackingPayload.toString());
         return trackingPayload;
     }
 
     @Override
-    public List<Events> getAllEvents(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+    public List<Events> getAllEvents(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String refNumber) {
         // Modified Logic (currently returning only shipment/ consol events)
         // This will be replaced once the below to-do item is completed
-        if(shipmentDetails != null)
-            return shipmentDetails.getEventsList();
-        else
-            return consolidationDetails.getEventsList();
+        List<Events> allEvents = new ArrayList<>();
+        if (shipmentDetails != null) {
+            allEvents.addAll(shipmentDetails.getEventsList() != null ? shipmentDetails.getEventsList() : Collections.emptyList());
+            // Fetch Consol events based on ref number
+            if(StringUtility.isNotEmpty(refNumber)) {
+                allEvents.addAll(getEventsFromConsolidation(refNumber));
+            }
+        }
+        if(consolidationDetails != null) {
+            allEvents.addAll(consolidationDetails.getEventsList() != null ? consolidationDetails.getEventsList() : Collections.emptyList());
+            // Fetch shipment events based on ref number
+            allEvents.addAll(getEventsFromShipment(refNumber));
+        }
 
-        //TODO (this method fetches all types of events based on a referenceNumber from ship/consol)
-        // eventsRepository.GetDataForEventsFromRefrenceNumber(uow.Connection,refrenceNoRequest,false);
+        allEvents = allEvents.stream().filter(i -> (i.getIsPublicTrackingEvent() == null || !i.getIsPublicTrackingEvent())).toList();
+        return allEvents;
     }
 
-    private ConsolidationDetails getConsolidationFromShipment(Long shipmentId, Integer currentTenant) {
+    private List<Events> getEventsFromShipment(String refNumber) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingReference", refNumber, "=");
+        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+        if(!shipmentDetailsPage.isEmpty()) {
+            return shipmentDetailsPage.getContent().get(0).getEventsList();
+        }
+        return Collections.emptyList();
+    }
+
+    private List<Events> getEventsFromConsolidation(String refNumber) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("referenceNumber", refNumber, "=");
+        Pair<Specification<ConsolidationDetails>, Pageable> pair = fetchData(listCommonRequest, ConsolidationDetails.class);
+        Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(pair.getLeft(), pair.getRight());
+        if(!consolidationDetailsPage.isEmpty()) {
+            return consolidationDetailsPage.getContent().get(0).getEventsList();
+        }
+        return Collections.emptyList();
+    }
+
+    private ConsolidationDetails getConsolidationFromShipment(Long shipmentId) {
         ConsolidationDetails consolidationDetails = null;
         try{
             List<ConsoleShipmentMapping> linkedConsol = consoleShipmentMappingDao.findByShipmentId(shipmentId);
@@ -234,7 +279,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         else
             trackingPayload.setBookingReferenceNumber(null);
 
-        if((inputConsol != null && ! inputConsol.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) || (inputShipment != null && inputShipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)))
+        if((inputConsol != null && ! inputConsol.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) || (inputShipment != null && !inputShipment.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)))
             trackingPayload.setEntityType("Container");
         else
             trackingPayload.setEntityType("awb");
@@ -262,11 +307,12 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
     private List<UniversalTrackingPayload.EntityDetail> GetAWBDetailsFromShipment(ShipmentDetails inputShipment) {
         List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
-        Awb awb = awbDao.findByShipmentId(inputShipment.getId()).get(0);
+        List<Awb> awbList = awbDao.findByShipmentId(inputShipment.getId());
         result.add(UniversalTrackingPayload.EntityDetail.builder()
-                        .trackingNumber(inputShipment.getHouseBill())
-                        .allocationDate(awb.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .trackingNumber(inputShipment.getHouseBill())
+                .allocationDate(awbList == null || awbList.size() == 0 ? null: awbList.get(0).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
                 .build());
+
         return result;
     }
 
@@ -293,7 +339,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                     .isEmpty(container.getIsEmpty())
                     .isReefer(container.getIsReefer())
                     .isShipperOwned(container.getIsShipperOwned())
-                    // .containerTypeCode(container.ContainerTypeCode) // TODO
+                    .containerTypeCode(container.getContainerCode())
                     .mode(container.getHblDeliveryMode())
                     .containerCount(container.getContainerCount())
                     .descriptionOfGoods(container.getDescriptionOfGoods())
@@ -323,23 +369,33 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return carrierMasterData.get(0).getItemDescription();
     }
 
-    private UniversalTrackingPayload.ShipmentDetail getShipmentDetails(ShipmentDetails shipmentsRow) {
-        if(shipmentsRow == null)
+    private UniversalTrackingPayload.ShipmentDetail getShipmentDetails(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails == null)
             return null;
 
-        return UniversalTrackingPayload.ShipmentDetail.builder().build();
-        // TODO map the following properties
-//                .originName(shipmentsRow.OriginName)
-//                .destinationName(shipmentsRow.DestinationName)
-//                .destinationCountry(shipmentsRow.DestinationCountry)
-//                .originPortCode(shipmentsRow.POLCode)
-//                .destinationPortCode(shipmentsRow.PODCode)
-//                .serviceMode(shipmentsRow.ServiceMode)
-//                .estimatedPickupDate(shipmentsRow.EstimatedPickup != null ? ((DateTime)shipmentsRow.EstimatedPickup).Date.ToString("yyyy-MM-dd") : null)
-//                .bookingCreationDate(shipmentsRow.DateofIssue != null ? ((DateTime)shipmentsRow.DateofIssue).Date.ToString("yyyy-MM-dd") : null)
-//                .houseBill(shipmentsRow.getHouseBill())
-//                .shipmentType(shipmentsRow.getDirection()) // Custom_ShipType
-//                .build();
+        UniversalTrackingPayload.ShipmentDetail response = UniversalTrackingPayload.ShipmentDetail.builder()
+                .serviceMode(shipmentDetails.getServiceType())
+//                .estimatedPickupDate(shipmentDetails.EstimatedPickup != null ? ((DateTime)shipmentDetails.EstimatedPickup).Date.ToString("yyyy-MM-dd") : null)
+//                .bookingCreationDate(shipmentDetails.DateofIssue != null ? ((DateTime)shipmentDetails.DateofIssue).Date.ToString("yyyy-MM-dd") : null)
+                .houseBill(shipmentDetails.getHouseBill())
+                .shipmentType(shipmentDetails.getDirection())
+                .build();
+
+        if(shipmentDetails.getCarrierDetails() != null) {
+            CarrierDetails cd = shipmentDetails.getCarrierDetails();
+            Set<String> locationRefGuids = new HashSet<>();
+            locationRefGuids.add(cd.getOrigin());
+            locationRefGuids.add(cd.getDestination());
+            locationRefGuids.add(cd.getOriginPort());
+            locationRefGuids.add(cd.getDestinationPort());
+            Map<String, UnlocationsResponse> unlocationsResponseMap = getLocationData(locationRefGuids);
+            response.setOriginName(unlocationsResponseMap.get(cd.getOrigin()) != null ? unlocationsResponseMap.get(cd.getOrigin()).getName() : null);
+            response.setOriginPortCode(unlocationsResponseMap.get(cd.getOriginPort()) != null ? unlocationsResponseMap.get(cd.getOriginPort()).getLocCode() : null);
+            response.setDestinationName(unlocationsResponseMap.get(cd.getDestination()) != null ? unlocationsResponseMap.get(cd.getDestination()).getName() : null);
+            response.setDestinationCountry(unlocationsResponseMap.get(cd.getDestination()) != null ? unlocationsResponseMap.get(cd.getDestination()).getCountry() : null);
+            response.setDestinationPortCode(unlocationsResponseMap.get(cd.getDestinationPort()) != null ? unlocationsResponseMap.get(cd.getDestinationPort()).getLocCode() : null);
+        }
+        return response;
     }
 
     private UniversalTrackingPayload mapDetailsForTracking(String referenceNumberType, String runnerReferenceNumber, String masterBill, List<UniversalTrackingPayload.ShipmentDetail> shipmentDetail, List<UniversalTrackingPayload.EntityDetail> entityDetail) {
@@ -350,5 +406,27 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         .entityDetails(entityDetail)
         .masterBill(masterBill)
         .build();
+    }
+
+    private Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
+        Map<String, UnlocationsResponse> locationMap = new HashMap<>();
+        if (locCodes.size() > 0) {
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
+                    "In",
+                    Arrays.asList(locCodes)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
+
+                for (UnlocationsResponse unlocation : unlocationsResponse) {
+                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
+                }
+
+            }
+        }
+        return locationMap;
     }
 }

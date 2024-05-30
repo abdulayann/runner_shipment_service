@@ -2,6 +2,9 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
+import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
@@ -10,6 +13,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -27,8 +31,10 @@ public class ContainerResponse implements IRunnerResponse {
     private String sealNumber;
     private String descriptionOfGoods;
     private Long noOfPackages;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal netWeight;
     private String netWeightUnit;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal grossWeight;
     private String grossWeightUnit;
     private BigDecimal measurement;
@@ -46,6 +52,7 @@ public class ContainerResponse implements IRunnerResponse {
     private String customsReleaseCode;
     private String containerStuffingLocation;
     private String containerComments;
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal grossVolume;
     private String grossVolumeUnit;
     private Boolean isReefer;
@@ -73,6 +80,7 @@ public class ContainerResponse implements IRunnerResponse {
     private String marksNums;
     private String innerPackageMeasurementUnit;
     private String pacrNumber;
+    @JsonSerialize(using = DecimalPlaceValueSerializer.class)
     private BigDecimal chargeable;
     private String chargeableUnit;
     private Boolean isOwnContainer;
@@ -80,12 +88,16 @@ public class ContainerResponse implements IRunnerResponse {
     private ContainerStatus status;
     private String extraParams;
     private String remarks;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal allocatedWeight;
     private String allocatedWeightUnit;
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal allocatedVolume;
     private String allocatedVolumeUnit;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal achievedWeight;
     private String achievedWeightUnit;
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal achievedVolume;
     private String achievedVolumeUnit;
     private String weightUtilization;
@@ -94,12 +106,21 @@ public class ContainerResponse implements IRunnerResponse {
     private Boolean isContractEnforced;
     private PartiesResponse pickupAddress;
     private PartiesResponse deliveryAddress;
-    public Map<String, String> unlocationData;
-    public Map<String, String> masterData;
-    public Map<String, String> commodityTypeData;
-    public Map<String, String> containerCodeData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> commodityTypeData;
+    private Map<String, String> containerCodeData;
     private Long contractEnforcedQuantityLimit;
     private String ownType;
     private String handlingInfo;
     private Map<String, String> textFieldData;
+    private Boolean isPart;
+    private Boolean isAttached;
+//    private List<TruckDriverDetailsResponse> truckingDetails;
+    private List<EventsResponse> eventsList;
+    private String hblNumber;
+    private String invoiceNumber;
+    private String invoiceCurrency;
+    private BigDecimal invoiceValue;
+    private Long tenantId;
 }

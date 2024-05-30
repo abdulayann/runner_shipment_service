@@ -1,11 +1,12 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.Commons;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
-public class ShipmentContainers {
+public class ShipmentContainers implements IRunnerResponse {
     public String ContainerNumber;
     public String SealNumber;
     public Long NoofPackages;
@@ -34,9 +35,9 @@ public class ShipmentContainers {
     public String ShipperSealNumber;
     public String BL_ContainerType;
     public String BL_SealNumber;
-    public BigDecimal BL_GrossWeight;
+    public String BL_GrossWeight;
     public String BL_GrossWeightUnit;
-    public BigDecimal BL_GrossVolume;
+    public String BL_GrossVolume;
     public String BL_GrossVolumeUnit;
     public Long BL_NoofPackages;
     public String BL_CarrierSealNumber;
@@ -45,4 +46,13 @@ public class ShipmentContainers {
     public String BL_PackageUnit;
     public String BL_CustomSealNumber;
     public String CommodityDescription;
+    public String CommodityGroup;
+    public BigDecimal VGMWeight;
+    public String WeightUnitDescription;
+    public String VolumeUnitDescription;
+    public String PacksUnitDescription;
+    public String CommodityDescriptionWithHSCode;
+    public String DgClassDescription;
+    public String HazardousUn;
+    public String CargoGrossWeightUnit;
 }

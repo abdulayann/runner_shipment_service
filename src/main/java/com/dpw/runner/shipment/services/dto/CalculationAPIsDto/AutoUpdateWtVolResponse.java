@@ -19,6 +19,8 @@ public class AutoUpdateWtVolResponse implements IRunnerResponse {
     private String volumetricWeightUnit;
     private BigDecimal netWeight;
     private String netWeightUnit;
+    private Integer innerPacks;
+    private String innerPackUnit;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
 }

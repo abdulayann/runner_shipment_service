@@ -11,4 +11,5 @@ public class ContainerSummaryRequest implements IRunnerRequest {
     private String totalTareWeight;
     private String chargeableWeight;
     private String totalContainerVolume;
+    private String summary;
 }

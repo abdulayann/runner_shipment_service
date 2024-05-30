@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.request;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 
@@ -12,7 +13,7 @@ import java.util.UUID;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class HblPartyDto {
+public class HblPartyDto implements Serializable {
     private Long id;
     private UUID guid;
     private Boolean isShipmentCreated;

@@ -10,11 +10,13 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Setter
 @Getter
+@Builder
 @Table(name = "shipment_setting")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
@@ -90,11 +92,21 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private Boolean isAtdAtaAutoPopulateEnabled;
 
     @Column(name = "restricted_locations")
-    @ElementCollection
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "shipment_settings_details_restricted_locations", joinColumns = @JoinColumn(name = "shipment_settings_details_id"))//    @OneToMany(fetch = FetchType.EAGER)
     private List<String> restrictedLocations;
 
     @Column(name = "shipment_console_import_approver_role")
     private String shipmentConsoleImportApproverRole;
+
+    @Column(name = "regulated_agent")
+    private Boolean regulatedAgent;
+
+    @Column(name = "ra_number")
+    private String raNumber;
+
+    @Column(name = "ra_expiry")
+    private LocalDateTime raExpiry;
 
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "shipment_id_generation_type")
@@ -481,4 +493,19 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "isf_file_main_page")
     private String isfFileMainPage;
+
+    @Column(name = "weight_decimal_place")
+    private Integer weightDecimalPlace;
+
+    @Column(name = "volume_decimal_place")
+    private Integer volumeDecimalPlace;
+
+    @Column(name = "cancelled_bl_suffix")
+    private String cancelledBLSuffix;
+
+    @Column(name = "transport_order_road")
+    private String transportOrderRoad;
+
+    @Column(name = "disable_bl_parties_name")
+    private Boolean disableBlPartiesName;
 }

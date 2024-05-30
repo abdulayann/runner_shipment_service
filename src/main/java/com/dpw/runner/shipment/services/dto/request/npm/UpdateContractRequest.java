@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
@@ -27,7 +28,7 @@ public class UpdateContractRequest implements IRunnerRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class BusinessInfo {
+    public static class BusinessInfo implements Serializable {
         private String product_name;
         private String tenant_id;
     }

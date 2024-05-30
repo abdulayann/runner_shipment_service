@@ -5,13 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class V1TenantSettingsResponse {
+public class V1TenantSettingsResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
     private List<String> RestrictedItemsForCreditLimit;
     private Boolean EnableCreditLimitManagement;
     private Boolean IsCreditLimitWithFusionEnabled;
@@ -24,4 +26,15 @@ public class V1TenantSettingsResponse {
     private Boolean ShipmentServiceV2Enabled;
     private Boolean UseV2ScreenForBillCharges;
     private Boolean P100Branch;
+    private String DPWDateFormat;
+    private Integer VolumeDecimalPlace;
+    private Integer WeightDecimalPlace;
+    private Integer WVDigitGrouping;
+    private Integer WVGroupingNumber;
+    private Boolean RoundoffLocalCurrencyAmount;
+    private Boolean IsGroupingOverseas;
+    private Integer CurrencyDigitGrouping;
+    private Integer CurrencyGroupingNumber;
+    private Integer DecimalValueForVolumetricWeight;
+    private Boolean EnableAirMessaging;
 }

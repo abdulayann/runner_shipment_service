@@ -23,6 +23,7 @@ import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 
 @Entity
@@ -66,7 +67,7 @@ public class ShipmentDetails extends MultiTenancy {
     @JoinTable(name = "shipments_containers_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "container_id"))
-    @JsonIgnoreProperties("shipmentsList")
+    @JsonIgnoreProperties(value = "shipmentsList", allowSetters = true)
     @BatchSize(size = 50)
     private List<Containers> containersList;
 
@@ -101,6 +102,7 @@ public class ShipmentDetails extends MultiTenancy {
     private Long salesAgent;
 
     @Column(name = "payment_terms")
+    @MasterData(type = MasterDataType.PAYMENT)
     private String paymentTerms;
 
     @Column(name = "incoterms")
@@ -225,7 +227,8 @@ public class ShipmentDetails extends MultiTenancy {
     private String marksNum;
 
     @Column(name = "entry_detail")
-    @Size(max=3, message = "max size is 3 for entry_detail")
+    @Size(max = 3, message = "max size is 3 for entry_detail")
+    @MasterData(type = MasterDataType.ENTRY_DETAILS)
     private String entryDetail;
 
     @Column(name = "is_locked")
@@ -310,10 +313,6 @@ public class ShipmentDetails extends MultiTenancy {
     private AdditionalDetails additionalDetails;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity = 'ShipmentDetails'")
-    private List<AuditLog> logsList;
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT'")
     private List<Notes> notesList;
 
@@ -347,7 +346,7 @@ public class ShipmentDetails extends MultiTenancy {
     @JoinTable(name = "console_shipment_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
-    @JsonIgnoreProperties("shipmentsList")
+    @JsonIgnoreProperties(value = {"shipmentsList", "containersList"}, allowSetters = true)
     private List<ConsolidationDetails> consolidationList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
@@ -395,4 +394,56 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "contract_type")
     @Size(max=64, message = "max size is 64 for contract_type")
     private String contractType;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "client_country")
+    private String clientCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "consignor_country")
+    private String consignorCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "consignee_country")
+    private String consigneeCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "notify_party_country")
+    private String notifyPartyCountry;
+
+    @Column(name = "primary_sales_agent_email")
+    private String primarySalesAgentEmail;
+
+    @Column(name = "secondary_sales_agent_email")
+    private String secondarySalesAgentEmail;
+
+    @Column(name = "sales_branch")
+    private String salesBranch;
+
+    @Column(name = "cloned_guid")
+    private UUID clonedGuid;
+
+    @Column(name = "source_guid")
+    private UUID sourceGuid;
+
+    @Column(name = "consignee_dps_address_id")
+    private Long consigneeDpsAddressId;
+
+    @Column(name = "client_dps_address_id")
+    private Long clientDpsAddressId;
+
+    @Column(name = "consignor_dps_address_id")
+    private Long consignorDpsAddressId;
+
+    @Column(name = "notify_party_dps_address_id")
+    private Long notifyPartyDpsAddressId;
+
+    @Column(name = "booking_created_date")
+    private LocalDateTime bookingCreatedDate;
+
+    @Column(name = "security_status")
+    private String securityStatus;
+
+    @Column(name = "current_party_for_quote")
+    private String currentPartyForQuote;
 }

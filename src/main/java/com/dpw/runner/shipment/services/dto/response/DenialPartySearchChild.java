@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-public class DenialPartySearchChild {
+import java.io.Serializable;
+
+public class DenialPartySearchChild implements Serializable {
     private String dp_id;
     private String list;
     private String type;

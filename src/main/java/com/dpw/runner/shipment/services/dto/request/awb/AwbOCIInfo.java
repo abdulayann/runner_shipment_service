@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 @Data
@@ -11,7 +13,8 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class AwbOCIInfo {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AwbOCIInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private Integer informationIdentifier;

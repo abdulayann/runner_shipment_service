@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -17,7 +18,9 @@ public interface ICustomerBookingDao {
 
     void delete(CustomerBooking customerBooking);
 
-    CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws Exception;
+    CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws RunnerException;
     Optional<CustomerBooking> findByBookingNumber(String bookingNumber);
 
+    int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated);
+    int updateBillStatus(Long id, Boolean isBillCreated);
 }

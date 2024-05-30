@@ -38,7 +38,6 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
             throw new BadRequestException("fileName cannot be null or empty");
         }
 
-        String token = httpServletRequest.getHeader(HttpHeaders.AUTHORIZATION);
         try {
             String originalFileName = filename;
             String base64EncodedFile = FileUtils.convertMultipartFileToBase64(file);
@@ -51,7 +50,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
 
             log.info("temporary upload file: {}", originalFileName);
 
-            return restClient.temporaryFileUpload(token, request);
+            return restClient.temporaryFileUpload(request);
 
         } catch (Exception e) {
             log.error("something went wrong in temporaryFileUpload {}", e.toString());
@@ -62,9 +61,8 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
 
     @Override
     public DocumentManagerResponse<DocumentManagerDataResponse> saveFile(DocumentManagerSaveFileRequest saveFileRequest) {
-        String token = httpServletRequest.getHeader(HttpHeaders.AUTHORIZATION);
         log.info("save file Request: {}", saveFileRequest);
-        return restClient.saveFile(token, saveFileRequest);
+        return restClient.saveFile(saveFileRequest);
     }
 
     @Override

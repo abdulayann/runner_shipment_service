@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.adapters.config;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,8 @@ public class NPMConfig {
 
     @Value("${npm.exchange.rate.api.key}")
     private String xApiKey;
+    @Value("${NPM.multiLang.xApiKey}")
+    private String multiLangXApiKey;
 
     @Bean
     public RestTemplate restTemplateForNPM() {
@@ -38,7 +41,7 @@ public class NPMConfig {
         restTemplate.getInterceptors().add((request, body, execution) -> {
             HttpHeaders headers = request.getHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("x-api-key", xApiKey);
+            headers.set(ApiConstants.X_API_KEY, xApiKey);
             return execution.execute(request, body);
         });
         return restTemplate;
@@ -50,9 +53,20 @@ public class NPMConfig {
         restTemplate.getInterceptors().add((request, body, execution) -> {
             HttpHeaders headers = request.getHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("x-api-key", xApiKey);
+            headers.set(ApiConstants.X_API_KEY, xApiKey);
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             headers.add("Authorization", RequestAuthContext.getAuthToken());
+            return execution.execute(request, body);
+        });
+        return restTemplate;
+    }
+    @Bean
+    public RestTemplate restTemplateForNpmMultiLangChargeCode() {
+        RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
+        restTemplate.getInterceptors().add((request, body, execution) -> {
+            HttpHeaders headers = request.getHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set(ApiConstants.X_API_KEY, multiLangXApiKey);
             return execution.execute(request, body);
         });
         return restTemplate;

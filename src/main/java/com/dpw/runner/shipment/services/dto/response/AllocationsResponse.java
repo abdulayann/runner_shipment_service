@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
+import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -21,10 +25,13 @@ public class AllocationsResponse implements IRunnerResponse {
     private Boolean hazardous;
     private LocalDateTime cutoffDate;
     private Boolean isTemperatureControlled;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal weight;
     private String weightUnit;
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal volume;
     private String volumeUnit;
+    @JsonSerialize(using = DecimalPlaceValueSerializer.class)
     private BigDecimal chargable;
     private String chargeableUnit;
     private BigDecimal minTemp;

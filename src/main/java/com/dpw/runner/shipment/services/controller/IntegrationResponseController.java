@@ -3,9 +3,9 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.IntegrationResponseConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.IntegrationResponseRequest;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IIntegrationResponseService;
 import io.swagger.annotations.ApiResponse;
@@ -25,22 +25,23 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping(value = IntegrationResponseConstants.INTEGRATION_RESPONSE_API_HANDLE)
 public class IntegrationResponseController {
-    @Autowired
-    private JsonHelper jsonHelper;
+    private final IIntegrationResponseService integrationResponseService;
 
     @Autowired
-    private IIntegrationResponseService integrationResponseService;
+    public IntegrationResponseController(IIntegrationResponseService integrationResponseService) {
+        this.integrationResponseService = integrationResponseService;
+    }
 
     @PostMapping(IntegrationResponseConstants.FETCH_INTEGRATION_RESPONSES)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = IntegrationResponseConstants.FETCH_RESPONSES_SUCCESSFUL),
+            @ApiResponse(code = 200, message = IntegrationResponseConstants.FETCH_RESPONSES_SUCCESSFUL, response = RunnerResponse.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
 
-    public ResponseEntity<?> fetchIntegrationResponses(@RequestBody @Valid IntegrationResponseRequest request) {
+    public ResponseEntity<IRunnerResponse> fetchIntegrationResponses(@RequestBody @Valid IntegrationResponseRequest request) {
         String responseMsg;
         try {
-             return  (ResponseEntity<RunnerResponse>) integrationResponseService.fetchIntegrationResponses(CommonRequestModel.buildRequest(request));
+             return  integrationResponseService.fetchIntegrationResponses(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : IntegrationResponseConstants.RESPONSE_FETCH_FAILED;

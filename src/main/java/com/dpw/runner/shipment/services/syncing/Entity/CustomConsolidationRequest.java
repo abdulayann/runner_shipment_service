@@ -67,6 +67,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
 
     @JsonProperty("Guid")
     private UUID Guid;
+    @JsonProperty("SourceGuid")
+    private UUID SourceGuid;
 //    @JsonProperty("Id")
 //    private Long Id;
     @JsonProperty("IntraBranch")
@@ -77,9 +79,11 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("IsInland")
     private boolean IsInland;
     @JsonProperty("IsReceivingAgentFreeTextAddress")
-    private boolean IsReceivingAgentFreeTextAddress;
+    private Boolean IsReceivingAgentFreeTextAddress;
     @JsonProperty("IsSendingAgentFreeTextAddress")
-    private boolean IsSendingAgentFreeTextAddress;
+    private Boolean IsSendingAgentFreeTextAddress;
+    @JsonProperty("IsCreditorFreeTextAddress")
+    private Boolean IsCreditorFreeTextAddress;
 
 
     // Using this field to address diff in v1 and v2
@@ -91,8 +95,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String MarksnNums;
     @JsonProperty("MrnNumber")
     private String MrnNumber;
-    @JsonProperty("MsnNumber")
-    private Long MsnNumber;
+    @JsonProperty("MsnNumberStr")
+    private String MsnNumberStr;
 
     @JsonProperty("PackageType")
     private String PackageType;
@@ -106,6 +110,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
 
     @JsonProperty("SendingAgentFreeTextAddress")
     private String SendingAgentFreeTextAddress;
+    @JsonProperty("CreditorFreeTextAddress")
+    private String CreditorFreeTextAddress;
     @JsonProperty("Smtpigmdate")
     private LocalDateTime Smtpigmdate;
     @JsonProperty("Smtpigmnumber")
@@ -153,9 +159,9 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("IGMInwardDate")
     private LocalDateTime IGMInwardDate;
     @JsonProperty("SMTPIGMDate")
-    private LocalDateTime SMTPIGMDate;
+    private LocalDateTime SMTPIGMDateCaps;
     @JsonProperty("SMTPIGMNumber")
-    private String SMTPIGMNumber;
+    private String SMTPIGMNumberCaps;
 
     @JsonProperty("ShipmentGuids")
     private List<UUID> ShipmentGuids;
@@ -434,6 +440,12 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private LocalDateTime VerifiedGrossMassCutoff;
     @JsonProperty("ReeferCutoff")
     private LocalDateTime ReeferCutoff;
+    @JsonProperty("LatestFullEquDeliveredToCarrier")
+    private LocalDateTime LatestFullEquDeliveredToCarrier;
+    @JsonProperty("EarliestDropOffFullEquToCarrier")
+    private LocalDateTime EarliestDropOffFullEquToCarrier;
+    @JsonProperty("EarliestEmptyEquPickUp")
+    private LocalDateTime EarliestEmptyEquPickUp;
 
     @JsonProperty("ShipmentType")
     private String ShipmentType;
@@ -518,4 +530,10 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private List<PartyRequestV2> consolidationAddresses;
     @JsonProperty("ModeOfBooking")
     private String ModeOfBooking;
+    @JsonProperty("AutoUpdateGoodsDesc")
+    private Boolean autoUpdateGoodsDesc;
+    @JsonProperty("CreatedBy")
+    private String CreatedBy;
+    @JsonProperty("CreatedDate")
+    private LocalDateTime CreatedDate;
 }

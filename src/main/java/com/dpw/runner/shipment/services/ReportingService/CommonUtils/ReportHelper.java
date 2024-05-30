@@ -2,36 +2,20 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ZIP_POST_CODE;
+
 @Component
 public class ReportHelper {
-
-    private static IV1Service v1Service;
-    private static JsonHelper jsonHelper;
-    private static IHblRepository hblRepository;
-
-    @Autowired
-    public ReportHelper(IV1Service v1Service, JsonHelper jsonHelper, IHblRepository hblRepository){
-        ReportHelper.v1Service = v1Service;
-        ReportHelper.jsonHelper = jsonHelper;
-        ReportHelper.hblRepository = hblRepository;
-    }
     public static String getCityCountry(String city, String country)
     {
         if (city == null)
@@ -48,6 +32,47 @@ public class ReportHelper {
             else
                 return city + " " + country;
         }
+    }
+
+    public static String getFormattedAddress(PartiesModel partiesModel) {
+        if(partiesModel == null || partiesModel.getAddressData() == null)
+            return null;
+        String response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.COMPANY_NAME, null);
+        response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.ADDRESS1, response);
+        response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.ADDRESS2, response);
+        String temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.CITY, null);
+        temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.STATE, temp);
+        temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.COUNTRY, temp);
+        temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIP_POST_CODE, temp);
+        if(!CommonUtils.IsStringNullOrEmpty(temp)) {
+            if(response == null)
+                response = temp;
+            else
+                response = response + "\n" + temp;
+        }
+        return response;
+    }
+
+    public static String getNextLineAddress(Map<String, Object> map, String key, String response) {
+        String x = getValueFromMap(map, key);
+        if(!CommonUtils.IsStringNullOrEmpty(x)){
+            if(response == null)
+                response = x;
+            else
+                response = response + "\n" + x;
+        }
+        return response;
+    }
+
+    public static String getCommaSeparatedAddress(Map<String, Object> map, String key, String response) {
+        String x = getValueFromMap(map, key);
+        if(!CommonUtils.IsStringNullOrEmpty(x)){
+            if(response == null)
+                response = x;
+            else
+                response = response + ", " + x;
+        }
+        return response;
     }
 
     public static List<String> getOrgAddressWithPhoneEmail(String name, String address1, String address2, String city_country, String email, String phone, String pincode)
@@ -126,6 +151,8 @@ public class ReportHelper {
             list.add(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)));
         if(getValueFromMap(partyAddress,ReportConstants.EMAIL) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.EMAIL));
+        if(getValueFromMap(party.getAddressData(),ZIP_POST_CODE) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ZIP_POST_CODE));
         if(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE));
         return list;
@@ -134,7 +161,7 @@ public class ReportHelper {
     public static List<String> getAddressList(String address)
     {
         if(address == null)
-            return null;
+            return Collections.emptyList();
         return List.of(address.split("\n"));
     }
 
@@ -153,8 +180,10 @@ public class ReportHelper {
     }
 
     public static String getValueFromMap(Map<String, Object> dataMap, String key) {
+        if (dataMap == null)
+            return null;
         Object value = dataMap.get(key);
-        if(value == null || ! (value instanceof String)) {
+        if (value == null || !(value instanceof String)) {
             return null;
         }
         return value.toString();
@@ -174,22 +203,6 @@ public class ReportHelper {
         return stringList;
     }
 
-    public static UnlocationsResponse getUNLocRow(String UNLocCode) {
-        if(UNLocCode == null || UNLocCode.isEmpty())
-            return null;
-        List <Object> criteria = Arrays.asList(
-                Arrays.asList("LocationsReferenceGUID"),
-                "=",
-                UNLocCode
-        );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            return unlocationsResponse.get(0);
-        return null;
-    }
-
     public static String combineStringsWithComma(String str1, String str2)
     {
         if (str1 == null)
@@ -204,26 +217,6 @@ public class ReportHelper {
         }
     }
 
-    public static String getPortDetails(String UNLocCode) {
-        UnlocationsResponse unlocationsResponse = getUNLocRow(UNLocCode);
-        if(unlocationsResponse != null) {
-            return combineStringsWithComma(unlocationsResponse.getName(), unlocationsResponse.getCountry());
-        }
-        return "";
-    }
-
-    public static void JsonDateFormat(Map<String, Object> dictionary) {
-        if (dictionary != null) {
-            Map<String, Object> dictionaryCopy = new LinkedHashMap<>(dictionary);
-            for (Map.Entry<String, Object> entry : dictionaryCopy.entrySet()) {
-                Object value = entry.getValue();
-                if (value != null && value instanceof LocalDateTime) {
-                    LocalDateTime val = (LocalDateTime) value;
-                    dictionary.put(entry.getKey(), IReport.ConvertToDPWDateFormat(val));
-                }
-            }
-        }
-    }
 
     public static String twoDecimalPlacesFormat(String value){
         if(value.isEmpty() || value.isBlank())
@@ -238,16 +231,6 @@ public class ReportHelper {
             return null;
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(pattern);
         return dateTimeFormatter.format(localDateTime);
-    }
-
-    public static void AddBlDetails(Map<String, Object> dictionary, Long shipmentId) {
-        List<Hbl> hbl = hblRepository.findByShipmentId(shipmentId);
-        if(hbl != null && hbl.size() > 0){
-            dictionary.put(ReportConstants.BL_CARGO_TERMS_DESCRIPTION,
-                    hbl.get(0).getHblData().getCargoTermsDescription());
-            dictionary.put(ReportConstants.BL_REMARKS_DESCRIPTION,
-                    hbl.get(0).getHblData().getBlRemarksDescription());
-        }
     }
 
 
@@ -334,33 +317,32 @@ public class ReportHelper {
         return fieldValue.isEmpty() ? "0" : fieldValue;
     }
 
-    public static Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
-        Map<String, UnlocationsResponse> locationMap = new HashMap<>();
-        if (Objects.isNull(locCodes))
-            return locationMap;
-        if (locCodes.size() > 0) {
-            List<Object> criteria = Arrays.asList(
-                    List.of("LocationsReferenceGUID"),
-                    "In",
-                    List.of(locCodes)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocCode(), unlocation);
-                }
-            }
-        }
-        return locationMap;
-    }
-
     public static String addCommaWithoutDecimal(BigDecimal amount)
     {
         if (amount == null) return null;
         DecimalFormat decimalFormat = new DecimalFormat("#,###");
         return decimalFormat.format(amount);
+    }
+
+    public static String addCommasWithPrecision(BigDecimal number, Integer decimalPlaces) {
+
+        if (number != null) {
+            if(decimalPlaces == null)
+                decimalPlaces = 2;
+            try {
+                BigDecimal roundedNumber = number.setScale(decimalPlaces, BigDecimal.ROUND_HALF_UP);
+                Locale customLocale = Locale.US;
+                NumberFormat numberInstance = NumberFormat.getNumberInstance(customLocale);
+                numberInstance.setMinimumFractionDigits(decimalPlaces);
+                numberInstance.setMaximumFractionDigits(decimalPlaces);
+
+                return numberInstance.format(roundedNumber);
+            } catch (Exception e) {
+                e.printStackTrace();  // Handle the exception appropriately
+            }
+        }
+
+        return number != null ? number.toString() : null;
     }
 
 }

@@ -1,0 +1,24 @@
+trigger: none
+
+pool:
+  name: Runner-self-hosted-agent
+
+variables:
+- template: pipelines/veracode/veracode-variables.yaml@devops_template
+
+resources:
+  repositories:
+  - repository: devops_template
+    name: DevOps/_git/devops-common-utils
+    type: git
+    ref: main
+  - repository: baseline_project_repo
+    name: veracode/_git/veracode
+    endpoint: Connection-to-veracode-org
+    type: git
+    ref: main
+
+jobs:
+- template: pipelines/veracode/veracode-mvn.yaml@devops_template
+  parameters:
+    mavenPath: pom.xml

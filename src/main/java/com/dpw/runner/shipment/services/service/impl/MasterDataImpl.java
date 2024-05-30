@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
@@ -22,325 +23,330 @@ public class MasterDataImpl implements IMasterDataService {
     private IV1Service v1Service;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createMasterData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateMasterData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchMasterData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createCarrier(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createCarrier(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createCarrierMasterData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateCarrier(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateCarrier(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateCarrierMasterData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listCarrier(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listCarrier(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchCarrierMasterData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createContainerType(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createContainerType(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createContainerTypeData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateContainerType(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateContainerType(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateContainerTypeData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listContainerType(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listContainerType(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchContainerTypeData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createVessel(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createVessel(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createVesselData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateVessel(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateVessel(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateVesselData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listVessel(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listVessel(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchVesselData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createRoutingMaster(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createRoutingMaster(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createRoutingMasterData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateRoutingMaster(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateRoutingMaster(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateRoutingMasterData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listRoutingMaster(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listRoutingMaster(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchRoutingMasterData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createCurrencies(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createCurrencies(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createCurrenciesData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateCurrencies(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateCurrencies(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateCurrenciesData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listCurrencies(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listCurrencies(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchCurrenciesData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createDangerousGood(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createDangerousGood(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createDangerousGoodData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateDangerousGood(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateDangerousGood(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateDangerousGoodData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listDangerousGood(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listDangerousGood(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchDangerousGoodData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createWarehouse(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createWarehouse(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createWarehouseData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateWarehouse(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateWarehouse(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateWarehouseData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listWarehouse(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listWarehouse(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchWarehouseData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createPorts(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createPorts(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createPortsData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updatePorts(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updatePorts(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updatePortsData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listPorts(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listPorts(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchPortsData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createCommodity(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createCommodity(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createCommodityData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateCommodity(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateCommodity(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateCommodityData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listCommodity(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listCommodity(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchCommodityData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createSalesAgent(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createSalesAgent(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createSalesAgentData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateSalesAgent(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateSalesAgent(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateSalesAgentData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listSalesAgent(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listSalesAgent(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchSalesAgentData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createOrganization(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createOrganization(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createOrganizationData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateOrganization(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateOrganization(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateOrganizationData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listOrganization(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listOrganization(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchOrganizationData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createUnlocation(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createUnlocation(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createUnlocationData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateUnlocation(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateUnlocation(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateUnlocationData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listUnlocation(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listUnlocation(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchUnlocationData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listUsers(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listUsers(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchUserData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> createGridColorCode(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> createGridColorCode(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createGridColorCodeData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> updateGridColorCode(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> updateGridColorCode(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateGridColorCodeData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listGridColorCode(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listGridColorCode(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchGridColorCodeData(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listOwnType(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listOwnType(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchOwnType(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listCarrierFilter(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listCarrierFilter(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchCarrierFilterList(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listCousinBranches(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listCousinBranches(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listCousinBranchesWithoutCurrent(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listCousinBranchesWithoutCurrent(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranchesWithoutCurrent(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> importFlightSchedules(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> importFlightSchedules(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().importFlightSchedules(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> fetchFlightStatus(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchFlightStatus(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchFlightStatus(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> importSailingSchedules(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> importSailingSchedules(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().importSailingSchedules(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> listSailingSchedule(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listSailingSchedule(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listSailingSchedule(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> addressList(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> addressList(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().addressList(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> tenantNameByTenantId(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> tenantNameByTenantId(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().tenantNameByTenantId(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> fetchUnlocationOriginAndDestinationList(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchUnlocationOriginAndDestinationList(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchUnlocationOriginAndDestinationList(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> fetchListUnlocationTransportModeBased(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchListUnlocationTransportModeBased(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchListUnlocationTransportModeBased(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public ResponseEntity<?> fetchActivityMaster(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchActivityMaster(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchActivityMaster(commonRequestModel.getDependentData()));
     }
 
     @Override
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         return null;
     }
 
     @Override
-    public ResponseEntity<?> retrieveTenantSettings() {
+    public ResponseEntity<IRunnerResponse> retrieveTenantSettings() {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().retrieveTenantSettings());
     }
 
     @Override
-    public ResponseEntity<?> retrieveTenant() {
+    public ResponseEntity<IRunnerResponse> retrieveTenant() {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().retrieveTenant());
     }
 
     @Override
-    public ResponseEntity<?> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchGetTemplateMainPage(commonRequestModel.getDependentData()));
     }
     @Override
-    public ResponseEntity<?> listRoles(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listRoles(CommonRequestModel commonRequestModel) {
         V1DataResponse v1DataResponse = v1Service.fetchRolesList(commonRequestModel.getDependentData());
         return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build());
     }
 
     @Override
-    public ResponseEntity<?> fetchChargeTypes(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchChargeTypes(CommonRequestModel commonRequestModel) {
         V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(commonRequestModel.getDependentData());
         return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getDefaultOrg(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().getDefaultOrg(commonRequestModel.getDependentData()));
     }
 }

@@ -51,4 +51,7 @@ public class EntityTransferAddress implements IEntityTranferBaseEntity {
     public LocalDateTime ExemptionStartDate;
     public LocalDateTime ExemptionExpiryDate;
     public String ExemptionSection;
+    public int RAKCType;
+    public String KCRANumber;
+    public String KCRAExpiry;
 }

@@ -6,11 +6,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CarrierMasterData {
+public class CarrierMasterData implements Serializable {
     @JsonProperty("Id")
     private int id;
     @JsonProperty("ItemValue")
@@ -33,7 +35,7 @@ public class CarrierMasterData {
     private String identifier3;
     @JsonProperty("TransportCodeDescription")
     private String transportCodeDescription;
-    @JsonProperty("IataCode")
+    @JsonProperty("IATACode")
     private String iataCode;
     @JsonProperty("AirlineCode")
     private String airlineCode;

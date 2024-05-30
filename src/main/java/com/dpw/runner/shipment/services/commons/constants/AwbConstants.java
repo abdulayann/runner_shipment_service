@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class AwbConstants {
+    private AwbConstants(){}
     public static final String AWB_API_HANDLE = "/api/v2/awb";
     public static final String AWB_LIST_SUCCESSFUL = "Successful AWB Info List Retrieval";
     public static final String AWB_CREATE_SUCCESSFUL = "Successful AWB Creation";
@@ -22,4 +23,19 @@ public class AwbConstants {
 
     public static final String ISSUING_AGENT_NAME = "Issuing Agent Name";
     public static final String AWB_NUMBER = "AWB Number";
+
+    public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
+    public static final String PAYMENT_INFO_RETRIEVE_SUCCESS = "Payment information created successfully !";
+    public static final String GET_AWB_PAYMENT_INFO = "/generate/awb-payment-info";
+    public static final String DIMS_TEXT = "/dims/text";
+    public static final String DIMS_TEXT_RETERIEVE_SUCCESS = "Dims text created successfully !";
+    public static final String CHARGE_TYPE_DATA_RETRIEVE_SUCCESSFUL = "Successfully retrieved data for charge type";
+    public static final String CHARGE_TYPE_ID = "ChargeTypeId";
+    public static final String AWB_RETRIEVE_ERROR = "AWB is null for Id {} with Request Id {}";
+    public static final String AWB_RETRIEVE_REQUEST_NULL_ERROR = "Request is empty for AWB retrieve with Request Id {}";
+    public static final String GENERATE_HAWB_BEFORE_MAWB_EXCEPTION = "To Generate Mawb, Please create Hawb for all the shipments attached";
+    public static final String DUPLICATE_PAIR_AWB_OCI_INFO_VALIDATION = "Combinations of Information Identifier and Trade identification code already exists. Please enter unique combinations";
+    public static final String IATA_DESCRIPTION_FIELD_VALIDATION = "IATA description shouldn't be more than 3 in other charges";
+    public static final String FNM_STATUS_FETCH_SUCCESS = "Successfully fetch fnm status message";
+
 }

@@ -26,4 +26,5 @@ public class PartiesResponse implements IRunnerResponse {
     private String addressCode;
     private Map<String, Object> orgData;
     private Map<String, Object> addressData;
+    private Boolean isAddressFreeText;
 }

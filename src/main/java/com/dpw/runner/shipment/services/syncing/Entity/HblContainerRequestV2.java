@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
-public class HblContainerRequestV2 {
+public class HblContainerRequestV2 implements IRunnerRequest {
     private Long id;
     private UUID guid;
     private String containerNumber;

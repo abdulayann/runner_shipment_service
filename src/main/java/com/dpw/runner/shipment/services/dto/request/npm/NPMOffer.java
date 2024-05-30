@@ -2,11 +2,12 @@ package com.dpw.runner.shipment.services.dto.request.npm;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class NPMOffer {
+public class NPMOffer implements Serializable {
     public Double total_route_price;
     public Double total_route_cost;
     public Long ID;
@@ -16,7 +17,7 @@ public class NPMOffer {
     public String chargeable_uom;
 
     @Data
-    public static class  ChargeGroups{
+    public static class  ChargeGroups implements Serializable{
         public String group_name;
         public String group_sell_rate;
         public Long ID;
@@ -24,7 +25,7 @@ public class NPMOffer {
     }
 
     @Data
-    public static class ChargeCodes{
+    public static class ChargeCodes implements Serializable{
         public String carrier;
         public String rate_name;
         public Long ID;
@@ -37,7 +38,7 @@ public class NPMOffer {
     }
 
     @Data
-    public static class EntityRateCards{
+    public static class EntityRateCards implements Serializable{
         public Double entity_price;
         public Long ID;
         public String node;
@@ -53,7 +54,7 @@ public class NPMOffer {
     }
 
     @Data
-    public static class LoadsRatesInfo{
+    public static class LoadsRatesInfo implements Serializable{
         public String load_type;
         public Long ID;
         public Double load_price;
@@ -71,7 +72,7 @@ public class NPMOffer {
     }
 
     @Data
-    public static class AssociatedRate{
+    public static class AssociatedRate implements Serializable{
         public Long ID;
         public String carrier;
         public String rate_name;
@@ -106,7 +107,7 @@ public class NPMOffer {
     }
 
     @Data
-    public static class SlabRate{
+    public static class SlabRate implements Serializable{
         public Long ID;
         public Double slab_low;
         public Double slab_high;
@@ -119,7 +120,7 @@ public class NPMOffer {
     }
 
     @Data
-    public static class SourceDetails{
+    public static class SourceDetails implements Serializable{
         public String _id;
         public String source_id;
         public String source_name;

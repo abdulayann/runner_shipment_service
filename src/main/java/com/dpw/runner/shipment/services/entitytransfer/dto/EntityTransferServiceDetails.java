@@ -22,5 +22,5 @@ public class EntityTransferServiceDetails implements IEntityTranferBaseEntity {
     public LocalDateTime completionDate;
     public String refNumber;
     public String serviceNotes;
-    public Map<String, EntityTransferMasterLists> masterData;
+    private Map<String, EntityTransferMasterLists> masterData;
 }

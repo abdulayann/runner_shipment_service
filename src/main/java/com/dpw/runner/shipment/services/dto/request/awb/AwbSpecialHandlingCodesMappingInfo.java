@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
+
+import java.io.Serializable;
 
 @Data
 @Builder
@@ -9,7 +12,8 @@ import lombok.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class AwbSpecialHandlingCodesMappingInfo {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AwbSpecialHandlingCodesMappingInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private String shcId;

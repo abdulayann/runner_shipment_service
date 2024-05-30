@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class BulkDownloadRequest {
     private String shipmentId;
     private String consolidationId;
+    private String transportMode;
+    private boolean isExport;
 }

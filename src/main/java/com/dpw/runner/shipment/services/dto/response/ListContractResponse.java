@@ -1,15 +1,18 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -20,16 +23,19 @@ public class ListContractResponse implements IRunnerResponse {
     private List<ContractResponse> contracts;
     @JsonProperty("count")
     private Long count;
+    private Map<String, UnlocationsResponse> unlocMasterData;
 
     @Data
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class ContractResponse {
+    public static class ContractResponse implements Serializable {
         @JsonProperty("_id")
         private String _id;
         @JsonProperty("contract_id")
         private String contract_id;
+        @JsonProperty("parent_contract_id")
+        private String parent_contract_id;
         @JsonProperty("contract_type")
         private String contract_type;
         @JsonProperty("source")
@@ -90,7 +96,7 @@ public class ListContractResponse implements IRunnerResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class Meta {
+    public static class Meta implements Serializable{
         @JsonProperty("pod")
         private String pod;
         @JsonProperty("pol")
@@ -109,13 +115,30 @@ public class ListContractResponse implements IRunnerResponse {
         private String mode_of_transport;
         @JsonProperty("shipment_movement")
         private String shipment_movement;
+        @JsonProperty("branch_info")
+        private BranchInfo branch_info;
     }
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class Route {
+    public static class BranchInfo implements Serializable{
+        @JsonProperty("id")
+        private String id;
+        @JsonProperty("country")
+        private String country;
+        @JsonProperty("sales_agent_primary_email")
+        private String sales_agent_primary_email;
+        @JsonProperty("sales_agent_secondary_email")
+        private String sales_agent_secondary_email;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Route implements Serializable{
         @JsonProperty("type")
         private String type;
         @JsonProperty("node")
@@ -130,7 +153,7 @@ public class ListContractResponse implements IRunnerResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class RouteInfo {
+    public static class RouteInfo implements Serializable{
         @JsonProperty("code")
         private String code;
         @JsonProperty("country_id")
@@ -147,7 +170,7 @@ public class ListContractResponse implements IRunnerResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class ContractUsage {
+    public static class ContractUsage implements Serializable{
         @JsonProperty("usage_id")
         private String usage_id;
         @JsonProperty("filter_params")
@@ -164,7 +187,7 @@ public class ListContractResponse implements IRunnerResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class FilterParams {
+    public static class FilterParams implements Serializable{
         @JsonProperty("load_type")
         private List<String> load_type;
         @JsonProperty("cargo_type")
@@ -177,7 +200,7 @@ public class ListContractResponse implements IRunnerResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class ContractUsageMeta {
+    public static class ContractUsageMeta implements Serializable{
         @JsonProperty("original_usage")
         private Long original_usage;
         @JsonProperty("original_usage_uom")
@@ -190,15 +213,19 @@ public class ListContractResponse implements IRunnerResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class LoadAttributes {
+    public static class LoadAttributes implements Serializable{
         @JsonProperty("weight")
-        private Long weight;
+        private BigDecimal weight;
         @JsonProperty("quantity")
         private Long quantity;
+        @JsonProperty("volume")
+        private BigDecimal volume;
         @JsonProperty("weight_uom")
         private String weight_uom;
         @JsonProperty("quantity_uom")
         private String quantity_uom;
+        @JsonProperty("volume_uom")
+        private String volume_uom;
         @JsonProperty("dimensions")
         private Dimensions dimensions;
     }
@@ -207,13 +234,15 @@ public class ListContractResponse implements IRunnerResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class Dimensions {
+    public static class Dimensions implements Serializable{
         @JsonProperty("width")
         private Long width;
         @JsonProperty("height")
         private Long height;
         @JsonProperty("length")
         private Long length;
+        @JsonProperty("uom")
+        private String uom;
     }
 
 }

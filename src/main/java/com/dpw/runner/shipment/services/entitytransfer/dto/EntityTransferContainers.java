@@ -83,7 +83,7 @@ public class EntityTransferContainers implements IEntityTranferBaseEntity {
     public String achievedVolumeUnit;
     public String weightUtilization;
     public String volumeUtilization;
-    public Map<String, EntityTransferMasterLists> masterData;
-    public Map<String, EntityTransferContainerType> containerTypeMasterData;
-    public Map<String, EntityTransferCommodityType> commodityTypeMasterData;
+    private Map<String, EntityTransferMasterLists> masterData;
+    private Map<String, EntityTransferContainerType> containerTypeMasterData;
+    private Map<String, EntityTransferCommodityType> commodityTypeMasterData;
 }

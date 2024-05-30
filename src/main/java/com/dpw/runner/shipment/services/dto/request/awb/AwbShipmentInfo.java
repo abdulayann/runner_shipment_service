@@ -1,7 +1,12 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
+
+import java.io.Serializable;
 
 @Data
 @ApiModel("Awb Shipment Info Request Model")
@@ -9,7 +14,8 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AwbShipmentInfo {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AwbShipmentInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private String shipperName;
@@ -24,9 +30,9 @@ public class AwbShipmentInfo {
     private String noOfCopies;
     private String status;
     private String awbNumber;
-    //TODO- Loc Code
+    @UnlocationData
     private String originAirport;
-    //TODO- Loc Code
+    @UnlocationData
     private String destinationAirport;
     private String firstCarrier;
     private Integer abrId;

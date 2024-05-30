@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Map;
 
 @Data
-public class PartyRequestV2 {
+public class PartyRequestV2 implements IRunnerRequest {
     @JsonProperty("AddressCode")
     private String AddressCode;
     @JsonProperty("AddressData")
@@ -23,4 +24,8 @@ public class PartyRequestV2 {
     private int TenantId;
     @JsonProperty("Type")
     private String Type;
+    @JsonProperty("IsFreeTextAddress")
+    private Boolean IsFreeTextAddress;
+    @JsonProperty("FreeTextAddress")
+    private String FreeTextAddress;
 }

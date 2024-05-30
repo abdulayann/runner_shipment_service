@@ -1,26 +1,29 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.Commons;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+@Data
 public class ShipmentResponse implements IRunnerResponse
 {
-    public String MasterBill;
-    public String HouseBill;
-    public Long TotalPacks;
-    public BigDecimal Weight;
-    public String WeightUnit;
-    public List<String> Consigner;
-    public List<String> Consignee;
-    public List<String> ConsignerAddressFreeText ;
-    public List<String> ConsigneeAddressFreeText ;
-    public List<String> NotifyPartyAddressFreeText ;
-    public String ConsignerCompanyName;
-    public String ConsigneeCompanyName;
-    public String ConsignerLocalName;
-    public String ConsigneeLocalName;
-    public String Description;
-    public String HsnNumber;
+    public String masterBill;
+    public String houseBill;
+    public Long totalPacks;
+    public BigDecimal weight;
+    public String weightUnit;
+    private List<String> consigner;
+    private List<String> consignee;
+    private List<String> consignerAddressFreeText;
+    private List<String> consigneeAddressFreeText;
+    private List<String> notifyPartyAddressFreeText;
+    public String consignerCompanyName;
+    public String consigneeCompanyName;
+    public String consignerLocalName;
+    public String consigneeLocalName;
+    public String description;
+    public String hsnNumber;
+    public String freightOverseasCurrency;
 }

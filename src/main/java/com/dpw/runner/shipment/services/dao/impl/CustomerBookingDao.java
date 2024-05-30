@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -22,6 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -47,7 +49,7 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     public CustomerBooking save(CustomerBooking customerBooking) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(customerBooking) , Constants.BOOKING, LifecycleHooks.ON_CREATE, false);
         if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
+            throw new ValidationException(String.join(",", errors));
         CustomerBooking old = null;
         if (customerBooking.getId() != null) {
             Optional<CustomerBooking> oldEntity = findById(customerBooking.getId());
@@ -83,7 +85,7 @@ public class CustomerBookingDao implements ICustomerBookingDao {
         customerBookingRepository.delete(customerBooking);
     }
 
-    public CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws Exception {
+    public CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws RunnerException {
         String responseMsg;
         try {
             if (customerBooking.getId() != null) {
@@ -100,11 +102,23 @@ public class CustomerBookingDao implements ICustomerBookingDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 
     public Optional<CustomerBooking> findByBookingNumber(String bookingNumber) {
         return customerBookingRepository.findByBookingNumber(bookingNumber);
+    }
+
+    @Override
+    @Transactional
+    public int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated){
+        return customerBookingRepository.updateIsPlatformBookingCreated(id, isPlatformBookingCreated);
+    }
+
+    @Override
+    @Transactional
+    public int updateBillStatus(Long id, Boolean isBillCreated){
+        return customerBookingRepository.updateBillingStatus(id, isBillCreated);
     }
 }

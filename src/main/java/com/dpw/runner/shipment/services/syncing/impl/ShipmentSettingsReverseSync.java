@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
@@ -35,7 +36,7 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
     IShipmentSettingsDao shipmentSettingsDao;
 
     @Override
-    public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel) {
         String responseMessage;
         ShipmentSettingsSyncRequest req = (ShipmentSettingsSyncRequest) commonRequestModel.getData();
         try {
@@ -79,6 +80,10 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
             dest.setLowMarginApproval(req.getIsLowMarginApprovalRequired());
             dest.setShippingInstruction(req.getShipmentInstruction());
             dest.setIsfFileMainPage(req.getISFFileMainPage());
+            dest.setAirExportConsoleManifest(req.getAirExportConsolManifest());
+            dest.setAirImportConsoleManifest(req.getAirImportConsolManifest());
+            dest.setSeaImportConsoleManifest(req.getSeaImportConsolManifest());
+            dest.setSeaExportConsoleManifest(req.getSeaExportConsolManifest());
 
             return shipmentSettingsService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(dest));
         } catch (Exception e) {
@@ -135,7 +140,7 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {
         if(obj == null)

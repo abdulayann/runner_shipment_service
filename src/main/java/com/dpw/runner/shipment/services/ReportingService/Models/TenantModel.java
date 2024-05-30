@@ -1,9 +1,16 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
-import java.io.Serializable;
+import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
+import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
+import lombok.Getter;
 
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
+@Getter
 public class TenantModel implements Serializable {
     public String tenantName;
+    public String code;
     public String address1;
     public String address2;
     public String email;
@@ -20,4 +27,18 @@ public class TenantModel implements Serializable {
     public String companyRegNumber;
     public boolean IATAAgent;
     public Long tenantId;
+    public String currencyCode;
+    public String AgentIATACode;
+    public String AgentCASSCode;
+    public LocalDateTime IATARegistrationStartDate;
+    public String PIMAAddress;
+    public Long DefaultOrgId;
+    public String AgentIATANumber;
+
+    public Boolean RoundoffLocalCurrencyAmount;
+    public Boolean IsGroupingOverseas;
+    public DigitGrouping CurrencyDigitGrouping;
+    public GroupingNumber CurrencyGroupingNumber;
+    public String UnlocoLocationGuid;
+    public Integer Unloco;
 }

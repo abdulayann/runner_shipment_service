@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class JobModel {
+public class JobModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("ShipmentId")
@@ -25,20 +28,24 @@ public class JobModel {
     @JsonProperty("OrderNumber")
     private String orderNumber;
     @JsonProperty("OrderDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime orderDate;
     @JsonProperty("ConfirmNumber")
     private String confirmNumber;
     @JsonProperty("ConfirmDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime confirmDate;
     @JsonProperty("InvoiceNumber")
     private String invoiceNumber;
     @JsonProperty("InvoiceDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime invoiceDate;
     @JsonProperty("BuyerId")
     private Long buyerId;
     @JsonProperty("OrderStatus")
     private String orderStatus;
     @JsonProperty("FollowUpDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime followUpDate;
     @JsonProperty("Description")
     private String description;

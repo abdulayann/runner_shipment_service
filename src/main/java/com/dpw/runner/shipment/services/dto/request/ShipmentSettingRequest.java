@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -18,6 +19,8 @@ import java.util.List;
 public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long tenantId;
+    private Boolean autoUpdateShipmentAWB;
+    private Boolean autoUpdateShipmentBL;
     private Boolean houseBillNumberLock;
     private Boolean restrictHblGen;
     private Boolean printPhoneNumber;
@@ -155,4 +158,14 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Integer restrictBlApprovalRole;
     private Boolean eManifest;
     private String isfFileMainPage;
+    private String cancelledBLSuffix;
+    private Integer volumeDecimalPlace;
+    private Integer weightDecimalPlace;
+    private Boolean restrictBLEdit;
+    private Boolean restrictAWBEdit;
+    private Boolean regulatedAgent;
+    private String raNumber;
+    private LocalDateTime raExpiry;
+    private String transportOrderRoad;
+    private Boolean disableBlPartiesName;
 }

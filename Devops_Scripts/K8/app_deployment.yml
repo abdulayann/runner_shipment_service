@@ -5,6 +5,15 @@ metadata:
   namespace: NAMESPACE_NAME
   labels:
     app: runner-shipment-service
+    product_name: PRODUCT_NAME
+    repo_name: REPO_NAME
+    service_name: SERVICE_NAME
+    service_type: SERVICE_TYPE
+    language: LANGUAGE
+    infra_type: INFRA_TYPE
+    branching: BRANCHING
+    cicd_type: CICD_TYPE
+    env_name: ENV_NAME
 spec:
   replicas: REPLICA_COUNT
   selector:
@@ -16,27 +25,38 @@ spec:
         app: runner-shipment-service
     spec:
       containers:
-        - name: runner-shipment-service
-          image: ContainerRegistryURL/ACR_NAME:LATEST_IMAGE
-          imagePullPolicy: Always
-          command: ["/bin/sh","-c"]
-          args: ["java HEAP_MIN HEAP_MAX -javaagent:/usr/local/newrelic/newrelic.jar -jar /usr/local/lib/runner-shipment-services-0.0.1.jar"]
-          resources:
-            requests:
-              cpu: MIN_CPU
-              memory: MIN_MEM
-            limits:
-              cpu: MAX_CPU
-              memory: MAX_MEM
-          ports:
-            - containerPort: 8080
-          envFrom:
-            - configMapRef:
-                name: runner-shipment-service-cm
-          readinessProbe:
-            httpGet:
-              path: /shipment-service/actuator/health
-              port: 8080
-            initialDelaySeconds: 60
-            periodSeconds: 10
-            timeoutSeconds: 10
+      - name: runner-shipment-service
+        image: ContainerRegistryURL/ACR_NAME:LATEST_IMAGE
+        imagePullPolicy: Always
+        command: [/bin/sh, -c]
+        args: [cat /mnt/secrets-store/shipment-service-ENV_NAME-SECRET >> ~/.bashrc && . ~/.bashrc && java HEAP_MIN HEAP_MAX -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -XX:InitiatingHeapOccupancyPercent=80 -XX:G1HeapRegionSize=16M -XX:G1ReservePercent=20 -XX:SoftRefLRUPolicyMSPerMB=50 -XX:+UseG1GC JVM_ALG -javaagent:/usr/local/newrelic/newrelic.jar -jar /usr/local/lib/runner-shipment-services-0.0.1.jar]
+        resources:
+          requests:
+            cpu: MIN_CPU
+            memory: MIN_MEM
+          limits:
+            cpu: MAX_CPU
+            memory: MAX_MEM
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: runner-shipment-service-cm
+        readinessProbe:
+          httpGet:
+            path: /shipment-service/actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 10
+        volumeMounts:
+        - name: secrets-store01-inline
+          mountPath: /mnt/secrets-store
+          readOnly: true
+      volumes:
+      - name: secrets-store01-inline
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: azure-kvname-system-msi

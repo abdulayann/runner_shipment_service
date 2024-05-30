@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
-import com.dpw.runner.shipment.services.commons.constants.Permissions;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.EntityNotFoundException;
@@ -20,15 +20,15 @@ public class TenantEntityListener {
     public void prePersist(Object object) {
         if (object instanceof MultiTenancy) {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
-            Map<String, Boolean> permissions = UserContext.getUser().Permissions;
+            Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
-            if (permissions.containsKey(Permissions.tenantSuperAdmin) && !Objects.isNull(tenantId))
+            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantCreatePermission)) && !Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
             else
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
 
             // Special case handled to retrigger sync from V1 to V2 on demand basis from admin account
-            if (permissions.containsKey(Permissions.tenantSuperAdmin) && !Objects.isNull(UserContext.getUser().getSyncTenantId()))
+            if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.isNull(UserContext.getUser().getSyncTenantId()))
                 ((MultiTenancy) object).setTenantId(UserContext.getUser().getSyncTenantId());
 
         }
@@ -38,9 +38,9 @@ public class TenantEntityListener {
     public void preUpdate(Object object) {
         if(object instanceof MultiTenancy) {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
-            Map<String, Boolean> permissions = UserContext.getUser().Permissions;
+            Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
-            if (permissions.containsKey(Permissions.tenantSuperAdmin) && !Objects.isNull(tenantId))
+            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && !Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
             else
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
@@ -48,7 +48,7 @@ public class TenantEntityListener {
             if(tenantId == null)
                 tenantId = TenantContext.getCurrentTenant();
 
-            if(! permissions.containsKey(Permissions.tenantSuperAdmin) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
+            if(! permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantUpdatePermission) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
                 throw new RuntimeException("Authorization has been denied for this request, tenantId mismatch");
 
 
@@ -59,14 +59,14 @@ public class TenantEntityListener {
     public void preRemove(Object object) {
         if(object instanceof MultiTenancy) {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
-            Map<String, Boolean> permissions = UserContext.getUser().Permissions;
+            Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
-            if (permissions.containsKey(Permissions.tenantSuperAdmin) && !Objects.isNull(tenantId))
+            if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
             else
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
 
-            if(! permissions.containsKey(Permissions.tenantSuperAdmin) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
+            if(! permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
                 throw new EntityNotFoundException();
         }
     }

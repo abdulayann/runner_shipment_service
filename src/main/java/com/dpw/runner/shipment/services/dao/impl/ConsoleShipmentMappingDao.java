@@ -4,6 +4,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsoleShipmentsMappingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +16,11 @@ import java.util.*;
 public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     @Autowired
     private IConsoleShipmentsMappingRepository consoleShipmentsMappingRepository;
+
+    @Override
+    public Page<ConsoleShipmentMapping> findAll(Specification<ConsoleShipmentMapping> spec, Pageable pageable) {
+        return consoleShipmentsMappingRepository.findAll(spec, pageable);
+    }
 
     @Override
     public List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId) {
@@ -28,6 +36,16 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
         return consoleShipmentsMappingRepository.findByShipmentId(shipmentId);
     }
 
+    @Override
+    public List<ConsoleShipmentMapping> findByConsolidationIdByQuery(Long consolidationId) {
+        return consoleShipmentsMappingRepository.findByConsolidationIdByQuery(consolidationId);
+    }
+
+    @Override
+    public List<ConsoleShipmentMapping> findByShipmentIdByQuery(Long shipmentId) {
+        return consoleShipmentsMappingRepository.findByShipmentIdByQuery(shipmentId);
+    }
+
     private ConsoleShipmentMapping save(ConsoleShipmentMapping consoleShipmentMapping) {
         return consoleShipmentsMappingRepository.save(consoleShipmentMapping);
     }
@@ -37,14 +55,13 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public List<Long> assignShipments(Long consolidationId, List<Long> shipIds) {
-        List<ConsoleShipmentMapping> mappings = findByConsolidationId(consolidationId);
+    public List<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings) {
+        if(mappings == null)
+            mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         if (mappings != null && mappings.size() > 0) {
             for (ConsoleShipmentMapping consoleShipmentMapping : mappings) {
-                if (shipmentIds.contains(consoleShipmentMapping.getShipmentId())) {
-                    shipmentIds.remove(consoleShipmentMapping.getShipmentId());
-                }
+                shipmentIds.remove(consoleShipmentMapping.getShipmentId());
             }
         }
         if (!shipmentIds.isEmpty()) {

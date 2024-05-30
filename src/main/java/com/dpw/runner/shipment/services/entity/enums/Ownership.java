@@ -3,8 +3,8 @@ package com.dpw.runner.shipment.services.entity.enums;
 import org.springframework.util.StringUtils;
 
 public enum Ownership {
-    SELF(1, "Self"),
-    THIRD_PARTY(2, "3rd Party");
+    Self(1, "Self"),
+    ThirdParty(2, "3rd Party");
 
     private final int value;
     private final String description;

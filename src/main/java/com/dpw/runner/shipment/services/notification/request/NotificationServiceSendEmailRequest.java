@@ -19,4 +19,8 @@ public class NotificationServiceSendEmailRequest implements Serializable {
     private Boolean trackEmailEvents = true;
     private MultipartFile files;
     private String metadata;
+    private String htmlBody;
+    private String item;
+    private String moduleName;
+    private String subject;
 }

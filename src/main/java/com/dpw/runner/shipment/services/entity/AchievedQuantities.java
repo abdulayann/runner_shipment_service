@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
@@ -32,12 +34,14 @@ public class AchievedQuantities extends MultiTenancy {
     private BigDecimal consolidatedWeight;
 
     @Column(name = "consolidated_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String consolidatedWeightUnit;
 
     @Column(name = "consolidated_volume")
     private BigDecimal consolidatedVolume;
 
     @Column(name = "consolidated_volume_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String consolidatedVolumeUnit;
 
     @Column(name = "consolidation_charge_quantity")

@@ -4,9 +4,11 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 public class HblDataRequestV2 {
+    private UUID guid;
     private Integer version;
     private String status;
     private String blType;

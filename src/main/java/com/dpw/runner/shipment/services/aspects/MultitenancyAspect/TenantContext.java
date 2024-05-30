@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TenantContext {
+    private TenantContext(){}
     private static ThreadLocal<Integer> currentTenant = new InheritableThreadLocal<>();
 
     public static Integer getCurrentTenant() {

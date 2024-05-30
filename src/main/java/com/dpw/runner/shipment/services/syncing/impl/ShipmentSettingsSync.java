@@ -1,22 +1,28 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -35,10 +41,16 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     RestTemplate restTemplate;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private V1AuthHelper v1AuthHelper;
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
-
+    @Autowired
+    private ISyncService syncService;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -50,8 +62,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     private String SHIPMENT_SETTING_V1_SYNC_URL;
 
     @Override
-    @Async
-    public ResponseEntity<?> sync(ShipmentSettingsDetails req) {
+    public ResponseEntity<IRunnerResponse> sync(ShipmentSettingsDetails req) {
         ShipmentSettingsSyncRequest syncRequest = modelMapper.map(req, ShipmentSettingsSyncRequest.class);
 
         syncRequest.setHblTermsConditionTemplateRow(convertToList(req.getHblTermsConditionTemplate(), HblTermsConditionTemplateDto.class));
@@ -59,36 +70,37 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setHblLock(convertToList(List.of(req.getHblLockSettings()), HblLockDto.class));
         syncRequest.setHawbLock(convertToList(List.of(req.getHawbLockSettings()), HawbLockDto.class));
         syncRequest.setMawbLock(convertToList(List.of(req.getMawbLockSettings()), MawbLockDto.class));
-        syncRequest.setTenantProducts(convertToList(req.getTenantProducts(), TenantProductsDto.class));
-        if(req.getProductSequenceConfig() != null) {
-            syncRequest.setProductSequenceConfig(req.getProductSequenceConfig().stream()
-                    .map(this::mapProductSequenceConfig).toList());
-        }
+//        syncRequest.setTenantProducts(convertToList(req.getTenantProducts(), TenantProductsDto.class)); // Removing for now as tenant products and product sequence should not sync from v2 to v1
+//        if(req.getProductSequenceConfig() != null) {
+//            syncRequest.setProductSequenceConfig(req.getProductSequenceConfig().stream()
+//                    .map(this::mapProductSequenceConfig).toList());
+//        }
 
         syncRequest.setShipmentImportApproverRole(req.getShipmentConsoleImportApproverRole());
         syncRequest.setIsLowMarginApprovalRequired(req.getLowMarginApproval());
         syncRequest.setShipmentInstruction(req.getShippingInstruction());
         syncRequest.setISFFileMainPage(req.getIsfFileMainPage());
+        syncRequest.setAirExportConsolManifest(req.getAirExportConsoleManifest());
+        syncRequest.setAirImportConsolManifest(req.getAirImportConsoleManifest());
+        syncRequest.setSeaImportConsolManifest(req.getSeaImportConsoleManifest());
+        syncRequest.setSeaExportConsolManifest(req.getSeaExportConsoleManifest());
 
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(syncRequest).module(SyncingConstants.TENANT_SETTINGS).build());
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(payload);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(req.getId()), String.valueOf(req.getGuid()),
-                            "Shipment Settings Details", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Shipment Settings Details: " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
-
+        syncService.pushToKafka(payload,String.valueOf(req.getId()), String.valueOf(req.getGuid()), SyncingConstants.TENANT_SETTINGS, String.valueOf(req.getGuid()));
         return ResponseHelper.buildSuccessResponse(modelMapper.map(syncRequest, ShipmentSettingsSyncRequest.class));
+    }
+
+    public ResponseEntity<IRunnerResponse> syncProductSequence(ProductSequenceConfig productSequenceConfig, HttpHeaders headers) throws RunnerException {
+        ProductSequenceConfigDto productSequenceConfigDto = mapProductSequenceConfig(productSequenceConfig);
+        String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(productSequenceConfigDto).module(SyncingConstants.PRODUCT_SEQUENCE).build());
+        syncService.callSyncAsync(payload, StringUtility.convertToString(productSequenceConfig.getId()), StringUtility.convertToString(productSequenceConfig.getGuid()), "Shipment Settings product sequence Details", headers);
+        return ResponseHelper.buildSuccessResponse(productSequenceConfigDto);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> syncSettings() {
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        return sync(shipmentSettingsDetails);
     }
 
     private ProductSequenceConfigDto mapProductSequenceConfig(ProductSequenceConfig req) {
@@ -106,7 +118,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {
         return modelMapper.map(obj, clazz);

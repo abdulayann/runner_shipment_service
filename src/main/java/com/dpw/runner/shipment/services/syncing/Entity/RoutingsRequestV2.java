@@ -23,8 +23,6 @@ public class RoutingsRequestV2 implements IRunnerRequest {
     public LocalDateTime ETD;
     @JsonProperty("ATD")
     public LocalDateTime ATD;
-    @JsonProperty("ConsolidationId")
-    public Long ConsolidationId;
     @JsonProperty("isDomestic")
     public Boolean isDomestic;
     @JsonProperty("EntityType")
@@ -45,12 +43,8 @@ public class RoutingsRequestV2 implements IRunnerRequest {
     public Long RouteLegId;
     @JsonProperty("RoutingStatus")
     public String RoutingStatus;
-    @JsonProperty("ShipmentId")
-    public Long ShipmentId;
     @JsonProperty("TransitDays")
     public Long TransitDays;
-    @JsonProperty("VesselId")
-    public Long VesselId;
     @JsonProperty("VesselName")
     public String VesselName;
     @JsonProperty("Voyage")
@@ -59,5 +53,6 @@ public class RoutingsRequestV2 implements IRunnerRequest {
     public UUID ShipmentGuid;
     @JsonProperty("ConsolidationGuid")
     public UUID ConsolidationGuid;
-//    public Long EntityId;
+    @JsonProperty("ByCarrier")
+    public String ByCarrier;
 }

@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,7 @@ public class UserServiceV1 implements IUserService {
     @Override
     @Cacheable(cacheNames = CacheConstants.CACHE_KEY_USER, keyGenerator = "customKeyGenerator")
     public UsersDto getUserByToken(String key, String token) {
-        log.info("getUserByToken --- URL: {} ||| Token: {}", url, token);
+        log.info("Request: {} || getUserByToken --- URL: {} ||| Token: {}", LoggerHelper.getRequestIdFromMDC(), url, token);
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
         if(token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], "Bearer"))
@@ -38,7 +39,7 @@ public class UserServiceV1 implements IUserService {
         headers.setBearerAuth(token);
         HttpEntity<String> entity = new HttpEntity<String>(headers);
         ResponseEntity<UsersDto> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, UsersDto.class);
-        log.info("User retrieved: " + responseEntity.getBody());
+        log.info("Request: {} || User retrieved from V1: {}", LoggerHelper.getRequestIdFromMDC(), responseEntity.getBody());
         return responseEntity.getBody();
     }
 

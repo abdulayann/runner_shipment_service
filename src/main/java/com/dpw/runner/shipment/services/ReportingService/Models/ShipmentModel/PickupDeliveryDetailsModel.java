@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,18 +15,23 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class PickupDeliveryDetailsModel {
+public class PickupDeliveryDetailsModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("EstimatedPickupOrDelivery")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime estimatedPickupOrDelivery;
     @JsonProperty("RequiredBy")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime requiredBy;
     @JsonProperty("PortTransportAdvised")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime portTransportAdvised;
     @JsonProperty("ActualPickupOrDelivery")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime actualPickupOrDelivery;
     @JsonProperty("PickupOrDelivery")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime pickupOrDelivery;
     @JsonProperty("TransporterDetail")
     private PartiesModel transporterDetail;
@@ -52,8 +60,10 @@ public class PickupDeliveryDetailsModel {
     @JsonProperty("InterimReceipt")
     private String interimReceipt;
     @JsonProperty("FclAvailableDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime fclAvailableDate;
     @JsonProperty("StorageDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime storageDate;
     @JsonProperty("TruckWaitTimeCharge")
     private BigDecimal truckWaitTimeCharge;
@@ -70,7 +80,11 @@ public class PickupDeliveryDetailsModel {
     @JsonProperty("UcrReference")
     private String ucrReference;
     @JsonProperty("EmptyTruckInDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime emptyTruckInDate;
     @JsonProperty("LoadedTruckGateOutDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime loadedTruckGateOutDate;
+    @JsonProperty("PickupDeliveryInstruction")
+    private String pickupDeliveryInstruction;
 }

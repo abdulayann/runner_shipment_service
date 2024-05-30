@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ELDetailsConstants {
+    private ELDetailsConstants(){}
     public static final String ELDETAILS_API_HANDLE = "/api/v2/el-details";
     public static final String ELDETAILS_CREATE_SUCCESSFUL = "Successful ELDetails Creation";
 

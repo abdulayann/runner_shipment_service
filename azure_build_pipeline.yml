@@ -3,49 +3,58 @@ trigger:
     include:
     - development
     - Release-v*
-    
+
 pool:
   vmImage: ubuntu-latest
 
 steps:
 
-  - task: MavenAuthenticate@0
-    inputs:
-      artifactsFeeds: 'runner-artifactory'
+- task: Cache@2
+  inputs:
+    key: maven | "$(Agent.OS)" | **/pom.xml
+    restoreKeys: maven | "$(Agent.OS)"
+    path: $(MAVEN_CACHE_FOLDER)
+  displayName: Cache Maven Dependencies
+- task: MavenAuthenticate@0
+  inputs:
+    artifactsFeeds: runner-artifactory
 
-  - task: Maven@3
-    inputs:
-      mavenPomFile: 'pom.xml'
-      goals: 'clean package -DskipTests'
-      publishJUnitResults: false
-      javaHomeOption: 'JDKVersion'
-      jdkVersionOption: '1.17'
-      mavenVersionOption: 'Default'
-      mavenAuthenticateFeed: true
-      mavenOptions: '-Xmx3072m'
-      effectivePomSkip: false
-      sonarQubeRunAnalysis: false
+- task: Maven@3
+  inputs:
+    mavenPomFile: pom.xml
+    goals: clean package -DskipTests
+    publishJUnitResults: false
+    javaHomeOption: JDKVersion
+    jdkVersionOption: '1.17'
+    mavenVersionOption: Default
+    mavenAuthenticateFeed: true
+    mavenOptions: '-Xmx3072m $(MAVEN_OPTS)'
+    effectivePomSkip: false
+    sonarQubeRunAnalysis: false
 
-  - task: CopyFiles@2
-    displayName: Copy Deployment Artifacts
-    inputs:
-      SourceFolder: $(System.DefaultWorkingDirectory)
-      Contents: '$(System.DefaultWorkingDirectory)/Devops_Scripts/**'
-      TargetFolder: $(Build.ArtifactStagingDirectory)/
+- task: CopyFiles@2
+  displayName: Copy Deployment Artifacts
+  inputs:
+    SourceFolder: $(System.DefaultWorkingDirectory)
+    Contents: $(System.DefaultWorkingDirectory)/Devops_Scripts/**
+    TargetFolder: $(Build.ArtifactStagingDirectory)/
 
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish Artifacts'
-    inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: runner-shipment-service
+- task: PublishBuildArtifacts@1
+  displayName: Publish Artifacts
+  inputs:
+    PathtoPublish: $(Build.ArtifactStagingDirectory)
+    artifactName: runner-shipment-service
 
-  - task: Docker@2
-    displayName: 'Build and push backend app - Docker'
-    inputs:
-      containerRegistry: 'ACR_Cargoes Runner'
-      repository: 'runner-shipment-service'
-      command: 'buildAndPush'
-      Dockerfile: 'Dockerfile'
-      tags: |
-        $(Build.SourceVersion)
-        latest
+- task: Docker@2
+  displayName: Build and push backend app - Docker
+  inputs:
+    containerRegistry: ACR_Cargoes Runner
+    repository: runner-shipment-service
+    command: buildAndPush
+    Dockerfile: Dockerfile
+    tags: |-
+      $(Build.SourceVersion)
+      latest
+variables:
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  MAVEN_OPTS: -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)

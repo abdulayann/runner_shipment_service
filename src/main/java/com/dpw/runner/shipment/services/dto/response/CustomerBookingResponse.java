@@ -59,12 +59,14 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private String businessCode;
     private String shipmentId;
     private String shipmentEntityId;
+    private String shipmentEntityIdV2;
+    private String shipmentGuid;
     private List<ContainerResponse> containersList;
     private List<PackingResponse> packingList;
     private List<RoutingsResponse> routingList;
     private List<BookingChargesResponse> bookingCharges;
     private List<FileRepoResponse> fileRepoList;
-    public Map<String, String> masterData;
+    private Map<String, String> masterData;
     private Boolean isAutoWeightVolumeUpdate;
     private String fmcTlcId;
     private BigDecimal totalRevenue;
@@ -75,4 +77,15 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private Boolean isNotifyPartyAddressFreeText;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedDate;
+    private String clientCountry;
+    private String consignorCountry;
+    private String consigneeCountry;
+    private String notifyPartyCountry;
+    private String parentContractId;
+    private String salesBranch;
+    private Boolean isNotifyConsigneeEqual;
+    private String primarySalesAgentEmail;
+    private String secondarySalesAgentEmail;
+    private Boolean isBillCreated;
+    private String currentPartyForQuote;
 }

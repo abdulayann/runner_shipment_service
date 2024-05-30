@@ -27,4 +27,13 @@ public enum ShipmentStatus {
     public int getValue() {
         return value;
     }
+
+    public static ShipmentStatus fromValue(int value) {
+        for (ShipmentStatus enumValue : ShipmentStatus.values()) {
+            if (enumValue.getValue() == value) {
+                return enumValue;
+            }
+        }
+        throw new IllegalArgumentException("No enum constant with value " + value);
+    }
 }

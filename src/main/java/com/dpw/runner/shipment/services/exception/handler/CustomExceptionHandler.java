@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.exception.handler;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.FileNotFoundException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAccessTokenException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticationException;
@@ -30,34 +31,34 @@ import java.util.stream.Collectors;
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
-    protected ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException ex) {
-        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse("Authorization has been denied for this request.", HttpStatus.FORBIDDEN);
+    protected ResponseEntity<IRunnerResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        return ResponseHelper.buildFailedResponse("Authorization has been denied for this request.", HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(InvalidAccessTokenException.class)
-    public final ResponseEntity<Object> handleInvalidAccessTokenException(InvalidAccessTokenException ex) {
-        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    public final ResponseEntity<IRunnerResponse> handleInvalidAccessTokenException(InvalidAccessTokenException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(FileNotFoundException.class)
-    public final ResponseEntity<Object> handleFileNotFoundException(FileNotFoundException ex) {
+    public final ResponseEntity<IRunnerResponse> handleFileNotFoundException(FileNotFoundException ex) {
 //        RunnerResponse runnerResponse =
 //                new RunnerResponse(false, new ApiError(HttpStatus.NOT_FOUND, ex.getLocalizedMessage()));
-        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.NOT_FOUND);
+        return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(RunnerException.class)
-    public final ResponseEntity<Object> handleRunnerException(RunnerException ex) {
+    public final ResponseEntity<IRunnerResponse> handleRunnerException(RunnerException ex) {
 //        RunnerResponse runnerResponse =
 //                new RunnerResponse(false, new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage()));
-        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(InvalidAuthenticationException.class)
-    public final ResponseEntity<Object> handleAuthenticationException(RunnerException ex) {
+    public final ResponseEntity<IRunnerResponse> handleAuthenticationException(RunnerException ex) {
 //        RunnerResponse runnerResponse =
 //                new RunnerResponse(false, new ApiError(HttpStatus.FORBIDDEN, ex.getLocalizedMessage()));
-        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.FORBIDDEN);
+        return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.FORBIDDEN);
     }
 
     @Override
@@ -74,10 +75,10 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                 .getFieldErrors()
                 .stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.toList());
+                .toList();
         log.error("Return Response with data {}", errors.toString());
-
-        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(Constants.Validation_Exception, errors);
+        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(Constants.Validation_Exception, errors);
+        return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
     }
 
     @Override
@@ -85,6 +86,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                                                                      HttpStatus status, WebRequest request) {
 //        RunnerResponse runnerResponse =
 //                new RunnerResponse(false, new ApiError(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage()));
-        return(ResponseEntity<Object>) ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.BAD_REQUEST);
+        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.BAD_REQUEST);
+        return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
     }
 }

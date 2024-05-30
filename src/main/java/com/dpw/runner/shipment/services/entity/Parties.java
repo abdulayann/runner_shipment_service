@@ -45,7 +45,7 @@ public class Parties extends MultiTenancy {
     private String orgCode;
 
     @Column(name = "address_code")
-    @Size(max=100, message = "max limit is 100 for address_code")
+    @Size(max=170, message = "max limit is 170 for address_code")
     private String addressCode;
 
     @Type(type = "jsonb")
@@ -56,19 +56,7 @@ public class Parties extends MultiTenancy {
     @Column(name = "address_data", columnDefinition = "jsonb")
     private Map<String, Object> addressData;
 
-//  @PrePersist
-//  private void beforeSave() {
-//    partiesValidation();
-//  }
-//
-//  @PreUpdate
-//  private void beforeUpdate() {
-//      partiesValidation();
-//  }
-//
-//  private void partiesValidation() throws ValidationException{
-//      if (orgCode == null && addressCode == null && orgData == null && addressData == null)
-//          throw new ValidationException("Party details can't be empty");
-//  }
+    @Column(name = "is_address_free_text")
+    private Boolean isAddressFreeText;
 
 }

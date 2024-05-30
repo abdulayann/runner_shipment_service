@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.validator.constants;
 
 public class ErrorConstants {
+    private ErrorConstants(){}
 
     public static final String INVALID_FIELD_TYPE_VALIDATION = "Invalid field type for field: %s, given field type: %s but expected type was: %s.";
     public static final String INVALID_COMPARISION_VALIDATION = "Comparison validation failed between field %s and %s.";
@@ -13,5 +14,5 @@ public class ErrorConstants {
     public static final String INVALID_ENUM_VALIDATION = "Enum validation failed for field: %s with value provided: %s. Supported values are: %s.";
     public static final String INVALID_CONDITIONAL_COMPARISON = "No Conditional comparison met for field: %s, please check dependent data.";
     public static final String INVALID_UNIQUE_CONSTRAINT = "Unique constraint failed for property: %s in field: %s.";
-
+    public static final String LOCK_UNLOCK_ERROR = "%s is Locked by User %s. Please request to Unlock for further update.";
 }

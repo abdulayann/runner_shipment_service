@@ -1,0 +1,9 @@
+productName: runner
+azureProject: DTLP
+repoName: runner_shipment_service
+repoId: cdeb2aab-0be8-4566-bbba-421a13f55ec5
+serviceType: Backend
+language: Java
+branching: Release
+infra: K8s
+cicd: Basic

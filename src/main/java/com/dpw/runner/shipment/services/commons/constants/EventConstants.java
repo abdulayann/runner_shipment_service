@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 public class EventConstants {
 
+    private EventConstants(){}
     public static final String EVENT_API_HANDLE = "api/v2/events";
     public static final String EVENT_CREATE_SUCCESS = "Events created successfully !";
     public static final String EVENT_UPDATE_SUCCESS = "Events updated successfully !";
@@ -18,4 +19,10 @@ public class EventConstants {
     public static final String SR_SENT_OR_NOT = "SHPRSC";
     public static final String TRACK_EVENTS_FETCH_SUCCESSFUL = "Track Events fetched Successfully";
     public static final String TRACK_EVENT_DETAILS = "/trackEvents";
+    public static final String EVENT_RETRIEVE_BY_ID_ERROR = "Event is null for Id {} with Request Id {}";
+
+    public static final String EMPTY_REQUEST_ERROR = "Request can't be empty!";
+    public static final String EMPTY_REQUEST_ID_ERROR = "Id can't be null in request";
+    public static final String FWB_FZB_EVENT_CODE = "FWB/FZB";
+    public static final String FWB_EVENT_CODE = "FWB";
 }

@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
-import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
+import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import io.swagger.annotations.ApiResponse;
@@ -26,19 +28,29 @@ import javax.validation.Valid;
 @Slf4j
 public class EntityTransferController {
 
+    private final IEntityTransferService entityTransferService;
+    private final JsonHelper jsonHelper;
+    private class CheckTaskExistResponseClass extends RunnerResponse<CheckTaskExistResponse>{}
+    private class ValidationResponseClass extends RunnerResponse<ValidationResponse>{}
+    private class ImportConsolidationResponseClass extends RunnerResponse<ImportConsolidationResponse>{}
+    private class ImportShipmentResponseClass extends RunnerResponse<ImportShipmentResponse>{}
+    private class SendConsolidationResponseClass extends RunnerResponse<SendConsolidationResponse>{}
+    private class SendShipmentResponseClass extends RunnerResponse<SendShipmentResponse>{}
+
     @Autowired
-    private IEntityTransferService entityTransferService;
-    @Autowired
-    JsonHelper jsonHelper;
+    public EntityTransferController(IEntityTransferService entityTransferService, JsonHelper jsonHelper) {
+        this.entityTransferService = entityTransferService;
+        this.jsonHelper = jsonHelper;
+    }
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL, response = SendShipmentResponseClass.class)
     })
-    public ResponseEntity<?> sendShipment(@RequestBody @Valid SendShipmentRequest request) {
+    public ResponseEntity<IRunnerResponse> sendShipment(@RequestBody @Valid SendShipmentRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.sendShipment(CommonRequestModel.buildRequest(request));
+            return entityTransferService.sendShipment(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -49,12 +61,12 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_CONSOLIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_CONSOLIDATION_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_CONSOLIDATION_SUCCESSFUL, response = SendConsolidationResponseClass.class)
     })
-    public ResponseEntity<?> sendConsolidation(@RequestBody @Valid @NonNull SendConsolidationRequest request) {
+    public ResponseEntity<IRunnerResponse> sendConsolidation(@RequestBody @Valid @NonNull SendConsolidationRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(request));
+            return entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -63,48 +75,48 @@ public class EntityTransferController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @PostMapping(EntityTransferConstants.IMPORT_SHIPMENT)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL)
-    })
-    public ResponseEntity<?> importShipment(@RequestBody @Valid ImportShipmentRequest request) {
-        String responseMsg;
-        ImportShipmentRequest importShipmentRequest = jsonHelper.convertValue(request, ImportShipmentRequest.class);
-        try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @PostMapping(EntityTransferConstants.IMPORT_CONSOLIDATION)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_CONSOLIDATION_SUCCESSFUL)
-    })
-    public ResponseEntity<?> importConsolidation(@RequestBody @Valid ImportConsolidationRequest request) {
-        String responseMsg;
-        ImportConsolidationRequest importConsolidationRequest = jsonHelper.convertValue(request, ImportConsolidationRequest.class);
-        try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
-    }
+//    @PostMapping(EntityTransferConstants.IMPORT_SHIPMENT)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL, response = ImportShipmentResponseClass.class)
+//    })
+//    public ResponseEntity<IRunnerResponse> importShipment(@RequestBody @Valid ImportShipmentRequest request) {
+//        String responseMsg;
+//        ImportShipmentRequest importShipmentRequest = jsonHelper.convertValue(request, ImportShipmentRequest.class);
+//        try {
+//            return entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest));
+//        } catch (Exception e) {
+//            responseMsg = e.getMessage() != null ? e.getMessage()
+//                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+//            log.error(responseMsg, e);
+//        }
+//        return ResponseHelper.buildFailedResponse(responseMsg);
+//    }
+//
+//    @PostMapping(EntityTransferConstants.IMPORT_CONSOLIDATION)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_CONSOLIDATION_SUCCESSFUL, response = ImportConsolidationResponseClass.class)
+//    })
+//    public ResponseEntity<IRunnerResponse> importConsolidation(@RequestBody @Valid ImportConsolidationRequest request) {
+//        String responseMsg;
+//        ImportConsolidationRequest importConsolidationRequest = jsonHelper.convertValue(request, ImportConsolidationRequest.class);
+//        try {
+//            return entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
+//        } catch (Exception e) {
+//            responseMsg = e.getMessage() != null ? e.getMessage()
+//                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+//            log.error(responseMsg, e);
+//        }
+//        return ResponseHelper.buildFailedResponse(responseMsg);
+//    }
 
     @PostMapping(EntityTransferConstants.SEND_CONSOLIDATION_VALIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL, response = ValidationResponseClass.class)
     })
-    public ResponseEntity<?> sendConsolidationValidation(@RequestBody @Valid ValidateSendConsolidationRequest request) {
+    public ResponseEntity<IRunnerResponse> sendConsolidationValidation(@RequestBody @Valid ValidateSendConsolidationRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request));
+            return entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -115,12 +127,12 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT_VALIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL, response = ValidationResponseClass.class)
     })
-    public ResponseEntity<?> sendShipmentValidation(@RequestBody @Valid ValidateSendShipmentRequest request) {
+    public ResponseEntity<IRunnerResponse> sendShipmentValidation(@RequestBody @Valid ValidateSendShipmentRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(request));
+            return entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -132,12 +144,12 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.CHECK_TASK_EXIST)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.CHECK_TASK_SUCCESSFUL)
+            @ApiResponse(code = 200, message = EntityTransferConstants.CHECK_TASK_SUCCESSFUL, response = CheckTaskExistResponseClass.class)
     })
-    public ResponseEntity<?> checkTaskExist(@RequestBody @Valid CheckTaskExistRequest request) {
+    public ResponseEntity<IRunnerResponse> checkTaskExist(@RequestBody @Valid CheckTaskExistRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<CheckTaskExistResponse>) entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
+            return entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

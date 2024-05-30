@@ -3,12 +3,15 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -18,12 +21,20 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 public class SeawayBillReport extends IReport {
 
+    public static final String GROSS_VOLUME_ALIAS = "GrossVolume";
+    public static final String BL_GROSS_VOLUME_ALIAS = "BL_GrossVolume";
+    public static final String BL_GROSS_WEIGHT_ALIAS = "BL_GrossWeight";
+    public static final String GROSS_WEIGHT = "GrossWeight";
+    public static final String NET_WEIGHT = "NetWeight";
+    public static final String NOOF_PACKAGES = "NoofPackages";
+    private final HblReport hblReport;
+    private final JsonHelper jsonHelper;
+
     @Autowired
-    HblReport hblReport;
-    @Autowired
-    IShipmentDao shipmentDao;
-    @Autowired
-    JsonHelper jsonHelper;
+    public SeawayBillReport(HblReport hblReport, JsonHelper jsonHelper) {
+        this.hblReport = hblReport;
+        this.jsonHelper = jsonHelper;
+    }
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -39,6 +50,7 @@ public class SeawayBillReport extends IReport {
                 .id(id)
                 .shipment(shipment)
                 .blObject(hbl)
+                .shipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings())
                 .build();
     }
 
@@ -53,17 +65,26 @@ public class SeawayBillReport extends IReport {
         dict.put(DATE_OF_RECEIPT_MDY, dict.get(DATE_OF_RECEIPT));
 
         dict.put(SHIPPER, dict.get(CONSIGNER));
-        Map<String, Object> consignerAddress = model.shipment.getConsigner().getAddressData();
-        var consignerWc = ReportHelper.getOrgAddressWithPhoneEmail(null, getValueFromMap(consignerAddress, ADDRESS1),
-                getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
-                getValueFromMap(consignerAddress, EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
-                getValueFromMap(consignerAddress, "Zip_PostCode"));
-        dict.put(SHIPPER_WC, consignerWc);
+        if(model.shipment.getConsigner() != null) {
+            Map<String, Object> consignerAddress = model.shipment.getConsigner().getAddressData();
+            var consignerWc = ReportHelper.getOrgAddressWithPhoneEmail(null, getValueFromMap(consignerAddress, ADDRESS1),
+                    getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
+                    getValueFromMap(consignerAddress, EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
+                    getValueFromMap(consignerAddress, "Zip_PostCode"));
+            dict.put(SHIPPER_WC, consignerWc);
+        }
 
         if(model.blObject != null && model.blObject.getHblData() != null){
             dict.put(CONSIGNER_ADDRESS, model.blObject.getHblData().getConsignorAddress());
-            var consignerWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsignorName(), model.blObject.getHblData().getConsignorAddress(), null, null, null, null, null);
-            var consigneeWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsigneeName(), model.blObject.getHblData().getConsigneeAddress(), null, null, null, null, null);
+            List<String> consignerWithNameAndAddress;
+            List<String> consigneeWithNameAndAddress;
+            if(Boolean.TRUE.equals(model.shipmentSettingsDetails.getDisableBlPartiesName())) {
+                consignerWithNameAndAddress = getOrgAddressWithPhoneEmail(null, model.blObject.getHblData().getConsignorAddress(), null, null, null, null, null);
+                consigneeWithNameAndAddress = getOrgAddressWithPhoneEmail(null, model.blObject.getHblData().getConsigneeAddress(), null, null, null, null, null);
+            } else {
+                consignerWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsignorName(), model.blObject.getHblData().getConsignorAddress(), null, null, null, null, null);
+                consigneeWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsigneeName(), model.blObject.getHblData().getConsigneeAddress(), null, null, null, null, null);
+            }
             dict.put("BLCustomConsigner", consignerWithNameAndAddress);
             dict.put("BLCustomConsignee", consigneeWithNameAndAddress);
             dict.put("PortOfLoad", model.blObject.getHblData().getPortOfLoad());
@@ -71,24 +92,23 @@ public class SeawayBillReport extends IReport {
 
 
         if (model.shipment.getShipmentContainersList() != null) {
-//            String json = jsonHelper.convertToJson(model.shipment.getShipmentContainersList());
+            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
             var values = model.shipment.getShipmentContainersList().stream()
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                     .toList();
-//            var values = jsonHelper.convertValue(json, new TypeReference<List<Map<String, Object>>>() {});
             values.forEach(v -> {
-                if (v.get("GrossWeight") != null && v.get("GrossWeight").toString() != null)
-                    v.put("GrossWeight", addCommas(v.get("GrossWeight").toString()));
-                if (v.get("NetWeight") != null && v.get("NetWeight").toString() != null)
-                    v.put("NetWeight", addCommas(v.get("NetWeight").toString()));
-                if (v.get("NoofPackages") != null && v.get("NoofPackages").toString() != null)
-                    v.put("NoofPackages", addCommaWithoutDecimal((BigDecimal) v.get("NoofPackages")));
-                if (v.get("GrossVolume") != null && v.get("GrossVolume").toString() != null)
-                    v.put("GrossVolume", addCommas(v.get("GrossVolume").toString()));
-                if (v.get("BL_GrossVolume") != null && v.get("BL_GrossVolume").toString() != null)
-                    v.put("BL_GrossVolume", addCommas(v.get("BL_GrossVolume").toString()));
-                if (v.get("BL_GrossWeight") != null && v.get("BL_GrossWeight").toString() != null)
-                    v.put("BL_GrossWeight", addCommas(v.get("BL_GrossWeight").toString()));
+                if (v.get(GROSS_WEIGHT) != null && v.get(GROSS_WEIGHT).toString() != null)
+                    v.put(GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(GROSS_WEIGHT), v1TenantSettingsResponse));
+                if (v.get(NET_WEIGHT) != null && v.get(NET_WEIGHT).toString() != null)
+                    v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
+                if (v.get(NOOF_PACKAGES) != null && v.get(NOOF_PACKAGES).toString() != null)
+                    v.put(NOOF_PACKAGES, GetDPWWeightVolumeFormat((BigDecimal) v.get(NOOF_PACKAGES), 0, v1TenantSettingsResponse));
+                if (v.get(GROSS_VOLUME_ALIAS) != null && v.get(GROSS_VOLUME_ALIAS).toString() != null)
+                    v.put(GROSS_VOLUME_ALIAS, addCommas(v.get(GROSS_VOLUME_ALIAS).toString()));
+                if (v.get(BL_GROSS_VOLUME_ALIAS) != null && v.get(BL_GROSS_VOLUME_ALIAS).toString() != null)
+                    v.put(BL_GROSS_VOLUME_ALIAS, addCommas(v.get(BL_GROSS_VOLUME_ALIAS).toString()));
+                if (v.get(BL_GROSS_WEIGHT_ALIAS) != null && v.get(BL_GROSS_WEIGHT_ALIAS).toString() != null)
+                    v.put(BL_GROSS_WEIGHT_ALIAS, ConvertToWeightNumberFormat(v.get(BL_GROSS_WEIGHT_ALIAS), v1TenantSettingsResponse));
             });
             dict.put("ShipmentContainers", values);
         }

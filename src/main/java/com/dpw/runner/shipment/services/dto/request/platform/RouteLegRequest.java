@@ -5,11 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RouteLegRequest {
+public class RouteLegRequest implements Serializable {
     private String order;
     private String origin_code;
     private String origin_location_type;

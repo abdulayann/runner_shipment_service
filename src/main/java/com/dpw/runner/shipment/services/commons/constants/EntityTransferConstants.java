@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 
 public class EntityTransferConstants {
+    private EntityTransferConstants(){}
     public static final String ENTITY_TRANSFER_API_HANDLE = "/api/v2/entity-transfer";
     public static final String SEND_SHIPMENT = "/send-shipment";
     public static final String SEND_SHIPMENT_VALIDATION = "/send-shipment-validation";
@@ -24,12 +25,13 @@ public class EntityTransferConstants {
     public static final String CODE = "Code";
     public static final String CURRENCY_CODE = "CurrenyCode";
     public static final String GUID = "Guid";
-    public static final String MMSI = "Mmsi";
     public static final String SELECT_SENDTOBRANCH_OR_SENDTOORG = "Please select atleast one send to branch or send to org option";
     public static final String APPROVAL_ROLE_NOT_ASSIGNED = "Approval role not assigned to tenant: ";
     public static final String CHARGE_CODE = "ChargeCode";
     public static final String TENANT_ID = "TenantId";
     public static final String ID = "Id";
     public static final String ACTIVITY_CODE = "ActivityCode";
+    public static final String NAME_WO_DIACRITICS = "NameWoDiacritics";
+    public static final String NAME = "Name";
 
 }

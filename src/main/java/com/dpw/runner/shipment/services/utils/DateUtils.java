@@ -4,13 +4,13 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.timeZone.utility.RunnerTimeZoneConvertor;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 
 public class DateUtils {
+    private DateUtils(){}
     public static String getDateAsString(LocalDateTime dateTime){
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(Constants.DEFAULT_DATE_FORMAT);
         String formattedDateTime = dateTime.format(dateTimeFormatter);

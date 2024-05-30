@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.request.hbl;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -12,7 +13,7 @@ import java.util.UUID;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class HblContainerDto {
+public class HblContainerDto implements Serializable {
     private Long id;
     private UUID guid;
     private String containerNumber;
@@ -36,4 +37,6 @@ public class HblContainerDto {
     private String  packageUnit;
     private Long  quantity;
     private String  quantityCode;
+    private String packsType;
+    private Long containerCount;
 }

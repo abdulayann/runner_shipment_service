@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +11,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class PartiesModel {
+public class PartiesModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("EntityId")
@@ -29,4 +30,5 @@ public class PartiesModel {
     private Map<String, Object> orgData;
     @JsonProperty("AddressData")
     private Map<String, Object> addressData;
+    private Boolean isAddressFreeText;
 }

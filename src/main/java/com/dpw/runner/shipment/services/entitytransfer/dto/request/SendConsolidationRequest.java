@@ -16,5 +16,5 @@ public class SendConsolidationRequest implements IRunnerRequest {
     private List<Integer> sendToBranch;
     private List<String> sendToOrg;
     private List<String> additionalDocs;
-    private Map<Long, List<String>> shipAdditionalDocs;
+    private Map<String, List<String>> shipAdditionalDocs;
 }

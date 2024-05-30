@@ -3,13 +3,11 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.repository.interfaces.IAdditionalDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -27,21 +25,11 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
     }
 
     @Override
-    public Page<AdditionalDetails> findAll(Specification<AdditionalDetails> spec, Pageable pageable) {
-        return additionalDetailRepository.findAll(spec, pageable);
-    }
-
-    @Override
     public Optional<AdditionalDetails> findById(Long id) {
         return additionalDetailRepository.findById(id);
     }
 
-    @Override
-    public void delete(AdditionalDetails additionalDetails) {
-        additionalDetailRepository.delete(additionalDetails);
-    }
-
-    public AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws Exception {
+    public AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws RunnerException {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
@@ -59,7 +47,7 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new RunnerException(e.getMessage());
         }
     }
 }

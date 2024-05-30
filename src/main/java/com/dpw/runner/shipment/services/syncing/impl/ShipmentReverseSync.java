@@ -1,25 +1,27 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
+import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
-import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -37,13 +39,13 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
 
     @Autowired
     IShipmentService shipmentService;
-    @Lazy
-    @Autowired
-    ISyncQueueService syncQueueService;
+
     @Autowired
     private SyncConfig syncConfig;
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
 
-    public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync) {
+    public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync, boolean dataMigration) {
         String responseMsg;
         try {
 
@@ -51,7 +53,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             ShipmentDetails sd = modelMapper.map(cs, ShipmentDetails.class);
 
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return syncQueueService.saveSyncRequest(SyncingConstants.SHIPMENT, StringUtility.convertToString(sd.getGuid()), cs);
+                return new ResponseEntity<>(HttpStatus.OK);
             }
             mapCarrierDetailsReverse(cs, sd);
             mapAdditionalDetailsReverse(cs, sd);
@@ -63,6 +65,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
 //                sd.setStatus(Integer.parseInt(cs.getStatusString())); // ENUM MAPPING ?
 //            }
             sd.setLockedBy(cs.getLockedByUser());
+            sd.setSourceGuid(cs.getSourceGuid());
 
             sd.setBookingReference(cs.getReferenceNo());
             sd.setDirection(cs.getCustom_ShipType());
@@ -76,25 +79,39 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setChargeableUnit(cs.getChargableUnit());
             sd.setNoOfPacks(cs.getPacks());
             sd.setFinanceClosedBy(cs.getFinanceClosedByUser());
+            sd.setClientCountry(cs.getClientCountryFilter());
+            sd.setConsigneeCountry(cs.getConsigneeCountryFilter());
+            sd.setConsignorCountry(cs.getConsignorCountryFilter());
+            sd.setNotifyPartyCountry(cs.getNotifyPartyCountryFilter());
+            sd.setShipmentCreatedOn(cs.getCreatedDate());
+            sd.setVolumetricWeight(cs.getVolumeWeight());
+            sd.setVolumetricWeightUnit(cs.getWeightVolumeUnit());
+            if(!IsStringNullOrEmpty(cs.getPrevShipmentStatusString()))
+                sd.setPrevShipmentStatus(ShipmentStatus.valueOf(cs.getPrevShipmentStatusString()).getValue());
+            if(!IsStringNullOrEmpty(cs.getStatusString()))
+                sd.setStatus(ShipmentStatus.valueOf(cs.getStatusString()).getValue());
 
-            sd.setConsigner(mapPartyObject(cs.getConsignerParty()));
-            sd.setConsignee(mapPartyObject(cs.getConsigneeParty()));
+            sd.setConsigner(mapPartyObjectWithFreetext(cs.getConsignerParty(), cs.getIsConsignerFreeTextAddress(), cs.getConsignerFreeTextAddress()));
+            sd.setConsignee(mapPartyObjectWithFreetext(cs.getConsigneeParty(), cs.getIsConsigneeFreeTextAddress(), cs.getConsigneeFreeTextAddress()));
 
             mapTruckDriverDetailReverse(cs, sd);
-            mapRoutingsReverse(cs, sd);
+            sd.setRoutingsList(syncEntityConversionService.routingsV1ToV2(cs.getRoutings()));
+            sd.setContainersList(syncEntityConversionService.containersV1ToV2(cs.getContainersList()));
+            sd.setShipmentAddresses(syncEntityConversionService.addressesV1ToV2(cs.getShipmentAddresses()));
             sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
             Map<UUID, String> map = new HashMap<>();
             if(cs.getPackings_() != null)
-                map = cs.getPackings_().stream().collect(Collectors.toMap(PackingRequestV2::getGuid, PackingRequestV2::getContainerNumber));
-            sd.setPackingList(convertToList(cs.getPackings_(), Packing.class));
+                map = cs.getPackings_().stream().filter(x-> x.getContainerNumber() != null).collect(Collectors.toMap(PackingRequestV2::getGuid, PackingRequestV2::getContainerNumber));
+            sd.setPackingList(syncEntityConversionService.packingsV1ToV2(cs.getPackings_()));
             sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
             sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
 
             sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));
             sd.setGoodsDescription(cs.getDescription());
-
+            
+            List<NotesRequest> customerBookingNotes = convertToList(cs.getCustomerBookingNotesList(), NotesRequest.class);
             return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.
-                    buildRequest(modelMapper.map(sd, ShipmentRequest.class)), map);
+                    buildRequest(modelMapper.map(sd, ShipmentRequest.class)), map, customerBookingNotes, dataMigration, cs.getChangeLogs(), cs.getCreatedBy());
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
@@ -112,7 +129,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
                     p.setGuid(item);
                     return p;
                 })
-                .collect(Collectors.toList());
+                .toList();
         response.setConsolidationList(req);
     }
 
@@ -124,7 +141,6 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
                 .map(item -> {
                     TruckDriverDetails t;
                     t = modelMapper.map(item, TruckDriverDetails.class);
-                    t.setTransporterName(item.getTransporterNameOrg());
                     t.setTransporterType(Ownership.valueOf(item.getTransporterTypeString()));
                     return t;
                 })
@@ -150,11 +166,12 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setReceivingForwarder(mapPartyObject(cs.getReceivingForwarderParty()));
         additionalDetails.setSendingForwarder(mapPartyObject(cs.getSendingForwarderParty()));
         additionalDetails.setTraderOrSupplier(mapPartyObject(cs.getTraderOrSupplierParty()));
+        additionalDetails.setNotifyParty(mapPartyObjectWithFreetext(cs.getNotifyParty(), cs.getIsNotifyPartyFreeTextAddress(), cs.getNotifyPartyFreeTextAddress()));
         if(!IsStringNullOrEmpty(cs.getAndesStatusString()))
             additionalDetails.setAndesStatus(AndesStatus.valueOf(cs.getAndesStatusString()));
         if(!IsStringNullOrEmpty(cs.getOwnershipString())) {
             additionalDetails.setOwnership(Ownership.valueOf(cs.getOwnershipString()));
-            if(additionalDetails.getOwnership().equals(Ownership.SELF))
+            if(additionalDetails.getOwnership().equals(Ownership.Self))
                 additionalDetails.setOwnershipName(cs.getOwnershipName());
             else
                 additionalDetails.setOwnershipOrg(mapPartyObject(cs.getOwnershipParty()));
@@ -163,8 +180,25 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             additionalDetails.setPassedBy(Ownership.valueOf(cs.getPassedByString()));
         additionalDetails.setBOEDate(cs.getBoedate());
         additionalDetails.setBOENumber(cs.getBoenumber());
+        additionalDetails.setIGMFileDate(cs.getIgmfileDate());
+        additionalDetails.setIGMFileNo(cs.getIgmfileNo());
+        additionalDetails.setIGMInwardDate(cs.getIgminwardDate());
+        additionalDetails.setSMTPIGMDate(cs.getSmtpigmdate());
+        additionalDetails.setSMTPIGMNumber(cs.getSmtpigmnumber());
         additionalDetails.setGuid(null);
         additionalDetails.setDeliveryMode(cs.getHblDeliveryMode());
+        if(cs.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+            additionalDetails.setDateOfIssue(cs.getIssueDate());
+        else
+            additionalDetails.setDateOfIssue(cs.getDateofIssue());
+        additionalDetails.setDateOfReceipt(cs.getDateofReceipt());
+        additionalDetails.setBLChargesDisplay(cs.getChargesApply());
+        additionalDetails.setBLExporterShipment(cs.getExporterStmt());
+        additionalDetails.setPlaceOfIssue(cs.getPlaceOfIssueName());
+        additionalDetails.setPlaceOfSupply(cs.getPlaceOfSupplyName());
+        additionalDetails.setPaidPlace(cs.getPaidPlaceName());
+        additionalDetails.setCIFValue(cs.getCIFValue());
+        additionalDetails.setCustomDeclType(cs.getCustom_DeclType());
         sd.setAdditionalDetails(additionalDetails);
     }
 
@@ -181,23 +215,23 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         sd.setServicesList(res);
     }
 
-    private void mapRoutingsReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        if(cs.getRoutings() == null)
-            return;
-        List<Routings> res = cs.getRoutings().stream().map(
-                i -> {
-                    var routings = modelMapper.map(i, Routings.class);
-                    routings.setDomestic(i.getIsDomestic());
-                    return routings;
-                }
-        ).toList();
-        sd.setRoutingsList(res);
-    }
-
     private Parties mapPartyObject(PartyRequestV2 sourcePartyObject) {
         if(sourcePartyObject == null)
             return null;
         return modelMapper.map(sourcePartyObject, Parties.class);
+    }
+
+    private Parties mapPartyObjectWithFreetext(PartyRequestV2 sourcePartyObject, Boolean isFreeText, String freeTextAddress) {
+        if(sourcePartyObject == null)
+            return null;
+        Parties parties = modelMapper.map(sourcePartyObject, Parties.class);
+        if(isFreeText != null && isFreeText) {
+            parties.setIsAddressFreeText(true);
+            if(parties.getAddressData() == null)
+                parties.setAddressData(new HashMap<>());
+            parties.getAddressData().put(PartiesConstants.RAW_DATA, freeTextAddress);
+        }
+        return parties;
     }
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
@@ -205,7 +239,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             return null;
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
+                .toList();
     }
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {
         return modelMapper.map(obj, clazz);

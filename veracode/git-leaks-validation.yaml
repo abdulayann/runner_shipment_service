@@ -1,0 +1,16 @@
+trigger: none
+
+pool:
+  name: Runner-self-hosted-agent
+
+name: $(Rev:r)
+
+resources:
+  repositories:
+  - repository: devops_template
+    name: DevOps/_git/devops-common-utils
+    type: git
+    ref: main
+
+steps:
+- template: pipelines/veracode/git-leaks.yaml@devops_template

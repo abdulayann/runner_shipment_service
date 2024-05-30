@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -115,4 +117,24 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private CustomerCategoryRates customerCategory;
     private String contractId;
     private String contractType;
+    private Boolean replaceConsoleRoute;
+    private Boolean createMainLegRoute;
+    private String clientCountry;
+    private String consignorCountry;
+    private String consigneeCountry;
+    private String notifyPartyCountry;
+    private String salesBranch;
+    private String primarySalesAgentEmail;
+    private String secondarySalesAgentEmail;
+    private List<ContainerIdDltReq> deletedContainerIds;
+    private UUID sourceGuid;
+    private UUID clonedGuid;
+    private Long consigneeDpsAddressId;
+    private Long clientDpsAddressId;
+    private Long consignorDpsAddressId;
+    private Long notifyPartyDpsAddressId;
+    private Boolean autoCreateConsole;
+    private LocalDateTime bookingCreatedDate;
+    private String securityStatus;
+    private String currentPartyForQuote;
 }

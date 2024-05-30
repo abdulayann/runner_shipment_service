@@ -1,11 +1,14 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,7 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ContainerModel {
+public class ContainerModel implements Serializable {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("Guid")
@@ -49,6 +52,8 @@ public class ContainerModel {
     private String measurementUnit;
     @JsonProperty("CommodityCode")
     private String commodityCode;
+    @JsonProperty("CommodityGroup")
+    private String commodityGroup;
     @JsonProperty("HsCode")
     private String hsCode;
     @JsonProperty("IsShipperOwned")
@@ -90,6 +95,7 @@ public class ContainerModel {
     @JsonProperty("HblDeliveryMode")
     private String hblDeliveryMode;
     @JsonProperty("AllocationDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime allocationDate;
     @JsonProperty("DgClass")
     private String dgClass;

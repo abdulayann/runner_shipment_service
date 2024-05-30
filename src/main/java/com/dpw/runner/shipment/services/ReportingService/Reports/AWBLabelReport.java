@@ -4,8 +4,10 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.AWbLabelModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -13,10 +15,8 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
 
 @Component
 public class AWBLabelReport extends IReport{
@@ -35,7 +35,7 @@ public class AWBLabelReport extends IReport{
     IDocumentModel getDocumentModel(Long id) {
         AWbLabelModel awbLabelModel = new AWbLabelModel();
         awbLabelModel.shipment = getShipment(id);
-
+        awbLabelModel.tenant = getTenant();
         // TODO TenantRow required
         return awbLabelModel;
     }
@@ -45,6 +45,7 @@ public class AWBLabelReport extends IReport{
         AWbLabelModel awbLabelModel = (AWbLabelModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         String mawb = awbLabelModel.shipment.getMasterBill();
+        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         if(mawb != null){
             mawb = mawb.replace("-","");
             if(mawb.length() < 11) mawb = appendZero(mawb, 11);
@@ -65,7 +66,7 @@ public class AWBLabelReport extends IReport{
                     inners = "0" + inners;
                 }
             }
-            dictionary.put(ReportConstants.INNERS, inners);
+            dictionary.put(ReportConstants.INNERS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(inners)), 0, v1TenantSettingsResponse));
         }
         if(awbLabelModel.shipment.getNoOfPacks() != null){
             var packs = awbLabelModel.shipment.getNoOfPacks().toString();
@@ -75,29 +76,43 @@ public class AWBLabelReport extends IReport{
                     packs = "0" + packs;
                 }
             }
-            dictionary.put(ReportConstants.PACKS, packs);
+            dictionary.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(packs)), 0, v1TenantSettingsResponse));
         }
         if(awbLabelModel.tenant != null) {
             ReportHelper.addTenantDetails(dictionary, awbLabelModel.tenant);
-            awbLabelModel.TenantAddress = ReportHelper.getListOfStrings(awbLabelModel.tenant.tenantName, awbLabelModel.tenant.address1,
+            awbLabelModel.setTenantAddress(ReportHelper.getListOfStrings(awbLabelModel.tenant.tenantName, awbLabelModel.tenant.address1,
                     awbLabelModel.tenant.address2, awbLabelModel.tenant.city, awbLabelModel.tenant.state,
                     awbLabelModel.tenant.zipPostCode, awbLabelModel.tenant.country, awbLabelModel.tenant.email,
-                    awbLabelModel.tenant.websiteUrl, awbLabelModel.tenant.phone);
-            if (awbLabelModel.TenantAddress != null)
-                dictionary.put(ReportConstants.TENANT, awbLabelModel.TenantAddress);
+                    awbLabelModel.tenant.websiteUrl, awbLabelModel.tenant.phone));
+            if (awbLabelModel.getTenantAddress() != null)
+                dictionary.put(ReportConstants.TENANT, awbLabelModel.getTenantAddress());
         }
         dictionary.put(ReportConstants.HAWB_NUMBER, awbLabelModel.shipment.getHouseBill());
-
-        List<Object>  criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                awbLabelModel.shipment.getCarrierDetails().getDestination()
-        );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-        if(unlocationsResponse != null && !unlocationsResponse.isEmpty())
-            dictionary.put(ReportConstants.HDEST, unlocationsResponse.get(0).getName());
+        List<String> unlocations = new ArrayList<>();
+        if(awbLabelModel.shipment.getCarrierDetails().getDestination() != null)
+            unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestination());
+        if(awbLabelModel.shipment.getCarrierDetails().getDestinationPort() != null)
+            unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestinationPort());
+        if(!unlocations.isEmpty()) {
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
+                    "In",
+                    Arrays.asList(unlocations)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
+                for (var unloc : unlocationsResponse) {
+                    if (Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestination())) {
+                        dictionary.put(ReportConstants.HDEST, unloc.getName());
+                    }
+                    if (Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestinationPort())) {
+                        dictionary.put(ReportConstants.DESTINATION, unloc.getLocCode());
+                    }
+                }
+            }
+        }
         return dictionary;
     }
 }

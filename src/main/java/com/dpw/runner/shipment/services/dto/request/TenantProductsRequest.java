@@ -24,5 +24,6 @@ public class TenantProductsRequest extends CommonRequest implements IRunnerReque
     private Boolean enabled;
     private Boolean enableGrouping;
     private Long shipmentSettingsId;
+    private Boolean isCommonSequence;
     private List<String> transportModes;
 }

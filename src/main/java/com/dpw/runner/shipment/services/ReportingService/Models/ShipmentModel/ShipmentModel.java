@@ -1,8 +1,14 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
+import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
+import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,7 +22,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ShipmentModel {
+public class ShipmentModel implements IDocumentModel {
     @JsonProperty("Guid")
     private UUID guid;
     @JsonProperty("AdditionalDetails")
@@ -40,6 +46,7 @@ public class ShipmentModel {
     @JsonProperty("CarrierDetails")
     private CarrierDetailModel carrierDetails;
     @JsonProperty("Chargable")
+    @JsonSerialize(using = DecimalPlaceValueSerializer.class)
     private BigDecimal chargable;
     @JsonProperty("ChargeableUnit")
     private String chargeableUnit;
@@ -70,6 +77,7 @@ public class ShipmentModel {
     @JsonProperty("FinanceClosedBy")
     private String financeClosedBy;
     @JsonProperty("FinanceClosedOn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime financeClosedOn;
     @JsonProperty("FreightLocal")
     private BigDecimal freightLocal;
@@ -87,9 +95,9 @@ public class ShipmentModel {
     private Long id;
     @JsonProperty("Incoterms")
     private String incoterms;
-    @JsonProperty("InnerPackUnit")
+    @JsonProperty("InnersUnit")
     private String innerPackUnit;
-    @JsonProperty("InnerPacks")
+    @JsonProperty("Inners")
     private Integer innerPacks;
     @JsonProperty("IntraBranch")
     private Boolean intraBranch;
@@ -112,6 +120,7 @@ public class ShipmentModel {
     @JsonProperty("MasterBill")
     private String masterBill;
     @JsonProperty("NetWeight")
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal netWeight;
     @JsonProperty("NetWeightUnit")
     private String netWeightUnit;
@@ -148,8 +157,10 @@ public class ShipmentModel {
     @JsonProperty("ShipmentCompletedBy")
     private String shipmentCompletedBy;
     @JsonProperty("ShipmentCompletedOn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime shipmentCompletedOn;
     @JsonProperty("ShipmentCreatedOn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime shipmentCreatedOn;
     @JsonProperty("ShipmentId")
     private String shipmentId;
@@ -168,13 +179,16 @@ public class ShipmentModel {
     @JsonProperty("TruckDriverDetails")
     private List<TruckDriverDetailsModel> truckDriverDetails;
     @JsonProperty("Volume")
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal volume;
     @JsonProperty("VolumeUnit")
     private String volumeUnit;
     @JsonProperty("VolumetricWeight")
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal volumetricWeight;
     @JsonProperty("VolumetricWeightUnit")
     private String volumetricWeightUnit;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     @JsonProperty("Weight")
     private BigDecimal weight;
     @JsonProperty("WeightUnit")
@@ -198,6 +212,12 @@ public class ShipmentModel {
     private List<ShipmentContainers> shipmentContainersList;
     @JsonProperty("EntryRefNo")
     private String entryRefNo;
+    @JsonProperty("Summary")
+    private String summary;
+    @JsonProperty("Voyage")
+    private String voyage;
+    @JsonProperty("SecurityStatus")
+    private String securityStatus;
 
 }
 

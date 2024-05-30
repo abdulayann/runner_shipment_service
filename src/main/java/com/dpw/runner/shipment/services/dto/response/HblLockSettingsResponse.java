@@ -88,4 +88,9 @@ public class HblLockSettingsResponse implements IRunnerResponse {
     private Boolean quantityCode;
     private Boolean blDeliveryAgent;
     private Boolean blDeliveryAgentAddress;
+    private Boolean bLTermsandConditionsIdLock;
+    private Boolean cargoTermsLock;
+    private Boolean cargoTermsDescriptionLock;
+    private Boolean bLRemarksLock;
+    private Boolean bLRemarksDescriptionLock;
 }

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -28,4 +29,9 @@ public class TruckDriverDetailsResponse implements IRunnerResponse {
     private Long containerId;
     private Long consolidationId;
     private String selfTransporterName;
+    private String remarks;
+    private String truckStatus;
+    private String shipmentNumber;
+    private String containerNumber;
+    private Parties thirdPartyTransporter;
 }

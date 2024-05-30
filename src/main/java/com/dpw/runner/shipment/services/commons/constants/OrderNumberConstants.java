@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class OrderNumberConstants {
+    private OrderNumberConstants(){}
     public static final String ORDER_NUMBER_API_HANDLE = "/api/v2/order-number";
     public static final String ORDER_NUMBER_CREATE_SUCCESSFUL = "Successful Order Number Data Creation";
     public static final String ORDER_NUMBER_UPDATE_SUCCESSFUL = "Successful Order Number Data Update";
