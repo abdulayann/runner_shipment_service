@@ -28,6 +28,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -140,6 +142,10 @@ class PreAlertReportTest {
         orgData.put(FULL_NAME, "123");
         orgData.put(CONTACT_PERSON, "123");
         orgData.put(COMPANY_NAME, "123");
+        orgData.put(CITY, "123");
+        orgData.put(STATE, "123");
+        orgData.put(COUNTRY, "123");
+        orgData.put(ZIP_POST_CODE, "123");
         partiesModel.setOrgData(orgData);
         partiesModel.setAddressData(orgData);
         shipmentModel.setConsignee(partiesModel);
@@ -477,10 +483,19 @@ class PreAlertReportTest {
         assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
-    @Test
-    void getDocumentModel() {
+    @ParameterizedTest
+    @ValueSource(ints = {
+            1000001,
+            1001,
+            101,
+            21,
+            10,
+            -1
+    })
+    void getDocumentModel(int noOfPacks) {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setNoOfPacks(noOfPacks);
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);

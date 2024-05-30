@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentAndContainerResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ManifestConsolModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
@@ -29,6 +30,7 @@ import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataIm
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,6 +92,7 @@ class ManifestConsolReportTest {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setEnableTimeZone(false);
+        mockUser.setCompanyCurrency("INR");
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
     }
@@ -100,7 +103,7 @@ class ManifestConsolReportTest {
     void setup() {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
-                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
+                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).IsGroupingOverseas(false).build());
     }
 
     private void populateModel(ManifestConsolModel manifestConsolModel) {
@@ -277,6 +280,14 @@ class ManifestConsolReportTest {
         masterDataMock();
         mockCarrier();
         mockUnloc();
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(WEIGHT, BigDecimal.TEN);
+        containerMap.put(VOLUME, BigDecimal.TEN);
+        containerMap.put(PACKS, BigDecimal.TEN);
+        containerMap.put(HSN_NUMBER, "100");
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentAndContainerResponse.class), any(TypeReference.class));
+
         assertNotNull(manifestConsolReport.populateDictionary(manifestConsolModel));
     }
 
@@ -291,6 +302,9 @@ class ManifestConsolReportTest {
         shipmentModel.setWeightUnit(null);
         shipmentModel.setVolumeUnit(null);
         shipmentModel.setPacksUnit(null);
+        shipmentModel.setFreightLocalCurrency("USD");
+        shipmentModel.setFreightOverseasCurrency("USD");
+
         List<PackingModel> packingModels = new ArrayList<>();
         PackingModel packingModel = new PackingModel();
         packingModel.setLength(BigDecimal.TEN);
@@ -320,6 +334,12 @@ class ManifestConsolReportTest {
         masterDataMock();
         mockCarrier();
         mockUnloc();
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(WEIGHT, BigDecimal.TEN);
+        containerMap.put(VOLUME, BigDecimal.TEN);
+        containerMap.put(PACKS, BigDecimal.TEN);
+        containerMap.put(HSN_NUMBER, "100");
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentAndContainerResponse.class), any(TypeReference.class));
         assertNotNull(manifestConsolReport.populateDictionary(manifestConsolModel));
     }
 

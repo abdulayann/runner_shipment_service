@@ -171,6 +171,17 @@ class DeliveryOrderReportTest {
         orgData.put(FULL_NAME, "123");
         orgData.put(CONTACT_PERSON, "123");
         orgData.put(COMPANY_NAME, "123");
+        orgData.put(CITY, "123");
+        orgData.put(STATE, "123");
+        orgData.put(COUNTRY, "123");
+        orgData.put(ZIP_POST_CODE, "123");
+        orgData.put(ADDRESS1, "123");
+        orgData.put(ADDRESS2, "123");
+        orgData.put(ORG_FULL_NAME, "123");
+        orgData.put(EMAIL, "123");
+        orgData.put(CONTACT_PHONE, "123");
+
+
         orgData.put(PartiesConstants.RAW_DATA, "Text");
         partiesModel.setOrgData(orgData);
         partiesModel.setAddressData(orgData);

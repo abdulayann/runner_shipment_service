@@ -455,6 +455,16 @@ class HblReportTest {
         hblDataDto.setMarksAndNumbers("123");
         hbl.setHblData(hblDataDto);
         hblModel.setBlObject(hbl);
+        Map<String, Long> containerGroupMap = new HashMap<>();
+        containerGroupMap.put("TEST", 40L);
+        containerGroupMap.put("TEST2", 40L);
+        hblModel.setContainerCountGrouped(containerGroupMap);
+        hblModel.setContainerPacksGrouped(containerGroupMap);
+        Map<String, Double> volumeGroupMap = new HashMap<>();
+        volumeGroupMap.put("TEST", 40.1);
+        volumeGroupMap.put("TEST2", 40.1);
+        hblModel.setContainerVolumeGrouped(volumeGroupMap);
+        hblModel.setContainerWeightGrouped(volumeGroupMap);
         hblModel.setTenant(new TenantModel());
         hblModel.setTenantSettingsResponse(V1TenantSettingsResponse.builder().P100Branch(false).build());
         hblModel.setShipmentSettingsDetails(ShipmentSettingsDetails.builder().build());
@@ -509,6 +519,8 @@ class HblReportTest {
         additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
         additionalDetailModel.setOnBoard("RFS");
         additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+        additionalDetailModel.setSendingAgent(partiesModel);
+        additionalDetailModel.setReceivingAgent(partiesModel);
         shipmentModel.setCarrierDetails(carrierDetailModel);
         shipmentModel.setAdditionalDetails(additionalDetailModel);
         shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
@@ -538,8 +550,6 @@ class HblReportTest {
 
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setPayment("PPM");
-        consolidationModel.setReceivingAgent(partiesModel);
-        consolidationModel.setSendingAgent(partiesModel);
         consolidationModel.setCarrierDetails(carrierDetailModel);
         partiesModel = new PartiesModel();
         partiesModel.setType("Notify Party 1");
@@ -623,9 +633,9 @@ class HblReportTest {
         shipmentModel.setChargable(BigDecimal.TEN);
         shipmentModel.setVolumetricWeight(BigDecimal.TEN);
         shipmentModel.setNoOfPacks(10);
+        shipmentModel.setIsNotifyConsigneeEqual(true);
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
         referenceNumbersModel.setType(ERN);
-        shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
 
         PartiesModel partiesModel = new PartiesModel();
         partiesModel.setType(CUSTOM_HOUSE_AGENT);
