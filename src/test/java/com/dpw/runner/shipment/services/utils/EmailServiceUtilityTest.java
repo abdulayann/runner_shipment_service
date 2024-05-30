@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.utils.config.EmailConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -18,9 +19,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
 
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(CONCURRENT)
 @TestPropertySource("classpath:application-qa.properties")
 class EmailServiceUtilityTest {
 
