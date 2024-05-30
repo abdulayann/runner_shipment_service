@@ -4426,7 +4426,9 @@ class ShipmentServiceTest {
     void changeConsolidationDGValuesById() {
         ShipmentService spyService = spy(shipmentService);
         doReturn(testConsol).when(spyService).saveConsolidationDGValue(1L, false);
-        spyService.changeConsolidationDGValuesById(false, new AtomicBoolean(true), 1L, testShipment);
+        ConsolidationDetails consolidationDetails = spyService.changeConsolidationDGValuesById(false, new AtomicBoolean(true), 1L, testShipment);
+        assertNotNull(consolidationDetails);
+        assertEquals(testConsol, consolidationDetails);
     }
 
     @Test

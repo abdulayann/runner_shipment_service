@@ -16,6 +16,7 @@ public class Constants {
     public static final String INTERNATIONAL = "international";
     public static final int IS_DOMESTIC_INDEX = 3;
     public static final String DELIMITER = "-";
+    public static final String CONTAINS_HAZARDOUS = "containsHazardous";
     public static final String SHIPMENT_LIST_PERMISSION = "ShipmentList";
     public static final String SHIPMENT_RETRIEVE_PERMISSION = "ShipmentRetrive";
     public static final String SHIPMENT_CREATE_PERMISSION = "ShipmentCreate";
