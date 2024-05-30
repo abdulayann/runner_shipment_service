@@ -60,6 +60,7 @@ public class DeliveryOrderReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.shipmentDetails = getShipment(id);
+        validateAirDGCheckShipments(deliveryOrderModel.shipmentDetails);
         validateAirDGCheck(deliveryOrderModel.shipmentDetails);
         deliveryOrderModel.usersDto = UserContext.getUser();
         deliveryOrderModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();

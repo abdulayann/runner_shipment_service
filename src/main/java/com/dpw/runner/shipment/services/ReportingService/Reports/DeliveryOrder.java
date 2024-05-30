@@ -13,7 +13,6 @@ public class DeliveryOrder extends IReport {
 
     @Override
     public Map<String, Object> getData(Long id) {
-        hblReport.setFromDeliveryReport(true);
         return hblReport.getData(id);
     }
 
