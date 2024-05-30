@@ -455,6 +455,16 @@ class HblReportTest {
         hblDataDto.setMarksAndNumbers("123");
         hbl.setHblData(hblDataDto);
         hblModel.setBlObject(hbl);
+        Map<String, Long> containerGroupMap = new HashMap<>();
+        containerGroupMap.put("TEST", 40L);
+        containerGroupMap.put("TEST2", 40L);
+        hblModel.setContainerCountGrouped(containerGroupMap);
+        hblModel.setContainerPacksGrouped(containerGroupMap);
+        Map<String, Double> volumeGroupMap = new HashMap<>();
+        volumeGroupMap.put("TEST", 40.1);
+        volumeGroupMap.put("TEST2", 40.1);
+        hblModel.setContainerVolumeGrouped(volumeGroupMap);
+        hblModel.setContainerWeightGrouped(volumeGroupMap);
         hblModel.setTenant(new TenantModel());
         hblModel.setTenantSettingsResponse(V1TenantSettingsResponse.builder().P100Branch(false).build());
         hblModel.setShipmentSettingsDetails(ShipmentSettingsDetails.builder().build());

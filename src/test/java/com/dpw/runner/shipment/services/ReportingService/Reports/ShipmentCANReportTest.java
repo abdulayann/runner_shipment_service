@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -107,6 +108,7 @@ class ShipmentCANReportTest {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setEnableTimeZone(false);
+        mockUser.setCompanyCurrency("INR");
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
     }
@@ -117,7 +119,7 @@ class ShipmentCANReportTest {
     void setup() {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
-                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).GSTTaxAutoCalculation(true).build());
+                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).GSTTaxAutoCalculation(true).CurrencyDigitGrouping(1).CurrencyGroupingNumber(GroupingNumber.DotAndComma.getValue()).IsGroupingOverseas(false).RoundoffLocalCurrencyAmount(true).build());
     }
 
     @Test
@@ -302,9 +304,9 @@ class ShipmentCANReportTest {
         shipmentModel.setTransportMode(ReportConstants.SEA);
         shipmentModel.setDirection(ReportConstants.EXP);
         shipmentModel.setFreightLocal(BigDecimal.TEN);
-        shipmentModel.setFreightLocalCurrency("INR");
+        shipmentModel.setFreightLocalCurrency("USD");
         shipmentModel.setFreightOverseas(BigDecimal.TEN);
-        shipmentModel.setFreightOverseasCurrency("INR");
+        shipmentModel.setFreightOverseasCurrency("USD");
         shipmentModel.setGoodsDescription("123");
         shipmentModel.setWeight(BigDecimal.TEN);
         shipmentModel.setVolume(BigDecimal.TEN);
