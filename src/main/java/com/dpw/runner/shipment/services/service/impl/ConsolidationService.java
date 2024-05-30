@@ -759,6 +759,8 @@ public class ConsolidationService implements IConsolidationService {
             return false;
         if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
             return false;
+        if(!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()))
+            return false;
         if(consolidationDetails.getShipmentsList() == null || consolidationDetails.getShipmentsList().isEmpty())
             return true;
         Boolean isDgShipmentAttached = consolidationDetails.getShipmentsList().stream().anyMatch(ship -> Boolean.TRUE.equals(ship.getContainsHazardous()));
