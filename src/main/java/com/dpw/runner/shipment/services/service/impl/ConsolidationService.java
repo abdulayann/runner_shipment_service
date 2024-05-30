@@ -732,6 +732,10 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        if(consol.isPresent() && checkAttachDgAirShipments(consol.get())){
+            consol.get().setHazardous(false);
+            consolidationDetailsDao.save(consol.get(), false);
+        }
         String transactionId = consol.get().getGuid().toString();
         if(packingList != null) {
             try {
@@ -748,6 +752,17 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails){
+        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            return false;
+        if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
+            return false;
+        if(consolidationDetails.getShipmentsList() == null || consolidationDetails.getShipmentsList().isEmpty())
+            return true;
+        Boolean isDgShipmentAttached = consolidationDetails.getShipmentsList().stream().anyMatch(ship -> Boolean.TRUE.equals(ship.getContainsHazardous()));
+        return !isDgShipmentAttached;
     }
 
     @Transactional

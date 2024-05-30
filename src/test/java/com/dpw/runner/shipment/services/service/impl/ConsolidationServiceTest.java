@@ -965,7 +965,61 @@ class ConsolidationServiceTest {
         shipmentDetails.setPackingList(List.of(packing));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationDetails.setGuid(UUID.randomUUID());
+
+        when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachShipments_Success_Air_DgCase_NoShipment() {
+        List<Long> shipmentIds = List.of(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        shipmentDetails.setId(1L);
+        shipmentDetails.setContainsHazardous(true);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setPackingList(List.of(packing));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setHazardous(true);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setGuid(UUID.randomUUID());
+
+        when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachShipments_Success_Air_DgCase() {
+        List<Long> shipmentIds = List.of(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        shipmentDetails.setId(1L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setPackingList(List.of(packing));
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setId(2L);
+        shipmentDetails1.setContainsHazardous(false);
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setGuid(UUID.randomUUID());
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setHazardous(true);
+        consolidationDetails.setShipmentsList(new ArrayList<>(List.of(shipmentDetails1)));
+
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
