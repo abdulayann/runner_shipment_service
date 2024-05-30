@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
@@ -45,6 +46,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
@@ -242,6 +244,24 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public Long findMaxId() { return shipmentRepository.findMaxId(); }
 
+    private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
+            return true;
+        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+    }
+
+    private boolean checkForDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+            return false;
+        return Boolean.TRUE.equals(request.getContainsHazardous());
+    }
+
+    private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+            return false;
+        return !Boolean.TRUE.equals(request.getContainsHazardous());
+    }
+
     public Set<String> applyShipmentValidations(ShipmentDetails request, ShipmentDetails oldEntity) {
         Set<String> errors = new LinkedHashSet<>();
 
@@ -251,14 +271,17 @@ public class ShipmentDao implements IShipmentDao {
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
 
         // Non dg Shipments can not have dg packs
-        if(!Boolean.TRUE.equals(request.getContainsHazardous()) && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
-        && request.getPackingList() != null && !request.getPackingList().isEmpty() && Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag())) {
+        if(checkForNonDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && request.getPackingList() != null) {
             for (Packing packing: request.getPackingList()) {
                 if(Boolean.TRUE.equals(packing.getHazardous())) {
                     errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
                 }
             }
         }
+
+        // Non dg user cannot save dg shipment
+        if(checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.getUser().getPermissions().containsKey(airDG))
+            errors.add("You don't have permission to update DG Shipment");
         
         // Routings leg no can not be repeated
         if (request.getRoutingsList() != null && request.getRoutingsList().size() > 0) {
