@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
@@ -37,10 +38,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -140,8 +138,47 @@ class ConsolidationDaoTest {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
         consolidationDetails.setId(null);
         consolidationDetails.setGuid(null);
+        consolidationDetails.setHazardous(true);
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+        shipmentDetails.setContainsHazardous(true);
+        consolidationDetails.setShipmentsList(List.of(shipmentDetails));
         var spyService = Mockito.spy(consolidationsDao);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
+    }
+
+    @Test
+    void testSave_Failure_Air_Validations() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.setHazardous(true);
+        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+        shipmentDetails.setContainsHazardous(false);
+        consolidationDetails.setShipmentsList(List.of(shipmentDetails));
+        var spyService = Mockito.spy(consolidationsDao);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.airDG, true);
+        UserContext.getUser().setPermissions(permissions);
+        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
+    }
+
+    @Test
+    void testSave_Failure_Air_Validations_nullShipments() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setId(null);
+        consolidationDetails.setGuid(null);
+        consolidationDetails.setHazardous(true);
+        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
+        consolidationDetails.setShipmentsList(null);
+        var spyService = Mockito.spy(consolidationsDao);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.airDG, true);
+        UserContext.getUser().setPermissions(permissions);
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 

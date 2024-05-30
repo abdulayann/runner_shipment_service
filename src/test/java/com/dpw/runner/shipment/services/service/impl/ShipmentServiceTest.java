@@ -79,6 +79,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.*;
@@ -4419,6 +4420,40 @@ class ShipmentServiceTest {
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
+    }
+
+    @Test
+    void changeConsolidationDGValuesById() {
+        ShipmentService spyService = spy(shipmentService);
+        doReturn(testConsol).when(spyService).saveConsolidationDGValue(1L, false);
+        spyService.changeConsolidationDGValuesById(false, new AtomicBoolean(true), 1L, testShipment);
+    }
+
+    @Test
+    void checkIfAllShipmentsAreNonDG() {
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testShipment)));
+        boolean response = shipmentService.checkIfAllShipmentsAreNonDG(List.of(1L));
+        assertFalse(response);
+    }
+
+    @Test
+    void checkIfAllShipmentsAreNonDG_ReturnNull() {
+        when(shipmentDao.findAll(any(), any())).thenReturn(null);
+        boolean response = shipmentService.checkIfAllShipmentsAreNonDG(List.of(1L));
+        assertTrue(response);
+    }
+
+    @Test
+    void checkIfAllShipmentsAreNonDG_ReturnEmpty() {
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        boolean response = shipmentService.checkIfAllShipmentsAreNonDG(List.of(1L));
+        assertTrue(response);
+    }
+
+    @Test
+    void checkIfAllShipmentsAreNonDG_Empty() {
+        boolean response = shipmentService.checkIfAllShipmentsAreNonDG(new ArrayList<>());
+        assertTrue(response);
     }
 
     private Runnable mockRunnable() {

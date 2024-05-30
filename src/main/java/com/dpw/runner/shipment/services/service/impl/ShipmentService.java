@@ -3743,7 +3743,7 @@ public class ShipmentService implements IShipmentService {
         return null;
     }
 
-    private ConsolidationDetails changeConsolidationDGValuesById(boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, Long consolidationId, ShipmentDetails shipment) {
+    public ConsolidationDetails changeConsolidationDGValuesById(boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, Long consolidationId, ShipmentDetails shipment) {
         if(makeConsoleDG)
             return saveConsolidationDGValue(consolidationId, true);
         if(makeConsoleNonDG.get()) {
@@ -3755,7 +3755,7 @@ public class ShipmentService implements IShipmentService {
         return null;
     }
 
-    private boolean checkIfAllShipmentsAreNonDG(List<Long> shipmentIdList) {
+    public boolean checkIfAllShipmentsAreNonDG(List<Long> shipmentIdList) {
         if (!shipmentIdList.isEmpty()) {
             ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
             listReq = andCriteria("containsHazardous", true, "=", listReq);
@@ -3767,7 +3767,7 @@ public class ShipmentService implements IShipmentService {
         return true;
     }
 
-    private ConsolidationDetails saveConsolidationDGValue(Long consolidationId, boolean dgFlag) {
+    public ConsolidationDetails saveConsolidationDGValue(Long consolidationId, boolean dgFlag) {
         ConsolidationDetails consolidationDetails;
         consolidationDetails = consolidationDetailsDao.findById(consolidationId).get();
         if( (!Boolean.TRUE.equals(consolidationDetails.getHazardous()) && dgFlag)
