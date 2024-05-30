@@ -149,13 +149,12 @@ class ConsolidationSyncTest {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockShipment)));
         when(truckDriverDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockTruckDriverDetails1, mockTruckDriverDetails2)));
         when(modelMapper.map(any(), eq(TruckDriverDetailsRequestV2.class))).thenReturn(mockTruckDriverDetailsRequestV2);
-//        when(modelMapper.map(eq(inputConsolidation.getCarrierDetails()), any())).thenReturn(new ShipmentDetails());
-        doNothing().when(modelMapper).map(eq(inputConsolidation.getCarrierDetails()), eq(mockCustomConsolidationRequest));
+        doNothing().when(modelMapper).map(inputConsolidation.getCarrierDetails(), mockCustomConsolidationRequest);
         when(modelMapper.map(any(), eq(PartyRequestV2.class))).thenReturn(new PartyRequestV2());
         when(modelMapper.map(any(), eq(JobRequestV2.class))).thenReturn(new JobRequestV2());
         when(modelMapper.map(any(), eq(FileRepoRequestV2.class))).thenReturn(new FileRepoRequestV2());
 
-        doNothing().when(modelMapper).map(eq(List.of()), eq(new ArrayList<>()));
+        doNothing().when(modelMapper).map(List.of(), new ArrayList<>());
 
 
         var responseEntity = consolidationSync.sync(inputConsolidation, guid.toString(), true);
@@ -345,12 +344,12 @@ class ConsolidationSyncTest {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockShipment)));
         when(truckDriverDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockTruckDriverDetails1, mockTruckDriverDetails2)));
         when(modelMapper.map(any(), eq(TruckDriverDetailsRequestV2.class))).thenReturn(mockTruckDriverDetailsRequestV2);
-        doNothing().when(modelMapper).map(eq(inputConsolidation.getCarrierDetails()), eq(mockCustomConsolidationRequest));
+        doNothing().when(modelMapper).map(inputConsolidation.getCarrierDetails(), mockCustomConsolidationRequest);
         when(modelMapper.map(any(), eq(PartyRequestV2.class))).thenReturn(new PartyRequestV2());
         when(modelMapper.map(any(), eq(JobRequestV2.class))).thenReturn(new JobRequestV2());
         when(modelMapper.map(any(), eq(FileRepoRequestV2.class))).thenReturn(new FileRepoRequestV2());
 
-        doNothing().when(modelMapper).map(eq(List.of()), eq(new ArrayList<>()));
+        doNothing().when(modelMapper).map(List.of(), new ArrayList<>());
 
 
         var responseEntity = consolidationSync.sync(inputConsolidation, guid.toString(), true);
@@ -429,12 +428,12 @@ class ConsolidationSyncTest {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockShipment)));
         when(truckDriverDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockTruckDriverDetails1, mockTruckDriverDetails2)));
         when(modelMapper.map(any(), eq(TruckDriverDetailsRequestV2.class))).thenReturn(mockTruckDriverDetailsRequestV2);
-        doNothing().when(modelMapper).map(eq(inputConsolidation.getCarrierDetails()), eq(mockCustomConsolidationRequest));
+        doNothing().when(modelMapper).map(inputConsolidation.getCarrierDetails(), mockCustomConsolidationRequest);
         when(modelMapper.map(any(), eq(PartyRequestV2.class))).thenReturn(new PartyRequestV2());
         when(modelMapper.map(any(), eq(JobRequestV2.class))).thenReturn(new JobRequestV2());
         when(modelMapper.map(any(), eq(FileRepoRequestV2.class))).thenReturn(new FileRepoRequestV2());
 
-        doNothing().when(modelMapper).map(eq(List.of()), eq(new ArrayList<>()));
+        doNothing().when(modelMapper).map(List.of(), new ArrayList<>());
 
         var responseEntity = consolidationSync.sync(inputConsolidation, guid.toString(), false);
 
