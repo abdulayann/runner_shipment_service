@@ -774,8 +774,7 @@ public class MasterDataUtils{
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.listCousinBranches(request);
-
-            List<TenantModel> tenantModelList = jsonHelper.convertValueToList(response.entities, TenantModel.class);
+            List<TenantModel> tenantModelList = commonUtils.convertToList((List<?>) response.entities, TenantModel.class);
             tenantModelList.forEach(tenantModel -> keyMasterDataMap.put(StringUtility.convertToString(tenantModel.tenantId), tenantModel));
         }
         return keyMasterDataMap;
