@@ -851,7 +851,7 @@ class MasterDataUtilsTest {
         var tenantModel = new TenantModel();
         tenantModel.tenantId = 11L;
         // Arrange
-        when(jsonHelper.convertValueToList(any(), eq(TenantModel.class))).thenReturn(List.of(tenantModel));
+        when(commonUtils.convertToList(any(), eq(TenantModel.class))).thenReturn(List.of(tenantModel));
         when(v1Service.listCousinBranches(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
         var responseEntity = masterDataUtils.fetchInTenantsList(List.of("INR"));
