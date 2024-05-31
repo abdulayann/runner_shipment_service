@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.AirMessagingLogs;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Repository
+@Repository @Generated
 public interface IAirMessagingLogsRepository extends MultiTenancyRepository<AirMessagingLogs> {
     List<AirMessagingLogs> findAll();
     Page<AirMessagingLogs> findAll(Specification<AirMessagingLogs> spec, Pageable pageable);

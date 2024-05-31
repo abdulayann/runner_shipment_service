@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 @Getter
 @Setter
+@Generated
 public class DenialPartySearchEntityRequest implements IRunnerRequest {
     private String name;
     private String company;

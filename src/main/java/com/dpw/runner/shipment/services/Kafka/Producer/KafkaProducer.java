@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.Kafka.Producer;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
+@Generated
 public class KafkaProducer {
 
     @Autowired

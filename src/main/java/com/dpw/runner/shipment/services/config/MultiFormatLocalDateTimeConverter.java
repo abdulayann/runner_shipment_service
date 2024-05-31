@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.config;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@Generated
 public class MultiFormatLocalDateTimeConverter implements Converter<String, LocalDateTime> {
 
     public static final String YYYY_MM_DD_HH_MM_SS = "yyyy-MM-dd HH:mm:ss";

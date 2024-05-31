@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -21,6 +22,7 @@ import java.net.URI;
 import java.util.Arrays;
 
 @Component
+@Generated
 public class DocumentService {
     @Value("${DocumentService.BaseUrl}")
     private String baseUrl;

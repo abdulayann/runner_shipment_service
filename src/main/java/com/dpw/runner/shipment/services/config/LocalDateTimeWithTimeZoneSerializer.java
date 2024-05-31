@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -28,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Component
+@Generated
 public class LocalDateTimeWithTimeZoneSerializer extends JsonSerializer<LocalDateTime> {
 
     @Override

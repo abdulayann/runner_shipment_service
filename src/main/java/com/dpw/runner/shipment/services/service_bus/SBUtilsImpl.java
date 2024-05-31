@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service_bus;
 
 import com.azure.messaging.servicebus.*;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import java.util.function.Consumer;
 @Slf4j
 @SuppressWarnings("InfiniteLoopStatement")
 @EnableAsync
+@Generated
 public class SBUtilsImpl implements ISBUtils {
 
     @Autowired
@@ -68,23 +70,6 @@ public class SBUtilsImpl implements ISBUtils {
             Consumer<ServiceBusReceivedMessageContext> onMessage,
             Consumer<ServiceBusErrorContext> onError) throws InterruptedException {
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.submit(() -> {
-            log.info("Executor thread calling to start listener {}", topicName);
-            while (true) {
-                try {
-                    ServiceBusProcessorClient sessionProcessor = null;
-                    log.info("1.starting processor client for {} ", topicName);
-                    sessionProcessor = sbConfiguration.getSessionProcessorClient(sbProperties, topicName, subscriptionName, onMessage, onError);
-                    sessionProcessor.start();
-                    TimeUnit.MINUTES.sleep(30);
-                    log.info("2.shutting down processor client for {} ", topicName);
-                    sessionProcessor.close();
-                } catch (Exception ex) {
-                    log.error("Exception occurred in sleep thread for service bus", ex);
-                }
-            }
-        });
     }
 
     public void onServiceBusErrorContext(ServiceBusErrorContext context) {
