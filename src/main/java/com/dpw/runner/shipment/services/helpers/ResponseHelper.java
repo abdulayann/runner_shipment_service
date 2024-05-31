@@ -44,12 +44,6 @@ public class ResponseHelper {
                 .data(data).build(), HttpStatus.OK);
     }
 
-    public static ResponseEntity<IRunnerResponse> buildCreationSuccessResponse(IRunnerResponse data) {
-        return new ResponseEntity<>(RunnerResponse.builder().success(true)
-                .requestId(LoggerHelper.getRequestIdFromMDC())
-                .data(data).build(), HttpStatus.CREATED);
-    }
-
     public static ResponseEntity<IRunnerResponse> buildSuccessResponse() {
         return new ResponseEntity<>(
                 RunnerResponse.builder().success(true)
@@ -93,10 +87,6 @@ public class ResponseHelper {
         return new ResponseEntity<>(runnerResponse, HttpStatus.BAD_REQUEST);
     }
 
-    public static ResponseEntity<IRunnerResponse> buildResponse(HttpStatus httpStatus) {
-        return new ResponseEntity<>(httpStatus);
-    }
-
     public static RunnerResponse buildFailResponse(ApiError apiError) {
         log.debug(RETURN_RESPONSE_WITH_ERROR_MSG, apiError);
         return RunnerResponse.builder().success(false)
@@ -104,13 +94,6 @@ public class ResponseHelper {
                 .error(apiError).build();
     }
 
-    public static ResponseEntity<DependentServiceResponse> buildDependentServiceFailedResponse(String msg) {
-        log.debug("Return Dependent Service Response with error {}", msg);
-        DependentServiceResponse runnerResponse = DependentServiceResponse.builder().success(false)
-                .requestId(LoggerHelper.getRequestIdFromMDC())
-                .error(new ApiError(HttpStatus.BAD_REQUEST, msg)).build();
-        return new ResponseEntity<>(runnerResponse, HttpStatus.BAD_REQUEST);
-    }
     public static ResponseEntity<IRunnerResponse> buildDependentServiceResponse(Object data, int pageNo, long count) {
         log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
         DependentServiceResponse runnerResponse = DependentServiceResponse.builder().success(true)
