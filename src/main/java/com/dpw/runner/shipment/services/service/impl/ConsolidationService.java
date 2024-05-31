@@ -680,6 +680,8 @@ public class ConsolidationService implements IConsolidationService {
         ConsolidationDetails consolidationDetails = null;
         if(consol.isPresent())
             consolidationDetails = consol.get();
+        else
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails)) {
             ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "in");
             listCommonRequest = andCriteria("containsHazardous", true, "=", listCommonRequest);

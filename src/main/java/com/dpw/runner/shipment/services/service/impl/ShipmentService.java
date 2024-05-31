@@ -1198,7 +1198,6 @@ public class ShipmentService implements IShipmentService {
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
-            ConsolidationDetails oldConsolidationDetails = null; // used to sync if old console data also needs to be changed
             boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails);
 
             entity = shipmentDao.update(entity, false);
@@ -3767,6 +3766,8 @@ public class ShipmentService implements IShipmentService {
         Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(consolidationId);
         if(optionalConsolidationDetails.isPresent())
             consolidationDetails = optionalConsolidationDetails.get();
+        else
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         if( (!Boolean.TRUE.equals(consolidationDetails.getHazardous()) && dgFlag)
             || (!dgFlag && Boolean.TRUE.equals(consolidationDetails.getHazardous())) ) {
             consolidationDetails.setHazardous(dgFlag);
