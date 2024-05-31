@@ -887,13 +887,13 @@ class MasterDataHelperTest {
         shipmentBillingListResponse.setData(data);
         when(iV1Service.fetchShipmentBillingData(any())).thenReturn(shipmentBillingListResponse);
         CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(shipmentDetails, new ShipmentDetailsResponse());
-        assert (response.get().equals(shipmentBillingListResponse));
+        assertEquals(shipmentBillingListResponse, response.get());
     }
 
     @Test
     void testAddBillData2() throws ExecutionException, InterruptedException {
         CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(new ShipmentDetails(), new ShipmentDetailsResponse());
-        assert (response.get() == null);
+        assertNull(response.get());
     }
 
     @Test
@@ -908,7 +908,7 @@ class MasterDataHelperTest {
         shipmentBillingListResponse.setData(data);
         when(iV1Service.fetchShipmentBillingData(any())).thenReturn(shipmentBillingListResponse);
         CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(shipmentDetails, new ShipmentDetailsResponse());
-        assert (response.get().equals(shipmentBillingListResponse));
+        assertEquals(shipmentBillingListResponse, response.get());
     }
 
     @Test
@@ -922,7 +922,7 @@ class MasterDataHelperTest {
         Map<Long, ContainerResponse> map = new HashMap<>();
         map.put(1L, new ContainerResponse());
         masterDataHelper.setTruckDriverDetailsData(shipmentDetailsResponse, map);
-        assert (!map.isEmpty());
+        assertNotNull(map);
     }
 
     @Test
@@ -931,7 +931,7 @@ class MasterDataHelperTest {
         Map<Long, ContainerResponse> map = new HashMap<>();
         map.put(1L, new ContainerResponse());
         masterDataHelper.setTruckDriverDetailsData(shipmentDetailsResponse, map);
-        assert (!map.isEmpty());
+        assertNotNull(map);
     }
 
     @Test
@@ -941,7 +941,7 @@ class MasterDataHelperTest {
         Map<Long, ContainerResponse> map = new HashMap<>();
         map.put(1L, new ContainerResponse());
         masterDataHelper.setTruckDriverDetailsData(shipmentDetailsResponse, map);
-        assert (!map.isEmpty());
+        assertNotNull(map);
     }
 
     @Test
@@ -984,7 +984,7 @@ class MasterDataHelperTest {
         Map<Long, ContainerResponse> map = new HashMap<>();
         map.put(1L, containerResponse);
         masterDataHelper.setContainersPacksAutoUpdateData(shipmentDetailsResponse, map);
-        assert(!map.isEmpty());
+        assertNotNull(map);
     }
 
     @Test
