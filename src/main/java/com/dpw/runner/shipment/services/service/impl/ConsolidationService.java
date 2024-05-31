@@ -677,8 +677,9 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        consol.isPresent();
-        ConsolidationDetails consolidationDetails = consol.get();
+        ConsolidationDetails consolidationDetails = null;
+        if(consol.isPresent())
+            consolidationDetails = consol.get();
         if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails)) {
             ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "in");
             listCommonRequest = andCriteria("containsHazardous", true, "=", listCommonRequest);

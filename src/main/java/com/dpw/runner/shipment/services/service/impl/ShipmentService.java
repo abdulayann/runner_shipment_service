@@ -605,8 +605,7 @@ public class ShipmentService implements IShipmentService {
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
 
-            ConsolidationDetails oldConsolidationDetails = null; // used to sync if old console data also needs to be changed
-            boolean syncConsole = beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails, oldConsolidationDetails);
+            boolean syncConsole = beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails);
 
             shipmentDetails = getShipment(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
@@ -630,7 +629,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
 
-            afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails, syncConsole, oldConsolidationDetails);
+            afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails, syncConsole);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -1200,7 +1199,7 @@ public class ShipmentService implements IShipmentService {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
             ConsolidationDetails oldConsolidationDetails = null; // used to sync if old console data also needs to be changed
-            boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, oldConsolidationDetails);
+            boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails);
 
             entity = shipmentDao.update(entity, false);
 
@@ -1220,7 +1219,7 @@ public class ShipmentService implements IShipmentService {
                 log.error("Error creating audit service log", e);
             }
 
-            afterSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, syncConsole, oldConsolidationDetails);
+            afterSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, syncConsole);
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
@@ -1234,7 +1233,7 @@ public class ShipmentService implements IShipmentService {
     }
 
 
-    private void syncShipment(ShipmentDetails shipmentDetails, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails, boolean syncConsole, ConsolidationDetails oldConsolidationDetails) {
+    private void syncShipment(ShipmentDetails shipmentDetails, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails, boolean syncConsole) {
         String transactionId = shipmentDetails.getGuid().toString();
         try {
             shipmentSync.sync(shipmentDetails, deletedContGuids, null, transactionId, false);
@@ -1263,15 +1262,8 @@ public class ShipmentService implements IShipmentService {
                 log.error("Error performing sync on packings list, {}", e);
             }
         }
-        if(oldConsolidationDetails != null) {
-            try {
-                consolidationSync.sync(oldConsolidationDetails, transactionId, false);
-            } catch (Exception e) {
-                log.error("Error performing sync on consol entity, {}", e);
-            }
-        }
     }
-    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails oldConsolidationDetails) throws RunnerException{
+    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException{
         List<Long> tempConsolIds = new ArrayList<>();
         List<Long> removedConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
@@ -1310,8 +1302,7 @@ public class ShipmentService implements IShipmentService {
             tempConsolIds = Objects.isNull(oldEntity) ? new ArrayList<>() : oldEntity.getConsolidationList().stream().map(e -> e.getId()).toList();
         }
 
-        boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) && !dgUser) {
+        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) && !isDgUser()) {
             if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                 if((removedConsolIds != null && !removedConsolIds.isEmpty()) || isNewConsolAttached)
                     throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
@@ -1407,7 +1398,7 @@ public class ShipmentService implements IShipmentService {
             if(removedConsolIds != null && !removedConsolIds.isEmpty()) {
                 boolean makeConsoleDG = checkForDGShipmentAndAirDgFlag(shipmentDetails);
                 boolean makeConsoleNonDG = checkForNonDGShipmentAndAirDgFlag(shipmentDetails);
-                oldConsolidationDetails = changeConsolidationDGValuesById(makeConsoleDG, new AtomicBoolean(makeConsoleNonDG), removedConsolIds.get(0), shipmentDetails);
+                changeConsolidationDGValuesById(makeConsoleDG, new AtomicBoolean(makeConsoleNonDG), removedConsolIds.get(0), shipmentDetails);
             }
         }
 
@@ -1556,7 +1547,7 @@ public class ShipmentService implements IShipmentService {
         return true;
     }
 
-    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, ConsolidationDetails oldConsolidationDetails) throws RunnerException {
+    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole) throws RunnerException {
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
@@ -1688,7 +1679,7 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails = shipmentDetails.getConsolidationList().get(0);
         }
         // Syncing shipment to V1
-        syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole, oldConsolidationDetails);
+        syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
         if (TenantSettingsDetailsContext.getCurrentTenantSettings().getP100Branch() != null && TenantSettingsDetailsContext.getCurrentTenantSettings().getP100Branch())
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
     }
@@ -2611,7 +2602,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             if(fromV1 == null || !fromV1) {
-                syncShipment(entity, null, null, null, consolidationDetails, true, null);
+                syncShipment(entity, null, null, null, consolidationDetails, true);
             }
 
             pushShipmentDataToDependentService(entity, false, false);
@@ -3129,6 +3120,8 @@ public class ShipmentService implements IShipmentService {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            if(checkForDGShipmentAndAirDgFlag(shipmentDetails.get()) && !isDgUser())
+                throw new ValidationException("You do not have necessary permissions for this.");
             ShipmentRequest cloneShipmentDetails = jsonHelper.convertValue(shipmentDetails.get(), ShipmentRequest.class);
             cloneShipmentDetails.setHouseBill(null);
             cloneShipmentDetails.setBookingNumber(null);
@@ -3546,8 +3539,7 @@ public class ShipmentService implements IShipmentService {
             CommonUtils.andCriteria(Constants.DIRECTION, "", Constants.IS_NULL, defaultRequest);
         CommonUtils.andCriteria(Constants.STATUS, 2, "!=", defaultRequest);
         CommonUtils.andCriteria(Constants.STATUS, 3, "!=", defaultRequest);
-        boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
-        if(checkForNonDGConsoleAndAirDgFlagAndNonDGUser(dgUser, consolidationDetails))
+        if(checkForNonDGConsoleAndAirDgFlagAndNonDGUser(consolidationDetails))
             CommonUtils.andCriteria(CONTAINS_HAZARDOUS, false, "!=", defaultRequest);
         List<FilterCriteria> criterias = defaultRequest.getFilterCriteria();
         List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
@@ -3651,14 +3643,18 @@ public class ShipmentService implements IShipmentService {
         return defaultRequest;
     }
 
-    private boolean checkForNonDGConsoleAndAirDgFlagAndNonDGUser(boolean dgUser, ConsolidationDetails consolidationDetails) {
+    private boolean isDgUser() {
+        return UserContext.getUser().getPermissions().containsKey(airDG);
+    }
+
+    private boolean checkForNonDGConsoleAndAirDgFlagAndNonDGUser(ConsolidationDetails consolidationDetails) {
         if(!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()))
             return false;
         if(!Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()))
             return false;
         if(Boolean.TRUE.equals(consolidationDetails.getHazardous()))
             return false;
-        return !dgUser;
+        return !isDgUser();
     }
 
     /**
@@ -3767,10 +3763,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     public ConsolidationDetails saveConsolidationDGValue(Long consolidationId, boolean dgFlag) {
-        ConsolidationDetails consolidationDetails;
+        ConsolidationDetails consolidationDetails = null;
         Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(consolidationId);
-        optionalConsolidationDetails.isPresent();
-        consolidationDetails = optionalConsolidationDetails.get();
+        if(optionalConsolidationDetails.isPresent())
+            consolidationDetails = optionalConsolidationDetails.get();
         if( (!Boolean.TRUE.equals(consolidationDetails.getHazardous()) && dgFlag)
             || (!dgFlag && Boolean.TRUE.equals(consolidationDetails.getHazardous())) ) {
             consolidationDetails.setHazardous(dgFlag);
