@@ -721,6 +721,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         assignCarrierDetailsToRequest(customerBookingRequest, request);
         ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = null;
         if (customerBooking.isEmpty()) {
+            customerBookingRequest.setCurrentPartyForQuote("CLIENT");
             this.createPlatformBooking(customerBookingRequest);
         } else {
             if (Objects.equals(customerBooking.get().getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT))
@@ -732,6 +733,10 @@ public class CustomerBookingService implements ICustomerBookingService {
             if (customerBooking.get().getCarrierDetails() != null) {
                 customerBookingRequest.getCarrierDetails().setId(customerBooking.get().getCarrierDetails().getId());
                 customerBookingRequest.getCarrierDetails().setGuid(customerBooking.get().getCarrierDetails().getGuid());
+            }
+            if(customerBooking.get().getCurrentPartyForQuote() != null)
+            {
+                customerBookingRequest.setCurrentPartyForQuote(customerBooking.get().getCurrentPartyForQuote());
             }
 
             Map<UUID, Long> guidVsIdContainerMap = new HashMap<>();
