@@ -2,12 +2,13 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.SyncQueue;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
+@Generated
 public interface ISyncQueueRepository extends MultiTenancyRepository<SyncQueue> {
 
     @Query(value = "SELECT * FROM sync_queue sd WHERE sd.sync_tenant_id IN ?1 AND sd.module_type = ?2 AND sd.is_deleted = false ORDER BY ID ASC", nativeQuery = true)

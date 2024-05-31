@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.config;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.interceptor.KeyGenerator;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.lang.reflect.Method;
 
 @Component("customKeyGenerator")
+@Generated
 public class CustomKeyGenerator implements KeyGenerator {
 
     @Value("${env.name}")

@@ -5,6 +5,7 @@ import com.azure.messaging.servicebus.administration.ServiceBusAdministrationCli
 import com.azure.messaging.servicebus.administration.models.QueueRuntimeProperties;
 import com.azure.messaging.servicebus.administration.models.SubscriptionRuntimeProperties;
 import com.azure.messaging.servicebus.models.ServiceBusReceiveMode;
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ import java.util.function.Consumer;
 
 @Data
 @Component
+@Generated
 public class SBConfiguration {
 
     public ServiceBusSenderClient getSenderTopicClient(ISBProperties sbProperties, String topicName) {

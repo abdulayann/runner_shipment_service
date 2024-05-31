@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+import com.dpw.runner.shipment.services.utils.Generated;
+
+@Generated
 public enum GenerationType {
 
     Random(0, "Generation Type Random"),

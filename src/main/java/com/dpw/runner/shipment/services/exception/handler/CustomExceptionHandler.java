@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.InvalidAccessTokenE
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticationException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 
 @ControllerAdvice
 @Slf4j
+@Generated
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
