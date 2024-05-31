@@ -764,6 +764,7 @@ public class ShipmentService implements IShipmentService {
                         .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
                         .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
                         .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
+                        .carrierCountry(customerBookingRequest.getCarrierDetails().getCarrierCountry())
                         .build()
                 ).
                 contractId(customerBookingRequest.getContractId()).
