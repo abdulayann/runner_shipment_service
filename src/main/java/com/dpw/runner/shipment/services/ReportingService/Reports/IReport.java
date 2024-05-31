@@ -1529,19 +1529,6 @@ public abstract class IReport {
         }
     }
 
-    public static String twoDecimalPlacesFormat(String value)
-    {
-        if(StringUtility.isEmpty(value))
-        {
-            return value;
-        }
-
-        else
-        {
-            return twoDecimalPlacesFormatDecimal(new BigDecimal(value));
-        }
-    }
-
     public static String twoDecimalPlacesFormatDecimal(BigDecimal value)
     {
         if(value == null)
@@ -1675,10 +1662,6 @@ public abstract class IReport {
         return null;
     }
 
-    public static String addCommasWithPrecision(BigDecimal number) {
-        return addCommasWithPrecision(number, 2);
-    }
-
     public static String addCommasWithPrecision(BigDecimal number, int decimalPlaces) {
         if (number != null) {
             try {
@@ -1691,72 +1674,6 @@ public abstract class IReport {
             }
         }
         return String.valueOf(number);
-    }
-
-    public String FormatWithoutDecimal(Object amount, int decimalDigits, V1TenantSettingsResponse tenantSettings) {
-        if (amount == null) {
-            return null;
-        }
-
-        BigDecimal amt = null;
-        try {
-            amt = new BigDecimal(amount.toString());
-        }
-        catch (Exception ignored){}
-        if (amt != null) {
-            return DisplayFormat(amt, decimalDigits, tenantSettings);
-        }
-
-        if (amount instanceof String) {
-            try {
-                BigDecimal parsedDecimal = new BigDecimal((String) amount);
-                return DisplayFormat(parsedDecimal, decimalDigits, tenantSettings);
-            } catch (Exception ignored) {}
-        }
-
-        try {
-            return new DecimalFormat("#,##0").format(amount);
-        } catch (Exception ignored) {}
-        return amount.toString();
-    }
-
-    public String FormatWithoutDecimal(Object amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
-        if (amount == null) {
-            return null;
-        }
-
-        BigDecimal amt = null;
-        try {
-            amt = new BigDecimal(amount.toString());
-        }
-        catch (Exception ignored){}
-        if (amt != null) {
-            return FormatWithoutDecimal(amt, localCurrency, tenantSettings);
-        }
-
-        if (amount instanceof String) {
-            try {
-                BigDecimal parsedDecimal = new BigDecimal((String) amount);
-                return FormatWithoutDecimal(parsedDecimal, localCurrency, tenantSettings);
-            } catch (Exception ignored) {}
-        }
-
-        try {
-            return new DecimalFormat("#,##0").format(amount);
-        } catch (Exception ignored) {}
-        return amount.toString();
-    }
-
-    private String FormatWithoutDecimal(BigDecimal amount, String localCurrency, V1TenantSettingsResponse v1TenantSettingsResponse) {
-        if(v1TenantSettingsResponse == null)
-            v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
-
-        UsersDto user = UserContext.getUser();
-        if (!Boolean.TRUE.equals(v1TenantSettingsResponse.getIsGroupingOverseas()) && !Objects.equals(localCurrency, user.getCompanyCurrency())) {
-            return addCommasWithPrecision(amount, 0);
-        } else {
-            return DisplayFormat(amount, 0, v1TenantSettingsResponse);
-        }
     }
 
     public static String DisplayFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
@@ -2387,8 +2304,7 @@ public abstract class IReport {
         {
             List<Map<String, Object>> values = new ArrayList<>();
             for (BillChargesResponse billChargesResponse : originalChargesRows) {
-                String billChargeJson = jsonHelper.convertToJson(billChargesResponse);
-                values.add(jsonHelper.convertJsonToMap(billChargeJson));
+                values.add(jsonHelper.convertValue(billChargesResponse, new TypeReference<>() {}));
             }
             for (Map<String, Object> v: values) {
                 if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null) {

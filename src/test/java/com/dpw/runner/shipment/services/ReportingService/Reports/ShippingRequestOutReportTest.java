@@ -205,6 +205,21 @@ class ShippingRequestOutReportTest {
         containers.setPacksType("PKG");
         containers.setPacks("100");
         containerModelList.add(containers);
+
+        containers = new ContainerModel();
+        containers.setContainerCount(1L);
+        containers.setContainerCode("20GP");
+        containers.setNetWeight(BigDecimal.TEN);
+        containers.setNoOfPackages(10L);
+        containers.setContainerNumber("CONT000283");
+        containers.setGrossVolume(BigDecimal.TEN);
+        containers.setGrossVolumeUnit("M3");
+        containers.setGrossWeight(BigDecimal.TEN);
+        containers.setGrossWeightUnit("KG");
+        containers.setPacksType("PKG");
+        containers.setPacks("100");
+
+        containerModelList.add(containers);
         shipmentModel.setContainersList(containerModelList);
         shippingRequestOutModel.setCommonContainers(containerModelList);
 

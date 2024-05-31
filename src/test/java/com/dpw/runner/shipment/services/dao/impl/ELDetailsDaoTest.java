@@ -216,4 +216,16 @@ class ELDetailsDaoTest {
             dao.updateEntityFromShipment(new ArrayList<>(), -1L);
         });
     }
+
+    @Test
+    void updateEntityFromShipmentOldEntityDeleteELDetailCatch() throws RunnerException {
+        ELDetails testData = ELDetails.builder().build();
+        testData.setId(1L);
+        testData.setShipmentId(5L);
+        testData.setGuid(UUID.randomUUID());
+        List<ELDetails> elDetailsList = Arrays.asList(testData);
+
+        when(jsonHelper.convertToJson(any())).thenThrow(new RuntimeException());
+        assertEquals(new ArrayList<>(), dao.updateEntityFromShipment(new ArrayList<>(), 5L, elDetailsList));
+    }
 }
