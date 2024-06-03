@@ -261,7 +261,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
         var entityDetails = getEntityDetails(inputConsol, inputShipment, isRequestFromShipment);
         var consolNumber = inputConsol !=null ? inputConsol.getConsolidationNumber() : null;
-        var masterBill = inputConsol !=null ? inputConsol.getBol() : null;
+        var masterBill = inputConsol !=null ? inputConsol.getBol() : (inputShipment != null ? inputShipment.getMasterBill() : null);
         var shipmentNumber =  inputShipment !=null ? inputShipment.getShipmentId() : null;
 
 
