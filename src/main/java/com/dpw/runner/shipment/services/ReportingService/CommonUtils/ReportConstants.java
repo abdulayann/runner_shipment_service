@@ -413,6 +413,7 @@ public class ReportConstants {
     public static final String USER_NAME = "UserName";
     public static final String USER_EMAIL = "UserEmail";
     public static final String USER_DISPLAY_NAME = "UserDisplayName";
+    public static final String USER_PHONE_NUMBER = "UserContactPhone";
 
 
     public static final String CURRENCY_SUMMARY = "CurrencySummary";
