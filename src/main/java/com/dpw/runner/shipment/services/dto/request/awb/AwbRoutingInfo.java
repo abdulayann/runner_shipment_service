@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AwbRoutingInfo implements Serializable {
+    private Long leg;
     private Long entityId;
     private String entityType;
     private String origin;
