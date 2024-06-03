@@ -20,4 +20,5 @@ public class DeliveryOrderModel implements IDocumentModel{
     public String placeOfIssueName;
     public Hbl hbl;
     public ShipmentSettingsDetails shipmentSettingsDetails;
+    public TenantModel tenantModel;
 }

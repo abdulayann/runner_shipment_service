@@ -1377,6 +1377,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.USER_NAME, user.Username);
         dictionary.put(PRINT_USER, user.Username.toUpperCase());
         dictionary.put(ReportConstants.USER_EMAIL, user.Email);
+        dictionary.put(USER_PHONE_NUMBER, user.Phone);
         dictionary.put(ReportConstants.TENANT_CURRENCY, user.CompanyCurrency);
     }
 

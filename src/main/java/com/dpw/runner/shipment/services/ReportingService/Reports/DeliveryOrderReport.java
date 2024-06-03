@@ -95,6 +95,7 @@ public class DeliveryOrderReport extends IReport{
         MasterData masterData = getMasterListData(MasterDataType.PAYMENT, deliveryOrderModel.shipmentDetails.getPaymentTerms());
         deliveryOrderModel.paymentTerms = (masterData != null ? masterData.getItemDescription() : null);
         deliveryOrderModel.hbl = getHbl(id);
+        deliveryOrderModel.tenantModel = getTenant();
         return deliveryOrderModel;
     }
 
@@ -108,6 +109,7 @@ public class DeliveryOrderReport extends IReport{
         populateShipmentFields(deliveryOrderModel.shipmentDetails, dictionary);
         populateConsolidationFields(deliveryOrderModel.consolidationDetails, dictionary);
         populateUserFields(deliveryOrderModel.usersDto, dictionary);
+        populateTenantFields(dictionary, deliveryOrderModel.getTenantModel());
         populateBlFields(deliveryOrderModel.hbl, dictionary);
         populateBillChargesFields(deliveryOrderModel.shipmentDetails, dictionary);
         populateShipmentOrganizationsLL(deliveryOrderModel.shipmentDetails, dictionary, orgWithoutTranslation);
