@@ -25,6 +25,8 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -57,6 +59,7 @@ import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -143,6 +146,8 @@ public abstract class IReport {
     private IAwbService awbService;
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
+    @Autowired
+    private IPackingService packingService;
 
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
@@ -342,6 +347,7 @@ public abstract class IReport {
             }
             else
                 dictionary.put(ORIGIN_PORT, pol.getName());
+            dictionary.put(POL_COUNTRY_NAME, pol.getCountryName());
             dictionary.put(POL_COUNTRY_NAME_IN_CAPS , (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pol.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pol.getCountry()).getItemDescription().toUpperCase() : ""));
             dictionary.put(ReportConstants.POL_AIRPORT_CODE, pol.getIataCode());
             if(pol.getIataCode() != null) {
@@ -353,6 +359,7 @@ public abstract class IReport {
             dictionary.put(ReportConstants.COUNTRY_OF_GOODS_ORIGIN, shipment.getAdditionalDetails().getGoodsCO());
         }
         dictionary.put(CONTAINER_SUMMARY, shipment.getSummary());
+        dictionary.put(PACK_SUMMARY, shipment.getPackSummary());
         dictionary.put(ReportConstants.SERVICE_MODE, shipment.getServiceType());
         dictionary.put(ReportConstants.POL_PORTNAME, pol != null ? pol.getPortName() : null);
         dictionary.put(ReportConstants.POL_PORT_NAME_IN_CAPS, pol != null ? StringUtility.toUpperCase(pol.getPortName()) : null);
@@ -369,6 +376,7 @@ public abstract class IReport {
             }
             else
                 dictionary.put(DESTINATION_PORT, pod.getName());
+            dictionary.put(POD_COUNTRY_NAME, pod.getCountryName());
             dictionary.put(ReportConstants.POD_COUNTRY_NAME_IN_CAPS, podCountry.toUpperCase());
             dictionary.put(ReportConstants.POD_AIRPORT_CODE, pod.getIataCode());
             if (pod.getIataCode() != null) {
@@ -509,6 +517,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DESTINATION_NAME_, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
+        dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountryName() : null);
 
         dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
         if(destination != null) {
@@ -630,6 +639,51 @@ public abstract class IReport {
             dictionary.put(ReportConstants.CONSIGNEE,consignee);
             dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
             dictionary.put(ReportConstants.CLIENT, client);
+
+            PartiesModel notifyParty1 = null;
+            List<PartiesModel> shipmentAddresses = shipment.getShipmentAddresses();
+            for (PartiesModel party : shipmentAddresses) {
+                if(Objects.equals(party.getType(), "Notify Party 1"))
+                {
+                    notifyParty1 = party;
+                }
+            }
+            if(notifyParty1 != null){
+                Map<String, Object> addressData = notifyParty1.getAddressData();
+                List<String> notifyPartyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
+                    StringUtility.convertToString(addressData.get(ADDRESS2)),
+                    ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                    null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                    StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
+                );
+                dictionary.put(SHIPMENT_NOTIFY_PARTY, notifyPartyAddress);
+            }
+
+            PartiesModel originAgent = additionalDetails.getExportBroker();
+            if(originAgent != null) {
+                Map<String, Object> addressData = originAgent.getAddressData();
+                List<String> partyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
+                    StringUtility.convertToString(addressData.get(ADDRESS2)),
+                    ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                    null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                    StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
+                );
+                dictionary.put(SHIPMENT_ORIGIN_AGENT, partyAddress);
+            }
+
+            PartiesModel destinationAgent = additionalDetails.getImportBroker();
+            if(destinationAgent != null) {
+                Map<String, Object> addressData = destinationAgent.getAddressData();
+                List<String> partyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
+                    StringUtility.convertToString(addressData.get(ADDRESS2)),
+                    ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                    null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                    StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
+                );
+                dictionary.put(SHIPMENT_DESTINATION_AGENT, partyAddress);
+            }
+
+
 
             if(shipment.getPickupDetails() != null && shipment.getPickupDetails().getSourceDetail() != null)
             {
@@ -896,6 +950,14 @@ public abstract class IReport {
                     shipmentModel.setSummary(containerSummaryResponse.getSummary());
                 }
             }
+
+            if(shipmentDetails.getPackingList() != null) {
+                PackSummaryResponse response = packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto());
+                if(response != null) {
+                    shipmentModel.setPackSummary(response.getTotalPacks());
+                }
+            }
+
         } catch (Exception e) {
             log.error(e.getMessage());
         }

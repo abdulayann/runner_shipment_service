@@ -34,7 +34,9 @@ public class ReportConstants {
     public static final String FPOD = "FPOD";
     public static final String ITEMS = "Items";
     public static final String POD_COUNTRY = "PODCountry";
+    public static final String POD_COUNTRY_NAME = "PODCountryName";
     public static final String POL_COUNTRY = "POLCountry";
+    public static final String POL_COUNTRY_NAME = "POLCountryName";
     public static final String POL_PORTNAME = "POLPortName";
     public static final String POD_PORTNAME = "PODPortName";
     public static final String SHIPMENT_BOOKING_NUMBER = "ShipmentBookingNumber";
@@ -175,6 +177,7 @@ public class ReportConstants {
     public static final String DATE_OF_RECEIPT_MDY = "DateofReceiptMDY";
     public static final String DESTINATION_NAME_ = "DestinationName";
     public static final String DESTINATION_COUNTRY = "DestinationCountry";
+    public static final String DESTINATION_COUNTRY_NAME = "DestinationCountryName";
     public static final String SHIPMENT_CONTAINERS = "ShipmentContainers";
     public static final String CONTAINER_COUNT_BY_CODE = "ContainerCountByCode";
     public static final String VESSEL_NAME_AND_VOYAGE = "VesselNameAndVoyage";
@@ -221,6 +224,9 @@ public class ReportConstants {
     public static final String ZIPCODE = "Zip";
     public static final String ZIP_POST_CODE = "ZipPostCode";
     public static final String NOTIFY_PARTY = "NotifyParty";
+    public static final String SHIPMENT_NOTIFY_PARTY = "ShipmentNotifyParty";
+    public static final String SHIPMENT_ORIGIN_AGENT = "ShipmentOriginAgent";
+    public static final String SHIPMENT_DESTINATION_AGENT = "ShipmentDestinationAgent";
     public static final String NOTIFY_PARTY_CAPS = "NotifyPartyInCaps";
     public static final String NOTIFY_PARTY_AIR = "NotifyPartyAir";
     public static final String NOTIFY_PARTY_ADDRESS = "NotifyPartyAddress";
@@ -306,7 +312,6 @@ public class ReportConstants {
     public static final String SERVICE_TYPE = "ServiceType";
     public static final String SUMMARY = "Summary";
     public static final String FULL_NAME = "FullName";
-
 
         /*
             AR Object Fields
@@ -761,6 +766,7 @@ public class ReportConstants {
     public static final String CONFIRMED = "Confirmed";
     public static final String CLI = "ClientAdrs";
     public static final String CONTAINER_SUMMARY = "ContainerSummary";
+    public static final String PACK_SUMMARY = "PackSummary";
     public static final String SHIPPER_REF_NO = "ShipperRefNo";
     public static final String PICKUP_SHIPPERS_REF = "ShipperReferenceNumber";
     public static final String PICKUP_ORDER_CONTACT_PERSON = "PickUpOrderContactPerson";
