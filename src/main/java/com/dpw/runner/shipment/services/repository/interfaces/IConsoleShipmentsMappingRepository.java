@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -9,7 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
-
+@Generated
 public interface IConsoleShipmentsMappingRepository extends JpaRepository<ConsoleShipmentMapping, Long> {
     List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId);
     List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);

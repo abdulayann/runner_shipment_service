@@ -13,6 +13,7 @@ import com.itextpdf.text.pdf.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -35,9 +36,11 @@ import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(CONCURRENT)
 class CommonUtilsTest {
 
     @Mock

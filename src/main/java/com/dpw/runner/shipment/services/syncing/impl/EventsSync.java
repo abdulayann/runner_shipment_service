@@ -34,23 +34,13 @@ public class EventsSync implements IEventsSync {
     @Autowired
     JsonHelper jsonHelper;
 
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
-            .maxAttempts(3)
-            .fixedBackoff(1000)
-            .retryOn(Exception.class)
-            .build();
 
-    @Autowired
-    private IV1Service v1Service;
-
-    @Autowired
-    private EmailServiceUtility emailServiceUtility;
     @Autowired
     private ISyncService syncService;
 
     @Override
     public ResponseEntity<?> sync(List<Events> eventsList) {
-        List<EventsRequestV2> eventsRequestV2List = new ArrayList<>();
+        List<EventsRequestV2> eventsRequestV2List;
         if(eventsList != null && eventsList.size() > 0) {
             eventsRequestV2List = syncEntityConversionService.eventsV2ToV1(eventsList);
             String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(eventsRequestV2List).module(SyncingConstants.EVENTS).build());

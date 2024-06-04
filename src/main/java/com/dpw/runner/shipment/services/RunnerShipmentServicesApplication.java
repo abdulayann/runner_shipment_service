@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -20,6 +21,7 @@ import java.util.TimeZone;
 @EnableSwagger2
 @EnableCaching(proxyTargetClass = true)
 @EnableKafka
+@Generated
 public class RunnerShipmentServicesApplication {
 
     public static void main(String[] args) {

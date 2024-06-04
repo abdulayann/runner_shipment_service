@@ -362,14 +362,25 @@ public class CommonUtils {
 
         StringBuilder str = new StringBuilder();
 
-        str.append((n[0] != 0) ? (!a[n[0]].equals("") ? a[n[0]] : b[n[0] / 10] + " " + a[n[0] % 10]) + "Crore " : "");
-        str.append((n[1] != 0) ? (!a[n[1]].equals("") ? a[n[1]] : b[n[1] / 10] + " " + a[n[1] % 10]) + "Lakh " : "");
-        str.append((n[2] != 0) ? (!a[n[2]].equals("") ? a[n[2]] : b[n[2] / 10] + " " + a[n[2] % 10]) + "Thousand " : "");
+        str.append((n[0] != 0) ? getTwoDigitWordConversion(a, b, n, 0) + "Crore " : "");
+        str.append((n[1] != 0) ? getTwoDigitWordConversion(a, b, n, 1) + "Lakh " : "");
+        str.append((n[2] != 0) ? getTwoDigitWordConversion(a, b, n, 2) + "Thousand " : "");
         str.append((n[3] != 0) ? (!a[n[3]].equals("") ? a[n[3]] : b[n[3] / 10] + " " + a[n[3] % 10]) + "Hundred " : "");
         str.append((n[4] != 0) ? ((str.length() != 0) ? "and " : "") +
-                (!a[n[4]].equals("") ? a[n[4]] : b[n[4] / 10] + " " + a[n[4] % 10]) + " " : "");
+                getTwoDigitWordConversion(a, b, n, 4) + " " : "");
 
         return str.toString().trim();
+    }
+
+    private static String getTwoDigitWordConversion(String[] a, String[] b, int[] n, int unitPlaceFromLeft) {
+        if(a[n[unitPlaceFromLeft] % 10].equals(""))
+            return b[n[unitPlaceFromLeft] / 10] + " ";
+        else {
+            if(n[unitPlaceFromLeft] / 10 != 0)
+                return b[n[unitPlaceFromLeft] / 10] + " " + a[n[unitPlaceFromLeft] % 10];
+            else
+                return a[n[unitPlaceFromLeft] % 10];
+        }
     }
 
     public static <T> Iterable<T> emptyIfNull(Iterable<T> iterable) {

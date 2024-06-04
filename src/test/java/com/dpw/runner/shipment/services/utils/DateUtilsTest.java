@@ -2,13 +2,16 @@ package com.dpw.runner.shipment.services.utils;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(CONCURRENT)
 class DateUtilsTest {
 
     @Test

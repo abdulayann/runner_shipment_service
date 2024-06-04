@@ -7,14 +7,17 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 @TestPropertySource("classpath:application-test.properties")
+@Execution(CONCURRENT)
 class V1AuthHelperTest {
 
     private static V1AuthHelper v1AuthHelper;

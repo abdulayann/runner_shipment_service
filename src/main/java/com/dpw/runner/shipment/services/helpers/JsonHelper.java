@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.helpers;
 import com.dpw.runner.shipment.services.commons.objectMapperMixin.ShipmentMixIn;
 import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -30,6 +31,7 @@ import java.util.TimeZone;
 
 @Component
 @Slf4j
+@Generated
 public class JsonHelper {
 
     @Autowired

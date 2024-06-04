@@ -357,4 +357,23 @@ class ContainerDaoTest {
         assertThrows(RunnerException.class, () -> containerDao.updateEntityFromShipmentConsole(List.of(testContainer), 3L, null, true));
     }
 
+    @Test
+    void updateEntityFromConsolidationV1() throws RunnerException {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        Containers container1 = Containers.builder().build();
+        container1.setGuid(uuid1);
+
+        Containers container2 = Containers.builder().build();
+        container2.setGuid(uuid2);
+
+        List<Containers> containersList = Arrays.asList(container1);
+        List<Containers> oldList = Arrays.asList(container1, container2);
+
+        doNothing().when(containerRepository).deleteById(any());
+        when(containerRepository.save(any())).thenReturn(container1);
+
+        assertEquals(containersList, containerDao.updateEntityFromConsolidationV1(containersList, 1L, oldList));
+    }
 }
