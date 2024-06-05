@@ -112,4 +112,15 @@ public class CarrierDetails extends MultiTenancy {
     @Size(max = 32, message = "max size is 32 for carrier_country")
     @MasterData(type = MasterDataType.COUNTRIES)
     private String carrierCountry;
+
+    @Column(name = "min_transit_hours")
+    @Size(max = 15, message = "max size is 15 for min_transit_hours")
+    private String minTransitHours;
+
+    @Column(name = "max_transit_hours")
+    @Size(max = 15, message = "max size is 15 for max_transit_hours")
+    private String maxTransitHours;
+
+    @Column(name = "carrier_added_from_npm")
+    private Boolean carrierAddedFromNpm;
 }

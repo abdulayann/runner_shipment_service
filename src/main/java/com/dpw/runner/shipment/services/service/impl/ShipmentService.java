@@ -767,6 +767,9 @@ public class ShipmentService implements IShipmentService {
                         .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
                         .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
                         .carrierCountry(customerBookingRequest.getCarrierDetails().getCarrierCountry())
+                        .minTransitHours(customerBookingRequest.getCarrierDetails().getMinTransitHours())
+                        .maxTransitHours(customerBookingRequest.getCarrierDetails().getMaxTransitHours())
+                        .carrierAddedFromNpm(customerBookingRequest.getCarrierDetails().getCarrierAddedFromNpm())
                         .build()
                 ).
                 contractId(customerBookingRequest.getContractId()).

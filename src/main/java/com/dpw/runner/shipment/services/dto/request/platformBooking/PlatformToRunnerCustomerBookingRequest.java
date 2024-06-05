@@ -1,11 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.platformBooking;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.dto.request.BookingChargesRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.platformBooking.BookingContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.platformBooking.BookingPackingRequest;
-import com.dpw.runner.shipment.services.dto.request.platformBooking.BookingRoutingsRequest;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
@@ -14,7 +10,6 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -80,4 +75,8 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private String secondarySalesAgentEmail;
     @JsonProperty("salesBranch")
     private String salesBranch;
+    @JsonProperty("minTransitHours")
+    private String minTransitHours;
+    @JsonProperty("maxTransitHours")
+    private String maxTransitHours;
 }

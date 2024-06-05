@@ -23,7 +23,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -946,10 +945,12 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .originPort(request.getOriginPort())
                 .destinationPort(request.getDestinationPort())
                 .shippingLine(request.getShippingLine())
+                .maxTransitHours(request.getMaxTransitHours())
+                .minTransitHours(request.getMinTransitHours())
                 .vessel(vessel)
                 .voyage(request.getVoyage())
                 .build();
-
+        
         customerBookingRequest.setCarrierDetails(carrierDetailRequest);
     }
 
