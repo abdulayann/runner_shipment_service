@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.DeliveryOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.NPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -36,6 +37,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
+import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
@@ -64,8 +66,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DeliveryOrderReportTest {
@@ -375,6 +376,7 @@ class DeliveryOrderReportTest {
         deliveryOrderModel.setUsersDto(UserContext.getUser());
         deliveryOrderModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         populateModel(deliveryOrderModel);
+        deliveryOrderModel.setTenantModel(new TenantModel());
         deliveryOrderModel.setHbl(populateHbl());
         mockVessel();
 
@@ -407,6 +409,7 @@ class DeliveryOrderReportTest {
         shipmentModel.getPackingList().get(0).setHazardous(true);
         shipmentModel.getPackingList().get(0).setIsTemperatureControlled(true);
         deliveryOrderModel.setHbl(populateHbl());
+        deliveryOrderModel.setTenantModel(new TenantModel());
         mockVessel();
 
         Map<String, Object> containerMap = new HashMap<>();
@@ -613,6 +616,10 @@ class DeliveryOrderReportTest {
         v1DataResponse.entities = Arrays.asList(new UnlocationsResponse());
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Arrays.asList(new UnlocationsResponse()));
+        V1MasterDataImpl mockV1MasterDataImpl = mock(V1MasterDataImpl.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(mockV1MasterDataImpl);
+        when(mockV1MasterDataImpl.retrieveTenant()).thenReturn(new DependentServiceResponse());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         assertNotNull(deliveryOrderReport.getDocumentModel(123L));
     }
 }
