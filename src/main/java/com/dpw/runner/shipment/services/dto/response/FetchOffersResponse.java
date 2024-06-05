@@ -161,9 +161,9 @@ public class FetchOffersResponse implements IRunnerResponse {
         @JsonProperty("shipment_level_rates")
         private List<AssociatedRate> shipment_level_rates;
         @JsonProperty("min_transit_hours")
-        private String min_transit_hours;
+        private String minTransitHours;
         @JsonProperty("max_transit_hours")
-        private String max_transit_hours;
+        private String maxTransitHours;
         @JsonProperty("carrier")
         private String carrier;
     }

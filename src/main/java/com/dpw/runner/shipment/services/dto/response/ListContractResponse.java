@@ -91,9 +91,9 @@ public class ListContractResponse implements IRunnerResponse {
         @JsonProperty("origin_name")
         private String origin_name;
         @JsonProperty("min_transit_hours")
-        private String min_transit_hours;
+        private String minTransitHours;
         @JsonProperty("max_transit_hours")
-        private String max_transit_hours;
+        private String maxTransitHours;
         @JsonProperty("carrier")
         private String carrier; // confirm from npm team
     }
