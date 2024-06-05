@@ -702,6 +702,7 @@ public class ReportConstants {
     public static final String CONSOLIDATED_PACKING_LIST = "ConsolidatedPackingList";
     public static final String COSTAL_DOC = "COSTALdoc";
     public static final String SHIPPING_INSTRUCTION = "ShippingInstruction";
+    public static final String BOOKING_ORDER = "BookingOrder";
     public static final Set<String> NEW_TEMPLATE_FLOW = Set.of(SHIP_TRUCKWAY_BILL, CONS_TRUCKWAY_BIll, SHIP_TRUCK_DRIVER_PROOF, CONS_TRUCK_DRIVER_PROOF, SHIPPING_REQUEST, SHIPPING_REQUEST_AIR, EXPORT_SHIPMENT_MANIFEST, IMPORT_SHIPMENT_MANIFEST, EXPORT_CONSOL_MANIFEST, IMPORT_CONSOL_MANIFEST);
 
 

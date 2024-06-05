@@ -514,4 +514,16 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "iata_tact_flag")
     private Boolean iataTactFlag;
+
+    @Column(name = "booking_order")
+    private String bookingOrder;
+
+    @Column(name = "booking_order_mbl")
+    private String bookingOrderForMbl;
+
+    @Column(name = "booking_order_air")
+    private String bookingOrderAir;
+
+    @Column(name = "booking_order_air_mawb")
+    private String bookingOrderAirForMawb;
 }
