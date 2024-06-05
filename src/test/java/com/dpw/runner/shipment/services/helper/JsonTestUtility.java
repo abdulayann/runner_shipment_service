@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
@@ -23,14 +22,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.springframework.boot.json.JsonParseException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 
@@ -57,6 +57,10 @@ public class JsonTestUtility {
 
     public JsonTestUtility() throws IOException {
         payload = objectMapper.readValue(new File(path), Map.class);
+    }
+
+    public String readJson(String fileName) throws IOException {
+        return FileUtils.readFileToString(new File(fileName), StandardCharsets.UTF_8);
     }
 
     public Packing getTestPacking(){
