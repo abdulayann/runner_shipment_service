@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PickUpOrderReportModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -274,6 +275,7 @@ class PickupOrderReportTest {
         pickUpOrderReportModel.hblModel = new HblModel();
         pickUpOrderReportModel.hblModel.user = UserContext.getUser();
         pickUpOrderReportModel.hblModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        pickUpOrderReportModel.hblModel.tenant = new TenantModel();
         populateModel(pickUpOrderReportModel.hblModel);
         pickUpOrderReportModel.pickUpTransportAddress = pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getTransporterDetail();
 
