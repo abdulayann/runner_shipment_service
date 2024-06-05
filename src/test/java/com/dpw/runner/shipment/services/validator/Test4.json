@@ -1,0 +1,15 @@
+{
+  "name": "John Doe",
+  "age": 30,
+  "email": "john.doe@example.com",
+  "password": "password123",
+  "confirmPassword": "password123",
+  "roles": [
+    "admin",
+    "user"
+  ],
+  "settings": {
+    "theme": "dark",
+    "notifications": true
+  }
+}

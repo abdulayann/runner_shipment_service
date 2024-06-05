@@ -1,0 +1,29 @@
+{
+  "properties": {
+    "name": {
+      "type": "string",
+      "compare": [
+        {
+          "compareTo": "23",
+          "operator": "not-equals"
+        },
+        {
+          "compareTo": "1",
+          "operator": "lesser-than"
+        },
+        {
+          "compareTo": "1",
+          "operator": "greater-than"
+        },
+        {
+          "compareTo": "1",
+          "operator": "lesser-than-equals"
+        },
+        {
+          "compareTo": "1",
+          "operator": "greater-than-equals"
+        }
+      ]
+    }
+  }
+}
