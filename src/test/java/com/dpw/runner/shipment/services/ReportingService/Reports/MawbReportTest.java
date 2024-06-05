@@ -5,6 +5,8 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Sh
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -13,6 +15,7 @@ import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
@@ -29,6 +32,8 @@ import org.modelmapper.ModelMapper;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -80,6 +85,13 @@ class MawbReportTest {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).DPWDateFormat("yyyy-MM-dd").build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder().airDGFlag(true).build());
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.airDG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
     }
 
     @Test
@@ -90,9 +102,29 @@ class MawbReportTest {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(new ConsolidationModel());
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationModel.setHazardous(true);
+        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mawbReport.isDMawb = false;
         Assertions.assertNotNull(mawbReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_dgError() {
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        when(awbRepository.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(123L);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationModel.setHazardous(true);
+        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mawbReport.isDMawb = false;
+        UserContext.getUser().setPermissions(new HashMap<>());
+        Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
     }
 
     @Test

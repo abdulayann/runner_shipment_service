@@ -1,11 +1,14 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -16,22 +19,17 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepositor
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -154,7 +152,7 @@ class ShipmentDaoTest {
 
     @Test
     void applyShipmentValidationsExpTest() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).restrictedLocationsEnabled(true).build());
 
         Packing packing = new Packing();
         packing.setHazardous(true);
@@ -188,6 +186,143 @@ class ShipmentDaoTest {
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
         when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
 
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
+        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(Arrays.asList(containers, containers))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(false)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
+        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.airDG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
+        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_HazShipment() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(Arrays.asList(containers, containers))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(true)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
+        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.airDG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
+        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_NonDgUser() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(Arrays.asList(containers, containers))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(true)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
+        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }

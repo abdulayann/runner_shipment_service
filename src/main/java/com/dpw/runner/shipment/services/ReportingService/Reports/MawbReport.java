@@ -55,6 +55,7 @@ public class MawbReport extends IReport{
             }
             hawbModel.setEntityType(entityType);
         }
+        validateAirDGCheckConsolidations(hawbModel.getConsolidationDetails());
         return hawbModel;
     }
 

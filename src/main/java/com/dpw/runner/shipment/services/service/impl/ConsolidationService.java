@@ -102,7 +102,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -678,14 +677,37 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        updateLinkedShipmentData(consol.get(), null, true);
+        ConsolidationDetails consolidationDetails = null;
+        if(consol.isPresent())
+            consolidationDetails = consol.get();
+        else
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails)) {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "in");
+            listCommonRequest = andCriteria("containsHazardous", true, "=", listCommonRequest);
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+            Page<ShipmentDetails> shipments = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            if(shipments != null && !shipments.isEmpty()) {
+                consolidationDetails.setHazardous(true);
+                consolidationDetailsDao.update(consolidationDetails, false);
+            }
+        }
+        updateLinkedShipmentData(consolidationDetails, null, true);
         try {
-            consolidationSync.sync(consol.get(), StringUtility.convertToString(consol.get().getGuid()), false);
+            consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
         }
         catch (Exception e) {
             log.error("Error Syncing Consol");
         }
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
+        if(!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()))
+            return false;
+        if(!Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()))
+            return false;
+        return !Boolean.TRUE.equals(consolidationDetails.getHazardous());
     }
 
     @Transactional
@@ -713,6 +735,10 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        if(consol.isPresent() && checkAttachDgAirShipments(consol.get())){
+            consol.get().setHazardous(false);
+            consolidationDetailsDao.save(consol.get(), false);
+        }
         String transactionId = consol.get().getGuid().toString();
         if(packingList != null) {
             try {
@@ -729,6 +755,19 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails){
+        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            return false;
+        if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
+            return false;
+        if(!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()))
+            return false;
+        if(consolidationDetails.getShipmentsList() == null || consolidationDetails.getShipmentsList().isEmpty())
+            return true;
+        Boolean isDgShipmentAttached = consolidationDetails.getShipmentsList().stream().anyMatch(ship -> Boolean.TRUE.equals(ship.getContainsHazardous()));
+        return !isDgShipmentAttached;
     }
 
     @Transactional
@@ -3047,6 +3086,7 @@ public class ConsolidationService implements IConsolidationService {
                 .mawb(isMawb ? shipment.getMasterBill() : null)
                 .createdBy(UserContext.getUser().getUsername())
                 .modeOfBooking(StringUtils.equals(transportMode, Constants.TRANSPORT_MODE_SEA) ? Constants.INTTRA : null)
+                .hazardous(shipment.getContainsHazardous())
                 //.isLinked(true)
                 .build();
 

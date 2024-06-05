@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -37,6 +38,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -188,9 +190,70 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findMaxId();
     }
 
+    private boolean checkForNonAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
+            return true;
+        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+    }
+
+    private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+            return false;
+        return !Boolean.TRUE.equals(request.getHazardous());
+    }
+
+    private boolean checkForDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+            return false;
+        return Boolean.TRUE.equals(request.getHazardous());
+    }
+
     private Set<String> applyConsolidationValidations(ConsolidationDetails request, ConsolidationDetails oldEntity) {
         Set<String> errors = new LinkedHashSet<>();
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+
+        // Non dg consolidation validations
+        if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+
+            // Non dg Consolidations can not have dg packs
+            if(request.getPackingList() != null) {
+                for (Packing packing: request.getPackingList()) {
+                    if(Boolean.TRUE.equals(packing.getHazardous())) {
+                        errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
+                    }
+                }
+            }
+
+            // Non dg Consolidations can not have dg shipments
+            if(request.getShipmentsList() != null) {
+                for (ShipmentDetails shipmentDetails: request.getShipmentsList()) {
+                    if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                        errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
+                    }
+                }
+            }
+        }
+
+        // Dg consolidation validations
+        if(checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+
+            // Non dg user cannot save dg consolidation
+            if(!UserContext.getUser().getPermissions().containsKey(airDG))
+                errors.add("You don't have permission to update DG Consolidation");
+
+            // Dg consolidation must have at least one dg shipment
+            boolean containsDgShipment = false;
+            if(request.getShipmentsList() != null) {
+                for (ShipmentDetails shipmentDetails: request.getShipmentsList()) {
+                    if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                        containsDgShipment = true;
+                        break;
+                    }
+                }
+            }
+            if(!containsDgShipment)
+                errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
+        }
 
         // Container Number can not be repeated
         if (request.getContainersList() != null && request.getContainersList().size() > 0) {

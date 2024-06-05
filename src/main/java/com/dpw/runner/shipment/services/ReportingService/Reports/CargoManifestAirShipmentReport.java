@@ -44,6 +44,7 @@ public class CargoManifestAirShipmentReport extends IReport{
     IDocumentModel getDocumentModel(Long id) throws RunnerException {
         CargoManifestAirShipmentModel cargoManifestAirShipmentModel = new CargoManifestAirShipmentModel();
         cargoManifestAirShipmentModel.setShipmentDetails(getShipment(id));
+        validateAirDGCheckShipments(cargoManifestAirShipmentModel.getShipmentDetails());
         validateAirDGCheck(cargoManifestAirShipmentModel.getShipmentDetails()); // check if for consolidation required
         cargoManifestAirShipmentModel.setTenantModel(getTenant());
         List<Awb> awbList = awbDao.findByShipmentId(id);

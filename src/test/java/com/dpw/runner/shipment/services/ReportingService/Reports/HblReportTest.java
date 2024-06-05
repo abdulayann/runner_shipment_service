@@ -693,6 +693,7 @@ class HblReportTest {
         consolidationModel.setReceivingAgent(partiesModel);
         consolidationModel.setSendingAgent(partiesModel);
         consolidationModel.setCarrierDetails(carrierDetailModel);
+        consolidationModel.setHazardous(true);
         partiesModel = new PartiesModel();
         partiesModel.setType("Notify Party 1");
         orgData = new HashMap<>();
@@ -722,6 +723,7 @@ class HblReportTest {
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
+        consolidationDetails.setHazardous(true);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("id", "123");

@@ -116,4 +116,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String wayBillNumber;
     private String orderManagementNumber;
     private String jobStatus;
+    private Boolean containsHazardous;
 }

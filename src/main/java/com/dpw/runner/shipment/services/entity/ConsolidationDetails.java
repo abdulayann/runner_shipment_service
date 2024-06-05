@@ -400,4 +400,12 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "hazardous")
     private Boolean hazardous;
+
+    @Column(name = "emergency_contact_number")
+    @Size(max=31, message = "max size is 31 for emergency_contact_number")
+    private String emergencyContactNumber;
+
+    @Column(name = "emergency_contact_number_code")
+    @Size(max=31, message = "max size is 31 for emergency_contact_number_code")
+    private String emergencyContactNumberCode;
 }

@@ -221,4 +221,6 @@ public class AdditionalDetailModel implements IDocumentModel {
     private String bLRemarksDescription;
     private String exemptionCodes;
     private String aomFreeText;
+    @JsonProperty("EmergencyContactNumber")
+    private String emergencyContactNumber;
 }
