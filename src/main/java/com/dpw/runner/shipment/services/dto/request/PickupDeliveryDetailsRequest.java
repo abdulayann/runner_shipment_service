@@ -53,4 +53,6 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private LocalDateTime emptyTruckInDate;
     private LocalDateTime loadedTruckGateOutDate;
     private String pickupDeliveryInstruction;
+    private LocalDateTime pickupDeliveryGateIn;
+    private LocalDateTime pickupDeliveryGateOut;
 }

@@ -58,4 +58,6 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime loadedTruckGateOutDate;
     private String pickupDeliveryInstruction;
+    private LocalDateTime pickupDeliveryGateIn;
+    private LocalDateTime pickupDeliveryGateOut;
 }
