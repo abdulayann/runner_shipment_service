@@ -110,4 +110,23 @@ class ValidatorUtilityTest {
 
     }
 
+    @Test
+    void testApplyValidation3() throws Exception {
+        String json = "{\"direction\":\"IMP\",\"transportMode\":\"SEA\",\"isDomestic\":true,\"status\":1,\"shipmentType\":\"LCL\",\"bookingReference\":\"REFERENCE\",\"containersList\":[{\"containerNumber\":\"CONT1212\",\"measurement\":11},{\"containerNumber\":\"CONT1213\",\"measurement\":11},{\"measurement\":12}],\"carrierDetails\":{\"eta\":\"26-04-18 19:15:44\",\"etd\":\"24-04-18 19:15:44\",\"origin\":\"AEJEA\",\"destination\":\"AEJEA\"}}";
+        String schema =
+                "{\"properties\":{\"direction\":{\"enum\":[\"EXP\",\"IMP\"],\"maxSize\":3,\"required\":true},\"status\":{\"enum\":[1,2,3,4],\"maxSize\":3,\"required\":true},\"containersList\":{\"type\":\"array\",\"minSize\":1,\"maxSize\":3,\"array-properties\":{\"unique\":[\"containerNumber\",\"measurement\"],\"properties\":{\"containerNumber\":{\"required\":true}}}},\"transportMode\":{\"enum\":[\"SEA\",\"AIR\",\"ROA\"],\"type\":\"string\",\"maxSize\":3,\"required\":true,\"conditional-compare\":[{\"value\":\"SEA\",\"compare\":[{\"compareTo\":\"shipmentType\",\"operator\":\"in\",\"value\":[\"LCL\",\"FCL\"]},{\"compareTo\":\"shipmentType\",\"operator\":\"equals\",\"value\":\"LCL\"},{\"compareTo\":\"shipmentType\",\"operator\":\"not-equals\",\"value\":\"LCL\"},{\"compareTo\":\"status\",\"operator\":\"equals\",\"value\":\"1\"},{\"compareTo\":\"isDomestic\",\"operator\":\"equals\",\"value\":\"true\"}]},{\"value\":\"SEA\",\"compare\":[{\"compareTo\":\"volume\",\"operator\":\"in\",\"value\":[1,2,3]},{\"compareTo\":\"volume\",\"operator\":\"equals\",\"value\":2},{\"compareTo\":\"volume\",\"operator\":\"not-equals\",\"value\":10}]}]},\"carrierDetails\":{\"type\":\"object\",\"properties\":{\"eta\":{\"type\":\"date-time\",\"compare\":[{\"operator\":\"greater-than\",\"compareTo\":\"carrierDetails.etd\"}]},\"origin\":{\"required\":true},\"destination\":{\"required\":true}}},\"bookingReference\":{\"type\":\"string\",\"required\":true},\"shipType\":{\"type\":\"null\"}}}";
+
+        JsonReader schemaReader = Json.createReader(new StringReader(schema));
+        JsonObject schemaObject = schemaReader.readObject();
+
+        Validations validation = new Validations();
+        validation.setJsonSchema(Map.of("",schemaObject));
+        List<Validations> validationsList = Collections.singletonList(validation);
+        when(validationsDao.findByLifecycleHookAndEntity(any(), any())).thenReturn(Optional.of(validationsList));
+        when(objectMapper.writeValueAsString(any())).thenReturn(schema);
+        Set<String> errors = validatorUtility.applyValidation(json, "entity", LifecycleHooks.ON_CREATE, false);
+
+        assertEquals(3, errors.size());
+    }
+
 }
