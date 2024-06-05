@@ -445,6 +445,22 @@ public class ReportService implements IReportService {
             //Update shipment issue date
             return pdfByte_Content;
         }
+        else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_ORDER)) {
+            String consolidationType = dataRetrived.get(ReportConstants.SHIPMENT_TYPE) != null ?
+                dataRetrived.get(ReportConstants.SHIPMENT_TYPE).toString() : null;
+            String transportMode = ReportConstants.SEA;
+
+            if (dataRetrived.containsKey(ReportConstants.TRANSPORT_MODE)){
+                transportMode = dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString();
+            }
+
+            DocPages pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, consolidationType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, transportMode, reportRequest.getMultiTemplateCode());
+
+            byte[] pdfByte_Content = GetFromDocumentService(dataRetrived, pages.getMainPageId());
+            if(pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
+
+            return pdfByte_Content;
+        }
 
 //        Long id = (Long) dataRetrived.getOrDefault(ReportConstants.ID, null); TODO- Removed this code for now, not in use
 
@@ -942,6 +958,20 @@ public class ReportService implements IReportService {
             case ReportConstants.TRANSPORT_ORDER:
                 return setDocPages(null,
                         row.getTransportOrderRoad() == null ? adminRow.getTransportOrderRoad(): row.getTransportOrderRoad(), null, row.getTransportOrderRoad() != null, null, null, null);
+            case ReportConstants.BOOKING_ORDER:
+                if (transportMode.equalsIgnoreCase(ReportConstants.AIR)){
+                    if(objectType.equalsIgnoreCase(Constants.DMAWB))
+                        return setDocPages(null,
+                            row.getBookingOrderAirForMawb() == null ? adminRow.getBookingOrderAirForMawb() : row.getBookingOrderAirForMawb(), null, row.getBookingOrderAirForMawb() != null, null, null, null);
+                    return setDocPages(null,
+                        row.getBookingOrderAir() == null ? adminRow.getBookingOrderAir() : row.getBookingOrderAir(), null, row.getBookingOrderAir() != null, null, null, null);
+                }else{
+                    if(objectType.equalsIgnoreCase(Constants.DMAWB)) // using key : DMAWB for sea also
+                        return setDocPages(null,
+                            row.getBookingOrderForMbl() == null ? adminRow.getBookingOrderForMbl() : row.getBookingOrderForMbl(), null, row.getBookingOrderForMbl() != null, null, null, null);
+                    return setDocPages(null,
+                        row.getBookingOrder() == null ? adminRow.getBookingOrder() : row.getBookingOrder(), null, row.getBookingOrder() != null, null, null, null);
+                }
             default:
         }
 
