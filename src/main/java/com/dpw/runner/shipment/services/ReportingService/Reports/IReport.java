@@ -316,6 +316,7 @@ public abstract class IReport {
         dictionary.put(REFERENCE_NO, shipment.getBookingReference());
         dictionary.put(ReportConstants.MASTER_BILL,shipment.getMasterBill());
         dictionary.put(ReportConstants.HOUSE_BILL,shipment.getHouseBill());
+        dictionary.put(SHIPMENT_ID, shipment.getShipmentId());
         VesselsResponse vesselsResponse = getVesselsData(shipment.getCarrierDetails().getVessel());
         if(Objects.equals(shipment.getTransportMode(), AIR))
         {
