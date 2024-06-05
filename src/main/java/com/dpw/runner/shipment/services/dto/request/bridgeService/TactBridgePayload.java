@@ -18,4 +18,5 @@ public class TactBridgePayload implements IRunnerRequest {
     private String rateType;
     private String chargeableWeight;
     private String weightUnit;
+    private String currency;
 }
