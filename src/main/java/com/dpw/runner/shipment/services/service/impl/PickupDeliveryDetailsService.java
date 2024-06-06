@@ -56,7 +56,9 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         String responseMsg;
         PickupDeliveryDetailsRequest request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
         if(request == null) {
+            String resp = "Request is empty for Pickup Delivery create with Request Id " + LoggerHelper.getRequestIdFromMDC();
             log.debug("Request is empty for Pickup Delivery create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildFailedResponse(resp);
         }
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
         try {
@@ -73,8 +75,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             );
             log.info("Pickup Delivery Details created successfully for Id {} with Request Id {}", pickupDeliveryDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
@@ -87,11 +88,14 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         PickupDeliveryDetailsRequest request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
         if(request == null) {
             log.debug("Request is empty for Pickup Delivery update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildFailedResponse("Request is empty for Pickup Delivery update with Request Id " + LoggerHelper.getRequestIdFromMDC());
         }
 
         if(request.getId() == null) {
             log.debug("Request Id is null for Pickup Delivery update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildFailedResponse("Request Id is null for Pickup Delivery update with Request Id " + LoggerHelper.getRequestIdFromMDC());
         }
+
         long id = request.getId();
         Optional<PickupDeliveryDetails> oldEntity = pickupDeliveryDetailsDao.findById(id);
         if(!oldEntity.isPresent()) {
@@ -131,6 +135,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if(request == null) {
                 log.error("Request is empty for Pickup Delivery list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse("Request is empty for Pickup Delivery list with Request Id " + LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
             Pair<Specification<PickupDeliveryDetails>, Pageable> tuple = fetchData(request, PickupDeliveryDetails.class);
@@ -160,9 +165,11 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if(request == null) {
                 log.debug("Request is empty for Pickup Delivery delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse("Request is empty for Pickup Delivery delete with Request Id " + LoggerHelper.getRequestIdFromMDC());
             }
             if(request.getId() == null) {
                 log.debug("Request Id is null for Pickup Delivery delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse("Request Id null for Pickup Delivery delete with Request Id " + LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
 
@@ -199,9 +206,11 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if(request == null) {
                 log.error("Request is empty for Pickup Delivery retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse("Request is empty for Pickup Delivery retrieve with Request Id " + LoggerHelper.getRequestIdFromMDC());
             }
             if(request.getId() == null) {
                 log.error("Request Id is null for Pickup Delivery retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse("Request Id is null for Pickup Delivery retrieve with Request Id " + LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
             Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsDao.findById(id);

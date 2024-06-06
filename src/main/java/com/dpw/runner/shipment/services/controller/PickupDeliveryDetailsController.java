@@ -40,8 +40,7 @@ public class PickupDeliveryDetailsController {
         try {
             return pickupDeliveryDetailsService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
@@ -74,8 +73,7 @@ public class PickupDeliveryDetailsController {
         try {
             return pickupDeliveryDetailsService.update(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
