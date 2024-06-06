@@ -54,4 +54,7 @@ public class CarrierDetailResponse implements IRunnerResponse {
     private LocalDateTime vesselBerthingDate;
     private String voyageOrFlightNumber;
     private String carrierCountry;
+    private String minTransitHours;
+    private String maxTransitHours;
+    private Boolean carrierAddedFromNpm;
 }

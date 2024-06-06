@@ -745,6 +745,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .destination(contract.getDestination())
                 .originPort(contract.getMeta() != null ? contract.getMeta().getPol() : null)
                 .destinationPort(contract.getMeta() != null ? contract.getMeta().getPod() : null)
+                .shippingLine(contract.getCarrier())
+                .minTransitHours(contract.getMinTransitHours())
+                .maxTransitHours(contract.getMaxTransitHours())
                 .build();
     }
 

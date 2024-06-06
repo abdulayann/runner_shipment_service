@@ -209,6 +209,9 @@ public class BookingIntegrationsUtility {
                         sales_agent_primary_email(customerBooking.getPrimarySalesAgentEmail()).
                         sales_agent_secondary_email(customerBooking.getSecondarySalesAgentEmail()).
                         build())
+                .mainLegCarrierCode(carrierDetails.map(CarrierDetails::getShippingLine).orElse(null))
+                .minTransitHours(carrierDetails.map(CarrierDetails::getMinTransitHours).orElse(null))
+                .maxTransitHours(carrierDetails.map(CarrierDetails::getMaxTransitHours).orElse(null))
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
