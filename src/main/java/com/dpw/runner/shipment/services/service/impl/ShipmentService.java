@@ -102,7 +102,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -1651,16 +1650,15 @@ public class ShipmentService implements IShipmentService {
             log.error("Error Producing shipment to kafka, error is due to " + e.getMessage());
         }
         try {
-            if(shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Completed.getValue()) || shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
-                if (trackingServiceAdapter.checkIfConsolAttached(shipmentDetails)|| (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT) && !Objects.isNull(shipmentDetails.getHouseBill()))) {
-                    UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
-                    List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
-                    if(_utPayload != null) {
-                        trackingPayloads.add(_utPayload);
-                        var jsonBody = jsonHelper.convertToJson(trackingPayloads);
-                        log.info("Producing tracking service payload from shipment with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
-                        trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, false);
-                    }
+            if(shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Completed.getValue()) || shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())
+                && trackingServiceAdapter.checkIfConsolAttached(shipmentDetails)|| (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT) && !Objects.isNull(shipmentDetails.getMasterBill()))) {
+                UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+                List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
+                if(_utPayload != null) {
+                    trackingPayloads.add(_utPayload);
+                    var jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                    log.info("Producing tracking service payload from shipment with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
+                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, false);
                 }
             }
             if(shipmentDetails.getSource() != null && shipmentDetails.getSource().equals(Constants.API)) {
