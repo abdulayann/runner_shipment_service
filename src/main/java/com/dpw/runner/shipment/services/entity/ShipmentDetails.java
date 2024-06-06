@@ -342,9 +342,6 @@ public class ShipmentDetails extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<Jobs> jobsList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
-    private List<PickupDeliveryDetails> pickupDeliveryDetailsInstructions;
-
     @ManyToMany
     @JoinTable(name = "console_shipment_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
@@ -470,4 +467,8 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "destination_contract_type")
     private String destinationContractType;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    private List<PickupDeliveryDetails> pickupDeliveryDetailsInstructions;
+
 }
