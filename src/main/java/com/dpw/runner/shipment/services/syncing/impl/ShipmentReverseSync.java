@@ -22,7 +22,6 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -55,7 +54,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             ShipmentDetails sd = modelMapper.map(cs, ShipmentDetails.class);
 
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return new ResponseEntity<>(HttpStatus.OK);
+                return ResponseHelper.buildSuccessResponse();
             }
             mapCarrierDetailsReverse(cs, sd);
             mapAdditionalDetailsReverse(cs, sd);

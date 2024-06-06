@@ -42,7 +42,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -321,7 +320,7 @@ public class EventService implements IEventService {
         EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return new ResponseEntity<>(HttpStatus.OK);
+                return ResponseHelper.buildSuccessResponse();
             }
             Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
             Events events = modelMapper.map(eventsRequestV2, Events.class);
