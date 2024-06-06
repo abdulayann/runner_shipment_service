@@ -2582,7 +2582,7 @@ class ShipmentServiceTest {
     void pushShipmentDataToDependentServiceCatch() {
         testShipment.setStatus(1);
         testShipment.setShipmentType(Constants.SHIPMENT_TYPE_DRT);
-        testShipment.setHouseBill("HBL11");
+        testShipment.setMasterBill("MBL22");
         testShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         when(trackingServiceAdapter.mapShipmentDataToTrackingServiceData(testShipment)).thenReturn(UniversalTrackingPayload.builder().bookingReferenceNumber("1").build());
         when(jsonHelper.convertToJson(any())).thenReturn("json");
@@ -2595,6 +2595,7 @@ class ShipmentServiceTest {
         testShipment.setStatus(1);
         testShipment.setShipmentType(Constants.SHIPMENT_TYPE_DRT);
         testShipment.setHouseBill("HBL11");
+        testShipment.setMasterBill("MBL22");
         testShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         testShipment.setSource(Constants.API);
         when(trackingServiceAdapter.mapShipmentDataToTrackingServiceData(testShipment)).thenReturn(UniversalTrackingPayload.builder().bookingReferenceNumber("1").build());
