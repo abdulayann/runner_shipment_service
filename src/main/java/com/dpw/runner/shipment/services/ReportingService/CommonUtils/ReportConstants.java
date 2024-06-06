@@ -162,6 +162,7 @@ public class ReportConstants {
     public static final String PAID_PLACE_COUNTRY = "PaidPlaceCountry";
     public static final String PAID_PLACE_COUNTRY_NAME = "PaidPlaceCountryName";
     public static final String DATE_OF_ISSUE = "DateOfIssue";
+    public static final String SHIPMENT_CREATION_DATE = "ShipmentCreationDate";
     public static final String DATE_OF_ISSUE_MDY = "DateofIssueMDY";
     public static final String DATE_OF_ISSUE_DMY = "DateofIssueDMY";
     public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
@@ -596,6 +597,9 @@ public class ReportConstants {
     public static final String FLIGHT_DATE1 = "FlightDate1";
     public static final String BY_FIRST = "ByFirst";
     public static final String TO_FIRST = "ToFirst";
+    public static final String FIRST_FLIGHT_AND_DAY = "FirstFlightAndDay";
+    public static final String SECOND_FLIGHT_AND_DAY = "SecondFlightAndDay";
+    public static final String BY_FIRST_CARRIER_NAME = "ByFirstCarriername";
     public static final String BY = "By";
     public static final String TO = "To";
     public static final String ISSUED_BY_NAME = "IssuedByName";
@@ -1107,5 +1111,6 @@ public class ReportConstants {
     public static final String AUM = "AUM";
     public static final String SPH = "SPH";
     public static final String ORG_DATA_NOT_AVAILABLE = "Org data not available";
+    public static final String  ISSUING_AGENT_ADDRESS = "IssuingAgentAddress";
 
 }

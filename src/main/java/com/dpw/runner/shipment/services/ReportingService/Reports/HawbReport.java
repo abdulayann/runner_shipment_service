@@ -224,6 +224,8 @@ public class HawbReport extends IReport{
                 if(AwbNumber.length() > 3) dictionary.put(ReportConstants.MAWB_REMAINING, AwbNumber.substring(3));
             }
 
+            dictionary.put(ISSUING_AGENT_ADDRESS, hawbModel.getAwb().getAwbShipmentInfo().getIssuingAgentAddress());
+
             AwbCargoInfo cargoInfoRows = hawbModel.getAwb().getAwbCargoInfo();
             String NtrQtyGoods = null;
             EntityTransferMasterLists paymentCodeDetails = null;
@@ -408,16 +410,16 @@ public class HawbReport extends IReport{
                 locCodes = new HashSet<>();
                 carrierSet = new HashSet<>();
 
-                locCodes.add(routingInfoRows.get(0).getDestination());
-                locCodes.add(routingInfoRows.get(0).getOrigin());
+                locCodes.add(routingInfoRows.get(0).getDestinationPortName());
+                locCodes.add(routingInfoRows.get(0).getOriginPortName());
                 carrierSet.add(routingInfoRows.get(0).getByCarrier());
 
                 if(routingInfoRows.size() >= 2) {
-                    locCodes.add(routingInfoRows.get(1).getDestination());
+                    locCodes.add(routingInfoRows.get(1).getDestinationPortName());
                     carrierSet.add(routingInfoRows.get(1).getByCarrier());
                 }
                 if(routingInfoRows.size() >= 3) {
-                    locCodes.add(routingInfoRows.get(2).getDestination());
+                    locCodes.add(routingInfoRows.get(2).getDestinationPortName());
                     carrierSet.add(routingInfoRows.get(2).getByCarrier());
                 }
                 // Fetch all the possible loc codes possible in single call
@@ -425,17 +427,24 @@ public class HawbReport extends IReport{
                 // Fetch all the possible carrier data in single call
                 Map<String, EntityTransferCarrier> carrierRow = fetchCarrier(carrierSet);
 
-                dictionary.put(ReportConstants.TO_FIRST, locCodeMap.get(routingInfoRows.get(0).getDestination()) != null ? locCodeMap.get(routingInfoRows.get(0).getDestination()).getIataCode() : null);
+                dictionary.put(ReportConstants.TO_FIRST, locCodeMap.get(routingInfoRows.get(0).getDestinationPortName()) != null ? locCodeMap.get(routingInfoRows.get(0).getDestinationPortName()).getIataCode() : null);
                 dictionary.put(ReportConstants.TO, dictionary.get(ReportConstants.TO_FIRST));
-                dictionary.put(ReportConstants.AO_DEPT_CODE, locCodeMap.get(routingInfoRows.get(0).getOrigin()) != null ? locCodeMap.get(routingInfoRows.get(0).getOrigin()).getIataCode() : null);
+                dictionary.put(ReportConstants.AO_DEPT_CODE, locCodeMap.get(routingInfoRows.get(0).getOriginPortName()) != null ? locCodeMap.get(routingInfoRows.get(0).getOriginPortName()).getIataCode() : null);
                 dictionary.put(ReportConstants.ISSUED_BY, routingInfoRows.get(0).getByCarrier());
                 dictionary.put(ReportConstants.FLIGHT_NO1, routingInfoRows.get(0).getFlightNumber());
                 dictionary.put(ReportConstants.FLIGHT_DATE1, ConvertToDPWDateFormat(routingInfoRows.get(0).getFlightDate(), tsDateTimeFormat));
 
-                if (carrierRow.size() > 0)
+                String carrier = routingInfoRows.get(0).getByCarrier();
+                String carrierCode = carrier != null && carrierRow.containsKey(carrier) ? carrierRow.get(carrier).IATACode : "";
+                String flightNumber = routingInfoRows.get(0).getFlightNumber();
+                String day = routingInfoRows.get(0).getFlightDate() != null ? String.valueOf(routingInfoRows.get(0).getFlightDate().getDayOfMonth()) : "";
+                dictionary.put(ReportConstants.FIRST_FLIGHT_AND_DAY, String.format("%s %s/%s", carrierCode, flightNumber, day));
+                dictionary.put(ReportConstants.BY_FIRST_CARRIER_NAME, carrier);
+
+                if (!carrierRow.isEmpty() && carrier != null && carrierRow.containsKey(carrier))
                 {
-                    dictionary.put(ReportConstants.BY_FIRST, carrierRow.get(routingInfoRows.get(0).getByCarrier()).IATACode);
-                    dictionary.put(ReportConstants.ISSUED_BY_NAME, carrierRow.get(routingInfoRows.get(0).getByCarrier()).ItemDescription);
+                    dictionary.put(ReportConstants.BY_FIRST, carrierRow.get(carrier).IATACode);
+                    dictionary.put(ReportConstants.ISSUED_BY_NAME, carrierRow.get(carrier).ItemDescription);
                 }
                 else
                 {
@@ -452,8 +461,8 @@ public class HawbReport extends IReport{
                 if(routingInfoRows.size()>=2){
 //                    locCodes.add(routingInfoRows.get(1).getDestination());
 //                    locCodeMap = getLocationData(locCodes);
-                    if(locCodeMap.containsKey(routingInfoRows.get(1).getDestination()))
-                        dictionary.put(ReportConstants.TO_SECOND, locCodeMap.get(routingInfoRows.get(1).getDestination()).getIataCode());
+                    if(locCodeMap.containsKey(routingInfoRows.get(1).getDestinationPortName()))
+                        dictionary.put(ReportConstants.TO_SECOND, locCodeMap.get(routingInfoRows.get(1).getDestinationPortName()).getIataCode());
 //                    carrierSet.add(routingInfoRows.get(1).getByCarrier());
 //                    carrierRow = fetchCarrier(carrierSet);
                     if (carrierRow.containsKey(routingInfoRows.get(1).getByCarrier()))
@@ -464,13 +473,18 @@ public class HawbReport extends IReport{
                     dictionary.put(ReportConstants.FLIGHT_DATE2, ConvertToDPWDateFormat(routingInfoRows.get(1).getFlightDate(), tsDateTimeFormat));
                     flightNumberList.add(String.format(REGEX_S_S, dictionary.get(ReportConstants.BY_SECOND), dictionary.get(ReportConstants.FLIGHT_NO2)));
                     flightDateList.add(ConvertToDPWDateFormat(routingInfoRows.get(1).getFlightDate(), tsDateTimeFormat));
+                    String carrier2 = routingInfoRows.get(1).getByCarrier();
+                    String carrierCode2 = carrier2 != null && carrierRow.containsKey(carrier2) ? carrierRow.get(carrier2).IATACode : "";
+                    String flightNumber2 = routingInfoRows.get(1).getFlightNumber();
+                    String day2 = routingInfoRows.get(1).getFlightDate() != null ? String.valueOf(routingInfoRows.get(1).getFlightDate().getDayOfMonth()) : "";
+                    dictionary.put(ReportConstants.SECOND_FLIGHT_AND_DAY, String.format("%s %s/%s", carrierCode2, flightNumber2, day2));
                 }
                 if(routingInfoRows.size()>=3){
                     locCodes = new HashSet<>();
-                    locCodes.add(routingInfoRows.get(2).getDestination());
+                    locCodes.add(routingInfoRows.get(2).getDestinationPortName());
 //                    locCodeMap = getLocationData(locCodes);
-                    if(locCodeMap.containsKey(routingInfoRows.get(2).getDestination()))
-                        dictionary.put(ReportConstants.TO_THIRD, locCodeMap.get(routingInfoRows.get(2).getDestination()).getIataCode());
+                    if(locCodeMap.containsKey(routingInfoRows.get(2).getDestinationPortName()))
+                        dictionary.put(ReportConstants.TO_THIRD, locCodeMap.get(routingInfoRows.get(2).getDestinationPortName()).getIataCode());
 //                    carrierSet.add(routingInfoRows.get(2).getByCarrier());
 //                    carrierRow = fetchCarrier(carrierSet);
                     if (carrierRow.containsKey(routingInfoRows.get(1).getByCarrier()))

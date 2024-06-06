@@ -423,6 +423,7 @@ public abstract class IReport {
         String formatPattern = "dd/MMM/y";
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
+        dictionary.put(ReportConstants.SHIPMENT_CREATION_DATE, ConvertToDPWDateFormat(shipment.getShipmentCreatedOn(), tsDateTimeFormat));
         dictionary.put(ReportConstants.DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
@@ -1373,6 +1374,7 @@ public abstract class IReport {
         if (user == null) {
             return;
         }
+        dictionary.put(USER_DISPLAY_NAME, user.DisplayName);
         dictionary.put(ReportConstants.USER_FULLNAME, user.DisplayName);
         dictionary.put(ReportConstants.TENANT_NAME, user.TenantDisplayName);
         dictionary.put(ReportConstants.USER_NAME, user.Username);
