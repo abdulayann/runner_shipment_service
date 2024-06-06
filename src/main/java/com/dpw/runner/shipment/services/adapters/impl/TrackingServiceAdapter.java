@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
@@ -305,11 +306,17 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return null;
     }
 
+    private String getBillOfLading(ShipmentDetails shipmentDetails) {
+        if(!IsStringNullOrEmpty(shipmentDetails.getHouseBill()))
+            return shipmentDetails.getHouseBill();
+        return shipmentDetails.getMasterBill();
+    }
+
     private List<UniversalTrackingPayload.EntityDetail> GetAWBDetailsFromShipment(ShipmentDetails inputShipment) {
         List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
         List<Awb> awbList = awbDao.findByShipmentId(inputShipment.getId());
         result.add(UniversalTrackingPayload.EntityDetail.builder()
-                .trackingNumber(inputShipment.getHouseBill())
+                .trackingNumber(getBillOfLading(inputShipment))
                 .allocationDate(awbList == null || awbList.size() == 0 ? null: awbList.get(0).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
                 .build());
 
@@ -377,7 +384,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                 .serviceMode(shipmentDetails.getServiceType())
 //                .estimatedPickupDate(shipmentDetails.EstimatedPickup != null ? ((DateTime)shipmentDetails.EstimatedPickup).Date.ToString("yyyy-MM-dd") : null)
 //                .bookingCreationDate(shipmentDetails.DateofIssue != null ? ((DateTime)shipmentDetails.DateofIssue).Date.ToString("yyyy-MM-dd") : null)
-                .houseBill(shipmentDetails.getHouseBill())
+                .houseBill(getBillOfLading(shipmentDetails))
                 .shipmentType(shipmentDetails.getDirection())
                 .build();
 
