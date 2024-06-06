@@ -86,16 +86,8 @@ class DbAccessHelperTest {
     @Test
     void fetchDataTableNamesNotNullLogicalOperator() {
         listCommonRequest.setContainsText("transportMode");
-        //FilterCriteria filterCriteria = listCommonRequest.getFilterCriteria().get(0);
-//        FilterCriteria filterCriteria = FilterCriteria.builder().logicOperator("OR").build();
-//        List<FilterCriteria> filterCriteriaList = Arrays.asList(filterCriteria);
-//        listCommonRequest.setFilterCriteria(filterCriteriaList);
-        //listCommonRequest.getFilterCriteria().set(0, FilterCriteria.builder().build());
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
         tableNames.put("transportMode", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).build());
         assertNotNull(dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames));
     }
-
-
-
 }
