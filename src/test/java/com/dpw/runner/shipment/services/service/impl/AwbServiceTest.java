@@ -337,6 +337,26 @@ class AwbServiceTest {
     }
 
     @Test
+    void updateAwb_shipment_RountingException() throws RunnerException {
+        AwbRequest request = new AwbRequest(); // Provide necessary data for request
+        request.setAwbNumber("updatedAWBNumber");
+        request.setId(1);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Awb mockAwb = testHawb;
+        mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
+        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
+        mockAwb.getAwbRoutingInfo().get(0).setLeg(1L);
+        mockAwb.getAwbRoutingInfo().get(1).setLeg(1L);
+        // Mocking
+        when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
+        when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void updateAwb_consolidation() throws RunnerException {
         AwbRequest request = new AwbRequest(); // Provide necessary data for request
         request.setAwbNumber("updatedAWBNumber");

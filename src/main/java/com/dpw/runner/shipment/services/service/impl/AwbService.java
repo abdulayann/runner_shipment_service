@@ -224,6 +224,7 @@ public class AwbService implements IAwbService {
                 log.debug(AwbConstants.AWB_RETRIEVE_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            this.validateAwbBeforeUpdate(awb);
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
@@ -264,6 +265,26 @@ public class AwbService implements IAwbService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
+    }
+
+    private void validateAwbBeforeUpdate(Awb awb) {
+        Set<String> errors = new LinkedHashSet<>();
+        // Routings leg no can not be repeated
+        if (awb.getAwbRoutingInfo() != null && !awb.getAwbRoutingInfo().isEmpty()) {
+            HashSet<Long> hashSet = new HashSet<>();
+            for (AwbRoutingInfo routings : awb.getAwbRoutingInfo()) {
+                if (routings.getLeg() != null) {
+                    if (hashSet.contains(routings.getLeg())) {
+                        errors.add("This Flight Sequence number already exists. Please use another");
+                        break;
+                    } else
+                        hashSet.add(routings.getLeg());
+                }
+            }
+        }
+
+        if(!errors.isEmpty())
+            throw new ValidationException(String.join(",", errors));
     }
 
     private void updateAwbPacking(long mawbId, List<AwbPackingInfo> awbPackingInfoList) throws RunnerException {
@@ -896,22 +917,26 @@ public class AwbService implements IAwbService {
 
     private List<AwbRoutingInfo> generateMawbRoutingInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request) {
         if (consolidationDetails.getRoutingsList() != null && consolidationDetails.getRoutingsList().size() > 0) {
-            var sortedRoutingList = consolidationDetails.getRoutingsList();
-            List<AwbRoutingInfo> res = new ArrayList<>();
-            Collections.sort(sortedRoutingList, Comparator.comparing(Routings::getLeg));
-            for (var route : sortedRoutingList) {
-                AwbRoutingInfo awbRoutingInfo = new AwbRoutingInfo();
-                awbRoutingInfo.setIsShipmentCreated(true);
-                awbRoutingInfo.setOriginPortName(route.getPol());
-                awbRoutingInfo.setDestinationPortName(route.getPod());
-                awbRoutingInfo.setByCarrier(route.getCarrier());
-                awbRoutingInfo.setFlightNumber(route.getFlightNumber());
-                awbRoutingInfo.setFlightDate(route.getEtd());
-                awbRoutingInfo.setEntityId(consolidationDetails.getId());
-                awbRoutingInfo.setEntityType(request.getAwbType());
-                res.add(awbRoutingInfo);
+            var sortedRoutingList = consolidationDetails.getRoutingsList().stream().filter(route -> Objects.equals(route.getMode(), Constants.TRANSPORT_MODE_AIR)).collect(Collectors.toList());
+            if(sortedRoutingList != null && !sortedRoutingList.isEmpty()) {
+                List<AwbRoutingInfo> res = new ArrayList<>();
+                Collections.sort(sortedRoutingList, Comparator.comparing(Routings::getLeg));
+                Long leg = 1L;
+                for (var route : sortedRoutingList) {
+                    AwbRoutingInfo awbRoutingInfo = new AwbRoutingInfo();
+                    awbRoutingInfo.setIsShipmentCreated(true);
+                    awbRoutingInfo.setOriginPortName(route.getPol());
+                    awbRoutingInfo.setDestinationPortName(route.getPod());
+                    awbRoutingInfo.setByCarrier(route.getCarrier());
+                    awbRoutingInfo.setFlightNumber(route.getFlightNumber());
+                    awbRoutingInfo.setFlightDate(route.getEtd());
+                    awbRoutingInfo.setEntityId(consolidationDetails.getId());
+                    awbRoutingInfo.setEntityType(request.getAwbType());
+                    awbRoutingInfo.setLeg(leg++);
+                    res.add(awbRoutingInfo);
+                }
+                return res;
             }
-            return res;
         }
         else if (consolidationDetails.getCarrierDetails() != null &&
                 consolidationDetails.getCarrierDetails().getOriginPort() != null &&
@@ -928,6 +953,7 @@ public class AwbService implements IAwbService {
             routingInfo.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
             routingInfo.setEntityId(consolidationDetails.getId());
             routingInfo.setEntityType(request.getAwbType());
+            routingInfo.setLeg(1L);
             return Arrays.asList(routingInfo);
         }
         return null;
@@ -1210,22 +1236,26 @@ public class AwbService implements IAwbService {
 
     private List<AwbRoutingInfo> generateAwbRoutingInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request) {
         if (shipmentDetails.getRoutingsList() != null && shipmentDetails.getRoutingsList().size() > 0) {
-            var sortedRoutingList = shipmentDetails.getRoutingsList();
-            List<AwbRoutingInfo> res = new ArrayList<>();
-            Collections.sort(sortedRoutingList, Comparator.comparing(Routings::getLeg));
-            for (var route : sortedRoutingList) {
-                AwbRoutingInfo awbRoutingInfo = new AwbRoutingInfo();
-                awbRoutingInfo.setIsShipmentCreated(true);
-                awbRoutingInfo.setOriginPortName(route.getPol());
-                awbRoutingInfo.setDestinationPortName(route.getPod());
-                awbRoutingInfo.setByCarrier(route.getCarrier());
-                awbRoutingInfo.setFlightNumber(route.getFlightNumber());
-                awbRoutingInfo.setFlightDate(route.getEtd());
-                awbRoutingInfo.setEntityId(shipmentDetails.getId());
-                awbRoutingInfo.setEntityType(request.getAwbType());
-                res.add(awbRoutingInfo);
+            var sortedRoutingList = shipmentDetails.getRoutingsList().stream().filter(route -> Objects.equals(route.getMode(), Constants.TRANSPORT_MODE_AIR)).collect(Collectors.toList());
+            if(sortedRoutingList != null && !sortedRoutingList.isEmpty()) {
+                List<AwbRoutingInfo> res = new ArrayList<>();
+                Collections.sort(sortedRoutingList, Comparator.comparing(Routings::getLeg));
+                Long leg = 1L;
+                for (var route : sortedRoutingList) {
+                    AwbRoutingInfo awbRoutingInfo = new AwbRoutingInfo();
+                    awbRoutingInfo.setIsShipmentCreated(true);
+                    awbRoutingInfo.setOriginPortName(route.getPol());
+                    awbRoutingInfo.setDestinationPortName(route.getPod());
+                    awbRoutingInfo.setByCarrier(route.getCarrier());
+                    awbRoutingInfo.setFlightNumber(route.getFlightNumber());
+                    awbRoutingInfo.setFlightDate(route.getEtd());
+                    awbRoutingInfo.setEntityId(shipmentDetails.getId());
+                    awbRoutingInfo.setEntityType(request.getAwbType());
+                    awbRoutingInfo.setLeg(leg++);
+                    res.add(awbRoutingInfo);
+                }
+                return res;
             }
-            return res;
         }
 
         else if (shipmentDetails.getCarrierDetails() != null &&
@@ -1235,6 +1265,7 @@ public class AwbService implements IAwbService {
             var flightDate = shipmentDetails.getCarrierDetails().getEtd();
             AwbRoutingInfo routingInfo = new AwbRoutingInfo();
             routingInfo.setIsShipmentCreated(true);
+            routingInfo.setLeg(1L);
 //            routingInfo.setOrigin(shipmentDetails.getCarrierDetails().getOriginPort()); // field missing: POLId
 //            routingInfo.setDestination(shipmentDetails.getCarrierDetails().getDestinationPort()); // field missing PODId:
             routingInfo.setOriginPortName(shipmentDetails.getCarrierDetails().getOriginPort());
