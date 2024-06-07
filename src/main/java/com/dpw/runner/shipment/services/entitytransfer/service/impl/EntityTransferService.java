@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -38,13 +39,11 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
-import com.dpw.runner.shipment.services.utils.MasterData;
-import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +57,7 @@ import javax.transaction.Transactional;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -91,6 +91,8 @@ public class EntityTransferService implements IEntityTransferService {
     private IAwbDao awbDao;
     @Autowired
     private IEventDao eventDao;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
     @Autowired
     MasterDataFactory masterDataFactory;
     @Transactional
@@ -1724,6 +1726,134 @@ public class EntityTransferService implements IEntityTransferService {
         eventReq.createDuplicate = true;
         eventDao.autoGenerateEvents(eventReq);
         return placeDescription;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> postArValidation(CommonRequestModel commonRequestModel) throws RunnerException {
+        PostArValidationRequest request =  (PostArValidationRequest)commonRequestModel.getData();
+        if(request.getShipmentGuids() == null || request.getShipmentGuids().isEmpty()) {
+            log.error("Guids are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("GUID can't be null. Please provide any one !");
+        }
+        Set<UUID> requestGuids = new HashSet<>(request.getShipmentGuids());
+        List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByGuids(requestGuids);
+        PostArValidationResponse response = new PostArValidationResponse();
+        response.setData(new ArrayList<>());
+
+        Set<UUID> sourceGuids = new HashSet<>();
+        Set<UUID> shipmentGuids = new HashSet<>();
+        Set<String> locationRefGuids = new HashSet<>();
+        for (var shipmentDetails: shipmentDetailsList) {
+            if(Objects.equals(shipmentDetails.getJobType(),  Constants.SHIPMENT_TYPE_DRT)){
+                continue;
+            }
+            if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()){
+                ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
+                var receivingAgent = consolidationDetails.getReceivingBranch();
+                var triangulationPartner = consolidationDetails.getTriangulationPartner();
+                if (receivingAgent == null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                    var destination = shipmentDetails.getCarrierDetails().getDestination();
+                    if(destination != null)
+                        locationRefGuids.add(destination);
+                }
+                if(receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+                        !shipmentDetails.getTenantId().equals(receivingAgent.intValue())){
+                    shipmentGuids.add(shipmentDetails.getGuid());
+                } else if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_IMP) &&
+                        shipmentDetails.getTenantId().equals(receivingAgent.intValue()) && shipmentDetails.getSourceGuid() != null){
+                    sourceGuids.add(shipmentDetails.getSourceGuid());
+                }
+                if(triangulationPartner != null && !Objects.equals(triangulationPartner, receivingAgent)){
+                    if (shipmentDetails.getTenantId().equals(triangulationPartner.intValue()) && shipmentDetails.getSourceGuid() != null){
+                        sourceGuids.add(shipmentDetails.getSourceGuid());
+                    } else if (!shipmentDetails.getTenantId().equals(triangulationPartner.intValue())) {
+                        shipmentGuids.add(shipmentDetails.getGuid());
+                    }
+                }
+            }
+        }
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        Map<UUID, ShipmentDetails> originShipmentsMap = new HashMap<>();
+        List<ShipmentDetails> destinationShipments = !shipmentGuids.isEmpty() ? shipmentDao.findShipmentsBySourceGuids(shipmentGuids) : null;
+        List<ShipmentDetails> originShipments = !sourceGuids.isEmpty() ? shipmentDao.findShipmentsByGuids(sourceGuids) : null;
+        if(destinationShipments != null && !destinationShipments.isEmpty()){
+            destinationShipmentsMap = destinationShipments.stream().collect(Collectors.groupingBy(ShipmentDetails::getSourceGuid));
+        }
+        if(originShipments != null && !originShipments.isEmpty()){
+            originShipmentsMap = originShipments.stream().collect(Collectors.toMap(ShipmentDetails::getGuid, Function.identity()));
+        }
+        Map<String, UnlocationsResponse> unlocationsResponseMap = !locationRefGuids.isEmpty() ? masterDataUtils.getLocationData(locationRefGuids) : new HashMap<>();
+        for (var shipmentDetails: shipmentDetailsList) {
+            PostArValidationResponse.ArValidationData arValidationData = new PostArValidationResponse.ArValidationData();
+            arValidationData.setShipmentType(shipmentDetails.getDirection());
+            arValidationData.setShipmentGuid(shipmentDetails.getGuid());
+            arValidationData.setConsolidationType(shipmentDetails.getJobType());
+            if (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
+                response.getData().add(arValidationData);
+                continue;
+            }
+            if (shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()) {
+                ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
+                var receivingAgent = consolidationDetails.getReceivingBranch();
+                var triangulationPartner = consolidationDetails.getTriangulationPartner();
+                if (receivingAgent == null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                    var destination = shipmentDetails.getCarrierDetails().getDestination();
+                    if(destination != null && unlocationsResponseMap.containsKey(destination)){
+                        arValidationData.setDestinationCountry(unlocationsResponseMap.get(destination).getCountry());
+                    }
+                }
+                arValidationData.setReceivingAgent(receivingAgent);
+                arValidationData.setTriangulationPartner(triangulationPartner);
+                arValidationData.setSourceBranch(shipmentDetails.getTenantId());
+                if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+                        !shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
+                    arValidationData.setOriginReceivingBranch(shipmentDetails.getTenantId());
+                    if(destinationShipmentsMap.containsKey(shipmentDetails.getGuid())){
+                        var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
+                        var isShip = ships.stream().filter(x->x.getTenantId().equals(receivingAgent.intValue())).findAny();
+                        if(isShip.isPresent()){
+                            arValidationData.setDestinationReceivingBranch(receivingAgent.intValue());
+                            arValidationData.setTransferToReceivingAgent(true);
+                        }
+                    }
+                } else if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_IMP) &&
+                        shipmentDetails.getTenantId().equals(receivingAgent.intValue()) && shipmentDetails.getSourceGuid() != null) {
+                    arValidationData.setDestinationReceivingBranch(shipmentDetails.getTenantId());
+                    arValidationData.setTransferToReceivingAgent(true);
+                    if(originShipmentsMap.containsKey(shipmentDetails.getSourceGuid())){
+                        arValidationData.setOriginReceivingBranch(originShipmentsMap.get(shipmentDetails.getSourceGuid()).getTenantId());
+                    }
+                }
+
+                if (triangulationPartner != null) {
+                    if (Objects.equals(triangulationPartner, receivingAgent)) {
+                        arValidationData.setOriginTriangulationBranch(arValidationData.getOriginReceivingBranch());
+                        arValidationData.setDestinationTriangulationBranch(arValidationData.getDestinationReceivingBranch());
+                        arValidationData.setTransferToTriangulationPartner(arValidationData.getTransferToReceivingAgent());
+                    } else if (shipmentDetails.getTenantId().equals(triangulationPartner.intValue()) && shipmentDetails.getSourceGuid() != null) {
+                        arValidationData.setDestinationTriangulationBranch(triangulationPartner.intValue());
+                        arValidationData.setTransferToTriangulationPartner(true);
+                        if(originShipmentsMap.containsKey(shipmentDetails.getSourceGuid())){
+                            arValidationData.setOriginTriangulationBranch(originShipmentsMap.get(shipmentDetails.getSourceGuid()).getTenantId());
+                        }
+                    } else if (!shipmentDetails.getTenantId().equals(triangulationPartner.intValue())) {
+                        arValidationData.setOriginTriangulationBranch(shipmentDetails.getTenantId());
+                        if(destinationShipmentsMap.containsKey(shipmentDetails.getGuid())){
+                            var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
+                            var isShip = ships.stream().filter(x->x.getTenantId().equals(triangulationPartner.intValue())).findAny();
+                            if(isShip.isPresent()){
+                                arValidationData.setDestinationTriangulationBranch(triangulationPartner.intValue());
+                                arValidationData.setTransferToTriangulationPartner(true);
+                            }
+                        }
+                    }
+                }
+            }
+            response.getData().add(arValidationData);
+        }
+
+
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
 

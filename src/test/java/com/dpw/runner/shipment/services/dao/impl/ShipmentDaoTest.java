@@ -702,6 +702,20 @@ class ShipmentDaoTest {
     }
 
     @Test
+    void findShipmentsByGuids() {
+        Set<UUID> request = Set.of(UUID.randomUUID());
+        shipmentDao.findShipmentsByGuids(request);
+        verify(shipmentRepository, times(1)).findShipmentsByGuids(request);
+    }
+
+    @Test
+    void findShipmentsBySourceGuids() {
+        Set<UUID> request = Set.of(UUID.randomUUID());
+        shipmentDao.findShipmentsBySourceGuids(request);
+        verify(shipmentRepository, times(1)).findShipmentsBySourceGuids(request);
+    }
+
+    @Test
     void delete() {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDao.delete(shipmentDetails);

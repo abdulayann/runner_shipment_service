@@ -595,4 +595,16 @@ public class ShipmentDao implements IShipmentDao {
         shipmentRepository.saveEntityTransfer(id, entityTransfer);
     }
 
+    @Override
+    @Transactional
+    public List<ShipmentDetails> findShipmentsByGuids(Set<UUID> guids) {
+        return shipmentRepository.findShipmentsByGuids(guids);
+    }
+
+    @Override
+    @Transactional
+    public List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid) {
+        return shipmentRepository.findShipmentsBySourceGuids(sourceGuid);
+    }
+
 }
