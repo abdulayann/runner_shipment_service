@@ -223,4 +223,6 @@ public class AdditionalDetailModel implements IDocumentModel {
     private String aomFreeText;
     @JsonProperty("EmergencyContactNumber")
     private String emergencyContactNumber;
+    @JsonProperty("EmergencyContactNumberCode")
+    private String emergencyContactNumberCode;
 }

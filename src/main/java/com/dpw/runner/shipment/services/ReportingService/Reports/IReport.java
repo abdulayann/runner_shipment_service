@@ -772,8 +772,12 @@ public abstract class IReport {
         populateIGMInfo(shipment, dictionary);
         if(Boolean.TRUE.equals(shipment.getContainsHazardous())) {
             dictionary.put(IsDG, true);
-            dictionary.put(DGEmergencyContact, shipment.getAdditionalDetails().getEmergencyContactNumber());
+            dictionary.put(DGEmergencyContact, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
         }
+    }
+
+    private String getConcatenatedContact(String code, String number) {
+        return Objects.toString(code, "") + " " + Objects.toString(number, "");
     }
 
     public Map<String, Object> populateHAWBAndSecurityData(List<ShipmentModel> shipmentModelList, List<Awb> awbList, Map<String, Object> dictionary, boolean isSecurity, boolean isShipperAndConsignee, boolean fromConsolidation) {
@@ -1273,7 +1277,7 @@ public abstract class IReport {
         populateUserFields(UserContext.getUser(), dictionary);
         if(Boolean.TRUE.equals(consolidation.getHazardous())) {
             dictionary.put(IsDG, true);
-            dictionary.put(DGEmergencyContact, consolidation.getEmergencyContactNumber());
+            dictionary.put(DGEmergencyContact, getConcatenatedContact(consolidation.getEmergencyContactNumberCode(), consolidation.getEmergencyContactNumber()));
         }
     }
 

@@ -2405,6 +2405,7 @@ class ShipmentServiceTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
 
         when(shipmentDao.findById(any()))
                 .thenReturn(
@@ -2457,6 +2458,7 @@ class ShipmentServiceTest {
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
 
         Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldEntity);
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
 
@@ -2507,6 +2509,7 @@ class ShipmentServiceTest {
 
         Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
 
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldEntity);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
 
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
@@ -2544,6 +2547,7 @@ class ShipmentServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
 
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.findById(any()))
                 .thenReturn(
                         Optional.of(
@@ -2667,6 +2671,7 @@ class ShipmentServiceTest {
         PartyRequestV2 partyRequestV2 = new PartyRequestV2();
         partyRequestV2.setTenantId(1);
 
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.findById(any()))
                 .thenReturn(
                         Optional.of(
@@ -3171,6 +3176,7 @@ class ShipmentServiceTest {
         PartyRequestV2 partyRequestV2 = new PartyRequestV2();
         partyRequestV2.setTenantId(1);
 
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.findById(any()))
                 .thenReturn(
                         Optional.of(
@@ -3732,6 +3738,7 @@ class ShipmentServiceTest {
         PartyRequestV2 partyRequestV2 = new PartyRequestV2();
         partyRequestV2.setTenantId(1);
 
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.findById(any()))
                 .thenReturn(
                         Optional.of(
@@ -4425,8 +4432,8 @@ class ShipmentServiceTest {
     @Test
     void changeConsolidationDGValuesById() {
         ShipmentService spyService = spy(shipmentService);
-        doReturn(testConsol).when(spyService).saveConsolidationDGValue(1L, false);
-        ConsolidationDetails consolidationDetails = spyService.changeConsolidationDGValuesById(false, new AtomicBoolean(true), 1L, testShipment);
+        doReturn(testConsol).when(spyService).saveConsolidationDGValue(false, testConsol);
+        ConsolidationDetails consolidationDetails = spyService.changeConsolidationDGValues(false, new AtomicBoolean(true), 1L, testShipment, testConsol);
         assertNotNull(consolidationDetails);
         assertEquals(testConsol, consolidationDetails);
     }
