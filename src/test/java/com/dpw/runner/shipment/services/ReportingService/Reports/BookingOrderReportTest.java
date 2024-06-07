@@ -351,6 +351,7 @@ class BookingOrderReportTest {
     void populateDictionary() throws RunnerException {
         BookingOrderModel bookingOrderModel = new BookingOrderModel();
         bookingOrderModel.setUser(UserContext.getUser());
+        bookingOrderModel.setTenantModel(new TenantModel());
         populateModel(bookingOrderModel);
         mockVessel();
 
