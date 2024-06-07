@@ -382,4 +382,21 @@ public class JsonTestUtility {
     public ListCommonRequest getListRequest() {
         return objectMapper.convertValue(payload.get("LIST_REQUEST"), ListCommonRequest.class);
     }
+
+    public ListCommonRequest getListRequest1() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST1"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest2() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST2"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequestIsEnum() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_IS_ENUM"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequestIN() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_IN"), ListCommonRequest.class);
+    }
+
 }
