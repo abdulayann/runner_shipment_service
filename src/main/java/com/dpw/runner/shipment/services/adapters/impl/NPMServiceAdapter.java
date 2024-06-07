@@ -11,16 +11,13 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
-import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NpmAwbImportRateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -36,13 +33,15 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.DateUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -121,6 +120,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private IAwbDao awbDao;
 
     @Autowired
+    private MasterDataUtils masterDataUtils;
+
+    @Autowired
     public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
@@ -138,6 +140,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             this.setOriginAndDestinationName(response.getBody());
+            this.setCarrierMasterData(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
@@ -307,6 +310,23 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 }
                 response.setUnlocMasterData(locationMap);
             }
+        }
+    }
+
+    private void setCarrierMasterData(ListContractResponse response) {
+        Set<String> carrier = new HashSet<>();
+        if(response != null && response.getContracts() != null  && !response.getContracts().isEmpty()) {
+            response.getContracts().forEach(cont -> {
+                if(cont.getCarrier_codes() != null && !cont.getCarrier_codes().isEmpty()) {
+                    if(!cont.getCarrier_codes().get(0).equals(NPMConstants.ANY)) {
+                        carrier.add(cont.getCarrier_codes().get(0));
+                        response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriers(carrier.stream().toList()));
+                    }
+                    else {
+                        cont.getCarrier_codes().remove(NPMConstants.ANY);
+                    }
+                }
+            });
         }
     }
 
