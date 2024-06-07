@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import org.junit.jupiter.api.Test;
@@ -177,6 +178,33 @@ class EntityTransferControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void postArValidation() throws RunnerException {
+        // Mock
+        when(entityTransferService.postArValidation(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = entityTransferController.postArValidation(PostArValidationRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
+    @Test
+    void postArValidation1() throws RunnerException {
+        // Mock
+        when(entityTransferService.postArValidation(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = entityTransferController.postArValidation(PostArValidationRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+    @Test
+    void postArValidation2() throws RunnerException {
+        // Mock
+        when(entityTransferService.postArValidation(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = entityTransferController.postArValidation(PostArValidationRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
 }

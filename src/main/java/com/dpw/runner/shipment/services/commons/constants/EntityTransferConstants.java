@@ -11,6 +11,7 @@ public class EntityTransferConstants {
     public static final String SEND_CONSOLIDATION_VALIDATION = "/send-consolidation-validation";
     public static final String IMPORT_SHIPMENT = "/import-shipment";
     public static final String IMPORT_CONSOLIDATION = "/import-consolidation";
+    public static final String POST_AR_VALIDATION = "/post-ar-validation";
     public static final String SEND_SHIPMENT_SUCCESSFUL = "Shipment is sent successfully";
     public static final String SEND_CONSOLIDATION_SUCCESSFUL = "Consolidation is sent successfully";
     public static final String VALIDATION_SUCCESSFUL = "All validation passes successfully";

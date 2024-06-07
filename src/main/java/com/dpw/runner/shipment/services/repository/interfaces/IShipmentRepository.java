@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -50,5 +51,11 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Modifying @Transactional
     @Query(value = "Update shipment_details set entity_transfer = ?2 Where id = ?1", nativeQuery = true)
     void saveEntityTransfer(Long id, Boolean entityTransfer);
+
+    @Query(value = "SELECT * FROM shipment_details WHERE guid IN ?1", nativeQuery = true)
+    List<ShipmentDetails> findShipmentsByGuids(Set<UUID> guids);
+
+    @Query(value = "SELECT * FROM shipment_details WHERE source_guid IN ?1", nativeQuery = true)
+    List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid);
 
 }

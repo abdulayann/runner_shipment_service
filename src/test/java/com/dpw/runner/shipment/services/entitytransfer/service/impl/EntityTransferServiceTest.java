@@ -15,19 +15,19 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsolidationResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +75,8 @@ class EntityTransferServiceTest {
     private IHblDao hblDao;
     @Mock
     private IAwbDao awbDao;
+    @Mock
+    private MasterDataUtils masterDataUtils;
     @Mock
     private IEventDao eventDao;
     @Mock
@@ -774,4 +776,90 @@ class EntityTransferServiceTest {
 
         assertThrows(RuntimeException.class, () -> entityTransferService.checkTaskExist(commonRequestModel));
     }
+
+    @Test
+    void testPostArValidation_Success() throws RunnerException {
+        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setTenantId(33);
+        ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
+        consolidationDetails.setReceivingBranch(123L);
+        consolidationDetails.setTriangulationPartner(231L);
+        ShipmentDetails shipmentDetailsDrt = jsonTestUtility.getCompleteShipment();
+        shipmentDetailsDrt.setGuid(UUID.randomUUID());
+        shipmentDetailsDrt.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetailsDrt.setTenantId(33);
+
+        ShipmentDetails shipmentDetailsImp = jsonTestUtility.getCompleteShipment();
+        shipmentDetailsImp.setGuid(UUID.randomUUID());
+        shipmentDetailsImp.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetailsImp.setSourceGuid(UUID.randomUUID());
+        shipmentDetailsImp.setTenantId(33);
+        ConsolidationDetails consolidationDetailsImp = shipmentDetailsImp.getConsolidationList().get(0);
+        consolidationDetailsImp.setShipmentType(Constants.DIRECTION_IMP);
+        consolidationDetailsImp.setReceivingBranch(33L);
+        consolidationDetailsImp.setTriangulationPartner(33L);
+
+        ShipmentDetails shipmentDetailsImp1 = jsonTestUtility.getCompleteShipment();
+        shipmentDetailsImp1.setGuid(UUID.randomUUID());
+        shipmentDetailsImp1.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetailsImp1.setSourceGuid(UUID.randomUUID());
+        shipmentDetailsImp1.setTenantId(33);
+        ConsolidationDetails consolidationDetailsImp1 = shipmentDetailsImp1.getConsolidationList().get(0);
+        consolidationDetailsImp1.setShipmentType(Constants.DIRECTION_IMP);
+        consolidationDetailsImp1.setReceivingBranch(null);
+        consolidationDetailsImp1.setTriangulationPartner(33L);
+
+        ShipmentDetails shipmentDetailsExp = jsonTestUtility.getCompleteShipment();
+        shipmentDetailsExp.setGuid(UUID.randomUUID());
+        shipmentDetailsExp.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetailsExp.setSourceGuid(UUID.randomUUID());
+        shipmentDetailsExp.setTenantId(33);
+        ConsolidationDetails consolidationDetailsExp = shipmentDetailsExp.getConsolidationList().get(0);
+        consolidationDetailsExp.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetailsExp.setReceivingBranch(null);
+
+        PostArValidationRequest postArValidationRequest = new PostArValidationRequest(List.of(shipmentDetails.getGuid(), shipmentDetailsDrt.getGuid(), shipmentDetailsImp.getGuid(), shipmentDetailsImp1.getGuid(), shipmentDetailsExp.getGuid()));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(postArValidationRequest);
+
+        ShipmentDetails destShipment = new ShipmentDetails();
+        destShipment.setGuid(UUID.randomUUID());
+        destShipment.setSourceGuid(shipmentDetails.getGuid());
+        destShipment.setTenantId(123);
+
+        ShipmentDetails destShipmentForTriangulation = new ShipmentDetails();
+        destShipmentForTriangulation.setGuid(UUID.randomUUID());
+        destShipmentForTriangulation.setSourceGuid(shipmentDetails.getGuid());
+        destShipmentForTriangulation.setTenantId(231);
+
+        ShipmentDetails originShipment = new ShipmentDetails();
+        originShipment.setGuid(shipmentDetailsImp.getSourceGuid());
+        originShipment.setTenantId(432);
+
+        ShipmentDetails originShipment1 = new ShipmentDetails();
+        originShipment1.setGuid(shipmentDetailsImp1.getSourceGuid());
+        originShipment1.setTenantId(432);
+
+        String locationRefGuid = shipmentDetailsExp.getCarrierDetails().getDestination();
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID(locationRefGuid);
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponseMap.put(locationRefGuid, unlocationsResponse);
+
+        when(shipmentDao.findShipmentsByGuids(Set.of(shipmentDetails.getGuid(), shipmentDetailsDrt.getGuid(), shipmentDetailsImp.getGuid(), shipmentDetailsImp1.getGuid(), shipmentDetailsExp.getGuid()))).thenReturn(List.of(shipmentDetails, shipmentDetailsDrt, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsExp));
+        when(shipmentDao.findShipmentsBySourceGuids(Set.of(shipmentDetails.getGuid()))).thenReturn(List.of(destShipment, destShipmentForTriangulation));
+        when(shipmentDao.findShipmentsByGuids(Set.of(shipmentDetailsImp.getSourceGuid(), shipmentDetailsImp1.getSourceGuid()))).thenReturn(List.of(originShipment, originShipment1));
+        when(masterDataUtils.getLocationData(Set.of(locationRefGuid))).thenReturn(unlocationsResponseMap);
+
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.postArValidation(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testPostArValidation_Failure() {
+        PostArValidationRequest request = new PostArValidationRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        assertThrows(RunnerException.class, () -> entityTransferService.postArValidation(commonRequestModel));
+    }
+
 }
