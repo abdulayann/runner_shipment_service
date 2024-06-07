@@ -214,6 +214,8 @@ public class ShipmentModel implements IDocumentModel {
     private String entryRefNo;
     @JsonProperty("Summary")
     private String summary;
+    @JsonProperty("PackSummary")
+    private String packSummary;
     @JsonProperty("Voyage")
     private String voyage;
     @JsonProperty("SecurityStatus")

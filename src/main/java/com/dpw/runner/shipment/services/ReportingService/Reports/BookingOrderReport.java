@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.BookingOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -9,6 +10,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -39,6 +41,16 @@ public class BookingOrderReport extends IReport {
 
         String shipmentType = (Objects.equals(bookingOrderModel.getShipmentModel().getJobType(), Constants.SHIPMENT_TYPE_DRT)) ? Constants.DMAWB : Constants.HAWB;
         dictionary.put(ReportConstants.SHIPMENT_TYPE, shipmentType);
+
+        List<String> tenantNameAddress = ReportHelper.getOrgAddressWithPhoneEmail(bookingOrderModel.getTenantModel().getTenantName(),
+            bookingOrderModel.getTenantModel().getAddress1(),
+            bookingOrderModel.getTenantModel().getAddress2(),
+            bookingOrderModel.getTenantModel().getCity(),
+            null,
+            bookingOrderModel.getTenantModel().getPhone(),
+            bookingOrderModel.getTenantModel().getZipPostCode()
+            );
+        dictionary.put(ReportConstants.TENANT_NAME_AND_ADDRESS, tenantNameAddress);
 
         return dictionary;
     }
