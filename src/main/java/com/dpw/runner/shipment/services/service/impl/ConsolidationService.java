@@ -1154,13 +1154,13 @@ public class ConsolidationService implements IConsolidationService {
         Map<Long, String> descOfGoodsMap = new HashMap<>();
         Map<Long, String> handlingInfoMap = new HashMap<>();
         Map<Long, String> hblNumberMap = new HashMap<>();
-        Map<Long, String> shipmentNumberMap = new HashMap<>();
+        Map<Long, ShipmentDetails> shipmentNumberMap = new HashMap<>();
         boolean lcl = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
         boolean autoUpdate = isAutoUpdate || (consolidationDetails.getAutoUpdateGoodsDesc() != null && consolidationDetails.getAutoUpdateGoodsDesc());
         Set<Long> containerSelfDataAdded = new HashSet<>();
         if(consolidationDetails.getShipmentsList() != null && consolidationDetails.getShipmentsList().size() > 0) {
             for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-                shipmentNumberMap.put(shipmentDetails.getId(), shipmentDetails.getShipmentId());
+                shipmentNumberMap.put(shipmentDetails.getId(), shipmentDetails);
                 boolean setContData = autoUpdate;
                 if(autoUpdate && lcl) {
                     if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate()) {
@@ -1209,8 +1209,10 @@ public class ConsolidationService implements IConsolidationService {
 
         if(!isAutoUpdate && consolidationDetailsResponse.getPackingList() != null && !consolidationDetailsResponse.getPackingList().isEmpty()) {
             for (PackingResponse packingResponse : consolidationDetailsResponse.getPackingList()) {
-                if(packingResponse.getShipmentId() != null && shipmentNumberMap.containsKey(packingResponse.getShipmentId()))
-                    packingResponse.setShipmentNumber(shipmentNumberMap.get(packingResponse.getShipmentId()));
+                if(packingResponse.getShipmentId() != null && shipmentNumberMap.containsKey(packingResponse.getShipmentId())) {
+                    packingResponse.setShipmentNumber(shipmentNumberMap.get(packingResponse.getShipmentId()).getShipmentId());
+                    packingResponse.setShipmentHazardous(shipmentNumberMap.get(packingResponse.getShipmentId()).getContainsHazardous());
+                }
             }
         }
     }
