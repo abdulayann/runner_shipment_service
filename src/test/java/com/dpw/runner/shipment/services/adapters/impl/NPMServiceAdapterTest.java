@@ -1,15 +1,5 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -40,12 +30,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,6 +50,16 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import static com.dpw.runner.shipment.services.commons.constants.NPMConstants.ANY;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {NPMServiceAdapter.class})
 @ExtendWith(SpringExtension.class)
@@ -91,6 +86,9 @@ class NPMServiceAdapterTest {
 
     @Autowired
     private NPMServiceAdapter nPMServiceAdapter;
+
+    @MockBean
+    private MasterDataUtils masterDataUtils;
 
     @MockBean(name = "restTemplateForNpmService")
     private RestTemplate restTemplate;
@@ -227,6 +225,54 @@ class NPMServiceAdapterTest {
         ListContractResponse listContractResponse = new ListContractResponse();
         List<ListContractResponse.ContractResponse> contracts = new ArrayList<>();
         contracts.add(ListContractResponse.ContractResponse.builder().origin("1").destination("2").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        listContractResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(listContractResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(listContractResponse);
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new ListContractRequest()).build();
+        var responseEntity = nPMServiceAdapter.fetchContract(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testFetchContract5_withCarrierANY() throws RunnerException {
+        ListContractResponse listContractResponse = new ListContractResponse();
+        List<ListContractResponse.ContractResponse> contracts = new ArrayList<>();
+        List<String> carrierCodes = new ArrayList<>();
+        carrierCodes.add(ANY);
+        contracts.add(ListContractResponse.ContractResponse.builder().origin("1").destination("2").carrier_codes(carrierCodes).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        listContractResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(listContractResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(listContractResponse);
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new ListContractRequest()).build();
+        var responseEntity = nPMServiceAdapter.fetchContract(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testFetchContract5_withCarrier() throws RunnerException {
+        ListContractResponse listContractResponse = new ListContractResponse();
+        List<ListContractResponse.ContractResponse> contracts = new ArrayList<>();
+        List<String> carrierCodes = new ArrayList<>();
+        carrierCodes.add("testCarrier");
+        contracts.add(ListContractResponse.ContractResponse.builder().origin("1").destination("2").carrier_codes(carrierCodes).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
         listContractResponse.setContracts(contracts);
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
         when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
