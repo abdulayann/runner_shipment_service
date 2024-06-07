@@ -322,9 +322,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                         carrier.add(cont.getCarrier_codes().get(0));
                         response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriers(carrier.stream().toList()));
                     }
-                    else {
+                    else
                         cont.getCarrier_codes().remove(NPMConstants.ANY);
-                    }
                 }
             });
         }
