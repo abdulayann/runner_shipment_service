@@ -6,8 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -15,13 +15,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class PostArValidationResponse implements IRunnerResponse {
-    List<ArValidationData> data;
+    private List<ArValidationData> data;
 
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class ArValidationData {
+    public static class ArValidationData implements Serializable {
         private String shipmentType;
         private UUID shipmentGuid;
         private String consolidationType;

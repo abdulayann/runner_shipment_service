@@ -14,5 +14,5 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class PostArValidationRequest implements IRunnerRequest {
-    List<UUID> shipmentGuids;
+    private List<UUID> shipmentGuids;
 }
