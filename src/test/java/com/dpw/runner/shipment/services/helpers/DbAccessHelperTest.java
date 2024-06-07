@@ -227,23 +227,4 @@ class DbAccessHelperTest {
         Predicate predicate = specification.toPredicate(root, criteriaQuery, criteriaBuilder);
         assertNull(predicate);
     }
-
-//    @Test
-//    void fetchDataTableNamesNotNullPredicateIN() {
-//
-//        ListCommonRequest listCommonRequestIn = jsonTestUtility.getListRequestIN();
-//        listCommonRequestIn.setContainsText("id");
-//
-//        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-//        tableNames.put("id", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Long.class).build());
-//
-//        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequestIn, ShipmentDetails.class, tableNames);
-//        Specification<Object> specification = pair.getLeft();
-//        assertNotNull(specification);
-//        //when(path.get("id")).thenReturn(p);
-//        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
-//
-//        Predicate predicate = specification.toPredicate(root, criteriaQuery, criteriaBuilder);
-//        assertNull(predicate);
-//    }
 }
