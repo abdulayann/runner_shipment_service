@@ -3,12 +3,14 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomLocalTimeSerializer;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -60,4 +62,5 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     private String pickupDeliveryInstruction;
     private LocalDateTime pickupDeliveryGateIn;
     private LocalDateTime pickupDeliveryGateOut;
+    private List<Parties> partiesList;
 }

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.config.CustomLocalTimeDeserializer;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -10,6 +11,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -55,4 +57,5 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private String pickupDeliveryInstruction;
     private LocalDateTime pickupDeliveryGateIn;
     private LocalDateTime pickupDeliveryGateOut;
+    private List<Parties> partiesList;
 }

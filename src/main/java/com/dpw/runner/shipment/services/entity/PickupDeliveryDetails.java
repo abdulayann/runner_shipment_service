@@ -73,7 +73,7 @@ public class PickupDeliveryDetails extends MultiTenancy {
     private Parties agentDetail;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'SHIPMENT'")
+    @Where(clause = "entity_type = 'PICKUP_DELIVERY'")
     private List<Parties> partiesList;
 
     @Column(name = "drop_mode")

@@ -136,7 +136,7 @@ class PickupDeliveryDetailsServiceTest {
     }
 
     @Test
-    void testUpdate_Exception() {
+    void testUpdate_Exception() throws RunnerException {
         PickupDeliveryDetailsRequest request = new PickupDeliveryDetailsRequest();
         request.setId(1L);
         PickupDeliveryDetails newEntity = new PickupDeliveryDetails();
