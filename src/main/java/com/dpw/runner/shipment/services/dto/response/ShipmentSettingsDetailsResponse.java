@@ -160,4 +160,8 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean disableBlPartiesName;
     private Boolean airDGFlag;
     private Boolean iataTactFlag;
+    private String bookingOrder;
+    private String bookingOrderForMbl;
+    private String bookingOrderAir;
+    private String bookingOrderAirForMawb;
 }
