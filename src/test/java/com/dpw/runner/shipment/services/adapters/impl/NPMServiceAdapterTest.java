@@ -1215,4 +1215,32 @@ class NPMServiceAdapterTest {
         verify(jsonHelper).convertToJson(isA(NpmErrorResponse.class));
         verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
     }
+
+    @Test
+    void getCarrier() {
+        ListContractResponse.ContractResponse contractResponse = ListContractResponse.ContractResponse.builder().build();
+        String response = nPMServiceAdapter.getCarrier(contractResponse);
+        assertNull(response);
+    }
+
+    @Test
+    void getCarrier_Empty() {
+        ListContractResponse.ContractResponse contractResponse = ListContractResponse.ContractResponse.builder().carrier_codes(new ArrayList<>()).build();
+        String response = nPMServiceAdapter.getCarrier(contractResponse);
+        assertNull(response);
+    }
+
+    @Test
+    void getCarrier_ANY() {
+        ListContractResponse.ContractResponse contractResponse = ListContractResponse.ContractResponse.builder().carrier_codes(List.of(ANY)).build();
+        String response = nPMServiceAdapter.getCarrier(contractResponse);
+        assertNull(response);
+    }
+
+    @Test
+    void getCarrier_test() {
+        ListContractResponse.ContractResponse contractResponse = ListContractResponse.ContractResponse.builder().carrier_codes(List.of("test")).build();
+        String response = nPMServiceAdapter.getCarrier(contractResponse);
+        assertEquals("test", response);
+    }
 }

@@ -764,10 +764,20 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .destination(contract.getDestination())
                 .originPort(contract.getMeta() != null ? contract.getMeta().getPol() : null)
                 .destinationPort(contract.getMeta() != null ? contract.getMeta().getPod() : null)
-                .shippingLine(contract.getCarrier_codes() != null && !contract.getCarrier_codes().isEmpty() ? contract.getCarrier_codes().get(0) : null)
+                .shippingLine(getCarrier(contract))
                 .minTransitHours(contract.getMeta() != null ? contract.getMeta().getMinTransitHours() : null)
                 .maxTransitHours(contract.getMeta() != null ? contract.getMeta().getMaxTransitHours() : null)
                 .build();
+    }
+
+    public String getCarrier(ListContractResponse.ContractResponse contract) {
+        if(contract.getCarrier_codes() == null)
+            return null;
+        if(contract.getCarrier_codes().isEmpty())
+            return null;
+        if(contract.getCarrier_codes().get(0).equals(NPMConstants.ANY))
+            return null;
+        return contract.getCarrier_codes().get(0);
     }
 
     private List<RoutingsResponse> createRoutings(ListContractResponse.ContractResponse contractResponse) {
