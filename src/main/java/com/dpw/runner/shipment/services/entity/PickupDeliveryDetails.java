@@ -12,6 +12,7 @@ import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @Entity
 @Setter
@@ -71,6 +72,10 @@ public class PickupDeliveryDetails extends MultiTenancy {
     @BatchSize(size = 50)
     private Parties agentDetail;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'PICKUP_DELIVERY'")
+    private List<Parties> partiesList;
+
     @Column(name = "drop_mode")
     private String dropMode;
 
@@ -125,4 +130,10 @@ public class PickupDeliveryDetails extends MultiTenancy {
 
     @Column(name = "pickup_delivery_instruction")
     public String pickupDeliveryInstruction;
+
+    @Column(name = "pickup_delivery_gate_in")
+    public LocalDateTime pickupDeliveryGateIn;
+
+    @Column(name = "pickup_delivery_gate_out")
+    public LocalDateTime pickupDeliveryGateOut;
 }

@@ -467,4 +467,8 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "destination_contract_type")
     private String destinationContractType;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    private List<PickupDeliveryDetails> pickupDeliveryDetailsInstructions;
+
 }

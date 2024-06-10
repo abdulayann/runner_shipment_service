@@ -196,4 +196,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String destinationCurrentPartyForQuote;
     private String destinationContractId;
     private String destinationContractType;
+    private List<PickupDeliveryDetailsResponse> pickupDeliveryDetailsInstructions;
 }
