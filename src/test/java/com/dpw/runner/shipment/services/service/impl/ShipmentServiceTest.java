@@ -4465,6 +4465,53 @@ class ShipmentServiceTest {
         assertTrue(response);
     }
 
+    @Test
+    void checkAttachDgAirShipments() {
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
+        assertTrue(response);
+    }
+
+    @Test
+    void checkAttachDgAirShipments_HazTrue() {
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setHazardous(true);
+        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
+        assertTrue(response);
+    }
+
+    @Test
+    void checkAttachDgAirShipments_HazTrue_Settings_AirDgTrue() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setHazardous(true);
+        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
+        assertFalse(response);
+    }
+
+    @Test
+    void checkAttachDgAirShipments_HazTrue_Settings_AirDgTrue_EmptyShipment() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setHazardous(true);
+        testConsol.setShipmentsList(new ArrayList<>());
+        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
+        assertFalse(response);
+    }
+
+    @Test
+    void checkAttachDgAirShipments_HazTrue_Settings_AirDgTrue_WithShipment() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setHazardous(true);
+        testConsol.setShipmentsList(List.of(testShipment));
+        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
+        assertFalse(response);
+    }
+
     private Runnable mockRunnable() {
         return null;
     }
