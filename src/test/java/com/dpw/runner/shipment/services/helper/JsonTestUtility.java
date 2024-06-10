@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.helper;
 
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
@@ -381,4 +382,25 @@ public class JsonTestUtility {
     public EntityTransferAddress getAddressData() {
         return objectMapper.convertValue(payload.get("ADDRESS_DATA"), EntityTransferAddress.class);
     }
+
+    public ListCommonRequest getListRequest() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest1() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST1"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest2() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST2"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequestIsEnum() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_IS_ENUM"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequestIN() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_IN"), ListCommonRequest.class);
+    }
+
 }

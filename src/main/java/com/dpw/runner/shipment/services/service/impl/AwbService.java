@@ -3334,6 +3334,9 @@ public class AwbService implements IAwbService {
         if(iataFetchRateRequest.getDestinationPort() == null || iataFetchRateRequest.getDestinationPort().isEmpty()){
             emptyFieldsError.add("Destination Airport");
         }
+        if(iataFetchRateRequest.getCurrency() == null || iataFetchRateRequest.getCurrency().isEmpty()){
+            emptyFieldsError.add("Currency(in Cargo Information)");
+        }
         if(!emptyFieldsError.isEmpty()){
             String errorString = String.join(", ", emptyFieldsError);
             throw new ValidationException("Please add " + errorString + " and retry");
@@ -3366,6 +3369,7 @@ public class AwbService implements IAwbService {
                 .carrier(carrier)
                 .rateSource("GS")
                 .rateType("CAR")
+                .currency(iataFetchRateRequest.getCurrency())
                 .build();
         log.info("TactPayload : "+ jsonHelper.convertToJson(tactBridgePayload));
         BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.requestTactResponse(CommonRequestModel.buildRequest(tactBridgePayload));

@@ -17,4 +17,5 @@ public class IataFetchRateRequest implements IRunnerRequest {
     private String originPort;
     private String destinationPort;
     private String flightCarrier;
+    private String currency;
 }

@@ -840,7 +840,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             for(var contractUsage: contractUsages)
             {
                 ContainerResponse containerResponse = new ContainerResponse();
-                containerResponse.setContainerCount(contractUsage.getUsage());
+                containerResponse.setContainerCount(Objects.isNull(contractUsage.getMeta()) ? contractUsage.getUsage() : contractUsage.getMeta().getOriginal_usage());
                 var filter_attributes = contractUsage.getFilter_params();
                 if(filter_attributes != null)
                 {

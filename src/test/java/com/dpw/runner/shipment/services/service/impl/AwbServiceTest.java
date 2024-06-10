@@ -2195,6 +2195,7 @@ class AwbServiceTest {
                 .destinationPort("NAKMP_AIR")
                 .originPort("NAGOG_AIR")
                 .flightCarrier("Aegean Airlines")
+                .currency("INR")
                 .build();
         UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
         unlocationsResponse1.setIataCode("A12");
@@ -2250,6 +2251,7 @@ class AwbServiceTest {
                 .destinationPort("NAKMP_AIR")
                 .originPort("NAGOG_AIR")
                 .flightCarrier("Aegean Airlines")
+                .currency("INR")
                 .build();
         UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
         unlocationsResponse1.setIataCode("A12");
@@ -2309,6 +2311,7 @@ class AwbServiceTest {
                 .destinationPort("NAKMP_AIR")
                 .originPort("NAGOG_AIR")
                 .flightCarrier("Aegean Airlines")
+                .currency("INR")
                 .build();
         UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
         unlocationsResponse1.setIataCode("A12");
@@ -2347,12 +2350,13 @@ class AwbServiceTest {
     }
 
     @Test
-    void testGetFetchIataRates_Success_Failure_Case1() throws RunnerException {
+    void testGetFetchIataRates_Failure_Case1() throws RunnerException {
         IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
                 .chargeableWeight(BigDecimal.valueOf(156.0))
                 .destinationPort("NAKMP_AIR")
                 .originPort("NAGOG_AIR")
                 .flightCarrier("Aegean Airlines")
+                .currency("INR")
                 .build();
         UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
         unlocationsResponse1.setIataCode("A12");
@@ -2396,12 +2400,13 @@ class AwbServiceTest {
     }
 
     @Test
-    void testGetFetchIataRates_Success_Failure_Case2() throws RunnerException {
+    void testGetFetchIataRates_Failure_Case2() throws RunnerException {
         IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
                 .chargeableWeight(BigDecimal.valueOf(156.0))
                 .destinationPort("NAKMP_AIR")
                 .originPort("NAGOG_AIR")
                 .flightCarrier("Aegean Airlines")
+                .currency("INR")
                 .build();
         UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
         unlocationsResponse1.setIataCode("A12");
@@ -2444,12 +2449,13 @@ class AwbServiceTest {
     }
 
     @Test
-    void testGetFetchIataRates_Success_Failure_Case3() throws RunnerException {
+    void testGetFetchIataRates_Failure_Case3() throws RunnerException {
         IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
                 .chargeableWeight(BigDecimal.valueOf(156.0))
                 .destinationPort("NAKMP_AIR")
                 .originPort("NAGOG_AIR")
                 .flightCarrier("Aegean Airlines")
+                .currency("INR")
                 .build();
         UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
         unlocationsResponse1.setIataCode("A12");
@@ -2485,12 +2491,13 @@ class AwbServiceTest {
     }
 
     @Test
-    void testGetFetchIataRates_Success_Failure_Case4() {
+    void testGetFetchIataRates_Failure_Case4() {
         IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
                 .chargeableWeight(null)
                 .destinationPort(null)
                 .originPort(null)
                 .flightCarrier(null)
+                .currency(null)
                 .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
 
@@ -2498,12 +2505,13 @@ class AwbServiceTest {
     }
 
     @Test
-    void testGetFetchIataRates_Success_Failure_Case5() {
+    void testGetFetchIataRates_Failure_Case5() {
         IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
                 .chargeableWeight(BigDecimal.valueOf(156.0))
                 .destinationPort("NAKMP_AIR")
                 .originPort("NAGOG_AIR")
                 .flightCarrier("Aegean Airlines")
+                .currency("INR")
                 .build();
 
         UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
