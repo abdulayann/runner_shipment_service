@@ -9864,5 +9864,200 @@
     "enable_grouping": "False",
     "shipment_settings_id": "1",
     "is_deleted": "True"
+  },
+
+  "LIST_REQUEST" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "transportMode",
+              "operator": "!=",
+              "value": "SEA"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">=",
+              "value": "2024-06-02 00:00:00"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": "<=",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": "<",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "masterBill",
+              "operator": "LIKE",
+              "value": "%1234%"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "masterBill",
+              "operator": "CONTAINS",
+              "value": "1234"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "origin",
+              "operator": "ISNULL"
+            },
+
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "destination",
+              "operator": "ISNOTNULL"
+            },
+            "logicOperator": "and"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST1" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "guid",
+              "operator": "=",
+              "value": "4cab9e0c-ea45-450d-88f4-144df5585a76"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "!=",
+              "value": 0
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": "<=",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": "<",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">=",
+              "value": "2024-06-02 00:00:00"
+            },
+            "logicOperator": "and"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_IS_ENUM" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_IN" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "id",
+              "operator": "IN",
+              "value": [1]
+            }
+          }
+        ]
+      }
+    ]
   }
 }
