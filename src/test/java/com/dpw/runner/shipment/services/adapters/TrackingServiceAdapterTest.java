@@ -38,6 +38,7 @@ import org.springframework.data.domain.PageImpl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -149,6 +150,18 @@ class TrackingServiceAdapterTest {
         shipmentDetails.setContainersList(List.of(jsonTestUtility.getTestContainer()));
         boolean res = trackingServiceAdapter.checkIfConsolAttached(shipmentDetails);
         assertFalse(res);
+    }
+
+    @Test
+    void checkIfConsolAttached_SEA() {
+        when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setMasterBill("MasterBill");
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        boolean res = trackingServiceAdapter.checkIfConsolAttached(shipmentDetails);
+        assertTrue(res);
     }
 
     @Test

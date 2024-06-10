@@ -133,7 +133,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             if(consolidationDetails != null && !consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
                 res = GetContainerDetailsAttachedForShipment(shipmentDetails).size() > 0;
             else
-                res = !Objects.isNull(shipmentDetails.getHouseBill());
+                res = !Objects.isNull(shipmentDetails.getHouseBill()) || !Objects.isNull(shipmentDetails.getMasterBill());
 
         } catch (Exception e) {
             log.error(e.getMessage());
