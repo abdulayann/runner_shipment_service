@@ -228,4 +228,6 @@ public class ConsolidationModel implements IDocumentModel {
     private Boolean hazardous;
     @JsonProperty("EmergencyContactNumber")
     private String emergencyContactNumber;
+    @JsonProperty("EmergencyContactNumberCode")
+    private String emergencyContactNumberCode;
 }

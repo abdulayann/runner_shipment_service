@@ -604,8 +604,9 @@ public class ShipmentService implements IShipmentService {
 
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            List<Long> removedConsolIds = new ArrayList<>();
 
-            boolean syncConsole = beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails);
+            boolean syncConsole = beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails, removedConsolIds);
 
             shipmentDetails = getShipment(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
@@ -629,7 +630,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
 
-            afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails, syncConsole);
+            afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails, syncConsole, removedConsolIds);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -858,7 +859,7 @@ public class ShipmentService implements IShipmentService {
                 .build();
     }
 
-    private List<PackingRequest> setPackingDetails(List<Containers> containersList, List<PackingRequest> packingRequests, String transportMode, Long consolidationId) {
+    private List<PackingRequest> setPackingDetails(List<PackingRequest> packingRequests, String transportMode, Long consolidationId) {
         if(packingRequests != null && packingRequests.size() > 0) {
             for (PackingRequest packingRequest : packingRequests) {
                 if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
@@ -1199,10 +1200,13 @@ public class ShipmentService implements IShipmentService {
             ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(oldEntity.get().getId());
+            List<Long> removedConsolIds = new ArrayList<>();
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
-            boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails);
+            ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
+
+            boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, removedConsolIds);
 
             entity = shipmentDao.update(entity, false);
 
@@ -1222,7 +1226,7 @@ public class ShipmentService implements IShipmentService {
                 log.error("Error creating audit service log", e);
             }
 
-            afterSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, syncConsole);
+            afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds);
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
@@ -1266,9 +1270,8 @@ public class ShipmentService implements IShipmentService {
             }
         }
     }
-    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException{
+    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds) throws RunnerException{
         List<Long> tempConsolIds = new ArrayList<>();
-        List<Long> removedConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
         boolean syncConsole = false;
 
@@ -1294,7 +1297,10 @@ public class ShipmentService implements IShipmentService {
                         oldConsolIds.remove(consolidation.getId());
                 }
             }
-            removedConsolIds = !Objects.isNull(oldConsolIds) ? oldConsolIds.stream().toList() : new ArrayList<>();
+            if(!Objects.isNull(oldConsolIds)) {
+                for (Long oldConsoleId: oldConsolIds)
+                    removedConsolIds.add(oldConsoleId);
+            }
 
             if(!consolidationDetailsRequests.isEmpty() && (oldEntity == null || oldEntity.getConsolidationList() == null ||  oldEntity.getConsolidationList().size() == 0 || removedConsolIds.size() > 0)) {
                 isNewConsolAttached = true;
@@ -1389,19 +1395,6 @@ public class ShipmentService implements IShipmentService {
             if(awb != null && !awb.isEmpty() && awb.get(0).getAirMessageStatus() != null && (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT) ||
                     Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS))) {
                 throw new RunnerException("FWB & FZB are already submitted and further modifications are prohibited for given console.");
-            }
-        }
-
-        if(!isCreate){
-            consolidationDetails = updateLinkedShipmentData(shipmentDetails, oldEntity);
-            if(!Objects.isNull(consolidationDetails)) {
-                shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
-                syncConsole = true;
-            }
-            if(removedConsolIds != null && !removedConsolIds.isEmpty()) {
-                boolean makeConsoleDG = checkForDGShipmentAndAirDgFlag(shipmentDetails);
-                boolean makeConsoleNonDG = checkForNonDGShipmentAndAirDgFlag(shipmentDetails);
-                changeConsolidationDGValuesById(makeConsoleDG, new AtomicBoolean(makeConsoleNonDG), removedConsolIds.get(0), shipmentDetails);
             }
         }
 
@@ -1564,7 +1557,7 @@ public class ShipmentService implements IShipmentService {
         return true;
     }
 
-    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole) throws RunnerException {
+    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, List<Long> removedConsolIds) throws RunnerException {
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
@@ -1632,9 +1625,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         if (packingRequestList != null) {
-            if(Objects.isNull(updatedContainers) && !Objects.isNull(oldEntity))
-                updatedContainers = oldEntity.getContainersList();
-            packingRequestList = setPackingDetails(updatedContainers, packingRequestList, shipmentDetails.getTransportMode(), consolidationId);
+            packingRequestList = setPackingDetails(packingRequestList, shipmentDetails.getTransportMode(), consolidationId);
             updatedPackings = packingDao.updateEntityFromShipment(commonUtils.convertToEntityList(packingRequestList, Packing.class, isCreate), id, deleteContainerIds);
             shipmentDetails.setPackingList(updatedPackings);
         }
@@ -1647,16 +1638,26 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setEventsList(updatedEvents);
             eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
         }
-        if(isCreate){
-            // create Shipment event on the bases of auto create event flag
-            if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
-                autoGenerateCreateEvent(shipmentDetails);
-            ConsolidationDetails consolidationDetails = updateLinkedShipmentData(shipmentDetails, null);
-            if(!Objects.isNull(consolidationDetails)) {
-                shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
-                syncConsole = true;
+        // create Shipment event on the bases of auto create event flag
+        if(isCreate && Boolean.TRUE.equals(shipmentSettingsDetails.getAutoEventCreate()))
+            autoGenerateCreateEvent(shipmentDetails);
+
+        ConsolidationDetails consolidationDetails = updateLinkedShipmentData(shipmentDetails, oldEntity);
+        if(!Objects.isNull(consolidationDetails)) {
+            shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+            syncConsole = true;
+        }
+
+        // make removed consolidation non dg if all other shipments are non dg
+        if(!isCreate && removedConsolIds != null && !removedConsolIds.isEmpty()) {
+            boolean makeConsoleNonDG = checkForDGShipmentAndAirDgFlag(oldEntity); // check if removed shipment was dg
+            if(makeConsoleNonDG) {
+                consolidationDetails = consolidationDetailsDao.findById(removedConsolIds.get(0)).get();
+                if(!checkAttachDgAirShipments(consolidationDetails)) // check if any other attached shipment is dg
+                    changeConsolidationDGValues(false, new AtomicBoolean(true), removedConsolIds.get(0), shipmentDetails, consolidationDetails);
             }
         }
+
         // Create events on basis of shipment status Confirmed/Created
         autoGenerateEvents(shipmentDetails, previousStatus);
 
@@ -1696,8 +1697,7 @@ public class ShipmentService implements IShipmentService {
             hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
         }
         pushShipmentDataToDependentService(shipmentDetails, isCreate, shipmentRequest.getIsAutoSellRequired() == null ? false : shipmentRequest.getIsAutoSellRequired());
-
-        ConsolidationDetails consolidationDetails = null;
+        
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
             consolidationDetails = shipmentDetails.getConsolidationList().get(0);
         }
@@ -3687,6 +3687,18 @@ public class ShipmentService implements IShipmentService {
         return !isDgUser();
     }
 
+    public boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails){
+        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            return true;
+        if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
+            return true;
+        if(!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()))
+            return true;
+        if(consolidationDetails.getShipmentsList() == null || consolidationDetails.getShipmentsList().isEmpty())
+            return false;
+        return consolidationDetails.getShipmentsList().stream().anyMatch(ship -> Boolean.TRUE.equals(ship.getContainsHazardous()));
+    }
+
     /**
      * back flows data of the current updated shipment to all its sibling shipments attached to the common console
      * @param current_shipment
@@ -3763,21 +3775,35 @@ public class ShipmentService implements IShipmentService {
     }
 
     private ConsolidationDetails changeConsolidationDGValues(boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, List<ConsolidationDetails> consolidationList, ShipmentDetails shipment) {
-        if(consolidationList != null && !consolidationList.isEmpty())
-            return changeConsolidationDGValuesById(makeConsoleDG, makeConsoleNonDG, consolidationList.get(0).getId(), shipment);
+        if(consolidationList != null && !consolidationList.isEmpty()) {
+            return changeConsolidationDGValues(makeConsoleDG, makeConsoleNonDG, consolidationList.get(0).getId(), shipment, null);
+        }
         return null;
     }
 
-    public ConsolidationDetails changeConsolidationDGValuesById(boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, Long consolidationId, ShipmentDetails shipment) {
-        if(makeConsoleDG)
-            return saveConsolidationDGValue(consolidationId, true);
+    public ConsolidationDetails changeConsolidationDGValues(boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, Long consolidationId, ShipmentDetails shipment, ConsolidationDetails consolidationDetails) {
+        if(makeConsoleDG) {
+            consolidationDetails = getConsolidationDetails(consolidationId, consolidationDetails);
+            return saveConsolidationDGValue(true, consolidationDetails);
+        }
         if(makeConsoleNonDG.get()) {
             List<Long> shipmentIdList = getShipmentIdsExceptCurrentShipment(consolidationId, shipment);
             makeConsoleNonDG.set(checkIfAllShipmentsAreNonDG(shipmentIdList));
-            if(makeConsoleNonDG.get())
-                return saveConsolidationDGValue(consolidationId, false);
+            if(makeConsoleNonDG.get()) {
+                consolidationDetails = getConsolidationDetails(consolidationId, consolidationDetails);
+                return saveConsolidationDGValue(false, consolidationDetails);
+            }
         }
         return null;
+    }
+
+    public ConsolidationDetails getConsolidationDetails(Long consolidationId, ConsolidationDetails consolidationDetails) {
+        if(!Objects.isNull(consolidationDetails))
+            return consolidationDetails;
+        Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(consolidationId);
+        if(optionalConsolidationDetails.isPresent())
+            return optionalConsolidationDetails.get();
+        throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
     }
 
     public boolean checkIfAllShipmentsAreNonDG(List<Long> shipmentIdList) {
@@ -3792,13 +3818,7 @@ public class ShipmentService implements IShipmentService {
         return true;
     }
 
-    public ConsolidationDetails saveConsolidationDGValue(Long consolidationId, boolean dgFlag) {
-        ConsolidationDetails consolidationDetails = null;
-        Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(consolidationId);
-        if(optionalConsolidationDetails.isPresent())
-            consolidationDetails = optionalConsolidationDetails.get();
-        else
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+    public ConsolidationDetails saveConsolidationDGValue(boolean dgFlag, ConsolidationDetails consolidationDetails) {
         if( (!Boolean.TRUE.equals(consolidationDetails.getHazardous()) && dgFlag)
             || (!dgFlag && Boolean.TRUE.equals(consolidationDetails.getHazardous())) ) {
             consolidationDetails.setHazardous(dgFlag);

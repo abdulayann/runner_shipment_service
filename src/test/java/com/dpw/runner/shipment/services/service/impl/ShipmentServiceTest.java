@@ -2428,6 +2428,7 @@ class ShipmentServiceTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
 
         when(shipmentDao.findById(any()))
                 .thenReturn(
@@ -2480,6 +2481,7 @@ class ShipmentServiceTest {
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
 
         Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldEntity);
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
 
@@ -2530,6 +2532,7 @@ class ShipmentServiceTest {
 
         Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
 
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldEntity);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
 
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
@@ -2567,6 +2570,7 @@ class ShipmentServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
 
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.findById(any()))
                 .thenReturn(
                         Optional.of(
@@ -2690,6 +2694,7 @@ class ShipmentServiceTest {
         PartyRequestV2 partyRequestV2 = new PartyRequestV2();
         partyRequestV2.setTenantId(1);
 
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.findById(any()))
                 .thenReturn(
                         Optional.of(
@@ -3194,6 +3199,7 @@ class ShipmentServiceTest {
         PartyRequestV2 partyRequestV2 = new PartyRequestV2();
         partyRequestV2.setTenantId(1);
 
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.findById(any()))
                 .thenReturn(
                         Optional.of(
@@ -3755,6 +3761,7 @@ class ShipmentServiceTest {
         PartyRequestV2 partyRequestV2 = new PartyRequestV2();
         partyRequestV2.setTenantId(1);
 
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.findById(any()))
                 .thenReturn(
                         Optional.of(
@@ -4448,8 +4455,8 @@ class ShipmentServiceTest {
     @Test
     void changeConsolidationDGValuesById() {
         ShipmentService spyService = spy(shipmentService);
-        doReturn(testConsol).when(spyService).saveConsolidationDGValue(1L, false);
-        ConsolidationDetails consolidationDetails = spyService.changeConsolidationDGValuesById(false, new AtomicBoolean(true), 1L, testShipment);
+        doReturn(testConsol).when(spyService).saveConsolidationDGValue(false, testConsol);
+        ConsolidationDetails consolidationDetails = spyService.changeConsolidationDGValues(false, new AtomicBoolean(true), 1L, testShipment, testConsol);
         assertNotNull(consolidationDetails);
         assertEquals(testConsol, consolidationDetails);
     }
@@ -4479,6 +4486,53 @@ class ShipmentServiceTest {
     void checkIfAllShipmentsAreNonDG_Empty() {
         boolean response = shipmentService.checkIfAllShipmentsAreNonDG(new ArrayList<>());
         assertTrue(response);
+    }
+
+    @Test
+    void checkAttachDgAirShipments() {
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
+        assertTrue(response);
+    }
+
+    @Test
+    void checkAttachDgAirShipments_HazTrue() {
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setHazardous(true);
+        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
+        assertTrue(response);
+    }
+
+    @Test
+    void checkAttachDgAirShipments_HazTrue_Settings_AirDgTrue() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setHazardous(true);
+        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
+        assertFalse(response);
+    }
+
+    @Test
+    void checkAttachDgAirShipments_HazTrue_Settings_AirDgTrue_EmptyShipment() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setHazardous(true);
+        testConsol.setShipmentsList(new ArrayList<>());
+        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
+        assertFalse(response);
+    }
+
+    @Test
+    void checkAttachDgAirShipments_HazTrue_Settings_AirDgTrue_WithShipment() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setHazardous(true);
+        testConsol.setShipmentsList(List.of(testShipment));
+        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
+        assertFalse(response);
     }
 
     private Runnable mockRunnable() {
