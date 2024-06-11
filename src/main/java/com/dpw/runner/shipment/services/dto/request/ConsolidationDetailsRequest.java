@@ -124,4 +124,5 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Boolean hazardous;
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;
+    private Boolean creatingFromDgShipment;
 }

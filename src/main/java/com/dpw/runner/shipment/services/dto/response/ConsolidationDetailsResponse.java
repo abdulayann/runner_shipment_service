@@ -141,4 +141,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Boolean hazardous;
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;
+    private Boolean creatingFromDgShipment;
 }
