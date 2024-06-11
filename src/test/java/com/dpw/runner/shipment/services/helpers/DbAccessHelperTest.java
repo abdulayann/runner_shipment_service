@@ -243,7 +243,7 @@ class DbAccessHelperTest {
     }
 
     @Test
-    public void testFetchData_WithSortAndFilter() {
+     void testFetchData_WithSortAndFilter() {
         when(request.getSortRequest()).thenReturn(sortRequest);
         when(request.getFilterCriteria()).thenReturn(new ArrayList<>());
         when(request.getPageNo()).thenReturn(1);
