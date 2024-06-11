@@ -960,15 +960,15 @@ public class ReportService implements IReportService {
                         row.getTransportOrderRoad() == null ? adminRow.getTransportOrderRoad(): row.getTransportOrderRoad(), null, row.getTransportOrderRoad() != null, null, null, null);
             case ReportConstants.BOOKING_ORDER:
                 if (transportMode.equalsIgnoreCase(ReportConstants.AIR)){
-                    if(objectType.equalsIgnoreCase(Constants.DMAWB))
-                        return setDocPages(null,
-                            row.getBookingOrderAirForMawb() == null ? adminRow.getBookingOrderAirForMawb() : row.getBookingOrderAirForMawb(), null, row.getBookingOrderAirForMawb() != null, null, null, null);
+//                    if(objectType.equalsIgnoreCase(Constants.DMAWB))
+//                        return setDocPages(null,
+//                            row.getBookingOrderAirForMawb() == null ? adminRow.getBookingOrderAirForMawb() : row.getBookingOrderAirForMawb(), null, row.getBookingOrderAirForMawb() != null, null, null, null);
                     return setDocPages(null,
                         row.getBookingOrderAir() == null ? adminRow.getBookingOrderAir() : row.getBookingOrderAir(), null, row.getBookingOrderAir() != null, null, null, null);
                 }else{
-                    if(objectType.equalsIgnoreCase(Constants.DMAWB)) // using key : DMAWB for sea also
-                        return setDocPages(null,
-                            row.getBookingOrderForMbl() == null ? adminRow.getBookingOrderForMbl() : row.getBookingOrderForMbl(), null, row.getBookingOrderForMbl() != null, null, null, null);
+//                    if(objectType.equalsIgnoreCase(Constants.DMAWB)) // using key : DMAWB for sea also
+//                        return setDocPages(null,
+//                            row.getBookingOrderForMbl() == null ? adminRow.getBookingOrderForMbl() : row.getBookingOrderForMbl(), null, row.getBookingOrderForMbl() != null, null, null, null);
                     return setDocPages(null,
                         row.getBookingOrder() == null ? adminRow.getBookingOrder() : row.getBookingOrder(), null, row.getBookingOrder() != null, null, null, null);
                 }
