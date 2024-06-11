@@ -432,7 +432,7 @@ public class ConsolidationService implements IConsolidationService {
 
             beforeSave(consolidationDetails, null, true);
 
-            getConsolidation(consolidationDetails);
+            getConsolidation(consolidationDetails, Boolean.TRUE.equals(request.getCreatingFromDgShipment()));
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false);
         } catch (Exception e) {
@@ -458,7 +458,7 @@ public class ConsolidationService implements IConsolidationService {
 
             beforeSave(consolidationDetails, null, true);
 
-            getConsolidation(consolidationDetails);
+            getConsolidation(consolidationDetails, false);
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true);
         } catch (Exception e) {
@@ -468,9 +468,9 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
     }
 
-    void getConsolidation(ConsolidationDetails consolidationDetails) throws RunnerException{
+    void getConsolidation(ConsolidationDetails consolidationDetails, boolean creatingFromDgShipment) throws RunnerException{
         generateConsolidationNumber(consolidationDetails);
-        consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
+        consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, creatingFromDgShipment);
 
         // audit logs
         try {
@@ -3088,6 +3088,7 @@ public class ConsolidationService implements IConsolidationService {
                 .mawb(isMawb ? shipment.getMasterBill() : null)
                 .createdBy(UserContext.getUser().getUsername())
                 .modeOfBooking(StringUtils.equals(transportMode, Constants.TRANSPORT_MODE_SEA) ? Constants.INTTRA : null)
+                .creatingFromDgShipment(shipment.getContainsHazardous())
                 //.isLinked(true)
                 .build();
 

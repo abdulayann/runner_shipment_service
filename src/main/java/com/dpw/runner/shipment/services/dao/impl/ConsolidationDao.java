@@ -73,7 +73,12 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
+        return save(consolidationDetails, fromV1Sync, false);
+    }
+
+    @Override
+    public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean creatingFromDgShipment) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         ConsolidationDetails oldConsole = null;
         if(consolidationDetails.getId() != null) {
             long id = consolidationDetails.getId();
@@ -87,7 +92,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity.get();
         }
-        onSave(consolidationDetails, errors, oldConsole, fromV1Sync);
+        onSave(consolidationDetails, errors, oldConsole, fromV1Sync, creatingFromDgShipment);
         return consolidationDetails;
     }
 
@@ -104,12 +109,12 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity;
         }
-        onSave(consolidationDetails, errors, oldConsole, fromV1Sync);
+        onSave(consolidationDetails, errors, oldConsole, fromV1Sync, false);
         return consolidationDetails;
     }
 
-    private void onSave(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean fromV1Sync) {
-        errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole));
+    private void onSave(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean fromV1Sync, boolean creatingFromDgShipment) {
+        errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole, creatingFromDgShipment));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if (consolidationDetails.getTransportMode() != null && consolidationDetails.getCarrierDetails() != null) {
@@ -207,7 +212,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return Boolean.TRUE.equals(request.getHazardous());
     }
 
-    private Set<String> applyConsolidationValidations(ConsolidationDetails request, ConsolidationDetails oldEntity) {
+    private Set<String> applyConsolidationValidations(ConsolidationDetails request, ConsolidationDetails oldEntity, boolean creatingFromDgShipment) {
         Set<String> errors = new LinkedHashSet<>();
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
 
@@ -242,7 +247,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
             // Dg consolidation must have at least one dg shipment
             boolean containsDgShipment = false;
-            if(request.getShipmentsList() != null) {
+            if(request.getShipmentsList() != null && !creatingFromDgShipment) {
                 for (ShipmentDetails shipmentDetails: request.getShipmentsList()) {
                     if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                         containsDgShipment = true;
@@ -250,7 +255,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
                     }
                 }
             }
-            if(!containsDgShipment)
+            if(!containsDgShipment && !creatingFromDgShipment)
                 errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
         }
 
