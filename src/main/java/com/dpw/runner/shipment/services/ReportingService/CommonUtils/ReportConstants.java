@@ -102,7 +102,7 @@ public class ReportConstants {
     public static final String PACKS_UNIT = "PacksUnit";
     public static final String COMMODITY_DESC = "CommodityDesc";
     public static final String COMMODITY_DESC_NAME = "CommodityDescName";
-    public static final String IsDG = "IsDG";
+    public static final String IsDG  = "IsDG";
     public static final String AirUNNumber = "AirUNNumber";
     public static final String AirDGClass = "AirDGClass";
     public static final String AirDGClassDescription = "AirDGClassDescription";
@@ -1119,5 +1119,7 @@ public class ReportConstants {
     public static final String SPH = "SPH";
     public static final String ORG_DATA_NOT_AVAILABLE = "Org data not available";
     public static final String  ISSUING_AGENT_ADDRESS = "IssuingAgentAddress";
+    public static final String IS_DIRECT_SHIPMENT = "IsDirect";
+    public static final String IS_NON_DIRECT_SHIPMENT = "IsNonDirect";
 
 }

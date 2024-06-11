@@ -51,6 +51,10 @@ public class BookingOrderReport extends IReport {
             bookingOrderModel.getTenantModel().getZipPostCode()
             );
         dictionary.put(ReportConstants.TENANT_NAME_AND_ADDRESS, tenantNameAddress);
+        boolean isDirect = Constants.DMAWB.equals(shipmentType) ? true : false;
+        boolean isNonDirect = !isDirect;
+        dictionary.put(ReportConstants.IS_DIRECT_SHIPMENT, isDirect);
+        dictionary.put(ReportConstants.IS_NON_DIRECT_SHIPMENT, isNonDirect);
 
         return dictionary;
     }
