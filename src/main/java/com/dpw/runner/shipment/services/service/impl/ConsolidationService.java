@@ -3088,7 +3088,6 @@ public class ConsolidationService implements IConsolidationService {
                 .mawb(isMawb ? shipment.getMasterBill() : null)
                 .createdBy(UserContext.getUser().getUsername())
                 .modeOfBooking(StringUtils.equals(transportMode, Constants.TRANSPORT_MODE_SEA) ? Constants.INTTRA : null)
-                .hazardous(shipment.getContainsHazardous())
                 //.isLinked(true)
                 .build();
 

@@ -90,7 +90,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
@@ -664,25 +663,29 @@ public abstract class IReport {
             PartiesModel originAgent = additionalDetails.getExportBroker();
             if(originAgent != null) {
                 Map<String, Object> addressData = originAgent.getAddressData();
-                List<String> partyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
-                    StringUtility.convertToString(addressData.get(ADDRESS2)),
-                    ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
-                    null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
-                    StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
-                );
-                dictionary.put(SHIPMENT_ORIGIN_AGENT, partyAddress);
+                if(addressData != null) {
+                    List<String> partyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
+                            StringUtility.convertToString(addressData.get(ADDRESS2)),
+                            ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                            null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                            StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
+                    );
+                    dictionary.put(SHIPMENT_ORIGIN_AGENT, partyAddress);
+                }
             }
 
             PartiesModel destinationAgent = additionalDetails.getImportBroker();
             if(destinationAgent != null) {
                 Map<String, Object> addressData = destinationAgent.getAddressData();
-                List<String> partyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
-                    StringUtility.convertToString(addressData.get(ADDRESS2)),
-                    ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
-                    null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
-                    StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
-                );
-                dictionary.put(SHIPMENT_DESTINATION_AGENT, partyAddress);
+                if(addressData != null) {
+                    List<String> partyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
+                            StringUtility.convertToString(addressData.get(ADDRESS2)),
+                            ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                            null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                            StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
+                    );
+                    dictionary.put(SHIPMENT_DESTINATION_AGENT, partyAddress);
+                }
             }
 
 
@@ -2855,20 +2858,20 @@ public abstract class IReport {
         }
     }
 
+    private static boolean isDgUser() {
+        return UserContext.isDgUser();
+    }
+
     public static void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
         if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
-                Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-            boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
-            if(!dgUser)
+                Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isDgUser()) {
                 throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }
 
     public static void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
         if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
-                Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-            boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
-            if(!dgUser)
+                Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isDgUser()) {
                 throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }
