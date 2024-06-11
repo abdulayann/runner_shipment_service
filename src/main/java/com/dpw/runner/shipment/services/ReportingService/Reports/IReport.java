@@ -2864,16 +2864,14 @@ public abstract class IReport {
 
     public static void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
         if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
-                Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-            if(!isDgUser())
+                Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isDgUser()) {
                 throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }
 
     public static void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
         if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
-                Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-            if(!isDgUser())
+                Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isDgUser()) {
                 throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }
