@@ -399,4 +399,47 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("LIST_REQUEST_IN"), ListCommonRequest.class);
     }
 
+    public ListCommonRequest getListRequestIN2() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_IN2"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest4() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_4"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest5() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_5"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest6() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_6"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest7() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_7"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest8() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_8"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest9() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_9"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest10() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_10"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest11() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_11"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest12() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_12"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest13() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_13"), ListCommonRequest.class);
+    }
 }

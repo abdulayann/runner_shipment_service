@@ -10051,13 +10051,350 @@
         "innerFilter": [
           {
             "criteria": {
-              "fieldName": "id",
-              "operator": "IN",
-              "value": [1]
+              "fieldName": "status",
+              "operator": "in"
             }
           }
         ]
       }
     ]
+  },
+  "LIST_REQUEST_4" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_5" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "DESC"
+    },
+    "containsText": ""
+  },
+
+  "LIST_REQUEST_6" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "guid",
+              "operator": "=",
+              "value": "4cab9e0c-ea45-450d-88f4-144df5585a76"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "!=",
+              "value": 0
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+
+  "LIST_REQUEST_7" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+
+  "LIST_REQUEST_IN2" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "guid",
+              "operator": "IN"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "LIST_REQUEST_7" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "transportMode",
+              "operator": "!=",
+              "value": "SEA"
+            },
+            "logicOperator": "or"
+          }
+        ]
+      },
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "transportMode",
+              "operator": "!=",
+              "value": "SEA"
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_8" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "DESC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_9" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "andesStatus",
+              "operator": "=",
+              "value": "SendToAndes"
+            }
+          }
+        ]
+      }
+    ],
+    "containsText": ""
+  },
+  "LIST_REQUEST_10" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">",
+              "value": "2024-06-12 23:59:59"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": ">",
+              "value": "2017-01-13T17:09:42.411"
+            },
+            "logicOperator": "or"
+          },{
+            "criteria": {
+              "fieldName": "status",
+              "operator": ">",
+              "value": 0
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "eta",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_11" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": "<",
+              "value": "2024-06-12 23:59:59"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": "<",
+              "value": "2017-01-13T17:09:42.411"
+            },
+            "logicOperator": "or"
+          },{
+            "criteria": {
+              "fieldName": "status",
+              "operator": "<",
+              "value": 0
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "eta",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_12" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": "<=",
+              "value": "2024-06-12 23:59:59"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": "<=",
+              "value": "2017-01-13T17:09:42.411"
+            },
+            "logicOperator": "or"
+          },{
+            "criteria": {
+              "fieldName": "status",
+              "operator": "<=",
+              "value": 0
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "eta",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_13" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">=",
+              "value": "2024-06-12 23:59:59"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": ">=",
+              "value": "2017-01-13T17:09:42.411"
+            },
+            "logicOperator": "or"
+          },{
+            "criteria": {
+              "fieldName": "status",
+              "operator": ">=",
+              "value": 0
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "eta",
+      "order": "ASC"
+    },
+    "containsText": ""
   }
 }
