@@ -43,10 +43,7 @@ public class DbAccessHelper {
                 if (Objects.equals(request.getSortRequest().getOrder(), "DESC"))
                     sortRequest = sortRequest.descending();
             }
-            if (!Objects.isNull(sortRequest))
-                pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
-            else
-                pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize());
+            pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
         } else {
             pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize());
         }
