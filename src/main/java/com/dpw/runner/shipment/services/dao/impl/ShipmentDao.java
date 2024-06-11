@@ -46,7 +46,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
@@ -280,7 +279,7 @@ public class ShipmentDao implements IShipmentDao {
         }
 
         // Non dg user cannot save dg shipment
-        if(checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.getUser().getPermissions().containsKey(airDG))
+        if(checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isDgUser())
             errors.add("You don't have permission to update DG Shipment");
         
         // Routings leg no can not be repeated

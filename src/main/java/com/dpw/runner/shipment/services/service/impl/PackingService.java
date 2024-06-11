@@ -72,7 +72,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -222,7 +221,7 @@ public class PackingService implements IPackingService {
         Boolean isHazardous = packingRow.getHazardous();
         if (isHazardous != null && isHazardous) {
 
-                boolean dgUser = UserContext.getUser().getPermissions().containsKey(airDG);
+                boolean dgUser = UserContext.isDgUser();
                 if(!dgUser)
                     throw new ValidationException("You do not have Air DG permissions for this.");
 
