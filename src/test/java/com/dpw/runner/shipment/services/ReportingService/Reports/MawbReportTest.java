@@ -114,7 +114,6 @@ class MawbReportTest {
     void getDocumentModel_dgError() {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
-        when(awbRepository.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
