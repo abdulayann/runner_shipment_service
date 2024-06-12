@@ -1,0 +1,15 @@
+{
+  "properties": {
+    "status": {
+      "enum": [1, 2, 3, 4],
+      "maxSize": 3,
+      "required": true,
+      "conditional-compare": [{
+        "value": 1,
+        "compare": [
+          {"compareTo": "status", "operator": "not-equals", "value": 2}
+        ]
+      }]
+    }
+  }
+}

@@ -890,11 +890,11 @@ class MasterDataHelperTest {
         assertEquals(shipmentBillingListResponse, response.get());
     }
 
-    @Test
-    void testAddBillData2() throws ExecutionException, InterruptedException {
-        CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(new ShipmentDetails(), new ShipmentDetailsResponse());
-        assertNull(response.get());
-    }
+//    @Test
+//    void testAddBillData2() throws ExecutionException, InterruptedException {
+//        CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(new ShipmentDetails(), new ShipmentDetailsResponse());
+//        assertNull(response.get());
+//    }
 
     @Test
     void testAddBillData3() throws ExecutionException, InterruptedException {

@@ -1,0 +1,22 @@
+{
+  "name": "John Doe",
+  "invalidName": 223,
+  "age": 30,
+  "email": "john.doe@example.com",
+  "password": true,
+  "confirmPassword": true,
+  "roles": [
+    "admin",
+    "user"
+  ],
+  "settings": {
+    "theme": "dark",
+    "notifications": true
+  },
+  "date": "2024-06-03",
+  "invalidDate": "2024-26-23",
+  "dateTime": "2024-06-03T12:00:00",
+  "boolean": true,
+  "invalidBoolean": "true",
+  "null": null
+}
