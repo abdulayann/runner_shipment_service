@@ -644,7 +644,7 @@ public abstract class IReport {
             PartiesModel notifyParty1 = null;
             List<PartiesModel> shipmentAddresses = shipment.getShipmentAddresses();
             for (PartiesModel party : shipmentAddresses) {
-                if(Objects.equals(party.getType(), "NP1"))
+                if(Objects.equals(party.getType(), "Notify Party 1"))
                 {
                     notifyParty1 = party;
                 }
