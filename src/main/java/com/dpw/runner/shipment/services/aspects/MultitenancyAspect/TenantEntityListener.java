@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.EntityNotFoundException;
@@ -11,6 +12,7 @@ import javax.persistence.PreUpdate;
 import java.util.Map;
 import java.util.Objects;
 
+@Generated
 public class TenantEntityListener {
 
     @Autowired
