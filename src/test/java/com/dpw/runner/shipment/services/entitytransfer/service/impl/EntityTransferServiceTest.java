@@ -809,16 +809,27 @@ class EntityTransferServiceTest {
         consolidationDetailsImp1.setReceivingBranch(null);
         consolidationDetailsImp1.setTriangulationPartner(33L);
 
+        ShipmentDetails shipmentDetailsImp2 = new ShipmentDetails();
+        shipmentDetailsImp2.setGuid(UUID.randomUUID());
+        shipmentDetailsImp2.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetailsImp2.setSourceGuid(UUID.randomUUID());
+        shipmentDetailsImp2.setTenantId(33);
+
+        ShipmentDetails shipmentDetailsImp3 = new ShipmentDetails();
+        shipmentDetailsImp3.setGuid(UUID.randomUUID());
+        shipmentDetailsImp3.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetailsImp3.setSourceGuid(UUID.randomUUID());
+        shipmentDetailsImp3.setTenantId(33);
+
         ShipmentDetails shipmentDetailsExp = jsonTestUtility.getCompleteShipment();
         shipmentDetailsExp.setGuid(UUID.randomUUID());
         shipmentDetailsExp.setDirection(Constants.DIRECTION_EXP);
-        shipmentDetailsExp.setSourceGuid(UUID.randomUUID());
         shipmentDetailsExp.setTenantId(33);
         ConsolidationDetails consolidationDetailsExp = shipmentDetailsExp.getConsolidationList().get(0);
         consolidationDetailsExp.setShipmentType(Constants.DIRECTION_EXP);
         consolidationDetailsExp.setReceivingBranch(null);
 
-        PostArValidationRequest postArValidationRequest = new PostArValidationRequest(List.of(shipmentDetails.getGuid(), shipmentDetailsDrt.getGuid(), shipmentDetailsImp.getGuid(), shipmentDetailsImp1.getGuid(), shipmentDetailsExp.getGuid()));
+        PostArValidationRequest postArValidationRequest = new PostArValidationRequest(List.of(shipmentDetails.getGuid(), shipmentDetailsDrt.getGuid(), shipmentDetailsImp.getGuid(), shipmentDetailsImp1.getGuid(), shipmentDetailsExp.getGuid(), shipmentDetailsImp2.getGuid(), shipmentDetailsImp3.getGuid()));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(postArValidationRequest);
 
         ShipmentDetails destShipment = new ShipmentDetails();
@@ -834,10 +845,50 @@ class EntityTransferServiceTest {
         ShipmentDetails originShipment = new ShipmentDetails();
         originShipment.setGuid(shipmentDetailsImp.getSourceGuid());
         originShipment.setTenantId(432);
+        ConsolidationDetails originShipConsole = new ConsolidationDetails();
+        originShipConsole.setShipmentType(Constants.DIRECTION_IMP);
+        originShipConsole.setReceivingBranch(33L);
+        originShipConsole.setTriangulationPartner(33L);
+        originShipment.setConsolidationList(new ArrayList<>(List.of(originShipConsole)));
 
         ShipmentDetails originShipment1 = new ShipmentDetails();
         originShipment1.setGuid(shipmentDetailsImp1.getSourceGuid());
         originShipment1.setTenantId(432);
+        ConsolidationDetails originShipConsole1 = new ConsolidationDetails();
+        originShipConsole1.setShipmentType(Constants.DIRECTION_IMP);
+        originShipConsole1.setReceivingBranch(null);
+        originShipConsole1.setTriangulationPartner(33L);
+        originShipment1.setConsolidationList(new ArrayList<>(List.of(originShipConsole1)));
+
+        ShipmentDetails originShipment2 = new ShipmentDetails();
+        originShipment2.setGuid(shipmentDetailsImp2.getSourceGuid());
+        originShipment2.setTenantId(432);
+        ConsolidationDetails originShipConsole2 = new ConsolidationDetails();
+        originShipConsole2.setShipmentType(Constants.DIRECTION_EXP);
+        originShipConsole2.setReceivingBranch(33L);
+        originShipConsole2.setTriangulationPartner(35L);
+        originShipment2.setConsolidationList(new ArrayList<>(List.of(originShipConsole2)));
+
+        ShipmentDetails triangulationShipment = new ShipmentDetails();
+        triangulationShipment.setGuid(UUID.randomUUID());
+        triangulationShipment.setSourceGuid(originShipment2.getGuid());
+        triangulationShipment.setTenantId(35);
+
+        ShipmentDetails originShipment3 = new ShipmentDetails();
+        originShipment3.setGuid(shipmentDetailsImp3.getSourceGuid());
+        originShipment3.setTenantId(432);
+        ConsolidationDetails originShipConsole3 = new ConsolidationDetails();
+        originShipConsole3.setShipmentType(Constants.DIRECTION_EXP);
+        originShipConsole3.setReceivingBranch(35L);
+        originShipConsole3.setTriangulationPartner(33L);
+        originShipment3.setConsolidationList(new ArrayList<>(List.of(originShipConsole3)));
+
+        ShipmentDetails receivingShipment = new ShipmentDetails();
+        receivingShipment.setGuid(UUID.randomUUID());
+        receivingShipment.setSourceGuid(originShipment3.getGuid());
+        receivingShipment.setTenantId(35);
+
+
 
         String locationRefGuid = shipmentDetailsExp.getCarrierDetails().getDestination();
         Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
@@ -846,9 +897,9 @@ class EntityTransferServiceTest {
         unlocationsResponse.setCountry("IND");
         unlocationsResponseMap.put(locationRefGuid, unlocationsResponse);
 
-        when(shipmentDao.findShipmentsByGuids(Set.of(shipmentDetails.getGuid(), shipmentDetailsDrt.getGuid(), shipmentDetailsImp.getGuid(), shipmentDetailsImp1.getGuid(), shipmentDetailsExp.getGuid()))).thenReturn(List.of(shipmentDetails, shipmentDetailsDrt, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsExp));
-        when(shipmentDao.findShipmentsBySourceGuids(Set.of(shipmentDetails.getGuid()))).thenReturn(List.of(destShipment, destShipmentForTriangulation));
-        when(shipmentDao.findShipmentsByGuids(Set.of(shipmentDetailsImp.getSourceGuid(), shipmentDetailsImp1.getSourceGuid()))).thenReturn(List.of(originShipment, originShipment1));
+        when(shipmentDao.findShipmentsByGuids(Set.of(shipmentDetails.getGuid(), shipmentDetailsDrt.getGuid(), shipmentDetailsImp.getGuid(), shipmentDetailsImp1.getGuid(), shipmentDetailsExp.getGuid(), shipmentDetailsImp2.getGuid(), shipmentDetailsImp3.getGuid()))).thenReturn(List.of(shipmentDetails, shipmentDetailsDrt, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsExp, shipmentDetailsImp2, shipmentDetailsImp3));
+        when(shipmentDao.findShipmentsBySourceGuids(Set.of(shipmentDetails.getGuid(), originShipment.getGuid(), originShipment1.getGuid(), originShipment2.getGuid(), originShipment3.getGuid()))).thenReturn(List.of(destShipment, destShipmentForTriangulation, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsImp2, triangulationShipment, receivingShipment));
+        when(shipmentDao.findShipmentsByGuids(Set.of(shipmentDetailsImp.getSourceGuid(), shipmentDetailsImp1.getSourceGuid(), shipmentDetailsImp2.getSourceGuid(), shipmentDetailsImp3.getSourceGuid()))).thenReturn(List.of(originShipment, originShipment1, originShipment2, originShipment3));
         when(masterDataUtils.getLocationData(Set.of(locationRefGuid))).thenReturn(unlocationsResponseMap);
 
         ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.postArValidation(commonRequestModel);
