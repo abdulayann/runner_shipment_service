@@ -37,6 +37,7 @@ public class BookingOrderReport extends IReport {
         BookingOrderModel bookingOrderModel = (BookingOrderModel) documentModel;
 
         populateUserFields(bookingOrderModel.getUser(), dictionary);
+        populateTenantFields(dictionary, bookingOrderModel.getTenantModel());
         populateShipmentFields(bookingOrderModel.getShipmentModel(), dictionary);
 
         String shipmentType = (Objects.equals(bookingOrderModel.getShipmentModel().getJobType(), Constants.SHIPMENT_TYPE_DRT)) ? Constants.DMAWB : Constants.HAWB;

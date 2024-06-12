@@ -518,7 +518,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DESTINATION_NAME_, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
-        dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountryName() : null);
+        dictionary.put(DESTINATION_COUNTRY_NAME, destination != null ? destination.getCountryThreeDigitCode() : null);
 
         dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
         if(destination != null) {
