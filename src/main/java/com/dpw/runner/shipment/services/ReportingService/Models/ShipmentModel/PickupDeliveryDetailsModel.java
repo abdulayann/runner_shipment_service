@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.Column;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -87,4 +88,9 @@ public class PickupDeliveryDetailsModel implements IDocumentModel {
     private LocalDateTime loadedTruckGateOutDate;
     @JsonProperty("PickupDeliveryInstruction")
     private String pickupDeliveryInstruction;
+
+    @JsonProperty("PickupDeliveryGateIn")
+    public LocalDateTime pickupDeliveryGateIn;
+    @JsonProperty("PickupDeliveryGateOut")
+    public LocalDateTime pickupDeliveryGateOut;
 }

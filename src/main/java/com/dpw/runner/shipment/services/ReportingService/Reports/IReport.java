@@ -2891,4 +2891,42 @@ public abstract class IReport {
             dictionary.put(ReportConstants.SHIPMENTS, values);
         }
     }
+
+    public void addTransportInstructionTags(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
+        if(Objects.isNull(shipmentModel.getPickupDeliveryDetailsInstructions()) || !shipmentModel.getPickupDeliveryDetailsInstructions().isEmpty())
+            return;
+
+        List<Map<String, Object>> tiList = new ArrayList();
+        for(var ti : shipmentModel.getPickupDeliveryDetailsInstructions()) {
+            Map<String, Object> map = new HashMap<>();
+
+            map.put(TI_INSTRUCTIONTYPE, ti.getType());
+            map.put(TI_DROPMODE, ti.getDropMode());
+//            map.put(TI_PARTYNAME, )
+//            map.put(TI_PARTYADDRESS, )
+//            map.put(TI_PARTYCONTACT, )
+            map.put(TI_TRANSPORTCOMPANY, getPartyAddress(ti.getTransporterDetail()));
+            map.put(TI_PICKUPFROM, ti);
+//            map.put(TI_DELIVERTO, )
+//            map.put(TI_TRANSPORTCOMPANYADDRESS, )
+//            map.put(TI_TRANSPORTCOMPANYCONTACT, )
+//            map.put(TI_PICKUPFROMADDRESS, )
+//            map.put(TI_PICKUPFROMCONTACT, )
+//            map.put(TI_DELIVERTOADDRESS, )
+//            map.put(TI_DELIVERTOCONTACT, )
+//            map.put(TI_REMARKS, )
+            map.put(TI_PORTTRANSPORTADVISED, ti.getPortTransportAdvised());
+            map.put(TI_REQUIREDBY, ti.getRequiredBy());
+            map.put(TI_ESTIMATEDPICKUP, ti.getEstimatedPickupOrDelivery());
+            map.put(TI_ESTIMATEDDELIVERY, ti.getEstimatedPickupOrDelivery());
+            map.put(TI_ACTUALPICKUP, ti.getActualPickupOrDelivery());
+            map.put(TI_ACTUALDELIVERY,ti.getActualPickupOrDelivery());
+            map.put(TI_PICKUP_GATEIN, ti.getPickupDeliveryGateIn());
+            map.put(TI_PICKUP_GATEOUT, ti.getPickupDeliveryGateOut());
+            map.put(TI_DELIVERY_GATEIN, ti.getPickupDeliveryGateIn());
+            map.put(TI_DELIVERY_GATEOUT, ti.getPickupDeliveryGateOut());
+
+            tiList.add(map);
+        }
+    }
 }
