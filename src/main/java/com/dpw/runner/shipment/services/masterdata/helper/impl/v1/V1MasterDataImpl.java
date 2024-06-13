@@ -58,7 +58,7 @@ public class V1MasterDataImpl implements IMasterDataService {
 
     @Override
     public DependentServiceResponse fetchCarrierMasterData(Object request) {
-        V1DataResponse v1DataResponse = v1Service.fetchCarrierMasterData(request, false);
+        V1DataResponse v1DataResponse = v1Service.fetchCarrierMasterData(request, true);
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
