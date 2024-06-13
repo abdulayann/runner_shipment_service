@@ -27,8 +27,7 @@ import static com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1Maste
 import static com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl.DEPARTURE_ESTIMATED_RUNWAY;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -531,7 +530,7 @@ class V1MasterDataImplTest {
     @Test
     void fetchCarrierMasterData() {
         V1DataResponse v1DataResponse = new V1DataResponse();
-        when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(v1DataResponse);
+        when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(v1DataResponse);
         assertNotNull(v1MasterData.fetchCarrierMasterData(new Object()));
     }
 
