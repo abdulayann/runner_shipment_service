@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -223,5 +224,6 @@ public class ShipmentModel implements IDocumentModel {
     @JsonProperty("ContainsHazardous")
     private Boolean containsHazardous;
 
+    private List<PickupDeliveryDetailsModel> pickupDeliveryDetailsInstructions;
 }
 
