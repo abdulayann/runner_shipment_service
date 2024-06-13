@@ -1232,14 +1232,18 @@ class NPMServiceAdapterTest {
 
     @Test
     void getCarrier_ANY() {
-        ListContractResponse.ContractResponse contractResponse = ListContractResponse.ContractResponse.builder().carrier_codes(List.of(ANY)).build();
+        List<String> carriers = new ArrayList<>();
+        carriers.add(ANY);
+        ListContractResponse.ContractResponse contractResponse = ListContractResponse.ContractResponse.builder().carrier_codes(carriers).build();
         String response = nPMServiceAdapter.getCarrier(contractResponse);
         assertNull(response);
     }
 
     @Test
     void getCarrier_test() {
-        ListContractResponse.ContractResponse contractResponse = ListContractResponse.ContractResponse.builder().carrier_codes(List.of("test")).build();
+        List<String> carriers = new ArrayList<>();
+        carriers.add("test");
+        ListContractResponse.ContractResponse contractResponse = ListContractResponse.ContractResponse.builder().carrier_codes(carriers).build();
         String response = nPMServiceAdapter.getCarrier(contractResponse);
         assertEquals("test", response);
     }

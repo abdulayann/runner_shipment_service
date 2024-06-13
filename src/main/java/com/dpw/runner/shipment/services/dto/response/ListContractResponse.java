@@ -25,6 +25,7 @@ public class ListContractResponse implements IRunnerResponse {
     @JsonProperty("count")
     private Long count;
     private Map<String, UnlocationsResponse> unlocMasterData;
+    @JsonProperty("carrierMasterData")
     private Map<String, EntityTransferCarrier> carrierMasterData;
 
     @Data

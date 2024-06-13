@@ -219,20 +219,24 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         // Non dg consolidation validations
         if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
 
-            // Non dg Consolidations can not have dg packs
-            if(request.getPackingList() != null) {
-                for (Packing packing: request.getPackingList()) {
-                    if(Boolean.TRUE.equals(packing.getHazardous())) {
-                        errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
-                    }
-                }
-            }
-
+            boolean isDGShipmentAttached = false;
             // Non dg Consolidations can not have dg shipments
             if(request.getShipmentsList() != null) {
                 for (ShipmentDetails shipmentDetails: request.getShipmentsList()) {
                     if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                         errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
+                        isDGShipmentAttached = true;
+                        break;
+                    }
+                }
+            }
+
+            // Non dg Consolidations can not have dg packs
+            if(request.getPackingList() != null && !isDGShipmentAttached) {
+                for (Packing packing: request.getPackingList()) {
+                    if(Boolean.TRUE.equals(packing.getHazardous())) {
+                        errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
+                        break;
                     }
                 }
             }

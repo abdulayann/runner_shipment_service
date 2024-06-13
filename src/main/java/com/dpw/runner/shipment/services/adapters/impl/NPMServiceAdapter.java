@@ -315,15 +315,16 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     private void setCarrierMasterData(ListContractResponse response) {
         Set<String> carrier = new HashSet<>();
+        log.info("List Contract Response to fetch carrier data {}", response);
         if(response != null && response.getContracts() != null  && !response.getContracts().isEmpty()) {
             response.getContracts().forEach(cont -> {
-                if(cont.getCarrier_codes() != null && !cont.getCarrier_codes().isEmpty()) {
-                    if(!cont.getCarrier_codes().get(0).equals(NPMConstants.ANY)) {
+                if(cont.getCarrier_codes() != null) {
+                    cont.getCarrier_codes().remove(NPMConstants.ANY);
+                    if(!cont.getCarrier_codes().isEmpty() && !cont.getCarrier_codes().get(0).equals(NPMConstants.ANY)) {
                         carrier.add(cont.getCarrier_codes().get(0));
+                        log.info("Carrier data from npm {}", carrier);
                         response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriers(carrier.stream().toList()));
                     }
-                    else
-                        cont.getCarrier_codes().remove(NPMConstants.ANY);
                 }
             });
         }
@@ -773,9 +774,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public String getCarrier(ListContractResponse.ContractResponse contract) {
         if(contract.getCarrier_codes() == null)
             return null;
+        contract.getCarrier_codes().remove(NPMConstants.ANY);
         if(contract.getCarrier_codes().isEmpty())
-            return null;
-        if(contract.getCarrier_codes().get(0).equals(NPMConstants.ANY))
             return null;
         return contract.getCarrier_codes().get(0);
     }
