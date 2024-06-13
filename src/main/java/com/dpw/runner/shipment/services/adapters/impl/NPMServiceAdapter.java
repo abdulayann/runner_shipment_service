@@ -138,7 +138,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
-            ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
+ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             this.setOriginAndDestinationName(response.getBody());
             this.setCarrierMasterData(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
@@ -315,11 +315,13 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     private void setCarrierMasterData(ListContractResponse response) {
         Set<String> carrier = new HashSet<>();
+        log.info("List Contract Response to fetch carrier data {}", response);
         if(response != null && response.getContracts() != null  && !response.getContracts().isEmpty()) {
             response.getContracts().forEach(cont -> {
                 if(cont.getCarrier_codes() != null && !cont.getCarrier_codes().isEmpty()) {
                     if(!cont.getCarrier_codes().get(0).equals(NPMConstants.ANY)) {
                         carrier.add(cont.getCarrier_codes().get(0));
+                        log.info("Carrier data from npm {}", carrier);
                         response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriers(carrier.stream().toList()));
                     }
                     else
