@@ -1466,6 +1466,7 @@ public abstract class IReport {
         CommonV1ListRequest carrierRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(carrierCriteria).build();
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(carrierRequest);
+        carrierListObject.setIsList(true);
         Object carrierResponse = masterDataFactory.getMasterDataService().fetchCarrierMasterData(carrierListObject).getData();
         List<CarrierMasterData> carrierMasterData = jsonHelper.convertValueToList(carrierResponse, CarrierMasterData.class);
         if(carrierMasterData == null || carrierMasterData.isEmpty())
