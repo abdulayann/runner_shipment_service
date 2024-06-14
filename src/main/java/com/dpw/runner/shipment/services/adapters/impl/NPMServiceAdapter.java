@@ -321,7 +321,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 if(cont.getCarrier_codes() != null) {
                     cont.getCarrier_codes().remove(NPMConstants.ANY);
                     cont.getCarrier_codes().remove(null);
-                    if(!cont.getCarrier_codes().isEmpty() && !NPMConstants.ANY.equals(cont.getCarrier_codes().get(0))) {
+                    if(!cont.getCarrier_codes().isEmpty()) {
                         carrier.add(cont.getCarrier_codes().get(0));
                         log.info("Carrier data from npm {}", carrier);
                         response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriers(carrier.stream().toList()));
