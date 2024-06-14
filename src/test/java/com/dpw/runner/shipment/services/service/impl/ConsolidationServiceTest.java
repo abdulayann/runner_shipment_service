@@ -320,6 +320,12 @@ class ConsolidationServiceTest {
 
         when(consolidationDetailsDao.findAll(any() , any())).thenReturn(new PageImpl<>(List.of(testConsol)));
         when(modelMapper.map(any() , any())).thenReturn(response);
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
 
         consolidationService.fetchConsolidations(CommonRequestModel.builder().data(sampleRequest).build());
 
