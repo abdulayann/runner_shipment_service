@@ -320,7 +320,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             response.getContracts().forEach(cont -> {
                 if(cont.getCarrier_codes() != null) {
                     cont.getCarrier_codes().remove(NPMConstants.ANY);
-                    if(!cont.getCarrier_codes().isEmpty() && !cont.getCarrier_codes().get(0).equals(NPMConstants.ANY)) {
+                    cont.getCarrier_codes().remove(null);
+                    if(!cont.getCarrier_codes().isEmpty() && !NPMConstants.ANY.equals(cont.getCarrier_codes().get(0))) {
                         carrier.add(cont.getCarrier_codes().get(0));
                         log.info("Carrier data from npm {}", carrier);
                         response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriers(carrier.stream().toList()));
@@ -775,6 +776,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if(contract.getCarrier_codes() == null)
             return null;
         contract.getCarrier_codes().remove(NPMConstants.ANY);
+        contract.getCarrier_codes().remove(null);
         if(contract.getCarrier_codes().isEmpty())
             return null;
         return contract.getCarrier_codes().get(0);
