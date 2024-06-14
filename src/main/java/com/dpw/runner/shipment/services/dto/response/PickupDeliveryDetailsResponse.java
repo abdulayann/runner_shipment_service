@@ -63,4 +63,5 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     private LocalDateTime pickupDeliveryGateIn;
     private LocalDateTime pickupDeliveryGateOut;
     private List<Parties> partiesList;
+    private String remarks;
 }
