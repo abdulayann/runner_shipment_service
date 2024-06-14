@@ -73,6 +73,8 @@ public class AwbPackingInfo implements Serializable {
     private String awbNumber;
     private UUID mawbGoodsDescGuid;
     private UUID awbGoodsDescriptionInfoGuid;
-
     private Long mawbGoodsDescId;
+    private String unNumberAir;
+    private String dgClassAir;
+    private String dgClassAirDescription;
 }
