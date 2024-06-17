@@ -136,4 +136,7 @@ public class PickupDeliveryDetails extends MultiTenancy {
 
     @Column(name = "pickup_delivery_gate_out")
     public LocalDateTime pickupDeliveryGateOut;
+
+    @Column(name = "remarks")
+    public String remarks;
 }
