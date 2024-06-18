@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.InstructionType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
@@ -245,7 +246,7 @@ public class TestDataGenerator {
         for (String partyType : PD_TYPE) {
             int random = new Random().nextInt(10);
             list.add(PickupDeliveryDetailsRequest.builder()
-                    .type(partyType)
+                    .type(InstructionType.Delivery)
                     .estimatedPickupOrDelivery(LocalDateTime.now())
                     .actualPickupOrDelivery(LocalDateTime.now())
                     .pickupOrDelivery(LocalDateTime.now())
