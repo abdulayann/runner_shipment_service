@@ -70,7 +70,12 @@ public class EnumConstantService implements IEnumConstantService {
         response.put(Constants.RA_KC_TYPE, enumList);
 
 
-        return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
+        enumList = new ArrayList<>();
+        for(InstructionType instructionType : InstructionType.values()){
+            enumList.add(EnumConstantResponse.builder().id(instructionType.getValue()).description(instructionType.getDescription()).name(instructionType.name()).build());
+        }
+        response.put(Constants.TRANSPORT_INSTRUCTION_TYPES, enumList);
 
+        return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
     }
 }
