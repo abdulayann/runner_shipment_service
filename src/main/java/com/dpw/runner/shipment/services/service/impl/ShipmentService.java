@@ -1719,7 +1719,7 @@ public class ShipmentService implements IShipmentService {
             shipmentRequest.setIsAutoSellRequired(isAutoSellRequired);
             KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentRequest, isCreate);
             log.info("Producing shipment data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(shipmentDetails.getGuid()));
         }
         catch (Exception e) {
             log.error("Error Producing shipment to kafka, error is due to " + e.getMessage());
