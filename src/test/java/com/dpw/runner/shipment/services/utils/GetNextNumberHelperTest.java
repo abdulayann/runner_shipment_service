@@ -258,7 +258,7 @@ class GetNextNumberHelperTest {
         ProductSequenceConfig config = new ProductSequenceConfig();
         Page<ProductSequenceConfig> responsePage = new PageImpl<>(List.of(config));
 
-        when(productSequenceConfigDao.findAll(any(), any())).thenReturn(responsePage);
+        when(productSequenceConfigDao.findAndLock(any(), any())).thenReturn(config);
         var response = getNextNumberHelper.getProductSequence(productId, productProcessTypes);
 
         assertNotNull(response);
@@ -272,7 +272,7 @@ class GetNextNumberHelperTest {
         ProductSequenceConfig config = new ProductSequenceConfig();
         Page<ProductSequenceConfig> responsePage = new PageImpl<>(Collections.emptyList());
 
-        when(productSequenceConfigDao.findAll(any(), any())).thenReturn(responsePage);
+        when(productSequenceConfigDao.findAndLock(any(), any())).thenReturn(null);
         var response = getNextNumberHelper.getProductSequence(productId, productProcessTypes);
 
         assertNull(response);
