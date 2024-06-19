@@ -1824,6 +1824,8 @@
         "entityId": 344,
         "entityType": "HAWB",
         "guid": "666322bc-cb98-48e3-8a3f-cb99e061a30f",
+        "chargeableWt": 12,
+        "grossWt": 10,
         "isShipmentCreated": true
       }
     ],
@@ -1870,6 +1872,8 @@
         "entityId": 344,
         "entityType": "HAWB",
         "guid": "666322bc-cb98-48e3-8a3f-cb99e061a30f",
+        "chargeableWt": 12,
+        "grossWt": 10,
         "isShipmentCreated": true
       }
     ],
