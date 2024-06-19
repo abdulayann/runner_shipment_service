@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -105,7 +106,7 @@ public class ProductIdentifierUtility {
           Map.ofEntries(
               Map.entry("tenantProductId", RunnerEntityMapping.builder().tableName("tenantProducts").dataType(Long.class).fieldName("id").build()),
               Map.entry("transportMode", RunnerEntityMapping.builder().tableName("tenantProducts").dataType(List.class).fieldName("transportModes").build()),
-              Map.entry("productProcessTypes", RunnerEntityMapping.builder().tableName("ProductSequenceConfig").dataType(ProductProcessTypes.class).fieldName("productProcessTypes").build())
+              Map.entry(Constants.PRODUCT_PROCESS_TYPES, RunnerEntityMapping.builder().tableName("ProductSequenceConfig").dataType(ProductProcessTypes.class).fieldName(Constants.PRODUCT_PROCESS_TYPES).build())
           );
       Pair<Specification<ProductSequenceConfig>, Pageable> productSequenceConfigPair =
           fetchData(listRequest, ProductSequenceConfig.class, tableNames);
@@ -724,12 +725,11 @@ public class ProductIdentifierUtility {
         ))
         .build();
 
-    ListCommonRequest listCommonRequest = ListCommonRequest.builder()
+    return ListCommonRequest.builder()
         .pageNo(1)
         .pageSize(Integer.MAX_VALUE)
         .filterCriteria(Arrays.asList(entityIdCriteria))
         .build();
 
-    return listCommonRequest;
   }
 }
