@@ -94,6 +94,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Slf4j
+@SuppressWarnings("unchecked")
 public abstract class IReport {
 
 
@@ -292,7 +293,7 @@ public abstract class IReport {
 
         PickupDeliveryDetailsModel pickup = shipment.getPickupDetails();
         PickupDeliveryDetailsModel delivery = shipment.getDeliveryDetails();
-
+        addTransportInstructionTags(dictionary , shipment);
         PartiesModel shipmentClient = shipment.getClient();
         PartiesModel shipmentConsignee = shipment.getConsignee();
         PartiesModel shipmentConsigner = shipment.getConsigner();
@@ -2891,5 +2892,44 @@ public abstract class IReport {
             });
             dictionary.put(ReportConstants.SHIPMENTS, values);
         }
+    }
+
+    public void addTransportInstructionTags(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
+        if(Objects.isNull(shipmentModel.getPickupDeliveryDetailsInstructions()) || !shipmentModel.getPickupDeliveryDetailsInstructions().isEmpty())
+            return;
+
+        List<Map<String, Object>> tiList = new ArrayList<>();
+        for(var ti : shipmentModel.getPickupDeliveryDetailsInstructions()) {
+            Map<String, Object> map = new HashMap<>();
+
+            map.put(TI_INSTRUCTIONTYPE, ti.getType());
+            map.put(TI_DROPMODE, ti.getDropMode());
+//            map.put(TI_PARTYNAME, ti) TODO :: ASK PAWAN FOR THE TAG
+//            map.put(TI_PARTYADDRESS, )
+//            map.put(TI_PARTYCONTACT, )
+            map.put(TI_TRANSPORTCOMPANY, getPartyAddress(ti.getTransporterDetail()));
+            map.put(TI_PICKUPFROM, getFormattedAddress(ti.getSourceDetail()));
+            map.put(TI_DELIVERTO, getFormattedAddress(ti.getDestinationDetail()));
+            map.put(TI_TRANSPORTCOMPANYADDRESS, getFormattedAddress(ti.getTransporterDetail()));
+            map.put(TI_TRANSPORTCOMPANYCONTACT, ReportHelper.getValueFromMap(ti.getTransporterDetail().getAddressData(), EMAIL));
+            map.put(TI_PICKUPFROMADDRESS, getFormattedAddress(ti.getSourceDetail()));
+            map.put(TI_PICKUPFROMCONTACT, ReportHelper.getValueFromMap(ti.getSourceDetail().getAddressData(), EMAIL));
+            map.put(TI_DELIVERTOADDRESS, getFormattedAddress(ti.getDestinationDetail()));
+            map.put(TI_DELIVERTOCONTACT, ReportHelper.getValueFromMap(ti.getDestinationDetail().getAddressData(), EMAIL));
+            map.put(TI_REMARKS, ti.getRemarks());
+            map.put(TI_PORTTRANSPORTADVISED, ti.getPortTransportAdvised());
+            map.put(TI_REQUIREDBY, ti.getRequiredBy());
+            map.put(TI_ESTIMATEDPICKUP, ConvertToDPWDateFormat(ti.getEstimatedPickup()));
+            map.put(TI_ESTIMATEDDELIVERY, ConvertToDPWDateFormat(ti.getEstimatedDelivery()));
+            map.put(TI_ACTUALPICKUP, ConvertToDPWDateFormat(ti.getActualPickup()));
+            map.put(TI_ACTUALDELIVERY,ConvertToDPWDateFormat(ti.getActualDelivery()));
+            map.put(TI_PICKUP_GATEIN, ConvertToDPWDateFormat(ti.getPickupGateIn()));
+            map.put(TI_PICKUP_GATEOUT, ConvertToDPWDateFormat(ti.getPickupGateOut()));
+            map.put(TI_DELIVERY_GATEIN, ConvertToDPWDateFormat(ti.getDeliveryGateIn()));
+            map.put(TI_DELIVERY_GATEOUT, ConvertToDPWDateFormat(ti.getDeliveryGateOut()));
+
+            tiList.add(map);
+        }
+        dictionary.put(TI , tiList);
     }
 }

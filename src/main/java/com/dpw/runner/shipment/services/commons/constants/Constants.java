@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.commons.constants;
 import java.util.List;
 
 public class Constants {
+    public static final String TRANSPORT_INSTRUCTION_TYPES = "TransportInstructionTypes";
+
     private Constants(){}
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
