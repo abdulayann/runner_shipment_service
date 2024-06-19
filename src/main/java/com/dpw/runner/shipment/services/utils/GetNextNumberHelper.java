@@ -216,8 +216,7 @@ public class GetNextNumberHelper {
                         .build()));
 
         Pair<Specification<ProductSequenceConfig>, Pageable> pair = DbAccessHelper.fetchData(listCommonRequest, ProductSequenceConfig.class, tableNames);
-        Page<ProductSequenceConfig> productSequenceConfigPage = productSequenceConfigDao.findAll(pair.getLeft(), pair.getRight());
-        return productSequenceConfigPage.getTotalElements() > 0 ? productSequenceConfigPage.getContent().get(0) : null;
+        return productSequenceConfigDao.findAndLock(pair.getLeft(), pair.getRight());
     }
 
     public String padLeft(String input, int len, char c) {
