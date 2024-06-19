@@ -280,10 +280,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         // MBL number must be unique
         if(!IsStringNullOrEmpty(request.getBol())) {
             List<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());
-            if(consolidationDetails != null && consolidationDetails.size() > 0) {
-                if(request.getId() == null || (request.getId().longValue() != consolidationDetails.get(0).getId().longValue())) {
-                    errors.add(String.format("The MBL Number %s is already used. Please use a different MBL Number", request.getBol()));
-                }
+            if(checkSameMblExists(consolidationDetails, request)) {
+                errors.add(String.format("The MBL Number %s is already used. Please use a different MBL Number", request.getBol()));
             }
         }
 
@@ -344,6 +342,18 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         return errors;
+    }
+
+    public boolean checkSameMblExists(List<ConsolidationDetails> consolidationDetails, ConsolidationDetails request) {
+        if(consolidationDetails == null)
+            return false;
+        if(consolidationDetails.isEmpty())
+            return false;
+        if(request.getId() == null)
+            return true;
+        if(consolidationDetails.size() > 1)
+            return true;
+        return request.getId().longValue() != consolidationDetails.get(0).getId().longValue();
     }
 
     private void setMawbStock(ConsolidationDetails consolidationDetails) {
