@@ -15,6 +15,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
+import javax.persistence.PersistenceContext;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -28,6 +31,8 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
 
     @Autowired
     private IProductSequenceConfigRepository productSequenceConfigRepository;
+    @PersistenceContext
+    EntityManager entityManager;
 
     @Override
     public ProductSequenceConfig save(ProductSequenceConfig productSequenceConfig) {
@@ -154,6 +159,20 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
+    }
+
+    @Override
+    public ProductSequenceConfig findAndLock(Specification<ProductSequenceConfig> spec, Pageable pageable) {
+        Page<ProductSequenceConfig> page = findAll(spec, pageable);
+        ProductSequenceConfig result = null;
+        if(!page.isEmpty()) {
+            // Acquire lock on this result row
+            result = page.getContent().get(0);
+            entityManager.lock(result, LockModeType.PESSIMISTIC_WRITE, Map.ofEntries(
+                Map.entry("javax.persistence.lock.timeout", 2000))
+            );
+        }
+        return result;
     }
 
 }
