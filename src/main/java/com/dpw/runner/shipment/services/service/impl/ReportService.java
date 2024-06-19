@@ -347,8 +347,21 @@ public class ReportService implements IReportService {
                 pdfByte_Content = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
                 if(pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             }
-            if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)){
+            var shc = dataRetrived.getOrDefault(ReportConstants.SPECIAL_HANDLING_CODE, null);
+            Boolean addWaterMarkForEaw = false;
+            if(shc != null){
+                List<String> items = Arrays.asList(shc.toString().split("\\s*,\\s*"));
+                if(!items.isEmpty() && items.contains(Constants.EAW)){
+                    addWaterMarkForEaw = true;
+                }
+            }
+            if(addWaterMarkForEaw && reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name())) {
+                pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_EAW_WATERMARK);
+            }
+            else if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)){
                 pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_WATERMARK);
+            } else if(addWaterMarkForEaw && Boolean.TRUE.equals(isOriginalPrint)) {
+                pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.ORIGINAL_EAW_WATERMARK);
             }
             //Update shipment issue date
             if ((isOriginalPrint || isSurrenderPrint) && reportRequest.getReportKey() != null && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID))
