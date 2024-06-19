@@ -197,4 +197,11 @@ public class CustomerBookingController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.API_CLONE)
+    public ResponseEntity<IRunnerResponse> cloneById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        return customerBookingService.cloneBooking(CommonRequestModel.buildRequest(request));
+    }
 }

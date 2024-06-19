@@ -288,6 +288,12 @@ class CustomerBookingControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void cloneBooking() {
+        when(customerBookingService.cloneBooking(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = customerBookingController.cloneById(1L);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
 
 }
