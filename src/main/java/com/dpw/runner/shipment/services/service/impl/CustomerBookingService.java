@@ -1279,4 +1279,134 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> cloneBooking(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+
+            if (request.getId() == null) {
+                log.error("Request Id is null for booking cloning with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("Booking Id cannot be null");
+            }
+            long id = request.getId();
+            Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
+            if(!customerBooking.isPresent())
+            {
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
+            customerBookingResponse.setId(null);
+            customerBookingResponse.setGuid(null);
+            customerBookingResponse.setBookingNumber(null);
+            customerBookingResponse.setBookingStatus(BookingStatus.PENDING_FOR_KYC);
+            customerBookingResponse.setSource(null);
+            customerBookingResponse.setCreatedBy(null);
+            customerBookingResponse.setSourceGuid(customerBooking.get().getGuid());
+            if(customerBookingResponse.getCustomer() != null)
+            {
+                customerBookingResponse.getCustomer().setId(null);
+                customerBookingResponse.getCustomer().setGuid(null);
+            }
+            if(customerBookingResponse.getConsignee() != null)
+            {
+                customerBookingResponse.getConsignee().setId(null);
+                customerBookingResponse.getConsignee().setGuid(null);
+            }
+            if(customerBookingResponse.getConsignor() != null)
+            {
+                customerBookingResponse.getConsignor().setId(null);
+                customerBookingResponse.getConsignor().setGuid(null);
+            }
+            if(customerBookingResponse.getNotifyParty() != null)
+            {
+                customerBookingResponse.getNotifyParty().setId(null);
+                customerBookingResponse.getNotifyParty().setGuid(null);
+            }
+            if(customerBookingResponse.getCarrierDetails() != null)
+            {
+                customerBookingResponse.getCarrierDetails().setId(null);
+                customerBookingResponse.getCarrierDetails().setGuid(null);
+            }
+            if(customerBookingResponse.getContainersList() != null && !customerBookingResponse.getContainersList().isEmpty())
+            {
+                customerBookingResponse.setContainersList(customerBookingResponse.getContainersList().stream().map(containerResponse -> {
+                    ContainerResponse c = new ContainerResponse();
+                    c.setContainerCode(containerResponse.getContainerCode());
+                    c.setCommodityGroup(containerResponse.getCommodityGroup());
+                    c.setContainerCount(containerResponse.getContainerCount());
+                    c.setGrossWeight(containerResponse.getGrossWeight());
+                    c.setGrossWeightUnit(containerResponse.getGrossWeightUnit());
+                    return c;
+                }).toList());
+            }
+            if(customerBookingResponse.getPackingList() != null && !customerBookingResponse.getPackingList().isEmpty())
+            {
+                customerBookingResponse.setPackingList(customerBookingResponse.getPackingList().stream().map(packingResponse -> {
+                    PackingResponse p = new PackingResponse();
+                    p.setPacks(packingResponse.getPacks());
+                    p.setPacksType(packingResponse.getPacksType());
+                    p.setWeight(packingResponse.getWeight());
+                    p.setWeightUnit(packingResponse.getWeightUnit());
+                    p.setVolume(packingResponse.getVolume());
+                    p.setVolumeUnit(packingResponse.getVolumeUnit());
+                    p.setLength(packingResponse.getLength());
+                    p.setLengthUnit(packingResponse.getLengthUnit());
+                    p.setWidth(packingResponse.getWidth());
+                    p.setWidthUnit(packingResponse.getWidthUnit());
+                    p.setHeight(packingResponse.getHeight());
+                    p.setHeightUnit(packingResponse.getHeightUnit());
+                    p.setGoodsDescription(packingResponse.getGoodsDescription());
+                    p.setNetWeight(packingResponse.getNetWeight());
+                    p.setNetWeightUnit(packingResponse.getNetWeightUnit());
+                    p.setVolumeWeight(packingResponse.getVolumeWeight());
+                    p.setVolumeWeightUnit(packingResponse.getVolumeWeightUnit());
+                    p.setCommodityGroup(packingResponse.getCommodityGroup());
+                    p.setChargeable(packingResponse.getChargeable());
+                    p.setChargeableUnit(packingResponse.getChargeableUnit());
+                    return p;
+                }).toList());
+            }
+            if(customerBookingResponse.getRoutingList() != null && !customerBookingResponse.getRoutingList().isEmpty())
+            {
+                customerBookingResponse.setRoutingList(customerBookingResponse.getRoutingList().stream().map(routingsResponse -> {
+                    RoutingsResponse r = new RoutingsResponse();
+                    r.setLeg(routingsResponse.getLeg());
+                    r.setMode(routingsResponse.getMode());
+                    r.setPol(routingsResponse.getPol());
+                    r.setPod(routingsResponse.getPod());
+                    return r;
+                }).toList());
+            }
+            customerBookingResponse.setBookingCharges(null);
+
+            //fields related to contract
+            customerBookingResponse.setContractId(null);
+            customerBookingResponse.setParentContractId(null);
+            customerBookingResponse.setContractStatus(null);
+            customerBookingResponse.setCurrentPartyForQuote(null);
+            customerBookingResponse.setBusinessCode(null);
+
+            //fields related to sales branch
+            customerBookingResponse.setSalesBranch(null);
+            customerBookingResponse.setSecondarySalesAgentEmail(null);
+            customerBookingResponse.setPrimarySalesAgentEmail(null);
+
+            //fields related to shipment
+            customerBookingResponse.setShipmentId(null);
+            customerBookingResponse.setShipmentGuid(null);
+            customerBookingResponse.setShipmentEntityIdV2(null);
+            customerBookingResponse.setShipmentEntityId(null);
+            customerBookingResponse.setShipmentCreatedDate(null);
+            customerBookingResponse.setIsBillCreated(null);
+
+            return ResponseHelper.buildSuccessResponse(customerBookingResponse);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
 }

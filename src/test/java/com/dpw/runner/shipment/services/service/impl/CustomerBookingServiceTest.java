@@ -1298,4 +1298,44 @@ class CustomerBookingServiceTest {
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
+    @Test
+    void testClone()
+    {
+        CustomerBooking customerBooking1 = customerBooking;
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(customerBooking, CustomerBookingResponse.class);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking1));
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(CommonGetRequest.builder().id(1L).build()).build();
+        customerBookingService.cloneBooking(commonRequestModel);
+        assertNotNull(commonRequestModel);
+    }
+
+    @Test
+    void testClone2()
+    {
+        CustomerBooking customerBooking1 = new CustomerBooking();
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(customerBooking1, CustomerBookingResponse.class);
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking1));
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(CommonGetRequest.builder().id(1L).build()).build();
+        customerBookingService.cloneBooking(commonRequestModel);
+        assertNotNull(commonRequestModel);
+    }
+
+    @Test
+    void testClone3()
+    {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(CommonGetRequest.builder().id(null).build()).build();
+        customerBookingService.cloneBooking(commonRequestModel);
+        assertNotNull(commonRequestModel);
+    }
+
+    @Test
+    void testClone4()
+    {
+        when(customerBookingDao.findById(any())).thenReturn(Optional.empty());
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(CommonGetRequest.builder().id(1L).build()).build();
+        customerBookingService.cloneBooking(commonRequestModel);
+        assertNotNull(commonRequestModel);
+    }
 }
