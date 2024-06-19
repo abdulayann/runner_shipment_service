@@ -66,6 +66,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -1670,8 +1671,21 @@ class AwbServiceTest {
         AwbCalculationResponse generatePaymentResponse = jsonTestUtility.getJson("AWB_CALCULATION_RESPONSE", AwbCalculationResponse.class);
         generatePaymentResponse.getAwbOtherChargesInfo().get(0).setChargeBasis(chargeBasis);
         BigDecimal zero = new BigDecimal(0);
-        if(chargeBasis > 1)
-            generatePaymentResponse.getAwbOtherChargesInfo().get(0).setAmount(zero);
+        var chargeableWt = request.getAwbGoodsDescriptionInfo().get(0).getChargeableWt();
+        var grossWt = request.getAwbGoodsDescriptionInfo().get(0).getGrossWt();
+        var rate = generatePaymentResponse.getAwbOtherChargesInfo().get(0).getRate();
+        if(chargeBasis == 2) {
+            BigDecimal val = rate.multiply(chargeableWt);
+            generatePaymentResponse.getAwbOtherChargesInfo().get(0).setAmount(val);
+            generatePaymentResponse.getAwbPaymentInfo().setTotalPrepaid(val.setScale(1, RoundingMode.HALF_DOWN));
+            generatePaymentResponse.getAwbPaymentInfo().setDueCarrierCharges(val);
+        }
+        if(chargeBasis == 3){
+            BigDecimal val = rate.multiply(grossWt);
+            generatePaymentResponse.getAwbOtherChargesInfo().get(0).setAmount(val);
+            generatePaymentResponse.getAwbPaymentInfo().setTotalPrepaid(val.setScale(1, RoundingMode.HALF_DOWN));
+            generatePaymentResponse.getAwbPaymentInfo().setDueCarrierCharges(val);
+        }
         generatePaymentResponse.getAwbPaymentInfo().setTotalCollect(
             generatePaymentResponse.getAwbPaymentInfo().getTotalPrepaid()
         );
