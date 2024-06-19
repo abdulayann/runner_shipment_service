@@ -521,4 +521,29 @@ class ConsolidationDaoTest extends CommonMocks {
             spyService.update(consolidationDetails, false);
         });
     }
+
+    @Test
+    void checkSameMblExists() {
+        assertFalse(consolidationsDao.checkSameMblExists(null, null));
+    }
+
+    @Test
+    void checkSameMblExists_RequestIdNotNull() {
+        testConsol.setId(3L);
+        assertFalse(consolidationsDao.checkSameMblExists(List.of(testConsol), testConsol));
+    }
+
+    @Test
+    void checkSameMblExists_RequestIdNotNull_DifferentId() {
+        testConsol.setId(3L);
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(6L);
+        assertTrue(consolidationsDao.checkSameMblExists(List.of(testConsol), consolidationDetails));
+    }
+
+    @Test
+    void checkSameMblExists_MoreThanOneExists() {
+        testConsol.setId(3L);
+        assertTrue(consolidationsDao.checkSameMblExists(List.of(testConsol, testConsol), testConsol));
+    }
 }
