@@ -98,6 +98,8 @@ class HblServiceTest {
     private IShipmentService shipmentService;
     @Mock
     private SyncConfig syncConfig;
+    @Mock
+    private PartialFetchUtils partialFetchUtils;
 
     @BeforeAll
     static void init() throws IOException {
@@ -775,11 +777,10 @@ class HblServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
         Hbl mockHbl = getHblModel();
         HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
-        Mockito.mockStatic(PartialFetchUtils.class);
         // Mock
         when(hblDao.findById(anyLong())).thenReturn(Optional.of(mockHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
-        when(PartialFetchUtils.fetchPartialListData(any(), any())).thenReturn(any());
+        when(partialFetchUtils.fetchPartialListData(any(), any())).thenReturn(any());
         var responseEntity = hblService.retrieveById(commonRequestModel);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
