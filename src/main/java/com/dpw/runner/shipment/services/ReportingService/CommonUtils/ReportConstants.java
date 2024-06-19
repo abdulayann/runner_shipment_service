@@ -1122,4 +1122,35 @@ public class ReportConstants {
     public static final String IS_DIRECT_SHIPMENT = "IsDirect";
     public static final String IS_NON_DIRECT_SHIPMENT = "IsNonDirect";
 
+    /*
+    Transport Instruction fields
+     */
+
+    public static final String TI_INSTRUCTIONTYPE = "TI-InstructionType";
+    public static final String TI_DROPMODE = "TI-DropMode";
+    public static final String TI_PARTYNAME = "TI-PartyName";
+    public static final String TI_PARTYADDRESS = "TI-PartyAddress";
+    public static final String TI_PARTYCONTACT = "TI-PartyContact";
+    public static final String TI_TRANSPORTCOMPANY = "TI-TransportCompany";
+    public static final String TI_PICKUPFROM = "TI-PickupFrom";
+    public static final String TI_DELIVERTO = "TI-DeliverTo";
+    public static final String TI_TRANSPORTCOMPANYADDRESS = "TI-TransportCompanyAddress";
+    public static final String TI_TRANSPORTCOMPANYCONTACT = "TI-TransportCompanyContact";
+    public static final String TI_PICKUPFROMADDRESS = "TI-PickupFromAddress";
+    public static final String TI_PICKUPFROMCONTACT = "TI-PickupFromContact";
+    public static final String TI_DELIVERTOADDRESS = "TI-DeliverToAddress";
+    public static final String TI_DELIVERTOCONTACT = "TI-DeliverToContact";
+    public static final String TI_REMARKS = "TI-Remarks";
+    public static final String TI_PORTTRANSPORTADVISED = "TI-PortTransportAdvised";
+    public static final String TI_REQUIREDBY = "TI-RequiredBy";
+    public static final String TI_ESTIMATEDPICKUP = "TI-EstimatedPickUp";
+    public static final String TI_ESTIMATEDDELIVERY = "TI-EstimatedDelivery";
+    public static final String TI_ACTUALPICKUP = "TI-ActualPickUp";
+    public static final String TI_ACTUALDELIVERY = "TI-ActualDelivery";
+    public static final String TI_PICKUP_GATEIN = "TI-Pickup-GateIn";
+    public static final String TI_PICKUP_GATEOUT = "TI-Pickup-GateOut";
+    public static final String TI_DELIVERY_GATEIN = "TI-Delivery-GateIn";
+    public static final String TI_DELIVERY_GATEOUT = "TI-Delivery-GateOut";
+    public static final String TI = "TransportInstructions";
+
 }
