@@ -235,6 +235,10 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IPackingsSync packingsADSync;
+
+    @Autowired
+    private PartialFetchUtils partialFetchUtils;
+
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
 
@@ -1819,7 +1823,7 @@ public class ConsolidationService implements IConsolidationService {
             if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
                 return ResponseHelper.buildSuccessResponse(res.getData());
             else{
-                return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(res.getData(), request.getIncludeColumns()));
+                return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(res.getData(), request.getIncludeColumns()));
             }
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1850,7 +1854,7 @@ public class ConsolidationService implements IConsolidationService {
                 List<IRunnerResponse>filteredList=new ArrayList<>();
                 for( var curr: convertEntityListToFullConsolidationList(consolidationDetailsPage.getContent())){
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
-                    res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
                     filteredList.add( res);
                 }
                 return ResponseHelper.buildListSuccessResponse(
@@ -1899,7 +1903,7 @@ public class ConsolidationService implements IConsolidationService {
                 List<IRunnerResponse>filteredList=new ArrayList<>();
                 for( var curr: convertEntityListToDtoList(consolidationDetailsPage.getContent())){
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
-                    res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
                     filteredList.add( res);
                 }
                 return ResponseHelper.buildListSuccessResponse(

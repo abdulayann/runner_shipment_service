@@ -49,6 +49,9 @@ public class NotesService implements INotesService {
     @Autowired
     private IAuditLogService auditLogService;
 
+    @Autowired
+    private PartialFetchUtils partialFetchUtils;
+
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -215,7 +218,7 @@ public class NotesService implements INotesService {
             NotesResponse response = convertEntityToDto(notes.get());
             if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildSuccessResponse(response);
-            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response,request.getIncludeColumns()));
+            else return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response,request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

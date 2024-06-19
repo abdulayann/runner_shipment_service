@@ -213,6 +213,7 @@ class ConsolidationServiceTest {
 
     @InjectMocks
     private ConsolidationService consolidationService;
+
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails testShipment;
     private static ObjectMapper objectMapperTest;
@@ -1752,7 +1753,6 @@ class ConsolidationServiceTest {
         Map<String, Object>  responseMap = new HashMap<>();
         responseMap.put("id", 1);
         responseMap.put("consolidationNumber", "CONS000231188");
-        PartialFetchUtils partialFetchUtils = new PartialFetchUtils(jsonHelper);
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
 
@@ -1789,7 +1789,6 @@ class ConsolidationServiceTest {
         sampleRequest.setIncludeColumns(includeColumns);
         ConsolidationDetails consolidationDetails = testConsol;
         ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
-        PartialFetchUtils partialFetchUtils = new PartialFetchUtils(jsonHelper);
         Map<String, Object>  responseMap = new HashMap<>();
         responseMap.put("id", 1);
         responseMap.put("consolidationNumber", "CONS000231188");
