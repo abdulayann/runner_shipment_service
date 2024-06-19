@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.requests.Criteria;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.dao.impl.ProductSequenceConfigDao;
@@ -87,7 +90,6 @@ public class ProductIdentifierUtility {
   private ProductSequenceConfig GetCommonProductSequence(
       String transportMode, ProductProcessTypes productProcessTypes) {
     ProductSequenceConfig returnProduct = null;
-    //
     ListCommonRequest listRequest =
         CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
     Pair<Specification<TenantProducts>, Pageable> pair =
@@ -98,49 +100,17 @@ public class ProductIdentifierUtility {
 
     if (tenantProductList.size() > 0) {
       var tenantProductIds = tenantProductList.stream().map(TenantProducts::getId).toList();
-      listRequest = constructListCommonRequest("tenantProductId", tenantProductIds, "IN");
+      listRequest = getCommonProductSequenceListCriteria(tenantProductIds, productProcessTypes, transportMode);
+
       Map<String, RunnerEntityMapping> tableNames =
-              Map.ofEntries(
-                      Map.entry(
-                              "tenantProductId",
-                              RunnerEntityMapping.builder()
-                                      .tableName("tenantProducts")
-                                      .dataType(Long.class)
-                                      .fieldName("id")
-                                      .build()),
-                      Map.entry(
-                              "productProcessTypes",
-                              RunnerEntityMapping.builder()
-                                      .tableName("ProductSequenceConfig")
-                                      .dataType(ProductProcessTypes.class)
-                                      .fieldName("productProcessTypes")
-                                      .build()));
+          Map.ofEntries(
+              Map.entry("tenantProductId", RunnerEntityMapping.builder().tableName("tenantProducts").dataType(Long.class).fieldName("id").build()),
+              Map.entry("transportMode", RunnerEntityMapping.builder().tableName("tenantProducts").dataType(List.class).fieldName("transportModes").build()),
+              Map.entry(Constants.PRODUCT_PROCESS_TYPES, RunnerEntityMapping.builder().tableName("ProductSequenceConfig").dataType(ProductProcessTypes.class).fieldName(Constants.PRODUCT_PROCESS_TYPES).build())
+          );
       Pair<Specification<ProductSequenceConfig>, Pageable> productSequenceConfigPair =
           fetchData(listRequest, ProductSequenceConfig.class, tableNames);
-      Page<ProductSequenceConfig> productSequenceConfigPage =
-          productSequenceConfigDao.findAll(
-              productSequenceConfigPair.getLeft(), productSequenceConfigPair.getRight());
-      List<ProductSequenceConfig> productSequenceConfigList =
-          productSequenceConfigPage.getContent();
-
-      if (productSequenceConfigList.size() > 0) {
-        var shipmentConsoleTIRecord =
-            productSequenceConfigList.stream()
-                .filter(
-                    i -> i.getProductProcessTypes().getValue() == productProcessTypes.getValue())
-                .toList();
-
-        if (shipmentConsoleTIRecord.size() > 0) {
-          var matchedRecords =
-              shipmentConsoleTIRecord.stream()
-                  .filter(i -> i.getTenantProducts().getTransportModes().contains(transportMode))
-                  .toList();
-          // TODO: isParent record ? what will be the source for this field
-          if (matchedRecords.size() > 0) {
-            return matchedRecords.get(0);
-          }
-        }
-      }
+        returnProduct = productSequenceConfigDao.findAndLock(productSequenceConfigPair.getLeft(), productSequenceConfigPair.getRight());
     }
     return returnProduct;
   }
@@ -726,5 +696,40 @@ public class ProductIdentifierUtility {
       }
     }
     return sequenceNumber;
+  }
+
+  private ListCommonRequest getCommonProductSequenceListCriteria(List<Long> tenantProductIds, ProductProcessTypes productProcessTypes, String transportMode) {
+    FilterCriteria entityIdCriteria = FilterCriteria.builder()
+        .innerFilter(Arrays.asList(FilterCriteria.builder()
+                .criteria(Criteria.builder()
+                    .fieldName("tenantProductId")
+                    .operator("IN")
+                    .value(tenantProductIds)
+                    .build()).build(),
+            FilterCriteria.builder()
+                .logicOperator("AND")
+                .criteria(Criteria.builder()
+                    .fieldName("productProcessTypes")
+                    .operator("=")
+                    .value(productProcessTypes.getDescription())
+                    .build())
+                .build(),
+            FilterCriteria.builder()
+                .logicOperator("AND")
+                .criteria(Criteria.builder()
+                    .fieldName("transportMode")
+                    .operator("CONTAINS")
+                    .value(transportMode)
+                    .build())
+                .build()
+        ))
+        .build();
+
+    return ListCommonRequest.builder()
+        .pageNo(1)
+        .pageSize(Integer.MAX_VALUE)
+        .filterCriteria(Arrays.asList(entityIdCriteria))
+        .build();
+
   }
 }
