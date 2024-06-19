@@ -241,4 +241,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "current_party_for_quote")
     private String currentPartyForQuote;
+
+    @Column(name = "source_guid")
+    private UUID sourceGuid;
 }
