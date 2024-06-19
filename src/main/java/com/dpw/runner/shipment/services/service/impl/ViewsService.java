@@ -44,6 +44,9 @@ public class ViewsService implements IViewsService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private PartialFetchUtils partialFetchUtils;
+
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -198,7 +201,7 @@ public class ViewsService implements IViewsService {
             ViewsResponse response = convertEntityToDto(view.get());
             if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildSuccessResponse(response);
-            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
+            else return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

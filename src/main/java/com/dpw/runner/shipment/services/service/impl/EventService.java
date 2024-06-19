@@ -93,6 +93,9 @@ public class EventService implements IEventService {
     @Value("${v1service.url.base}${v1.service.url.trackEventDetails}")
     private String trackEventDetailsUrl;
 
+    @Autowired
+    private PartialFetchUtils partialFetchUtils;
+
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -289,7 +292,7 @@ public class EventService implements IEventService {
             if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildSuccessResponse(response);
             else{
-                return  ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
+                return  ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
             }
 
         } catch (Exception e) {

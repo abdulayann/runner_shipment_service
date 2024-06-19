@@ -152,6 +152,9 @@ public class AwbService implements IAwbService {
     @Autowired
     ExecutorService executorService;
 
+    @Autowired
+    private PartialFetchUtils partialFetchUtils;
+
 
 
     private Integer totalPacks = 0;
@@ -367,7 +370,7 @@ public class AwbService implements IAwbService {
                 List<IRunnerResponse>filtered_list=new ArrayList<>();
                 for( var curr: convertEntityListToDtoList(awbList)){
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
-                    res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
                     filtered_list.add( res);
                 }
                 return ResponseHelper.buildListSuccessResponse(
@@ -448,7 +451,7 @@ public class AwbService implements IAwbService {
 
             if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
                 return ResponseHelper.buildSuccessResponse(response);
-            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
+            else return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
 
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -2698,7 +2701,7 @@ public class AwbService implements IAwbService {
             else {
                 List<Object> data = new ArrayList<>();
                 for(Awb awb1 : awb) {
-                    data.add(PartialFetchUtils.fetchPartialListData(jsonHelper.convertValue(awb, AwbResponse.class), request.getIncludeColumns()));
+                    data.add(partialFetchUtils.fetchPartialListData(jsonHelper.convertValue(awb, AwbResponse.class), request.getIncludeColumns()));
                 }
                 return ResponseHelper.buildSuccessResponse(data);
             }

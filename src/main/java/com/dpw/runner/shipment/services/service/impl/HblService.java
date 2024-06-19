@@ -91,6 +91,9 @@ public class HblService implements IHblService {
     @Autowired
     private IV1Service v1Service;
 
+    @Autowired
+    private PartialFetchUtils partialFetchUtils;
+
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -190,7 +193,7 @@ public class HblService implements IHblService {
         if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
             return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl.get()));
         else
-            return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
+            return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
 
     public Hbl checkAllContainerAssigned(ShipmentDetails shipment, List<Containers> containersList, List<Packing> packings) {
