@@ -262,6 +262,9 @@ public class ShipmentService implements IShipmentService {
     private ProductIdentifierUtility productEngine;
     private SecureRandom rnd = new SecureRandom();
 
+    @Autowired
+    private PartialFetchUtils partialFetchUtils;
+
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
@@ -2077,7 +2080,7 @@ public class ShipmentService implements IShipmentService {
                 List<IRunnerResponse>filteredList=new ArrayList<>();
                 for( var curr: convertEntityListToFullShipmentList(shipmentDetailsPage.getContent())){
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
-                    res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
                     filteredList.add( res);
 
                 }
@@ -2277,7 +2280,7 @@ public class ShipmentService implements IShipmentService {
                 List<IRunnerResponse>filtered_list=new ArrayList<>();
                 for( var curr: convertEntityListToDtoList(shipmentDetailsPage.getContent())){
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
-                    res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
                     filtered_list.add( res);
 
                 }
@@ -2475,7 +2478,7 @@ public class ShipmentService implements IShipmentService {
             if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
                 return ResponseHelper.buildSuccessResponse(res.getData());
             else
-                return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialData(res, request.getIncludeColumns()));
+                return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialData(res, request.getIncludeColumns()));
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
