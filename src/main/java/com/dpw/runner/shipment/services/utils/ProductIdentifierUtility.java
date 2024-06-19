@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.requests.Criteria;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.dao.impl.ProductSequenceConfigDao;
@@ -87,7 +89,6 @@ public class ProductIdentifierUtility {
   private ProductSequenceConfig GetCommonProductSequence(
       String transportMode, ProductProcessTypes productProcessTypes) {
     ProductSequenceConfig returnProduct = null;
-    //
     ListCommonRequest listRequest =
         CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
     Pair<Specification<TenantProducts>, Pageable> pair =
@@ -98,78 +99,17 @@ public class ProductIdentifierUtility {
 
     if (tenantProductList.size() > 0) {
       var tenantProductIds = tenantProductList.stream().map(TenantProducts::getId).toList();
-      listRequest = constructListCommonRequest("tenantProductId", tenantProductIds, "IN");
+      listRequest = getCommonProductSequenceListCriteria(tenantProductIds, productProcessTypes, transportMode);
+
       Map<String, RunnerEntityMapping> tableNames =
-              Map.ofEntries(
-                      Map.entry(
-                              "tenantProductId",
-                              RunnerEntityMapping.builder()
-                                      .tableName("tenantProducts")
-                                      .dataType(Long.class)
-                                      .fieldName("id")
-                                      .build()),
-                      Map.entry(
-                              "productProcessTypes",
-                              RunnerEntityMapping.builder()
-                                      .tableName("ProductSequenceConfig")
-                                      .dataType(ProductProcessTypes.class)
-                                      .fieldName("productProcessTypes")
-                                      .build()));
+          Map.ofEntries(
+              Map.entry("tenantProductId", RunnerEntityMapping.builder().tableName("tenantProducts").dataType(Long.class).fieldName("id").build()),
+              Map.entry("transportMode", RunnerEntityMapping.builder().tableName("tenantProducts").dataType(List.class).fieldName("transportModes").build()),
+              Map.entry("productProcessTypes", RunnerEntityMapping.builder().tableName("ProductSequenceConfig").dataType(ProductProcessTypes.class).fieldName("productProcessTypes").build())
+          );
       Pair<Specification<ProductSequenceConfig>, Pageable> productSequenceConfigPair =
           fetchData(listRequest, ProductSequenceConfig.class, tableNames);
-      Page<ProductSequenceConfig> productSequenceConfigPage =
-          productSequenceConfigDao.findAll(
-              productSequenceConfigPair.getLeft(), productSequenceConfigPair.getRight());
-      List<ProductSequenceConfig> productSequenceConfigList =
-          productSequenceConfigPage.getContent();
-
-      if (productSequenceConfigList.size() > 0) {
-        var shipmentConsoleTIRecord =
-            productSequenceConfigList.stream()
-                .filter(
-                    i -> i.getProductProcessTypes().getValue() == productProcessTypes.getValue())
-                .toList();
-
-        if (shipmentConsoleTIRecord.size() > 0) {
-          //                    var transportMappingRepo = new
-          // TenantProductTransportMappingRepository();
-          //                    var productIds = shipmentConsoleTIRecord.stream().map(i ->
-          // i.getTenantProducts().getId()).toList();
-          //                    listRequest = constructListCommonRequest("tenantProductId",
-          // productIds, "IN");
-          //                    var transPortMappingList =
-          // transportMappingRepo.List(listRequest).Entities;
-          //                    if (transportMappingList.size() > 0) {
-          //                        var transportMappingDetailList =
-          // transportMappingList.stream().filter(x -> x.getTransportMode() ==
-          // transportMode).toList();
-          //
-          //                        if (transportMappingDetailList.size() > 0) {
-          //                            var mappedTenantProductIds =
-          // transportMappingDetailList.stream().fitler(x -> x.TenantProductId).toList();
-          //                            var matchedRecord =
-          // shipmentConsoleTIRecord.stream().filter(x ->
-          // mappedTenantProductIds.contains(x.TenantProduct)).toList();
-          //                            var CheckIfParentFound = matchedRecord.FirstOrDefault(x ->
-          // x.IsParent == true);
-          //
-          //                            if (CheckIfParentFound != null) {
-          //                                return CheckIfParentFound;
-          //                            } else {
-          //                                returnProduct = matchedRecord.FirstOrDefault();
-          //                            }
-          //                        }
-          //                    }
-          var matchedRecords =
-              shipmentConsoleTIRecord.stream()
-                  .filter(i -> i.getTenantProducts().getTransportModes().contains(transportMode))
-                  .toList();
-          // TODO: isParent record ? what will be the source for this field
-          if (matchedRecords.size() > 0) {
-            return matchedRecords.get(0);
-          }
-        }
-      }
+        returnProduct = productSequenceConfigDao.findAndLock(productSequenceConfigPair.getLeft(), productSequenceConfigPair.getRight());
     }
     return returnProduct;
   }
@@ -357,13 +297,6 @@ public class ProductIdentifierUtility {
       if (res.isPresent()) return res.get();
     }
 
-    // No relevant to shipment
-    //        for (var product : enabledTenantProducts) {
-    //            if(MatchProduct(shipment, null, product.getProductType())) {
-    //                return product;
-    //            }
-    //        }
-
     var transportAll =
         enabledTenantProducts.stream()
             .filter(p -> p.getProductType() == ProductType.Transport_All)
@@ -498,23 +431,6 @@ public class ProductIdentifierUtility {
     return null;
   }
 
-  //    private boolean MatchProduct(ShipmentDetails shipment, TransportInstructionRow transport,
-  // ProductType productType)
-  //    {
-  //        var isMatched = false;
-  //
-  //        switch (productType) {
-  //            case ProductType.Domestic_Barge -> isMatched = IsDomesticBargeBooking(shipment);
-  //            case ProductType.International_Barge -> isMatched =
-  // IsInternationalBargeBooking(shipment);
-  //            case ProductType.Ocean -> isMatched = IsOceanBooking(shipment);
-  //            case ProductType.Transport -> isMatched = IsTransportBooking(transport);
-  //            default -> {}
-  //        }
-  //
-  //        return isMatched;
-  //    }
-
   TenantProducts checkShipAllCargoTypeProduct(ShipmentDetails shipment, List<TenantProducts> enabledTenantProducts) {
     TenantProducts product = null;
     List<String> allCargoTypeProducts = new ArrayList<>();
@@ -609,27 +525,6 @@ public class ProductIdentifierUtility {
         && enabledTenantProducts.stream()
             .anyMatch(p -> p.getProductType() == ProductType.Shipment_Rail_TransShip);
   }
-
-  boolean isInvoiceAir(String TransportMode, List<TenantProducts> enabledTenantProducts) {
-    return isAir(TransportMode)
-        && enabledTenantProducts.stream()
-            .anyMatch(p -> p.getProductType() == ProductType.Bill_Air_EXIM);
-  }
-
-  boolean isInvoiceSea(String TransportMode, List<TenantProducts> enabledTenantProducts) {
-    return isSea(TransportMode)
-        && enabledTenantProducts.stream()
-            .anyMatch(p -> p.getProductType() == ProductType.Bill_Sea_EXIM);
-  }
-
-  //    Quotes not available yet
-  //    boolean isQuoteAir(QuotesRow quote){
-  //        return isAir(quote.getTransportMode());
-  //    }
-  //
-  //    boolean isQuoteSea(QuotesRow quote){
-  //        return isSea(quote.getTransportMode());
-  //    }
 
   boolean isConsolAir(ConsolidationDetails consolidationRow, List<TenantProducts> enabledTenantProducts) {
     return isAir(consolidationRow.getTransportMode())
@@ -800,5 +695,41 @@ public class ProductIdentifierUtility {
       }
     }
     return sequenceNumber;
+  }
+
+  private ListCommonRequest getCommonProductSequenceListCriteria(List<Long> tenantProductIds, ProductProcessTypes productProcessTypes, String transportMode) {
+    FilterCriteria entityIdCriteria = FilterCriteria.builder()
+        .innerFilter(Arrays.asList(FilterCriteria.builder()
+                .criteria(Criteria.builder()
+                    .fieldName("tenantProductId")
+                    .operator("IN")
+                    .value(tenantProductIds)
+                    .build()).build(),
+            FilterCriteria.builder()
+                .logicOperator("AND")
+                .criteria(Criteria.builder()
+                    .fieldName("productProcessTypes")
+                    .operator("=")
+                    .value(productProcessTypes.getDescription())
+                    .build())
+                .build(),
+            FilterCriteria.builder()
+                .logicOperator("AND")
+                .criteria(Criteria.builder()
+                    .fieldName("transportMode")
+                    .operator("CONTAINS")
+                    .value(transportMode)
+                    .build())
+                .build()
+        ))
+        .build();
+
+    ListCommonRequest listCommonRequest = ListCommonRequest.builder()
+        .pageNo(1)
+        .pageSize(Integer.MAX_VALUE)
+        .filterCriteria(Arrays.asList(entityIdCriteria))
+        .build();
+
+    return listCommonRequest;
   }
 }
