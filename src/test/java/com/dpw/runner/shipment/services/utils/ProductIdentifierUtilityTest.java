@@ -99,7 +99,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         ListCommonRequest listRequest =
                 CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
@@ -469,7 +469,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
@@ -545,7 +545,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         ListCommonRequest listRequest =
                 CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
@@ -575,7 +575,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         ListCommonRequest listRequest =
                 CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
@@ -605,7 +605,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         ListCommonRequest listRequest =
                 CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
@@ -635,7 +635,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         ListCommonRequest listRequest =
                 CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
@@ -671,7 +671,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
@@ -706,7 +706,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
@@ -740,7 +740,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
@@ -774,7 +774,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
@@ -804,7 +804,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
@@ -834,7 +834,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
@@ -862,7 +862,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         ListCommonRequest listRequest =
                 CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
@@ -892,7 +892,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         ListCommonRequest listRequest =
                 CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
@@ -921,7 +921,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         ListCommonRequest listRequest =
                 CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
@@ -970,7 +970,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
@@ -1001,7 +1001,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
@@ -1032,7 +1032,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
@@ -1063,13 +1063,10 @@ class ProductIdentifierUtilityTest {
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        when(productSequenceConfigDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfigPage);
-
-        when(getNextNumberHelper.getProductSequence(any(), any())).thenReturn(productSequenceConfig);
-        when(getNextNumberHelper.generateCustomSequence(any(), any(), eq(1), eq(true), any(), eq(false))).thenReturn("SEQ001");
+        when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
         String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
-        assertEquals("SEQ001", number);
+        assertEquals("SHP001", number);
     }
 
     @Test
