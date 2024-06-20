@@ -115,6 +115,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private BigDecimal totalPostedProfitPercent;
     private String wayBillNumber;
     private String orderManagementNumber;
+    private String orderManagementId;
     private String jobStatus;
     private Boolean containsHazardous;
 }
