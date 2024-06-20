@@ -1153,4 +1153,5 @@ public class ReportConstants {
     public static final String TI_DELIVERY_GATEOUT = "TI-Delivery-GateOut";
     public static final String TI = "TransportInstructions";
 
+    public static final String CARRIER_HQ = "CarrierHQ";
 }
