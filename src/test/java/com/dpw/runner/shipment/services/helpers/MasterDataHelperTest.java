@@ -892,6 +892,7 @@ class MasterDataHelperTest {
 
     @Test
     void testAddBillData2() throws ExecutionException, InterruptedException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(null);
         CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(new ShipmentDetails(), new ShipmentDetailsResponse());
         assertNull(response.get());
     }
