@@ -2897,35 +2897,29 @@ public class ConsolidationService implements IConsolidationService {
         V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             List<Parties> orgList = new ArrayList<>();
-            if(sendingAgent != null) {
-                if(sendingAgent != null && StringUtility.isNotEmpty(sendingAgent.getAddressCode())) {
-                    orgList.add(sendingAgent);
-                }
+            if(sendingAgent != null && StringUtility.isNotEmpty(sendingAgent.getAddressCode())) {
+                orgList.add(sendingAgent);
             }
 
-            if(orgList.size() > 0) {
+            if(!orgList.isEmpty()) {
                 OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(orgList);
                 if (orgAddressResponse != null) {
                     Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
-                    if(sendingAgent != null) {
-                        if (addressMap.containsKey(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode())) {
-                            Map<String, Object> addressConsignorAgent = addressMap.get(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode());
-                            if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
-                                var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
-                                if (rakcType != null && (Integer) rakcType == RAKCType.KNOWN_CONSIGNOR.getId() && (consolidationDetails.getScreeningStatus() == null ||
-                                        consolidationDetails.getScreeningStatus().isEmpty() ||
-                                        consolidationDetails.getSecurityStatus() == null)) {
-                                    throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
-                                }
+                    if (sendingAgent != null && addressMap.containsKey(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode())) {
+                        Map<String, Object> addressConsignorAgent = addressMap.get(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode());
+                        if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
+                            var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
+                            if (rakcType != null && (Integer) rakcType == RAKCType.KNOWN_CONSIGNOR.getId() && (consolidationDetails.getScreeningStatus() == null ||
+                                    consolidationDetails.getScreeningStatus().isEmpty() ||
+                                    consolidationDetails.getSecurityStatus() == null)) {
+                                throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
                             }
                         }
                     }
 
-                    if(consolidationDetails.getId() == null ) {
-                        if (consolidationDetails.getSendingAgent() != null && StringUtility.isNotEmpty(consolidationDetails.getSendingAgent().getAddressCode())) {
-                            if (!checkRaStatusFields(consolidationDetails, orgAddressResponse, consolidationDetails.getSendingAgent())) {
-                                throw new RunnerException("Screening Status and Security Status is mandatory for RA Origin Agent.");
-                            }
+                    if (consolidationDetails.getId() == null && consolidationDetails.getSendingAgent() != null && StringUtility.isNotEmpty(consolidationDetails.getSendingAgent().getAddressCode())) {
+                        if (!checkRaStatusFields(consolidationDetails, orgAddressResponse, consolidationDetails.getSendingAgent())) {
+                            throw new RunnerException("Screening Status and Security Status is mandatory for RA Origin Agent.");
                         }
                     }
                 }

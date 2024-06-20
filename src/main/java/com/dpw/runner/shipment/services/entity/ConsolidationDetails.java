@@ -411,7 +411,6 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "screening_status")
     @Size(max=50, message = "max size is 50 for screening_status")
-    //@MasterData(type = MasterDataType.SCREENING_STATUS)
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "screening_status_consol", joinColumns = @JoinColumn(name = "consolidation_details_id"))
     private List<String> screeningStatus;
