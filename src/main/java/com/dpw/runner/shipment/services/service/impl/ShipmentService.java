@@ -833,7 +833,7 @@ public class ShipmentService implements IShipmentService {
                 autoUpdateWtVol(true).
                 build();
         AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
-        shipmentRequest.setNoOfPacks(GetIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
+        shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
         shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
         shipmentRequest.setWeight(autoUpdateWtVolResponse.getWeight());
         shipmentRequest.setWeightUnit(autoUpdateWtVolResponse.getWeightUnit());

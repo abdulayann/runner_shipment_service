@@ -321,7 +321,7 @@ public class CommonUtils {
         return s == null || s.isEmpty();
     }
 
-    public static Integer GetIntFromString(String s) {
+    public static Integer getIntFromString(String s) {
         if(IsStringNullOrEmpty(s))
             return null;
         return Integer.parseInt(s);
