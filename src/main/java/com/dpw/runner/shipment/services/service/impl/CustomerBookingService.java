@@ -1292,6 +1292,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBookingResponse.setSource(null);
             customerBookingResponse.setCreatedBy(null);
             customerBookingResponse.setSourceGuid(customerBooking.get().getGuid());
+            customerBookingResponse.setBookingDate(LocalDateTime.now());
             if(customerBookingResponse.getCustomer() != null)
             {
                 customerBookingResponse.getCustomer().setId(null);
@@ -1316,6 +1317,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             {
                 customerBookingResponse.getCarrierDetails().setId(null);
                 customerBookingResponse.getCarrierDetails().setGuid(null);
+                customerBookingResponse.getCarrierDetails().setCarrierAddedFromNpm(null);
             }
             if(customerBookingResponse.getContainersList() != null && !customerBookingResponse.getContainersList().isEmpty())
             {
@@ -1388,6 +1390,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBookingResponse.setShipmentEntityId(null);
             customerBookingResponse.setShipmentCreatedDate(null);
             customerBookingResponse.setIsBillCreated(null);
+
+            createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
 
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
         } catch (Exception e) {
