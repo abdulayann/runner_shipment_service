@@ -23,4 +23,6 @@ public class NPMConstants {
     public static final String OFFERS_V2 = "OFFERS-V2";
 
     public static final String OFFERS_V8 = "OFFERS-V8";
+
+    public static final String QUOTE_CONTRACTS_DATA_API_HANDLE = "/api/v2/quoteContractsData";
 }
