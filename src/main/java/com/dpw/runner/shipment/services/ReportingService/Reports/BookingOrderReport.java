@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -57,6 +58,29 @@ public class BookingOrderReport extends IReport {
         dictionary.put(ReportConstants.IS_DIRECT_SHIPMENT, isDirect);
         dictionary.put(ReportConstants.IS_NON_DIRECT_SHIPMENT, isNonDirect);
 
+        // get string enclosed in parenthesis of container summary
+        String containerSummary = StringUtility.convertToString(dictionary.get(ReportConstants.CONTAINER_SUMMARY));
+        dictionary.put(ReportConstants.CONTAINER_SUMMARY, getStringBetweenParenthesis(containerSummary));
+
         return dictionary;
     }
+
+    private String getStringBetweenParenthesis(String input) {
+        int length = input.length();
+        boolean inParentheses = false;
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < length; i++) {
+            char currentChar = input.charAt(i);
+            if (currentChar == '(') {
+                inParentheses = true;
+            } else if (currentChar == ')' && inParentheses) {
+                inParentheses = false;
+            } else if (inParentheses) {
+                sb.append(currentChar); // Collect characters inside parentheses
+            }
+        }
+        return sb.toString();
+    }
+
 }
