@@ -2595,6 +2595,13 @@ public class AwbService implements IAwbService {
 
         GenerateAwbPaymentInfoRequest req = (GenerateAwbPaymentInfoRequest) commonRequestModel.getData();
 
+        /*
+            1. Calculate good description based on packs
+            2. Calculate other infos based on good description
+         */
+        updateGoodsDescriptionInfoFromPacks(req);
+        updateOtherChargesFromGoodsDescription(req);
+
         double totalAmount = 0.00;
         if(req.getAwbGoodsDescriptionInfo() != null) {
             for(var goods : req.getAwbGoodsDescriptionInfo()) {
@@ -2682,12 +2689,6 @@ public class AwbService implements IAwbService {
             paymentInfo.setTotalPrepaid(convertToBigDecimal(totalPrepaid));
         }
 
-        /*
-            1. Calculate good description based on packs
-            2. Calculate other infos based on good description
-         */
-        updateGoodsDescriptionInfoFromPacks(req);
-        updateOtherChargesFromGoodsDescription(req);
 
         return ResponseHelper.buildSuccessResponse(AwbCalculationResponse.builder()
                 .awbPackingInfo(req.getAwbPackingInfo()).awbGoodsDescriptionInfo(req.getAwbGoodsDescriptionInfo())
@@ -2752,7 +2753,13 @@ public class AwbService implements IAwbService {
         if (!Objects.isNull(goodsDescriptionInfos)) {
             Map<UUID, List<AwbPackingInfo>> guidBasedAwbPackingList = new HashMap<>();
             if (!Objects.isNull(packsInfo)) {
-                if (!Objects.isNull(request.getIsFromShipment()) && request.getIsFromShipment())
+                if(!Objects.isNull(request.getIsFromShipment()) && Boolean.TRUE.equals(request.getIsFromShipment()) && goodsDescriptionInfos.get(0).getEntityType().equals(Constants.DMAWB)){
+                    if(goodsDescriptionInfos.size() == 1){
+                        request.setPackUpdate(true);
+                        guidBasedAwbPackingList.put(goodsDescriptionInfos.get(0).getGuid(), packsInfo);
+                    }
+                }
+                else if (!Objects.isNull(request.getIsFromShipment()) && Boolean.TRUE.equals(request.getIsFromShipment()))
                     guidBasedAwbPackingList = packsInfo.stream().filter(c -> !Objects.isNull(c.getAwbGoodsDescriptionInfoGuid()))
                             .collect(Collectors.groupingBy(AwbPackingInfo::getAwbGoodsDescriptionInfoGuid));
                 else
