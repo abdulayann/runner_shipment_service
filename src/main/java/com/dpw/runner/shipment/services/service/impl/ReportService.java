@@ -64,6 +64,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -348,9 +349,10 @@ public class ReportService implements IReportService {
                 if(pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             }
             var shc = dataRetrived.getOrDefault(ReportConstants.SPECIAL_HANDLING_CODE, null);
-            Boolean addWaterMarkForEaw = false;
+            boolean addWaterMarkForEaw = false;
             if(shc != null){
-                List<String> items = Arrays.asList(shc.toString().split("\\s*,\\s*"));
+                Pattern pattern = Pattern.compile("\\s*,\\s*");
+                List<String> items = Arrays.asList(pattern.split(shc.toString()));
                 if(!items.isEmpty() && items.contains(Constants.EAW)){
                     addWaterMarkForEaw = true;
                 }
