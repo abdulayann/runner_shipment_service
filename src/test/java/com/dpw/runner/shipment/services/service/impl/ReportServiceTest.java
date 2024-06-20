@@ -422,6 +422,40 @@ public class ReportServiceTest {
     }
 
     @Test
+    void getMAwbDocumentDataForEAW() throws DocumentException, RunnerException, IOException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setMawb("123456789");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setMawb("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setReportInfo(ReportConstants.MAWB);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.DRAFT);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(mawbReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
+        dataRetrived.put(ReportConstants.SPECIAL_HANDLING_CODE, "EAW");
+        when(mawbReport.getData(any())).thenReturn(dataRetrived);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        byte[] data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+
+    @Test
     void getMAwbWithOtherAmountDocumentData() throws DocumentException, RunnerException, IOException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setMawb("123456789");
