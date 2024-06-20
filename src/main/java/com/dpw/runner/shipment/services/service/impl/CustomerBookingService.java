@@ -1303,7 +1303,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBookingResponse.setSource(null);
             customerBookingResponse.setCreatedBy(null);
             customerBookingResponse.setSourceGuid(customerBooking.get().getGuid());
-            customerBookingResponse.setBookingDate(null);
+            customerBookingResponse.setBookingDate(LocalDateTime.now());
             if(customerBookingResponse.getCustomer() != null)
             {
                 customerBookingResponse.getCustomer().setId(null);
