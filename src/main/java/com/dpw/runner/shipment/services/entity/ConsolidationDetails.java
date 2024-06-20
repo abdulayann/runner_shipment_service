@@ -408,4 +408,23 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "emergency_contact_number_code")
     @Size(max=31, message = "max size is 31 for emergency_contact_number_code")
     private String emergencyContactNumberCode;
+
+    @Column(name = "screening_status")
+    @Size(max=50, message = "max size is 50 for screening_status")
+    //@MasterData(type = MasterDataType.SCREENING_STATUS)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "screening_status_consol", joinColumns = @JoinColumn(name = "consolidation_details_id"))
+    private List<String> screeningStatus;
+
+    @Column(name = "exemption_codes")
+    @MasterData(type = MasterDataType.EXEMPTION_CODES)
+    private String exemptionCodes;
+
+    @Column(name = "aom_free_text")
+    private String aomFreeText;
+
+    @Column(name = "security_status")
+    private String securityStatus;
+
+
 }

@@ -23,10 +23,7 @@ import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchReque
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
@@ -46,6 +43,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
@@ -210,6 +208,9 @@ class ConsolidationServiceTest {
     private IPackingsSync packingsADSync;
     @Mock
     private BookingIntegrationsUtility bookingIntegrationsUtility;
+
+    @Mock
+    private V1ServiceUtil v1ServiceUtil;
 
     @InjectMocks
     private ConsolidationService consolidationService;
@@ -2365,4 +2366,367 @@ class ConsolidationServiceTest {
         assertEquals(AwbStatus.AIR_MESSAGE_SENT, consolidationDetailsResponse.getLinkedHawbStatus());
     }
 
+    @Test
+    void testCreate_SuccessRa() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
+        consolidationDetails.setSendingAgent(parties);
+
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("RAKCType", 2);
+        addressMap.put("o1#c1", map);
+        orgAddressResponse.setAddresses(addressMap);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
+        String errorMessage = "Screening Status and Security Status is mandatory for KC consginor.";
+        Exception e = assertThrows(ValidationException.class, () -> {
+            spyService.create(commonRequestModel);
+        });
+
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void testCreate_SuccessIdNull() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setId(null);
+
+        Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
+        consolidationDetails.setSendingAgent(parties);
+
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("RAKCType", 2);
+        addressMap.put("c1#o1", map);
+        orgAddressResponse.setAddresses(addressMap);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
+        Exception e = assertThrows(ValidationException.class, () -> {
+            spyService.create(commonRequestModel);
+        });
+    }
+
+    @Test
+    void testCreate_SuccessIdNullSendingAgent() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setId(null);
+
+        Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
+        consolidationDetails.setSendingAgent(parties);
+
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("RAKCType", 1);
+        addressMap.put("o1#c1", map);
+        orgAddressResponse.setAddresses(addressMap);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
+        String errorMessage = "Screening Status and Security Status is mandatory for RA Origin Agent.";
+        Exception e = assertThrows(ValidationException.class, () -> {
+            spyService.create(commonRequestModel);
+        });
+
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void testCreate_SuccessRaScreeningStatusNotNull() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setScreeningStatus(Collections.emptyList());
+
+        Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
+        consolidationDetails.setSendingAgent(parties);
+
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("RAKCType", 2);
+        addressMap.put("o1#c1", map);
+        orgAddressResponse.setAddresses(addressMap);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
+        String errorMessage = "Screening Status and Security Status is mandatory for KC consginor.";
+        Exception e = assertThrows(ValidationException.class, () -> {
+            spyService.create(commonRequestModel);
+        });
+
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void testCreate_SuccessIdNullScreeningStatusNotNull() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setScreeningStatus(Collections.emptyList());
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setId(null);
+
+        Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
+        consolidationDetails.setSendingAgent(parties);
+
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("RAKCType", 2);
+        addressMap.put("c1#o1", map);
+        orgAddressResponse.setAddresses(addressMap);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
+        Exception e = assertThrows(ValidationException.class, () -> {
+            spyService.create(commonRequestModel);
+        });
+    }
+
+    @Test
+    void testCreate_SuccessIdNullSendingAgentScreeningStatusNotNull() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setScreeningStatus(Collections.emptyList());
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setId(null);
+
+        Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
+        consolidationDetails.setSendingAgent(parties);
+
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("RAKCType", 1);
+        addressMap.put("o1#c1", map);
+        orgAddressResponse.setAddresses(addressMap);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
+        String errorMessage = "Screening Status and Security Status is mandatory for RA Origin Agent.";
+        Exception e = assertThrows(ValidationException.class, () -> {
+            spyService.create(commonRequestModel);
+        });
+
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void testCreate_SuccessRaSecurityStatusNull() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        List<String> status = new ArrayList<>();
+        status.add("PHS");
+        consolidationDetails.setScreeningStatus(status);
+
+        Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
+        consolidationDetails.setSendingAgent(parties);
+
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("RAKCType", 2);
+        addressMap.put("o1#c1", map);
+        orgAddressResponse.setAddresses(addressMap);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
+        String errorMessage = "Screening Status and Security Status is mandatory for KC consginor.";
+        Exception e = assertThrows(ValidationException.class, () -> {
+            spyService.create(commonRequestModel);
+        });
+
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void testCreate_SuccessIdNullSecurityStatusNull() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        List<String> status = new ArrayList<>();
+        status.add("PHS");
+        consolidationDetails.setScreeningStatus(status);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setId(null);
+
+        Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
+        consolidationDetails.setSendingAgent(parties);
+
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("RAKCType", 2);
+        addressMap.put("c1#o1", map);
+        orgAddressResponse.setAddresses(addressMap);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
+        Exception e = assertThrows(ValidationException.class, () -> {
+            spyService.create(commonRequestModel);
+        });
+    }
+
+    @Test
+    void testCreate_SuccessIdNullSendingAgentSecurityStatusNull() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = testConsol;
+
+        List<String> status = new ArrayList<>();
+        status.add("PHS");
+        consolidationDetails.setScreeningStatus(status);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setId(null);
+
+        Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
+        consolidationDetails.setSendingAgent(parties);
+
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("RAKCType", 1);
+        addressMap.put("o1#c1", map);
+        orgAddressResponse.setAddresses(addressMap);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
+        String errorMessage = "Screening Status and Security Status is mandatory for RA Origin Agent.";
+        Exception e = assertThrows(ValidationException.class, () -> {
+            spyService.create(commonRequestModel);
+        });
+
+        assertEquals(errorMessage, e.getMessage());
+    }
 }
