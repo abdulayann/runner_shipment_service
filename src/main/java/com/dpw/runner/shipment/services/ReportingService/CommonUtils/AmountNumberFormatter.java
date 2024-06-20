@@ -26,6 +26,9 @@ public class AmountNumberFormatter {
             var user = UserContext.getUser();
             int numberDecimalDigits = 2;
 
+            if (!Objects.isNull(tenantSettings.getCurrencyDecimalPlace()))
+                numberDecimalDigits = tenantSettings.getCurrencyDecimalPlace();
+
             if (tenantSettings.getRoundoffLocalCurrencyAmount() != null
                     && tenantSettings.getRoundoffLocalCurrencyAmount() && Objects.equals(localCurrency, user.CompanyCurrency)) {
                 numberDecimalDigits = 0;
