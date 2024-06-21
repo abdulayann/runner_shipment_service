@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
@@ -445,5 +446,13 @@ public class JsonTestUtility {
 
     public ListCommonRequest getListRequest13() {
         return objectMapper.convertValue(payload.get("LIST_REQUEST_13"), ListCommonRequest.class);
+    }
+
+    public QuoteContracts getQuoteContracts() {
+        return objectMapper.convertValue(payload.get("QUOTE_CONTRACTS"), QuoteContracts.class);
+    }
+
+    public ListContractResponse getListContractResponse() {
+        return objectMapper.convertValue(payload.get("LIST_CONTRACT_RESPONSE"), ListContractResponse.class);
     }
 }
