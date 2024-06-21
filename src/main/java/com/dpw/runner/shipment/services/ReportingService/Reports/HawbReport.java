@@ -86,10 +86,13 @@ public class HawbReport extends IReport{
 
         HawbModel hawbModel = (HawbModel) documentModel;
         String json;
+        CarrierDetailModel carrierDetailModel;
         if(hawbModel.shipmentDetails != null ) {
             json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.shipmentDetails, GetDPWDateFormatOrDefault());
+            carrierDetailModel = hawbModel.getShipmentDetails().getCarrierDetails();
         } else {
             json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.getConsolidationDetails(), GetDPWDateFormatOrDefault());
+            carrierDetailModel = hawbModel.getConsolidationDetails().getCarrierDetails();
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
@@ -632,6 +635,13 @@ public class HawbReport extends IReport{
             }
         }
 
+        if (StringUtility.isNotEmpty(carrierDetailModel.getShippingLine())) {
+            var masterData = masterDataUtils.fetchInBulkCarriers(List.of(carrierDetailModel.getShippingLine()));
+            if (!Objects.isNull(masterData) && masterData.containsKey(carrierDetailModel.getShippingLine())) {
+                dictionary.put(CARRIER_HQ, masterData.get(carrierDetailModel.getShippingLine()).getHeadQuartersDetails());
+            }
+        }
+        
         if(!Objects.equals(hawbModel.shipmentDetails, null)) {
             populateRaKcData(dictionary, hawbModel.shipmentDetails);
         }
