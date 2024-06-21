@@ -56,6 +56,13 @@ public class DeliveryOrderReport extends IReport{
         return populateDictionary(deliveryOrderModel);
     }
 
+
+    public Map<String, Object> getData(Long id, Long transportInstructionId) {
+        DeliveryOrderModel deliveryOrderModel = (DeliveryOrderModel) getDocumentModel(id);
+        deliveryOrderModel.setTransportInstructionId(transportInstructionId);
+        return populateDictionary(deliveryOrderModel);
+    }
+
     @Override
     public IDocumentModel getDocumentModel(Long id) {
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
@@ -106,6 +113,7 @@ public class DeliveryOrderReport extends IReport{
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(deliveryOrderModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
+        deliveryOrderModel.shipmentDetails.setTransportInstructionId(deliveryOrderModel.getTransportInstructionId());
         populateShipmentFields(deliveryOrderModel.shipmentDetails, dictionary);
         populateConsolidationFields(deliveryOrderModel.consolidationDetails, dictionary);
         populateUserFields(deliveryOrderModel.usersDto, dictionary);

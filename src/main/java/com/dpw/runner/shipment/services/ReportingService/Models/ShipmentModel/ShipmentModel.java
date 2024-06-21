@@ -223,5 +223,7 @@ public class ShipmentModel implements IDocumentModel {
     @JsonProperty("ContainsHazardous")
     private Boolean containsHazardous;
     private List<PickupDeliveryDetailsModel> pickupDeliveryDetailsInstructions;
+    @JsonProperty("TransportInstructionId")
+    private Long transportInstructionId;
 }
 

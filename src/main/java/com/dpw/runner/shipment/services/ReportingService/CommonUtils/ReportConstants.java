@@ -1152,5 +1152,13 @@ public class ReportConstants {
     public static final String TI_DELIVERY_GATEIN = "TI-Delivery-GateIn";
     public static final String TI_DELIVERY_GATEOUT = "TI-Delivery-GateOut";
     public static final String TI = "TransportInstructions";
+    public static final String TI_EXPORT_AGENT = "TI-ExportAgent";
+    public static final String TI_EXPORT_AGENT_ADDRESS = "TI-ExportAgentAddress";
+    public static final String TI_EXPORT_AGENT_CONTACT = "TI-ExportAgentContact";
+
+    public static final String TI_IMPORT_AGENT = "TI-ImportAgent";
+    public static final String TI_IMPORT_AGENT_ADDRESS = "TI-ImportAgentAddress";
+    public static final String TI_IMPORT_AGENT_CONTACT = "TI-ImportAgentContact";
+
 
 }

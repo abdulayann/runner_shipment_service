@@ -226,6 +226,7 @@ public class HblReport extends IReport{
             hblModel.blObject.setHblData(new HblDataDto());
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
+        hblModel.shipment.setTransportInstructionId(hblModel.getTransportInstructionId());
         populateShipmentFields(hblModel.shipment, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         JsonDateFormat(dictionary);
