@@ -293,7 +293,8 @@ public abstract class IReport {
 
         PickupDeliveryDetailsModel pickup = shipment.getPickupDetails();
         PickupDeliveryDetailsModel delivery = shipment.getDeliveryDetails();
-        addTransportInstructionTags(dictionary , shipment);
+        if(shipment.getTransportInstructionId() != null)
+            addTransportInstructionTags(dictionary , shipment);
         PartiesModel shipmentClient = shipment.getClient();
         PartiesModel shipmentConsignee = shipment.getConsignee();
         PartiesModel shipmentConsigner = shipment.getConsigner();
@@ -2897,41 +2898,47 @@ public abstract class IReport {
     }
 
     public void addTransportInstructionTags(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
-        if(Objects.isNull(shipmentModel.getPickupDeliveryDetailsInstructions()) || !shipmentModel.getPickupDeliveryDetailsInstructions().isEmpty())
+        if (Objects.isNull(shipmentModel.getPickupDeliveryDetailsInstructions()) || shipmentModel.getPickupDeliveryDetailsInstructions().isEmpty())
             return;
 
-        List<Map<String, Object>> tiList = new ArrayList<>();
-        for(var ti : shipmentModel.getPickupDeliveryDetailsInstructions()) {
-            Map<String, Object> map = new HashMap<>();
+        Optional<PickupDeliveryDetailsModel> transportInstruction = shipmentModel.getPickupDeliveryDetailsInstructions().stream().filter(pickupDeliveryDetailsModel -> pickupDeliveryDetailsModel.getId().equals(shipmentModel.getTransportInstructionId())).findFirst();
+        if (transportInstruction.isEmpty())
+            return;
+        var ti = transportInstruction.get();
+        var exportAgent = ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Export Agent")).findFirst();
+        var importAgent = ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Import Agent")).findFirst();
 
-            map.put(TI_INSTRUCTIONTYPE, ti.getType());
-            map.put(TI_DROPMODE, ti.getDropMode());
-//            map.put(TI_PARTYNAME, ti) TODO :: ASK PAWAN FOR THE TAG
-//            map.put(TI_PARTYADDRESS, )
-//            map.put(TI_PARTYCONTACT, )
-            map.put(TI_TRANSPORTCOMPANY, getPartyAddress(ti.getTransporterDetail()));
-            map.put(TI_PICKUPFROM, getFormattedAddress(ti.getSourceDetail()));
-            map.put(TI_DELIVERTO, getFormattedAddress(ti.getDestinationDetail()));
-            map.put(TI_TRANSPORTCOMPANYADDRESS, getFormattedAddress(ti.getTransporterDetail()));
-            map.put(TI_TRANSPORTCOMPANYCONTACT, ReportHelper.getValueFromMap(ti.getTransporterDetail().getAddressData(), EMAIL));
-            map.put(TI_PICKUPFROMADDRESS, getFormattedAddress(ti.getSourceDetail()));
-            map.put(TI_PICKUPFROMCONTACT, ReportHelper.getValueFromMap(ti.getSourceDetail().getAddressData(), EMAIL));
-            map.put(TI_DELIVERTOADDRESS, getFormattedAddress(ti.getDestinationDetail()));
-            map.put(TI_DELIVERTOCONTACT, ReportHelper.getValueFromMap(ti.getDestinationDetail().getAddressData(), EMAIL));
-            map.put(TI_REMARKS, ti.getRemarks());
-            map.put(TI_PORTTRANSPORTADVISED, ti.getPortTransportAdvised());
-            map.put(TI_REQUIREDBY, ti.getRequiredBy());
-            map.put(TI_ESTIMATEDPICKUP, ConvertToDPWDateFormat(ti.getEstimatedPickup()));
-            map.put(TI_ESTIMATEDDELIVERY, ConvertToDPWDateFormat(ti.getEstimatedDelivery()));
-            map.put(TI_ACTUALPICKUP, ConvertToDPWDateFormat(ti.getActualPickup()));
-            map.put(TI_ACTUALDELIVERY,ConvertToDPWDateFormat(ti.getActualDelivery()));
-            map.put(TI_PICKUP_GATEIN, ConvertToDPWDateFormat(ti.getPickupGateIn()));
-            map.put(TI_PICKUP_GATEOUT, ConvertToDPWDateFormat(ti.getPickupGateOut()));
-            map.put(TI_DELIVERY_GATEIN, ConvertToDPWDateFormat(ti.getDeliveryGateIn()));
-            map.put(TI_DELIVERY_GATEOUT, ConvertToDPWDateFormat(ti.getDeliveryGateOut()));
+        dictionary.put(TI_INSTRUCTIONTYPE, ti.getType());
+        dictionary.put(TI_DROPMODE, ti.getDropMode());
 
-            tiList.add(map);
-        }
-        dictionary.put(TI , tiList);
+        dictionary.put(ReportConstants.TI_EXPORT_AGENT, exportAgent.isPresent() && exportAgent.get().getOrgData() != null ? exportAgent.get().getOrgData().get("FullName") : "");
+        dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, exportAgent.isPresent() ? getFormattedAddress(exportAgent.get()) : "");
+        dictionary.put(ReportConstants.TI_EXPORT_AGENT_CONTACT,  exportAgent.isPresent() ? ReportHelper.getValueFromMap(exportAgent.get().getAddressData(), EMAIL) : "");
+
+        dictionary.put(ReportConstants.TI_IMPORT_AGENT , importAgent.isPresent() && importAgent.get().getOrgData() != null ? importAgent.get().getOrgData().get("FullName") : "");
+        dictionary.put(ReportConstants.TI_IMPORT_AGENT_ADDRESS, importAgent.isPresent() ? getFormattedAddress(importAgent.get()) : "");
+        dictionary.put(ReportConstants.TI_IMPORT_AGENT_CONTACT,  importAgent.isPresent() ? ReportHelper.getValueFromMap(importAgent.get().getAddressData(), EMAIL) : "");
+
+        dictionary.put(TI_TRANSPORTCOMPANY, getPartyAddress(ti.getTransporterDetail()));
+        dictionary.put(TI_PICKUPFROM, getFormattedAddress(ti.getSourceDetail()));
+        dictionary.put(TI_DELIVERTO, getFormattedAddress(ti.getDestinationDetail()));
+        dictionary.put(TI_TRANSPORTCOMPANYADDRESS, getFormattedAddress(ti.getTransporterDetail()));
+        dictionary.put(TI_TRANSPORTCOMPANYCONTACT, ti.getTransporterDetail() != null ? ReportHelper.getValueFromMap(ti.getTransporterDetail().getAddressData(), EMAIL) : "");
+        dictionary.put(TI_PICKUPFROMADDRESS, getFormattedAddress(ti.getSourceDetail()));
+        dictionary.put(TI_PICKUPFROMCONTACT, ti.getSourceDetail() != null ? ReportHelper.getValueFromMap(ti.getSourceDetail().getAddressData(), EMAIL) : "");
+        dictionary.put(TI_DELIVERTOADDRESS, getFormattedAddress(ti.getDestinationDetail()));
+        dictionary.put(TI_DELIVERTOCONTACT, ti.getDestinationDetail() != null ? ReportHelper.getValueFromMap(ti.getDestinationDetail().getAddressData(), EMAIL) : "");
+        dictionary.put(TI_REMARKS, ti.getRemarks());
+        dictionary.put(TI_PORTTRANSPORTADVISED, ti.getPortTransportAdvised());
+        dictionary.put(TI_REQUIREDBY, ti.getRequiredBy());
+        dictionary.put(TI_ESTIMATEDPICKUP, ConvertToDPWDateFormat(ti.getEstimatedPickup()));
+        dictionary.put(TI_ESTIMATEDDELIVERY, ConvertToDPWDateFormat(ti.getEstimatedDelivery()));
+        dictionary.put(TI_ACTUALPICKUP, ConvertToDPWDateFormat(ti.getActualPickup()));
+        dictionary.put(TI_ACTUALDELIVERY, ConvertToDPWDateFormat(ti.getActualDelivery()));
+        dictionary.put(TI_PICKUP_GATEIN, ConvertToDPWDateFormat(ti.getPickupGateIn()));
+        dictionary.put(TI_PICKUP_GATEOUT, ConvertToDPWDateFormat(ti.getPickupGateOut()));
+        dictionary.put(TI_DELIVERY_GATEIN, ConvertToDPWDateFormat(ti.getDeliveryGateIn()));
+        dictionary.put(TI_DELIVERY_GATEOUT, ConvertToDPWDateFormat(ti.getDeliveryGateOut()));
+
     }
 }
