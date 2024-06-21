@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.response.QuoteContractsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.QuoteContracts;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -37,13 +39,13 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class QuoteContractsServiceTest {
+class QuoteContractsServiceTest {
 
     @Mock
     private JsonHelper jsonHelper;
@@ -134,6 +136,38 @@ public class QuoteContractsServiceTest {
     void updateQuoteContracts() {
         ListContractResponse listContractResponse = jsonTestUtility.getListContractResponse();
         quoteContractsService.updateQuoteContracts(listContractResponse);
+        verify(quoteContractsDao, Mockito.times(1)).save(any());
+    }
+
+    @Test
+    void updateQuoteContracts_NullRequest() {
+        quoteContractsService.updateQuoteContracts(null);
+        verify(quoteContractsDao, Mockito.times(0)).save(any());
+    }
+
+    @Test
+    void updateQuoteContracts_NullContract() {
+        ListContractResponse listContractResponse = jsonTestUtility.getListContractResponse();
+        listContractResponse.setContracts(null);
+        quoteContractsService.updateQuoteContracts(listContractResponse);
+        verify(quoteContractsDao, Mockito.times(0)).save(any());
+    }
+
+    @Test
+    void updateQuoteContracts_error() {
+        ListContractResponse listContractResponse = jsonTestUtility.getListContractResponse();
+        when(quoteContractsDao.save(any())).thenThrow(new ValidationException(""));
+        quoteContractsService.updateQuoteContracts(listContractResponse);
+        verify(quoteContractsDao, Mockito.times(1)).save(any());
+    }
+
+    @Test
+    void updateQuoteContracts_oldQuoteContracts() {
+        ListContractResponse listContractResponse = jsonTestUtility.getListContractResponse();
+        listContractResponse.getContracts().get(0).getContract_usage().get(0).setFilter_params(null);
+        when(quoteContractsDao.findByContractId(anyString())).thenReturn(List.of(testQuoteContracts));
+        quoteContractsService.updateQuoteContracts(listContractResponse);
+        verify(quoteContractsDao, Mockito.times(1)).save(any());
     }
 
 }

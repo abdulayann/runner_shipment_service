@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
-public class QuoteContractsDaoTest {
+class QuoteContractsDaoTest {
 
     @Mock
     private IQuoteContractsRepository quoteContractsRepository;

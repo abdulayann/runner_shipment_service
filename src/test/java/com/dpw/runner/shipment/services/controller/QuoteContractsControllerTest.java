@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class QuoteContractsControllerTest {
+class QuoteContractsControllerTest {
 
     @Mock
     private IQuoteContractsService quoteContractsService;

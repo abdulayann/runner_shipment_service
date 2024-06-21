@@ -96,12 +96,11 @@ public class QuoteContractsService implements IQuoteContractsService {
                 log.error("Request is empty for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 return;
             }
-            String contractId;
+            String contractId = null;
             try {
                 contractId = request.getContracts().get(0).getContract_id();
             } catch (Exception e) {
                 log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                return;
             }
             if(IsStringNullOrEmpty(contractId)) {
                 log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -139,9 +138,7 @@ public class QuoteContractsService implements IQuoteContractsService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<QuoteContracts> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(quoteContracts -> {
-            responseList.add(convertEntityToDto(quoteContracts));
-        });
+        lst.forEach(quoteContracts -> responseList.add(convertEntityToDto(quoteContracts)));
         return responseList;
     }
 
