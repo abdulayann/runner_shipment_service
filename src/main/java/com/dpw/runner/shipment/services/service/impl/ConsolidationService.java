@@ -2917,10 +2917,8 @@ public class ConsolidationService implements IConsolidationService {
                         }
                     }
 
-                    if (consolidationDetails.getId() == null && consolidationDetails.getSendingAgent() != null && StringUtility.isNotEmpty(consolidationDetails.getSendingAgent().getAddressCode())) {
-                        if (!checkRaStatusFields(consolidationDetails, orgAddressResponse, consolidationDetails.getSendingAgent())) {
-                            throw new RunnerException("Screening Status and Security Status is mandatory for RA Origin Agent.");
-                        }
+                    if (consolidationDetails.getId() == null && consolidationDetails.getSendingAgent() != null && StringUtility.isNotEmpty(consolidationDetails.getSendingAgent().getAddressCode()) && !checkRaStatusFields(consolidationDetails, orgAddressResponse, consolidationDetails.getSendingAgent())) {
+                        throw new RunnerException("Screening Status and Security Status is mandatory for RA Origin Agent.");
                     }
                 }
             }
