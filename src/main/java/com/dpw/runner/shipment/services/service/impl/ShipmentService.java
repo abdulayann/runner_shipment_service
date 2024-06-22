@@ -829,7 +829,23 @@ public class ShipmentService implements IShipmentService {
                 masterBill(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getBol() : null).
                 freightLocalCurrency(UserContext.getUser().CompanyCurrency).
                 currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
+                autoUpdateWtVol(true).
                 build();
+        AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
+        shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
+        shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
+        shipmentRequest.setWeight(autoUpdateWtVolResponse.getWeight());
+        shipmentRequest.setWeightUnit(autoUpdateWtVolResponse.getWeightUnit());
+        shipmentRequest.setVolume(autoUpdateWtVolResponse.getVolume());
+        shipmentRequest.setVolumeUnit(autoUpdateWtVolResponse.getVolumeUnit());
+        shipmentRequest.setChargable(autoUpdateWtVolResponse.getChargable());
+        shipmentRequest.setChargeableUnit(autoUpdateWtVolResponse.getChargeableUnit());
+        shipmentRequest.setVolumetricWeight(autoUpdateWtVolResponse.getVolumetricWeight());
+        shipmentRequest.setVolumetricWeightUnit(autoUpdateWtVolResponse.getVolumetricWeightUnit());
+        shipmentRequest.setNetWeight(autoUpdateWtVolResponse.getNetWeight());
+        shipmentRequest.setNetWeightUnit(autoUpdateWtVolResponse.getNetWeightUnit());
+        shipmentRequest.setInnerPacks(autoUpdateWtVolResponse.getInnerPacks());
+        shipmentRequest.setInnerPackUnit(autoUpdateWtVolResponse.getInnerPackUnit());
 
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }
@@ -1718,7 +1734,7 @@ public class ShipmentService implements IShipmentService {
             shipmentRequest.setIsAutoSellRequired(isAutoSellRequired);
             KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentRequest, isCreate);
             log.info("Producing shipment data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(shipmentDetails.getGuid()));
         }
         catch (Exception e) {
             log.error("Error Producing shipment to kafka, error is due to " + e.getMessage());
@@ -3170,7 +3186,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
-
+            
             if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()) && !Constants.SHIPMENT_TYPE_DRT.equals(cloneShipmentDetails.getJobType()))
                 cloneShipmentDetails.setHouseBill(generateCustomHouseBL(null));
 
@@ -3458,6 +3474,7 @@ public class ShipmentService implements IShipmentService {
             response.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
             response.setShipmentCreatedOn(LocalDateTime.now());
             response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
+            response.setAutoUpdateWtVol(true);
             //Generate HBL
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL(null));

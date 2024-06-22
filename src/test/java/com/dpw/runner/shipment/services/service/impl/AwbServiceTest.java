@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.Runner;
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -14,7 +13,6 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.AwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
@@ -49,9 +47,10 @@ import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.models.Response;
-import org.checkerframework.checker.units.qual.C;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -61,7 +60,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
@@ -69,11 +67,12 @@ import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Stream;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -1677,8 +1676,21 @@ class AwbServiceTest extends CommonMocks {
         AwbCalculationResponse generatePaymentResponse = jsonTestUtility.getJson("AWB_CALCULATION_RESPONSE", AwbCalculationResponse.class);
         generatePaymentResponse.getAwbOtherChargesInfo().get(0).setChargeBasis(chargeBasis);
         BigDecimal zero = new BigDecimal(0);
-        if(chargeBasis > 1)
-            generatePaymentResponse.getAwbOtherChargesInfo().get(0).setAmount(zero);
+        var chargeableWt = request.getAwbGoodsDescriptionInfo().get(0).getChargeableWt();
+        var grossWt = request.getAwbGoodsDescriptionInfo().get(0).getGrossWt();
+        var rate = generatePaymentResponse.getAwbOtherChargesInfo().get(0).getRate();
+        if(chargeBasis == 2) {
+            BigDecimal val = rate.multiply(chargeableWt);
+            generatePaymentResponse.getAwbOtherChargesInfo().get(0).setAmount(val);
+            generatePaymentResponse.getAwbPaymentInfo().setTotalPrepaid(val.setScale(1, RoundingMode.HALF_DOWN));
+            generatePaymentResponse.getAwbPaymentInfo().setDueCarrierCharges(val);
+        }
+        if(chargeBasis == 3){
+            BigDecimal val = rate.multiply(grossWt);
+            generatePaymentResponse.getAwbOtherChargesInfo().get(0).setAmount(val);
+            generatePaymentResponse.getAwbPaymentInfo().setTotalPrepaid(val.setScale(1, RoundingMode.HALF_DOWN));
+            generatePaymentResponse.getAwbPaymentInfo().setDueCarrierCharges(val);
+        }
         generatePaymentResponse.getAwbPaymentInfo().setTotalCollect(
             generatePaymentResponse.getAwbPaymentInfo().getTotalPrepaid()
         );
@@ -2537,6 +2549,58 @@ class AwbServiceTest extends CommonMocks {
         when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
         assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
+    }
+
+    @Test
+    void createAwb_success_Dg() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+
+        testShipment.setHouseBill("custom-house-bill");
+        testShipment.setContainsHazardous(true);
+        testShipment.getPackingList().get(0).setHazardous(true);
+        addShipmentDataForAwbGeneration(testShipment);
+
+        Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+//        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
+//        Mockito.when(shipmentDao.save(any(), anyBoolean())).thenReturn(testShipment);
+
+//        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+        when(awbDao.save(any())).thenReturn(testDmawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(List.of(new EntityTransferMasterLists())).build();
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
+                objectMapper.convertValue(testDmawb, AwbResponse.class)
+        );
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
 

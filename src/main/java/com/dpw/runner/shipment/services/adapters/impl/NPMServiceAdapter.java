@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.DateUtils;
@@ -132,6 +133,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Autowired
     private IShipmentService shipmentService;
 
+    @Autowired
+    private IQuoteContractsService quoteContractsService;
+
     @Override
     public ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
@@ -141,6 +145,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             this.setOriginAndDestinationName(response.getBody());
             this.setCarrierMasterData(response.getBody());
+            quoteContractsService.updateQuoteContracts(response.getBody()); // update quote contracts data in db
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
@@ -163,6 +168,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 var masterData = shipmentService.fetchAllMasterDataByKey(null, shipmentDetailsResponse);
                 shipmentDetailsResponse.setMasterDataMap(masterData);
             }
+            quoteContractsService.updateQuoteContracts(response.getBody()); // update quote contracts data in db
             return ResponseHelper.buildDependentServiceResponse(shipmentDetailsResponse,0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);

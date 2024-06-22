@@ -2373,7 +2373,7 @@ public abstract class IReport {
         List<BillChargesResponse> copyChargesRows = new ArrayList<>();
         dictionary.put(AS_AGREED, false);
         dictionary.put(COPY_AS_AGREED, false);
-
+        var v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         String chargesApply = shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getBLChargesDisplay() : null;
 
         if (!Objects.isNull(chargesApply) && chargesApply.equals("AGR")) {
@@ -2399,7 +2399,7 @@ public abstract class IReport {
             }
             for (Map<String, Object> v: values) {
                 if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null) {
-                    v.put(OVERSEAS_SELL_AMOUNT, addCommas(v.get(OVERSEAS_SELL_AMOUNT).toString()));
+                    v.put(OVERSEAS_SELL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(v.get(OVERSEAS_SELL_AMOUNT))), StringUtility.convertToString(v.get("OverseasSellCurrency")), v1TenantSettingsResponse));
                 };
             }
             dictionary.put(CHARGES_SMALL, values);

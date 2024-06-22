@@ -37,7 +37,10 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.SaveStatus;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -68,12 +71,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
 @SuppressWarnings("ALL")
@@ -997,7 +1000,7 @@ public class AwbService implements IAwbService {
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getInsuranceValue() != null ? shipmentDetailsgetInsuranceValue() : new BigDecimal(0.0)); // field missing
         awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
         awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
-        awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.MAWB_GENERATION));
+        awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.MAWB_GENERATION, awbPackingList, consolidationDetails.getHazardous()));
         awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
         awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
@@ -1303,7 +1306,7 @@ public class AwbService implements IAwbService {
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getInsuranceValue() != null ? shipmentDetailsgetInsuranceValue() : new BigDecimal(0.0)); // field missing
         awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
         awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
-        awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.HAWB_GENERATION));
+        awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.HAWB_GENERATION, awbPackingList, shipmentDetails.getContainsHazardous()));
         awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
         awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
@@ -1419,6 +1422,9 @@ public class AwbService implements IAwbService {
                 awbPacking.setNetWeightUnit(packing.getNetWeightUnit());
                 awbPacking.setVolumeWeight(packing.getVolumeWeight());
                 awbPacking.setVolumeWeightUnit(packing.getVolumeWeightUnit());
+                awbPacking.setUnNumberAir(packing.getUnNumberAir());
+                awbPacking.setDgClassAir(packing.getDgClassAir());
+                awbPacking.setDgClassAirDescription(packing.getDgClassAirDescription());
                 awbPacking.setAwbNumber(shipmentDetails.getHouseBill());
                 totalPacks += Integer.parseInt(packing.getPacks());
                 awbPackingList.add(awbPacking);
@@ -1751,6 +1757,9 @@ public class AwbService implements IAwbService {
                 awbPacking.setNetWeightUnit(packing.getNetWeightUnit());
                 awbPacking.setVolumeWeight(packing.getVolumeWeight());
                 awbPacking.setVolumeWeightUnit(packing.getVolumeWeightUnit());
+                awbPacking.setUnNumberAir(packing.getUnNumberAir());
+                awbPacking.setDgClassAir(packing.getDgClassAir());
+                awbPacking.setDgClassAirDescription(packing.getDgClassAirDescription());
                 awbPacking.setAwbNumber(shipmentDetails.getHouseBill());
                 totalPacksCount += Integer.parseInt(packing.getPacks());
                 if(awb.getAwbPackingInfo() == null){
@@ -1854,6 +1863,9 @@ public class AwbService implements IAwbService {
         if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingHsCodeLock()) ||
                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingHsCodeLock()))
             awbPackingInfo.setHsCode(packing.getHSCode());
+        awbPackingInfo.setUnNumberAir(packing.getUnNumberAir());
+        awbPackingInfo.setDgClassAir(packing.getDgClassAir());
+        awbPackingInfo.setDgClassAirDescription(packing.getDgClassAirDescription());
     }
 
     private void updateShipmentInfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
@@ -2390,7 +2402,7 @@ public class AwbService implements IAwbService {
             awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
         if(!mawbLockSettings.getCurrencyLock())
             awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
-        awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.MAWB_GENERATION));
+        awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.MAWB_GENERATION, awb.getAwbPackingInfo(), consolidationDetails.getHazardous()));
         if(!mawbLockSettings.getAccountingInfoLock())
             awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         if(!mawbLockSettings.getOtherInfoLock())
@@ -2417,7 +2429,7 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setAgentCASSCode(tenantModel.AgentCASSCode);
     }
 
-    private String getHandlingInfo(MasterDataType masterDataType) {
+    private String getHandlingInfo(MasterDataType masterDataType, List<AwbPackingInfo> awbPackingInfoList, Boolean dgFlag) {
         String res = null;
         List<Integer> itemTypeList = new ArrayList<>();
         itemTypeList.add(masterDataType.getId());
@@ -2432,6 +2444,19 @@ public class AwbService implements IAwbService {
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(masterDataResponse.entities, EntityTransferMasterLists.class);
             if(masterLists.size() > 0)
                 res = masterLists.get(0).getItemDescription();
+        }
+        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) && Boolean.TRUE.equals(dgFlag)) {
+            Integer packs = 0;
+            if(awbPackingInfoList != null && !awbPackingInfoList.isEmpty()) {
+                for (AwbPackingInfo awbPackingInfo: awbPackingInfoList) {
+                    if(Boolean.TRUE.equals(awbPackingInfo.getHazardous()) && !IsStringNullOrEmpty(awbPackingInfo.getPacks())) {
+                        packs = packs + Integer.parseInt(awbPackingInfo.getPacks());
+                    }
+                }
+            }
+            if(!Objects.isNull(res))
+                res = res + "\n";
+            res = res + "Dangerous Goods as per attached Shipper’s Declaration " + packs.toString();
         }
         return res;
     }
@@ -2572,6 +2597,13 @@ public class AwbService implements IAwbService {
 
         GenerateAwbPaymentInfoRequest req = (GenerateAwbPaymentInfoRequest) commonRequestModel.getData();
 
+        /*
+            1. Calculate good description based on packs
+            2. Calculate other infos based on good description
+         */
+        updateGoodsDescriptionInfoFromPacks(req);
+        updateOtherChargesFromGoodsDescription(req);
+
         double totalAmount = 0.00;
         if(req.getAwbGoodsDescriptionInfo() != null) {
             for(var goods : req.getAwbGoodsDescriptionInfo()) {
@@ -2659,12 +2691,6 @@ public class AwbService implements IAwbService {
             paymentInfo.setTotalPrepaid(convertToBigDecimal(totalPrepaid));
         }
 
-        /*
-            1. Calculate good description based on packs
-            2. Calculate other infos based on good description
-         */
-        updateGoodsDescriptionInfoFromPacks(req);
-        updateOtherChargesFromGoodsDescription(req);
 
         return ResponseHelper.buildSuccessResponse(AwbCalculationResponse.builder()
                 .awbPackingInfo(req.getAwbPackingInfo()).awbGoodsDescriptionInfo(req.getAwbGoodsDescriptionInfo())
@@ -2729,7 +2755,13 @@ public class AwbService implements IAwbService {
         if (!Objects.isNull(goodsDescriptionInfos)) {
             Map<UUID, List<AwbPackingInfo>> guidBasedAwbPackingList = new HashMap<>();
             if (!Objects.isNull(packsInfo)) {
-                if (!Objects.isNull(request.getIsFromShipment()) && request.getIsFromShipment())
+                if(!Objects.isNull(request.getIsFromShipment()) && Boolean.TRUE.equals(request.getIsFromShipment()) && goodsDescriptionInfos.get(0).getEntityType().equals(Constants.DMAWB)){
+                    if(goodsDescriptionInfos.size() == 1){
+                        request.setPackUpdate(true);
+                        guidBasedAwbPackingList.put(goodsDescriptionInfos.get(0).getGuid(), packsInfo);
+                    }
+                }
+                else if (!Objects.isNull(request.getIsFromShipment()) && Boolean.TRUE.equals(request.getIsFromShipment()))
                     guidBasedAwbPackingList = packsInfo.stream().filter(c -> !Objects.isNull(c.getAwbGoodsDescriptionInfoGuid()))
                             .collect(Collectors.groupingBy(AwbPackingInfo::getAwbGoodsDescriptionInfoGuid));
                 else

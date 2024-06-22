@@ -328,6 +328,12 @@ public class CommonUtils {
         return s == null || s.isEmpty();
     }
 
+    public static Integer getIntFromString(String s) {
+        if(IsStringNullOrEmpty(s))
+            return null;
+        return Integer.parseInt(s);
+    }
+
     public static String getErrorResponseMessage(Exception e, Class<?> clazz) {
         String responseMessage = "";
     responseMessage =

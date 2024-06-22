@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -55,6 +56,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
@@ -240,6 +242,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
+
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
@@ -2886,6 +2891,53 @@ public class ConsolidationService implements IConsolidationService {
                 awbDao.save(awb);
             }
         }
+
+        Parties sendingAgent = consolidationDetails.getSendingAgent();
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
+            List<Parties> orgList = new ArrayList<>();
+            if(sendingAgent != null && StringUtility.isNotEmpty(sendingAgent.getAddressCode())) {
+                orgList.add(sendingAgent);
+            }
+
+            if(!orgList.isEmpty()) {
+                OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(orgList);
+                if (orgAddressResponse != null) {
+                    Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+                    if (sendingAgent != null && addressMap.containsKey(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode())) {
+                        Map<String, Object> addressConsignorAgent = addressMap.get(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode());
+                        if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
+                            var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
+                            if (rakcType != null && (Integer) rakcType == RAKCType.KNOWN_CONSIGNOR.getId() && (consolidationDetails.getScreeningStatus() == null ||
+                                    consolidationDetails.getScreeningStatus().isEmpty() ||
+                                    consolidationDetails.getSecurityStatus() == null)) {
+                                throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
+                            }
+                        }
+                    }
+
+                    if (consolidationDetails.getId() == null && consolidationDetails.getSendingAgent() != null && StringUtility.isNotEmpty(consolidationDetails.getSendingAgent().getAddressCode()) && !checkRaStatusFields(consolidationDetails, orgAddressResponse, consolidationDetails.getSendingAgent())) {
+                        throw new RunnerException("Screening Status and Security Status is mandatory for RA Origin Agent.");
+                    }
+                }
+            }
+        }
+    }
+
+    public boolean checkRaStatusFields(ConsolidationDetails consolidationDetails, OrgAddressResponse orgAddressResponse, Parties parties) {
+        Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+        if (addressMap.containsKey(parties.getOrgCode() + "#" + parties.getAddressCode())) {
+            Map<String, Object> addressConsignorAgent = addressMap.get(parties.getOrgCode() + "#" + parties.getAddressCode());
+            if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
+                var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
+                if (rakcType != null && (Integer)rakcType == RAKCType.REGULATED_AGENT.getId() && (consolidationDetails.getScreeningStatus() == null ||
+                        consolidationDetails.getScreeningStatus().isEmpty() ||
+                        consolidationDetails.getSecurityStatus() == null)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private boolean checkDisableFetchConditionForAwb(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity,ShipmentSettingsDetails shipmentSettingsDetails){
@@ -2972,7 +3024,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
             KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
             log.info("Producing consolidation data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(consolidationDetails.getGuid()));
         }
         catch (Exception e) {
             log.error("Error Producing consolidation to kafka, error is due to " + e.getMessage());
