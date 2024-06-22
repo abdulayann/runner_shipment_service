@@ -32,6 +32,7 @@ public class AwbRequest implements IRunnerRequest {
     private List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo;
     private List<AwbPackingInfo> awbPackingInfo;
     private List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;
+    private Boolean airMessageResubmitted;
 
     //Used to provide special handling codes for UI
     private List<String> shcIdList;

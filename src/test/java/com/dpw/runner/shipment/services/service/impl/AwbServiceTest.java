@@ -2611,5 +2611,60 @@ class AwbServiceTest extends CommonMocks {
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
+    @Test
+    void testValidateAwbThrowsExceptionIfNotAllHawbGenerated() {
+        Awb mockAwb = testMawb;
+        mockAwb.setAirMessageResubmitted(false);
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build();
+
+        when(consoleShipmentMappingDao.findByConsolidationId(testMawb.getConsolidationId())).thenReturn(
+            List.of(consoleShipmentMapping)
+        );
+        List<String> errors = new ArrayList();
+
+        assertThrows(RunnerException.class, () -> awbService.validateAwb(mockAwb));
+    }
+
+    @Test
+    void testValidateAwbGivesErrorWhenNewShipmentIsAttached() {
+        Awb mockAwb = testMawb;
+        List<String> errors = new ArrayList();
+        mockAwb.setAirMessageResubmitted(true);
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build();
+
+        when(consoleShipmentMappingDao.findByConsolidationId(testMawb.getConsolidationId())).thenReturn(
+            List.of(consoleShipmentMapping)
+        );
+        when(mawbHawbLinkDao.findByMawbId(mockAwb.getId())).thenReturn(Collections.EMPTY_LIST);
+        when(awbDao.findByShipmentId(1L)).thenReturn(List.of(testHawb));
+
+        errors.add("Additional Shipments have been attached, please reset data as required.");
+
+        try{
+            var res = awbService.validateAwb(mockAwb);
+            assertEquals(errors.toString(), res);
+        } catch (Exception e){
+            fail(e);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {Constants.DMAWB, Constants.HAWB})
+    void testValidateAwbGivesErrorIfAirMessageNotResubmitted(String entityType) {
+        Awb mockAwb = testHawb;
+        mockAwb.getAwbShipmentInfo().setEntityType(entityType);
+        mockAwb.setAirMessageResubmitted(false);
+
+        List<String> errors = new ArrayList();
+        errors.add(Constants.DMAWB.equalsIgnoreCase(entityType) ? AwbConstants.RESUBMIT_FWB_VALIDATION : AwbConstants.RESUBMIT_FZB_VALIDATION);
+
+        try{
+            var res = awbService.validateAwb(mockAwb);
+            assertEquals(errors.toString(), res);
+        } catch (Exception e){
+            fail(e);
+        }
+
+    }
 
 }

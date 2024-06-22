@@ -741,7 +741,7 @@ public class AwbService implements IAwbService {
             }
             if(res.getAwbShipmentInfo().getEntityType().equals("MAWB")) {
                 try {
-                    res.setErrors(validateMawb(awbShipmentInfo));
+                    res.setErrors(validateAwb(awbShipmentInfo));
                 } catch (RunnerException e) {
                     throw new RuntimeException(e);
                 }
@@ -3155,33 +3155,43 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private String validateMawb(Awb awb) throws RunnerException {
+    public String validateAwb(Awb awb) throws RunnerException {
         List<String> errors = new ArrayList<>();
-        boolean allHawbsGenerated = true;
-        var id = awb.getConsolidationId();
-        if(id == null) {
-            throw new RunnerException("ID can't be null, please provide a valid input !");
-        }
-
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(id);
-        List<Long> shipmentIdList = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
-        List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(awb.getId());
-        Set<Long> shipmentAwbIdSet = mawbHawbLinks.stream().map(MawbHawbLink::getHawbId).collect(Collectors.toSet());
-        // Check whether HAWB is generated for all the linked shipments
-        for(var shipmentId : shipmentIdList) {
-            List<Awb> response = awbDao.findByShipmentId(shipmentId);
-            if (Objects.isNull(response) || response.size() == 0) {
-              allHawbsGenerated = false;
-              break;
+        String awbType = awb.getAwbShipmentInfo().getEntityType();
+        if(Constants.MAWB.equalsIgnoreCase(awbType)) {
+            boolean allHawbsGenerated = true;
+            var id = awb.getConsolidationId();
+            if(id == null) {
+                throw new RunnerException("ID can't be null, please provide a valid input !");
             }
-            else if(!shipmentAwbIdSet.contains(response.get(0).getId())) {
-                errors.add("Additional Shipments have been attached, please reset data as required.");
-                break;
-            }
-        }
 
-        if(!allHawbsGenerated)
-            throw new RunnerException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(id);
+            List<Long> shipmentIdList = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+            List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(awb.getId());
+            Set<Long> shipmentAwbIdSet = mawbHawbLinks.stream().map(MawbHawbLink::getHawbId).collect(Collectors.toSet());
+            // Check whether HAWB is generated for all the linked shipments
+            for(var shipmentId : shipmentIdList) {
+                List<Awb> response = awbDao.findByShipmentId(shipmentId);
+                if (Objects.isNull(response) || response.size() == 0) {
+                    allHawbsGenerated = false;
+                    break;
+                }
+                else if(!shipmentAwbIdSet.contains(response.get(0).getId())) {
+                    errors.add("Additional Shipments have been attached, please reset data as required.");
+                    break;
+                }
+            }
+            if(Boolean.FALSE.equals(awb.getAirMessageResubmitted()))
+                errors.add(AwbConstants.RESUBMIT_FWB_VALIDATION);
+
+            if(!allHawbsGenerated)
+                throw new RunnerException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
+        }
+        else {
+            // For HAWB/DMAWB
+            if(Boolean.FALSE.equals(awb.getAirMessageResubmitted()))
+                errors.add(Constants.DMAWB.equalsIgnoreCase(awbType) ? AwbConstants.RESUBMIT_FWB_VALIDATION : AwbConstants.RESUBMIT_FZB_VALIDATION);
+        }
 
         return errors.size() > 0 ? errors.toString() : null;
     }
