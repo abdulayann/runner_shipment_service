@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
@@ -77,6 +78,9 @@ class V1ServiceImplTest {
 
     @MockBean
     private V1ServiceUtil v1ServiceUtil;
+
+    @MockBean
+    private CommonUtils commonUtils;
 
     @BeforeAll
     static void init() throws IOException {
@@ -4226,6 +4230,7 @@ class V1ServiceImplTest {
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
 
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         // Act
         var responseEntity = v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build());
 
@@ -4240,6 +4245,7 @@ class V1ServiceImplTest {
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
         // Act
         var responseEntity = v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build());
@@ -4254,6 +4260,7 @@ class V1ServiceImplTest {
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
 
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         // Act and Assert
         var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build()));
         assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());

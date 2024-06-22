@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -58,7 +59,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
-class AwbUtilityTest {
+class AwbUtilityTest extends CommonMocks {
 
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails testShipment;
@@ -463,7 +464,7 @@ class AwbUtilityTest {
         EntityTransferCarrier mockCarrier = new EntityTransferCarrier();
         carriersMap.put(mockByCarrier, mockCarrier);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
-
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForConsole(mockAwb, mockConsol);
 
         assertNotNull(expectedResponse);
@@ -552,7 +553,7 @@ class AwbUtilityTest {
         EntityTransferCarrier mockCarrier = new EntityTransferCarrier();
         carriersMap.put(mockByCarrier, mockCarrier);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
-
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForConsole(mockAwb, mockConsol);
 
         assertNotNull(expectedResponse);
@@ -632,7 +633,7 @@ class AwbUtilityTest {
         EntityTransferCarrier mockCarrier = new EntityTransferCarrier();
         carriersMap.put(mockByCarrier, mockCarrier);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
-
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment);
 
         assertNotNull(expectedResponse);
@@ -669,7 +670,7 @@ class AwbUtilityTest {
                 .organizations(responseOrgs).addresses(responseAddrs).build();
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
 
-
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment);
 
         assertNotNull(expectedResponse);
