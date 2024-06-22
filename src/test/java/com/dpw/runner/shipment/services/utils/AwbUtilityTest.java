@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
@@ -1027,6 +1028,50 @@ class AwbUtilityTest {
 
         try {
             awbUtility.createEventUpdateForAirMessaging(airMessagingEventDto);
+        }
+        catch (Exception e){
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    void testUpdateAwbStatusForFsuUpdateForAwbWithShipmentId() {
+        AirMessagingEventDto airMessagingEventDto = new AirMessagingEventDto();
+        airMessagingEventDto.setGuid(UUID.randomUUID());
+        airMessagingEventDto.setEventCode(AwbConstants.FSU_LOCK_EVENT_CODE);
+
+        Awb mockAwb = testHawb;
+        mockAwb.setShipmentId(1L);
+        when(awbDao.findByGuid(airMessagingEventDto.getGuid())).thenReturn(Optional.of(mockAwb));
+
+        try {
+            awbUtility.createEventUpdateForAirMessaging(airMessagingEventDto);
+            verify(awbDao, times(1)).updateAirMessageStatus(any(),any());
+        }
+        catch (Exception e){
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    void testUpdateAwbStatusForFsuUpdateForAwbWithConsolidationId() {
+        AirMessagingEventDto airMessagingEventDto = new AirMessagingEventDto();
+        airMessagingEventDto.setGuid(UUID.randomUUID());
+        airMessagingEventDto.setEventCode(AwbConstants.FSU_LOCK_EVENT_CODE);
+
+        Awb mockAwb = testMawb;
+        AwbStatus mockStatus = AwbStatus.AWB_FSU_LOCKED;
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build();
+
+        when(awbDao.findByGuid(airMessagingEventDto.getGuid())).thenReturn(Optional.of(mockAwb));
+        when(consoleShipmentMappingDao.findByConsolidationIdByQuery(testMawb.getConsolidationId())).thenReturn(
+            List.of(consoleShipmentMapping)
+        );
+
+        try {
+            awbUtility.createEventUpdateForAirMessaging(airMessagingEventDto);
+            verify(awbDao, times(1)).updateLinkedHawbAirMessageStatus(mockAwb.getGuid(), mockStatus.name());
+            verify(awbDao, times(1)).updateAirMessageStatus(mockAwb.getGuid(), mockStatus.name());
         }
         catch (Exception e){
             fail(e.getMessage());

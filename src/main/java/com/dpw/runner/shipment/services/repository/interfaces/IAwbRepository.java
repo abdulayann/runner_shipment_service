@@ -40,7 +40,7 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set air_message_status = ?2 Where guid = ?1", nativeQuery = true)
+    @Query(value = "Update Awb set air_message_status = ?2, air_message_resubmitted = true Where guid = ?1", nativeQuery = true)
     int updateAirMessageStatus(UUID guid, String airMessageStatus);
 
     @Transactional
