@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
@@ -70,6 +71,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
@@ -214,7 +218,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private Set<String> applyConsolidationValidations(ConsolidationDetails request, ConsolidationDetails oldEntity, boolean creatingFromDgShipment) {
         Set<String> errors = new LinkedHashSet<>();
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         // Non dg consolidation validations
         if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
@@ -53,7 +54,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class HblReportTest {
+class HblReportTest extends CommonMocks {
 
     @InjectMocks
     private HblReport hblReport;
@@ -299,7 +300,7 @@ class HblReportTest {
         v1DataResponse.entities = Arrays.asList(new VesselsResponse());
         when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
-
+        mockShipmentSettings();
         assertNotNull(hblReport.getDocumentModel(123L));
     }
 
@@ -439,6 +440,7 @@ class HblReportTest {
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mockShipmentSettings();
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -590,6 +592,7 @@ class HblReportTest {
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mockShipmentSettings();
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -735,6 +738,7 @@ class HblReportTest {
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
+        mockShipmentSettings();
         Map<String, Object> response = hblReport.populateDictionary(hblModel);
         assertNotNull(response);
     }
@@ -861,6 +865,7 @@ class HblReportTest {
         consoleShipmentMapping.setConsolidationId(1L);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> hblReport.populateDictionary(hblModel));
     }
 }

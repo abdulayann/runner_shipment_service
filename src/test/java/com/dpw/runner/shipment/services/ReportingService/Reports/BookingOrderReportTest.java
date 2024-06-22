@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.BookingOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
@@ -69,7 +70,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class BookingOrderReportTest {
+class BookingOrderReportTest extends CommonMocks {
 
     @InjectMocks
     private BookingOrderReport bookingOrderReport;
@@ -368,6 +369,7 @@ class BookingOrderReportTest {
         mockCarrier();
         mockUnloc();
         mockUnlocation();
+        mockShipmentSettings();
         assertNotNull(bookingOrderReport.populateDictionary(bookingOrderModel));
     }
 

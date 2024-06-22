@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -40,7 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class MawbReportTest {
+class MawbReportTest extends CommonMocks {
 
     @InjectMocks
     private MawbReport mawbReport;
@@ -107,6 +108,7 @@ class MawbReportTest {
         consolidationModel.setHazardous(true);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mawbReport.isDMawb = false;
+        mockShipmentSettings();
         Assertions.assertNotNull(mawbReport.getDocumentModel(123L));
     }
 
@@ -123,6 +125,7 @@ class MawbReportTest {
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mawbReport.isDMawb = false;
         UserContext.getUser().setPermissions(new HashMap<>());
+        mockShipmentSettings();
         Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
     }
 
@@ -134,6 +137,7 @@ class MawbReportTest {
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(awbRepository.findByConsolidationId(any())).thenReturn(null);
         mawbReport.isDMawb = true;
+        mockShipmentSettings();
         Assertions.assertNotNull(mawbReport.getDocumentModel(123L));
     }
 

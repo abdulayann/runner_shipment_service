@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
@@ -43,7 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PickupOrderReportTest {
+class PickupOrderReportTest extends CommonMocks {
 
     @InjectMocks
     private PickupOrderReport pickupOrderReport;
@@ -310,6 +311,7 @@ class PickupOrderReportTest {
         HblModel hblModel = new HblModel();
         hblModel.setShipment(shipmentModel);
         when(hblReport.getDocumentModel(any())).thenReturn(hblModel);
+        mockShipmentSettings();
         assertNotNull(pickupOrderReport.getDocumentModel(123L));
     }
 }

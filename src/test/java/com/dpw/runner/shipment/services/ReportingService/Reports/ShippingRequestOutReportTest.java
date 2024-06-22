@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
@@ -54,7 +55,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ShippingRequestOutReportTest {
+class ShippingRequestOutReportTest extends CommonMocks {
 
     @InjectMocks
     private ShippingRequestOutReport shippingRequestOutReport;
@@ -288,6 +289,7 @@ class ShippingRequestOutReportTest {
         masterDataMock();
         mockVessel();
         mockCarrier();
+        mockShipmentSettings();
         assertNotNull(shippingRequestOutReport.populateDictionary(shippingRequestOutModel));
     }
 
@@ -448,6 +450,7 @@ class ShippingRequestOutReportTest {
         masterDataMock();
         mockVessel();
         mockCarrier();
+        mockShipmentSettings();
         assertNotNull(shippingRequestOutReport.populateDictionary(shippingRequestOutModel));
         assert (true);
     }

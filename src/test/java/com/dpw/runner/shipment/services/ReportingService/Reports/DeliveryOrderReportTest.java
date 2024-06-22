@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.DeliveryOrderModel;
@@ -69,7 +70,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class DeliveryOrderReportTest {
+class DeliveryOrderReportTest extends CommonMocks {
 
     @InjectMocks
     private DeliveryOrderReport deliveryOrderReport;
@@ -396,6 +397,7 @@ class DeliveryOrderReportTest {
         mockBill();
         mockUnloc();
         mockUnlocation();
+        mockShipmentSettings();
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
     }
 
@@ -428,6 +430,7 @@ class DeliveryOrderReportTest {
         mockBill();
         mockUnloc();
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
+        mockShipmentSettings();
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
     }
 
@@ -620,6 +623,7 @@ class DeliveryOrderReportTest {
         when(masterDataFactory.getMasterDataService()).thenReturn(mockV1MasterDataImpl);
         when(mockV1MasterDataImpl.retrieveTenant()).thenReturn(new DependentServiceResponse());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        mockShipmentSettings();
         assertNotNull(deliveryOrderReport.getDocumentModel(123L));
     }
 }

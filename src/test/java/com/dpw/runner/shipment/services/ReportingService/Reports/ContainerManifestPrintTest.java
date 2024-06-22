@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ConsolidationManifestPrintModel;
@@ -54,7 +55,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ContainerManifestPrintTest {
+class ContainerManifestPrintTest extends CommonMocks {
 
     @InjectMocks
     private ContainerManifestPrint containerManifestPrint;
@@ -275,6 +276,7 @@ class ContainerManifestPrintTest {
         mockCarrier();
         mockUnlocRow();
         mockUnloc();
+        mockShipmentSettings();
         assertNotNull(containerManifestPrint.populateDictionary(consolidationManifestPrintModel));
     }
 
@@ -305,6 +307,7 @@ class ContainerManifestPrintTest {
         mockCarrier();
         mockUnlocRow();
         mockUnloc();
+        mockShipmentSettings();
         assertNotNull(containerManifestPrint.populateDictionary(consolidationManifestPrintModel));
     }
 
@@ -327,6 +330,7 @@ class ContainerManifestPrintTest {
         mockCarrier();
         mockUnlocRow();
         mockUnloc();
+        mockShipmentSettings();
         assertNotNull(containerManifestPrint.populateDictionary(consolidationManifestPrintModel));
     }
 

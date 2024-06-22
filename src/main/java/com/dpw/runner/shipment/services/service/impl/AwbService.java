@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
@@ -157,6 +156,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private PartialFetchUtils partialFetchUtils;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
 
 
@@ -331,7 +333,7 @@ public class AwbService implements IAwbService {
             List<Awb> awbList = awbPage.getContent();
 
             if(awbList != null) {
-                ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+                ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
                 for (Awb awb : awbList) {
                     if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
@@ -394,7 +396,7 @@ public class AwbService implements IAwbService {
     @Override
     public Awb getMawnLinkPacks(Awb awb) {
         try {
-            ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
             List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.getId());
             List<AwbPackingInfo> linkedPacks = new ArrayList<>();
             for (var hawb : linkedHawb) {
@@ -731,7 +733,7 @@ public class AwbService implements IAwbService {
             generateDefaultAwbInformation(awbShipmentInfo, res);
             String error = null;
             if(res.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB) || res.getAwbShipmentInfo().getEntityType().equals(Constants.DMAWB)){
-                ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+                ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
                 Boolean fetchRatesWarning = awbShipmentInfo.getAwbGoodsDescriptionInfo().stream().anyMatch(x -> x.getRateCharge() != null && Boolean.TRUE.equals(x.getEnableFetchRatesWarning()));
                 if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && Boolean.TRUE.equals(fetchRatesWarning)){
                     error = "The Port/ Carrier details are changed - You need to fetch the new TACT Rates.";
@@ -1647,7 +1649,7 @@ public class AwbService implements IAwbService {
 
         Awb awb = awbs.get(0);
 
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         if(shipmentSettingsDetails.getRestrictAWBEdit() != null && shipmentSettingsDetails.getRestrictAWBEdit()){
             ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder()
@@ -2163,7 +2165,7 @@ public class AwbService implements IAwbService {
 
         Awb awb = awbs.get(0);
 
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         // fetch consolidation info
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
@@ -2939,7 +2941,7 @@ public class AwbService implements IAwbService {
 
                 packsDescriptionValue += "Total Volumetric Weight " + totalVWt.toString() + " ";
 
-                ShipmentSettingsDetails tenantSettingsList = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+                ShipmentSettingsDetails tenantSettingsList = commonUtils.getShipmentSettingFromContext();
 
                 if (tenantSettingsList != null && tenantSettingsList.getWeightChargeableUnit().equalsIgnoreCase(Constants.WEIGHT_UNIT_KG)) {
                     packsDescriptionValue += Constants.KGS;

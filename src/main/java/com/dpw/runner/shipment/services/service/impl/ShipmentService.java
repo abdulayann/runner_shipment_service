@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -536,7 +535,7 @@ public class ShipmentService implements IShipmentService {
             if(request.getContainersList() != null)
                 shipmentDetails.setContainersList(jsonHelper.convertValueToList(request.getContainersList(), Containers.class));
             shipmentDetails = getShipment(shipmentDetails);
-            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails, null);
@@ -605,7 +604,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setConsolidationList(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class));
 
         try {
-            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             List<Long> removedConsolIds = new ArrayList<>();
 
             boolean syncConsole = beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails, removedConsolIds);
@@ -958,7 +957,7 @@ public class ShipmentService implements IShipmentService {
 //        }
         response = calculatePacksAndPacksUnit(packingList, response);
         response = calculateWeightAndVolumeUnit(request, packingList, response);
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         boolean isPacksPresent = packingList != null && packingList.size() > 0;
         if(!isPacksPresent)
             response = updateShipmentDetails(response, containersList);
@@ -1006,7 +1005,7 @@ public class ShipmentService implements IShipmentService {
         String packsUnit = "";
         String toWeightUnit = Constants.WEIGHT_UNIT_KG;
         String toVolumeUnit = Constants.VOLUME_UNIT_M3;
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
             toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
         if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
@@ -1179,7 +1178,7 @@ public class ShipmentService implements IShipmentService {
         // TODO- implement Validation logic
 
         Optional<ShipmentDetails>oldEntity =retrieveByIdOrGuid(request);
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         ShipmentDetails entity = objectMapper.convertValue(request, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
         if(entity.getGuid() != null && !oldEntity.get().getGuid().equals(entity.getGuid())) {
@@ -1215,7 +1214,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         try {
-            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(oldEntity.get().getId());
             List<Long> removedConsolIds = new ArrayList<>();
@@ -1329,7 +1328,7 @@ public class ShipmentService implements IShipmentService {
             tempConsolIds = Objects.isNull(oldEntity) ? new ArrayList<>() : oldEntity.getConsolidationList().stream().map(e -> e.getId()).toList();
         }
 
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) && !isDgUser()) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && !isDgUser()) {
             if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                 if((removedConsolIds != null && !removedConsolIds.isEmpty()) || isNewConsolAttached)
                     throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
@@ -1815,7 +1814,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) throws RunnerException {
-        ShipmentSettingsDetails shipmentSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
         if(Boolean.TRUE.equals(shipmentSettings.getShipConsolidationContainerEnabled())) {
             ConsolidationDetails consolidationDetails = new ConsolidationDetails();
             consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_DRT);
@@ -2118,7 +2117,7 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             ShipmentContainerAssignRequest request = (ShipmentContainerAssignRequest) commonRequestModel.getData();
-            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
             if(shipmentSettingsDetails.getMultipleShipmentEnabled() && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA))) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getContainerIds(), "IN");
@@ -2163,7 +2162,7 @@ public class ShipmentService implements IShipmentService {
     @Override
     public ResponseEntity<IRunnerResponse> assignAllContainers(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         boolean lclAndSeaOrRoadFlag = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
         boolean IsConsolidatorFlag = shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator();
         List<Containers> containersList = new ArrayList<>();
@@ -2561,7 +2560,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails entity = oldEntity.get();
             Integer previousStatus = oldEntity.get().getStatus();
             shipmentDetailsMapper.update(shipmentRequest, entity);
-            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             Long consolidationId = null;
@@ -3280,7 +3279,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     public ResponseEntity<IRunnerResponse> getShipmentFromConsol(Long consolidationId, String bookingNumber) {
-        var tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        var tenantSettings = commonUtils.getShipmentSettingFromContext();
         // Populate shipment details on basis of tenant settings
 
         ShipmentDetailsResponse shipment;
@@ -3423,7 +3422,7 @@ public class ShipmentService implements IShipmentService {
         if(shipmentDetails != null) {
             res = shipmentDetails.getHouseBill();
         }
-        ShipmentSettingsDetails tenantSetting = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails tenantSetting = commonUtils.getShipmentSettingFromContext();
         if(shipmentDetails == null && tenantSetting != null && tenantSetting.getRestrictHblGen()) {
             return null;
         }
@@ -3459,7 +3458,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> getDefaultShipment() {
         String responseMsg;
         try {
-            var tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            var tenantSettings = commonUtils.getShipmentSettingFromContext();
             // Populate shipment details on basis of tenant settings
             ShipmentDetailsResponse response = new ShipmentDetailsResponse();
             response.setAdditionalDetails(new AdditionalDetailResponse());
@@ -3541,7 +3540,7 @@ public class ShipmentService implements IShipmentService {
             log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getConsolidationId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         ListCommonRequest listRequest = setCrieteriaForAttachShipment(request, consolidationDetails.get());
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listRequest, ShipmentDetails.class, tableNames);
@@ -3697,7 +3696,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean checkForNonDGConsoleAndAirDgFlagAndNonDGUser(ConsolidationDetails consolidationDetails) {
-        if(!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()))
+        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
             return false;
         if(!Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()))
             return false;
@@ -3711,7 +3710,7 @@ public class ShipmentService implements IShipmentService {
             return true;
         if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
             return true;
-        if(!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()))
+        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
             return true;
         if(consolidationDetails.getShipmentsList() == null || consolidationDetails.getShipmentsList().isEmpty())
             return false;
@@ -3854,13 +3853,13 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean checkForDGShipmentAndAirDgFlag(ShipmentDetails shipment) {
-        if(checkForNonAirDGFlag(shipment, ShipmentSettingsDetailsContext.getCurrentTenantSettings()))
+        if(checkForNonAirDGFlag(shipment, commonUtils.getShipmentSettingFromContext()))
             return false;
         return Boolean.TRUE.equals(shipment.getContainsHazardous());
     }
 
     private boolean checkForNonDGShipmentAndAirDgFlag(ShipmentDetails shipment) {
-        if(checkForNonAirDGFlag(shipment, ShipmentSettingsDetailsContext.getCurrentTenantSettings()))
+        if(checkForNonAirDGFlag(shipment, commonUtils.getShipmentSettingFromContext()))
             return false;
         return !Boolean.TRUE.equals(shipment.getContainsHazardous());
     }

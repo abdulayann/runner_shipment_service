@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.ArrivalNoticeModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
@@ -61,7 +62,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ArrivalNoticeReportTest {
+class ArrivalNoticeReportTest extends CommonMocks {
 
     @InjectMocks
     private ArrivalNoticeReport arrivalNoticeReport;
@@ -357,6 +358,7 @@ class ArrivalNoticeReportTest {
         mockRakc(arrivalNoticeModel.shipmentDetails);
         mockBill();
         mockCommodity();
+        mockShipmentSettings();
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 
@@ -397,6 +399,7 @@ class ArrivalNoticeReportTest {
         mockRakc(arrivalNoticeModel.shipmentDetails);
         mockBill();
         mockCommodity();
+        mockShipmentSettings();
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 
@@ -511,6 +514,7 @@ class ArrivalNoticeReportTest {
         shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
+        mockShipmentSettings();
         assertNotNull(arrivalNoticeReport.getDocumentModel(123L));
     }
 }

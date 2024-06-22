@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -85,6 +84,9 @@ public class ShipmentDao implements IShipmentDao {
     @Autowired
     private IV1Service v1Service;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
     @Override
     public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails) , Constants.SHIPMENT, LifecycleHooks.ON_CREATE, false);
@@ -159,7 +161,7 @@ public class ShipmentDao implements IShipmentDao {
     private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
         if (!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()) && (oldShipment != null && !Objects.equals(oldShipment.getStatus(), shipmentDetails.getStatus())) &&
                 Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
-            ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
             if (tenantSettings != null) {
                 String suffix = tenantSettings.getCancelledBLSuffix();
                 if (suffix != null) {
@@ -267,7 +269,7 @@ public class ShipmentDao implements IShipmentDao {
         if(request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {
             errors.add("Multiple consolidations are attached to the shipment, please verify.");
         }
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         // Non dg Shipments can not have dg packs
         if(checkForNonDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && request.getPackingList() != null) {
