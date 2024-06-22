@@ -55,7 +55,7 @@ public class CommonUtils {
     public ExecutorService syncExecutorService;
 
     @Autowired
-    private IShipmentSettingsDao shipmentSettingsDao;
+    public IShipmentSettingsDao shipmentSettingsDao;
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
