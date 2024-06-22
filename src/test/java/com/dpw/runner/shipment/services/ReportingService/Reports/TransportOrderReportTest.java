@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
@@ -41,7 +42,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class TransportOrderReportTest {
+class TransportOrderReportTest extends CommonMocks {
 
     @InjectMocks
     private TransportOrderReport transportOrderReport;
@@ -288,6 +289,7 @@ class TransportOrderReportTest {
         shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
         shipmentModel.setCarrierDetails(new CarrierDetailModel());
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        mockShipmentSettings();
         assertNotNull(transportOrderReport.getDocumentModel(123L));
     }
 }

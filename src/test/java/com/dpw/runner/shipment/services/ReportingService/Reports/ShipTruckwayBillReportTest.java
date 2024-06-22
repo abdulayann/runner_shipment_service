@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
@@ -53,7 +54,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ShipTruckwayBillReportTest {
+class ShipTruckwayBillReportTest extends CommonMocks {
 
     @InjectMocks
     private ShipTruckwayBillReport shipTruckwayBillReport;
@@ -299,6 +300,7 @@ class ShipTruckwayBillReportTest {
         masterDataMock();
         mockVessel();
         mockCarrier();
+        mockShipmentSettings();
         assertNotNull(shipTruckwayBillReport.populateDictionary(truckDriverModel));
     }
 
@@ -327,7 +329,7 @@ class ShipTruckwayBillReportTest {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
 
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-
+        mockShipmentSettings();
         assertNotNull(shipTruckwayBillReport.getDocumentModel(123L));
     }
 

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
@@ -90,7 +91,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
-class ConsolidationServiceTest {
+class ConsolidationServiceTest extends CommonMocks {
 
     @Mock
     private PartialFetchUtils partialFetchUtils;
@@ -137,8 +138,6 @@ class ConsolidationServiceTest {
 
     @Mock
     private IPackingService packingService;
-    @Mock
-    private CommonUtils commonUtils;
 
     @Mock
     private UserContext userContext;
@@ -261,6 +260,7 @@ class ConsolidationServiceTest {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
 
+        mockShipmentSettings();
 
         CompletableFuture<ResponseEntity<IRunnerResponse>> future = consolidationService.retrieveByIdAsync(requestModel);
 
@@ -327,6 +327,7 @@ class ConsolidationServiceTest {
             argument.run();
             return mockRunnable;
         });
+        mockShipmentSettings();
 
         consolidationService.fetchConsolidations(CommonRequestModel.builder().data(sampleRequest).build());
 
@@ -502,6 +503,7 @@ class ConsolidationServiceTest {
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails);
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        mockShipmentSettings();
 
         ResponseEntity<IRunnerResponse> response = consolidationService.createFromBooking(commonRequestModel);
 
@@ -520,7 +522,7 @@ class ConsolidationServiceTest {
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
-
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
     }
 
@@ -539,7 +541,7 @@ class ConsolidationServiceTest {
 
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenThrow(new ValidationException("TEST"));
-
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
     }
 
@@ -609,6 +611,7 @@ class ConsolidationServiceTest {
 
         UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
         LocalDateTime currentTime = LocalDateTime.now();
+        mockShipmentSettings();
 
         ResponseEntity<IRunnerResponse> response = consolidationService.getDefaultConsolidation();
 
@@ -649,6 +652,7 @@ class ConsolidationServiceTest {
         when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getConsolidationAddresses());
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -671,6 +675,7 @@ class ConsolidationServiceTest {
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails);
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenThrow(new RunnerException("Test"));
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -689,7 +694,7 @@ class ConsolidationServiceTest {
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
-
+        mockShipmentSettings();
         assertThrows(ValidationException.class, ()->spyService.create(commonRequestModel));
     }
 
@@ -768,6 +773,7 @@ class ConsolidationServiceTest {
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> response = spyService.update(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -838,6 +844,7 @@ class ConsolidationServiceTest {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         doNothing().when(containerService).afterSaveList(anyList(),anyBoolean());
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -878,6 +885,7 @@ class ConsolidationServiceTest {
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -921,6 +929,7 @@ class ConsolidationServiceTest {
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1004,6 +1013,7 @@ class ConsolidationServiceTest {
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1034,6 +1044,7 @@ class ConsolidationServiceTest {
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1059,6 +1070,7 @@ class ConsolidationServiceTest {
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1143,6 +1155,7 @@ class ConsolidationServiceTest {
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> response = spyService.partialUpdate(commonRequestModel, false);
 
         assertEquals(expectedEntity, response);
@@ -1174,6 +1187,8 @@ class ConsolidationServiceTest {
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
+        mockShipmentSettings();
+
         ResponseEntity<IRunnerResponse> response = spyService.partialUpdate(commonRequestModel, false);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -1219,6 +1234,7 @@ class ConsolidationServiceTest {
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
     }
@@ -1267,6 +1283,8 @@ class ConsolidationServiceTest {
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
+        mockShipmentSettings();
+
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
     }
@@ -1457,7 +1475,7 @@ class ConsolidationServiceTest {
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = spyService.calculateAchievedValues(CommonRequestModel.buildRequest(1L));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1661,6 +1679,7 @@ class ConsolidationServiceTest {
         when(containerService.calculateUtilization(any())).thenReturn(containers);
         when(containerDao.save(any())).thenReturn(containers);
         doNothing().when(shipmentsContainersMappingDao).assignShipments(anyLong(), any(), anyBoolean());
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.assignPacksAndShipments(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1775,7 +1794,7 @@ class ConsolidationServiceTest {
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1795,6 +1814,7 @@ class ConsolidationServiceTest {
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1811,6 +1831,7 @@ class ConsolidationServiceTest {
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         when(v1Service.fetchBookingIdFilterGuids(any())).thenReturn(resp);
+        mockShipmentSettings();
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1831,6 +1852,7 @@ class ConsolidationServiceTest {
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
+        mockShipmentSettings();
 
         CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity = consolidationService.listAsync(CommonRequestModel.buildRequest(sampleRequest));
         assertEquals(HttpStatus.OK, responseEntity.get().getStatusCode());
@@ -1873,6 +1895,7 @@ class ConsolidationServiceTest {
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(consolidationDetails, ConsolidationDetailsResponse.class);
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+        mockShipmentSettings();
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1884,7 +1907,7 @@ class ConsolidationServiceTest {
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(consolidationDetails, ConsolidationDetailsResponse.class);
         when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().guid("1d27fe99-0874-4587-9a83-460bb5ba31f0").build()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1956,6 +1979,7 @@ class ConsolidationServiceTest {
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(consolidationListResponse);
+        mockShipmentSettings();
 
         consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(200,response.getStatus());
@@ -2058,6 +2082,7 @@ class ConsolidationServiceTest {
 
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel.buildRequest(1L));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -2102,6 +2127,7 @@ class ConsolidationServiceTest {
     void testGetDefaultConsolidation_Failure() {
         var spyService = Mockito.spy(consolidationService);
         Mockito.doThrow(new RuntimeException()).when(spyService).generateCustomBolNumber();
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = spyService.getDefaultConsolidation();
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -2129,6 +2155,8 @@ class ConsolidationServiceTest {
         shipmentSettingsDetails.setBolNumberGeneration(GenerationType.Serial);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
         when(v1Service.getMaxConsolidationId()).thenReturn("2313");
+        mockShipmentSettings();
+
         String res = consolidationService.generateCustomBolNumber();
         assertEquals("CONS2313", res);
     }
@@ -2139,6 +2167,7 @@ class ConsolidationServiceTest {
         shipmentSettingsDetails.setBolNumberPrefix("CONS");
         shipmentSettingsDetails.setBolNumberGeneration(GenerationType.Random);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        mockShipmentSettings();
         String res = consolidationService.generateCustomBolNumber();
         assertEquals(14, res.length());
     }
@@ -2168,6 +2197,7 @@ class ConsolidationServiceTest {
         when(productEngine.IdentifyProduct(any(ConsolidationDetails.class), any())).thenReturn(tenantProducts);
         when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
         when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("BOL23131");
+        mockShipmentSettings();
         spyService.generateConsolidationNumber(consolidationDetails);
         assertEquals("CONS007262", consolidationDetails.getConsolidationNumber());
         assertEquals("CONS007262", consolidationDetails.getReferenceNumber());
@@ -2194,6 +2224,7 @@ class ConsolidationServiceTest {
         when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("");
         when(v1Service.getMaxConsolidationId()).thenReturn("123311");
         doReturn("BOL2121").when(spyService).generateCustomBolNumber();
+        mockShipmentSettings();
         spyService.generateConsolidationNumber(consolidationDetails);
         assertEquals("CONS000123311", consolidationDetails.getConsolidationNumber());
         assertEquals("CONS000123311", consolidationDetails.getReferenceNumber());
@@ -2219,6 +2250,7 @@ class ConsolidationServiceTest {
         when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("");
         when(v1Service.getMaxConsolidationId()).thenReturn("123311");
         doReturn("BOL2121").when(spyService).generateCustomBolNumber();
+        mockShipmentSettings();
         spyService.generateConsolidationNumber(consolidationDetails);
         assertEquals("CONS000123311", consolidationDetails.getConsolidationNumber());
         assertEquals("CONS000123311", consolidationDetails.getReferenceNumber());
@@ -2251,7 +2283,6 @@ class ConsolidationServiceTest {
         when(partiesDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
         when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString(), any())).thenReturn(consolidationDetails.getConsolidationAddresses());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
-
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(consolidationDetailsRequest), false, "user", LocalDateTime.now());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(consolidationDetailsResponse), responseEntity);

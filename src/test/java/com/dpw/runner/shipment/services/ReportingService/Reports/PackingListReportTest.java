@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.PackingListModel;
@@ -55,7 +56,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PackingListReportTest {
+class PackingListReportTest extends CommonMocks {
 
     @InjectMocks
     private PackingListReport packingListReport;
@@ -287,6 +288,7 @@ class PackingListReportTest {
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         masterDataMock();
         mockCarrier();
+        mockShipmentSettings();
         assertNotNull(packingListReport.populateDictionary(packingListModel));
     }
 
@@ -318,6 +320,7 @@ class PackingListReportTest {
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         masterDataMock();
         mockCarrier();
+        mockShipmentSettings();
         assertNotNull(packingListReport.populateDictionary(packingListModel));
     }
 
@@ -413,6 +416,7 @@ class PackingListReportTest {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
+        mockShipmentSettings();
         assertNotNull(packingListReport.getDocumentModel(123L));
     }
 }

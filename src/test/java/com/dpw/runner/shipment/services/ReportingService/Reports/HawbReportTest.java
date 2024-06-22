@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
@@ -60,7 +61,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class HawbReportTest {
+class HawbReportTest extends CommonMocks {
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -742,6 +743,7 @@ class HawbReportTest {
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(awbRepository.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
+        mockShipmentSettings();
         assertNotNull(hawbReport.getDocumentModel(123L));
     }
 
@@ -758,6 +760,7 @@ class HawbReportTest {
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         UserContext.getUser().setPermissions(new HashMap<>());
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
     }
 }

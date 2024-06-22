@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
@@ -54,7 +55,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ShippingRequestAirReportTest {
+class ShippingRequestAirReportTest extends CommonMocks {
 
     @InjectMocks
     private ShippingRequestAirReport shippingRequestAirReport;
@@ -302,6 +303,7 @@ class ShippingRequestAirReportTest {
         EntityTransferCommodityType entityTransferCommodityType = new EntityTransferCommodityType();
         entityTransferCommodityType.setDescription("Bag");
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferCommodityType.class))).thenReturn(Arrays.asList(entityTransferCommodityType));
+        mockShipmentSettings();
         assertNotNull(shippingRequestAirReport.populateDictionary(shippingRequestAirModel));
     }
 
@@ -332,7 +334,7 @@ class ShippingRequestAirReportTest {
         shipmentModel.setTruckDriverDetails(Arrays.asList(new TruckDriverDetailsModel()));
 
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-
+        mockShipmentSettings();
         assertNotNull(shippingRequestAirReport.getDocumentModel(123L));
     }
 

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.CustomsInstructionsModel;
@@ -51,7 +52,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CustomsInstructionsReportTest {
+class CustomsInstructionsReportTest extends CommonMocks {
 
     @InjectMocks
     private CustomsInstructionsReport customsInstructionsReport;
@@ -276,6 +277,7 @@ class CustomsInstructionsReportTest {
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         masterDataMock();
         mockCarrier();
+        mockShipmentSettings();
         assertNotNull(customsInstructionsReport.populateDictionary(customsInstructionsModel));
     }
 
@@ -361,6 +363,7 @@ class CustomsInstructionsReportTest {
         shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
         shipmentModel.setCarrierDetails(new CarrierDetailModel());
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        mockShipmentSettings();
         assertNotNull(customsInstructionsReport.getDocumentModel(123L));
     }
 }

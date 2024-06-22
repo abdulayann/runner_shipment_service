@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
@@ -53,7 +54,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ShippingInstructionReportTest {
+class ShippingInstructionReportTest extends CommonMocks {
 
     @InjectMocks
     private ShippingInstructionReport shippingInstructionReport;
@@ -269,6 +270,7 @@ class ShippingInstructionReportTest {
         Hbl hbl = new Hbl();
         hbl.setHblData(new HblDataDto());
         when(hblRepository.findByShipmentId(any())).thenReturn(Arrays.asList(hbl));
+        mockShipmentSettings();
         assertNotNull(shippingInstructionReport.populateDictionary(shippingInstructionModel));
     }
 
@@ -306,6 +308,7 @@ class ShippingInstructionReportTest {
         Hbl hbl = new Hbl();
         hbl.setHblData(new HblDataDto());
         when(hblRepository.findByShipmentId(any())).thenReturn(Arrays.asList(hbl));
+        mockShipmentSettings();
         assertNotNull(shippingInstructionReport.populateDictionary(shippingInstructionModel));
     }
 

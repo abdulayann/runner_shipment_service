@@ -37,6 +37,9 @@ public class CargoManifestReport extends IReport{
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
     @Override
     public Map<String, Object> getData(Long id) {
         CargoManifestModel cargoManifestModel = (CargoManifestModel) getDocumentModel(id);
@@ -51,7 +54,7 @@ public class CargoManifestReport extends IReport{
         cargoManifestModel.tenantDetails = getTenant();
         cargoManifestModel.usersDto = UserContext.getUser();
         cargoManifestModel.awb = getHawb(id);
-        cargoManifestModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        cargoManifestModel.shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         return cargoManifestModel;
     }
 

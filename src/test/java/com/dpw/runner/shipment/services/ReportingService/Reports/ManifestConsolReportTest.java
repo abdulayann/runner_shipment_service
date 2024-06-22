@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentAndContainerResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
@@ -55,7 +56,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ManifestConsolReportTest {
+class ManifestConsolReportTest extends CommonMocks {
 
     @InjectMocks
     private ManifestConsolReport manifestConsolReport;
@@ -287,7 +288,7 @@ class ManifestConsolReportTest {
         containerMap.put(PACKS, BigDecimal.TEN);
         containerMap.put(HSN_NUMBER, "100");
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentAndContainerResponse.class), any(TypeReference.class));
-
+        mockShipmentSettings();
         assertNotNull(manifestConsolReport.populateDictionary(manifestConsolModel));
     }
 
@@ -340,6 +341,7 @@ class ManifestConsolReportTest {
         containerMap.put(PACKS, BigDecimal.TEN);
         containerMap.put(HSN_NUMBER, "100");
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentAndContainerResponse.class), any(TypeReference.class));
+        mockShipmentSettings();
         assertNotNull(manifestConsolReport.populateDictionary(manifestConsolModel));
     }
 

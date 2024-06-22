@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
@@ -46,7 +47,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SeawayBillReportTest {
+class SeawayBillReportTest extends CommonMocks {
     @InjectMocks
     private SeawayBillReport seawayBillReport;
 
@@ -328,6 +329,7 @@ class SeawayBillReportTest {
         HblModel hblModel = new HblModel();
         hblModel.setShipment(shipmentModel);
         when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
+        mockShipmentSettings();
         assertNotNull(seawayBillReport.getDocumentModel(123L));
     }
 }

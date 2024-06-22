@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestAirConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
@@ -61,7 +62,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CargoManifestAirConsolidationReportTest {
+class CargoManifestAirConsolidationReportTest extends CommonMocks {
 
     @InjectMocks
     private CargoManifestAirConsolidationReport cargoManifestAirConsolidationReport;
@@ -98,9 +99,6 @@ class CargoManifestAirConsolidationReportTest {
 
     @Mock
     private IAwbDao awbDao;
-
-    @Mock
-    private CommonUtils commonUtils;
 
     @Mock
     private IPackingService packingService;
@@ -343,6 +341,7 @@ class CargoManifestAirConsolidationReportTest {
         mockCarrier();
         mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
         mockUnloc();
+        mockShipmentSettings();
         assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
     }
 
@@ -362,6 +361,7 @@ class CargoManifestAirConsolidationReportTest {
         mockCarrier();
         mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
         mockUnloc();
+        mockShipmentSettings();
         assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
     }
 
@@ -512,7 +512,7 @@ class CargoManifestAirConsolidationReportTest {
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
 
         cargoManifestAirConsolidationReport.setShipIds(Arrays.asList(1L,2L));
-
+        mockShipmentSettings();
         assertNotNull(cargoManifestAirConsolidationReport.getDocumentModel(123L));
     }
 
@@ -551,7 +551,7 @@ class CargoManifestAirConsolidationReportTest {
 
         cargoManifestAirConsolidationReport.setShipIds(Arrays.asList(1L,2L));
         cargoManifestAirConsolidationReport.setShipperAndConsignee(true);
-
+        mockShipmentSettings();
         assertNotNull(cargoManifestAirConsolidationReport.getDocumentModel(123L));
     }
 }
