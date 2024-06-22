@@ -271,6 +271,7 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -608,6 +609,7 @@ class AwbServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
 
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -657,7 +659,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -955,6 +957,7 @@ class AwbServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
 
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -2599,6 +2602,7 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
