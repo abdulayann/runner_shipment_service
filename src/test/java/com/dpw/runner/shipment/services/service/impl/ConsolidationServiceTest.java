@@ -2259,6 +2259,27 @@ class ConsolidationServiceTest extends CommonMocks {
     }
 
     @Test
+    void testGenerateConsolidationNumberWithConsolidationLiteTrue() throws RunnerException {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setConsolidationNumber(null);
+        consolidationDetails.setReferenceNumber(null);
+        consolidationDetails.setBol(null);
+        TenantProducts tenantProducts = new TenantProducts();
+        tenantProducts.setId(1L);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setConsolidationLite(true);
+        shipmentSettingsDetails.setCustomisedSequence(false);
+        var spyService = Mockito.spy(consolidationService);
+        when(shipmentSettingsDao.list()).thenReturn(List.of(shipmentSettingsDetails));
+        when(v1Service.getMaxConsolidationId()).thenReturn("123311");
+        mockShipmentSettings();
+        spyService.generateConsolidationNumber(consolidationDetails);
+        assertEquals("CONS000123311", consolidationDetails.getConsolidationNumber());
+        assertEquals("CONS000123311", consolidationDetails.getReferenceNumber());
+        assertNull(consolidationDetails.getBol());
+    }
+
+    @Test
     void testCompleteV1ConsolidationCreateAndUpdate_Success() throws RunnerException {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         ShipmentDetails shipmentDetails = consolidationDetails.getShipmentsList().get(0);

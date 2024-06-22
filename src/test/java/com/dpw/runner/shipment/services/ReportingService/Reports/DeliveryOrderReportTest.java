@@ -405,6 +405,7 @@ class DeliveryOrderReportTest extends CommonMocks {
     void populateDictionaryWithouConsolidation() throws RunnerException {
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.setUsersDto(UserContext.getUser());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().disableBlPartiesName(false).decimalPlaces(2).build());
         deliveryOrderModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         populateModel(deliveryOrderModel);
         ShipmentModel shipmentModel = deliveryOrderModel.shipmentDetails;

@@ -470,6 +470,12 @@ class CommonUtilsTest {
     void defaultShipmentSettings() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(null);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
-        commonUtils.getShipmentSettingFromContext();
+        assertNotNull(commonUtils.getShipmentSettingFromContext());
+    }
+
+    @Test
+    void defaultShipmentSettingsWithValue() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        assertNotNull(commonUtils.getShipmentSettingFromContext());
     }
 }

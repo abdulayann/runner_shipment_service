@@ -236,6 +236,7 @@ class AwbServiceTest extends CommonMocks {
 
     @Test
     void createAwbSuccessGeneratesRoutingInfoFromCarrierDetails() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
         CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
 
