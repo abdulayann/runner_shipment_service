@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
@@ -467,6 +468,7 @@ class CommonUtilsTest {
 
     @Test
     void defaultShipmentSettings() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(null);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
         commonUtils.getShipmentSettingFromContext();
     }
