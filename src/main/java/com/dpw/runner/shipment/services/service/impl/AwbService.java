@@ -2445,7 +2445,7 @@ public class AwbService implements IAwbService {
             if(masterLists.size() > 0)
                 res = masterLists.get(0).getItemDescription();
         }
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) && Boolean.TRUE.equals(dgFlag)) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && Boolean.TRUE.equals(dgFlag)) {
             Integer packs = 0;
             if(awbPackingInfoList != null && !awbPackingInfoList.isEmpty()) {
                 for (AwbPackingInfo awbPackingInfo: awbPackingInfoList) {
