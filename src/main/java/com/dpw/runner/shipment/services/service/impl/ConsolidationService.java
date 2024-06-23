@@ -387,7 +387,9 @@ public class ConsolidationService implements IConsolidationService {
                         ++container20Count;
                     } else if (container.getContainerCode().contains(Constants.Cont40)) {
                         ++container40Count;
-                    } else if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                    }
+
+                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
                         ++container20GPCount;
                     } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
                         ++container20RECount;
