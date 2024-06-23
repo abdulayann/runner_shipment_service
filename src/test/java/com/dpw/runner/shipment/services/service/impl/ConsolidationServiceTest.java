@@ -57,6 +57,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -218,6 +220,8 @@ class ConsolidationServiceTest extends CommonMocks {
     private static ShipmentDetails testShipment;
     private static ObjectMapper objectMapperTest;
     private static ConsolidationDetails testConsol;
+    private static ShipmentDetails shipmentDetails;
+
     private static ConsolidationDetailsResponse testConsolResponse;
     private static ConsolidationDetailsRequest testConsolRequest;
 
@@ -241,6 +245,7 @@ class ConsolidationServiceTest extends CommonMocks {
         testConsolResponse = modelMapperTest.map(testConsol , ConsolidationDetailsResponse.class);
         testConsolRequest = modelMapperTest.map(testConsol , ConsolidationDetailsRequest.class);
         consolidationService.executorService = Executors.newFixedThreadPool(2);
+        shipmentDetails = jsonTestUtility.getCompleteShipment();
     }
 
     @AfterEach
@@ -1821,15 +1826,20 @@ class ConsolidationServiceTest extends CommonMocks {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
-    @Test
-    void testList_Success1() {
+    @ParameterizedTest
+    @ValueSource(booleans = {
+            true, false
+    })
+    void testList_Success1(boolean shipmentLevelContainer) {
         ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
         ConsolidationDetails consolidationDetails = testConsol;
         ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
 
+        consolidationDetails.setShipmentsList(Arrays.asList(shipmentDetails));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(shipmentLevelContainer);
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
