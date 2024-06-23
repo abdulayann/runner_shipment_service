@@ -60,6 +60,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -2567,8 +2569,11 @@ class ShipmentServiceTest extends CommonMocks {
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
-    @Test
-    void completeUpdateConsolidationListNotEmpty_success_isDGUser() throws RunnerException {
+    @ParameterizedTest
+    @ValueSource(booleans = {
+            true, false
+    })
+    void completeUpdateConsolidationListNotEmpty_success_isDGUser(boolean dgUser) throws RunnerException {
         ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
         consolidationDetails1.setId(1L);
 
@@ -2581,7 +2586,7 @@ class ShipmentServiceTest extends CommonMocks {
         mockShipment.setConsolidationList(Arrays.asList(consolidationDetails1));
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).airDGFlag(true).build());
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.airDG, dgUser);
         UserContext.getUser().setPermissions(permissions);
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
@@ -2599,17 +2604,19 @@ class ShipmentServiceTest extends CommonMocks {
                                         .setContainersList(new ArrayList<>())));
 
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
-        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
-
-        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
-
-        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
         mockShipmentSettings();
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+        if(dgUser) {
+            when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+            when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
+            when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+            when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+            when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
+            ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+            assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+        } else {
+            assertThrows(ValidationException.class, () -> shipmentService.completeUpdate(commonRequestModel));
+        }
         UserContext.getUser().setPermissions(new HashMap<>());
-        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
     @Test
