@@ -3465,6 +3465,44 @@ class ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void updateWithGuid() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(Arrays.asList(Containers.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
+
+        ShipmentDetails savedShipmentDetails = new ShipmentDetails();
+        savedShipmentDetails.setGuid(UUID.randomUUID());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(savedShipmentDetails));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+
+        shipmentDetails.setGuid(UUID.randomUUID());
+        assertThrows(RunnerException.class, () -> {shipmentService.update(commonRequestModel);});
+    }
+
+    @Test
+    void updateWithContainerListNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(Arrays.asList(Containers.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
+
+        ShipmentDetails savedShipmentDetails = new ShipmentDetails();
+        savedShipmentDetails.setGuid(UUID.randomUUID());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(savedShipmentDetails));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(savedShipmentDetails);
+
+        shipmentDetails.setGuid(savedShipmentDetails.getGuid());
+        doNothing().when(eventService).updateAtaAtdInShipment(any(), any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ContainerResponse containerResponse = new ContainerResponse();
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().containersList(Arrays.asList(containerResponse)).build();
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.update(commonRequestModel);
+        assertEquals(ResponseHelper.buildSuccessResponse(shipmentDetailsResponse), httpResponse);
+    }
+
+    @Test
     void fetchEmailsShipmentIdConsolidationIdNull() {
         assertThrows(DataRetrievalFailureException.class, () -> {
             shipmentService.fetchEmails(null, null);
