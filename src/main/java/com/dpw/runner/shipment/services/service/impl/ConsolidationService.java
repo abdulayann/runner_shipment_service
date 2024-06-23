@@ -524,15 +524,13 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
-        if(StringUtility.isEmpty(consolidationDetails.getBol())) {
-            if(Objects.equals(commonUtils.getShipmentSettingFromContext().getConsolidationLite(), false)) {
-                String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.BOLNumber);
-                if (StringUtility.isEmpty(bol)) {
-                    bol = generateCustomBolNumber();
-                }
-                if (StringUtility.isNotEmpty(bol)) {
-                    consolidationDetails.setBol(bol);
-                }
+        if (StringUtility.isEmpty(consolidationDetails.getBol()) && Objects.equals(commonUtils.getShipmentSettingFromContext().getConsolidationLite(), false)) {
+            String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.BOLNumber);
+            if (StringUtility.isEmpty(bol)) {
+                bol = generateCustomBolNumber();
+            }
+            if (StringUtility.isNotEmpty(bol)) {
+                consolidationDetails.setBol(bol);
             }
         }
     }
