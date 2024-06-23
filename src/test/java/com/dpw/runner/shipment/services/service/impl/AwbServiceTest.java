@@ -2555,15 +2555,18 @@ class AwbServiceTest extends CommonMocks {
         assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
     }
 
-    @Test
-    void createAwb_success_Dg() throws RunnerException {
+    @ParameterizedTest
+    @ValueSource(booleans = {
+            true, false
+    })
+    void createAwb_success_Dg(boolean hazardous) throws RunnerException {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
 
         testShipment.setHouseBill("custom-house-bill");
-        testShipment.setContainsHazardous(true);
-        testShipment.getPackingList().get(0).setHazardous(true);
+        testShipment.setContainsHazardous(hazardous);
+        testShipment.getPackingList().get(0).setHazardous(hazardous);
         addShipmentDataForAwbGeneration(testShipment);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
