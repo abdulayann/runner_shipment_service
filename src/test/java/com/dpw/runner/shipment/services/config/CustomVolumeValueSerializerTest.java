@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @ExtendWith(MockitoExtension.class)
-public class CustomVolumeValueSerializerTest {
+class CustomVolumeValueSerializerTest {
 
     @Mock
     private CommonUtils commonUtils;
