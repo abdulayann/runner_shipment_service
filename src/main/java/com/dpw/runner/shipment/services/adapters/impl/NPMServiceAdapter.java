@@ -336,8 +336,11 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                         carrier.add(cont.getCarrier_codes().get(0));
                         log.info("Carrier data from npm {}", carrier);
                         response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriersBySCACCode(carrier.stream().toList()));
-                        if(response.getCarrierMasterData().containsKey(cont.getCarrier_codes().get(0)))
-                            cont.getCarrier_codes().set(0, response.getCarrierMasterData().get(cont.getCarrier_codes().get(0)).getItemValue());
+                        if(response.getCarrierMasterData().containsKey(cont.getCarrier_codes().get(0))) {
+                            EntityTransferCarrier carrierMasterData = response.getCarrierMasterData().get(cont.getCarrier_codes().get(0));
+                            cont.getCarrier_codes().set(0, carrierMasterData.getItemValue());
+                            response.getCarrierMasterData().put(carrierMasterData.getItemValue(), carrierMasterData);
+                        }
                         else {
                             log.info("Carrier code not valid or not present in contract");
                             cont.setCarrier_codes(new ArrayList<>());
