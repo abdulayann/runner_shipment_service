@@ -1546,12 +1546,6 @@ public class ShipmentService implements IShipmentService {
                                 throw new RunnerException("Screening Status and Security Status is mandatory for RA Origin Agent.");
                             }
                         }
-
-                        if (shipmentDetails.getAdditionalDetails().getExportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getExportBroker().getAddressCode())) {
-                            if (!checkRaStatusFields(shipmentDetails, orgAddressResponse, shipmentDetails.getAdditionalDetails().getExportBroker())) {
-                                throw new RunnerException("Screening Status and Security Status is mandatory for RA Destination Agent.");
-                            }
-                        }
                     }
                 }
             }
