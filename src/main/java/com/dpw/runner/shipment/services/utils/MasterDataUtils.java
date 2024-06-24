@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -14,7 +13,6 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -582,6 +580,28 @@ public class MasterDataUtils{
             List<EntityTransferCarrier> vesselsList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
             vesselsList.forEach(vessel -> {
                 keyMasterDataMap.put(vessel.getItemValue(), vessel);
+            });
+        }
+        return keyMasterDataMap;
+    }
+
+    public Map<String, EntityTransferCarrier> fetchInBulkCarriersBySCACCode(List<String> requests) {
+        Map<String, EntityTransferCarrier> keyMasterDataMap = new HashMap<>();
+        if(requests.size() > 0) {
+            log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> criteria = new ArrayList<>();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.IDENTIFIER1));
+            String operator = Operators.IN.getValue();
+            criteria.addAll(List.of(field, operator, List.of(requests)));
+            request.setCriteriaRequests(criteria);
+            CarrierListObject carrierListObject = new CarrierListObject();
+            carrierListObject.setListObject(request);
+            V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+
+            List<EntityTransferCarrier> carriers = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
+            carriers.forEach(carrier -> {
+                keyMasterDataMap.put(carrier.getIdentifier1(), carrier);
             });
         }
         return keyMasterDataMap;
