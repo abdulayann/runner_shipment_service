@@ -10,10 +10,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DbAccessHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -123,6 +125,7 @@ public class GetNextNumberHelper {
             throw new ValidationException("CONFIGURED_SEQUENCE_LENGTH_VALIDATION");
         }
         if (updateCounter) {
+            log.info("CR-ID {} || Calling event {} from generateCustomSequence", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PRODUCT_SEQ_SAVE);
             sequenceSettings = productSequenceConfigDao.save(sequenceSettings);
             try {
                 shipmentSettingsSync.syncProductSequence(sequenceSettings, v1AuthHelper.getHeadersForDataSync());
