@@ -244,6 +244,7 @@ public class AwbService implements IAwbService {
                         i.setAwbNumber(awb.getAwbNumber());
                     }
                 }
+                this.updateSciFieldFromHawb(awb, oldEntity.get(), false, id);
             }
             awb = awbDao.save(awb);
 
@@ -271,6 +272,40 @@ public class AwbService implements IAwbService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
+    }
+
+    private void updateSciFieldFromHawb(Awb awb, Awb oldEntity, boolean isReset, Long awbId) throws RunnerException {
+        if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
+            List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
+            if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
+                Long mawbId = mawbHawbLinks.get(0).getMawbId();
+                Optional<Awb> mawb = awbDao.findById(mawbId);
+                if(mawb.isPresent()){
+                    mawb.get().getAwbCargoInfo().setSci(awb.getAwbCargoInfo().getSci());
+                    awbDao.save(mawb.get());
+                }
+            }
+        } else if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && !Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1) && ((oldEntity != null && Objects.equals(oldEntity.getAwbCargoInfo().getSci(), AwbConstants.T1)) || isReset)){
+            List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
+            if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
+                Long mawbId = mawbHawbLinks.get(0).getMawbId();
+                List<Awb> hawbsList = getLinkedAwbFromMawb(mawbId);
+                boolean updateSci = false;
+                if(hawbsList != null && !hawbsList.isEmpty()){
+                    Optional<Awb> hawb = hawbsList.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1) && !Objects.equals(x.getId(), awbId)).findAny();
+                    if(!hawb.isPresent()){
+                        updateSci = true;
+                    }
+                }
+                if(updateSci) {
+                    Optional<Awb> mawb = awbDao.findById(mawbId);
+                    if (mawb.isPresent() && Objects.equals(mawb.get().getAwbCargoInfo().getSci(), AwbConstants.T1)) {
+                        mawb.get().getAwbCargoInfo().setSci(null);
+                        awbDao.save(mawb.get());
+                    }
+                }
+            }
+        }
     }
 
     private void validateAwbBeforeUpdate(Awb awb) {
@@ -495,7 +530,10 @@ public class AwbService implements IAwbService {
             }
 
             // save awb details
-            awb = awbDao.save(generateMawb(request, consolidationDetails, mawbPackingInfo));
+            awb = generateMawb(request, consolidationDetails, mawbPackingInfo);
+            if(awbList != null && !awbList.isEmpty())
+                updateSciFieldFromMawb(awb, awbList);
+            awb = awbDao.save(awb);
             try {
                 callV1Sync(awb, SaveStatus.CREATE);
             } catch (Exception e) {
@@ -823,6 +861,21 @@ public class AwbService implements IAwbService {
                 .build();
         awb.setAwbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo()));
         return awb;
+    }
+
+    private void updateSciFieldFromMawb(Awb awb, List<Awb> awbList) {
+        boolean updateSci = false;
+        if(!awbList.isEmpty()){
+            Optional<Awb> hawb = awbList.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
+            if(hawb.isPresent()){
+                updateSci = true;
+            }
+        }
+        if(updateSci) {
+            awb.getAwbCargoInfo().setSci(AwbConstants.T1);
+        } else {
+            awb.getAwbCargoInfo().setSci(null);
+        }
     }
 
     private AwbShipmentInfo generateMawbShipmentInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, AwbCargoInfo awbCargoInfo) throws RunnerException {
@@ -1573,8 +1626,13 @@ public class AwbService implements IAwbService {
                     awb.setAwbSpecialHandlingCodesMappings(resetAwb.getAwbSpecialHandlingCodesMappings());
                     // Link
                     LinkHawbMawb(awb, awbList);
+                    if(awbList != null && !awbList.isEmpty())
+                        updateSciFieldFromMawb(awb, awbList);
                 }
-                else awb = generateAwb(createAwbRequest);
+                else {
+                    awb = generateAwb(createAwbRequest);
+                    this.updateSciFieldFromHawb(awb, null, true, awbId);
+                }
                 awb.setGuid(awbGuid);
                 awb.setAirMessageStatus(airMessageStatus);
                 awb.setLinkedHawbAirMessageStatus(linkedHawbAirMessageStatus);
