@@ -587,7 +587,7 @@ public class MasterDataUtils{
 
     public Map<String, EntityTransferCarrier> fetchInBulkCarriersBySCACCode(List<String> requests) {
         Map<String, EntityTransferCarrier> keyMasterDataMap = new HashMap<>();
-        if(requests.size() > 0) {
+        if(!requests.isEmpty()) {
             log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> criteria = new ArrayList<>();
@@ -600,9 +600,7 @@ public class MasterDataUtils{
             V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
 
             List<EntityTransferCarrier> carriers = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
-            carriers.forEach(carrier -> {
-                keyMasterDataMap.put(carrier.getIdentifier1(), carrier);
-            });
+            carriers.forEach(carrier -> keyMasterDataMap.put(carrier.getIdentifier1(), carrier));
         }
         return keyMasterDataMap;
     }
