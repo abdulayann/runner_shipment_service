@@ -142,7 +142,6 @@ class HblReportTest extends CommonMocks {
         shipmentContainers.setContainerCount(1L);
         shipmentContainers.setContainerCode("20GP");
         shipmentContainers.setNetWeight(BigDecimal.TEN);
-        shipmentContainers.setNoOfPackages(10L);
         shipmentContainers.setContainerNumber("CONT000283");
         shipmentContainers.setGrossVolume(BigDecimal.TEN);
         shipmentContainers.setGrossVolumeUnit("M3");
@@ -155,7 +154,6 @@ class HblReportTest extends CommonMocks {
         shipmentContainers.setContainerCount(1L);
         shipmentContainers.setContainerCode("20GP");
         shipmentContainers.setNetWeight(BigDecimal.TEN);
-        shipmentContainers.setNoOfPackages(10L);
         shipmentContainers.setContainerNumber("CONT000284");
         shipmentContainers.setGrossVolume(BigDecimal.TEN);
         shipmentContainers.setGrossVolumeUnit("M3");
