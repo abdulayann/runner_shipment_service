@@ -409,5 +409,8 @@ public class Constants {
     public static final String DESCARTES = "Descartes";
     public static final String INTTRA = "INTTRA";
     public static final String PICKUP_DELIVERY = "PICKUP_DELIVERY";
+    public static final String VIEWS = "Views";
+    public static final String ENTITY = "entity";
+    public static final String NAME_FILTER = "name";
 
 }

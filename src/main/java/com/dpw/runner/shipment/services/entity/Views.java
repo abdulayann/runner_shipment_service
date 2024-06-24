@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -29,20 +30,23 @@ import java.util.UUID;
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @SQLDelete(sql = "UPDATE views SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
-public class Views extends MultiTenancy {
+public class Views extends BaseEntity {
 
     private static final long serialVersionUID = 190794279984274725L;
 
     @Type(type = "jsonb")
     @Column(name = "columns", columnDefinition = "jsonb")
-    private Map<String, String> columns;
+    private Map<String, Object> columns;
 
     @Type(type = "jsonb")
     @Column(name = "criteria", columnDefinition = "jsonb")
-    private List<FilterCriteria> criteria;
+    private Map<String, Object> criteria;
 
-    @Column(name = "is_public")
-    private Boolean isPublic;
+    @Column(name = "is_default")
+    private Boolean isDefault;
+
+    @Column(name = "name")
+    private String name;
 
     @Column(name = "entity")
     private String entity;
