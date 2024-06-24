@@ -2666,7 +2666,7 @@ public class ShipmentService implements IShipmentService {
         List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
         String shipmentId = "";
         boolean flag = true;
-
+        int counter = 1;
         while(flag) {
             ListCommonRequest listRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentId, "=");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class);
@@ -2675,6 +2675,7 @@ public class ShipmentService implements IShipmentService {
             if(!shipmentId.isEmpty() && shipments.getTotalElements() == 0)
                 flag = false;
             else {
+                log.info("Inside generateShipmentId: with shipmentID: {} | counter: {}", shipmentId, counter++);
                 if(shipmentSettingsList != null && shipmentSettingsList.size() != 0 && shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
                     try{
                         shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber, shipmentDetails);
