@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
@@ -78,7 +79,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AwbServiceTest {
+class AwbServiceTest extends CommonMocks {
 
     @Mock
     private IAwbDao awbDao;
@@ -228,12 +229,14 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
     void createAwbSuccessGeneratesRoutingInfoFromCarrierDetails() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
         CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
 
@@ -269,6 +272,7 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -402,7 +406,7 @@ class AwbServiceTest {
         when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(chargeMasterData);
         when(v1Service.fetchMasterData(any())).thenReturn(mockChargeCodeMasterData);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
         assertNotNull(listResponse.getBody());
@@ -426,6 +430,7 @@ class AwbServiceTest {
 //        when(v1Service.fetchMasterData(any())).thenReturn(mockChargeCodeMasterData);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
         assertNotNull(listResponse.getBody());
@@ -605,6 +610,7 @@ class AwbServiceTest {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
 
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -654,7 +660,7 @@ class AwbServiceTest {
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -811,6 +817,7 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(mockAwb, AwbResponse.class)
         );
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -951,6 +958,7 @@ class AwbServiceTest {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
 
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -1165,7 +1173,7 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 mockAwbResponse
         );
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -1201,7 +1209,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
 //        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -1240,7 +1248,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -1277,7 +1285,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -1313,7 +1321,7 @@ class AwbServiceTest {
 //        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
-
+        mockShipmentSettings();
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
@@ -1347,7 +1355,7 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
-
+        mockShipmentSettings();
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
@@ -1469,6 +1477,7 @@ class AwbServiceTest {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -1505,7 +1514,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
 //        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -1540,7 +1549,7 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
-
+        mockShipmentSettings();
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
@@ -1579,7 +1588,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -1614,7 +1623,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -1737,6 +1746,7 @@ class AwbServiceTest {
 
         Mockito.when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(ShipmentSettingsDetails.builder().volumeChargeableUnit("M3").weightChargeableUnit("KG").build()));
 
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> response = awbService.generateUpdatedNatureAndQuantGoodsField(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, response.getStatusCode());
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
@@ -2545,15 +2555,18 @@ class AwbServiceTest {
         assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
     }
 
-    @Test
-    void createAwb_success_Dg() throws RunnerException {
+    @ParameterizedTest
+    @ValueSource(booleans = {
+            true, false
+    })
+    void createAwb_success_Dg(boolean hazardous) throws RunnerException {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
 
         testShipment.setHouseBill("custom-house-bill");
-        testShipment.setContainsHazardous(true);
-        testShipment.getPackingList().get(0).setHazardous(true);
+        testShipment.setContainsHazardous(hazardous);
+        testShipment.getPackingList().get(0).setHazardous(hazardous);
         addShipmentDataForAwbGeneration(testShipment);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
@@ -2593,6 +2606,7 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }

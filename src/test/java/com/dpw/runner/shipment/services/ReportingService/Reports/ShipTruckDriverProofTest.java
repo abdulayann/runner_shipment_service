@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
@@ -53,7 +54,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ShipTruckDriverProofTest {
+class ShipTruckDriverProofTest extends CommonMocks {
 
     @InjectMocks
     private ShipTruckDriverProof shipTruckDriverProof;
@@ -299,6 +300,7 @@ class ShipTruckDriverProofTest {
         masterDataMock();
         mockVessel();
         mockCarrier();
+        mockShipmentSettings();
         assertNotNull(shipTruckDriverProof.populateDictionary(truckDriverModel));
     }
 
@@ -334,7 +336,7 @@ class ShipTruckDriverProofTest {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-
+        mockShipmentSettings();
         assertNotNull(shipTruckDriverProof.getDocumentModel(123L));
     }
 

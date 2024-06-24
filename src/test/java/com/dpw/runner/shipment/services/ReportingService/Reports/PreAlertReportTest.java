@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.PreAlertModel;
@@ -48,7 +49,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PreAlertReportTest {
+class PreAlertReportTest extends CommonMocks {
 
     @InjectMocks
     private PreAlertReport preAlertReport;
@@ -246,6 +247,7 @@ class PreAlertReportTest {
         locationMap.put(carrierDetailModel.getDestination(), unlocationsResponse);
 
         when(masterDataUtils.getLocationData(any())).thenReturn(locationMap);
+        mockShipmentSettings();
         assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
@@ -372,6 +374,7 @@ class PreAlertReportTest {
         Map<String, Object> dictionary = new HashMap<>();
         dictionary.put("id", "123");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
+        mockShipmentSettings();
         assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
@@ -480,6 +483,7 @@ class PreAlertReportTest {
         Map<String, Object> dictionary = new HashMap<>();
         dictionary.put("id", "123");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
+        mockShipmentSettings();
         assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
@@ -503,6 +507,7 @@ class PreAlertReportTest {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
+        mockShipmentSettings();
         assertNotNull(preAlertReport.getDocumentModel(123L));
     }
 }

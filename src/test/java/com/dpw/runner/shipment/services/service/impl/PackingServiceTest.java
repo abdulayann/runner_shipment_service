@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -71,7 +72,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class PackingServiceTest {
+class PackingServiceTest extends CommonMocks {
 
     @Mock
     IPackingDao packingDao;
@@ -116,8 +117,6 @@ class PackingServiceTest {
     private CSVParsingUtil<Packing> parser;
     @Mock
     private MasterDataUtils masterDataUtils;
-    @Mock
-    private CommonUtils commonUtils;
 
     @Mock
     private HttpServletResponse response;
@@ -1060,7 +1059,6 @@ class PackingServiceTest {
 
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.convertToList(any(), eq(PackingExcelModel.class))).thenReturn(List.of(PackingExcelModel.builder().build()));
-
         Assertions.assertThrows(RunnerException.class, () -> packingService.downloadPacking(response, request));
     }
 
@@ -1071,7 +1069,6 @@ class PackingServiceTest {
 
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.convertToList(any(), eq(PackingExcelModel.class))).thenReturn(List.of(PackingExcelModel.builder().build()));
-
         Assertions.assertThrows(RunnerException.class, () -> packingService.downloadPacking(response, request));
     }
 
@@ -1082,7 +1079,6 @@ class PackingServiceTest {
 
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.convertToList(any(), eq(PackingExcelModel.class))).thenReturn(List.of(PackingExcelModel.builder().build()));
-
         Assertions.assertThrows(RunnerException.class, () -> packingService.downloadPacking(response, request));
     }
 
@@ -1161,7 +1157,7 @@ class PackingServiceTest {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Packing.class))).thenReturn(testPacking);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1178,7 +1174,7 @@ class PackingServiceTest {
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1193,6 +1189,7 @@ class PackingServiceTest {
                 .newPack(null)
                 .oldContainer(containerRequest).build();
 
+        mockShipmentSettings();
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(commonRequestModel));
@@ -1209,7 +1206,7 @@ class PackingServiceTest {
                 .oldContainer(containerRequest).build();
 
         when(shipmentDao.findById(anyLong())).thenThrow(new RuntimeException());
-
+        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build()));
     }
 
@@ -1220,6 +1217,7 @@ class PackingServiceTest {
                 .oldPack(null)
                 .newPack(null)
                 .oldContainer(null).build();
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
     }
@@ -1227,6 +1225,7 @@ class PackingServiceTest {
     @Test
     void testCalculatePackSummary_Success() throws RunnerException {
         List<Packing> packingList = testPackingList;
+        mockShipmentSettings();
         PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(packingList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
         assertNotNull(packSummaryResponse);
         assertEquals(packSummaryResponse, jsonTestUtility.getTestPackSummaryResponse());
@@ -1235,6 +1234,7 @@ class PackingServiceTest {
     @Test
     void testCalculatePackSummary_AIR_Success() throws RunnerException {
         List<Packing> packingList = testPackingList;
+        mockShipmentSettings();
         PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(packingList, Constants.TRANSPORT_MODE_AIR, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
         assertNotNull(packSummaryResponse);
         assertEquals(packSummaryResponse, jsonTestUtility.getTestPackSummaryAirResponse());

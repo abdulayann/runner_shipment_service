@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -149,6 +148,10 @@ public abstract class IReport {
     @Autowired
     private IPackingService packingService;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
+
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
     abstract Map<String, Object> populateDictionary(IDocumentModel documentModel);
@@ -260,7 +263,7 @@ public abstract class IReport {
     }
 
     public void populateBLContainer(ShipmentContainers shipmentContainer, HblContainerDto blObjectContainer) {
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         V1TenantSettingsResponse tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
         Integer decimalPlaces = shipmentSettingsDetails.getDecimalPlaces();
         if(decimalPlaces == null)
@@ -289,7 +292,7 @@ public abstract class IReport {
         if (shipment == null) {
             return;
         }
-        var shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        var shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         PickupDeliveryDetailsModel pickup = shipment.getPickupDetails();
         PickupDeliveryDetailsModel delivery = shipment.getDeliveryDetails();
@@ -1089,7 +1092,7 @@ public abstract class IReport {
         if (consolidation == null) {
             return;
         }
-        var shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        var shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         PartiesModel sendingAgent = consolidation.getSendingAgent();
         PartiesModel receivingAgent = consolidation.getReceivingAgent();
@@ -1354,7 +1357,7 @@ public abstract class IReport {
     {
         if (hbl == null) return;
         List<String> notify = new ArrayList<>();
-        var shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        var shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(hbl.getHblNotifyParty() != null && hbl.getHblNotifyParty().size() > 0) {
             HblPartyDto hblNotify = hbl.getHblNotifyParty().get(0);
             if(Boolean.TRUE.equals(shipmentSettingsDetails.getDisableBlPartiesName()))
@@ -2843,8 +2846,8 @@ public abstract class IReport {
 
     }
 
-    public static void validateAirDGCheck(ShipmentModel shipmentModel) {
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
+    public void validateAirDGCheck(ShipmentModel shipmentModel) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
                 Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
            boolean dgPack = false;
            if(shipmentModel.getPackingList() != null && !shipmentModel.getPackingList().isEmpty()) {
@@ -2865,15 +2868,15 @@ public abstract class IReport {
         return UserContext.isDgUser();
     }
 
-    public static void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
+    public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
                 Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isDgUser()) {
                 throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }
 
-    public static void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
+    public void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
                 Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isDgUser()) {
                 throw new ValidationException("You do not have permission to print the freight documents.");
         }

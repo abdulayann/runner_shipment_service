@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -42,7 +43,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
-class ShipmentDaoTest {
+class ShipmentDaoTest extends CommonMocks {
 
     @InjectMocks
     private ShipmentDao shipmentDao;
@@ -107,7 +108,7 @@ class ShipmentDaoTest {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-
+        mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
 
@@ -145,7 +146,7 @@ class ShipmentDaoTest {
 
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
         //when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
-
+        mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }
@@ -185,7 +186,7 @@ class ShipmentDaoTest {
 
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
         when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
-
+        mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }
@@ -232,6 +233,7 @@ class ShipmentDaoTest {
         permissions.put(PermissionConstants.airDG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
+        mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }
@@ -278,6 +280,7 @@ class ShipmentDaoTest {
         permissions.put(PermissionConstants.airDG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
+        mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }
@@ -323,6 +326,7 @@ class ShipmentDaoTest {
         Map<String, Boolean> permissions = new HashMap<>();
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
+        mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }
@@ -357,6 +361,7 @@ class ShipmentDaoTest {
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(shipmentDetails)).thenReturn(shipmentDetails);
+        mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, true);
         assertNotNull(response);
     }
@@ -386,7 +391,7 @@ class ShipmentDaoTest {
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
         //when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
         doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
-
+        mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
         assertNotNull(response);
     }
@@ -415,7 +420,7 @@ class ShipmentDaoTest {
 
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
         when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
-
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> {
             shipmentDao.update(shipmentDetails, false);
         });
@@ -454,7 +459,7 @@ class ShipmentDaoTest {
         doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
         when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().build()));
-
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () ->{
             shipmentDao.update(shipmentDetails, false);
         });
@@ -494,7 +499,7 @@ class ShipmentDaoTest {
         doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
         when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
-
+        mockShipmentSettings();
        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
        assertNotNull(response);
     }
@@ -541,7 +546,7 @@ class ShipmentDaoTest {
 
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
         when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
-
+        mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
         assertNotNull(response);
     }
@@ -598,7 +603,7 @@ class ShipmentDaoTest {
 
         when(mawbStocksDao.save(any())).thenReturn(mawbStocks);
         when(mawbStocksLinkDao.save(any())).thenReturn(MawbStocksLink.builder().build());
-
+        mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
         assertNotNull(response);
     }
@@ -673,7 +678,7 @@ class ShipmentDaoTest {
 
         when(mawbStocksDao.save(any())).thenReturn(mawbStocks);
         when(mawbStocksLinkDao.save(any())).thenReturn(MawbStocksLink.builder().build());
-
+        mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
         assertNotNull(response);
     }
@@ -744,7 +749,7 @@ class ShipmentDaoTest {
 
         MawbStocks mawbStocks = MawbStocks.builder().build();
         mawbStocks.setId(1L);
-
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> {
             shipmentDao.update(shipmentDetails, false);
         });
@@ -807,7 +812,7 @@ class ShipmentDaoTest {
         when(mawbStocksLinkDao.findByMawbNumber(any())).thenReturn(mawbStocksLinkList);
 
         when(mawbStocksDao.findById(any())).thenReturn(Optional.of(MawbStocks.builder().build()));
-
+        mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
         assertNotNull(response);
     }
@@ -913,7 +918,7 @@ class ShipmentDaoTest {
 
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
         when(shipmentRepository.findByHouseBill(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
-
+        mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }
@@ -956,7 +961,7 @@ class ShipmentDaoTest {
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
         when(shipmentRepository.findByHouseBill(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
         when(shipmentRepository.findByBookingReference(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
-
+        mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }
@@ -1005,7 +1010,7 @@ class ShipmentDaoTest {
         when(shipmentRepository.findByBookingReference(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
 
         when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
-
+        mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, shipmentDetails);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }
@@ -1025,7 +1030,7 @@ class ShipmentDaoTest {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-
+        mockShipmentSettings();
         assertEquals(shipmentDetailsList, shipmentDao.saveAll(shipmentDetailsList));
     }
 
@@ -1040,7 +1045,7 @@ class ShipmentDaoTest {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-
+        mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
 
@@ -1053,7 +1058,7 @@ class ShipmentDaoTest {
 
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-
+        mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
 

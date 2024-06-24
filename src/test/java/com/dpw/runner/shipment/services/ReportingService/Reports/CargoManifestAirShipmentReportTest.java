@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestAirShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
@@ -57,7 +58,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CargoManifestAirShipmentReportTest {
+class CargoManifestAirShipmentReportTest extends CommonMocks {
 
     @InjectMocks
     private CargoManifestAirShipmentReport cargoManifestAirShipmentReport;
@@ -91,9 +92,6 @@ class CargoManifestAirShipmentReportTest {
 
     @Mock
     private IAwbDao awbDao;
-
-    @Mock
-    private CommonUtils commonUtils;
 
     @Mock
     private IPackingService packingService;
@@ -332,6 +330,7 @@ class CargoManifestAirShipmentReportTest {
         masterDataMock();
         mockCarrier();
         mockRakc(cargoManifestAirShipmentModel.getShipmentDetails());
+        mockShipmentSettings();
         assertNotNull(cargoManifestAirShipmentReport.populateDictionary(cargoManifestAirShipmentModel));
     }
 
@@ -435,6 +434,7 @@ class CargoManifestAirShipmentReportTest {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
+        mockShipmentSettings();
 
 
         assertNotNull(cargoManifestAirShipmentReport.getDocumentModel(123L));

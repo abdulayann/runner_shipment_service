@@ -1,10 +1,13 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
@@ -55,6 +58,9 @@ class CommonUtilsTest {
     @Mock
     private ObjectMapper mapper;
 
+    @Mock
+    private IShipmentSettingsDao shipmentSettingsDao;
+
     @InjectMocks
     private CommonUtils commonUtils;
 
@@ -82,6 +88,7 @@ class CommonUtilsTest {
         MockitoAnnotations.initMocks(this);
         commonUtils = new CommonUtils(mapper);
         commonUtils.syncExecutorService = syncExecutorService;
+        commonUtils.shipmentSettingsDao = shipmentSettingsDao;
     }
 
     @Test
@@ -457,5 +464,18 @@ class CommonUtilsTest {
         }
         document.close();
         return baos.toByteArray();
+    }
+
+    @Test
+    void defaultShipmentSettings() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(null);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
+        assertNotNull(commonUtils.getShipmentSettingFromContext());
+    }
+
+    @Test
+    void defaultShipmentSettingsWithValue() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        assertNotNull(commonUtils.getShipmentSettingFromContext());
     }
 }

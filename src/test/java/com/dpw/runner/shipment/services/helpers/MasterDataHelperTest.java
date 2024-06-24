@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,9 @@ class MasterDataHelperTest {
 
     @MockBean
     private MasterDataUtils masterDataUtils;
+
+    @MockBean
+    private CommonUtils commonUtils;
 
     @Test
     void testAddAllMasterDataInSingleCall() throws InterruptedException, ExecutionException {
@@ -982,6 +986,7 @@ class MasterDataHelperTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
         Map<Long, ContainerResponse> map = new HashMap<>();
         map.put(1L, containerResponse);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         masterDataHelper.setContainersPacksAutoUpdateData(shipmentDetailsResponse, map);
         assertNotNull(map);
     }

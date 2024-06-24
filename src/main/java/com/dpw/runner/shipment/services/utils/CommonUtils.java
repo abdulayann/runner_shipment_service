@@ -1,10 +1,14 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
@@ -49,6 +53,9 @@ public class CommonUtils {
     private JsonHelper jsonHelper;
     @Autowired
     public ExecutorService syncExecutorService;
+
+    @Autowired
+    public IShipmentSettingsDao shipmentSettingsDao;
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
@@ -391,6 +398,20 @@ public class CommonUtils {
 
     public static <T> Iterable<T> emptyIfNull(Iterable<T> iterable) {
         return iterable == null ? Collections.<T>emptyList() : iterable;
+    }
+
+    public ShipmentSettingsDetails getShipmentSettingFromContext() {
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        if(shipmentSettingsDetails == null) {
+            shipmentSettingsDetails = getTenantSettings();
+            ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        }
+        return shipmentSettingsDetails;
+    }
+
+    private ShipmentSettingsDetails getTenantSettings() {
+        Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
+        return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
     }
 
 }

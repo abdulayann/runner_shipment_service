@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -45,7 +46,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ConsolidationDaoTest {
+class ConsolidationDaoTest extends CommonMocks {
 
     @Mock
     private IConsolidationRepository consolidationRepository;
@@ -107,6 +108,7 @@ class ConsolidationDaoTest {
         var spyService = Mockito.spy(consolidationsDao);
         doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
         doReturn(consolidationDetails).when(consolidationRepository).save(any());
+        mockShipmentSettings();
         ConsolidationDetails responseEntity = spyService.save(consolidationDetails, false);
         assertEquals(consolidationDetails, responseEntity);
     }
@@ -129,6 +131,7 @@ class ConsolidationDaoTest {
         doReturn(mawbStocksLink).when(mawbStocksLinkDao).save(any());
         doReturn(List.of(mawbStocksLink)).when(mawbStocksLinkDao).findByMawbNumber(anyString());
         doReturn(Optional.of(mawbStocks)).when(mawbStocksDao).findById(anyLong());
+        mockShipmentSettings();
         ConsolidationDetails responseEntity = spyService.save(consolidationDetails, false);
         assertEquals(consolidationDetails, responseEntity);
     }
@@ -145,6 +148,7 @@ class ConsolidationDaoTest {
         consolidationDetails.setShipmentsList(List.of(shipmentDetails));
         var spyService = Mockito.spy(consolidationsDao);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -163,6 +167,7 @@ class ConsolidationDaoTest {
         Map<String, Boolean> permissions = new HashMap<>();
         permissions.put(PermissionConstants.airDG, true);
         UserContext.getUser().setPermissions(permissions);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -179,6 +184,7 @@ class ConsolidationDaoTest {
         Map<String, Boolean> permissions = new HashMap<>();
         permissions.put(PermissionConstants.airDG, true);
         UserContext.getUser().setPermissions(permissions);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -192,6 +198,7 @@ class ConsolidationDaoTest {
         consolidationDetails.setGuid(null);
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
         var spyService = Mockito.spy(consolidationsDao);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -207,6 +214,7 @@ class ConsolidationDaoTest {
         consolidationDetails.setGuid(null);
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
         var spyService = Mockito.spy(consolidationsDao);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -218,6 +226,7 @@ class ConsolidationDaoTest {
         consolidationDetails.setGuid(null);
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
         var spyService = Mockito.spy(consolidationsDao);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -230,6 +239,7 @@ class ConsolidationDaoTest {
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
         consolidationDetails.getPackingList().get(0).setHazardous(true);
         var spyService = Mockito.spy(consolidationsDao);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -241,6 +251,7 @@ class ConsolidationDaoTest {
         consolidationDetails.setGuid(null);
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
         var spyService = Mockito.spy(consolidationsDao);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -253,6 +264,7 @@ class ConsolidationDaoTest {
         shipmentSettingsDetails.setRestrictedLocationsEnabled(true);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
         var spyService = Mockito.spy(consolidationsDao);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -266,6 +278,7 @@ class ConsolidationDaoTest {
         shipmentSettingsDetails.setRestrictedLocationsEnabled(true);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
         var spyService = Mockito.spy(consolidationsDao);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -277,6 +290,7 @@ class ConsolidationDaoTest {
         ConsolidationDetails consolidationDetails1 = jsonTestUtility.getTestConsolidation();
         var spyService = Mockito.spy(consolidationsDao);
         doReturn(List.of(consolidationDetails1)).when(spyService).findByBol(consolidationDetails.getBol());
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -288,6 +302,7 @@ class ConsolidationDaoTest {
         consolidationDetails.getCarrierDetails().setEta(LocalDateTime.parse("2024-05-09T20:50:36"));
         consolidationDetails.getCarrierDetails().setEtd(LocalDateTime.parse("2024-05-11T20:50:36"));
         var spyService = Mockito.spy(consolidationsDao);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -299,6 +314,7 @@ class ConsolidationDaoTest {
         consolidationDetails.getCarrierDetails().setEta(LocalDateTime.parse("2024-05-09T20:50:36"));
         consolidationDetails.getCarrierDetails().setEtd(LocalDateTime.parse("2024-05-11T20:50:36"));
         var spyService = Mockito.spy(consolidationsDao);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
     }
 
@@ -316,6 +332,7 @@ class ConsolidationDaoTest {
         var spyService = Mockito.spy(consolidationsDao);
         doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
         doReturn(consolidationDetails).when(consolidationRepository).save(any());
+        mockShipmentSettings();
         ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
         assertEquals(consolidationDetails, responseEntity);
     }
@@ -426,6 +443,7 @@ class ConsolidationDaoTest {
         doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
         doReturn(consolidationDetails).when(consolidationRepository).save(any());
         doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
+        mockShipmentSettings();
 
         ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
         assertEquals(consolidationDetails, responseEntity);
@@ -440,6 +458,7 @@ class ConsolidationDaoTest {
 
         var spyService = Mockito.spy(consolidationsDao);
         doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> {
             spyService.update(consolidationDetails, false);
         });
@@ -457,6 +476,7 @@ class ConsolidationDaoTest {
         doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
         doReturn(consolidationDetails).when(consolidationRepository).save(any());
 
+        mockShipmentSettings();
         ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
         assertEquals(consolidationDetails, responseEntity);
     }
@@ -474,6 +494,7 @@ class ConsolidationDaoTest {
 
         when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(CarrierResponse.class))).thenReturn(null);
+        mockShipmentSettings();
 
         assertThrows(ValidationException.class, () -> {
             spyService.update(consolidationDetails, false);
@@ -494,6 +515,7 @@ class ConsolidationDaoTest {
         when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(CarrierResponse.class))).thenReturn(Arrays.asList(CarrierResponse.builder().build()));
         doReturn(new PageImpl<>(List.of(MawbStocksLink.builder().status("Consumed").build()))).when(mawbStocksLinkDao).findAll(any(), any());
+        mockShipmentSettings();
 
         assertThrows(ValidationException.class, () -> {
             spyService.update(consolidationDetails, false);
