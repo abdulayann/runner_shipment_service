@@ -435,7 +435,7 @@ public class BookingIntegrationsUtility {
                 .load(createLoad(shipmentDetails))
                 .pol(StringUtility.getNullIfEmpty(carrierDetails.getOriginPort()))
                 .pod(StringUtility.getNullIfEmpty(carrierDetails.getDestinationPort()))
-                .carrier_code(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine()))
+                .carrier_code(getCarrierSCACCodeFromItemValue(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine())))
                 .carrier_display_name(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
                 .vessel_name(masterDataUtils.getVesselName(carrierDetails.getVessel()))
                 .air_carrier_details(null)
