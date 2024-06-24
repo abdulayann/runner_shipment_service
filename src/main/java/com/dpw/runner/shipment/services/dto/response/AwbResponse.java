@@ -33,6 +33,7 @@ public class AwbResponse implements IRunnerResponse {
     private Map<String, String> masterData;
     private Map<String, String> unlocationData;
     private MasterData chargeDetails;
+    private Boolean airMessageResubmitted;
     // Default Awb objects for UI
     private AwbShipmentInfoResponse defaultAwbShipmentInfo;
     private List<AwbNotifyPartyInfo> defaultAwbNotifyPartyInfo;
@@ -42,5 +43,4 @@ public class AwbResponse implements IRunnerResponse {
     private List<String> shcIdList;
     private AwbStatus airMessageStatus;
     private AwbStatus linkedHawbAirMessageStatus;
-
 }
