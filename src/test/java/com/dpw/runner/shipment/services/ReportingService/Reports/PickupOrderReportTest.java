@@ -41,7 +41,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PickupOrderReportTest extends CommonMocks {
@@ -83,6 +83,13 @@ class PickupOrderReportTest extends CommonMocks {
 
     private void populateModel(HblModel hblModel) {
         ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                .id(12L)
+                .agentDetail(new PartiesModel())
+                .actualPickup(LocalDateTime.now())
+                .actualDelivery(LocalDateTime.now())
+                .build()));
         shipmentModel.setId(123L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
         shipmentModel.setDirection(ReportConstants.EXP);
@@ -301,6 +308,13 @@ class PickupOrderReportTest extends CommonMocks {
     void getDocumentModel() {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(SEA);
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                        .id(12L)
+                        .agentDetail(new PartiesModel())
+                        .actualPickup(LocalDateTime.now())
+                        .actualDelivery(LocalDateTime.now())
+                .build()));
         shipmentModel.setDirection(EXP);
         shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
         shipmentModel.setPickupDetails(new PickupDeliveryDetailsModel());
