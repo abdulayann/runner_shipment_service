@@ -15,4 +15,5 @@ public interface IMawbHawbLinkRepository extends MultiTenancyRepository<MawbHawb
     Page<MawbHawbLink> findAll(Specification<MawbHawbLink> spec, Pageable pageable);
 
     List<MawbHawbLink> findByMawbId(Long mawbId);
+    List<MawbHawbLink> findByHawbId(Long hawbId);
 }

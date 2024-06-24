@@ -16,7 +16,7 @@ public class AwbConstants {
     //Entity Type
     public static final String MAWB = "MAWB";
     public static final String DMAWB = "DMAWB";
-
+    public static final String T1 = "T1";
     public static final String FREIGHT_AMOUNT = "Freight Amount";
     public static final String OTHER_AMOUNT = "Other Amount";
     public static final String AWB_SYNC_SUCCESSFUL = "Successful AWB Syncing";
