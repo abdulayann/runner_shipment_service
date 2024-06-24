@@ -197,7 +197,6 @@ class ShippingRequestOutReportTest extends CommonMocks {
         containers.setContainerCount(1L);
         containers.setContainerCode("20GP");
         containers.setNetWeight(BigDecimal.TEN);
-        containers.setNoOfPackages(10L);
         containers.setContainerNumber("CONT000283");
         containers.setGrossVolume(BigDecimal.TEN);
         containers.setGrossVolumeUnit("M3");
@@ -211,7 +210,6 @@ class ShippingRequestOutReportTest extends CommonMocks {
         containers.setContainerCount(1L);
         containers.setContainerCode("20GP");
         containers.setNetWeight(BigDecimal.TEN);
-        containers.setNoOfPackages(10L);
         containers.setContainerNumber("CONT000283");
         containers.setGrossVolume(BigDecimal.TEN);
         containers.setGrossVolumeUnit("M3");
@@ -375,7 +373,6 @@ class ShippingRequestOutReportTest extends CommonMocks {
         containers.setContainerCount(1L);
         containers.setContainerCode("20GP");
         containers.setNetWeight(BigDecimal.TEN);
-        containers.setNoOfPackages(10L);
         containers.setContainerNumber("CONT000283");
         containers.setGrossVolume(BigDecimal.TEN);
         containers.setGrossVolumeUnit("M3");
@@ -621,7 +618,6 @@ class ShippingRequestOutReportTest extends CommonMocks {
         containers.setContainerCount(1L);
         containers.setContainerCode("20GP");
         containers.setNetWeight(BigDecimal.TEN);
-        containers.setNoOfPackages(10L);
         containers.setContainerNumber("CONT000283");
         containers.setGrossVolume(BigDecimal.TEN);
         containers.setGrossVolumeUnit("M3");
@@ -704,7 +700,6 @@ class ShippingRequestOutReportTest extends CommonMocks {
         containers.setContainerCount(1L);
         containers.setContainerCode("20GP");
         containers.setNetWeight(BigDecimal.TEN);
-        containers.setNoOfPackages(10L);
         containers.setContainerNumber("CONT000283");
         containers.setGrossVolume(BigDecimal.TEN);
         containers.setGrossVolumeUnit("M3");
