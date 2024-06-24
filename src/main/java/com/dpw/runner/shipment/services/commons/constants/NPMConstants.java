@@ -12,6 +12,7 @@ public class NPMConstants {
     public static final String GET_OFFERS_V8 = "/runner-offers-v8";
     public static final String LIST_SUCCESSFUL = "Successfully Fetched Offers";
     public static final String ANY = "ANY";
+    public static final String SQSN = "SQSN";
     public static final String FAK = "FAK";
     public static final String FCL = "FCL";
     public static final String LCL = "LCL";
