@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -128,4 +129,7 @@ public class PickupDeliveryDetailsModel implements IDocumentModel {
 
     @JsonProperty("Remarks")
     public String remarks;
+
+    @JsonProperty("Parties")
+    private List<PartiesModel> partiesModels;
 }
