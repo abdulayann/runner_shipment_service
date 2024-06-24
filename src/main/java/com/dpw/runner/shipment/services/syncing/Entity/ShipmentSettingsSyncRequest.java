@@ -316,4 +316,8 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private String BookingOrderAir;
     @JsonProperty("BookingOrderAirforMawb")
     private String BookingOrderAirForMawb;
+    @JsonProperty("TransportInstructionPickupOrder")
+    private String transportInstructionPickupOrder;
+    @JsonProperty("TransportInstructionDeliveryOrder")
+    private String transportInstructionDeliveryOrder;
 }
