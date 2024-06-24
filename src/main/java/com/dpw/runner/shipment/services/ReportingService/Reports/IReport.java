@@ -2906,8 +2906,8 @@ public abstract class IReport {
         if (transportInstruction.isEmpty())
             return;
         var ti = transportInstruction.get();
-        var exportAgent = ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Export Agent")).findFirst();
-        var importAgent = ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Import Agent")).findFirst();
+        Optional<PartiesModel> exportAgent = ti.getPartiesModels()!= null ? ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Export Agent")).findFirst() : Optional.empty();
+        Optional<PartiesModel> importAgent = ti.getPartiesModels()!= null ? ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Import Agent")).findFirst() : Optional.empty();
 
         dictionary.put(TI_INSTRUCTIONTYPE, ti.getType());
         dictionary.put(TI_DROPMODE, ti.getDropMode());
