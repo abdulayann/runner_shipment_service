@@ -339,6 +339,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                         if(response.getCarrierMasterData().containsKey(cont.getCarrier_codes().get(0))) {
                             EntityTransferCarrier carrierMasterData = response.getCarrierMasterData().get(cont.getCarrier_codes().get(0));
                             cont.getCarrier_codes().set(0, carrierMasterData.getItemValue());
+                            response.getCarrierMasterData().clear();
                             response.getCarrierMasterData().put(carrierMasterData.getItemValue(), carrierMasterData);
                         }
                         else {
