@@ -2487,7 +2487,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("KnownConsignor", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2527,7 +2527,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("KnownConsignor", true);
         addressMap.put("c1#o1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2564,7 +2564,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 1);
+        map.put("RegulatedAgent", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2605,7 +2605,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("KnownConsignor", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2646,7 +2646,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("KnownConsignor", true);
         addressMap.put("c1#o1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2684,7 +2684,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 1);
+        map.put("RegulatedAgent", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2727,7 +2727,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("KnownConsignor", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2770,7 +2770,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("KnownConsignor", true);
         addressMap.put("c1#o1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2811,7 +2811,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 1);
+        map.put("RegulatedAgent", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 

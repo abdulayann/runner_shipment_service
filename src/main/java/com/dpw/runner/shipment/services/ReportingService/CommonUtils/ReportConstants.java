@@ -1092,7 +1092,8 @@ public class ReportConstants {
     public static final String GOODS_VALUE = "GoodsValue";
     public static final String GOODS_VALUE_CURRENCY = "GoodsValueCurrency";
 
-    public static final String RAKC_TYPE = "RAKCType";
+    public static final String REGULATED_AGENT = "RegulatedAgent";
+    public static final String KNOWN_CONSIGNOR = "KnownConsignor";
     public static final String KCRA_NUMBER = "KCRANumber";
     public static final String KCRA_EXPIRY = "KCRAExpiry";
 
