@@ -37,7 +37,6 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -209,7 +208,6 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         containers.setContainerCount(1L);
         containers.setContainerCode("20GP");
         containers.setNetWeight(BigDecimal.TEN);
-        containers.setNoOfPackages(10L);
         containers.setContainerNumber("CONT000283");
         containers.setGrossVolume(BigDecimal.TEN);
         containers.setGrossVolumeUnit("M3");

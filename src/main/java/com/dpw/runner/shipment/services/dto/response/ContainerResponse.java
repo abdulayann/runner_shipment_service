@@ -30,7 +30,6 @@ public class ContainerResponse implements IRunnerResponse {
     private String containerNumber;
     private String sealNumber;
     private String descriptionOfGoods;
-    private Long noOfPackages;
     @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal netWeight;
     private String netWeightUnit;

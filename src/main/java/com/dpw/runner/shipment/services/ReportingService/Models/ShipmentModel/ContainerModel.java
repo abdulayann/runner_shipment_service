@@ -36,8 +36,6 @@ public class ContainerModel implements Serializable {
     private String sealNumber;
     @JsonProperty("DescriptionOfGoods")
     private String descriptionOfGoods;
-    @JsonProperty("NoOfPackages")
-    private Long noOfPackages;
     @JsonProperty("NetWeight")
     private BigDecimal netWeight;
     @JsonProperty("NetWeightUnit")
