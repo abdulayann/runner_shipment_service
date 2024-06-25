@@ -4156,17 +4156,35 @@ public class ShipmentService implements IShipmentService {
     }
 
     private Boolean checkActiveCharges(BillingSummary billingSummary) {
-        try {
-            for (Field field : BillingSummary.class.getDeclaredFields()) {
-                field.setAccessible(true);
-                Object value = field.get(billingSummary);
-
-                if ((value instanceof Double && ((Double) value) != 0.0) || (value instanceof Integer && ((Integer) value) != 0)) {
-                    return false;
-                }
-            }
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+        if (!Objects.equals(null, billingSummary.getTotalCount()) && !Objects.equals(0, billingSummary.getTotalCount())) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getTotalRevenue()) && Double.compare(billingSummary.getTotalRevenue(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getTotalCost()) && Double.compare(billingSummary.getTotalCost(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getAccruedRevenue()) && Double.compare(billingSummary.getAccruedRevenue(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getAccruedCost()) && Double.compare(billingSummary.getAccruedCost(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getInvoicedRevenue()) && Double.compare(billingSummary.getInvoicedRevenue(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getInvoicedCost()) && Double.compare(billingSummary.getInvoicedCost(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getDisbursementAccruedRevenue()) && Double.compare(billingSummary.getDisbursementAccruedRevenue(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getDisbursementAccruedCost()) && Double.compare(billingSummary.getDisbursementAccruedCost(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getDisbursementInvoicedRevenue()) && Double.compare(billingSummary.getDisbursementInvoicedRevenue(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getDisbursementInvoicedCost()) && Double.compare(billingSummary.getDisbursementInvoicedCost(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getDisbursementRevenue()) && Double.compare(billingSummary.getDisbursementRevenue(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getDisbursementCost()) && Double.compare(billingSummary.getDisbursementCost(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getCumulativeGP()) && Double.compare(billingSummary.getCumulativeGP(), 0.0) > 0) {
+            return false;
+        } else if (!Objects.equals(null, billingSummary.getCumulativeGPPercentage()) && Double.compare(billingSummary.getCumulativeGPPercentage(), 0.0) > 0) {
             return false;
         }
         return true;
