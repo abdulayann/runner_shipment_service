@@ -2797,8 +2797,9 @@ public abstract class IReport {
 
     private void processAgent(Map<String, Object> agent, Map<String, Object> dictionary, String type, String agentType) {
         if(agent != null) {
-            if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(RAKC_TYPE)))
-                    && StringUtility.convertToString(agent.get(RAKC_TYPE)).equals(type)) {
+            var raKcType = Boolean.TRUE.equals(agent.get(REGULATED_AGENT))? ONE : "";
+            raKcType = Boolean.TRUE.equals(agent.get(KNOWN_CONSIGNOR))? TWO : raKcType;
+            if(Objects.equals(raKcType, type)) {
                 if(type.equals(ONE)) {
                     dictionary.put(agentType + TYPE, RA);
                 } else if(type.equals(TWO)) {

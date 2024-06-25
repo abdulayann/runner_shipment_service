@@ -267,7 +267,7 @@ class FreightCertificationReportTest extends CommonMocks {
         parties.setAddressCode("Test");
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> addressDataMap = new HashMap<>();
-        addressDataMap.put(RAKC_TYPE, ONE);
+        addressDataMap.put(REGULATED_AGENT, true);
         addressDataMap.put(KCRA_NUMBER, ONE);
         addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
         addressMap.put(parties.getOrgCode()+"#"+parties.getAddressCode(), addressDataMap);
@@ -276,7 +276,7 @@ class FreightCertificationReportTest extends CommonMocks {
         parties2.setOrgCode("Test2");
         parties2.setAddressCode("Test2");
         addressDataMap = new HashMap<>();
-        addressDataMap.put(RAKC_TYPE, TWO);
+        addressDataMap.put(KNOWN_CONSIGNOR, true);
         addressDataMap.put(KCRA_NUMBER, TWO);
         addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
         addressMap.put(parties2.getOrgCode()+"#"+parties2.getAddressCode(), addressDataMap);

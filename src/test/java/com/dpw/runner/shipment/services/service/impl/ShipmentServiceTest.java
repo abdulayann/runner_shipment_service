@@ -3083,7 +3083,7 @@ class ShipmentServiceTest extends CommonMocks {
     @Test
     void checkRaStatusFieldsTest() {
         HashMap<String, Object> hm = new HashMap<>();
-        hm.put("RAKCType", 1);
+        hm.put("RegulatedAgent", true);
 
         HashMap<String, Map<String, Object>> map = new HashMap();
         map.put("org1#add1", hm);
@@ -3099,7 +3099,7 @@ class ShipmentServiceTest extends CommonMocks {
     @Test
     void checkRaStatusFieldsTestFalse() {
         HashMap<String, Object> hm = new HashMap<>();
-        hm.put("RAKCType", 2);
+        hm.put("KnownConsignor", true);
 
         HashMap<String, Map<String, Object>> map = new HashMap();
         map.put("org1#add1", hm);
@@ -3719,7 +3719,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
 
         HashMap<String, Object> hm = new HashMap<>();
-        hm.put("RAKCType", 1);
+        hm.put("RegulatedAgent", true);
 
         HashMap<String, Map<String, Object>> map = new HashMap();
         map.put("org1#add1", hm);

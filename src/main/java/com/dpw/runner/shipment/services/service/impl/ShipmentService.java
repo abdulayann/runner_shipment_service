@@ -1529,9 +1529,9 @@ public class ShipmentService implements IShipmentService {
                     if(consignor != null) {
                         if (addressMap.containsKey(consignor.getOrgCode() + "#" + consignor.getAddressCode())) {
                             Map<String, Object> addressConsignorAgent = addressMap.get(consignor.getOrgCode() + "#" + consignor.getAddressCode());
-                            if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
-                                var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
-                                if (rakcType != null && (Integer) rakcType == RAKCType.KNOWN_CONSIGNOR.getId() && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
+                            if (addressConsignorAgent.containsKey(Constants.KNOWN_CONSIGNOR)) {
+                                var rakcType = addressConsignorAgent.get(Constants.KNOWN_CONSIGNOR);
+                                if (rakcType != null && Boolean.TRUE.equals(rakcType) && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
                                         shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
                                         shipmentDetails.getSecurityStatus() == null)) {
                                     throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
@@ -1556,9 +1556,9 @@ public class ShipmentService implements IShipmentService {
         Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
         if (addressMap.containsKey(parties.getOrgCode() + "#" + parties.getAddressCode())) {
             Map<String, Object> addressConsignorAgent = addressMap.get(parties.getOrgCode() + "#" + parties.getAddressCode());
-            if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
-                var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
-                if (rakcType != null && (Integer)rakcType == RAKCType.REGULATED_AGENT.getId() && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
+            if (addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
+                var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
+                if (rakcType != null && Boolean.TRUE.equals(rakcType) && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
                         shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
                         shipmentDetails.getSecurityStatus() == null)) {
                     return false;

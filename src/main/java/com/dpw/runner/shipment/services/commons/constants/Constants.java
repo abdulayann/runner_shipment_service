@@ -171,7 +171,8 @@ public class Constants {
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
     public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
     public static final String CARRIER_BOOKING_STATUS = "CarrierBookingStatus";
-    public static final String RA_KC_TYPE = "RAKCType";
+    public static final String REGULATED_AGENT = "RegulatedAgent";
+    public static final String KNOWN_CONSIGNOR = "KnownConsignor";
 
     /**
      * Events
