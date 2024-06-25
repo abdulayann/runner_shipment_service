@@ -1798,27 +1798,37 @@ public class EntityTransferService implements IEntityTransferService {
                         var receivingAgent = consolidationDetails.getReceivingBranch();
                         var triangulationPartner = consolidationDetails.getTriangulationPartner();
                         arValidationResponse.setOrigin(originShipment.getTenantId());
+                        arValidationResponse.setOriginShipmentGuid(originShipment.getGuid());
+                        arValidationResponse.setOriginShipmentCreatedBy(originShipment.getCreatedBy());
                         arValidationResponse.setReceivingAgent(receivingAgent);
                         arValidationResponse.setTriangulationPartner(triangulationPartner);
                         if(receivingAgent != null) {
                             if (shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
                                 arValidationResponse.setTransferToReceivingAgent(true);
+                                arValidationResponse.setReceivingAgentShipmentGud(shipmentDetails.getGuid());
+                                arValidationResponse.setReceivingAgentShipmentCreatedBy(shipmentDetails.getCreatedBy());
                             } else if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
                                 var ships = destinationShipmentsMap.get(originShipment.getGuid());
                                 var isShip = ships.stream().filter(x -> x.getTenantId().equals(receivingAgent.intValue())).findAny();
                                 if (isShip.isPresent()) {
                                     arValidationResponse.setTransferToReceivingAgent(true);
+                                    arValidationResponse.setReceivingAgentShipmentGud(isShip.get().getGuid());
+                                    arValidationResponse.setReceivingAgentShipmentCreatedBy(isShip.get().getCreatedBy());
                                 }
                             }
                         }
                         if(triangulationPartner != null) {
                             if (shipmentDetails.getTenantId().equals(triangulationPartner.intValue())) {
                                 arValidationResponse.setTransferToTriangulationPartner(true);
+                                arValidationResponse.setTriangulationPartnerShipmentGud(shipmentDetails.getGuid());
+                                arValidationResponse.setTriangulationPartnerShipmentCreatedBy(shipmentDetails.getCreatedBy());
                             } else if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
                                 var ships = destinationShipmentsMap.get(originShipment.getGuid());
                                 var isShip = ships.stream().filter(x -> x.getTenantId().equals(triangulationPartner.intValue())).findAny();
                                 if (isShip.isPresent()) {
                                     arValidationResponse.setTransferToTriangulationPartner(true);
+                                    arValidationResponse.setTriangulationPartnerShipmentGud(isShip.get().getGuid());
+                                    arValidationResponse.setTriangulationPartnerShipmentCreatedBy(isShip.get().getCreatedBy());
                                 }
                             }
                         }
@@ -1838,23 +1848,31 @@ public class EntityTransferService implements IEntityTransferService {
                 arValidationResponse.setReceivingAgent(receivingAgent);
                 arValidationResponse.setTriangulationPartner(triangulationPartner);
                 arValidationResponse.setOrigin(shipmentDetails.getTenantId());
+                arValidationResponse.setOriginShipmentGuid(shipmentDetails.getGuid());
+                arValidationResponse.setOriginShipmentCreatedBy(shipmentDetails.getCreatedBy());
                 if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
                         !shipmentDetails.getTenantId().equals(receivingAgent.intValue()) && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())) {
                     var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
                     var isShip = ships.stream().filter(x->x.getTenantId().equals(receivingAgent.intValue())).findAny();
                     if(isShip.isPresent()){
                         arValidationResponse.setTransferToReceivingAgent(true);
+                        arValidationResponse.setReceivingAgentShipmentGud(isShip.get().getGuid());
+                        arValidationResponse.setReceivingAgentShipmentCreatedBy(isShip.get().getCreatedBy());
                     }
                 }
 
                 if (triangulationPartner != null) {
                     if (Objects.equals(triangulationPartner, receivingAgent)) {
                         arValidationResponse.setTransferToTriangulationPartner(arValidationResponse.getTransferToReceivingAgent());
+                        arValidationResponse.setTriangulationPartnerShipmentGud(arValidationResponse.getReceivingAgentShipmentGud());
+                        arValidationResponse.setTriangulationPartnerShipmentCreatedBy(arValidationResponse.getReceivingAgentShipmentCreatedBy());
                     } else if (!shipmentDetails.getTenantId().equals(triangulationPartner.intValue()) && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())) {
                         var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
                         var isShip = ships.stream().filter(x->x.getTenantId().equals(triangulationPartner.intValue())).findAny();
                         if(isShip.isPresent()){
                             arValidationResponse.setTransferToTriangulationPartner(true);
+                            arValidationResponse.setTriangulationPartnerShipmentGud(isShip.get().getGuid());
+                            arValidationResponse.setTriangulationPartnerShipmentCreatedBy(isShip.get().getCreatedBy());
                         }
                     }
                 }

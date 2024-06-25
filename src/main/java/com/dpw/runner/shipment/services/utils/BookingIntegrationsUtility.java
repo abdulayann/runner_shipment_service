@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -49,6 +50,8 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 
 /**
@@ -209,11 +212,22 @@ public class BookingIntegrationsUtility {
                         sales_agent_primary_email(customerBooking.getPrimarySalesAgentEmail()).
                         sales_agent_secondary_email(customerBooking.getSecondarySalesAgentEmail()).
                         build())
-                .mainLegCarrierCode(carrierDetails.map(CarrierDetails::getShippingLine).orElse(null))
+                .mainLegCarrierCode(getCarrierSCACCodeFromItemValue(carrierDetails.map(CarrierDetails::getShippingLine).orElse(null)))
                 .minTransitHours(carrierDetails.map(CarrierDetails::getMinTransitHours).orElse(null))
                 .maxTransitHours(carrierDetails.map(CarrierDetails::getMaxTransitHours).orElse(null))
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
+    }
+
+    private String getCarrierSCACCodeFromItemValue(String itemValue) {
+        if(IsStringNullOrEmpty(itemValue))
+            return null;
+        List<String> carrierCodes = new ArrayList<>();
+        carrierCodes.add(itemValue);
+        Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriers(carrierCodes);
+        if(map.containsKey(itemValue))
+            return map.get(itemValue).Identifier1;
+        return null;
     }
 
     public List<String> createEmailIds(String primaryEmail, String secondaryEmail)
@@ -421,7 +435,7 @@ public class BookingIntegrationsUtility {
                 .load(createLoad(shipmentDetails))
                 .pol(StringUtility.getNullIfEmpty(carrierDetails.getOriginPort()))
                 .pod(StringUtility.getNullIfEmpty(carrierDetails.getDestinationPort()))
-                .carrier_code(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine()))
+                .carrier_code(getCarrierSCACCodeFromItemValue(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine())))
                 .carrier_display_name(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
                 .vessel_name(masterDataUtils.getVesselName(carrierDetails.getVessel()))
                 .air_carrier_details(null)
