@@ -122,18 +122,25 @@ public class QuoteContractsService implements IQuoteContractsService {
     }
 
     private void getQuoteContractsData(QuoteContracts quoteContracts, ListContractResponse request, String contractId) {
-        // set container types
+        quoteContracts.setContainerTypes(getContainerTypes(request, contractId));
+    }
+
+    private List<String> getContainerTypes(ListContractResponse request, String contractId) {
         List<String> containerTypes = new ArrayList<>();
         try {
-            containerTypes = request.getContracts().get(0).getContract_usage().get(0).getFilter_params().getCargo_type();
+            if(!Objects.isNull(request.getContracts().get(0).getContract_usage())) {
+                for (ListContractResponse.ContractUsage contractUsage : request.getContracts().get(0).getContract_usage()) {
+                    if(!Objects.isNull(contractUsage) && !Objects.isNull(contractUsage.getFilter_params()) &&
+                            !Objects.isNull(contractUsage.getFilter_params().getCargo_type()))
+                        containerTypes.addAll(contractUsage.getFilter_params().getCargo_type());
+                }
+            }
         } catch (Exception e) {
             log.info("Container Types not available for contract {}", contractId);
         }
-        if(!Objects.isNull(containerTypes)) {
-            containerTypes.remove(NPMConstants.ANY);
-            containerTypes.remove(null);
-        }
-        quoteContracts.setContainerTypes(containerTypes);
+        containerTypes.remove(NPMConstants.ANY);
+        containerTypes.remove(null);
+        return containerTypes;
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<QuoteContracts> lst) {
