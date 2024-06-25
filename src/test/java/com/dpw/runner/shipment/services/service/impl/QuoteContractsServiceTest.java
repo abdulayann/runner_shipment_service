@@ -170,4 +170,36 @@ class QuoteContractsServiceTest {
         verify(quoteContractsDao, Mockito.times(1)).save(any());
     }
 
+    @Test
+    void updateQuoteContracts_NullContractUsages() {
+        ListContractResponse listContractResponse = jsonTestUtility.getListContractResponse();
+        listContractResponse.getContracts().get(0).setContract_usage(null);
+        quoteContractsService.updateQuoteContracts(listContractResponse);
+        verify(quoteContractsDao, Mockito.times(1)).save(any());
+    }
+
+    @Test
+    void updateQuoteContracts_NullContractUsage() {
+        ListContractResponse listContractResponse = jsonTestUtility.getListContractResponse();
+        listContractResponse.getContracts().get(0).getContract_usage().set(0, null);
+        quoteContractsService.updateQuoteContracts(listContractResponse);
+        verify(quoteContractsDao, Mockito.times(1)).save(any());
+    }
+
+    @Test
+    void updateQuoteContracts_NullFilterParams() {
+        ListContractResponse listContractResponse = jsonTestUtility.getListContractResponse();
+        listContractResponse.getContracts().get(0).getContract_usage().get(0).setFilter_params(null);
+        quoteContractsService.updateQuoteContracts(listContractResponse);
+        verify(quoteContractsDao, Mockito.times(1)).save(any());
+    }
+
+    @Test
+    void updateQuoteContracts_NullCargoTypes() {
+        ListContractResponse listContractResponse = jsonTestUtility.getListContractResponse();
+        listContractResponse.getContracts().get(0).getContract_usage().get(0).getFilter_params().setCargo_type(null);
+        quoteContractsService.updateQuoteContracts(listContractResponse);
+        verify(quoteContractsDao, Mockito.times(1)).save(any());
+    }
+
 }
