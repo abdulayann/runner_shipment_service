@@ -92,8 +92,6 @@ public class HblService implements IHblService {
     @Autowired
     private PartialFetchUtils partialFetchUtils;
 
-    @Autowired
-    private PartialFetchUtils partialFetchUtils;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
