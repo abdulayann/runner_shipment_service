@@ -4158,9 +4158,7 @@ public class ShipmentService implements IShipmentService {
                 field.setAccessible(true); // Make private fields accessible
                 Object value = field.get(billingSummary);
 
-                if (value instanceof Double && ((Double) value) != 0.0) {
-                    return false;
-                } else if (value instanceof Integer && ((Integer) value) != 0) {
+                if ((value instanceof Double && ((Double) value) != 0.0) || (value instanceof Integer && ((Integer) value) != 0)) {
                     return false;
                 }
             }
