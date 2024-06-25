@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.dpw.runner.shipment.services.Kafka.Dto.BillDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -25,7 +26,12 @@ import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.bridgeService.BridgeRequest;
+import com.dpw.runner.shipment.services.dto.request.bridgeService.TactBridgePayload;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
@@ -71,18 +77,21 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -239,6 +248,12 @@ public class ShipmentService implements IShipmentService {
     @Value("${shipmentsKafka.queue}")
     private String senderQueue;
 
+    @Value("${billing.baseUrl}")
+    private String billingBaseUrl;
+
+    @Value("${billing.getInvoiceData}")
+    private String getInvoiceData;
+
     @Autowired
     private KafkaProducer producer;
 
@@ -263,6 +278,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private PartialFetchUtils partialFetchUtils;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
@@ -3967,8 +3985,23 @@ public class ShipmentService implements IShipmentService {
             log.error("Request guid is null for fetch active invoices with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new RunnerException("Shipment Guid can't be null");
         }
-        CheckActiveInvoiceRequest checkActiveInvoiceRequest = CheckActiveInvoiceRequest.builder().BillGuid(request.getGuid()).build();
-        return ResponseHelper.buildSuccessResponse(v1Service.getActiveInvoices(checkActiveInvoiceRequest));
+
+        InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
+        invoiceSummaryRequest.setModuleType("SHIPMENT");
+        invoiceSummaryRequest.setModuleGuid(request.getGuid());
+
+        String url = billingBaseUrl + getInvoiceData;
+
+        HttpEntity<V1DataResponse> httpEntity = new HttpEntity(invoiceSummaryRequest, V1AuthHelper.getHeaders());
+        var response = this.restTemplate.postForEntity(url, httpEntity, BillingSummaryResponse.class, new Object[0]).getBody();
+        BillingSummary billingSummary = modelMapper.map(response.getData(), BillingSummary.class);
+
+        boolean activeCharges = checkActiveCharges(billingSummary);
+        /*
+        activeCharges false means atleast one of the value is not 0
+        return true because active charges are present
+         */
+        return ResponseHelper.buildDependentServiceResponse(!activeCharges,0,0);
     }
 
     public ResponseEntity<IRunnerResponse> showAssignAllContainers(CommonRequestModel commonRequestModel) {
@@ -4117,5 +4150,24 @@ public class ShipmentService implements IShipmentService {
         } else {
             return ResponseHelper.buildFailedResponse("Please send a valid doc type for check credit limit.");
         }
+    }
+
+    private Boolean checkActiveCharges(BillingSummary billingSummary) {
+        try {
+            for (Field field : BillingSummary.class.getDeclaredFields()) {
+                field.setAccessible(true); // Make private fields accessible
+                Object value = field.get(billingSummary);
+
+                if (value instanceof Double && ((Double) value) != 0.0) {
+                    return false;
+                } else if (value instanceof Integer && ((Integer) value) != 0) {
+                    return false;
+                }
+            }
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 }
