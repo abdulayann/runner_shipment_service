@@ -132,6 +132,42 @@ class ViewsServiceTest {
     }
 
     @Test
+    void testUpdate_Exception1() {
+
+        ViewsRequest request = new ViewsRequest(); // Provide necessary data for request
+        request.setIsDefault(true);
+        request.setId(10L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        Views views = new Views(); // Provide necessary data for views
+        views.setCreatedBy("user1");
+        ViewsResponse viewsResponse = new ViewsResponse();
+        when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
+
+        assertThrows(ValidationException.class, () -> viewsService.update(commonRequestModel));
+
+    }
+
+    @Test
+    void testUpdate_Exception2() {
+
+        ViewsRequest request = new ViewsRequest(); // Provide necessary data for request
+        request.setIsDefault(true);
+        request.setId(10L);
+        request.setName("test");
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        Views views = new Views(); // Provide necessary data for views
+        views.setCreatedBy("user");
+        ViewsResponse viewsResponse = new ViewsResponse();
+        when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
+        when(viewsDao.findAllByUsername(anyString())).thenReturn(List.of("test"));
+
+        assertThrows(ValidationException.class, () -> viewsService.update(commonRequestModel));
+
+    }
+
+    @Test
     void testUpdate_Exception() {
 
         ViewsRequest request = new ViewsRequest(); // Provide necessary data for request
