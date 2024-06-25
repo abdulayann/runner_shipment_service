@@ -24,6 +24,8 @@ import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -70,6 +72,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -188,6 +191,9 @@ class ShipmentServiceTest {
     private GetNextNumberHelper getNextNumberHelper;
     @Mock
     private MasterDataHelper masterDataHelper;
+
+    @Mock
+    private RestTemplate restTemplate;
 
     @Captor
     private ArgumentCaptor<Workbook> workbookCaptor;
@@ -1074,13 +1080,53 @@ class ShipmentServiceTest {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
 
-        CheckActiveInvoiceResponse mockCheckActiveInvoiceResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(true).build();
-        //Mock
-        when(v1Service.getActiveInvoices(any())).thenReturn(mockCheckActiveInvoiceResponse);
-        // Test
+        InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
+        invoiceSummaryRequest.setModuleType("SHIPMENT");
+        invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
+
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().build());
+
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
-        // Assert
-        assertEquals(ResponseHelper.buildSuccessResponse(mockCheckActiveInvoiceResponse), httpResponse);
+        assertEquals(ResponseHelper.buildDependentServiceResponse(false,0,0), httpResponse);
+    }
+
+    @Test
+    void fetchActiveInvoicesDoubleValuePresent() throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+
+        InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
+        invoiceSummaryRequest.setModuleType("SHIPMENT");
+        invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
+
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().totalRevenue(0.001).build());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
+        assertEquals(ResponseHelper.buildDependentServiceResponse(true,0,0), httpResponse);
+    }
+
+    @Test
+    void fetchActiveInvoicesIntegerValuePresent() throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+
+        InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
+        invoiceSummaryRequest.setModuleType("SHIPMENT");
+        invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
+
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().totalCount(1).build());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
+        assertEquals(ResponseHelper.buildDependentServiceResponse(true,0,0), httpResponse);
     }
 
     @Test
