@@ -22,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -221,6 +222,22 @@ class ViewsServiceTest {
         when(jsonHelper.convertValue(any(ViewsRequest.class), eq(Views.class))).thenReturn(views);
 
         ResponseEntity<IRunnerResponse> responseEntity = viewsService.update(commonRequestModel);
+    }
+
+    @Test
+    void list() {
+
+        ListCommonRequest request = new ListCommonRequest(); // Provide necessary data for request
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        List<Views> viewsList = List.of(Views.builder().build()); // Provide necessary data for views list
+        when(viewsDao.findAll(any(), any())).thenReturn(new PageImpl<>(viewsList));
+        ViewsResponse viewsResponse = new ViewsResponse();
+        when(jsonHelper.convertValue(any(), eq(ViewsResponse.class))).thenReturn(viewsResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = viewsService.list(commonRequestModel);
+
+        assertNotNull(responseEntity.getBody());
+
     }
 
     @Test
