@@ -15,5 +15,5 @@ import java.util.Map;
 @AllArgsConstructor
 @Generated
 public class BillingSummaryResponse implements IRunnerResponse {
-    private Map<String, Object> data;
+    transient Map<String, Object> data;
 }

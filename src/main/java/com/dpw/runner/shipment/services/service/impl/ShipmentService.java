@@ -3992,9 +3992,12 @@ public class ShipmentService implements IShipmentService {
 
         String url = billingBaseUrl + getInvoiceData;
 
-        HttpEntity<V1DataResponse> httpEntity = new HttpEntity(invoiceSummaryRequest, V1AuthHelper.getHeaders());
-        var response = this.restTemplate.postForEntity(url, httpEntity, BillingSummaryResponse.class, new Object[0]).getBody();
-        BillingSummary billingSummary = modelMapper.map(response.getData(), BillingSummary.class);
+        HttpEntity<InvoiceSummaryRequest> httpEntity = new HttpEntity<>(invoiceSummaryRequest, V1AuthHelper.getHeaders());
+        var response = this.restTemplate.postForEntity(url, httpEntity, BillingSummaryResponse.class).getBody();
+        BillingSummary billingSummary = new BillingSummary();
+        if(Objects.nonNull(response)) {
+            billingSummary = modelMapper.map(response.getData(), BillingSummary.class);
+        }
 
         boolean activeCharges = checkActiveCharges(billingSummary);
         /*
@@ -4155,7 +4158,7 @@ public class ShipmentService implements IShipmentService {
     private Boolean checkActiveCharges(BillingSummary billingSummary) {
         try {
             for (Field field : BillingSummary.class.getDeclaredFields()) {
-                field.setAccessible(true); // Make private fields accessible
+                field.setAccessible(true);
                 Object value = field.get(billingSummary);
 
                 if ((value instanceof Double && ((Double) value) != 0.0) || (value instanceof Integer && ((Integer) value) != 0)) {
