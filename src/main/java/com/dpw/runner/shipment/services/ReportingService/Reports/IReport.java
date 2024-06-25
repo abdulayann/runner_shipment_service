@@ -834,6 +834,7 @@ public abstract class IReport {
         if (!Objects.isNull(shipment.getNoOfPacks()))
             dictionary.put(ReportConstants.NO_OF_PACKAGES_ALIAS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
         populateIGMInfo(shipment, dictionary);
+        dictionary.put(IsDG, false);
         if(Boolean.TRUE.equals(shipment.getContainsHazardous())) {
             dictionary.put(IsDG, true);
             dictionary.put(DGEmergencyContact, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
@@ -1347,6 +1348,7 @@ public abstract class IReport {
             }
         }
         populateUserFields(UserContext.getUser(), dictionary);
+        dictionary.put(IsDG, false);
         if(Boolean.TRUE.equals(consolidation.getHazardous())) {
             dictionary.put(IsDG, true);
             dictionary.put(DGEmergencyContact, getConcatenatedContact(consolidation.getEmergencyContactNumberCode(), consolidation.getEmergencyContactNumber()));
@@ -2311,7 +2313,7 @@ public abstract class IReport {
             dict.put(ChargeableUnit, pack.getChargeableUnit());
             dict.put(HS_CODE, pack.getHSCode());
             dict.put(DESCRIPTION, pack.getGoodsDescription());
-
+            dict.put(IsDG, false);
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
                 var dgSubstanceRow = masterDataUtils.fetchDgSubstanceRow(pack.getDGSubstanceId());
                 dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);

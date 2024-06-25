@@ -104,7 +104,7 @@ class ProductSequenceConfigDaoTest {
     void saveEntityFromSettings() {
         List<ProductSequenceConfig> productSequenceConfigList = List.of(testProductSequenceConfig);
         Mockito.when(productSequenceConfigRepository.findById(any())).thenReturn(Optional.of(testProductSequenceConfig));
-        Mockito.when(productSequenceConfigRepository.save(any())).thenReturn(testProductSequenceConfig);
+        Mockito.when(productSequenceConfigRepository.saveAll(any())).thenReturn(List.of(testProductSequenceConfig));
         List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.saveEntityFromSettings(productSequenceConfigList, 3L);
         assertEquals(productSequenceConfigList, productSequenceConfigs);
     }
@@ -113,7 +113,7 @@ class ProductSequenceConfigDaoTest {
     void saveEntityFromSettings_IdNull() {
         testProductSequenceConfig.setId(null);
         List<ProductSequenceConfig> productSequenceConfigList = List.of(testProductSequenceConfig);
-        Mockito.when(productSequenceConfigRepository.save(any())).thenReturn(testProductSequenceConfig);
+        Mockito.when(productSequenceConfigRepository.saveAll(any())).thenReturn(List.of(testProductSequenceConfig));
         List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.saveEntityFromSettings(productSequenceConfigList, 3L);
         assertEquals(productSequenceConfigList, productSequenceConfigs);
     }

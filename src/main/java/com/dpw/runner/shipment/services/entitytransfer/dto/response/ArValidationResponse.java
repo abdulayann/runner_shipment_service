@@ -24,5 +24,11 @@ public class ArValidationResponse implements IRunnerResponse {
     private String destinationCountry;
     private Boolean transferToReceivingAgent;
     private Boolean transferToTriangulationPartner;
+    private UUID originShipmentGuid;
+    private UUID receivingAgentShipmentGud;
+    private UUID triangulationPartnerShipmentGud;
+    private String originShipmentCreatedBy;
+    private String receivingAgentShipmentCreatedBy;
+    private String triangulationPartnerShipmentCreatedBy;
 
 }

@@ -1324,7 +1324,7 @@ public class ShipmentService implements IShipmentService {
                     throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
             } else {
                 if((removedConsolIds != null && !removedConsolIds.isEmpty() && oldEntity != null && oldEntity.getConsolidationList() != null && Boolean.TRUE.equals(oldEntity.getConsolidationList().get(0).getHazardous()))
-                    || (isNewConsolAttached && Boolean.TRUE.equals(consolidationDetailsRequests.get(0).getHazardous()))) {
+                    || (consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty() && Boolean.TRUE.equals(consolidationDetailsRequests.get(0).getHazardous()))) {
                     throw new RunnerException("You do not have Air DG permissions to edit this as it is a part of DG Consol");
                 }
             }
@@ -2265,7 +2265,7 @@ public class ShipmentService implements IShipmentService {
                 log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
             }
-            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
+            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
             checkWayBillNumberCriteria(request);
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -2666,7 +2666,7 @@ public class ShipmentService implements IShipmentService {
         List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
         String shipmentId = "";
         boolean flag = true;
-
+        int counter = 1;
         while(flag) {
             ListCommonRequest listRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentId, "=");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class);
@@ -2675,6 +2675,7 @@ public class ShipmentService implements IShipmentService {
             if(!shipmentId.isEmpty() && shipments.getTotalElements() == 0)
                 flag = false;
             else {
+                log.info("CR-ID {} || Inside generateShipmentId: with shipmentID: {} | counter: {}", LoggerHelper.getRequestIdFromMDC(), shipmentId, counter++);
                 if(shipmentSettingsList != null && shipmentSettingsList.size() != 0 && shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
                     try{
                         shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber, shipmentDetails);

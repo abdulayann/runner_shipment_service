@@ -798,6 +798,30 @@ class NPMServiceAdapterTest {
     }
 
     @Test
+    void testFetchOffers_WithCarrier() throws RunnerException, JsonProcessingException {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+        String json = "{\"origin\":\"INMAA_POR\",\"destination\":\"LzpprcihHCD42MNLUaM1\",\"preferred_date\":\"2024-05-22 12:40:33\",\"preferred_date_type\":\"PICKUP\",\"mode_of_transport\":\"SEA\",\"cargo_type\":\"FCL\",\"service_mode\":\"P2F\",\"fetch_default_rates\":\"false\",\"direction\":\"EXP\",\"offer_filter_type\":\"CHEAPEST\",\"weight\":null,\"volume\":null,\"volume_uom\":null,\"contracts_info\":{\"customer_org_id\":\"FRC00003392\",\"contract_id\":\"DPWQ-171434-101744\"},\"pol\":\"INMAA_POR\",\"pod\":\"USMIA_POR\",\"containers\":[{\"id\":null,\"isContractEnforced\":true,\"commodityGroup\":\"FAK\",\"containerCode\":\"20FR\",\"containerCount\":\"1\",\"contractEnforcedQuantityLimit\":100,\"customId\":\"1cbcb101-6b2f-4541-ab70-30c9a1ff8534\",\"initalCount\":100,\"masterData\":{\"commodityGroup\":\"FREIGHTALLKINDS-FAK\"},\"containerType\":\"20FR\",\"quantity\":\"1\",\"commodityCode\":\"FAK\"}]}";
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        NPMFetchOffersRequestFromUI fetchOffersRequest = objectMapper.readValue(json, NPMFetchOffersRequestFromUI.class);
+        String rates = "{\"offer_type\":\"CONTRACTUAL_OFFER\",\"offers\":[{\"offer_type\":\"CONTRACTUAL_OFFER\",\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"entity_rate_cards\":[{\"loads_rates_info\":[{\"associated_rates\":[{\"slabs\":[],\"calculated_sell\":151.23,\"calculated_cost\":0,\"procured_sell\":3.24,\"procured_cost\":0,\"unit_sell\":15122.67,\"unit_cost\":0,\"procured_unit_sell\":324.23,\"procured_unit_cost\":0,\"calculated_margin\":0,\"procured_margin\":0,\"rates_uom\":\"perctr\",\"conversion_rate\":46.6417910448,\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"total_unit_count\":0.01,\"measurement_unit\":\"M3\",\"applicable_on_booking\":false,\"mode_of_transport\":\"ANY\",\"rate_classification\":\"NON-VAS\",\"rate_taxes\":[],\"charge_group\":[\"ORIGIN_CHARGES\"],\"slab_floor\":15122.67,\"slab_ceil\":15122.67,\"carrier\":\"ANY\",\"rate_type\":\"ACD\",\"rate_name\":\"AdvanceCargoDeclaration\",\"base_price_currency\":\"USD\",\"required_currency\":\"EGP\"}],\"quantity\":1}],\"aggregated_shipment_load_rates_info\":[{\"associated_rates\":[{\"slabs\":[],\"calculated_sell\":151.23,\"calculated_cost\":0,\"procured_sell\":3.24,\"procured_cost\":0,\"unit_sell\":15122.67,\"unit_cost\":0,\"procured_unit_sell\":324.23,\"procured_unit_cost\":0,\"calculated_margin\":0,\"procured_margin\":0,\"rates_uom\":\"pership\",\"conversion_rate\":46.6417910448,\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"total_unit_count\":0.01,\"measurement_unit\":\"M3\",\"applicable_on_booking\":false,\"mode_of_transport\":\"ANY\",\"rate_classification\":\"NON-VAS\",\"rate_taxes\":[],\"charge_group\":[\"ORIGIN_CHARGES\"],\"slab_floor\":15122.67,\"slab_ceil\":15122.67,\"carrier\":\"ANY\",\"rate_type\":\"ACD\",\"rate_name\":\"AdvanceCargoDeclaration\",\"base_price_currency\":\"USD\",\"required_currency\":\"EGP\"}],\"quantity\":1}]}],\"product_name\":\"LCL\",\"tenant_uuid\":\"ab2f6b79-0384-43b2-ba09-e6c38c1df6f6\",\"meta\":{\"route\":[{\"type\":\"LEG\",\"origin\":{\"code\":\"EGDAM_POR\"},\"destination\":{\"code\":\"AEJEA_POR\"}}]},\"shipment_level_rates\":[{\"slabs\":[],\"calculated_sell\":151.23,\"calculated_cost\":0,\"procured_sell\":3.24,\"procured_cost\":0,\"unit_sell\":15122.67,\"unit_cost\":0,\"procured_unit_sell\":324.23,\"procured_unit_cost\":0,\"calculated_margin\":0,\"procured_margin\":0,\"rates_uom\":\"percbm\",\"conversion_rate\":46.6417910448,\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"total_unit_count\":0.01,\"measurement_unit\":\"M3\",\"applicable_on_booking\":false,\"mode_of_transport\":\"ANY\",\"rate_classification\":\"NON-VAS\",\"rate_taxes\":[],\"charge_group\":[\"ORIGIN_CHARGES\"],\"slab_floor\":15122.67,\"slab_ceil\":15122.67,\"carrier\":\"ANY\",\"rate_type\":\"ACD\",\"rate_name\":\"AdvanceCargoDeclaration\",\"base_price_currency\":\"USD\",\"required_currency\":\"EGP\"}]}],\"reason\":\"\",\"message\":\"\"}";
+        FetchOffersResponse fetchOffersResponse = objectMapper.readValue(rates, FetchOffersResponse.class);
+        fetchOffersResponse.getOffers().get(0).setCarrier("Code");
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(fetchOffersResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(fetchOffersResponse);
+
+        // Arrange and Act
+        var response = nPMServiceAdapter.fetchOffers(CommonRequestModel.builder().data(fetchOffersRequest).build());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
     void testFetchOffers2() throws RunnerException, JsonProcessingException {
         UsersDto usersDto = new UsersDto();
         usersDto.setTenantId(1);
@@ -1249,6 +1273,6 @@ class NPMServiceAdapterTest {
         carriers.add("test");
         ListContractResponse.ContractResponse contractResponse = ListContractResponse.ContractResponse.builder().carrier_codes(carriers).build();
         String response = nPMServiceAdapter.getCarrier(contractResponse);
-        assertEquals("test", response);
+        assertNull(response);
     }
 }

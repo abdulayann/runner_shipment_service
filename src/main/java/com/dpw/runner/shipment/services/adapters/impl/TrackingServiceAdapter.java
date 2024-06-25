@@ -288,7 +288,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         if(inputConsol != null)
             trackingPayload.setCarrier(fetchCarrierName(inputConsol.getCarrierDetails().getShippingLine()));
         else
-            trackingPayload.setCarrier(inputShipment.getCarrierDetails().getShippingLine());
+            trackingPayload.setCarrier(fetchCarrierName(inputShipment.getCarrierDetails().getShippingLine()));
 
         return trackingPayload;
     }
@@ -373,7 +373,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         List<CarrierMasterData> carrierMasterData = jsonHelper.convertValueToList(carrierResponse, CarrierMasterData.class);
         if(carrierMasterData == null || carrierMasterData.isEmpty())
             return null;
-        return carrierMasterData.get(0).getItemDescription();
+        return carrierMasterData.get(0).getIdentifier1();
     }
 
     private UniversalTrackingPayload.ShipmentDetail getShipmentDetails(ShipmentDetails shipmentDetails) {
