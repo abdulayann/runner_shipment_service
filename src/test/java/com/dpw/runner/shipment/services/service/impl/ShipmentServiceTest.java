@@ -3111,6 +3111,57 @@ class ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void checkRaStatusFieldsTest_ScreeningStatus_Empty() {
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("RegulatedAgent", true);
+
+        HashMap<String, Map<String, Object>> map = new HashMap();
+        map.put("org1#add1", hm);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        additionalDetails.setScreeningStatus(List.of());
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().addresses(map).build();
+        Parties parties = Parties.builder().orgCode("org1").addressCode("add1").build();
+        assertFalse(shipmentService.checkRaStatusFields(shipmentDetails, orgAddressResponse, parties));
+    }
+
+    @Test
+    void checkRaStatusFieldsTest_ScreeningStatus() {
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("RegulatedAgent", true);
+
+        HashMap<String, Map<String, Object>> map = new HashMap();
+        map.put("org1#add1", hm);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        additionalDetails.setScreeningStatus(List.of("Screening"));
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().addresses(map).build();
+        Parties parties = Parties.builder().orgCode("org1").addressCode("add1").build();
+        assertFalse(shipmentService.checkRaStatusFields(shipmentDetails, orgAddressResponse, parties));
+    }
+
+    @Test
+    void checkRaStatusFieldsTest_SecurityStatus() {
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("RegulatedAgent", true);
+
+        HashMap<String, Map<String, Object>> map = new HashMap();
+        map.put("org1#add1", hm);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).securityStatus("Security").build();
+        additionalDetails.setScreeningStatus(List.of("Screening"));
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().addresses(map).build();
+        Parties parties = Parties.builder().orgCode("org1").addressCode("add1").build();
+        assertTrue(shipmentService.checkRaStatusFields(shipmentDetails, orgAddressResponse, parties));
+    }
+
+    @Test
     void retrieveByIdAsycNullRequest() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
         CompletableFuture<ResponseEntity<IRunnerResponse>> httpResponse = shipmentService.retrieveByIdAsync(commonRequestModel);
