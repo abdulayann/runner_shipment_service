@@ -130,12 +130,9 @@ public class QuoteContractsService implements IQuoteContractsService {
         try {
             if(!Objects.isNull(request.getContracts().get(0).getContract_usage())) {
                 for (ListContractResponse.ContractUsage contractUsage : request.getContracts().get(0).getContract_usage()) {
-                    try {
-                        if(!Objects.isNull(contractUsage.getFilter_params().getCargo_type()))
-                            containerTypes.addAll(contractUsage.getFilter_params().getCargo_type());
-                    } catch (Exception ignored) {
-                        log.info("Container Types not available");
-                    }
+                    if(!Objects.isNull(contractUsage) && !Objects.isNull(contractUsage.getFilter_params()) &&
+                            !Objects.isNull(contractUsage.getFilter_params().getCargo_type()))
+                        containerTypes.addAll(contractUsage.getFilter_params().getCargo_type());
                 }
             }
         } catch (Exception e) {
