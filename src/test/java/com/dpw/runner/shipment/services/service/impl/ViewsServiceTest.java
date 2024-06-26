@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.request.ViewsRequest;
 import com.dpw.runner.shipment.services.dto.response.ViewsResponse;
 import com.dpw.runner.shipment.services.entity.DefaultViews;
 import com.dpw.runner.shipment.services.entity.Views;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Arrays;
@@ -62,6 +65,7 @@ class ViewsServiceTest {
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
         ViewsResponse viewsResponse = new ViewsResponse();
+        when(viewsDao.findByCreatedByAndIsDefault(anyString())).thenReturn(Optional.of(views));
         when(viewsDao.save(views)).thenReturn(views);
         when(jsonHelper.convertValue(any(ViewsRequest.class), eq(Views.class))).thenReturn(views);
         when(jsonHelper.convertValue(any(Views.class), eq(ViewsResponse.class))).thenReturn(viewsResponse);
@@ -70,6 +74,21 @@ class ViewsServiceTest {
 
         assertNotNull(responseEntity.getBody());
 
+    }
+
+    @Test
+    void testCreate_Exception1() {
+
+        ViewsRequest request = new ViewsRequest(); // Provide necessary data for request
+        request.setIsDefault(true);
+        request.setName("name");
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        Views views = new Views(); // Provide necessary data for views
+        ViewsResponse viewsResponse = new ViewsResponse();
+        when(viewsDao.findAllByUsername(anyString())).thenReturn(List.of("name"));
+
+        assertThrows(ValidationException.class, () ->viewsService.create(commonRequestModel));
     }
 
     @Test
@@ -99,16 +118,73 @@ class ViewsServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
+        views.setCreatedBy("user");
         ViewsResponse viewsResponse = new ViewsResponse();
         when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
+        when(viewsDao.findByCreatedByAndIsDefault(anyString())).thenReturn(Optional.of(views));
         when(viewsDao.save(any(Views.class))).thenReturn(views);
-        when(defaultViewsDao.findByUsername(anyString())).thenReturn(Optional.empty());
         when(jsonHelper.convertValue(any(ViewsRequest.class), eq(Views.class))).thenReturn(views);
         when(jsonHelper.convertValue(any(Views.class), eq(ViewsResponse.class))).thenReturn(viewsResponse);
 
         ResponseEntity<IRunnerResponse> responseEntity = viewsService.update(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(viewsResponse), responseEntity);
+
+    }
+
+    @Test
+    void testUpdate_Exception1() {
+
+        ViewsRequest request = new ViewsRequest(); // Provide necessary data for request
+        request.setIsDefault(true);
+        request.setId(10L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        Views views = new Views(); // Provide necessary data for views
+        views.setCreatedBy("user1");
+        ViewsResponse viewsResponse = new ViewsResponse();
+        when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
+
+        assertThrows(ValidationException.class, () -> viewsService.update(commonRequestModel));
+
+    }
+
+    @Test
+    void testUpdate_Exception2() {
+
+        ViewsRequest request = new ViewsRequest(); // Provide necessary data for request
+        request.setIsDefault(true);
+        request.setId(10L);
+        request.setName("test");
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        Views views = new Views(); // Provide necessary data for views
+        views.setCreatedBy("user");
+        ViewsResponse viewsResponse = new ViewsResponse();
+        when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
+        when(viewsDao.findAllByUsername(anyString())).thenReturn(List.of("test"));
+
+        assertThrows(ValidationException.class, () -> viewsService.update(commonRequestModel));
+
+    }
+
+    @Test
+    void testUpdate_Exception() {
+
+        ViewsRequest request = new ViewsRequest(); // Provide necessary data for request
+        request.setIsDefault(true);
+        request.setId(10L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        Views views = new Views(); // Provide necessary data for views
+        views.setCreatedBy("user");
+        ViewsResponse viewsResponse = new ViewsResponse();
+        when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
+        when(viewsDao.save(any(Views.class))).thenThrow(new RuntimeException());
+
+        ResponseEntity<IRunnerResponse> responseEntity = viewsService.update(commonRequestModel);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
 
     }
 
@@ -136,17 +212,32 @@ class ViewsServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
+        views.setCreatedBy("user");
         views.setId(1L);
         ViewsResponse viewsResponse = new ViewsResponse();
         DefaultViews defaultView = new DefaultViews();
         defaultView.setDefaultViewId(2L);
         when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
         when(viewsDao.save(any(Views.class))).thenReturn(views);
-        when(defaultViewsDao.findByUsername(anyString())).thenReturn(Optional.of(defaultView));
         when(jsonHelper.convertValue(any(ViewsRequest.class), eq(Views.class))).thenReturn(views);
-        doThrow(new RuntimeException()).when(defaultViewsDao).save(any());
 
         ResponseEntity<IRunnerResponse> responseEntity = viewsService.update(commonRequestModel);
+    }
+
+    @Test
+    void list() {
+
+        ListCommonRequest request = new ListCommonRequest(); // Provide necessary data for request
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        List<Views> viewsList = List.of(Views.builder().build()); // Provide necessary data for views list
+        when(viewsDao.findAll(any(), any())).thenReturn(new PageImpl<>(viewsList));
+        ViewsResponse viewsResponse = new ViewsResponse();
+        when(jsonHelper.convertValue(any(), eq(ViewsResponse.class))).thenReturn(viewsResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = viewsService.list(commonRequestModel);
+
+        assertNotNull(responseEntity.getBody());
+
     }
 
     @Test
@@ -218,7 +309,6 @@ class ViewsServiceTest {
         Views views = new Views(); // Provide necessary data for views
         views.setId(1L);
         when(viewsDao.findById(any())).thenReturn(Optional.of(views));
-        when(defaultViewsDao.findByDefaultViewId(any())).thenReturn(Optional.of(new DefaultViews()));
 
         ResponseEntity<IRunnerResponse> responseEntity = viewsService.delete(commonRequestModel);
 
@@ -234,7 +324,6 @@ class ViewsServiceTest {
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
         when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
-        doThrow(new RuntimeException()).when(defaultViewsDao).findByDefaultViewId(any());
 
         ResponseEntity<IRunnerResponse> responseEntity = viewsService.delete(commonRequestModel);
 
