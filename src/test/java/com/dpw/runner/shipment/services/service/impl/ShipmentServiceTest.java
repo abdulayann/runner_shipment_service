@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -25,6 +26,8 @@ import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -73,6 +76,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -189,6 +193,12 @@ class ShipmentServiceTest extends CommonMocks {
     private GetNextNumberHelper getNextNumberHelper;
     @Mock
     private MasterDataHelper masterDataHelper;
+
+    @Mock
+    private RestTemplate restTemplate;
+
+    @Mock
+    private BillingServiceAdapter billingServiceAdapter;
 
     @Captor
     private ArgumentCaptor<Workbook> workbookCaptor;
@@ -1083,13 +1093,29 @@ class ShipmentServiceTest extends CommonMocks {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
 
-        CheckActiveInvoiceResponse mockCheckActiveInvoiceResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(true).build();
-        //Mock
-        when(v1Service.getActiveInvoices(any())).thenReturn(mockCheckActiveInvoiceResponse);
-        // Test
+        InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
+        invoiceSummaryRequest.setModuleType("SHIPMENT");
+        invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
+
+        when(billingServiceAdapter.fetchActiveInvoices(any())).thenReturn(false);
+
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
-        // Assert
-        assertEquals(ResponseHelper.buildSuccessResponse(mockCheckActiveInvoiceResponse), httpResponse);
+        assertEquals(ResponseHelper.buildDependentServiceResponse(false,0,0), httpResponse);
+    }
+
+    @Test
+    void fetchActiveInvoicesDoubleValuePresent() throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+
+        InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
+        invoiceSummaryRequest.setModuleType("SHIPMENT");
+        invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
+
+        when(billingServiceAdapter.fetchActiveInvoices(any())).thenReturn(true);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
+        assertEquals(ResponseHelper.buildDependentServiceResponse(true,0,0), httpResponse);
     }
 
     @Test
