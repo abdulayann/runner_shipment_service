@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
@@ -57,6 +58,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -227,6 +230,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
             ResponseEntity<FetchOffersResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), FetchOffersResponse.class);
             this.setMeasurementBasis(response.getBody());
+            this.modifyOffersAPIData(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
@@ -326,11 +330,22 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             response.getContracts().forEach(cont -> {
                 if(cont.getCarrier_codes() != null) {
                     cont.getCarrier_codes().remove(NPMConstants.ANY);
+                    cont.getCarrier_codes().remove(NPMConstants.SQSN);
                     cont.getCarrier_codes().remove(null);
                     if(!cont.getCarrier_codes().isEmpty()) {
                         carrier.add(cont.getCarrier_codes().get(0));
                         log.info("Carrier data from npm {}", carrier);
-                        response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriers(carrier.stream().toList()));
+                        response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriersBySCACCode(carrier.stream().toList()));
+                        if(response.getCarrierMasterData().containsKey(cont.getCarrier_codes().get(0))) {
+                            EntityTransferCarrier carrierMasterData = response.getCarrierMasterData().get(cont.getCarrier_codes().get(0));
+                            cont.getCarrier_codes().set(0, carrierMasterData.getItemValue());
+                            response.getCarrierMasterData().clear();
+                            response.getCarrierMasterData().put(carrierMasterData.getItemValue(), carrierMasterData);
+                        }
+                        else {
+                            log.info("Carrier code not valid or not present in contract");
+                            cont.setCarrier_codes(new ArrayList<>());
+                        }
                     }
                 }
             });
@@ -398,6 +413,21 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 return "Shipment";
             default:
                 return uom;
+        }
+    }
+
+    private void modifyOffersAPIData(FetchOffersResponse response) {
+        if(Objects.isNull(response) || Objects.isNull(response.getOffers()) || response.getOffers().isEmpty())
+            return;
+        FetchOffersResponse.Offer offer = response.getOffers().get(0);
+        if(!IsStringNullOrEmpty(offer.getCarrier())) {
+            List<String> carrierCodes = new ArrayList<>();
+            carrierCodes.add(offer.getCarrier());
+            Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriersBySCACCode(carrierCodes);
+            if(map.containsKey(offer.getCarrier()))
+                offer.setCarrier(map.get(offer.getCarrier()).ItemValue);
+            else
+                offer.setCarrier(null);
         }
     }
 
@@ -782,10 +812,14 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if(contract.getCarrier_codes() == null)
             return null;
         contract.getCarrier_codes().remove(NPMConstants.ANY);
+        contract.getCarrier_codes().remove(NPMConstants.SQSN);
         contract.getCarrier_codes().remove(null);
         if(contract.getCarrier_codes().isEmpty())
             return null;
-        return contract.getCarrier_codes().get(0);
+        Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriersBySCACCode(contract.getCarrier_codes().stream().toList());
+        if(map.containsKey(contract.getCarrier_codes().get(0)))
+            return map.get(contract.getCarrier_codes().get(0)).ItemValue;
+        return null;
     }
 
     private List<RoutingsResponse> createRoutings(ListContractResponse.ContractResponse contractResponse) {

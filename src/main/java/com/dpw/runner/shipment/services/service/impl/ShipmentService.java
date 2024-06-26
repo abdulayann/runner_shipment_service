@@ -1017,13 +1017,8 @@ public class ShipmentService implements IShipmentService {
                 double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
                 totalWeight = totalWeight + wInDef;
                 tareWeight = tareWeight + tarDef;
-                double noOfPackages = 0;
-                if(containers.getNoOfPackages() != null)
-                    noOfPackages = containers.getNoOfPackages().doubleValue();
                 if(!IsStringNullOrEmpty(containers.getPacks()))
                     packageCount = packageCount + Long.parseLong(containers.getPacks());
-                else
-                    packageCount = packageCount + noOfPackages;
                 totalVolume = totalVolume + volume;
                 if(containers.getContainerCount() != null)
                     totalContainerCount = totalContainerCount + containers.getContainerCount();
@@ -1053,11 +1048,6 @@ public class ShipmentService implements IShipmentService {
             for (Containers container : containersList) {
                 if (!IsStringNullOrEmpty(container.getPacks())) {
                     packageCount = packageCount + Integer.parseInt(container.getPacks());
-                } else {
-                    if(container.getNoOfPackages() != null)
-                        packageCount = packageCount + container.getNoOfPackages();
-                }
-                if (!IsStringNullOrEmpty(container.getPacks())) {
                     totalPacks = totalPacks + Integer.parseInt(container.getPacks());
                 }
             };
@@ -1334,7 +1324,7 @@ public class ShipmentService implements IShipmentService {
                     throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
             } else {
                 if((removedConsolIds != null && !removedConsolIds.isEmpty() && oldEntity != null && oldEntity.getConsolidationList() != null && Boolean.TRUE.equals(oldEntity.getConsolidationList().get(0).getHazardous()))
-                    || (isNewConsolAttached && Boolean.TRUE.equals(consolidationDetailsRequests.get(0).getHazardous()))) {
+                    || (consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty() && Boolean.TRUE.equals(consolidationDetailsRequests.get(0).getHazardous()))) {
                     throw new RunnerException("You do not have Air DG permissions to edit this as it is a part of DG Consol");
                 }
             }
@@ -1529,9 +1519,9 @@ public class ShipmentService implements IShipmentService {
                     if(consignor != null) {
                         if (addressMap.containsKey(consignor.getOrgCode() + "#" + consignor.getAddressCode())) {
                             Map<String, Object> addressConsignorAgent = addressMap.get(consignor.getOrgCode() + "#" + consignor.getAddressCode());
-                            if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
-                                var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
-                                if (rakcType != null && (Integer) rakcType == RAKCType.KNOWN_CONSIGNOR.getId() && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
+                            if (addressConsignorAgent.containsKey(Constants.KNOWN_CONSIGNOR)) {
+                                var rakcType = addressConsignorAgent.get(Constants.KNOWN_CONSIGNOR);
+                                if (rakcType != null && Boolean.TRUE.equals(rakcType) && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
                                         shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
                                         shipmentDetails.getSecurityStatus() == null)) {
                                     throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
@@ -1546,12 +1536,6 @@ public class ShipmentService implements IShipmentService {
                                 throw new RunnerException("Screening Status and Security Status is mandatory for RA Origin Agent.");
                             }
                         }
-
-                        if (shipmentDetails.getAdditionalDetails().getExportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getExportBroker().getAddressCode())) {
-                            if (!checkRaStatusFields(shipmentDetails, orgAddressResponse, shipmentDetails.getAdditionalDetails().getExportBroker())) {
-                                throw new RunnerException("Screening Status and Security Status is mandatory for RA Destination Agent.");
-                            }
-                        }
                     }
                 }
             }
@@ -1562,9 +1546,9 @@ public class ShipmentService implements IShipmentService {
         Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
         if (addressMap.containsKey(parties.getOrgCode() + "#" + parties.getAddressCode())) {
             Map<String, Object> addressConsignorAgent = addressMap.get(parties.getOrgCode() + "#" + parties.getAddressCode());
-            if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
-                var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
-                if (rakcType != null && (Integer)rakcType == RAKCType.REGULATED_AGENT.getId() && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
+            if (addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
+                var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
+                if (rakcType != null && Boolean.TRUE.equals(rakcType) && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
                         shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
                         shipmentDetails.getSecurityStatus() == null)) {
                     return false;
@@ -2281,7 +2265,7 @@ public class ShipmentService implements IShipmentService {
                 log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
             }
-            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
+            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
             checkWayBillNumberCriteria(request);
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -2682,7 +2666,7 @@ public class ShipmentService implements IShipmentService {
         List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
         String shipmentId = "";
         boolean flag = true;
-
+        int counter = 1;
         while(flag) {
             ListCommonRequest listRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentId, "=");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class);
@@ -2691,6 +2675,7 @@ public class ShipmentService implements IShipmentService {
             if(!shipmentId.isEmpty() && shipments.getTotalElements() == 0)
                 flag = false;
             else {
+                log.info("CR-ID {} || Inside generateShipmentId: with shipmentID: {} | counter: {}", LoggerHelper.getRequestIdFromMDC(), shipmentId, counter++);
                 if(shipmentSettingsList != null && shipmentSettingsList.size() != 0 && shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
                     try{
                         shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber, shipmentDetails);

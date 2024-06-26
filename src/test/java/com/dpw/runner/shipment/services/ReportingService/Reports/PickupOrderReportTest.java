@@ -41,7 +41,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PickupOrderReportTest extends CommonMocks {
@@ -83,6 +83,13 @@ class PickupOrderReportTest extends CommonMocks {
 
     private void populateModel(HblModel hblModel) {
         ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                .id(12L)
+                .agentDetail(new PartiesModel())
+                .actualPickup(LocalDateTime.now())
+                .actualDelivery(LocalDateTime.now())
+                .build()));
         shipmentModel.setId(123L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
         shipmentModel.setDirection(ReportConstants.EXP);
@@ -169,7 +176,6 @@ class PickupOrderReportTest extends CommonMocks {
         containers.setContainerCount(1L);
         containers.setContainerCode("20GP");
         containers.setNetWeight(BigDecimal.TEN);
-        containers.setNoOfPackages(10L);
         containers.setContainerNumber("CONT000283");
         containers.setGrossVolume(BigDecimal.TEN);
         containers.setGrossVolumeUnit("M3");
@@ -248,7 +254,7 @@ class PickupOrderReportTest extends CommonMocks {
         parties.setAddressCode("Test");
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> addressDataMap = new HashMap<>();
-        addressDataMap.put(RAKC_TYPE, ONE);
+        addressDataMap.put(REGULATED_AGENT, true);
         addressDataMap.put(KCRA_NUMBER, ONE);
         addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
         addressMap.put(parties.getOrgCode()+"#"+parties.getAddressCode(), addressDataMap);
@@ -257,7 +263,7 @@ class PickupOrderReportTest extends CommonMocks {
         parties2.setOrgCode("Test2");
         parties2.setAddressCode("Test2");
         addressDataMap = new HashMap<>();
-        addressDataMap.put(RAKC_TYPE, TWO);
+        addressDataMap.put(KNOWN_CONSIGNOR, true);
         addressDataMap.put(KCRA_NUMBER, TWO);
         addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
         addressMap.put(parties2.getOrgCode()+"#"+parties2.getAddressCode(), addressDataMap);
@@ -301,6 +307,13 @@ class PickupOrderReportTest extends CommonMocks {
     void getDocumentModel() {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(SEA);
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                        .id(12L)
+                        .agentDetail(new PartiesModel())
+                        .actualPickup(LocalDateTime.now())
+                        .actualDelivery(LocalDateTime.now())
+                .build()));
         shipmentModel.setDirection(EXP);
         shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
         shipmentModel.setPickupDetails(new PickupDeliveryDetailsModel());

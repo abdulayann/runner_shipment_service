@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.request;
 
-import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.utils.ExcelCell;
 import lombok.AllArgsConstructor;
@@ -10,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 @Data
 @Builder
 @AllArgsConstructor
@@ -32,8 +30,6 @@ public class ContainersExcelModel {
     private String sealNumber;
     @ExcelCell(displayName = "DescriptionOfGoods")
     private String descriptionOfGoods;
-    @ExcelCell(displayName = "NoOfPackages")
-    private Long noOfPackages;
     @ExcelCell(displayName = "NetWeight")
     private BigDecimal netWeight;
     @ExcelCell(displayName = "NetWeightUnit")

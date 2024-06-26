@@ -77,4 +77,12 @@ class MawbHawbLinkDaoTest {
         when(mawbHawbLinkRepository.findByMawbId(any())).thenReturn(mawbHawbLinkList);
         assertEquals(mawbHawbLinkList, mawbHawbLinkDao.findByMawbId(1L));
     }
+
+    @Test
+    void findByHawbId() {
+        MawbHawbLink mawbHawbLink = MawbHawbLink.builder().build();
+        List<MawbHawbLink> mawbHawbLinkList = Arrays.asList(mawbHawbLink);
+        when(mawbHawbLinkRepository.findByHawbId(any())).thenReturn(mawbHawbLinkList);
+        assertEquals(mawbHawbLinkList, mawbHawbLinkDao.findByHawbId(1L));
+    }
 }

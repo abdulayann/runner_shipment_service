@@ -37,7 +37,6 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -209,7 +208,6 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         containers.setContainerCount(1L);
         containers.setContainerCode("20GP");
         containers.setNetWeight(BigDecimal.TEN);
-        containers.setNoOfPackages(10L);
         containers.setContainerNumber("CONT000283");
         containers.setGrossVolume(BigDecimal.TEN);
         containers.setGrossVolumeUnit("M3");
@@ -296,7 +294,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         parties.setAddressCode("Test");
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> addressDataMap = new HashMap<>();
-        addressDataMap.put(RAKC_TYPE, ONE);
+        addressDataMap.put(REGULATED_AGENT, true);
         addressDataMap.put(KCRA_NUMBER, ONE);
         addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
         addressMap.put(parties.getOrgCode()+"#"+parties.getAddressCode(), addressDataMap);
@@ -305,7 +303,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         parties2.setOrgCode("Test2");
         parties2.setAddressCode("Test2");
         addressDataMap = new HashMap<>();
-        addressDataMap.put(RAKC_TYPE, TWO);
+        addressDataMap.put(KNOWN_CONSIGNOR, true);
         addressDataMap.put(KCRA_NUMBER, TWO);
         addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
         addressMap.put(parties2.getOrgCode()+"#"+parties2.getAddressCode(), addressDataMap);

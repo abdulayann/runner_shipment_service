@@ -944,7 +944,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .destination(request.getDestination())
                 .originPort(request.getOriginPort())
                 .destinationPort(request.getDestinationPort())
-                .shippingLine(request.getShippingLine())
+                .shippingLine(getCarrierItemValueFromSCAC(request.getShippingLine()))
                 .maxTransitHours(request.getMaxTransitHours())
                 .minTransitHours(request.getMinTransitHours())
                 .vessel(vessel)
@@ -952,6 +952,17 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .build();
         
         customerBookingRequest.setCarrierDetails(carrierDetailRequest);
+    }
+
+    private String getCarrierItemValueFromSCAC(String carrierSCACCode) {
+        if(IsStringNullOrEmpty(carrierSCACCode))
+            return null;
+        List<String> carrierCodes = new ArrayList<>();
+        carrierCodes.add(carrierSCACCode);
+        Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriersBySCACCode(carrierCodes);
+        if(map.containsKey(carrierSCACCode))
+            return map.get(carrierSCACCode).ItemValue;
+        return null;
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<CustomerBooking> lst) {

@@ -15,4 +15,5 @@ public interface IMawbHawbLinkDao {
     Optional<MawbHawbLink> findById(Long id);
     void delete(MawbHawbLink mawbHawbLink);
     List<MawbHawbLink> findByMawbId(Long mawbId);
+    List<MawbHawbLink> findByHawbId(Long hawbId);
 }

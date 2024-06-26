@@ -43,4 +43,9 @@ public class MawbHawbLinkDao implements IMawbHawbLinkDao {
 
     @Override
     public List<MawbHawbLink> findByMawbId(Long mawbId) { return mawbHawbLinkRepository.findByMawbId(mawbId); }
+
+    @Override
+    public List<MawbHawbLink> findByHawbId(Long hawbId) {
+        return mawbHawbLinkRepository.findByHawbId(hawbId);
+    }
 }

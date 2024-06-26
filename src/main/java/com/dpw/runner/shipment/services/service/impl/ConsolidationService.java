@@ -2482,10 +2482,6 @@ public class ConsolidationService implements IConsolidationService {
         try {
             finalContainer.setDescriptionOfGoods(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods()));
 //        finalContainer.setHa(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods())); TODO- missing handling info in containers
-            if(finalContainer.getNoOfPackages() != null && container.getNoOfPackages() != null)
-                finalContainer.setNoOfPackages(finalContainer.getNoOfPackages() + container.getNoOfPackages());
-            else if(container.getNoOfPackages() != null)
-                finalContainer.setNoOfPackages(container.getNoOfPackages());
             if(!IsStringNullOrEmpty(finalContainer.getPacks()) && !IsStringNullOrEmpty(container.getPacks()))
                 finalContainer.setPacks(String.valueOf(new BigDecimal(finalContainer.getPacks()).add(new BigDecimal(container.getPacks()))));
             else if(!IsStringNullOrEmpty(container.getPacks())) {
@@ -2906,9 +2902,9 @@ public class ConsolidationService implements IConsolidationService {
                     Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
                     if (sendingAgent != null && addressMap.containsKey(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode())) {
                         Map<String, Object> addressConsignorAgent = addressMap.get(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode());
-                        if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
-                            var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
-                            if (rakcType != null && (Integer) rakcType == RAKCType.KNOWN_CONSIGNOR.getId() && (consolidationDetails.getScreeningStatus() == null ||
+                        if (addressConsignorAgent.containsKey(Constants.KNOWN_CONSIGNOR)) {
+                            var rakcType = addressConsignorAgent.get(Constants.KNOWN_CONSIGNOR);
+                            if (rakcType != null && Boolean.TRUE.equals(rakcType) && (consolidationDetails.getScreeningStatus() == null ||
                                     consolidationDetails.getScreeningStatus().isEmpty() ||
                                     consolidationDetails.getSecurityStatus() == null)) {
                                 throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
@@ -2928,9 +2924,9 @@ public class ConsolidationService implements IConsolidationService {
         Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
         if (addressMap.containsKey(parties.getOrgCode() + "#" + parties.getAddressCode())) {
             Map<String, Object> addressConsignorAgent = addressMap.get(parties.getOrgCode() + "#" + parties.getAddressCode());
-            if (addressConsignorAgent.containsKey(Constants.RA_KC_TYPE)) {
-                var rakcType = addressConsignorAgent.get(Constants.RA_KC_TYPE);
-                if (rakcType != null && (Integer)rakcType == RAKCType.REGULATED_AGENT.getId() && (consolidationDetails.getScreeningStatus() == null ||
+            if (addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
+                var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
+                if (rakcType != null && Boolean.TRUE.equals(rakcType) && (consolidationDetails.getScreeningStatus() == null ||
                         consolidationDetails.getScreeningStatus().isEmpty() ||
                         consolidationDetails.getSecurityStatus() == null)) {
                     return false;

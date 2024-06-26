@@ -92,6 +92,7 @@ public class HblService implements IHblService {
     @Autowired
     private PartialFetchUtils partialFetchUtils;
 
+
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -590,7 +591,7 @@ public class HblService implements IHblService {
             hblContainer.setGuid(container.getGuid());
             hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
             hblContainer.setSealNumber(container.getSealNumber());
-            hblContainer.setNoOfPackages(container.getNoOfPackages());
+            hblContainer.setNoOfPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()));
             hblContainer.setContainerGrossVolume(container.getGrossVolume());
             hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
             hblContainer.setContainerGrossWeight(container.getGrossWeight());
@@ -885,7 +886,7 @@ public class HblService implements IHblService {
                 hblContainer.setGuid(container.getGuid());
                 hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
                 hblContainer.setSealNumber(container.getSealNumber());
-                hblContainer.setNoOfPackages(container.getNoOfPackages());
+                hblContainer.setNoOfPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()));
                 hblContainer.setContainerGrossVolume(container.getGrossVolume());
                 hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
                 hblContainer.setContainerGrossWeight(container.getGrossWeight());

@@ -161,7 +161,7 @@ public abstract class IReport {
         ShipmentContainers ship = new ShipmentContainers();
         ship.ContainerNumber = row.getContainerNumber();
         ship.SealNumber = StringUtility.isEmpty(row.getCarrierSealNumber()) ? row.getShipperSealNumber() : row.getCarrierSealNumber();
-        ship.NoofPackages = row.getNoOfPackages();
+        ship.NoofPackages = IsStringNullOrEmpty(row.getPacks()) ? null : Long.valueOf(row.getPacks());
         if(row.getPacks() != null && !row.getPacks().isEmpty())
             ship.ShipmentPacks = Long.valueOf(row.getPacks());
         ship.ShipmentPacksUnit = row.getPacksType();
@@ -834,6 +834,7 @@ public abstract class IReport {
         if (!Objects.isNull(shipment.getNoOfPacks()))
             dictionary.put(ReportConstants.NO_OF_PACKAGES_ALIAS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
         populateIGMInfo(shipment, dictionary);
+        dictionary.put(IsDG, false);
         if(Boolean.TRUE.equals(shipment.getContainsHazardous())) {
             dictionary.put(IsDG, true);
             dictionary.put(DGEmergencyContact, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
@@ -1347,6 +1348,7 @@ public abstract class IReport {
             }
         }
         populateUserFields(UserContext.getUser(), dictionary);
+        dictionary.put(IsDG, false);
         if(Boolean.TRUE.equals(consolidation.getHazardous())) {
             dictionary.put(IsDG, true);
             dictionary.put(DGEmergencyContact, getConcatenatedContact(consolidation.getEmergencyContactNumberCode(), consolidation.getEmergencyContactNumber()));
@@ -2311,7 +2313,7 @@ public abstract class IReport {
             dict.put(ChargeableUnit, pack.getChargeableUnit());
             dict.put(HS_CODE, pack.getHSCode());
             dict.put(DESCRIPTION, pack.getGoodsDescription());
-
+            dict.put(IsDG, false);
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
                 var dgSubstanceRow = masterDataUtils.fetchDgSubstanceRow(pack.getDGSubstanceId());
                 dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);
@@ -2797,8 +2799,9 @@ public abstract class IReport {
 
     private void processAgent(Map<String, Object> agent, Map<String, Object> dictionary, String type, String agentType) {
         if(agent != null) {
-            if(StringUtility.isNotEmpty(StringUtility.convertToString(agent.get(RAKC_TYPE)))
-                    && StringUtility.convertToString(agent.get(RAKC_TYPE)).equals(type)) {
+            var raKcType = Boolean.TRUE.equals(agent.get(REGULATED_AGENT))? ONE : "";
+            raKcType = Boolean.TRUE.equals(agent.get(KNOWN_CONSIGNOR))? TWO : raKcType;
+            if(Objects.equals(raKcType, type)) {
                 if(type.equals(ONE)) {
                     dictionary.put(agentType + TYPE, RA);
                 } else if(type.equals(TWO)) {
@@ -2906,8 +2909,8 @@ public abstract class IReport {
         if (transportInstruction.isEmpty())
             return;
         var ti = transportInstruction.get();
-        var exportAgent = ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Export Agent")).findFirst();
-        var importAgent = ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Import Agent")).findFirst();
+        Optional<PartiesModel> exportAgent = ti.getPartiesModels()!= null ? ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Export Agent")).findFirst() : Optional.empty();
+        Optional<PartiesModel> importAgent = ti.getPartiesModels()!= null ? ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Import Agent")).findFirst() : Optional.empty();
 
         dictionary.put(TI_INSTRUCTIONTYPE, ti.getType());
         dictionary.put(TI_DROPMODE, ti.getDropMode());
