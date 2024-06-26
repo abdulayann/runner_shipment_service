@@ -108,10 +108,13 @@ public class ViewsService implements IViewsService {
         {
             throw new ValidationException("This view does not belongs to this user");
         }
-        List<String> viewsNamesList = viewsDao.findAllByUsername(UserContext.getUser().getUsername());
-        if(viewsNamesList != null && viewsNamesList.contains(request.getName()))
+        if(!Objects.equals(oldEntity.get().getName(), request.getName()))
         {
-            throw new ValidationException("A view with this name already exists, please change the view name!");
+            List<String> viewsNamesList = viewsDao.findAllByUsername(UserContext.getUser().getUsername());
+            if(viewsNamesList != null && viewsNamesList.contains(request.getName()))
+            {
+                throw new ValidationException("A view with this name already exists, please change the view name!");
+            }
         }
         if(!Boolean.TRUE.equals(oldEntity.get().getIsDefault()) && Boolean.TRUE.equals(request.getIsDefault())) {
             Optional<Views> view = viewsDao.findByCreatedByAndIsDefault(UserContext.getUser().getUsername());
