@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
@@ -37,7 +38,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     public Boolean fetchActiveInvoices(CommonGetRequest request) throws RunnerException {
 
         InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
-        invoiceSummaryRequest.setModuleType("SHIPMENT");
+        invoiceSummaryRequest.setModuleType(Constants.SHIPMENT);
         invoiceSummaryRequest.setModuleGuid(request.getGuid());
 
         String url = billingBaseUrl + getInvoiceData;
