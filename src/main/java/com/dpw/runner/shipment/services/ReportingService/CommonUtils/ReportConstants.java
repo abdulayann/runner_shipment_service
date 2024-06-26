@@ -1160,6 +1160,10 @@ public class ReportConstants {
     public static final String TI_IMPORT_AGENT = "TI-ImportAgent";
     public static final String TI_IMPORT_AGENT_ADDRESS = "TI-ImportAgentAddress";
     public static final String TI_IMPORT_AGENT_CONTACT = "TI-ImportAgentContact";
+    //TI-DeliveryAgent
+    public static final String TI_DELIVERY_AGENT = "TI-DeliveryAgent";
+    public static final String TI_DELIVERY_AGENT_ADDRESS = "TI-DeliveryAgentAddress";
+    public static final String TI_DELIVERY_AGENT_CONTACT = "TI-DeliveryAgentContact";
 
 
     public static final String CARRIER_HQ = "CarrierHQ";
