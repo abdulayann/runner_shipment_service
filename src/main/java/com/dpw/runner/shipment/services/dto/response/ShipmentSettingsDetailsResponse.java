@@ -164,4 +164,6 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private String bookingOrderForMbl;
     private String bookingOrderAir;
     private String bookingOrderAirForMawb;
+    private String transportInstructionPickupOrder;
+    private String transportInstructionDeliveryOrder;
 }

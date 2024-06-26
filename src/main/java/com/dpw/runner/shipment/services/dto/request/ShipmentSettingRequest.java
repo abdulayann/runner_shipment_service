@@ -174,4 +174,6 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private String bookingOrderForMbl;
     private String bookingOrderAir;
     private String bookingOrderAirForMawb;
+    private String transportInstructionPickupOrder;
+    private String transportInstructionDeliveryOrder;
 }
