@@ -316,7 +316,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
         List<Awb> awbList = awbDao.findByShipmentId(inputShipment.getId());
         result.add(UniversalTrackingPayload.EntityDetail.builder()
-                .trackingNumber(getBillOfLading(inputShipment))
+                .trackingNumber(inputShipment.getMasterBill())
                 .allocationDate(awbList == null || awbList.size() == 0 ? null: awbList.get(0).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
                 .build());
 
