@@ -66,5 +66,154 @@ class BillingServiceAdapterTest {
         assertEquals(false, billingServiceAdapter.fetchActiveInvoices(commonGetRequest));
     }
 
+    @Test
+    void testCheckActiveChargesWithTotalCount() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().totalCount(1).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithTotalRevenue() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().totalRevenue(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithTotalCost() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().totalCost(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithAccruedRevenue() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().accruedRevenue(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithAccruedCost() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().accruedCost(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithInvoicedRevenue() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().invoicedRevenue(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithInvoicedCost() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().invoicedCost(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithDisbursementAccruedRevenue() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().disbursementAccruedRevenue(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithDisbursementAccruedCost() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().disbursementAccruedCost(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithDisbursementInvoicedRevenue() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().disbursementInvoicedRevenue(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithDisbursementInvoicedCost() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().disbursementInvoicedCost(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithDisbursementRevenue() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().disbursementRevenue(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithDisbursementCost() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().disbursementCost(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithCumulativeGP() throws RunnerException{
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().cumulativeGP(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
+
+    @Test
+    void testCheckActiveChargesWithCumulativeGPPercentage() throws RunnerException {
+        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
+        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().cumulativeGPPercentage(0.01).build());
+
+        assertEquals(true, billingServiceAdapter.fetchActiveInvoices(CommonGetRequest.builder().guid("guid").build()));
+    }
 
 }
