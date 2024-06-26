@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -248,12 +249,6 @@ public class ShipmentService implements IShipmentService {
     @Value("${shipmentsKafka.queue}")
     private String senderQueue;
 
-    @Value("${billing.baseUrl}")
-    private String billingBaseUrl;
-
-    @Value("${billing.getInvoiceData}")
-    private String getInvoiceData;
-
     @Autowired
     private KafkaProducer producer;
 
@@ -281,6 +276,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private BillingServiceAdapter billingServiceAdapter;
 
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
@@ -3986,20 +3984,8 @@ public class ShipmentService implements IShipmentService {
             throw new RunnerException("Shipment Guid can't be null");
         }
 
-        InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
-        invoiceSummaryRequest.setModuleType("SHIPMENT");
-        invoiceSummaryRequest.setModuleGuid(request.getGuid());
+        boolean activeCharges = billingServiceAdapter.fetchActiveInvoices(request);
 
-        String url = billingBaseUrl + getInvoiceData;
-
-        HttpEntity<InvoiceSummaryRequest> httpEntity = new HttpEntity<>(invoiceSummaryRequest, V1AuthHelper.getHeaders());
-        var response = this.restTemplate.postForEntity(url, httpEntity, BillingSummaryResponse.class).getBody();
-        BillingSummary billingSummary = new BillingSummary();
-        if(Objects.nonNull(response)) {
-            billingSummary = modelMapper.map(response.getData(), BillingSummary.class);
-        }
-
-        boolean activeCharges = checkActiveCharges(billingSummary);
         /*
         activeCharges false means atleast one of the value is not 0
         return true because active charges are present
@@ -4153,23 +4139,5 @@ public class ShipmentService implements IShipmentService {
         } else {
             return ResponseHelper.buildFailedResponse("Please send a valid doc type for check credit limit.");
         }
-    }
-
-    private Boolean checkActiveCharges(BillingSummary billingSummary) {
-        return (!Objects.equals(null, billingSummary.getTotalCount()) && !Objects.equals(0, billingSummary.getTotalCount())) ||
-                !Objects.equals(null, billingSummary.getTotalRevenue()) && Double.compare(billingSummary.getTotalRevenue(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getTotalCost()) && Double.compare(billingSummary.getTotalCost(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getAccruedRevenue()) && Double.compare(billingSummary.getAccruedRevenue(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getAccruedCost()) && Double.compare(billingSummary.getAccruedCost(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getInvoicedRevenue()) && Double.compare(billingSummary.getInvoicedRevenue(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getInvoicedCost()) && Double.compare(billingSummary.getInvoicedCost(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getDisbursementAccruedRevenue()) && Double.compare(billingSummary.getDisbursementAccruedRevenue(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getDisbursementAccruedCost()) && Double.compare(billingSummary.getDisbursementAccruedCost(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getDisbursementInvoicedRevenue()) && Double.compare(billingSummary.getDisbursementInvoicedRevenue(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getDisbursementInvoicedCost()) && Double.compare(billingSummary.getDisbursementInvoicedCost(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getDisbursementRevenue()) && Double.compare(billingSummary.getDisbursementRevenue(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getDisbursementCost()) && Double.compare(billingSummary.getDisbursementCost(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getCumulativeGP()) && Double.compare(billingSummary.getCumulativeGP(), 0.0) > 0 ||
-                !Objects.equals(null, billingSummary.getCumulativeGPPercentage()) && Double.compare(billingSummary.getCumulativeGPPercentage(), 0.0) > 0;
     }
 }

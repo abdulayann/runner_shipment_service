@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -195,6 +196,9 @@ class ShipmentServiceTest extends CommonMocks {
 
     @Mock
     private RestTemplate restTemplate;
+
+    @Mock
+    private BillingServiceAdapter billingServiceAdapter;
 
     @Captor
     private ArgumentCaptor<Workbook> workbookCaptor;
@@ -1093,10 +1097,7 @@ class ShipmentServiceTest extends CommonMocks {
         invoiceSummaryRequest.setModuleType("SHIPMENT");
         invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
 
-        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
-        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().build());
+        when(billingServiceAdapter.fetchActiveInvoices(any())).thenReturn(false);
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
         assertEquals(ResponseHelper.buildDependentServiceResponse(false,0,0), httpResponse);
@@ -1111,28 +1112,7 @@ class ShipmentServiceTest extends CommonMocks {
         invoiceSummaryRequest.setModuleType("SHIPMENT");
         invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
 
-        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
-        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().totalRevenue(0.001).build());
-
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
-        assertEquals(ResponseHelper.buildDependentServiceResponse(true,0,0), httpResponse);
-    }
-
-    @Test
-    void fetchActiveInvoicesIntegerValuePresent() throws RunnerException {
-        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06").build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
-
-        InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
-        invoiceSummaryRequest.setModuleType("SHIPMENT");
-        invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
-
-        BillingSummaryResponse billingSummaryResponse = new BillingSummaryResponse();
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenReturn(ResponseEntity.ok(billingSummaryResponse));
-        when(modelMapper.map(any(), any())).thenReturn(BillingSummary.builder().totalCount(1).build());
+        when(billingServiceAdapter.fetchActiveInvoices(any())).thenReturn(true);
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
         assertEquals(ResponseHelper.buildDependentServiceResponse(true,0,0), httpResponse);
