@@ -2902,12 +2902,12 @@ public class ConsolidationService implements IConsolidationService {
                     Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
                     if (sendingAgent != null && addressMap.containsKey(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode())) {
                         Map<String, Object> addressConsignorAgent = addressMap.get(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode());
-                        if (addressConsignorAgent.containsKey(Constants.KNOWN_CONSIGNOR)) {
-                            var rakcType = addressConsignorAgent.get(Constants.KNOWN_CONSIGNOR);
+                        if (addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
+                            var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
                             if (rakcType != null && Boolean.TRUE.equals(rakcType) && (consolidationDetails.getScreeningStatus() == null ||
                                     consolidationDetails.getScreeningStatus().isEmpty() ||
                                     consolidationDetails.getSecurityStatus() == null)) {
-                                throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
+                                throw new RunnerException("Screening Status and Security Status is mandatory for RA consginor.");
                             }
                         }
                     }
