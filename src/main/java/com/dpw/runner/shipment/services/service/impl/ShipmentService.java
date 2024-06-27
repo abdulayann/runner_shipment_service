@@ -3986,12 +3986,13 @@ public class ShipmentService implements IShipmentService {
         }
 
         boolean activeCharges = billingServiceAdapter.fetchActiveInvoices(request);
+        CheckActiveInvoiceResponse checkActiveInvoiceResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(activeCharges).build();
 
         /*
         activeCharges false means atleast one of the value is not 0
         return true because active charges are present
          */
-        return ResponseHelper.buildDependentServiceResponse(activeCharges,0,0);
+        return ResponseHelper.buildSuccessResponse(checkActiveInvoiceResponse);
     }
 
     public ResponseEntity<IRunnerResponse> showAssignAllContainers(CommonRequestModel commonRequestModel) {
