@@ -1098,9 +1098,10 @@ class ShipmentServiceTest extends CommonMocks {
         invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
 
         when(billingServiceAdapter.fetchActiveInvoices(any())).thenReturn(false);
+        CheckActiveInvoiceResponse checkActiveInvoiceResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(false).build();
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
-        assertEquals(ResponseHelper.buildDependentServiceResponse(false,0,0), httpResponse);
+        assertEquals(ResponseHelper.buildSuccessResponse(checkActiveInvoiceResponse), httpResponse);
     }
 
     @Test
@@ -1113,9 +1114,10 @@ class ShipmentServiceTest extends CommonMocks {
         invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
 
         when(billingServiceAdapter.fetchActiveInvoices(any())).thenReturn(true);
+        CheckActiveInvoiceResponse checkActiveInvoiceResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(true).build();
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
-        assertEquals(ResponseHelper.buildDependentServiceResponse(true,0,0), httpResponse);
+        assertEquals(ResponseHelper.buildSuccessResponse(checkActiveInvoiceResponse), httpResponse);
     }
 
     @Test
