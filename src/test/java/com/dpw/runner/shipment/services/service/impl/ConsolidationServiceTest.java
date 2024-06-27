@@ -2494,7 +2494,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consginor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2571,7 +2571,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consginor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2612,7 +2612,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consginor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2691,7 +2691,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consginor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2734,7 +2734,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consginor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2818,7 +2818,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consginor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });

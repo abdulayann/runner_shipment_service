@@ -2907,7 +2907,7 @@ public class ConsolidationService implements IConsolidationService {
                             if (rakcType != null && Boolean.TRUE.equals(rakcType) && (consolidationDetails.getScreeningStatus() == null ||
                                     consolidationDetails.getScreeningStatus().isEmpty() ||
                                     consolidationDetails.getSecurityStatus() == null)) {
-                                throw new RunnerException("Screening Status and Security Status is mandatory for RA consginor.");
+                                throw new RunnerException("Screening Status and Security Status is mandatory for RA consignor.");
                             }
                         }
                     }
