@@ -133,5 +133,5 @@ public class PickupDeliveryDetailsModel implements IDocumentModel {
     public String remarks;
 
     @JsonProperty("Parties")
-    private List<PartiesModel> partiesModels;
+    private List<PartiesModel> partiesList;
 }
