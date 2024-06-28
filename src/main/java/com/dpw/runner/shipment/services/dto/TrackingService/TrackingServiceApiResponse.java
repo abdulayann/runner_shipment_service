@@ -1,12 +1,17 @@
 package com.dpw.runner.shipment.services.dto.TrackingService;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class TrackingServiceApiResponse {
 
     private String identifierType;
@@ -18,6 +23,8 @@ public class TrackingServiceApiResponse {
 
     @Data
     @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Container {
         private String containerNumber;
         private String identifierType;
@@ -30,6 +37,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Container2
     {
         private String type;
@@ -55,6 +65,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Journey
     {
         private Object lineCode;
@@ -82,6 +95,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class PortOfDepartureEtd
     {
         private LocalDateTime dateTime;
@@ -90,6 +106,9 @@ public class TrackingServiceApiResponse {
 
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class PortOfArrivalEta
     {
         private LocalDateTime dateTime;
@@ -97,6 +116,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class PortOfArrivalAta
     {
         private LocalDateTime dateTime;
@@ -104,6 +126,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class PortOfArrivalAtd
     {
         private LocalDateTime dateTime;
@@ -111,6 +136,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Segment
     {
         private Integer source;
@@ -123,6 +151,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class DateAndSources
     {
         private LocalDateTime dateTime;
@@ -130,6 +161,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Source
     {
         private LocalDateTime dateTime;
@@ -137,6 +171,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Place
     {
         private Integer id;
@@ -176,6 +213,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Event
     {
         private Integer id;
@@ -192,6 +232,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class ProjectedEventTime
     {
         private LocalDateTime dateTime;
@@ -199,6 +242,9 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class ActualEventTime
     {
         private LocalDateTime dateTime;
@@ -206,7 +252,10 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
-    public class Details
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Details
     {
         private Integer transport;
         private Boolean hasContainer;

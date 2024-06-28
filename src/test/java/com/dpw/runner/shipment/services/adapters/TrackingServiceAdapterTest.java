@@ -95,6 +95,8 @@ class TrackingServiceAdapterTest {
 
     private static ObjectMapper objectMapperTest;
 
+    private static TrackingServiceApiResponse trackingServiceApiResponse;
+
     @BeforeAll
     static void init(){
         try {
@@ -287,29 +289,10 @@ class TrackingServiceAdapterTest {
     void getTrackingEvents() {
         String refNumber = "refNum";
         TrackingServiceApiResponse response = new TrackingServiceApiResponse();
-
-        TrackingServiceApiResponse.Place place = new TrackingServiceApiResponse.Place();
-        place.setId(1);
-
-        TrackingServiceApiResponse.Source source = new TrackingServiceApiResponse.Source();
-        source.setSource("tracking source");
-
-        TrackingServiceApiResponse.DateAndSources dateAndSources = new TrackingServiceApiResponse.DateAndSources();
-        dateAndSources.setSources(List.of(source));
-
-        TrackingServiceApiResponse.Event containerEvent = new TrackingServiceApiResponse.Event();
-        containerEvent.setLocation(1);
-        containerEvent.setActualEventTime(dateAndSources);
-
-
-        TrackingServiceApiResponse.Container containers = TrackingServiceApiResponse.Container.builder().build();
-        containers.setEvents(List.of(containerEvent));
-        containers.setPlaces(List.of(place));
-        response.setContainers(List.of(containers));
-
+        TrackingServiceApiResponse mockResponse = jsonTestUtility.getJson("TRACKING_SERVICE_SHIPMENT_RESPONSE", TrackingServiceApiResponse.class);
 
         try {
-            when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(TrackingServiceApiResponse.class))).thenReturn(ResponseEntity.ok(response));
+            when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(TrackingServiceApiResponse.class))).thenReturn(ResponseEntity.ok(mockResponse));
             var responseEvents = trackingServiceAdapter.getTrackingEvents(refNumber);
 
             assertNotNull(responseEvents);
