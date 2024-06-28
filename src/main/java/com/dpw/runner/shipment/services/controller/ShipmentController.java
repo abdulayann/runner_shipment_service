@@ -191,7 +191,7 @@ public class ShipmentController {
     public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request, @RequestParam(required = false, defaultValue = "false") Boolean fromV1) {
         String responseMsg;
         try {
-            ShipmentPatchRequest req = jsonHelper.convertValue(request, ShipmentPatchRequest.class);
+            ShipmentPatchRequest req = jsonHelper.convertValueWithJsonNullable(request, ShipmentPatchRequest.class);
             return shipmentService.partialUpdate(CommonRequestModel.buildRequest(req), fromV1);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
