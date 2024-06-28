@@ -62,6 +62,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -172,6 +173,7 @@ public class AwbService implements IAwbService {
     private String iataCode;
     private String executedAt;
 
+    @Transactional
     public ResponseEntity<IRunnerResponse> createAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
@@ -501,6 +503,7 @@ public class AwbService implements IAwbService {
         }
     }
 
+    @Transactional
     public ResponseEntity<IRunnerResponse> createMawb(CommonRequestModel commonRequestModel) {
         String responseMsg;
 
@@ -1571,6 +1574,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> reset(CommonRequestModel commonRequestModel) throws RunnerException {
         ResetAwbRequest resetAwbRequest = (ResetAwbRequest) commonRequestModel.getData();
         Optional<Awb> awbOptional = awbDao.findById(resetAwbRequest.getId());
