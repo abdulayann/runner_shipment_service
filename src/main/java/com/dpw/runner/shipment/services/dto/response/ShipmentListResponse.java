@@ -51,9 +51,9 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String packsUnit;
     private Integer innerPacks;
     private String innerPackUnit;
-    private Integer freightLocal;
+    private BigDecimal freightLocal;
     private String freightLocalCurrency;
-    private Integer freightOverseas;
+    private BigDecimal freightOverseas;
     private String freightOverseasCurrency;
     private boolean autoUpdateWtVol;
     private boolean containerAutoWeightVolumeUpdate;

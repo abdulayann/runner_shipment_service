@@ -167,7 +167,7 @@ public class ConsolidationController {
     public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request, @RequestParam(required = false, defaultValue = "false") Boolean fromV1) {
         String responseMsg;
         try {
-            ConsolidationPatchRequest req = jsonHelper.convertValue(request, ConsolidationPatchRequest.class);
+            ConsolidationPatchRequest req = jsonHelper.convertValueWithJsonNullable(request, ConsolidationPatchRequest.class);
             return consolidationService.partialUpdate(CommonRequestModel.buildRequest(req), fromV1);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

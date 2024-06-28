@@ -348,6 +348,8 @@ public class Constants {
     public static final String CONTAINERS_LIST = "containersList";
     public static final String CONSOLIDATION_LIST = "consolidationList";
     public static final String ORDER_MANAGEMENT_ID = "orderManagementId";
+    public static final String ORDER_NUMBER = "orderNumber";
+    public static final String ORDER_MANAGEMENT_NUMBER = "orderManagementNumber";
     public static final String HANDLING_INFO = "handlingInfo";
     public static final String DESCRIPTION_OF_GOODS = "descriptionOfGoods";
     public static final String BOOKING_STATUS_FIELD = "bookingStatus";
