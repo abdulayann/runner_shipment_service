@@ -2909,9 +2909,9 @@ public abstract class IReport {
         if (transportInstruction.isEmpty())
             return;
         var ti = transportInstruction.get();
-        Optional<PartiesModel> exportAgent = ti.getPartiesModels()!= null ? ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().contains("Export Agent")).findFirst() : Optional.empty();
-        Optional<PartiesModel> importAgent = ti.getPartiesModels()!= null ? ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().contains("Import Agent")).findFirst() : Optional.empty();
-        Optional<PartiesModel> deliveryAgent = ti.getPartiesModels()!=null ? ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().contains("Delivery Agent")).findFirst() : Optional.empty();
+        Optional<PartiesModel> exportAgent = ti.getPartiesList()!= null ? ti.getPartiesList().stream().filter(Objects::nonNull).filter(c -> c.getType().toUpperCase().contains("EXA")).findFirst() : Optional.empty();
+        Optional<PartiesModel> importAgent = ti.getPartiesList()!= null ? ti.getPartiesList().stream().filter(Objects::nonNull).filter(c -> c.getType().toUpperCase().contains("IMA")).findFirst() : Optional.empty();
+        Optional<PartiesModel> deliveryAgent = ti.getPartiesList()!=null ? ti.getPartiesList().stream().filter(Objects::nonNull).filter(c -> c.getType().toUpperCase().contains("DAG")).findFirst() : Optional.empty();
         dictionary.put(TI_INSTRUCTIONTYPE, ti.getType());
         dictionary.put(TI_DROPMODE, ti.getDropMode());
 
