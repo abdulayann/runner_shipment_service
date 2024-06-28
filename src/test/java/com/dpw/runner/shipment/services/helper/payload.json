@@ -10690,5 +10690,486 @@
       }
     ],
     "count": 1
+  },
+  "TRACKING_SERVICE_SHIPMENT_RESPONSE": {
+    "identifierType": "userDefinedCollection",
+    "identifier": "97e7f430-ffc4-4eb9-b42f-0cca449949a9",
+    "status": "Success",
+    "containers": [
+      {
+        "containerNumber": "TCLU3168510",
+        "identifierType": "containerNumber",
+        "identifierSource": "none",
+        "identifierValue": "TCLU3168510",
+        "clientReference": null,
+        "customerId": null,
+        "container": {
+          "type": "General Purpose",
+          "size": "20",
+          "typeIsoCode": "22G1",
+          "bolNumber": null,
+          "bookingNumber": null,
+          "clientBookingNumber": "DBLC-3420558-207193",
+          "shipmentReference": null,
+          "sealNumber": null,
+          "marks": null,
+          "incoterm": null,
+          "shipper": null,
+          "consignee": null,
+          "weight": null,
+          "weightUom": null,
+          "numberOfPackages": null,
+          "packageType": null,
+          "reeferTemperature": null,
+          "commodity": null,
+          "grossWeight": null,
+          "cargoWeight": null,
+          "customAgencyName": null,
+          "grossWeightUom": null,
+          "cargoWeightUom": null,
+          "latitude": 32.77657,
+          "longitude": -79.93092,
+          "location": null,
+          "locationUpdateTime": "2024-06-21T07:16:00",
+          "locationName": null,
+          "locationType": null,
+          "locationLabel": null
+        },
+        "journey": {
+          "lineCode": null,
+          "from": null,
+          "to": null,
+          "serviceType": "unknown",
+          "carrierName": "ZIM",
+          "scacCode": "ZIMU",
+          "rawCarrierName": null,
+          "standardCarrierName": null,
+          "placeOfOrigin": null,
+          "portOfDeparture": 1,
+          "portOfArrival": 3,
+          "placeOfDestination": null,
+          "originHub": null,
+          "destinationHub": null,
+          "placeOfOriginEtd": null,
+          "placeOfOriginAtd": null,
+          "portOfDepartureEtd": null,
+          "portOfDepartureAtd": null,
+          "portOfArrivalEta": null,
+          "portOfArrivalAta": null,
+          "placeOfDestinationEta": null,
+          "placeOfDestinationAta": null,
+          "originHubEtd": null,
+          "originHubAtd": null,
+          "destinationHubEta": null,
+          "destinationHubAta": null,
+          "isJourneyComplete": true,
+          "storageFreeDays": null,
+          "igmNo": null,
+          "igmDate": null,
+          "itemNo": null,
+          "cfsName": null,
+          "segments": null,
+          "lastMileLocations": null
+        },
+        "places": [
+          {
+            "id": 1,
+            "type": "unknown",
+            "code": "CNNGB",
+            "name": "Ningbo",
+            "terminalName": null,
+            "subdivisionName": null,
+            "subdivisionType": null,
+            "country": "CN",
+            "city": null,
+            "pincode": null,
+            "latitude": 29.87819,
+            "longitude": 121.54945,
+            "rawDescription": "Ningbo, Zhejiang Sheng, China",
+            "formattedDescription": "Ningbo, Zhejiang Sheng, China",
+            "source": null
+          },
+          {
+            "id": 2,
+            "type": "unknown",
+            "code": "USSAV",
+            "name": "Savannah",
+            "terminalName": null,
+            "subdivisionName": null,
+            "subdivisionType": null,
+            "country": "US",
+            "city": null,
+            "pincode": null,
+            "latitude": 32.08354,
+            "longitude": -81.09983,
+            "rawDescription": "Savannah, Georgia, United States",
+            "formattedDescription": "Savannah, Georgia, United States",
+            "source": null
+          },
+          {
+            "id": 3,
+            "type": "unknown",
+            "code": "USCHS",
+            "name": "Charleston",
+            "terminalName": null,
+            "subdivisionName": null,
+            "subdivisionType": null,
+            "country": "US",
+            "city": null,
+            "pincode": null,
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "rawDescription": "Charleston, South Carolina, United States",
+            "formattedDescription": "Charleston, South Carolina, United States",
+            "source": null
+          }
+        ],
+        "transports": [
+          {
+            "id": 1,
+            "type": "truck",
+            "operatorCode": null,
+            "operatorName": null,
+            "name": null,
+            "voyage": null,
+            "imo": null,
+            "mmsi": null,
+            "callSign": null,
+            "flag": null,
+            "trainNumber": null,
+            "truckNumber": null,
+            "truckDriverName": null,
+            "truckDriverPhoneNumber": null,
+            "truckCompanyName": null
+          },
+          {
+            "id": 2,
+            "type": "vessel",
+            "operatorCode": null,
+            "operatorName": null,
+            "name": "ZIM SAMMY OFER",
+            "voyage": null,
+            "imo": "9931094",
+            "mmsi": "477871500",
+            "callSign": "VRUX7",
+            "flag": "HK",
+            "trainNumber": null,
+            "truckNumber": null,
+            "truckDriverName": null,
+            "truckDriverPhoneNumber": null,
+            "truckCompanyName": null
+          }
+        ],
+        "events": [
+          {
+            "id": 1,
+            "eventCategory": "departure",
+            "eventType": "gateOutWithContainerEmpty",
+            "description": "Empty Container Gate Out",
+            "descriptionFromSource": "Empty container dispatched from inland point to Customer",
+            "status": "actual",
+            "location": 1,
+            "locationRole": "originEmptyDepot",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-04-26T16:33:00",
+              "sources": [
+                {
+                  "dateTime": "2024-04-26T16:33:00",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "transport": 1,
+              "hasContainer": true,
+              "hasCargo": false
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 2,
+            "eventCategory": "arrival",
+            "eventType": "gateInWithContainerFull",
+            "description": "Full Container Gate In",
+            "descriptionFromSource": "Export gate-in from Customer to Port of Loading",
+            "status": "actual",
+            "location": 1,
+            "locationRole": "originPort",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-04-29T00:40:00",
+              "sources": [
+                {
+                  "dateTime": "2024-04-29T00:40:00",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "transport": 1,
+              "hasContainer": true,
+              "hasCargo": true
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 3,
+            "eventCategory": "load",
+            "eventType": "loadOnVessel",
+            "description": "Load on Vessel",
+            "descriptionFromSource": "Container was loaded at Port of Loading to Port of Discharge",
+            "status": "actual",
+            "location": 1,
+            "locationRole": "originPort",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-05-03T15:11:00",
+              "sources": [
+                {
+                  "dateTime": "2024-05-03T15:11:00",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "transport": 2,
+              "hasCargo": true
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 4,
+            "eventCategory": "departure",
+            "eventType": "vesselDepartureWithContainer",
+            "description": "Vessel Departure",
+            "descriptionFromSource": "Vessel departure from Port of Loading to Port of Discharge",
+            "status": "actual",
+            "location": 1,
+            "locationRole": "originPort",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-05-04T01:21:00",
+              "sources": [
+                {
+                  "dateTime": "2024-05-04T01:21:00",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "transport": 2,
+              "hasContainer": true,
+              "hasCargo": true
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 5,
+            "eventCategory": "notification",
+            "eventType": "notification",
+            "description": "Notification",
+            "descriptionFromSource": "Carrier Release",
+            "status": "actual",
+            "location": 2,
+            "locationRole": "unknown",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-05-31T17:51:44",
+              "sources": [
+                {
+                  "dateTime": "2024-05-31T17:51:44",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "eventCategory": "notification"
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 6,
+            "eventCategory": "customsRelease",
+            "eventType": "customsRelease",
+            "description": "Customs Release",
+            "descriptionFromSource": "Customs release",
+            "status": "actual",
+            "location": 3,
+            "locationRole": "destinationPort",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-06-05T09:01:28",
+              "sources": [
+                {
+                  "dateTime": "2024-06-05T09:01:28",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "eventCategory": "customsRelease"
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 7,
+            "eventCategory": "arrival",
+            "eventType": "vesselArrivalWithContainer",
+            "description": "Vessel Arrival",
+            "descriptionFromSource": "Vessel arrival to Port of Discharge",
+            "status": "actual",
+            "location": 3,
+            "locationRole": "destinationPort",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-06-07T22:06:00",
+              "sources": [
+                {
+                  "dateTime": "2024-06-07T22:06:00",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "transport": 2,
+              "hasContainer": true,
+              "hasCargo": true
+            },
+            "reason": null,
+            "subevents": null
+          }
+        ],
+        "locationHistory": [
+          {
+            "source": "ZIM",
+            "latitude": 29.87819,
+            "longitude": 121.54945,
+            "locationUpdateTime": "2024-04-26T16:33:00",
+            "locationName": "Ningbo",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 29.87819,
+            "longitude": 121.54945,
+            "locationUpdateTime": "2024-04-29T00:40:00",
+            "locationName": "Ningbo",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 29.87819,
+            "longitude": 121.54945,
+            "locationUpdateTime": "2024-05-03T15:11:00",
+            "locationName": "Ningbo",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 29.87819,
+            "longitude": 121.54945,
+            "locationUpdateTime": "2024-05-04T01:21:00",
+            "locationName": "Ningbo",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.08354,
+            "longitude": -81.09983,
+            "locationUpdateTime": "2024-05-31T17:51:44",
+            "locationName": "Savannah",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-05T09:01:28",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-07T22:06:00",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "SeaRoute",
+            "latitude": 29.9534473419189,
+            "longitude": 121.858291625977,
+            "locationUpdateTime": "2024-06-19T07:11:00",
+            "locationName": null,
+            "locationType": "ON_VESSEL",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-19T08:11:00",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-19T08:11:00",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-20T08:28:00",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-21T07:16:00",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          }
+        ],
+        "bookingContainers": null,
+        "temperatureHistory": []
+      }
+    ],
+    "failedContainers": [],
+    "failedBookings": [],
+    "failedBillOfLadings": [],
+    "invalidInputs": []
   }
 }

@@ -42,6 +42,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.swing.text.html.Option;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -491,7 +492,9 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                 .flatMap(ce -> container.getPlaces().stream()
                                     .filter(pl -> pl != null && ce.getLocation() != null && ce.getLocation().equals(pl.getId()))
                                     .flatMap(pl -> {
-                                        List<TrackingServiceApiResponse.Source> sources = ce.getActualEventTime() == null ? (ce.getProjectedEventTime() == null ? null : ce.getProjectedEventTime().getSources()) : ce.getActualEventTime().getSources();
+                                        List<TrackingServiceApiResponse.Source> sources = new ArrayList<>();
+                                        sources.addAll(Optional.ofNullable(ce.getActualEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
+                                        sources.addAll(Optional.ofNullable(ce.getProjectedEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
                                         if (sources == null) return Stream.empty();
                                         return sources.stream()
                                             .filter(Objects::nonNull)
@@ -525,4 +528,9 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         }
     }
 
+    private List<TrackingServiceApiResponse.Source> getDefaultListValue (List<TrackingServiceApiResponse.Source> lst) {
+        if(lst == null)
+            return Collections.emptyList();
+        return lst;
+    }
 }
