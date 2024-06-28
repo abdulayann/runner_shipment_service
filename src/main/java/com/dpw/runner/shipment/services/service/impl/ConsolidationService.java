@@ -2906,7 +2906,7 @@ public class ConsolidationService implements IConsolidationService {
                             var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
                             if (rakcType != null && Boolean.TRUE.equals(rakcType) && (consolidationDetails.getScreeningStatus() == null ||
                                     consolidationDetails.getScreeningStatus().isEmpty() ||
-                                    consolidationDetails.getSecurityStatus() == null)) {
+                                    consolidationDetails.getSecurityStatus() == null || consolidationDetails.getSecurityStatus().isEmpty())) {
                                 throw new RunnerException("Screening Status and Security Status is mandatory for RA consignor.");
                             }
                         }
@@ -2928,7 +2928,7 @@ public class ConsolidationService implements IConsolidationService {
                 var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
                 if (rakcType != null && Boolean.TRUE.equals(rakcType) && (consolidationDetails.getScreeningStatus() == null ||
                         consolidationDetails.getScreeningStatus().isEmpty() ||
-                        consolidationDetails.getSecurityStatus() == null)) {
+                        consolidationDetails.getSecurityStatus() == null || consolidationDetails.getSecurityStatus().isEmpty())) {
                     return false;
                 }
             }
