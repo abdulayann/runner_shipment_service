@@ -51,10 +51,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
@@ -141,6 +138,8 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IEventDao eventDao;
+    @Autowired
+    private IShipmentService shipmentService;
 
     @Autowired
     private INotesDao notesDao;
@@ -680,6 +679,7 @@ public class ConsolidationService implements IConsolidationService {
                     packingList = packingDao.saveAll(packingList);
                 }
             }
+            shipmentService.checkSciForAttachConsole(consolidationId);
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         ConsolidationDetails consolidationDetails = null;
@@ -716,7 +716,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) {
+    public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
         List<Packing> packingList = null;
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
@@ -744,6 +744,7 @@ public class ConsolidationService implements IConsolidationService {
             consol.get().setHazardous(false);
             consolidationDetailsDao.save(consol.get(), false);
         }
+        shipmentService.checkSciForDetachConsole(consolidationId);
         String transactionId = consol.get().getGuid().toString();
         if(packingList != null) {
             try {

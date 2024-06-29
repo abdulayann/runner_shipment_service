@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
@@ -4747,4 +4748,31 @@ class ShipmentServiceTest {
             }
         }
     }
+
+    @Test
+    void testCheckSciForDetachConsole_Success() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        Awb hawb = Awb.builder().consolidationId(2L).awbCargoInfo(AwbCargoInfo.builder().sci("T2").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(awbDao.findByShipmentIdList(List.of(2L))).thenReturn(List.of(hawb));
+        shipmentService.checkSciForDetachConsole(1L);
+        verify(awbDao, times(1)).save(any());
+    }
+
+    @Test
+    void testCheckSciForAttachConsole_Success () throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci(null).build()).build();
+        Awb hawb = Awb.builder().consolidationId(2L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(awbDao.findByShipmentIdList(List.of(2L))).thenReturn(List.of(hawb));
+        shipmentService.checkSciForAttachConsole(1L);
+        verify(awbDao, times(1)).save(any());
+    }
+
 }

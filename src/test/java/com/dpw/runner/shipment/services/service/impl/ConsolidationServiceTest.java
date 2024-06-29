@@ -45,6 +45,7 @@ import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
@@ -128,6 +129,8 @@ class ConsolidationServiceTest {
     private IRoutingsDao routingsDao;
     @Mock
     private IAwbDao awbDao;
+    @Mock
+    private IShipmentService shipmentService;
 
     @Mock
     private IContainerDao containerDao;
@@ -940,7 +943,7 @@ class ConsolidationServiceTest {
     }
 
     @Test
-    void testDetachShipments_Success_Sea() {
+    void testDetachShipments_Success_Sea() throws RunnerException {
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Containers containers = new Containers();
@@ -962,7 +965,7 @@ class ConsolidationServiceTest {
     }
 
     @Test
-    void testDetachShipments_Success_Air() {
+    void testDetachShipments_Success_Air() throws RunnerException {
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -984,7 +987,7 @@ class ConsolidationServiceTest {
     }
 
     @Test
-    void testDetachShipments_Success_Air_DgCase_NoShipment() {
+    void testDetachShipments_Success_Air_DgCase_NoShipment() throws RunnerException {
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -1009,7 +1012,7 @@ class ConsolidationServiceTest {
     }
 
     @Test
-    void testDetachShipments_Success_Air_DgCase() {
+    void testDetachShipments_Success_Air_DgCase() throws RunnerException {
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -1039,7 +1042,7 @@ class ConsolidationServiceTest {
     }
 
     @Test
-    void testDetachShipments_Success_Air_DgCase_NoShipment_DgFlagFalse() {
+    void testDetachShipments_Success_Air_DgCase_NoShipment_DgFlagFalse() throws RunnerException {
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
