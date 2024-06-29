@@ -1223,6 +1223,132 @@
         "truckingDetails": [],
         "eventsList": [],
         "tenantId": 728
+      },
+      {
+        "id": 150409,
+        "guid": "dc092b0e-43a6-41d7-9dc3-546017f85123",
+        "consolidationId": 1,
+        "containerCode": "20RE",
+        "containerNumber": "TCLU1666665",
+        "hblDeliveryMode": "CFS/CY",
+        "netWeight": 0.000000,
+        "grossWeight": 1.120000,
+        "grossWeightUnit": "KG",
+        "measurement": 0,
+        "isShipperOwned": false,
+        "isEmpty": false,
+        "containerCount": 1,
+        "grossVolume": 2.234,
+        "grossVolumeUnit": "M3",
+        "isReefer": false,
+        "minTemp": 0,
+        "maxTemp": 0,
+        "allocationDate": "2024-01-04T01:05:07",
+        "hazardous": false,
+        "tareWeight": 0,
+        "isTemperatureMaintained": false,
+        "chargeable": 0.00,
+        "isOwnContainer": false,
+        "transportMode": "SEA",
+        "allocatedWeight": 28230.000000,
+        "allocatedWeightUnit": "KG",
+        "allocatedVolume": 33.000,
+        "allocatedVolumeUnit": "M3",
+        "achievedWeight": 0.000000,
+        "achievedWeightUnit": "KG",
+        "achievedVolume": 0.000,
+        "achievedVolumeUnit": "M3",
+        "weightUtilization": "0",
+        "volumeUtilization": "0",
+        "isPart": false,
+        "isAttached": true,
+        "truckingDetails": [],
+        "eventsList": [],
+        "tenantId": 728
+      },
+      {
+        "id": 150409,
+        "guid": "dc092b0e-43a6-41d7-9dc3-546017f85123",
+        "consolidationId": 1,
+        "containerCode": "40GP",
+        "containerNumber": "TCLU1666666",
+        "hblDeliveryMode": "CFS/CY",
+        "netWeight": 0.000000,
+        "grossWeight": 1.120000,
+        "grossWeightUnit": "KG",
+        "measurement": 0,
+        "isShipperOwned": false,
+        "isEmpty": false,
+        "containerCount": 1,
+        "grossVolume": 2.234,
+        "grossVolumeUnit": "M3",
+        "isReefer": false,
+        "minTemp": 0,
+        "maxTemp": 0,
+        "allocationDate": "2024-01-04T01:05:07",
+        "hazardous": false,
+        "tareWeight": 0,
+        "isTemperatureMaintained": false,
+        "chargeable": 0.00,
+        "isOwnContainer": false,
+        "transportMode": "SEA",
+        "allocatedWeight": 28230.000000,
+        "allocatedWeightUnit": "KG",
+        "allocatedVolume": 33.000,
+        "allocatedVolumeUnit": "M3",
+        "achievedWeight": 0.000000,
+        "achievedWeightUnit": "KG",
+        "achievedVolume": 0.000,
+        "achievedVolumeUnit": "M3",
+        "weightUtilization": "0",
+        "volumeUtilization": "0",
+        "isPart": false,
+        "isAttached": true,
+        "truckingDetails": [],
+        "eventsList": [],
+        "tenantId": 728
+      },
+      {
+        "id": 150409,
+        "guid": "dc092b0e-43a6-41d7-9dc3-546017f85123",
+        "consolidationId": 1,
+        "containerCode": "40RE",
+        "containerNumber": "TCLU1666667",
+        "hblDeliveryMode": "CFS/CY",
+        "netWeight": 0.000000,
+        "grossWeight": 1.120000,
+        "grossWeightUnit": "KG",
+        "measurement": 0,
+        "isShipperOwned": false,
+        "isEmpty": false,
+        "containerCount": 1,
+        "grossVolume": 2.234,
+        "grossVolumeUnit": "M3",
+        "isReefer": false,
+        "minTemp": 0,
+        "maxTemp": 0,
+        "allocationDate": "2024-01-04T01:05:07",
+        "hazardous": false,
+        "tareWeight": 0,
+        "isTemperatureMaintained": false,
+        "chargeable": 0.00,
+        "isOwnContainer": false,
+        "transportMode": "SEA",
+        "allocatedWeight": 28230.000000,
+        "allocatedWeightUnit": "KG",
+        "allocatedVolume": 33.000,
+        "allocatedVolumeUnit": "M3",
+        "achievedWeight": 0.000000,
+        "achievedWeightUnit": "KG",
+        "achievedVolume": 0.000,
+        "achievedVolumeUnit": "M3",
+        "weightUtilization": "0",
+        "volumeUtilization": "0",
+        "isPart": false,
+        "isAttached": true,
+        "truckingDetails": [],
+        "eventsList": [],
+        "tenantId": 728
       }
     ],
     "truckDriverDetails": [],
@@ -10400,5 +10526,166 @@
       "order": "ASC"
     },
     "containsText": ""
+  },
+  "QUOTE_CONTRACTS": {
+    "id": 1,
+    "guid": "63b0083b-08ab-49e4-a457-a7484cb172c8",
+    "contractId": "DPWQ-846222-103303",
+    "containerTypes": [
+      "BBK"
+    ]
+  },
+  "LIST_CONTRACT_RESPONSE": {
+    "unlocMasterData": {
+      "EGDAM_POR": {
+        "Id": 138013,
+        "Country": "EGY",
+        "Name": "DAMIETTA2",
+        "PortName": "Damietta",
+        "LocCode": "EGDAM",
+        "NameWoDiacritics": "DAMIETTA",
+        "LocationsReferenceGUID": "EGDAM_POR",
+        "lookupDescAir": "DAMIETTA",
+        "lookupDescSea": "DAMIETTA - EGDAM, Damietta",
+        "CountryName": "Egypt",
+        "CountryThreeDigitCode": "EGY"
+      },
+      "INNSA_POR": {
+        "Id": 138284,
+        "Country": "IND",
+        "Name": "INNSA Nhava Sheva Port",
+        "PortName": "INNSA Nhava Sheva Port",
+        "LocCode": "INNSA",
+        "NameWoDiacritics": "INNSA Nhava Sheva Port",
+        "LocationsReferenceGUID": "INNSA_POR",
+        "lookupDescAir": "INNSA Nhava Sheva Port",
+        "lookupDescSea": "INNSA Nhava Sheva Port - INNSA, INNSA Nhava Sheva Port",
+        "CountryName": "India",
+        "CountryThreeDigitCode": "IND"
+      }
+    },
+    "contracts": [
+      {
+        "_id": "2b65f67c-2e4a-4d51-bb57-8d1fe65f6d61",
+        "contract_id": "DPWQ-846222-103303",
+        "parent_contract_id": "DPWQ-846222-103303",
+        "contract_type": "MULTI_USAGE",
+        "source": "p100_digitaluser2_stage@maildrop.cc",
+        "source_type": "QUOTE_MODULE",
+        "customer_org_id": "FRC00003242",
+        "origin": "7grk4eWHGEhfD9VxCJKx",
+        "destination": "uYPwD6dHL6k7GGoETE4t",
+        "valid_from": "2024-06-13T00:00:00",
+        "valid_till": "2024-06-19T00:00:00",
+        "product_type": "LCL",
+        "state": "ENABLED",
+        "tenant_id": "ab2f6b79-0384-43b2-ba09-e6c38c1df6f6",
+        "offer_type": "ONLY_CONTRACT_OFFERS",
+        "via_nodes": [
+          null
+        ],
+        "load_types": [
+          "LCL"
+        ],
+        "cargo_types": [
+          "BBK",
+          "ANY"
+        ],
+        "commodities": [
+          "FAK"
+        ],
+        "carrier_codes": [],
+        "cha": "ANY",
+        "forwarder": "ANY",
+        "bco": "ANY",
+        "cycle": "ANY",
+        "meta": {
+          "pod": "INNSA_POR",
+          "pol": "EGDAM_POR",
+          "route": [
+            {
+              "type": "LEG",
+              "origin": {
+                "code": "7grk4eWHGEhfD9VxCJKx"
+              },
+              "destination": {
+                "code": "EGDAM_POR"
+              }
+            },
+            {
+              "type": "LEG",
+              "origin": {
+                "code": "EGDAM_POR"
+              },
+              "destination": {
+                "code": "INNSA_POR"
+              }
+            },
+            {
+              "type": "LEG",
+              "origin": {
+                "code": "INNSA_POR"
+              },
+              "destination": {
+                "code": "uYPwD6dHL6k7GGoETE4t"
+              }
+            }
+          ],
+          "incoterm": "CIP",
+          "service_mode": "F2F",
+          "payment_terms": "PPD",
+          "additional_info": "NA",
+          "mode_of_transport": "SEA",
+          "shipment_movement": "EXP",
+          "branch_info": {
+            "id": "EGCAI",
+            "country": "Egypt",
+            "sales_agent_primary_email": "CRMTest.One@dpworld.com",
+            "sales_agent_secondary_email": "crmtest.one@dpworld.com"
+          }
+        },
+        "createdAt": "2024-06-13T09:19:32.897",
+        "updatedAt": "2024-06-13T09:19:32.897",
+        "contract_usage": [
+          {
+            "usage_id": "ae4dd142-7871-475e-9581-332a84f20979",
+            "filter_params": {
+              "load_type": [
+                "LCL"
+              ],
+              "cargo_type": [
+                "BBK"
+              ],
+              "commodity": [
+                "FAK"
+              ]
+            },
+            "usage": 1,
+            "usage_uom": "unit",
+            "meta": {
+              "original_usage": 1,
+              "original_usage_uom": "unit",
+              "load_attributes": {
+                "weight": 2000,
+                "quantity": 1,
+                "volume": 1000,
+                "weight_uom": "KG",
+                "quantity_uom": "unit",
+                "volume_uom": "CC",
+                "dimensions": {
+                  "width": 111,
+                  "height": 1111,
+                  "length": 111,
+                  "uom": "CM"
+                }
+              }
+            }
+          }
+        ],
+        "destination_name": "uYPwD6dHL6k7GGoETE4t",
+        "origin_name": "7grk4eWHGEhfD9VxCJKx"
+      }
+    ],
+    "count": 1
   }
 }

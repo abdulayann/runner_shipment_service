@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
@@ -35,6 +36,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -60,7 +62,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class HawbReportTest {
+class HawbReportTest extends CommonMocks {
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -94,6 +96,9 @@ class HawbReportTest {
 
     @Mock
     private IAwbService awbService;
+
+    @Mock
+    private MasterDataUtils masterDataUtils;
 
     @BeforeAll
     static void init() throws IOException {
@@ -742,6 +747,7 @@ class HawbReportTest {
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(awbRepository.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
+        mockShipmentSettings();
         assertNotNull(hawbReport.getDocumentModel(123L));
     }
 
@@ -758,6 +764,7 @@ class HawbReportTest {
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         UserContext.getUser().setPermissions(new HashMap<>());
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
     }
 }

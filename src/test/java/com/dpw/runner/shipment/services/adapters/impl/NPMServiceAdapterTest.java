@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -89,6 +90,9 @@ class NPMServiceAdapterTest {
 
     @MockBean
     private MasterDataUtils masterDataUtils;
+
+    @MockBean
+    private IQuoteContractsService quoteContractsService;
 
     @MockBean(name = "restTemplateForNpmService")
     private RestTemplate restTemplate;

@@ -21,4 +21,5 @@ public class DeliveryOrderModel implements IDocumentModel{
     public Hbl hbl;
     public ShipmentSettingsDetails shipmentSettingsDetails;
     public TenantModel tenantModel;
+    public Long transportInstructionId;
 }

@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -36,6 +37,9 @@ public class PreAlertReport extends IReport {
 
     public Boolean printWithoutTranslation;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
     @Override
     public Map<String, Object> getData(Long id) {
         PreAlertModel preAlertModel = (PreAlertModel) getDocumentModel(id);
@@ -48,7 +52,7 @@ public class PreAlertReport extends IReport {
         preAlertModel.shipmentDetails = getShipment(id);
         validateAirDGCheck(preAlertModel.shipmentDetails);
         preAlertModel.tenantDetails = getTenant();
-        preAlertModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        preAlertModel.shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         preAlertModel.consolidationDetails = getFirstConsolidationFromShipmentId(id);
         if(preAlertModel.shipmentDetails.getContainersList() != null && preAlertModel.shipmentDetails.getContainersList().size() > 0) {
             List<ShipmentContainers> shipmentContainersList = new ArrayList<>();

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
@@ -53,7 +54,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class HblReportTest {
+class HblReportTest extends CommonMocks {
 
     @InjectMocks
     private HblReport hblReport;
@@ -119,6 +120,7 @@ class HblReportTest {
     void getDocumentModelWithoutBlObject() {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1))).thenReturn(Arrays.asList(ShipmentSettingsDetails.builder().build()));
@@ -134,6 +136,7 @@ class HblReportTest {
     void getDocumentModelWithBlObject() {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
 
         List<ContainerModel> containerModelList = new ArrayList<>();
@@ -299,7 +302,7 @@ class HblReportTest {
         v1DataResponse.entities = Arrays.asList(new VesselsResponse());
         when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
-
+        mockShipmentSettings();
         assertNotNull(hblReport.getDocumentModel(123L));
     }
 
@@ -329,7 +332,15 @@ class HblReportTest {
         HblPartyDto hblPartyDto = new HblPartyDto();
         hbl.setHblNotifyParty(Arrays.asList(hblPartyDto));
         ShipmentModel shipmentModel = new ShipmentModel();
-                shipmentModel.setTransportMode(ReportConstants.SEA);
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setTransportMode(ReportConstants.SEA);
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                .id(12L)
+                .agentDetail(new PartiesModel())
+                .actualPickup(LocalDateTime.now())
+                .actualDelivery(LocalDateTime.now())
+                .build()));
         shipmentModel.setDirection(ReportConstants.EXP);
         shipmentModel.setFreightLocal(BigDecimal.TEN);
         shipmentModel.setFreightLocalCurrency("INR");
@@ -383,17 +394,18 @@ class HblReportTest {
         delivertDetails.setTransporterDetail(partiesModel);
         shipmentModel.setPickupDetails(delivertDetails);
         shipmentModel.setDeliveryDetails(delivertDetails);
-        hblModel.setShipment(shipmentModel);
 
         PackingModel packingModel = new PackingModel();
         packingModel.setLength(BigDecimal.TEN);
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
-                shipmentModel.setPackingList(Arrays.asList(packingModel));
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
         bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
         shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
+        hblModel.setTransportInstructionId(12L);
+        hblModel.setShipment(shipmentModel);
 
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setPayment("PPM");
@@ -439,6 +451,7 @@ class HblReportTest {
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mockShipmentSettings();
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -477,6 +490,7 @@ class HblReportTest {
         HblPartyDto hblPartyDto = new HblPartyDto();
         hbl.setHblNotifyParty(Arrays.asList(hblPartyDto));
         ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
         shipmentModel.setDirection(ReportConstants.EXP);
         shipmentModel.setFreightLocal(BigDecimal.TEN);
@@ -590,6 +604,7 @@ class HblReportTest {
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mockShipmentSettings();
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -620,6 +635,7 @@ class HblReportTest {
         HblPartyDto hblPartyDto = new HblPartyDto();
         hbl.setHblNotifyParty(Arrays.asList(hblPartyDto));
         ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setContainsHazardous(true);
         shipmentModel.setTransportMode(AIR);
         shipmentModel.setDirection(ReportConstants.EXP);
@@ -735,6 +751,7 @@ class HblReportTest {
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
+        mockShipmentSettings();
         Map<String, Object> response = hblReport.populateDictionary(hblModel);
         assertNotNull(response);
     }
@@ -861,6 +878,7 @@ class HblReportTest {
         consoleShipmentMapping.setConsolidationId(1L);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> hblReport.populateDictionary(hblModel));
     }
 }

@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
@@ -157,6 +156,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private PartialFetchUtils partialFetchUtils;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
 
 
@@ -366,7 +368,7 @@ public class AwbService implements IAwbService {
             List<Awb> awbList = awbPage.getContent();
 
             if(awbList != null) {
-                ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+                ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
                 for (Awb awb : awbList) {
                     if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
@@ -429,7 +431,7 @@ public class AwbService implements IAwbService {
     @Override
     public Awb getMawnLinkPacks(Awb awb) {
         try {
-            ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
             List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.getId());
             List<AwbPackingInfo> linkedPacks = new ArrayList<>();
             for (var hawb : linkedHawb) {
@@ -769,7 +771,7 @@ public class AwbService implements IAwbService {
             generateDefaultAwbInformation(awbShipmentInfo, res);
             String error = null;
             if(res.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB) || res.getAwbShipmentInfo().getEntityType().equals(Constants.DMAWB)){
-                ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+                ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
                 Boolean fetchRatesWarning = awbShipmentInfo.getAwbGoodsDescriptionInfo().stream().anyMatch(x -> x.getRateCharge() != null && Boolean.TRUE.equals(x.getEnableFetchRatesWarning()));
                 if(Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()) && Boolean.TRUE.equals(fetchRatesWarning)){
                     error = "The Port/ Carrier details are changed - You need to fetch the new TACT Rates.";
@@ -777,7 +779,7 @@ public class AwbService implements IAwbService {
             }
             if(res.getAwbShipmentInfo().getEntityType().equals("MAWB")) {
                 try {
-                    res.setErrors(validateMawb(awbShipmentInfo));
+                    res.setErrors(validateAwb(awbShipmentInfo));
                 } catch (RunnerException e) {
                     throw new RuntimeException(e);
                 }
@@ -1705,7 +1707,7 @@ public class AwbService implements IAwbService {
 
         Awb awb = awbs.get(0);
 
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         if(shipmentSettingsDetails.getRestrictAWBEdit() != null && shipmentSettingsDetails.getRestrictAWBEdit()){
             ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder()
@@ -2221,7 +2223,7 @@ public class AwbService implements IAwbService {
 
         Awb awb = awbs.get(0);
 
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         // fetch consolidation info
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
@@ -2501,7 +2503,7 @@ public class AwbService implements IAwbService {
             if(masterLists.size() > 0)
                 res = masterLists.get(0).getItemDescription();
         }
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) && Boolean.TRUE.equals(dgFlag)) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && Boolean.TRUE.equals(dgFlag)) {
             Integer packs = 0;
             if(awbPackingInfoList != null && !awbPackingInfoList.isEmpty()) {
                 for (AwbPackingInfo awbPackingInfo: awbPackingInfoList) {
@@ -2997,7 +2999,7 @@ public class AwbService implements IAwbService {
 
                 packsDescriptionValue += "Total Volumetric Weight " + totalVWt.toString() + " ";
 
-                ShipmentSettingsDetails tenantSettingsList = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+                ShipmentSettingsDetails tenantSettingsList = commonUtils.getShipmentSettingFromContext();
 
                 if (tenantSettingsList != null && tenantSettingsList.getWeightChargeableUnit().equalsIgnoreCase(Constants.WEIGHT_UNIT_KG)) {
                     packsDescriptionValue += Constants.KGS;
@@ -3211,33 +3213,43 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private String validateMawb(Awb awb) throws RunnerException {
+    public String validateAwb(Awb awb) throws RunnerException {
         List<String> errors = new ArrayList<>();
-        boolean allHawbsGenerated = true;
-        var id = awb.getConsolidationId();
-        if(id == null) {
-            throw new RunnerException("ID can't be null, please provide a valid input !");
-        }
-
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(id);
-        List<Long> shipmentIdList = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
-        List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(awb.getId());
-        Set<Long> shipmentAwbIdSet = mawbHawbLinks.stream().map(MawbHawbLink::getHawbId).collect(Collectors.toSet());
-        // Check whether HAWB is generated for all the linked shipments
-        for(var shipmentId : shipmentIdList) {
-            List<Awb> response = awbDao.findByShipmentId(shipmentId);
-            if (Objects.isNull(response) || response.size() == 0) {
-              allHawbsGenerated = false;
-              break;
+        String awbType = awb.getAwbShipmentInfo().getEntityType();
+        if(Constants.MAWB.equalsIgnoreCase(awbType)) {
+            boolean allHawbsGenerated = true;
+            var id = awb.getConsolidationId();
+            if(id == null) {
+                throw new RunnerException("ID can't be null, please provide a valid input !");
             }
-            else if(!shipmentAwbIdSet.contains(response.get(0).getId())) {
-                errors.add("Additional Shipments have been attached, please reset data as required.");
-                break;
-            }
-        }
 
-        if(!allHawbsGenerated)
-            throw new RunnerException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(id);
+            List<Long> shipmentIdList = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+            List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(awb.getId());
+            Set<Long> shipmentAwbIdSet = mawbHawbLinks.stream().map(MawbHawbLink::getHawbId).collect(Collectors.toSet());
+            // Check whether HAWB is generated for all the linked shipments
+            for(var shipmentId : shipmentIdList) {
+                List<Awb> response = awbDao.findByShipmentId(shipmentId);
+                if (Objects.isNull(response) || response.size() == 0) {
+                    allHawbsGenerated = false;
+                    break;
+                }
+                else if(!shipmentAwbIdSet.contains(response.get(0).getId())) {
+                    errors.add("Additional Shipments have been attached, please reset data as required.");
+                    break;
+                }
+            }
+            if(Boolean.FALSE.equals(awb.getAirMessageResubmitted()))
+                errors.add(AwbConstants.RESUBMIT_FWB_VALIDATION);
+
+            if(!allHawbsGenerated)
+                throw new RunnerException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
+        }
+        else {
+            // For HAWB/DMAWB
+            if(Boolean.FALSE.equals(awb.getAirMessageResubmitted()))
+                errors.add(Constants.DMAWB.equalsIgnoreCase(awbType) ? AwbConstants.RESUBMIT_FWB_VALIDATION : AwbConstants.RESUBMIT_FZB_VALIDATION);
+        }
 
         return errors.size() > 0 ? errors.toString() : null;
     }

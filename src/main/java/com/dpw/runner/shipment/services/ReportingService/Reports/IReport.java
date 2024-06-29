@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -149,6 +148,10 @@ public abstract class IReport {
     @Autowired
     private IPackingService packingService;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
+
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
     abstract Map<String, Object> populateDictionary(IDocumentModel documentModel);
@@ -260,7 +263,7 @@ public abstract class IReport {
     }
 
     public void populateBLContainer(ShipmentContainers shipmentContainer, HblContainerDto blObjectContainer) {
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         V1TenantSettingsResponse tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
         Integer decimalPlaces = shipmentSettingsDetails.getDecimalPlaces();
         if(decimalPlaces == null)
@@ -289,11 +292,12 @@ public abstract class IReport {
         if (shipment == null) {
             return;
         }
-        var shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        var shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         PickupDeliveryDetailsModel pickup = shipment.getPickupDetails();
         PickupDeliveryDetailsModel delivery = shipment.getDeliveryDetails();
-        addTransportInstructionTags(dictionary , shipment);
+        if(shipment.getTransportInstructionId() != null)
+            addTransportInstructionTags(dictionary , shipment);
         PartiesModel shipmentClient = shipment.getClient();
         PartiesModel shipmentConsignee = shipment.getConsignee();
         PartiesModel shipmentConsigner = shipment.getConsigner();
@@ -1088,7 +1092,7 @@ public abstract class IReport {
         if (consolidation == null) {
             return;
         }
-        var shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        var shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         PartiesModel sendingAgent = consolidation.getSendingAgent();
         PartiesModel receivingAgent = consolidation.getReceivingAgent();
@@ -1353,7 +1357,7 @@ public abstract class IReport {
     {
         if (hbl == null) return;
         List<String> notify = new ArrayList<>();
-        var shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        var shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(hbl.getHblNotifyParty() != null && hbl.getHblNotifyParty().size() > 0) {
             HblPartyDto hblNotify = hbl.getHblNotifyParty().get(0);
             if(Boolean.TRUE.equals(shipmentSettingsDetails.getDisableBlPartiesName()))
@@ -2370,7 +2374,7 @@ public abstract class IReport {
         List<BillChargesResponse> copyChargesRows = new ArrayList<>();
         dictionary.put(AS_AGREED, false);
         dictionary.put(COPY_AS_AGREED, false);
-
+        var v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         String chargesApply = shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getBLChargesDisplay() : null;
 
         if (!Objects.isNull(chargesApply) && chargesApply.equals("AGR")) {
@@ -2396,7 +2400,7 @@ public abstract class IReport {
             }
             for (Map<String, Object> v: values) {
                 if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null) {
-                    v.put(OVERSEAS_SELL_AMOUNT, addCommas(v.get(OVERSEAS_SELL_AMOUNT).toString()));
+                    v.put(OVERSEAS_SELL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(v.get(OVERSEAS_SELL_AMOUNT))), StringUtility.convertToString(v.get("OverseasSellCurrency")), v1TenantSettingsResponse));
                 };
             }
             dictionary.put(CHARGES_SMALL, values);
@@ -2842,8 +2846,8 @@ public abstract class IReport {
 
     }
 
-    public static void validateAirDGCheck(ShipmentModel shipmentModel) {
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
+    public void validateAirDGCheck(ShipmentModel shipmentModel) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
                 Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
            boolean dgPack = false;
            if(shipmentModel.getPackingList() != null && !shipmentModel.getPackingList().isEmpty()) {
@@ -2864,15 +2868,15 @@ public abstract class IReport {
         return UserContext.isDgUser();
     }
 
-    public static void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
+    public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
                 Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isDgUser()) {
                 throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }
 
-    public static void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
-        if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getAirDGFlag()) &&
+    public void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
                 Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isDgUser()) {
                 throw new ValidationException("You do not have permission to print the freight documents.");
         }
@@ -2895,41 +2899,47 @@ public abstract class IReport {
     }
 
     public void addTransportInstructionTags(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
-        if(Objects.isNull(shipmentModel.getPickupDeliveryDetailsInstructions()) || !shipmentModel.getPickupDeliveryDetailsInstructions().isEmpty())
+        if (Objects.isNull(shipmentModel.getPickupDeliveryDetailsInstructions()) || shipmentModel.getPickupDeliveryDetailsInstructions().isEmpty())
             return;
 
-        List<Map<String, Object>> tiList = new ArrayList<>();
-        for(var ti : shipmentModel.getPickupDeliveryDetailsInstructions()) {
-            Map<String, Object> map = new HashMap<>();
+        Optional<PickupDeliveryDetailsModel> transportInstruction = shipmentModel.getPickupDeliveryDetailsInstructions().stream().filter(pickupDeliveryDetailsModel -> pickupDeliveryDetailsModel.getId().equals(shipmentModel.getTransportInstructionId())).findFirst();
+        if (transportInstruction.isEmpty())
+            return;
+        var ti = transportInstruction.get();
+        Optional<PartiesModel> exportAgent = ti.getPartiesModels()!= null ? ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Export Agent")).findFirst() : Optional.empty();
+        Optional<PartiesModel> importAgent = ti.getPartiesModels()!= null ? ti.getPartiesModels().stream().filter(Objects::nonNull).filter(c -> c.getType().equals("Import Agent")).findFirst() : Optional.empty();
 
-            map.put(TI_INSTRUCTIONTYPE, ti.getType());
-            map.put(TI_DROPMODE, ti.getDropMode());
-//            map.put(TI_PARTYNAME, ti) TODO :: ASK PAWAN FOR THE TAG
-//            map.put(TI_PARTYADDRESS, )
-//            map.put(TI_PARTYCONTACT, )
-            map.put(TI_TRANSPORTCOMPANY, getPartyAddress(ti.getTransporterDetail()));
-            map.put(TI_PICKUPFROM, getFormattedAddress(ti.getSourceDetail()));
-            map.put(TI_DELIVERTO, getFormattedAddress(ti.getDestinationDetail()));
-            map.put(TI_TRANSPORTCOMPANYADDRESS, getFormattedAddress(ti.getTransporterDetail()));
-            map.put(TI_TRANSPORTCOMPANYCONTACT, ReportHelper.getValueFromMap(ti.getTransporterDetail().getAddressData(), EMAIL));
-            map.put(TI_PICKUPFROMADDRESS, getFormattedAddress(ti.getSourceDetail()));
-            map.put(TI_PICKUPFROMCONTACT, ReportHelper.getValueFromMap(ti.getSourceDetail().getAddressData(), EMAIL));
-            map.put(TI_DELIVERTOADDRESS, getFormattedAddress(ti.getDestinationDetail()));
-            map.put(TI_DELIVERTOCONTACT, ReportHelper.getValueFromMap(ti.getDestinationDetail().getAddressData(), EMAIL));
-            map.put(TI_REMARKS, ti.getRemarks());
-            map.put(TI_PORTTRANSPORTADVISED, ti.getPortTransportAdvised());
-            map.put(TI_REQUIREDBY, ti.getRequiredBy());
-            map.put(TI_ESTIMATEDPICKUP, ConvertToDPWDateFormat(ti.getEstimatedPickup()));
-            map.put(TI_ESTIMATEDDELIVERY, ConvertToDPWDateFormat(ti.getEstimatedDelivery()));
-            map.put(TI_ACTUALPICKUP, ConvertToDPWDateFormat(ti.getActualPickup()));
-            map.put(TI_ACTUALDELIVERY,ConvertToDPWDateFormat(ti.getActualDelivery()));
-            map.put(TI_PICKUP_GATEIN, ConvertToDPWDateFormat(ti.getPickupGateIn()));
-            map.put(TI_PICKUP_GATEOUT, ConvertToDPWDateFormat(ti.getPickupGateOut()));
-            map.put(TI_DELIVERY_GATEIN, ConvertToDPWDateFormat(ti.getDeliveryGateIn()));
-            map.put(TI_DELIVERY_GATEOUT, ConvertToDPWDateFormat(ti.getDeliveryGateOut()));
+        dictionary.put(TI_INSTRUCTIONTYPE, ti.getType());
+        dictionary.put(TI_DROPMODE, ti.getDropMode());
 
-            tiList.add(map);
-        }
-        dictionary.put(TI , tiList);
+        dictionary.put(ReportConstants.TI_EXPORT_AGENT, exportAgent.isPresent() && exportAgent.get().getOrgData() != null ? exportAgent.get().getOrgData().get("FullName") : "");
+        dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, exportAgent.isPresent() ? getFormattedAddress(exportAgent.get()) : "");
+        dictionary.put(ReportConstants.TI_EXPORT_AGENT_CONTACT,  exportAgent.isPresent() ? ReportHelper.getValueFromMap(exportAgent.get().getAddressData(), EMAIL) : "");
+
+        dictionary.put(ReportConstants.TI_IMPORT_AGENT , importAgent.isPresent() && importAgent.get().getOrgData() != null ? importAgent.get().getOrgData().get("FullName") : "");
+        dictionary.put(ReportConstants.TI_IMPORT_AGENT_ADDRESS, importAgent.isPresent() ? getFormattedAddress(importAgent.get()) : "");
+        dictionary.put(ReportConstants.TI_IMPORT_AGENT_CONTACT,  importAgent.isPresent() ? ReportHelper.getValueFromMap(importAgent.get().getAddressData(), EMAIL) : "");
+
+        dictionary.put(TI_TRANSPORTCOMPANY, getPartyAddress(ti.getTransporterDetail()));
+        dictionary.put(TI_PICKUPFROM, getFormattedAddress(ti.getSourceDetail()));
+        dictionary.put(TI_DELIVERTO, getFormattedAddress(ti.getDestinationDetail()));
+        dictionary.put(TI_TRANSPORTCOMPANYADDRESS, getFormattedAddress(ti.getTransporterDetail()));
+        dictionary.put(TI_TRANSPORTCOMPANYCONTACT, ti.getTransporterDetail() != null ? ReportHelper.getValueFromMap(ti.getTransporterDetail().getAddressData(), EMAIL) : "");
+        dictionary.put(TI_PICKUPFROMADDRESS, getFormattedAddress(ti.getSourceDetail()));
+        dictionary.put(TI_PICKUPFROMCONTACT, ti.getSourceDetail() != null ? ReportHelper.getValueFromMap(ti.getSourceDetail().getAddressData(), EMAIL) : "");
+        dictionary.put(TI_DELIVERTOADDRESS, getFormattedAddress(ti.getDestinationDetail()));
+        dictionary.put(TI_DELIVERTOCONTACT, ti.getDestinationDetail() != null ? ReportHelper.getValueFromMap(ti.getDestinationDetail().getAddressData(), EMAIL) : "");
+        dictionary.put(TI_REMARKS, ti.getRemarks());
+        dictionary.put(TI_PORTTRANSPORTADVISED, ti.getPortTransportAdvised());
+        dictionary.put(TI_REQUIREDBY, ti.getRequiredBy());
+        dictionary.put(TI_ESTIMATEDPICKUP, ConvertToDPWDateFormat(ti.getEstimatedPickup()));
+        dictionary.put(TI_ESTIMATEDDELIVERY, ConvertToDPWDateFormat(ti.getEstimatedDelivery()));
+        dictionary.put(TI_ACTUALPICKUP, ConvertToDPWDateFormat(ti.getActualPickup()));
+        dictionary.put(TI_ACTUALDELIVERY, ConvertToDPWDateFormat(ti.getActualDelivery()));
+        dictionary.put(TI_PICKUP_GATEIN, ConvertToDPWDateFormat(ti.getPickupGateIn()));
+        dictionary.put(TI_PICKUP_GATEOUT, ConvertToDPWDateFormat(ti.getPickupGateOut()));
+        dictionary.put(TI_DELIVERY_GATEIN, ConvertToDPWDateFormat(ti.getDeliveryGateIn()));
+        dictionary.put(TI_DELIVERY_GATEOUT, ConvertToDPWDateFormat(ti.getDeliveryGateOut()));
+
     }
 }

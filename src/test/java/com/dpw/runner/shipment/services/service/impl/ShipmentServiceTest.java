@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -60,6 +61,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -90,7 +93,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class ShipmentServiceTest {
+class ShipmentServiceTest extends CommonMocks {
 
     @InjectMocks
     private ShipmentService shipmentService;
@@ -178,8 +181,6 @@ class ShipmentServiceTest {
     private V1ServiceUtil v1ServiceUtil;
 
     @Mock
-    private CommonUtils commonUtils;
-    @Mock
     private ObjectMapper mockObjectMapper;
     @Mock
     ConsolidationService consolidationService;
@@ -224,6 +225,7 @@ class ShipmentServiceTest {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         shipmentService.executorService = Executors.newFixedThreadPool(2);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
     }
 
     @Test
@@ -243,6 +245,7 @@ class ShipmentServiceTest {
         when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         // Test
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -273,6 +276,7 @@ class ShipmentServiceTest {
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
 //        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
+        mockShipmentSettings();
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
@@ -381,7 +385,7 @@ class ShipmentServiceTest {
     @Test
     void generateCustomHouseBL_restrictHblGen() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictHblGen(true).build());
-
+        mockShipmentSettings();
         String hbl = shipmentService.generateCustomHouseBL(null);
         String mockHbl = null;
 
@@ -398,6 +402,7 @@ class ShipmentServiceTest {
 
         // Mock
         when(productEngine.getCustomizedBLNumber(any(), any())).thenReturn(mockHbl);
+        mockShipmentSettings();
         // Test
         String hbl = shipmentService.generateCustomHouseBL(mockShipment);
 
@@ -411,7 +416,7 @@ class ShipmentServiceTest {
 
         ShipmentDetails mockShipment = testShipment;
         mockShipment.setHouseBill(null);
-
+        mockShipmentSettings();
         // Test
         String hbl = shipmentService.generateCustomHouseBL(mockShipment);
 
@@ -430,6 +435,7 @@ class ShipmentServiceTest {
         //Mock
         when(v1Service.getShipmentSerialNumber()).thenReturn("112344");
 
+        mockShipmentSettings();
         // Test
         String hbl = shipmentService.generateCustomHouseBL(mockShipment);
 
@@ -469,6 +475,7 @@ class ShipmentServiceTest {
 //        when(jsonHelper.buildSuccessResponse(any())).thenReturn(ResponseHelper.buildSuccessResponse(expectedResponse));
 
         // Execute the method under test
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getDefaultShipment();
         RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
 //        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
@@ -734,7 +741,7 @@ class ShipmentServiceTest {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
-
+        mockShipmentSettings();
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getShipmentFromConsol(consolidationId, bookingNumber);
         RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
@@ -799,7 +806,7 @@ class ShipmentServiceTest {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
-
+        mockShipmentSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
 
@@ -842,6 +849,7 @@ class ShipmentServiceTest {
                 shipmentDetailsPage.getTotalElements()
         );
 
+        mockShipmentSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
 
@@ -884,7 +892,7 @@ class ShipmentServiceTest {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
-
+        mockShipmentSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
 
@@ -928,7 +936,7 @@ class ShipmentServiceTest {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
-
+        mockShipmentSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
 
@@ -972,6 +980,7 @@ class ShipmentServiceTest {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
+        mockShipmentSettings();
 
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
@@ -1015,7 +1024,7 @@ class ShipmentServiceTest {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
-
+        mockShipmentSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
 
@@ -1253,6 +1262,7 @@ class ShipmentServiceTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(false).build());
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         List<Containers> containers = new ArrayList<>();
+        mockShipmentSettings();
         assertEquals(null, shipmentService.createConsolidation(shipmentDetails, containers));
     }
 
@@ -1263,7 +1273,7 @@ class ShipmentServiceTest {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
         List<Containers> containers = new ArrayList<>();
         String errorMessage = "Not able to create consolidation, before adding 'New Containers' , please provide ‘Origin’ and ‘Destination’ values.";
-
+        mockShipmentSettings();
         Exception e = assertThrows(ValidationException.class, () -> shipmentService.createConsolidation(shipmentDetails, containers));
         assertEquals(errorMessage, e.getMessage());
     }
@@ -1275,7 +1285,7 @@ class ShipmentServiceTest {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
         List<Containers> containers = new ArrayList<>();
         String errorMessage = "‘Origin’ and ‘Destination’ can't be same";
-
+        mockShipmentSettings();
         Exception e = assertThrows(ValidationException.class, () -> shipmentService.createConsolidation(shipmentDetails, containers));
         assertEquals(errorMessage, e.getMessage());
     }
@@ -1309,7 +1319,7 @@ class ShipmentServiceTest {
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
-
+        mockShipmentSettings();
         ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
 
         assertNotNull(result);
@@ -1347,7 +1357,7 @@ class ShipmentServiceTest {
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).shipmentType(Constants.DIRECTION_EXP).sendingAgent(parties).receivingAgent(parties).build();
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
-
+        mockShipmentSettings();
         ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
 
         assertNotNull(result);
@@ -2313,7 +2323,7 @@ class ShipmentServiceTest {
 
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createShipmentInV2(customerBookingRequest);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -2338,6 +2348,7 @@ class ShipmentServiceTest {
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(Arrays.asList(ShipmentsContainersMapping.builder().shipmentId(1L).build()));
         when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build()));
         //doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any());
+        mockShipmentSettings();
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignAllContainers(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -2347,6 +2358,7 @@ class ShipmentServiceTest {
     void testAssignAllContainers_CatchBlock() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
         CommonRequestModel commonRequestModel = Mockito.mock(CommonRequestModel.class);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = shipmentService.assignAllContainers(commonRequestModel);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -2372,6 +2384,7 @@ class ShipmentServiceTest {
         when(packingService.calculatePackSummary(any(), any(), any(), any())).thenReturn(new PackSummaryResponse());
 
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
     }
@@ -2452,6 +2465,7 @@ class ShipmentServiceTest {
 
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -2499,6 +2513,7 @@ class ShipmentServiceTest {
 
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -2549,13 +2564,17 @@ class ShipmentServiceTest {
 
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
-    @Test
-    void completeUpdateConsolidationListNotEmpty_success_isDGUser() throws RunnerException {
+    @ParameterizedTest
+    @ValueSource(booleans = {
+            true, false
+    })
+    void completeUpdateConsolidationListNotEmpty_success_isDGUser(boolean dgUser) throws RunnerException {
         ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
         consolidationDetails1.setId(1L);
 
@@ -2568,7 +2587,7 @@ class ShipmentServiceTest {
         mockShipment.setConsolidationList(Arrays.asList(consolidationDetails1));
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).airDGFlag(true).build());
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.airDG, dgUser);
         UserContext.getUser().setPermissions(permissions);
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
@@ -2586,16 +2605,19 @@ class ShipmentServiceTest {
                                         .setContainersList(new ArrayList<>())));
 
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
-        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
-
-        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
-
-        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+        mockShipmentSettings();
+        if(dgUser) {
+            when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+            when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
+            when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+            when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+            when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
+            ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+            assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+        } else {
+            assertThrows(ValidationException.class, () -> shipmentService.completeUpdate(commonRequestModel));
+        }
         UserContext.getUser().setPermissions(new HashMap<>());
-        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
     @Test
@@ -2724,7 +2746,7 @@ class ShipmentServiceTest {
 
         PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing));
         when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -2837,7 +2859,7 @@ class ShipmentServiceTest {
         PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(container));
         when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignShipmentContainers(commonRequestModel);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
@@ -2860,7 +2882,7 @@ class ShipmentServiceTest {
 
         when(containerDao.saveAll(anyList())).thenReturn(Arrays.asList(Containers.builder().build()));
         doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any());
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignShipmentContainers(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -3256,6 +3278,7 @@ class ShipmentServiceTest {
 
         PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing));
         when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
+        mockShipmentSettings();
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
@@ -3294,6 +3317,7 @@ class ShipmentServiceTest {
         when(consolidationDetailsDao.save(any(), eq(false))).thenReturn(ConsolidationDetails.builder().build());
 
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
+        mockShipmentSettings();
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
 
@@ -3347,7 +3371,7 @@ class ShipmentServiceTest {
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
         when(shipmentDao.save(any(), eq(false))).thenThrow(RunnerException.class);
-
+        mockShipmentSettings();
         assertThrows(ValidationException.class, () -> {
             shipmentService.create(commonRequestModel);
         });
@@ -3430,6 +3454,44 @@ class ShipmentServiceTest {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
 
+        doNothing().when(eventService).updateAtaAtdInShipment(any(), any(), any());
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ContainerResponse containerResponse = new ContainerResponse();
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().containersList(Arrays.asList(containerResponse)).build();
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.update(commonRequestModel);
+        assertEquals(ResponseHelper.buildSuccessResponse(shipmentDetailsResponse), httpResponse);
+    }
+
+    @Test
+    void updateWithGuid() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(Arrays.asList(Containers.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
+
+        ShipmentDetails savedShipmentDetails = new ShipmentDetails();
+        savedShipmentDetails.setGuid(UUID.randomUUID());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(savedShipmentDetails));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+
+        shipmentDetails.setGuid(UUID.randomUUID());
+        assertThrows(RunnerException.class, () -> {shipmentService.update(commonRequestModel);});
+    }
+
+    @Test
+    void updateWithContainerListNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(Arrays.asList(Containers.builder().build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
+
+        ShipmentDetails savedShipmentDetails = new ShipmentDetails();
+        savedShipmentDetails.setGuid(UUID.randomUUID());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(savedShipmentDetails));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(savedShipmentDetails);
+
+        shipmentDetails.setGuid(savedShipmentDetails.getGuid());
         doNothing().when(eventService).updateAtaAtdInShipment(any(), any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
 
@@ -3614,7 +3676,7 @@ class ShipmentServiceTest {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
-
+        mockShipmentSettings();
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getShipmentFromConsol(consolidationId, bookingNumber);
         RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
@@ -3666,6 +3728,7 @@ class ShipmentServiceTest {
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(OrgAddressResponse.builder().addresses(map).build());
 
         when(additionalDetailDao.updateEntityFromShipment(any())).thenReturn(additionalDetails);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
     }
@@ -3793,7 +3856,7 @@ class ShipmentServiceTest {
 
         PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing2));
         when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -3841,7 +3904,7 @@ class ShipmentServiceTest {
 
         when(jsonHelper.convertValue(any(), eq(Notes.class))).thenReturn(Notes.builder().build());
         when(notesDao.save(any())).thenReturn(Notes.builder().build());
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createFromBooking(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(shipmentDetailsResponse), httpResponse);
     }
@@ -3959,7 +4022,7 @@ class ShipmentServiceTest {
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-
+        mockShipmentSettings();
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
@@ -3992,7 +4055,7 @@ class ShipmentServiceTest {
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-
+        mockShipmentSettings();
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
@@ -4106,7 +4169,7 @@ class ShipmentServiceTest {
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-
+        mockShipmentSettings();
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
@@ -4198,7 +4261,7 @@ class ShipmentServiceTest {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
         assertEquals(expectedResponse, result);
     }
@@ -4324,7 +4387,7 @@ class ShipmentServiceTest {
         when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(Arrays.asList(ShipmentsContainersMapping.builder().shipmentId(1L).build()));
         when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build()));
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignAllContainers(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -4349,7 +4412,7 @@ class ShipmentServiceTest {
         when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(Arrays.asList(ShipmentsContainersMapping.builder().shipmentId(1L).build()));
         when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build()));
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignAllContainers(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -4424,7 +4487,7 @@ class ShipmentServiceTest {
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
-
+        mockShipmentSettings();
         ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
 
         assertNotNull(result);
@@ -4452,7 +4515,7 @@ class ShipmentServiceTest {
         when(jsonHelper.convertValue(autoUpdateWtVolRequest, AutoUpdateWtVolResponse.class)).thenReturn(autoUpdateWtVolResponse);
         when(jsonHelper.convertValueToList(anyList(), eq(Packing.class))).thenReturn(packingList);
         when(packingService.calculatePackSummary(any(), any(), any(), any())).thenReturn(new PackSummaryResponse());
-
+        mockShipmentSettings();
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
@@ -4505,6 +4568,7 @@ class ShipmentServiceTest {
     void checkAttachDgAirShipments_HazTrue() {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         testConsol.setHazardous(true);
+        mockShipmentSettings();
         boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
         assertTrue(response);
     }
@@ -4514,6 +4578,7 @@ class ShipmentServiceTest {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         testConsol.setHazardous(true);
+        mockShipmentSettings();
         boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
         assertFalse(response);
@@ -4525,6 +4590,7 @@ class ShipmentServiceTest {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         testConsol.setHazardous(true);
         testConsol.setShipmentsList(new ArrayList<>());
+        mockShipmentSettings();
         boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
         assertFalse(response);
@@ -4536,6 +4602,7 @@ class ShipmentServiceTest {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         testConsol.setHazardous(true);
         testConsol.setShipmentsList(List.of(testShipment));
+        mockShipmentSettings();
         boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
         assertFalse(response);
@@ -4567,7 +4634,7 @@ class ShipmentServiceTest {
 
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createShipmentInV2(customerBookingRequest);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -4625,7 +4692,7 @@ class ShipmentServiceTest {
         when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         when(hblDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -4654,7 +4721,7 @@ class ShipmentServiceTest {
         when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         when(hblDao.findByShipmentId(any())).thenReturn(Arrays.asList(Hbl.builder().build()));
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);

@@ -3,8 +3,8 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
@@ -78,6 +78,8 @@ public class AwbUtility {
     private IShipmentDao shipmentDao;
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
+    @Autowired
+    private CommonUtils commonUtils;
 
     public static String getFormattedAddress(AwbAddressParam addressParam)
     {
@@ -192,7 +194,7 @@ public class AwbUtility {
 
     public AwbAirMessagingResponse createAirMessagingRequestForConsole(Awb awb, ConsolidationDetails consolidationDetails) {
         TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
@@ -368,7 +370,7 @@ public class AwbUtility {
 
     public AwbAirMessagingResponse createAirMessagingRequestForShipment(Awb awb, ShipmentDetails shipmentDetails) {
         TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
@@ -659,8 +661,9 @@ public class AwbUtility {
             throw new RunnerException("No Awb exist for given Guid: " + guid);
         }
         var tenantId = awb.get().getTenantId();
+        List<ConsoleShipmentMapping> consoleShipmentMappings = null;
         if(awb.get().getConsolidationId() != null) {
-            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationIdByQuery(awb.get().getConsolidationId());
+            consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationIdByQuery(awb.get().getConsolidationId());
 
             eventDao.createEventForAirMessagingEvent(prepareEventPayload(airMessageEvent, awb.get().getConsolidationId(), Constants.CONSOLIDATION, tenantId));
             if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()){
@@ -669,7 +672,7 @@ public class AwbUtility {
         } else if (awb.get().getShipmentId() != null) {
             eventDao.createEventForAirMessagingEvent(prepareEventPayload(airMessageEvent, awb.get().getShipmentId(), Constants.SHIPMENT, tenantId));
         }
-
+        updateAwbStatusForFsuUpdate(awb.get(), airMessageEvent.getEventCode(), consoleShipmentMappings);
 
     }
 
@@ -752,5 +755,19 @@ public class AwbUtility {
         body = body + "\n \n Please rectify the data as per the failure comment and resend the messages by clicking on the \"Print\" button in the MAWB. \n \n" +
                         "Thank you!\n" + "Cargoes Runner";
         emailServiceUtility.sendEmail(body, subject, emailIds, null, null);
+    }
+
+    private void updateAwbStatusForFsuUpdate(Awb awb, String eventCode, List<ConsoleShipmentMapping> consoleShipmentMappings) {
+        if(!AwbConstants.FSU_LOCK_EVENT_CODE.equalsIgnoreCase(eventCode))
+            return;
+
+        AwbStatus status = AwbStatus.AWB_FSU_LOCKED;
+        if(awb.getConsolidationId() != null) {
+            awbDao.updateLinkedHawbAirMessageStatus(awb.getGuid(), status.name());
+            if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()){
+                consoleShipmentMappings.forEach(x -> awbDao.updateAirMessageStatusFromShipmentId(x.getShipmentId() , status.name()));
+            }
+        }
+        awbDao.updateAirMessageStatus(awb.getGuid(), status.name());
     }
 }

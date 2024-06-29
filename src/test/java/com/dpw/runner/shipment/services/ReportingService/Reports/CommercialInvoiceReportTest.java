@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.CommercialInvoiceModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
@@ -21,6 +22,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,7 +47,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CommercialInvoiceReportTest {
+class CommercialInvoiceReportTest extends CommonMocks {
 
     @InjectMocks
     private CommercialInvoiceReport commercialInvoiceReport;
@@ -116,6 +118,7 @@ class CommercialInvoiceReportTest {
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
 
         doReturn(new HashMap<>()).when(jsonHelper).convertValue(any(CommercialInvoiceModel.class), any(TypeReference.class));
+        mockShipmentSettings();
 
         assertNotNull(commercialInvoiceReport.getData(123L));
     }
@@ -140,8 +143,7 @@ class CommercialInvoiceReportTest {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-
-
+        mockShipmentSettings();
         assertNotNull(commercialInvoiceReport.getDocumentModel(123L));
     }
 

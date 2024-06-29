@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
@@ -40,10 +41,10 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class PickupOrderReportTest {
+class PickupOrderReportTest extends CommonMocks {
 
     @InjectMocks
     private PickupOrderReport pickupOrderReport;
@@ -82,6 +83,13 @@ class PickupOrderReportTest {
 
     private void populateModel(HblModel hblModel) {
         ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                .id(12L)
+                .agentDetail(new PartiesModel())
+                .actualPickup(LocalDateTime.now())
+                .actualDelivery(LocalDateTime.now())
+                .build()));
         shipmentModel.setId(123L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
         shipmentModel.setDirection(ReportConstants.EXP);
@@ -300,6 +308,13 @@ class PickupOrderReportTest {
     void getDocumentModel() {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(SEA);
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                        .id(12L)
+                        .agentDetail(new PartiesModel())
+                        .actualPickup(LocalDateTime.now())
+                        .actualDelivery(LocalDateTime.now())
+                .build()));
         shipmentModel.setDirection(EXP);
         shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
         shipmentModel.setPickupDetails(new PickupDeliveryDetailsModel());
@@ -310,6 +325,7 @@ class PickupOrderReportTest {
         HblModel hblModel = new HblModel();
         hblModel.setShipment(shipmentModel);
         when(hblReport.getDocumentModel(any())).thenReturn(hblModel);
+        mockShipmentSettings();
         assertNotNull(pickupOrderReport.getDocumentModel(123L));
     }
 }

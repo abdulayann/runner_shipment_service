@@ -247,7 +247,15 @@ public class ReportService implements IReportService {
 //        }
 
         //TODO - Need to handle for new flow
-        dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
+        if(report instanceof PickupOrderReport pickupOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())){
+            dataRetrived = pickupOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
+        }
+        else if(report instanceof DeliveryOrderReport deliveryOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())){
+            dataRetrived = deliveryOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
+        }
+        else {
+            dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
+        }
 
         boolean isOriginalPrinted = (boolean) dataRetrived.getOrDefault(ReportConstants.PRINTED_ORIGINAL, false);
         String hbltype = (String)dataRetrived.getOrDefault(ReportConstants.HOUSE_BILL_TYPE, null);

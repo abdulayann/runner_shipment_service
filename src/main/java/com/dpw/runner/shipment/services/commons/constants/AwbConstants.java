@@ -40,4 +40,8 @@ public class AwbConstants {
     public static final String IATA_FETCH_RATE_SUCCESS = "Successfully fetched rates from iata";
     public static final String SERVICE_HTTP_STATUS_CODE = "SERVICE_HTTP_STATUS_CODE";
 
+    public static final String FSU_LOCK_EVENT_CODE = "RCS";
+    public static final String RESUBMIT_FZB_VALIDATION = "HAWB is updated, please resubmit the FZB by printing the original MAWB";
+    public static final String RESUBMIT_FWB_VALIDATION = "MAWB is updated, please resubmit the FWB by printing the original MAWB";
+
 }

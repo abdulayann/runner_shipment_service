@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.modelmapper.ModelMapper;
@@ -48,11 +49,21 @@ public class DeliveryOrderReport extends IReport{
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
     public Boolean printWithoutTranslation;
 
     @Override
     public Map<String, Object> getData(Long id) {
         DeliveryOrderModel deliveryOrderModel = (DeliveryOrderModel) getDocumentModel(id);
+        return populateDictionary(deliveryOrderModel);
+    }
+
+
+    public Map<String, Object> getData(Long id, Long transportInstructionId) {
+        DeliveryOrderModel deliveryOrderModel = (DeliveryOrderModel) getDocumentModel(id);
+        deliveryOrderModel.setTransportInstructionId(transportInstructionId);
         return populateDictionary(deliveryOrderModel);
     }
 
@@ -63,7 +74,7 @@ public class DeliveryOrderReport extends IReport{
         validateAirDGCheckShipments(deliveryOrderModel.shipmentDetails);
         validateAirDGCheck(deliveryOrderModel.shipmentDetails);
         deliveryOrderModel.usersDto = UserContext.getUser();
-        deliveryOrderModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        deliveryOrderModel.shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(deliveryOrderModel.shipmentDetails.getConsolidationList() != null && deliveryOrderModel.shipmentDetails.getConsolidationList().size() > 0)
         {
             deliveryOrderModel.consolidationDetails = deliveryOrderModel.shipmentDetails.getConsolidationList().get(0);
@@ -106,6 +117,7 @@ public class DeliveryOrderReport extends IReport{
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(deliveryOrderModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
+        deliveryOrderModel.shipmentDetails.setTransportInstructionId(deliveryOrderModel.getTransportInstructionId());
         populateShipmentFields(deliveryOrderModel.shipmentDetails, dictionary);
         populateConsolidationFields(deliveryOrderModel.consolidationDetails, dictionary);
         populateUserFields(deliveryOrderModel.usersDto, dictionary);
@@ -194,7 +206,7 @@ public class DeliveryOrderReport extends IReport{
                     getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
             dictionary.put(ReportConstants.DeliveryTo, address);
         }
-        Integer decimalPlaces = ShipmentSettingsDetailsContext.getCurrentTenantSettings().getDecimalPlaces() == null ? 2 : ShipmentSettingsDetailsContext.getCurrentTenantSettings().getDecimalPlaces();
+        Integer decimalPlaces = commonUtils.getShipmentSettingFromContext().getDecimalPlaces() == null ? 2 : commonUtils.getShipmentSettingFromContext().getDecimalPlaces();
         if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getWeight())) {
             BigDecimal weight = deliveryOrderModel.shipmentDetails.getWeight().setScale(decimalPlaces, RoundingMode.HALF_UP);
             String weightString = ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);

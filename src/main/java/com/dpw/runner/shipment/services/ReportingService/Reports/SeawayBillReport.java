@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -35,6 +36,9 @@ public class SeawayBillReport extends IReport {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
     @Override
     public Map<String, Object> getData(Long id) {
         SeawayBillModel seawayBillModel = (SeawayBillModel) getDocumentModel(id);
@@ -49,7 +53,7 @@ public class SeawayBillReport extends IReport {
                 .id(id)
                 .shipment(shipment)
                 .blObject(hbl)
-                .shipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings())
+                .shipmentSettingsDetails(commonUtils.getShipmentSettingFromContext())
                 .build();
     }
 
