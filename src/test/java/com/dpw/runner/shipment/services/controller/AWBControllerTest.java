@@ -375,9 +375,9 @@ class AWBControllerTest {
     @Test
     void validateIataAgent() {
         // Mock
-        when(awbService.validateIataAgent(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(awbService.validateIataAgent(any(), any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = awbController.validateIataAgent(false);
+        var responseEntity = awbController.validateIataAgent(false, Optional.empty());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -385,9 +385,9 @@ class AWBControllerTest {
     @Test
     void validateIataAgent2() {
         // Mock
-        when(awbService.validateIataAgent(any())).thenThrow(new RuntimeException());
+        when(awbService.validateIataAgent(any(), any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = awbController.validateIataAgent(false);
+        var responseEntity = awbController.validateIataAgent(false, Optional.empty());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -395,9 +395,9 @@ class AWBControllerTest {
     @Test
     void validateIataAgent3() {
         // Mock
-        when(awbService.validateIataAgent(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(awbService.validateIataAgent(any(), any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = awbController.validateIataAgent(false);
+        var responseEntity = awbController.validateIataAgent(false, Optional.empty());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

@@ -138,6 +138,11 @@ public class AwbDao implements IAwbDao {
     }
 
     @Override
+    public List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds) {
+        return awbRepository.findByShipmentIdsByQuery(shipmentIds);
+    }
+    
+    @Override
     public List<Awb> findByConsolidationIdByQuery(Long consolidationId) {
         return awbRepository.findByConsolidationIdByQuery(consolidationId);
     }
@@ -207,7 +212,6 @@ public class AwbDao implements IAwbDao {
                             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                             this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent");
-
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
                                 this.pushToKafkaForAirMessaging(shipAwb, ship, null);

@@ -47,6 +47,7 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
@@ -3278,7 +3279,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> validateIataAgent(Boolean fromShipment) {
+    public ResponseEntity<IRunnerResponse> validateIataAgent(Boolean fromShipment, Optional<Long> consolidationId) {
         TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
         IataAgentResponse res;
         if(tenantModel.IATAAgent && !Strings.isNullOrEmpty(tenantModel.AgentIATACode)
@@ -3286,6 +3287,8 @@ public class AwbService implements IAwbService {
             if(Boolean.TRUE.equals(fromShipment)){
                 res = IataAgentResponse.builder().iataAgent(true).message("FWB will be sent before printing, do you want to proceed?").build();
             } else {
+                if (consolidationId.isPresent())
+                    checkForHawbPrinted(consolidationId.get());
                 res = IataAgentResponse.builder().iataAgent(true).message("FWB & FZB  will be sent before printing, do you want to proceed?").build();
             }
         } else if (tenantModel.IATAAgent && !Strings.isNullOrEmpty(tenantModel.AgentIATACode)
@@ -3294,6 +3297,7 @@ public class AwbService implements IAwbService {
         } else {
             res = IataAgentResponse.builder().iataAgent(false).build();
         }
+
         return ResponseHelper.buildSuccessResponse(res);
     }
 
@@ -3547,4 +3551,23 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
     }
 
+    private void checkForHawbPrinted(Long consolidationId) {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
+        List<String> errorShipments = new ArrayList<>();
+        if (!consoleShipmentMappingList.isEmpty()) {
+            var shipmentsList = shipmentDao.getShipmentNumberFromId(consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList());
+            var shipmentIdToNumberMap = shipmentsList.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
+            var awbList = awbDao.findByShipmentIdsByQuery(shipmentsList.stream().map(ShipmentDetails::getId).toList());
+            for (var awb : awbList) {
+                if (!Objects.equals(awb.getAirMessageStatus(), AwbStatus.AWB_ORIGINAL_PRINTED.name()))
+                    errorShipments.add(shipmentIdToNumberMap.get(awb.getShipmentId()));
+                shipmentIdToNumberMap.remove(awb.getShipmentId());
+            }
+            for (var key : shipmentIdToNumberMap.keySet())
+                errorShipments.add(shipmentIdToNumberMap.get(key));
+
+            if (!errorShipments.isEmpty())
+                throw new ValidationException(String.format(ErrorConstants.HAWB_NOT_GENERATED_ERROR, String.join(", ", errorShipments)));
+        }
+    }
 }

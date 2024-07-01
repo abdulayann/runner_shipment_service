@@ -1857,7 +1857,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(true);
+        var httpResponse = awbService.validateIataAgent(true, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
@@ -1878,7 +1878,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(false);
+        var httpResponse = awbService.validateIataAgent(false, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
@@ -1899,7 +1899,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(false);
+        var httpResponse = awbService.validateIataAgent(false, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
@@ -1916,7 +1916,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(false);
+        var httpResponse = awbService.validateIataAgent(false, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
