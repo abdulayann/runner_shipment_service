@@ -780,12 +780,10 @@ public class AwbService implements IAwbService {
                     error = "The Port/ Carrier details are changed - You need to fetch the new TACT Rates.";
                 }
             }
-            if(res.getAwbShipmentInfo().getEntityType().equals("MAWB")) {
-                try {
-                    res.setErrors(validateAwb(awbShipmentInfo));
-                } catch (RunnerException e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+                res.setErrors(validateAwb(awbShipmentInfo));
+            } catch (RunnerException e) {
+                throw new RuntimeException(e);
             }
             if(error != null)
                 res.setErrors(res.getErrors()!=null ? String.join("\r\n", res.getErrors(), error): error);
