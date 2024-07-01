@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -26,6 +27,8 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -74,6 +77,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -190,6 +194,12 @@ class ShipmentServiceTest extends CommonMocks {
     private GetNextNumberHelper getNextNumberHelper;
     @Mock
     private MasterDataHelper masterDataHelper;
+
+    @Mock
+    private RestTemplate restTemplate;
+
+    @Mock
+    private BillingServiceAdapter billingServiceAdapter;
 
     @Captor
     private ArgumentCaptor<Workbook> workbookCaptor;
@@ -1084,13 +1094,31 @@ class ShipmentServiceTest extends CommonMocks {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
 
-        CheckActiveInvoiceResponse mockCheckActiveInvoiceResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(true).build();
-        //Mock
-        when(v1Service.getActiveInvoices(any())).thenReturn(mockCheckActiveInvoiceResponse);
-        // Test
+        InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
+        invoiceSummaryRequest.setModuleType("SHIPMENT");
+        invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
+
+        when(billingServiceAdapter.fetchActiveInvoices(any())).thenReturn(false);
+        CheckActiveInvoiceResponse checkActiveInvoiceResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(false).build();
+
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
-        // Assert
-        assertEquals(ResponseHelper.buildSuccessResponse(mockCheckActiveInvoiceResponse), httpResponse);
+        assertEquals(ResponseHelper.buildSuccessResponse(checkActiveInvoiceResponse), httpResponse);
+    }
+
+    @Test
+    void fetchActiveInvoicesDoubleValuePresent() throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+
+        InvoiceSummaryRequest invoiceSummaryRequest = new InvoiceSummaryRequest();
+        invoiceSummaryRequest.setModuleType("SHIPMENT");
+        invoiceSummaryRequest.setModuleGuid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06");
+
+        when(billingServiceAdapter.fetchActiveInvoices(any())).thenReturn(true);
+        CheckActiveInvoiceResponse checkActiveInvoiceResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(true).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchActiveInvoices(commonRequestModel);
+        assertEquals(ResponseHelper.buildSuccessResponse(checkActiveInvoiceResponse), httpResponse);
     }
 
     @Test
@@ -3084,7 +3112,7 @@ class ShipmentServiceTest extends CommonMocks {
     @Test
     void checkRaStatusFieldsTest() {
         HashMap<String, Object> hm = new HashMap<>();
-        hm.put("RAKCType", 1);
+        hm.put("RegulatedAgent", true);
 
         HashMap<String, Map<String, Object>> map = new HashMap();
         map.put("org1#add1", hm);
@@ -3100,7 +3128,7 @@ class ShipmentServiceTest extends CommonMocks {
     @Test
     void checkRaStatusFieldsTestFalse() {
         HashMap<String, Object> hm = new HashMap<>();
-        hm.put("RAKCType", 2);
+        hm.put("KnownConsignor", true);
 
         HashMap<String, Map<String, Object>> map = new HashMap();
         map.put("org1#add1", hm);
@@ -3108,6 +3136,57 @@ class ShipmentServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().addresses(map).build();
         Parties parties = Parties.builder().orgCode("org2").addressCode("add2").build();
+        assertTrue(shipmentService.checkRaStatusFields(shipmentDetails, orgAddressResponse, parties));
+    }
+
+    @Test
+    void checkRaStatusFieldsTest_ScreeningStatus_Empty() {
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("RegulatedAgent", true);
+
+        HashMap<String, Map<String, Object>> map = new HashMap();
+        map.put("org1#add1", hm);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        additionalDetails.setScreeningStatus(List.of());
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().addresses(map).build();
+        Parties parties = Parties.builder().orgCode("org1").addressCode("add1").build();
+        assertFalse(shipmentService.checkRaStatusFields(shipmentDetails, orgAddressResponse, parties));
+    }
+
+    @Test
+    void checkRaStatusFieldsTest_ScreeningStatus() {
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("RegulatedAgent", true);
+
+        HashMap<String, Map<String, Object>> map = new HashMap();
+        map.put("org1#add1", hm);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        additionalDetails.setScreeningStatus(List.of("Screening"));
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().addresses(map).build();
+        Parties parties = Parties.builder().orgCode("org1").addressCode("add1").build();
+        assertFalse(shipmentService.checkRaStatusFields(shipmentDetails, orgAddressResponse, parties));
+    }
+
+    @Test
+    void checkRaStatusFieldsTest_SecurityStatus() {
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("RegulatedAgent", true);
+
+        HashMap<String, Map<String, Object>> map = new HashMap();
+        map.put("org1#add1", hm);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).securityStatus("Security").build();
+        additionalDetails.setScreeningStatus(List.of("Screening"));
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().addresses(map).build();
+        Parties parties = Parties.builder().orgCode("org1").addressCode("add1").build();
         assertTrue(shipmentService.checkRaStatusFields(shipmentDetails, orgAddressResponse, parties));
     }
 
@@ -3720,7 +3799,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
 
         HashMap<String, Object> hm = new HashMap<>();
-        hm.put("RAKCType", 1);
+        hm.put("RegulatedAgent", true);
 
         HashMap<String, Map<String, Object>> map = new HashMap();
         map.put("org1#add1", hm);

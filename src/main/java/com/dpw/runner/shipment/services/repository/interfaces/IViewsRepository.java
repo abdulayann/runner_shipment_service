@@ -6,9 +6,11 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
+
 @Generated
 public interface IViewsRepository extends MultiTenancyRepository<Views> {
     List<Views> findAll();
@@ -17,4 +19,10 @@ public interface IViewsRepository extends MultiTenancyRepository<Views> {
         Specification<Views> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+
+    @Query(value = "SELECT name from views where created_by = ?1", nativeQuery = true)
+    List<String> findAllByUsername(String username);
+
+    @Query(value = "SELECT * from views where created_by = ?1 and is_default = TRUE", nativeQuery = true)
+    Views findByCreatedByAndIsDefault(String createdBy);
 }

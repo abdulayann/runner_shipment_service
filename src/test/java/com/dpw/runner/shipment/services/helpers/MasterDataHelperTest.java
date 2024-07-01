@@ -1086,7 +1086,6 @@ class MasterDataHelperTest {
         containerResponse.setMinTempUnit("42");
         containerResponse.setNetWeight(new BigDecimal("2.3"));
         containerResponse.setNetWeightUnit("42");
-        containerResponse.setNoOfPackages(-1L);
         containerResponse.setOwnType("42");
         containerResponse.setPackageBreadth(new BigDecimal("2.3"));
         containerResponse.setPackageHeight(new BigDecimal("2.3"));

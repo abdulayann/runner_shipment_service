@@ -288,7 +288,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         if(inputConsol != null)
             trackingPayload.setCarrier(fetchCarrierName(inputConsol.getCarrierDetails().getShippingLine()));
         else
-            trackingPayload.setCarrier(inputShipment.getCarrierDetails().getShippingLine());
+            trackingPayload.setCarrier(fetchCarrierName(inputShipment.getCarrierDetails().getShippingLine()));
 
         return trackingPayload;
     }
@@ -316,7 +316,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
         List<Awb> awbList = awbDao.findByShipmentId(inputShipment.getId());
         result.add(UniversalTrackingPayload.EntityDetail.builder()
-                .trackingNumber(getBillOfLading(inputShipment))
+                .trackingNumber(inputShipment.getMasterBill())
                 .allocationDate(awbList == null || awbList.size() == 0 ? null: awbList.get(0).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
                 .build());
 
@@ -350,7 +350,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                     .mode(container.getHblDeliveryMode())
                     .containerCount(container.getContainerCount())
                     .descriptionOfGoods(container.getDescriptionOfGoods())
-                    .noofPackages(container.getNoOfPackages())
+                    .noofPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()))
                     .netWeight(container.getNetWeight())
                     .netWeightUom(container.getNetWeightUnit())
                     .build();
@@ -373,7 +373,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         List<CarrierMasterData> carrierMasterData = jsonHelper.convertValueToList(carrierResponse, CarrierMasterData.class);
         if(carrierMasterData == null || carrierMasterData.isEmpty())
             return null;
-        return carrierMasterData.get(0).getItemDescription();
+        return carrierMasterData.get(0).getIdentifier1();
     }
 
     private UniversalTrackingPayload.ShipmentDetail getShipmentDetails(ShipmentDetails shipmentDetails) {

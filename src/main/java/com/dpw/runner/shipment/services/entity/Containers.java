@@ -56,9 +56,6 @@ public class Containers extends MultiTenancy {
     @Size(max = 2048, message = "max size is 2048 for description_of_goods")
     private String descriptionOfGoods;
 
-    @Column(name = "no_of_packages")
-    private Long noOfPackages;
-
     @Column(name = "net_weight")
     private BigDecimal netWeight;
 

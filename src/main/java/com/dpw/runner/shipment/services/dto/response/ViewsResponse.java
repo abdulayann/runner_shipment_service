@@ -12,8 +12,10 @@ import java.util.UUID;
 public class ViewsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
-    private Map<String, String> columns;
-    private List<FilterCriteria> criteria;
-    private Boolean isPublic;
+    private Map<String, Object> columns;
+    private Map<String, Object> criteria;
     private String entity;
+    private String name;
+    private String createdBy;
+    private Boolean isDefault;
 }

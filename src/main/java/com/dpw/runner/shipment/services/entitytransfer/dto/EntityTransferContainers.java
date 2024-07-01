@@ -20,7 +20,6 @@ public class EntityTransferContainers implements IEntityTranferBaseEntity {
     public String containerNumber;
     public String sealNumber;
     public String descriptionOfGoods;
-    public Long noOfPackages;
     public BigDecimal netWeight;
     public String netWeightUnit;
     public BigDecimal grossWeight;

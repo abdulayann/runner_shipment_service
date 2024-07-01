@@ -526,4 +526,10 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "booking_order_air_mawb")
     private String bookingOrderAirForMawb;
+
+    @Column(name = "transport_instruction_pickup_order")
+    private String transportInstructionPickupOrder;
+
+    @Column(name = "transport_instruction_delivery_order")
+    private String transportInstructionDeliveryOrder;
 }

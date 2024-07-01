@@ -48,6 +48,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -91,6 +92,7 @@ public class HblService implements IHblService {
 
     @Autowired
     private PartialFetchUtils partialFetchUtils;
+
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -275,6 +277,7 @@ public class HblService implements IHblService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> generateHBL(CommonRequestModel commonRequestModel) throws RunnerException {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Hbl hbl = getHblFromShipmentId(request.getShipmentId());
@@ -345,6 +348,7 @@ public class HblService implements IHblService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel commonRequestModel) throws RunnerException {
         HblResetRequest request = (HblResetRequest) commonRequestModel.getData();
         Optional<Hbl> hblOptional = hblDao.findById(request.getId());
@@ -590,7 +594,7 @@ public class HblService implements IHblService {
             hblContainer.setGuid(container.getGuid());
             hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
             hblContainer.setSealNumber(container.getSealNumber());
-            hblContainer.setNoOfPackages(container.getNoOfPackages());
+            hblContainer.setNoOfPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()));
             hblContainer.setContainerGrossVolume(container.getGrossVolume());
             hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
             hblContainer.setContainerGrossWeight(container.getGrossWeight());
@@ -885,7 +889,7 @@ public class HblService implements IHblService {
                 hblContainer.setGuid(container.getGuid());
                 hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
                 hblContainer.setSealNumber(container.getSealNumber());
-                hblContainer.setNoOfPackages(container.getNoOfPackages());
+                hblContainer.setNoOfPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()));
                 hblContainer.setContainerGrossVolume(container.getGrossVolume());
                 hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
                 hblContainer.setContainerGrossWeight(container.getGrossWeight());

@@ -2490,14 +2490,14 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("RegulatedAgent", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for KC consginor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2530,7 +2530,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("KnownConsignor", true);
         addressMap.put("c1#o1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2567,14 +2567,14 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 1);
+        map.put("RegulatedAgent", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for RA Origin Agent.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2608,14 +2608,14 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("RegulatedAgent", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for KC consginor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2649,7 +2649,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("KnownConsignor", true);
         addressMap.put("c1#o1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2687,14 +2687,14 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 1);
+        map.put("RegulatedAgent", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for RA Origin Agent.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2730,14 +2730,14 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("RegulatedAgent", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for KC consginor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2773,7 +2773,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 2);
+        map.put("KnownConsignor", true);
         addressMap.put("c1#o1", map);
         orgAddressResponse.setAddresses(addressMap);
 
@@ -2814,14 +2814,14 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
-        map.put("RAKCType", 1);
+        map.put("RegulatedAgent", true);
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
-        String errorMessage = "Screening Status and Security Status is mandatory for RA Origin Agent.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });

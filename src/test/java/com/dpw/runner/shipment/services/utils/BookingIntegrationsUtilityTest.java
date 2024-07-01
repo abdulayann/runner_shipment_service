@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -93,6 +94,34 @@ class BookingIntegrationsUtilityTest {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
 
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
+
+        bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
+
+        verify(platformServiceAdapter, times(1)).createAtPlatform(any(CommonRequestModel.class));
+        verify(integrationResponseDao, times(1)).save(any());
+    }
+
+    @Test
+    void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType_EmptyCarrier() throws RunnerException {
+        CustomerBooking customerBooking = getCustomerBooking("FCL");
+        customerBooking.getCarrierDetails().setShippingLine("");
+
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
+
+        bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
+
+        verify(platformServiceAdapter, times(1)).createAtPlatform(any(CommonRequestModel.class));
+        verify(integrationResponseDao, times(1)).save(any());
+    }
+
+    @Test
+    void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType_ValidCarrier() throws RunnerException {
+        CustomerBooking customerBooking = getCustomerBooking("FCL");
+
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.fetchInBulkCarriers(anyList())).thenReturn(Map.of("Maersk Line", EntityTransferCarrier.builder().ItemValue("item val").Identifier1("code").build()));
         when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
