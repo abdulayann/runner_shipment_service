@@ -376,4 +376,5 @@ public class MapperMasterDataImpl implements IMasterDataService {
     public DependentServiceResponse getDefaultOrg(Object request) {
         return null;
     }
+
 }

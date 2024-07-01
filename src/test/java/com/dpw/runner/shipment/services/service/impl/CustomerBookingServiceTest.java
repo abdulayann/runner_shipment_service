@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -92,6 +93,10 @@ class CustomerBookingServiceTest {
     private IV1Service v1Service;
     @Mock
     private MasterDataUtils masterDataUtils;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
+
     @Mock
     private IBookingChargesDao bookingChargesDao;
     @Mock
@@ -1337,5 +1342,29 @@ class CustomerBookingServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(CommonGetRequest.builder().id(1L).build()).build();
         customerBookingService.cloneBooking(commonRequestModel);
         assertNotNull(commonRequestModel);
+    }
+
+    @Test
+    void testCheckForCrediLimitManagement_returnsTrue() throws JsonProcessingException, RunnerException {
+        CustomerBooking customerBooking1 = customerBooking;
+        when(mdmServiceAdapter.getApprovalStausForParties(any())).thenReturn("Approved");
+        var result = customerBookingService.checkForCreditLimitManagement(customerBooking1);
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckForCrediLimitManagement_finalStatusInit_returnsFalse() throws JsonProcessingException, RunnerException {
+        CustomerBooking customerBooking1 = customerBooking;
+        when(mdmServiceAdapter.getApprovalStausForParties(any())).thenReturn("Init");
+        var result = customerBookingService.checkForCreditLimitManagement(customerBooking1);
+        assertFalse(result);
+    }
+
+    @Test
+    void testCheckForCrediLimitManagement_nullString_returnsFalse() throws JsonProcessingException, RunnerException {
+        CustomerBooking customerBooking1 = customerBooking;
+        when(mdmServiceAdapter.getApprovalStausForParties(any())).thenReturn(null);
+        var result = customerBookingService.checkForCreditLimitManagement(customerBooking1);
+        assertFalse(result);
     }
 }

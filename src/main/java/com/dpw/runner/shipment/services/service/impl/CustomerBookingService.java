@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -17,6 +18,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
@@ -41,6 +43,7 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +79,9 @@ public class CustomerBookingService implements ICustomerBookingService {
     private ModelMapper modelMapper;
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -281,6 +287,12 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request, String oldEntity) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         populateTotalRevenueDetails(customerBooking, request);
+
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT) && Boolean.TRUE.equals(tenantSettingsResponse.getEnableCreditLimitManagement()) && !checkForCreditLimitManagement(customerBooking)){
+            throw new RunnerException("Request for credit limit has not been approved. Hence cannot proceed.");
+        }
+
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -326,7 +338,6 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBooking.setBookingCharges(bookingCharges);
         }
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
-            V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
             if(Boolean.TRUE.equals(tenantSettingsResponse.getShipmentServiceV2Enabled()))
             {
                 ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
@@ -1413,6 +1424,32 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    public boolean checkForCreditLimitManagement(CustomerBooking booking) throws RunnerException {
+        ApprovalPartiesRequest approvalPartiesRequest = ApprovalPartiesRequest.builder().build();
+        List<Parties> parties = List.of(booking.getConsignee(), booking.getCustomer(), booking.getNotifyParty(), booking.getConsignor())
+                .stream()
+                .filter(Objects::nonNull)
+                .toList();
+        List<ApprovalPartiesRequest.ApprovalParty> partiesList = new ArrayList<>();
+        for(Parties party : parties){
+            if(party == null) continue;
+            var orgId = party.getOrgData() != null ? String.valueOf(party.getOrgData().get(PartiesConstants.ID)) : null;
+            var addressId = party.getAddressData() != null ? String.valueOf(party.getAddressData().get(PartiesConstants.ID)) : null;
+            partiesList.add(ApprovalPartiesRequest.ApprovalParty.builder()
+                    .addressId(addressId)
+                    .orgId(orgId)
+                    .entityType(CustomerBookingConstants.CUSTOMER_BOOKING_STRING)
+                    .entityId(String.valueOf(booking.getGuid()))
+                    .build());
+        }
+        approvalPartiesRequest.setCreditDetailsRequests(partiesList);
+        approvalPartiesRequest.setOperation("POST_AR");
+
+        String finalStatus = mdmServiceAdapter.getApprovalStausForParties(CommonRequestModel.builder().data(approvalPartiesRequest).build());
+
+        return StringUtils.equals(finalStatus , CustomerBookingConstants.MDM_FINAL_STATUS_APPROVED);
     }
 
 }
