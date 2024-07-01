@@ -746,7 +746,8 @@ public class ConsolidationService implements IConsolidationService {
             consol.get().setHazardous(false);
             consolidationDetailsDao.save(consol.get(), false);
         }
-        this.checkSciForDetachConsole(consolidationId);
+        if(consol.isPresent() && Objects.equals(consol.get().getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            this.checkSciForDetachConsole(consolidationId);
         String transactionId = consol.get().getGuid().toString();
         if(packingList != null) {
             try {
@@ -770,16 +771,21 @@ public class ConsolidationService implements IConsolidationService {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
         List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
         List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
-        if(mawbs != null && !mawbs.isEmpty() && shipIdList != null){
+        if(mawbs != null && !mawbs.isEmpty()){
             Awb mawb = mawbs.get(0);
-            if(mawb.getAwbCargoInfo() != null && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
-                List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
-                if(awbs != null && !awbs.isEmpty()) {
-                    var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
-                    if (isShipmentSciT1.isEmpty()) {
-                        mawb.getAwbCargoInfo().setSci(null);
-                        awbDao.save(mawb);
+            if(mawb.getAwbCargoInfo() != null && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)) {
+                if (shipIdList != null && !shipIdList.isEmpty()) {
+                    List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
+                    if (awbs != null && !awbs.isEmpty()) {
+                        var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
+                        if (isShipmentSciT1.isEmpty()) {
+                            mawb.getAwbCargoInfo().setSci(null);
+                            awbDao.save(mawb);
+                        }
                     }
+                } else {
+                    mawb.getAwbCargoInfo().setSci(null);
+                    awbDao.save(mawb);
                 }
             }
         }
@@ -790,7 +796,7 @@ public class ConsolidationService implements IConsolidationService {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
         List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
         List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
-        if(mawbs != null && !mawbs.isEmpty() && shipIdList != null){
+        if(mawbs != null && !mawbs.isEmpty() && shipIdList != null && !shipIdList.isEmpty()){
             Awb mawb = mawbs.get(0);
             if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
                 List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);

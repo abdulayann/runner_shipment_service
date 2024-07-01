@@ -64,6 +64,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
@@ -618,7 +619,7 @@ public class ShipmentService implements IShipmentService {
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             List<Long> removedConsolIds = new ArrayList<>();
-            boolean isNewConsolAttached = false;
+            MutableBoolean isNewConsolAttached = new MutableBoolean(false);
 
 
             boolean syncConsole = beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached);
@@ -1222,7 +1223,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(oldEntity.get().getId());
             List<Long> removedConsolIds = new ArrayList<>();
-            boolean isNewConsolAttached = false;
+            MutableBoolean isNewConsolAttached = new MutableBoolean(false);
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
@@ -1292,7 +1293,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
     }
-    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, boolean isNewConsolAttached) throws RunnerException{
+    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached) throws RunnerException{
         List<Long> tempConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
         boolean syncConsole = false;
@@ -1324,7 +1325,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             if(!consolidationDetailsRequests.isEmpty() && (oldEntity == null || oldEntity.getConsolidationList() == null ||  oldEntity.getConsolidationList().size() == 0 || removedConsolIds.size() > 0)) {
-                isNewConsolAttached = true;
+                isNewConsolAttached.setTrue();
             }
         }
         else {
@@ -1334,7 +1335,7 @@ public class ShipmentService implements IShipmentService {
 
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && !isDgUser()) {
             if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
-                if((removedConsolIds != null && !removedConsolIds.isEmpty()) || isNewConsolAttached)
+                if((removedConsolIds != null && !removedConsolIds.isEmpty()) || Boolean.TRUE.equals(isNewConsolAttached.getValue()))
                     throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
             } else {
                 if((removedConsolIds != null && !removedConsolIds.isEmpty() && oldEntity != null && oldEntity.getConsolidationList() != null && Boolean.TRUE.equals(oldEntity.getConsolidationList().get(0).getHazardous()))
@@ -1398,7 +1399,7 @@ public class ShipmentService implements IShipmentService {
         validateBeforeSave(shipmentDetails);
 
 
-        if(isNewConsolAttached) {
+        if(Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
             ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().get(0);
             shipmentDetails.setMasterBill(consolidationDetails1.getBol());
             shipmentDetails.setDirection(consolidationDetails1.getShipmentType());
@@ -1572,7 +1573,7 @@ public class ShipmentService implements IShipmentService {
         return true;
     }
 
-    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, List<Long> removedConsolIds, boolean isNewConsolAttached) throws RunnerException {
+    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached) throws RunnerException {
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
@@ -1674,10 +1675,10 @@ public class ShipmentService implements IShipmentService {
         }
 
         // Sci status update for attach and detach in console mawb
-        if(removedConsolIds != null && !removedConsolIds.isEmpty()){
+        if(removedConsolIds != null && !removedConsolIds.isEmpty() && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)){
             consolidationService.checkSciForDetachConsole(removedConsolIds.get(0));
         }
-        if(isNewConsolAttached) {
+        if(Boolean.TRUE.equals(isNewConsolAttached.getValue()) && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             consolidationService.checkSciForAttachConsole(consolidationId);
         }
 
