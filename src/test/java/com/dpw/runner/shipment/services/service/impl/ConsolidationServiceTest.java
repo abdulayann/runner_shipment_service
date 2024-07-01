@@ -2840,6 +2840,16 @@ class ConsolidationServiceTest extends CommonMocks {
     }
 
     @Test
+    void testCheckSciForDetachConsole_Success1() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(awbDao, times(1)).save(any());
+    }
+
+    @Test
     void testCheckSciForAttachConsole_Success () throws RunnerException {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
         consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
