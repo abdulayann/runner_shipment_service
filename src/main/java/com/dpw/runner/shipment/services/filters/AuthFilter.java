@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
@@ -47,6 +48,8 @@ public class AuthFilter extends OncePerRequestFilter {
     IShipmentSettingsDao shipmentSettingsDao;
     @Autowired
     private TenantSettingsService tenantSettingsService;
+    @Autowired
+    private JsonHelper jsonHelper;
 
     private final String[] ignoredPaths = new String[]{"/actuator/**",
             "/v2/api-docs",
@@ -111,6 +114,7 @@ public class AuthFilter extends OncePerRequestFilter {
         TenantContext.setCurrentTenant(user.getTenantId());
         //ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
         TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsService.getV1TenantSettings(user.getTenantId()));
+        log.info("RequestId: {} || V1TenantSettings: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(TenantSettingsDetailsContext.getCurrentTenantSettings()));
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
