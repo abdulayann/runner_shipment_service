@@ -3,10 +3,13 @@ package com.dpw.runner.shipment.services.masterdata.helper.impl.mapper;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.Generated;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -20,6 +23,12 @@ import java.util.Map;
 public class MapperMasterDataImpl implements IMasterDataService {
 
     Map<MasterDataType , List<MasterData>> masterDataMap;
+    private final JsonHelper jsonHelper;
+
+    @Autowired
+    public MapperMasterDataImpl(IV1Service v1Service, JsonHelper jsonHelper) {
+        this.jsonHelper = jsonHelper;
+    }
 
     @PostConstruct
     public void fillMasterData() {
@@ -376,4 +385,5 @@ public class MapperMasterDataImpl implements IMasterDataService {
     public DependentServiceResponse getDefaultOrg(Object request) {
         return null;
     }
+
 }

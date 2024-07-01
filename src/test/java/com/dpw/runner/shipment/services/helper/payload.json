@@ -10690,5 +10690,190 @@
       }
     ],
     "count": 1
+  },
+  "MDM_RESPONSE" : {
+    "count": 0,
+    "currentPage": 0,
+    "data": [
+      {
+        "disbursementBucketEnum": [
+          {
+            "description": "string",
+            "value": "string"
+          }
+        ],
+        "finalStatus": "Init",
+        "freightBucketEnum": [
+          {
+            "description": "string",
+            "value": "string"
+          }
+        ],
+        "isRestricted": true,
+        "responses": [
+          {
+            "city": "New York",
+            "country": "USA",
+            "creditLimitInfoInLocalCurrency": {
+              "availableCreditBalance": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "creditLimit": 0,
+              "disbursementCreditInfo": {
+                "approver": [
+                  {
+                    "approvalRole": "string",
+                    "approvedOrRejectedAt": "string",
+                    "approvedOrRejectedBy": "string",
+                    "approvedOrRejectedRole": "string",
+                    "message": "string",
+                    "order": 0,
+                    "status": "Init",
+                    "taskCreationDate": "string"
+                  }
+                ],
+                "bucketName": "string",
+                "creditInfo": {
+                  "additionalProp1": 0,
+                  "additionalProp2": 0,
+                  "additionalProp3": 0
+                },
+                "intimationRoles": [
+                  "string"
+                ],
+                "taskIds": [
+                  "string"
+                ]
+              },
+              "freightAndServicesCreditInfo": {
+                "approver": [
+                  {
+                    "approvalRole": "string",
+                    "approvedOrRejectedAt": "string",
+                    "approvedOrRejectedBy": "string",
+                    "approvedOrRejectedRole": "string",
+                    "message": "string",
+                    "order": 0,
+                    "status": "Init",
+                    "taskCreationDate": "string"
+                  }
+                ],
+                "bucketName": "string",
+                "creditInfo": {
+                  "additionalProp1": 0,
+                  "additionalProp2": 0,
+                  "additionalProp3": 0
+                },
+                "intimationRoles": [
+                  "string"
+                ],
+                "taskIds": [
+                  "string"
+                ]
+              },
+              "outstandingAmount": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "overdueAmount": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "paymentTerm": "string"
+            },
+            "creditLimitInfoInUSDCurrency": {
+              "availableCreditBalance": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "creditLimit": 0,
+              "disbursementCreditInfo": {
+                "approver": [
+                  {
+                    "approvalRole": "string",
+                    "approvedOrRejectedAt": "string",
+                    "approvedOrRejectedBy": "string",
+                    "approvedOrRejectedRole": "string",
+                    "message": "string",
+                    "order": 0,
+                    "status": "Init",
+                    "taskCreationDate": "string"
+                  }
+                ],
+                "bucketName": "string",
+                "creditInfo": {
+                  "additionalProp1": 0,
+                  "additionalProp2": 0,
+                  "additionalProp3": 0
+                },
+                "intimationRoles": [
+                  "string"
+                ],
+                "taskIds": [
+                  "string"
+                ]
+              },
+              "freightAndServicesCreditInfo": {
+                "approver": [
+                  {
+                    "approvalRole": "string",
+                    "approvedOrRejectedAt": "string",
+                    "approvedOrRejectedBy": "string",
+                    "approvedOrRejectedRole": "string",
+                    "message": "string",
+                    "order": 0,
+                    "status": "Init",
+                    "taskCreationDate": "string"
+                  }
+                ],
+                "bucketName": "string",
+                "creditInfo": {
+                  "additionalProp1": 0,
+                  "additionalProp2": 0,
+                  "additionalProp3": 0
+                },
+                "intimationRoles": [
+                  "string"
+                ],
+                "taskIds": [
+                  "string"
+                ]
+              },
+              "outstandingAmount": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "overdueAmount": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "paymentTerm": "string"
+            },
+            "orgId": "ORG123456",
+            "partyName": "John Doe Enterprises",
+            "siteId": "SITE78910"
+          }
+        ],
+        "restrictionType": "string"
+      }
+    ],
+    "errors": [
+      "string"
+    ],
+    "httpStatus": "100 CONTINUE",
+    "message": "string",
+    "metadata": "string",
+    "pageSize": 0,
+    "requestId": "string",
+    "success": true,
+    "totalNoOfItems": 0,
+    "totalPages": 0
   }
 }

@@ -65,6 +65,10 @@ public class JsonTestUtility {
         return FileUtils.readFileToString(new File(fileName), StandardCharsets.UTF_8);
     }
 
+    public String getMDMResponseString() throws JsonProcessingException {
+        return convertToJson(payload.get("MDM_RESPONSE"));
+    }
+
     public Packing getTestPacking(){
         return objectMapper.convertValue(payload.get("PACKING") , Packing.class);
     }
