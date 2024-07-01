@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.impl.UserServiceMavani;
@@ -57,6 +58,9 @@ class AuthFilterTest {
 
     @InjectMocks
     private AuthFilter authFilter;
+
+    @Mock
+    private JsonHelper jsonHelper;
 
     @Test
     void testShouldNotFilter() throws ServletException {
