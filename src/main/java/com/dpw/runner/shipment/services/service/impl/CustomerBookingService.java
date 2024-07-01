@@ -1329,6 +1329,8 @@ public class CustomerBookingService implements ICustomerBookingService {
                 customerBookingResponse.getCarrierDetails().setId(null);
                 customerBookingResponse.getCarrierDetails().setGuid(null);
                 customerBookingResponse.getCarrierDetails().setCarrierAddedFromNpm(null);
+                customerBookingResponse.getCarrierDetails().setVessel(null);
+                customerBookingResponse.getCarrierDetails().setVoyage(null);
             }
             if(customerBookingResponse.getContainersList() != null && !customerBookingResponse.getContainersList().isEmpty())
             {
