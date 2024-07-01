@@ -19,6 +19,7 @@ public interface IAwbDao {
     Optional<Awb> findByGuid(UUID guid);
     List<Awb> findByShipmentId(Long shipmentId);
     List<Awb> findByConsolidationId(Long consolidationId);
+    List<Awb> findByShipmentIdList(List<Long> shipmentIds);
 
     List<Awb> findByShipmentIdByQuery(Long shipmentId);
     List<Awb> findByConsolidationIdByQuery(Long consolidationId);

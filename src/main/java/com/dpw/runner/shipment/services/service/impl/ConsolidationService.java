@@ -51,10 +51,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
@@ -684,6 +681,7 @@ public class ConsolidationService implements IConsolidationService {
                     packingList = packingDao.saveAll(packingList);
                 }
             }
+            this.checkSciForAttachConsole(consolidationId);
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         ConsolidationDetails consolidationDetails = null;
@@ -720,7 +718,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) {
+    public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
         List<Packing> packingList = null;
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
@@ -748,6 +746,7 @@ public class ConsolidationService implements IConsolidationService {
             consol.get().setHazardous(false);
             consolidationDetailsDao.save(consol.get(), false);
         }
+        this.checkSciForDetachConsole(consolidationId);
         String transactionId = consol.get().getGuid().toString();
         if(packingList != null) {
             try {
@@ -764,6 +763,46 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @Override
+    public void checkSciForDetachConsole(Long consoleId) throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+        List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+        List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
+        if(mawbs != null && !mawbs.isEmpty() && shipIdList != null){
+            Awb mawb = mawbs.get(0);
+            if(mawb.getAwbCargoInfo() != null && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
+                List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
+                if(awbs != null && !awbs.isEmpty()) {
+                    var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
+                    if (isShipmentSciT1.isEmpty()) {
+                        mawb.getAwbCargoInfo().setSci(null);
+                        awbDao.save(mawb);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void checkSciForAttachConsole(Long consoleId) throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+        List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+        List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
+        if(mawbs != null && !mawbs.isEmpty() && shipIdList != null){
+            Awb mawb = mawbs.get(0);
+            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
+                List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
+                if(awbs != null && !awbs.isEmpty()) {
+                    var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
+                    if (!isShipmentSciT1.isEmpty()) {
+                        mawb.getAwbCargoInfo().setSci(AwbConstants.T1);
+                        awbDao.save(mawb);
+                    }
+                }
+            }
+        }
     }
 
     private boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails){

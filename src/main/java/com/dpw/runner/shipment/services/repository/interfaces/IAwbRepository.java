@@ -66,4 +66,7 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     @Query(value = "SELECT * FROM awb WHERE guid = ?1 limit 1", nativeQuery = true)
     Awb findAwbByGuidByQuery(UUID guid);
 
+    @Query(value = "SELECT * FROM awb WHERE shipment_id IN ?1", nativeQuery = true)
+    List<Awb> findByShipmentIdList(List<Long> shipmentIds);
+
 }

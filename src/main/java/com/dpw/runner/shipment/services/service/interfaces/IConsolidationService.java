@@ -68,4 +68,6 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> showCreateBooking(String operation) throws RunnerException;
     ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> fullConsolidationsList(CommonRequestModel commonRequestModel);
+    void checkSciForDetachConsole(Long consoleId) throws RunnerException;
+    void checkSciForAttachConsole(Long consoleId) throws RunnerException;
 }
