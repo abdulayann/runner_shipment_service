@@ -1127,43 +1127,43 @@ public class ReportConstants {
     Transport Instruction fields
      */
 
-    public static final String TI_INSTRUCTIONTYPE = "TI-InstructionType";
-    public static final String TI_DROPMODE = "TI-DropMode";
-    public static final String TI_PARTYNAME = "TI-PartyName";
-    public static final String TI_PARTYADDRESS = "TI-PartyAddress";
-    public static final String TI_PARTYCONTACT = "TI-PartyContact";
-    public static final String TI_TRANSPORTCOMPANY = "TI-TransportCompany";
-    public static final String TI_PICKUPFROM = "TI-PickupFrom";
-    public static final String TI_DELIVERTO = "TI-DeliverTo";
-    public static final String TI_TRANSPORTCOMPANYADDRESS = "TI-TransportCompanyAddress";
-    public static final String TI_TRANSPORTCOMPANYCONTACT = "TI-TransportCompanyContact";
-    public static final String TI_PICKUPFROMADDRESS = "TI-PickupFromAddress";
-    public static final String TI_PICKUPFROMCONTACT = "TI-PickupFromContact";
-    public static final String TI_DELIVERTOADDRESS = "TI-DeliverToAddress";
-    public static final String TI_DELIVERTOCONTACT = "TI-DeliverToContact";
-    public static final String TI_REMARKS = "TI-Remarks";
-    public static final String TI_PORTTRANSPORTADVISED = "TI-PortTransportAdvised";
-    public static final String TI_REQUIREDBY = "TI-RequiredBy";
-    public static final String TI_ESTIMATEDPICKUP = "TI-EstimatedPickUp";
-    public static final String TI_ESTIMATEDDELIVERY = "TI-EstimatedDelivery";
-    public static final String TI_ACTUALPICKUP = "TI-ActualPickUp";
-    public static final String TI_ACTUALDELIVERY = "TI-ActualDelivery";
-    public static final String TI_PICKUP_GATEIN = "TI-Pickup-GateIn";
-    public static final String TI_PICKUP_GATEOUT = "TI-Pickup-GateOut";
-    public static final String TI_DELIVERY_GATEIN = "TI-Delivery-GateIn";
-    public static final String TI_DELIVERY_GATEOUT = "TI-Delivery-GateOut";
+    public static final String TI_INSTRUCTIONTYPE = "TI_InstructionType";
+    public static final String TI_DROPMODE = "TI_DropMode";
+    public static final String TI_PARTYNAME = "TI_PartyName";
+    public static final String TI_PARTYADDRESS = "TI_PartyAddress";
+    public static final String TI_PARTYCONTACT = "TI_PartyContact";
+    public static final String TI_TRANSPORTCOMPANY = "TI_TransportCompany";
+    public static final String TI_PICKUPFROM = "TI_PickupFrom";
+    public static final String TI_DELIVERTO = "TI_DeliverTo";
+    public static final String TI_TRANSPORTCOMPANYADDRESS = "TI_TransportCompanyAddress";
+    public static final String TI_TRANSPORTCOMPANYCONTACT = "TI_TransportCompanyContact";
+    public static final String TI_PICKUPFROMADDRESS = "TI_PickupFromAddress";
+    public static final String TI_PICKUPFROMCONTACT = "TI_PickupFromContact";
+    public static final String TI_DELIVERTOADDRESS = "TI_DeliverToAddress";
+    public static final String TI_DELIVERTOCONTACT = "TI_DeliverToContact";
+    public static final String TI_REMARKS = "TI_Remarks";
+    public static final String TI_PORTTRANSPORTADVISED = "TI_PortTransportAdvised";
+    public static final String TI_REQUIREDBY = "TI_RequiredBy";
+    public static final String TI_ESTIMATEDPICKUP = "TI_EstimatedPickUp";
+    public static final String TI_ESTIMATEDDELIVERY = "TI_EstimatedDelivery";
+    public static final String TI_ACTUALPICKUP = "TI_ActualPickUp";
+    public static final String TI_ACTUALDELIVERY = "TI_ActualDelivery";
+    public static final String TI_PICKUP_GATEIN = "TI_Pickup_GateIn";
+    public static final String TI_PICKUP_GATEOUT = "TI_Pickup_GateOut";
+    public static final String TI_DELIVERY_GATEIN = "TI_Delivery_GateIn";
+    public static final String TI_DELIVERY_GATEOUT = "TI_Delivery_GateOut";
     public static final String TI = "TransportInstructions";
-    public static final String TI_EXPORT_AGENT = "TI-ExportAgent";
-    public static final String TI_EXPORT_AGENT_ADDRESS = "TI-ExportAgentAddress";
-    public static final String TI_EXPORT_AGENT_CONTACT = "TI-ExportAgentContact";
+    public static final String TI_EXPORT_AGENT = "TI_ExportAgent";
+    public static final String TI_EXPORT_AGENT_ADDRESS = "TI_ExportAgentAddress";
+    public static final String TI_EXPORT_AGENT_CONTACT = "TI_ExportAgentContact";
 
-    public static final String TI_IMPORT_AGENT = "TI-ImportAgent";
-    public static final String TI_IMPORT_AGENT_ADDRESS = "TI-ImportAgentAddress";
-    public static final String TI_IMPORT_AGENT_CONTACT = "TI-ImportAgentContact";
-    //TI-DeliveryAgent
-    public static final String TI_DELIVERY_AGENT = "TI-DeliveryAgent";
-    public static final String TI_DELIVERY_AGENT_ADDRESS = "TI-DeliveryAgentAddress";
-    public static final String TI_DELIVERY_AGENT_CONTACT = "TI-DeliveryAgentContact";
+    public static final String TI_IMPORT_AGENT = "TI_ImportAgent";
+    public static final String TI_IMPORT_AGENT_ADDRESS = "TI_ImportAgentAddress";
+    public static final String TI_IMPORT_AGENT_CONTACT = "TI_ImportAgentContact";
+    //TI_DeliveryAgent
+    public static final String TI_DELIVERY_AGENT = "TI_DeliveryAgent";
+    public static final String TI_DELIVERY_AGENT_ADDRESS = "TI_DeliveryAgentAddress";
+    public static final String TI_DELIVERY_AGENT_CONTACT = "TI_DeliveryAgentContact";
 
 
     public static final String CARRIER_HQ = "CarrierHQ";
