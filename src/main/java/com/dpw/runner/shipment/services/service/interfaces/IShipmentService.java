@@ -84,7 +84,5 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> fetchEmails(Long shipmentId, Long consolidationId);
     ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(CommonRequestModel commonRequestModel);
-    void checkSciForDetachConsole(Long consoleId) throws RunnerException;
-    void checkSciForAttachConsole(Long consoleId) throws RunnerException;
 
 }

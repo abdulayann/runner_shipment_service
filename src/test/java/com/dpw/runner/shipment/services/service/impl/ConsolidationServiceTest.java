@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
@@ -43,7 +44,6 @@ import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
@@ -130,8 +130,6 @@ class ConsolidationServiceTest extends CommonMocks {
     private IRoutingsDao routingsDao;
     @Mock
     private IAwbDao awbDao;
-    @Mock
-    private IShipmentService shipmentService;
 
     @Mock
     private IContainerDao containerDao;
@@ -2827,5 +2825,30 @@ class ConsolidationServiceTest extends CommonMocks {
         });
 
         assertEquals(errorMessage, e.getMessage());
+    }
+    @Test
+    void testCheckSciForDetachConsole_Success() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        Awb hawb = Awb.builder().consolidationId(2L).awbCargoInfo(AwbCargoInfo.builder().sci("T2").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(awbDao.findByShipmentIdList(List.of(2L))).thenReturn(List.of(hawb));
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(awbDao, times(1)).save(any());
+    }
+
+    @Test
+    void testCheckSciForAttachConsole_Success () throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci(null).build()).build();
+        Awb hawb = Awb.builder().consolidationId(2L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(awbDao.findByShipmentIdList(List.of(2L))).thenReturn(List.of(hawb));
+        consolidationService.checkSciForAttachConsole(1L);
+        verify(awbDao, times(1)).save(any());
     }
 }

@@ -1556,47 +1556,6 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-
-    @Override
-    public void checkSciForDetachConsole(Long consoleId) throws RunnerException {
-        List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
-        List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
-        List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
-        if(mawbs != null && !mawbs.isEmpty() && shipIdList != null){
-            Awb mawb = mawbs.get(0);
-            if(mawb.getAwbCargoInfo() != null && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
-                List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
-                if(awbs != null && !awbs.isEmpty()) {
-                    var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
-                    if (isShipmentSciT1.isEmpty()) {
-                        mawb.getAwbCargoInfo().setSci(null);
-                        awbDao.save(mawb);
-                    }
-                }
-            }
-        }
-    }
-
-    @Override
-    public void checkSciForAttachConsole(Long consoleId) throws RunnerException {
-        List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
-        List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
-        List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
-        if(mawbs != null && !mawbs.isEmpty() && shipIdList != null){
-            Awb mawb = mawbs.get(0);
-            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
-                List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
-                if(awbs != null && !awbs.isEmpty()) {
-                    var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
-                    if (!isShipmentSciT1.isEmpty()) {
-                        mawb.getAwbCargoInfo().setSci(AwbConstants.T1);
-                        awbDao.save(mawb);
-                    }
-                }
-            }
-        }
-    }
-
     public boolean checkRaStatusFields(ShipmentDetails shipmentDetails, OrgAddressResponse orgAddressResponse, Parties parties) {
         Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
         if (addressMap.containsKey(parties.getOrgCode() + "#" + parties.getAddressCode())) {
@@ -1716,10 +1675,10 @@ public class ShipmentService implements IShipmentService {
 
         // Sci status update for attach and detach in console mawb
         if(removedConsolIds != null && !removedConsolIds.isEmpty()){
-            this.checkSciForDetachConsole(removedConsolIds.get(0));
+            consolidationService.checkSciForDetachConsole(removedConsolIds.get(0));
         }
         if(isNewConsolAttached) {
-            this.checkSciForAttachConsole(consolidationId);
+            consolidationService.checkSciForAttachConsole(consolidationId);
         }
 
         // Create events on basis of shipment status Confirmed/Created

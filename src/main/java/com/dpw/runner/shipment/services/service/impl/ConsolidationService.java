@@ -139,8 +139,6 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IEventDao eventDao;
-    @Autowired
-    private IShipmentService shipmentService;
 
     @Autowired
     private INotesDao notesDao;
@@ -683,7 +681,7 @@ public class ConsolidationService implements IConsolidationService {
                     packingList = packingDao.saveAll(packingList);
                 }
             }
-            shipmentService.checkSciForAttachConsole(consolidationId);
+            this.checkSciForAttachConsole(consolidationId);
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         ConsolidationDetails consolidationDetails = null;
@@ -748,7 +746,7 @@ public class ConsolidationService implements IConsolidationService {
             consol.get().setHazardous(false);
             consolidationDetailsDao.save(consol.get(), false);
         }
-        shipmentService.checkSciForDetachConsole(consolidationId);
+        this.checkSciForDetachConsole(consolidationId);
         String transactionId = consol.get().getGuid().toString();
         if(packingList != null) {
             try {
@@ -765,6 +763,46 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @Override
+    public void checkSciForDetachConsole(Long consoleId) throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+        List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+        List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
+        if(mawbs != null && !mawbs.isEmpty() && shipIdList != null){
+            Awb mawb = mawbs.get(0);
+            if(mawb.getAwbCargoInfo() != null && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
+                List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
+                if(awbs != null && !awbs.isEmpty()) {
+                    var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
+                    if (isShipmentSciT1.isEmpty()) {
+                        mawb.getAwbCargoInfo().setSci(null);
+                        awbDao.save(mawb);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void checkSciForAttachConsole(Long consoleId) throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+        List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+        List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
+        if(mawbs != null && !mawbs.isEmpty() && shipIdList != null){
+            Awb mawb = mawbs.get(0);
+            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
+                List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
+                if(awbs != null && !awbs.isEmpty()) {
+                    var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
+                    if (!isShipmentSciT1.isEmpty()) {
+                        mawb.getAwbCargoInfo().setSci(AwbConstants.T1);
+                        awbDao.save(mawb);
+                    }
+                }
+            }
+        }
     }
 
     private boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails){
