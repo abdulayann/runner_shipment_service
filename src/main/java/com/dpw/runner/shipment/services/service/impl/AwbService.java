@@ -3559,12 +3559,12 @@ public class AwbService implements IAwbService {
             var shipmentIdToNumberMap = shipmentsList.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
             var awbList = awbDao.findByShipmentIdsByQuery(shipmentsList.stream().map(ShipmentDetails::getId).toList());
             for (var awb : awbList) {
-                if (!Objects.equals(awb.getAirMessageStatus(), AwbStatus.AWB_ORIGINAL_PRINTED.name()))
+                if (!Objects.equals(awb.getAirMessageStatus().name(), AwbStatus.AWB_ORIGINAL_PRINTED.name()))
                     errorShipments.add(shipmentIdToNumberMap.get(awb.getShipmentId()));
                 shipmentIdToNumberMap.remove(awb.getShipmentId());
             }
-            for (var key : shipmentIdToNumberMap.keySet())
-                errorShipments.add(shipmentIdToNumberMap.get(key));
+            for (var entry : shipmentIdToNumberMap.entrySet())
+                errorShipments.add(entry.getValue());
 
             if (!errorShipments.isEmpty())
                 throw new ValidationException(String.format(ErrorConstants.HAWB_NOT_GENERATED_ERROR, String.join(", ", errorShipments)));
