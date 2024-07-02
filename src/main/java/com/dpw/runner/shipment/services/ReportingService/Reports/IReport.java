@@ -337,8 +337,16 @@ public abstract class IReport {
                 dictionary.put(VesselsNameFlightName, vesselsResponse.getName());
         }
         dictionary.put(ReportConstants.VOYAGE,shipment.getCarrierDetails().getVoyage());
-        if(!Objects.isNull(pol)) dictionary.put(ReportConstants.POL_CODE, pol.getLocCode());
-        if(!Objects.isNull(pod)) dictionary.put(ReportConstants.POD_CODE, pod.getLocCode());
+        if(!Objects.isNull(pol)) {
+            dictionary.put(ReportConstants.POL_CODE, pol.getLocCode());
+            if (Objects.equals(shipment.getTransportMode(), AIR) && BOOKING_ORDER.equalsIgnoreCase(shipment.getDocument()))
+                dictionary.put(ReportConstants.POL_CODE, pol.getIataCode());
+        }
+        if(!Objects.isNull(pod)) {
+            dictionary.put(ReportConstants.POD_CODE, pod.getLocCode());
+            if (Objects.equals(shipment.getTransportMode(), AIR) && BOOKING_ORDER.equalsIgnoreCase(shipment.getDocument()))
+                dictionary.put(ReportConstants.POL_CODE, pod.getIataCode());
+        }
         dictionary.put(ReportConstants.POD_COUNTRY, pod != null ? pod.getCountry() : null);
         dictionary.put(ReportConstants.POL_COUNTRY, pol != null ? pol.getCountry() : null);
         dictionary.put(CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(shipment.getGoodsDescription()));
