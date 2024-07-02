@@ -370,7 +370,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("CutoffDate")
     private LocalDateTime CutoffDate;
     @JsonProperty("Hazardous")
-    private Boolean Hazardous;
+    private Boolean hazardous;
     @JsonProperty("DGClass")
     private String DGClass;
     @JsonProperty("DGSubstance")
