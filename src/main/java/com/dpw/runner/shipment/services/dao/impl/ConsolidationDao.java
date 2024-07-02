@@ -117,7 +117,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private void onSave(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean fromV1Sync, boolean creatingFromDgShipment) {
-        errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole, creatingFromDgShipment, fromV1Sync));
+        errors.addAll(applyConsolidationValidations(consolidationDetails, creatingFromDgShipment, fromV1Sync));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if (consolidationDetails.getTransportMode() != null && consolidationDetails.getCarrierDetails() != null) {
@@ -215,7 +215,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return Boolean.TRUE.equals(request.getHazardous());
     }
 
-    private Set<String> applyConsolidationValidations(ConsolidationDetails request, ConsolidationDetails oldEntity, boolean creatingFromDgShipment, boolean fromV1Sync) {
+    private Set<String> applyConsolidationValidations(ConsolidationDetails request, boolean creatingFromDgShipment, boolean fromV1Sync) {
         Set<String> errors = new LinkedHashSet<>();
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 

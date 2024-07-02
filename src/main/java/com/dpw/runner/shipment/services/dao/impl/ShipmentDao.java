@@ -170,7 +170,7 @@ public class ShipmentDao implements IShipmentDao {
                 }
             }
         }
-        errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment, fromV1Sync));
+        errors.addAll(applyShipmentValidations(shipmentDetails, fromV1Sync));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if (shipmentDetails.getTransportMode() != null && shipmentDetails.getCarrierDetails() != null) {
@@ -263,7 +263,7 @@ public class ShipmentDao implements IShipmentDao {
         return !Boolean.TRUE.equals(request.getContainsHazardous());
     }
 
-    public Set<String> applyShipmentValidations(ShipmentDetails request, ShipmentDetails oldEntity, boolean fromV1Sync) {
+    public Set<String> applyShipmentValidations(ShipmentDetails request, boolean fromV1Sync) {
         Set<String> errors = new LinkedHashSet<>();
 
         if(request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {
