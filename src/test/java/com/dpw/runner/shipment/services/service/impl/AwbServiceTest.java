@@ -25,10 +25,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.AirMessagingStatus;
-import com.dpw.runner.shipment.services.entity.enums.AwbReset;
-import com.dpw.runner.shipment.services.entity.enums.ChargeTypeCode;
-import com.dpw.runner.shipment.services.entity.enums.RateClass;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -2708,6 +2705,7 @@ class AwbServiceTest extends CommonMocks {
     @ValueSource(strings = {Constants.DMAWB, Constants.HAWB})
     void testValidateAwbGivesErrorIfAirMessageNotResubmitted(String entityType) {
         Awb mockAwb = testHawb;
+        mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
         mockAwb.getAwbShipmentInfo().setEntityType(entityType);
         mockAwb.setAirMessageResubmitted(false);
 
