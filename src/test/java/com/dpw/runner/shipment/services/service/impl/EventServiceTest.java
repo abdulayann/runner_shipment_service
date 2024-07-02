@@ -115,6 +115,9 @@ class EventServiceTest extends CommonMocks {
     @Mock
     private SyncConfig syncConfig;
 
+    @Mock
+    private DateTimeChangeLogService dateTimeChangeLogService;
+
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
     private static ObjectMapper objectMapperTest;

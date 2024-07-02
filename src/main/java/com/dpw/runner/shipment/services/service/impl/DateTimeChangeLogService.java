@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,12 +20,10 @@ import java.util.Objects;
 @Service
 public class DateTimeChangeLogService implements IDateTimeChangeLogService {
 
-    private JsonHelper jsonHelper;
     private IDateTimeChangeLogDao dateTimeChangeLogDao;
 
     @Autowired
-    DateTimeChangeLogService(JsonHelper jsonHelper, IDateTimeChangeLogDao dateTimeChangeLogDao) {
-        this.jsonHelper = jsonHelper;
+    DateTimeChangeLogService(IDateTimeChangeLogDao dateTimeChangeLogDao) {
         this.dateTimeChangeLogDao = dateTimeChangeLogDao;
     }
 
@@ -35,7 +32,6 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
     public void createEntryFromShipment(ShipmentRequest entity, ShipmentDetails oldEntity) {
 
         var tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
-        DateTimeChangeLog dateTimeChangeLog = null;
         // Only process if the feature is enabled
         if(Boolean.TRUE.equals(tenantSettings.getEnableEstimateAndActualDateTimeUpdates())) {
             // refresh all logs when carrier or vessel change
@@ -84,11 +80,9 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
     private boolean checkIfCarrierOrVesselChanged(ShipmentRequest entity, ShipmentDetails oldEntity) {
         if(Objects.isNull(oldEntity))
             return false;
-        if(!Objects.equals(entity.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine()) ||
-            !Objects.equals(entity.getCarrierDetails().getVessel(), oldEntity.getCarrierDetails().getVessel()))
-            return true;
+        return (!Objects.equals(entity.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine()) ||
+            !Objects.equals(entity.getCarrierDetails().getVessel(), oldEntity.getCarrierDetails().getVessel()));
 
-        return false;
     }
 
     private void generateDefaultLogs(ShipmentRequest shipmentDetails) {
@@ -114,12 +108,12 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
     }
 
     @Override
-    public void saveDateTimeChangeLog(DateType dateType, LocalDateTime dateTime, Long ShipmentId, String source) {
+    public void saveDateTimeChangeLog(DateType dateType, LocalDateTime dateTime, Long shipmentId, String source) {
         var dateTimeChangeLog = DateTimeChangeLog.builder()
             .dateType(dateType)
             .currentValue(dateTime)
             .sourceOfUpdate(source)
-            .shipmentId(ShipmentId)
+            .shipmentId(shipmentId)
             .build();
         dateTimeChangeLogDao.create(dateTimeChangeLog);
     }

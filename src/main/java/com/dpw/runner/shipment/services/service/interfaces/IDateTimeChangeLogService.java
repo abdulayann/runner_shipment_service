@@ -15,5 +15,5 @@ public interface IDateTimeChangeLogService {
     List<DateTimeChangeLog> getDateTimeChangeLog(Long shipmentId);
 
     void deleteDateTimeLogs(Long shipmentId);
-    void saveDateTimeChangeLog(DateType dateType, LocalDateTime dateTime, Long ShipmentId, String source);
+    void saveDateTimeChangeLog(DateType dateType, LocalDateTime dateTime, Long shipmentId, String source);
 }

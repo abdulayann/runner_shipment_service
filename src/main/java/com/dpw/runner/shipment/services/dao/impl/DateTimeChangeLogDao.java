@@ -20,8 +20,7 @@ public class DateTimeChangeLogDao implements IDateTimeChangeLogDao {
 
     @Override
     public DateTimeChangeLog create(DateTimeChangeLog dateTimeChangeLog) {
-        var res = dateTimeChangeLogRepository.save(dateTimeChangeLog);
-        return res;
+        return dateTimeChangeLogRepository.save(dateTimeChangeLog);
     }
 
     @Override
