@@ -307,6 +307,12 @@ public class AwbDao implements IAwbDao {
     public int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus) {
         return awbRepository.updateAirMessageStatusFromConsolidationId(id, airMessageStatus);
     }
+    public int updatePrintTypeFromConsolidationId(Long id, String printType){
+        return awbRepository.updatePrintTypeFromConsolidationId(id, printType);
+    }
+    public int updatePrintTypeFromShipmentId(Long id, String printType) {
+        return awbRepository.updatePrintTypeFromShipmentId(id, printType);
+    }
 
     @Override
     public int updateUserDetails(UUID guid, String userDisplayName, String userMailId) {

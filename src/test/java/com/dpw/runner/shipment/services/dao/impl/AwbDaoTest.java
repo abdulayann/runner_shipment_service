@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -467,6 +468,27 @@ class AwbDaoTest {
         when(awbRepository.updateAirMessageStatusFromConsolidationId(id, status)).thenReturn(responseCount);
 
         var res = awbDao.updateAirMessageStatusFromConsolidationId(id, status);
+
+        assertEquals(responseCount, res);
+    }
+
+    @Test
+    void testUpdatePrintTypeFromConsolidationId() {
+        Long id = 1L;
+        int responseCount = 1;
+        when(awbRepository.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
+
+        var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name());
+
+        assertEquals(responseCount, res);
+    }
+    @Test
+    void testUpdatePrintTypeFromShipmentId() {
+        Long id = 1L;
+        int responseCount = 1;
+        when(awbRepository.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
+
+        var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name());
 
         assertEquals(responseCount, res);
     }

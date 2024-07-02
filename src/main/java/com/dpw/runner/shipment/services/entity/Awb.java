@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
@@ -93,4 +94,8 @@ public class Awb extends MultiTenancy {
 
     @Column(name = "air_message_resubmitted")
     private Boolean airMessageResubmitted;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "print_type")
+    private PrintType printType;
 }
