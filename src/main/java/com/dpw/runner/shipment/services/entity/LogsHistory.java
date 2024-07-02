@@ -36,7 +36,7 @@ public class LogsHistory extends MultiTenancy {
     private UUID entityGuid;
 
     @Lob
-    @Column(name = "entity_payload", columnDefinition = "BLOB")
+    @Column(name = "entity_payload", columnDefinition = "BYTEA")
     private byte[] entityPayload;
 
 }
