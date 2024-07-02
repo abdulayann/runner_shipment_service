@@ -3241,7 +3241,7 @@ public class AwbService implements IAwbService {
                     break;
                 }
             }
-            if(Boolean.FALSE.equals(awb.getAirMessageResubmitted()))
+            if(Boolean.FALSE.equals(awb.getAirMessageResubmitted()) && !Objects.isNull(awb.getAirMessageStatus()))
                 errors.add(AwbConstants.RESUBMIT_FWB_VALIDATION);
 
             if(!allHawbsGenerated)
@@ -3249,7 +3249,7 @@ public class AwbService implements IAwbService {
         }
         else {
             // For HAWB/DMAWB
-            if(Boolean.FALSE.equals(awb.getAirMessageResubmitted()))
+            if(Boolean.FALSE.equals(awb.getAirMessageResubmitted()) && !Objects.isNull(awb.getAirMessageStatus()))
                 errors.add(Constants.DMAWB.equalsIgnoreCase(awbType) ? AwbConstants.RESUBMIT_FWB_VALIDATION : AwbConstants.RESUBMIT_FZB_VALIDATION);
         }
 
