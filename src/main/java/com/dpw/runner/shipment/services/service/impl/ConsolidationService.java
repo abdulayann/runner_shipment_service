@@ -773,7 +773,7 @@ public class ConsolidationService implements IConsolidationService {
         List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
         if(mawbs != null && !mawbs.isEmpty()){
             Awb mawb = mawbs.get(0);
-            if(mawb.getAwbCargoInfo() != null && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)) {
+            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getPrintType(), PrintType.ORIGINAL_PRINTED) && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)) {
                 if (shipIdList != null && !shipIdList.isEmpty()) {
                     List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
                     if (awbs != null && !awbs.isEmpty()) {
@@ -798,7 +798,7 @@ public class ConsolidationService implements IConsolidationService {
         List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
         if(mawbs != null && !mawbs.isEmpty() && shipIdList != null && !shipIdList.isEmpty()){
             Awb mawb = mawbs.get(0);
-            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
+            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getPrintType(), PrintType.ORIGINAL_PRINTED) && !Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
                 List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
                 if(awbs != null && !awbs.isEmpty()) {
                     var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();

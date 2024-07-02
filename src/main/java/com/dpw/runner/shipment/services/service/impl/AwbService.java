@@ -284,7 +284,7 @@ public class AwbService implements IAwbService {
             if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
                 Long mawbId = mawbHawbLinks.get(0).getMawbId();
                 Optional<Awb> mawb = awbDao.findById(mawbId);
-                if(mawb.isPresent()){
+                if(mawb.isPresent() && !Objects.equals(mawb.get().getPrintType(), PrintType.ORIGINAL_PRINTED)){
                     mawb.get().getAwbCargoInfo().setSci(awb.getAwbCargoInfo().getSci());
                     awbDao.save(mawb.get());
                 }
@@ -303,7 +303,7 @@ public class AwbService implements IAwbService {
                 }
                 if(updateSci) {
                     Optional<Awb> mawb = awbDao.findById(mawbId);
-                    if (mawb.isPresent() && Objects.equals(mawb.get().getAwbCargoInfo().getSci(), AwbConstants.T1)) {
+                    if (mawb.isPresent() && !Objects.equals(mawb.get().getPrintType(), PrintType.ORIGINAL_PRINTED) && Objects.equals(mawb.get().getAwbCargoInfo().getSci(), AwbConstants.T1)) {
                         mawb.get().getAwbCargoInfo().setSci(null);
                         awbDao.save(mawb.get());
                     }
@@ -874,10 +874,12 @@ public class AwbService implements IAwbService {
                 updateSci = true;
             }
         }
-        if(updateSci) {
-            awb.getAwbCargoInfo().setSci(AwbConstants.T1);
-        } else {
-            awb.getAwbCargoInfo().setSci(null);
+        if(!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED)) {
+            if (updateSci) {
+                awb.getAwbCargoInfo().setSci(AwbConstants.T1);
+            } else {
+                awb.getAwbCargoInfo().setSci(null);
+            }
         }
     }
 
@@ -1586,6 +1588,7 @@ public class AwbService implements IAwbService {
         Long awbId = awb.getId();
         AwbStatus airMessageStatus = awb.getAirMessageStatus();
         AwbStatus linkedHawbAirMessageStatus = awb.getLinkedHawbAirMessageStatus();
+        PrintType printType = awb.getPrintType();
         var isAirMessagingSent = false; //awb.getIsAirMessagingSent();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
@@ -1630,11 +1633,13 @@ public class AwbService implements IAwbService {
                     awb.setAwbSpecialHandlingCodesMappings(resetAwb.getAwbSpecialHandlingCodesMappings());
                     // Link
                     LinkHawbMawb(awb, awbList);
+                    awb.setPrintType(printType);
                     if(awbList != null && !awbList.isEmpty())
                         updateSciFieldFromMawb(awb, awbList);
                 }
                 else {
                     awb = generateAwb(createAwbRequest);
+                    awb.setPrintType(printType);
                     this.updateSciFieldFromHawb(awb, null, true, awbId);
                 }
                 awb.setGuid(awbGuid);
