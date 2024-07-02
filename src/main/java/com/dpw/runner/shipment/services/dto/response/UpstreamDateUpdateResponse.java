@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.Builder;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,7 +19,7 @@ public class UpstreamDateUpdateResponse implements IRunnerResponse {
 
     @Data
     @Builder
-    public static class DateAndLogResponse {
+    public static class DateAndLogResponse implements Serializable {
         private LocalDateTime updatedDate;
         private List<DateTimeChangeLogResponse> changeLogs;
     }

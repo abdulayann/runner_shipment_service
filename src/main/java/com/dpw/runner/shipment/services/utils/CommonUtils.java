@@ -421,9 +421,7 @@ public class CommonUtils {
         if(a == null || b == null)
             return false;
         var res = a.truncatedTo(ChronoUnit.MINUTES).compareTo(b.truncatedTo(ChronoUnit.MINUTES));
-        if(res == 0)
-            return true;
-        return false;
+        return res == 0;
     }
 
 }

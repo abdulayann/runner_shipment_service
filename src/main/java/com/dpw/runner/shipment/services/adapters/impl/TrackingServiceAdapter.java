@@ -27,7 +27,6 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
-import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +41,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import javax.swing.text.html.Option;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -60,43 +58,31 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
     @Autowired
+    private IAwbDao awbDao;
+    @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
-
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
-
-    @Autowired
-    private IShipmentDao shipmentDao;
-
-    @Autowired
-    private IAwbDao awbDao;
-
-    @Autowired
-    private MasterDataFactory masterDataFactory;
-
-    @Autowired
-    private JsonHelper jsonHelper;
-
-    @Autowired
-    private TrackingServiceConfig trackingServiceConfig;
-
     @Autowired
     private ISBProperties isbProperties;
-
     @Autowired
-    private ISBUtils sbUtils;
-
+    private JsonHelper jsonHelper;
     @Autowired
-    private IV1Service v1Service;
-
+    private MasterDataFactory masterDataFactory;
     @Autowired
     private RestTemplate restTemplate;
-
+    @Autowired
+    private ISBUtils sbUtils;
+    @Autowired
+    private IShipmentDao shipmentDao;
     @Value("${trackingService.apiKey}")
     private String trackingServiceApiKey;
-
+    @Autowired
+    private TrackingServiceConfig trackingServiceConfig;
     @Value("${trackingService.newFlowEndpoint.url}")
     private String trackingServiceNewFlowEndpoint;
+    @Autowired
+    private IV1Service v1Service;
 
     @Override
     public UniversalTrackingPayload.UniversalEventsPayload mapEventDetailsForTracking(String bookingReferenceNumber, String referenceNumberType, String runnerReferenceNumber, List<Events> events) {
@@ -523,8 +509,8 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
             return eventsRows.stream().toList();
 
-        } catch (RunnerException e) {
-            throw e;
+        } catch (Exception e) {
+            throw new RunnerException(e.getMessage());
         }
     }
 

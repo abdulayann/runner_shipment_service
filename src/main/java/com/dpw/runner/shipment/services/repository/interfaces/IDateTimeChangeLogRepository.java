@@ -10,5 +10,4 @@ import java.util.List;
 public interface IDateTimeChangeLogRepository extends MultiTenancyRepository<DateTimeChangeLog> {
 
     List<DateTimeChangeLog> findByShipmentId(Long shipmentId);
-    void deleteAll(List<DateTimeChangeLog> dateTimeChangeLogs);
 }
