@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.filters;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -113,7 +115,8 @@ public class AuthFilter extends OncePerRequestFilter {
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         //ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
-        TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsService.getV1TenantSettings(user.getTenantId()));
+        if (!servletRequest.getRequestURI().contains(ShipmentSettingsConstants.SHIPMENT_SETTINGS_API_HANDLE + ApiConstants.SYNC))
+            TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsService.getV1TenantSettings(user.getTenantId()));
         log.info("RequestId: {} || V1TenantSettings: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(TenantSettingsDetailsContext.getCurrentTenantSettings()));
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
