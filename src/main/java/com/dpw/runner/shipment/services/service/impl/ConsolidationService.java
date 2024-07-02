@@ -133,6 +133,8 @@ public class ConsolidationService implements IConsolidationService {
     private JsonHelper jsonHelper;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private ILogsHistoryService logsHistoryService;
 
     @Autowired
     private IPackingDao packingDao;
@@ -443,6 +445,7 @@ public class ConsolidationService implements IConsolidationService {
             getConsolidation(consolidationDetails, Boolean.TRUE.equals(request.getCreatingFromDgShipment()));
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false);
+            this.createLogHistoryForConsole(consolidationDetails);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -469,6 +472,7 @@ public class ConsolidationService implements IConsolidationService {
             getConsolidation(consolidationDetails, false);
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true);
+            this.createLogHistoryForConsole(consolidationDetails);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -680,6 +684,7 @@ public class ConsolidationService implements IConsolidationService {
                     }
                     packingList = packingDao.saveAll(packingList);
                 }
+                this.createLogHistoryForShipment(shipmentDetails);
             }
             this.checkSciForAttachConsole(consolidationId);
         }
@@ -739,6 +744,7 @@ public class ConsolidationService implements IConsolidationService {
                     }
                     packingList = packingDao.saveAll(packingList);
                 }
+                this.createLogHistoryForShipment(shipmentDetails);
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
@@ -959,7 +965,7 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             afterSave(entity, oldEntity.get(), consolidationDetailsRequest, false, shipmentSettingsDetails, false);
-
+            this.createLogHistoryForConsole(entity);
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -3048,6 +3054,25 @@ public class ConsolidationService implements IConsolidationService {
                 if (TenantSettingsDetailsContext.getCurrentTenantSettings().getP100Branch() != null && TenantSettingsDetailsContext.getCurrentTenantSettings().getP100Branch())
                     CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
             });
+        }
+    }
+
+    private void createLogHistoryForConsole(ConsolidationDetails consolidationDetails){
+        try {
+            String entityPayload = jsonHelper.convertToJson(consolidationDetails);
+            logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(consolidationDetails.getId())
+                    .entityType(Constants.CONSOLIDATION).entityGuid(consolidationDetails.getGuid()).entityPayload(entityPayload).build());
+        } catch (Exception ex) {
+            log.error("Error while creating LogsHistory : " + ex.getMessage());
+        }
+    }
+    public void createLogHistoryForShipment(ShipmentDetails shipmentDetails){
+        try {
+            String entityPayload = jsonHelper.convertToJson(shipmentDetails);
+            logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(shipmentDetails.getId())
+                    .entityType(Constants.SHIPMENT).entityGuid(shipmentDetails.getGuid()).entityPayload(entityPayload).build());
+        } catch (Exception ex) {
+            log.error("Error while creating LogsHistory : " + ex.getMessage());
         }
     }
 

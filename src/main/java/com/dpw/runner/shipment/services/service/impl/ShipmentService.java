@@ -152,6 +152,9 @@ public class ShipmentService implements IShipmentService {
     private IContainerService containerService;
 
     @Autowired
+    private ILogsHistoryService logsHistoryService;
+
+    @Autowired
     private ITruckDriverDetailsDao truckDriverDetailsDao;
     @Autowired
     private IBookingCarriageDao bookingCarriageDao;
@@ -656,6 +659,8 @@ public class ShipmentService implements IShipmentService {
                             .parentId(shipmentDetails.getId())
                             .operation(DBOperationType.CREATE.name()).build()
             );
+
+            this.createLogHistoryForShipment(shipmentDetails);
 
         } catch (Exception e) {
             log.error("Error occurred due to: " + e.getStackTrace());
@@ -1249,7 +1254,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached);
-
+            this.createLogHistoryForShipment(entity);
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -1261,6 +1266,15 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    public void createLogHistoryForShipment(ShipmentDetails shipmentDetails){
+        try {
+            String entityPayload = jsonHelper.convertToJson(shipmentDetails);
+            logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(shipmentDetails.getId())
+                    .entityType(Constants.SHIPMENT).entityGuid(shipmentDetails.getGuid()).entityPayload(entityPayload).build());
+        } catch (Exception ex) {
+            log.error("Error while creating LogsHistory : " + ex.getMessage());
+        }
+    }
 
     private void syncShipment(ShipmentDetails shipmentDetails, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails, boolean syncConsole) {
         String transactionId = shipmentDetails.getGuid().toString();
