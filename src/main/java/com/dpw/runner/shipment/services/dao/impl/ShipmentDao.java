@@ -170,7 +170,7 @@ public class ShipmentDao implements IShipmentDao {
                 }
             }
         }
-        errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
+        errors.addAll(applyShipmentValidations(shipmentDetails, fromV1Sync));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if (shipmentDetails.getTransportMode() != null && shipmentDetails.getCarrierDetails() != null) {
@@ -263,7 +263,7 @@ public class ShipmentDao implements IShipmentDao {
         return !Boolean.TRUE.equals(request.getContainsHazardous());
     }
 
-    public Set<String> applyShipmentValidations(ShipmentDetails request, ShipmentDetails oldEntity) {
+    public Set<String> applyShipmentValidations(ShipmentDetails request, boolean fromV1Sync) {
         Set<String> errors = new LinkedHashSet<>();
 
         if(request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {
@@ -281,7 +281,7 @@ public class ShipmentDao implements IShipmentDao {
         }
 
         // Non dg user cannot save dg shipment
-        if(checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isDgUser())
+        if(!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isDgUser())
             errors.add("You don't have permission to update DG Shipment");
         
         // Routings leg no can not be repeated
