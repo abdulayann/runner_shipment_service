@@ -125,6 +125,7 @@ class AuthFilterTest {
         when(tokenUtility.getUserIdAndBranchId(Mockito.<String>any())).thenReturn("abc");
         DefaultMultipartHttpServletRequest servletRequest = mock(DefaultMultipartHttpServletRequest.class);
         when(servletRequest.getServletPath()).thenReturn("https://example.org/example");
+        when(servletRequest.getRequestURI()).thenReturn("https://example.org/example");
         when(servletRequest.getHeader(Mockito.<String>any())).thenReturn("def");
         IUserService userService = mock(IUserService.class);
         when(getUserServiceFactory.returnUserService()).thenReturn(userService);
