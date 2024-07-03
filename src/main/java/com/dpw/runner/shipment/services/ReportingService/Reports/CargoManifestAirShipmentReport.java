@@ -68,7 +68,7 @@ public class CargoManifestAirShipmentReport extends IReport{
             Map<String, CarrierMasterData> carriersMap = new HashMap<>();
             if(!CommonUtils.IsStringNullOrEmpty(carrierDetailModel.getShippingLine()))
                 carriersMap = masterDataUtils.getCarriersData(Set.of(carrierDetailModel.getShippingLine()));
-            dictionary.put(CONSOL_FIRST_FLIGHT_AND_DAY, getFlightAndDayString(carriersMap, carrierDetailModel.getShippingLine(), carrierDetailModel.getFlightNumber(), carrierDetailModel.getEtd()));
+            dictionary.put(SHIPMENT_FIRST_FLIGHT_AND_DAY, getFlightAndDayString(carriersMap, carrierDetailModel.getShippingLine(), carrierDetailModel.getFlightNumber(), carrierDetailModel.getEtd()));
         }
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
         ReportHelper.addTenantDetails(dictionary, cargoManifestAirShipmentModel.getTenantModel());
