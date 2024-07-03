@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
+import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -22,6 +23,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
@@ -74,6 +76,8 @@ public class ShipmentController {
     IOrderManagementAdapter orderManagementAdapter;
     @Autowired
     IConsolidationService consolidationService;
+    @Autowired
+    IDateTimeChangeLogService dateTimeChangeLogService;
 
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List", response = RunnerListResponse.class)})
@@ -533,6 +537,16 @@ public class ShipmentController {
     public ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(@RequestBody CheckCreditLimitFromV1Request request) {
         try {
             return shipmentService.checkCreditLimitFromV1(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = UpstreamDateUpdateResponse.class)})
+    @GetMapping(value = ShipmentConstants.GET_DATETIME_CHANGES)
+    public ResponseEntity<IRunnerResponse> getDateTimeChanges(@RequestParam Long shipmentId) {
+        try {
+            return shipmentService.getDateTimeChangeUpdates(shipmentId);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

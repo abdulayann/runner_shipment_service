@@ -10,11 +10,16 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
+import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -33,15 +38,15 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -80,12 +85,17 @@ class TrackingServiceAdapterTest {
     @Mock
     private IV1Service v1Service;
 
+    @Mock
+    private RestTemplate restTemplate;
+
     @InjectMocks
     private TrackingServiceAdapter trackingServiceAdapter;
 
     private static JsonTestUtility jsonTestUtility;
 
     private static ObjectMapper objectMapperTest;
+
+    private static TrackingServiceApiResponse trackingServiceApiResponse;
 
     @BeforeAll
     static void init(){
@@ -274,4 +284,23 @@ class TrackingServiceAdapterTest {
         assertNotNull(events);
         assertEquals(new ArrayList<>(), events);
     }
+
+    @Test
+    void getTrackingEvents() {
+        String refNumber = "refNum";
+        TrackingServiceApiResponse response = new TrackingServiceApiResponse();
+        TrackingServiceApiResponse mockResponse = jsonTestUtility.getJson("TRACKING_SERVICE_SHIPMENT_RESPONSE", TrackingServiceApiResponse.class);
+
+        try {
+            when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(TrackingServiceApiResponse.class))).thenReturn(ResponseEntity.ok(mockResponse));
+            var responseEvents = trackingServiceAdapter.getTrackingEvents(refNumber);
+
+            assertNotNull(responseEvents);
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+
 }

@@ -38,4 +38,5 @@ public class V1TenantSettingsResponse implements Serializable {
     private Integer DecimalValueForVolumetricWeight;
     private Boolean EnableAirMessaging;
     private Integer CurrencyDecimalPlace;
+    private Boolean EnableEstimateAndActualDateTimeUpdates;
 }
