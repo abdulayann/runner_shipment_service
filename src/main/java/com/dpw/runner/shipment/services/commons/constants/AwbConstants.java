@@ -43,5 +43,7 @@ public class AwbConstants {
     public static final String FSU_LOCK_EVENT_CODE = "RCS";
     public static final String RESUBMIT_FZB_VALIDATION = "HAWB is updated, please resubmit the FZB by printing the original MAWB";
     public static final String RESUBMIT_FWB_VALIDATION = "MAWB is updated, please resubmit the FWB by printing the original MAWB";
+    public static final String ORDER_NUMBER = "ORDER NO: %s";
+
 
 }
