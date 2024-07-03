@@ -906,6 +906,62 @@ public abstract class IReport {
         return dictionary;
     }
 
+    public boolean getAirRoutingFlightTags(List<RoutingsModel> routingsModels, Map<String, Object> dictionary, boolean fromShipment) {
+        if(routingsModels == null)
+            return false;
+        TreeMap<Long, RoutingsModel> map = routingsModels.stream()
+                .filter(e -> Constants.TRANSPORT_MODE_AIR.equals(e.getMode()))
+                .collect(Collectors.toMap(
+                        RoutingsModel::getLeg,
+                        e -> e,
+                        (existing, replacement) -> existing,
+                        TreeMap::new
+                ));
+        if(map.isEmpty())
+            return false;
+        Set<String> carriers = new HashSet<>();
+        RoutingsModel firstRouting = map.firstEntry().getValue();
+        RoutingsModel secondRouting = null;
+        if(!CommonUtils.IsStringNullOrEmpty(firstRouting.getCarrier()))
+            carriers.add(firstRouting.getCarrier());
+        Iterator<Map.Entry<Long, RoutingsModel>> iterator = map.entrySet().iterator();
+        iterator.next();
+        if(iterator.hasNext()) {
+            secondRouting = iterator.next().getValue();
+            if(!CommonUtils.IsStringNullOrEmpty(secondRouting.getCarrier()))
+                carriers.add(secondRouting.getCarrier());
+        }
+        Map<String, CarrierMasterData> carriersMap = masterDataUtils.getCarriersData(carriers);
+        if(fromShipment) {
+            dictionary.put(SHIPMENT_FIRST_FLIGHT_AND_DAY, getRoutingFlightAndDay(firstRouting, carriersMap));
+            if(secondRouting != null)
+                dictionary.put(SHIPMENT_SECOND_FLIGHT_AND_DAY, getRoutingFlightAndDay(secondRouting, carriersMap));
+        } else {
+            dictionary.put(CONSOL_FIRST_FLIGHT_AND_DAY, getRoutingFlightAndDay(firstRouting, carriersMap));
+            if(secondRouting != null)
+                dictionary.put(CONSOL_SECOND_FLIGHT_AND_DAY, getRoutingFlightAndDay(secondRouting, carriersMap));
+        }
+        return true;
+    }
+
+    public String getRoutingFlightAndDay(RoutingsModel routingsModel, Map<String, CarrierMasterData> map) {
+        String res = "";
+        if(routingsModel == null)
+            return res;
+        return getFlightAndDayString(map, routingsModel.getCarrier(), routingsModel.getFlightNumber(), routingsModel.getEtd());
+    }
+
+    public String getFlightAndDayString(Map<String, CarrierMasterData> carriersMap, String carrierCode, String flightNumber, LocalDateTime etd) {
+        String res = "";
+        if(!CommonUtils.IsStringNullOrEmpty(carrierCode) && carriersMap != null && carriersMap.containsKey(carrierCode))
+            res = carriersMap.get(carrierCode).getIataCode() + " ";
+        if(!CommonUtils.IsStringNullOrEmpty(flightNumber))
+            res = res + flightNumber + "/";
+        if(etd != null)
+            res = res + etd.getDayOfMonth();
+        return res;
+    }
+
     public List<String> populateConsigneeData(Map<String, Object> dictionary, PartiesModel shipmentConsignee) {
         List<String> consignee = null;
         if(shipmentConsignee != null)
@@ -1284,6 +1340,14 @@ public abstract class IReport {
             }
             if (pod != null && pod.getPortName() != null) {
                 dictionary.put(ReportConstants.DESTINATION_PORT_NAME_INCAPS, pod.getPortName().toUpperCase());
+            }
+            if (pol != null && !CommonUtils.IsStringNullOrEmpty(pol.getIataCode())) {
+                dictionary.put(ReportConstants.CONSOL_ORIGIN_AIRPORT_CODE, pol.getIataCode());
+                dictionary.put(CONSOL_ORIGIN_AIRPORT_CODE_CAPS, pol.getIataCode().toUpperCase());
+            }
+            if (pod != null && !CommonUtils.IsStringNullOrEmpty(pod.getIataCode())) {
+                dictionary.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE, pod.getIataCode());
+                dictionary.put(CONSOL_DESTINATION_AIRPORT_CODE_CAPS, pod.getIataCode().toUpperCase());
             }
             if(origin != null && origin.getPortName() != null) {
                 dictionary.put(ReportConstants.ORIGIN, origin.getPortName().toUpperCase());
