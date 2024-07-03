@@ -37,5 +37,7 @@ public interface IAwbDao {
     Awb findAwbByGuidByQuery(UUID guid);
     int updateAirMessageStatusFromShipmentId(Long id, String airMessageStatus);
     int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus);
+    int updatePrintTypeFromConsolidationId(Long id, String printType);
+    int updatePrintTypeFromShipmentId(Long id, String printType);
 
 }

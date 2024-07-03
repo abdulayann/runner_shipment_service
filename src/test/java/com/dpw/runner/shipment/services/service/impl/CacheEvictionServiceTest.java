@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.CacheEvictionExcept
 
 import java.util.ArrayList;
 
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,9 @@ class CacheEvictionServiceTest {
 
     @MockBean(name = "customKeyGenerator")
     private CustomKeyGenerator customKeyGenerator;
+
+    @MockBean
+    private JsonHelper jsonHelper;
 
 
     /**

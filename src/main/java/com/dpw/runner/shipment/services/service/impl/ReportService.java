@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -196,6 +197,9 @@ public class ReportService implements IReportService {
             else
                 awbDao.updateAirMessageStatusFromShipmentId(Long.parseLong(reportRequest.getReportId()), AwbStatus.AWB_ORIGINAL_PRINTED.name());
         }
+        // Awb print status set for Hawb and Mawb
+        this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
+
         boolean reportingNewFlow = false;
         Map<String, Object> dataRetrived = new HashMap<>();
         boolean newFlowSuccess = false;
@@ -1431,4 +1435,19 @@ public class ReportService implements IReportService {
         shipmentTagsForExteranlServices.populateRaKcData(dataRetrived, shipmentModel);
         return ResponseHelper.buildSuccessResponse(dataRetrived);
     }
+
+    private void setPrintTypeForAwb(ReportRequest reportRequest, Boolean isOriginalPrint) {
+        if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)) {
+            if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
+                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name());
+            else
+                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name());
+        } else if ((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
+            if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
+                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name());
+            else
+                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name());
+        }
+    }
+
 }

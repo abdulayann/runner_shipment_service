@@ -335,7 +335,13 @@ class HblReportTest extends CommonMocks {
         shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
                 .id(12L)
-                .agentDetail(new PartiesModel())
+                .partiesList(List.of(
+                        PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build(),
+                        PartiesModel.builder().type("IMA").orgData(Map.of("FullName", "name", "ContactPhone", "99")).addressData(Map.of()).build(),
+                        PartiesModel.builder().type("DAG").orgData(Map.of("FullName", "name", "ContactPhone","88")).addressData(Map.of()).build()
+                ))
+                .sourceDetail(PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build())
+                .transporterDetail(PartiesModel.builder().type("EXA").build())
                 .actualPickup(LocalDateTime.now())
                 .actualDelivery(LocalDateTime.now())
                 .build()));

@@ -34,24 +34,34 @@ public class ReportHelper {
         }
     }
 
-    public static String getFormattedAddress(PartiesModel partiesModel) {
-        if(partiesModel == null || partiesModel.getAddressData() == null)
+    public static String getFormattedAddress(PartiesModel partiesModel, boolean includeCompanyName) {
+        if (partiesModel == null || partiesModel.getAddressData() == null) {
             return null;
-        String response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.COMPANY_NAME, null);
+        }
+
+        String response = null;
+        if (includeCompanyName) {
+            response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.COMPANY_NAME, null);
+        }
         response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.ADDRESS1, response);
         response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.ADDRESS2, response);
+
         String temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.CITY, null);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.STATE, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.COUNTRY, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIP_POST_CODE, temp);
-        if(!CommonUtils.IsStringNullOrEmpty(temp)) {
-            if(response == null)
+
+        if (!CommonUtils.IsStringNullOrEmpty(temp)) {
+            if (response == null) {
                 response = temp;
-            else
+            } else {
                 response = response + "\n" + temp;
+            }
         }
+
         return response;
     }
+
 
     public static String getNextLineAddress(Map<String, Object> map, String key, String response) {
         String x = getValueFromMap(map, key);

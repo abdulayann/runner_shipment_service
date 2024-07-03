@@ -112,12 +112,12 @@ public class TransportOrderReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, shipmentModel.getFreightOverseasCurrency());
         if(shipmentModel.getPickupDetails() != null && shipmentModel.getPickupDetails().getSourceDetail() != null) {
             PartiesModel pickup = shipmentModel.getPickupDetails().getSourceDetail();
-            dictionary.put(ReportConstants.PICK_UP_ADDRESS, getFormattedAddress(pickup));
+            dictionary.put(ReportConstants.PICK_UP_ADDRESS, getFormattedAddress(pickup,true));
             dictionary.put(ReportConstants.PICKUP_CONTACT, getValueFromMap(pickup.getAddressData(), ReportConstants.CONTACT_PHONE));
         }
         if(shipmentModel.getDeliveryDetails() != null && shipmentModel.getDeliveryDetails().getDestinationDetail() != null) {
             PartiesModel delivery = shipmentModel.getDeliveryDetails().getDestinationDetail();
-            dictionary.put(ReportConstants.DELIVERY_ADDRESS, getFormattedAddress(delivery));
+            dictionary.put(ReportConstants.DELIVERY_ADDRESS, getFormattedAddress(delivery,true));
             dictionary.put(ReportConstants.DELIVERY_CONTACT, getValueFromMap(delivery.getAddressData(), ReportConstants.CONTACT_PHONE));
         }
         try { dictionary.put(ReportConstants.EXPORT_BROKER, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}

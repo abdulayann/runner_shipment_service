@@ -60,6 +60,16 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
 
     @Transactional
     @Modifying
+    @Query(value = "Update Awb set print_type = ?2 Where consolidation_id = ?1", nativeQuery = true)
+    int updatePrintTypeFromConsolidationId(Long id, String printType);
+
+    @Transactional
+    @Modifying
+    @Query(value = "Update Awb set print_type = ?2 Where shipment_id = ?1", nativeQuery = true)
+    int updatePrintTypeFromShipmentId(Long id, String printType);
+
+    @Transactional
+    @Modifying
     @Query(value = "Update Awb set user_mail_id = ?3, user_display_name = ?2 Where guid = ?1", nativeQuery = true)
     int updateUserDetails(UUID guid, String userDisplayName, String userMailId);
 
