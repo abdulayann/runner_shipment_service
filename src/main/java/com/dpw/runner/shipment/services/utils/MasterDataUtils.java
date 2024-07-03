@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -1057,6 +1058,28 @@ public class MasterDataUtils{
                 unlocationsResponse.forEach(location ->  locationMap.put(location.getLocationsReferenceGUID(), location));
         }
         return locationMap;
+    }
+
+    public Map<String, CarrierMasterData> getCarriersData(Set<String> carrierCodes) {
+        Map<String, CarrierMasterData> carrierMap = new HashMap<>();
+        if (Objects.isNull(carrierCodes))
+            return carrierMap;
+        if (!carrierCodes.isEmpty()) {
+            List<Object> criteria = Arrays.asList(
+                    List.of(EntityTransferConstants.ITEM_VALUE),
+                    "In",
+                    List.of(carrierCodes)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            CarrierListObject carrierListObject = new CarrierListObject();
+            carrierListObject.setListObject(commonV1ListRequest);
+            carrierListObject.setIsList(true);
+            V1DataResponse v1DataResponse = v1Service.fetchCarrierMasterData(carrierListObject, true);
+            List<CarrierMasterData> carriersResponse = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierMasterData.class);
+            if (!Objects.isNull(carriersResponse))
+                carriersResponse.forEach(carrier ->  carrierMap.put(carrier.getItemValue(), carrier));
+        }
+        return carrierMap;
     }
 
     public EntityTransferDGSubstance fetchDgSubstanceRow(Integer dgSubstanceId) {
