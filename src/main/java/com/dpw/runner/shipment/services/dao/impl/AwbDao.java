@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -138,6 +139,11 @@ public class AwbDao implements IAwbDao {
     }
 
     @Override
+    public List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds) {
+        return awbRepository.findByShipmentIdsByQuery(shipmentIds);
+    }
+    
+    @Override
     public List<Awb> findByConsolidationIdByQuery(Long consolidationId) {
         return awbRepository.findByConsolidationIdByQuery(consolidationId);
     }
@@ -207,7 +213,6 @@ public class AwbDao implements IAwbDao {
                             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                             this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent");
-
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
                                 this.pushToKafkaForAirMessaging(shipAwb, ship, null);
@@ -307,11 +312,17 @@ public class AwbDao implements IAwbDao {
     public int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus) {
         return awbRepository.updateAirMessageStatusFromConsolidationId(id, airMessageStatus);
     }
-    public int updatePrintTypeFromConsolidationId(Long id, String printType){
-        return awbRepository.updatePrintTypeFromConsolidationId(id, printType);
+    public int updatePrintTypeFromConsolidationId(Long id, String printType) {
+        var awbList = findByConsolidationId(id);
+        if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
+            return awbRepository.updatePrintTypeFromConsolidationId(id, printType);
+        return 0;
     }
     public int updatePrintTypeFromShipmentId(Long id, String printType) {
-        return awbRepository.updatePrintTypeFromShipmentId(id, printType);
+        var awbList = findByShipmentId(id);
+        if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
+            return awbRepository.updatePrintTypeFromShipmentId(id, printType);
+        return 0;
     }
 
     @Override

@@ -1857,7 +1857,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(true);
+        var httpResponse = awbService.validateIataAgent(true, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
@@ -1878,10 +1878,50 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(false);
+        var httpResponse = awbService.validateIataAgent(false, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
+    }
+
+    @Test
+    void testValidateIataAgent2() {
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.IATAAgent = true;
+        mockTenantModel.AgentIATACode = "test-code";
+        mockTenantModel.AgentCASSCode = "test-code";
+        mockTenantModel.PIMAAddress = "test-addr";
+        mockTenantModel.DefaultOrgId = 1L;
+
+        var mockShipmentConsoleMapping1 = ConsoleShipmentMapping.builder().shipmentId(10L).consolidationId(100L).build();
+        var mockShipmentConsoleMapping2 = ConsoleShipmentMapping.builder().shipmentId(11L).consolidationId(100L).build();
+
+        var mockShipmentDetails1 = new ShipmentDetails();
+        mockShipmentDetails1.setId(10L);
+        mockShipmentDetails1.setShipmentId("SHP00001");
+
+        var mockShipmentDetails2 = new ShipmentDetails();
+        mockShipmentDetails2.setId(11L);
+        mockShipmentDetails2.setShipmentId("SHP00011");
+
+        var mockAWB1 = new Awb();
+        mockAWB1.setShipmentId(10L);
+        mockAWB1.setPrintType(PrintType.ORIGINAL_PRINTED);
+
+        var mockAWB2 = new Awb();
+        mockAWB2.setShipmentId(12L);
+        mockAWB2.setPrintType(PrintType.DRAFT_PRINTED);
+
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(mockShipmentConsoleMapping1, mockShipmentConsoleMapping2));
+        when(shipmentDao.getShipmentNumberFromId(anyList())).thenReturn(List.of(mockShipmentDetails1, mockShipmentDetails2));
+        when(awbDao.findByShipmentIdsByQuery(anyList())).thenReturn(List.of(mockAWB1, mockAWB2));
+
+        var throwable = assertThrows(Throwable.class, () -> awbService.validateIataAgent(false, Optional.of(100L)));
+        assertEquals(ValidationException.class.getSimpleName(), throwable.getClass().getSimpleName());
+        assertFalse(throwable.getMessage().isEmpty());
     }
 
     @Test
@@ -1899,7 +1939,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(false);
+        var httpResponse = awbService.validateIataAgent(false, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
@@ -1916,7 +1956,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(false);
+        var httpResponse = awbService.validateIataAgent(false, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);

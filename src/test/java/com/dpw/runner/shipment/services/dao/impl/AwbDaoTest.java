@@ -476,8 +476,25 @@ class AwbDaoTest {
     void testUpdatePrintTypeFromConsolidationId() {
         Long id = 1L;
         int responseCount = 1;
+        var mockAWB = new Awb();
+        mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
+        when(awbRepository.findByConsolidationId(anyLong())).thenReturn(List.of(mockAWB));
+
         when(awbRepository.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
 
+        var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name());
+
+        assertEquals(responseCount, res);
+    }
+
+    @Test
+    void testUpdatePrintTypeFromConsolidationId2() {
+        Long id = 1L;
+        int responseCount = 0;
+        var mockAWB = new Awb();
+        mockAWB.setPrintType(PrintType.ORIGINAL_PRINTED);
+
+        when(awbRepository.findByConsolidationId(anyLong())).thenReturn(List.of(mockAWB));
         var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name());
 
         assertEquals(responseCount, res);
@@ -485,9 +502,27 @@ class AwbDaoTest {
     @Test
     void testUpdatePrintTypeFromShipmentId() {
         Long id = 1L;
-        int responseCount = 1;
-        when(awbRepository.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
+        int responseCount = 0;
 
+        var mockAWB = new Awb();
+        mockAWB.setPrintType(PrintType.ORIGINAL_PRINTED);
+
+        when(awbRepository.findByShipmentId(anyLong())).thenReturn(List.of(mockAWB));
+        var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name());
+
+        assertEquals(responseCount, res);
+    }
+
+    @Test
+    void testUpdatePrintTypeFromShipmentId2() {
+        Long id = 1L;
+        int responseCount = 1;
+
+        var mockAWB = new Awb();
+        mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
+
+        when(awbRepository.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
+        when(awbRepository.findByShipmentId(anyLong())).thenReturn(List.of(mockAWB));
         var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name());
 
         assertEquals(responseCount, res);
