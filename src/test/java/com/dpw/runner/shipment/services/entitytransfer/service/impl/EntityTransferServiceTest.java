@@ -547,13 +547,13 @@ class EntityTransferServiceTest {
         shipmentDetails.getCarrierDetails().setFlightNumber("A123");
         shipmentDetails.getCarrierDetails().setShippingLine("Air India");
         ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
-        ValidationResponse response = ValidationResponse.builder().success(true).build();
         TenantModel tenantModel = new TenantModel();
         tenantModel.IATAAgent = true;
-        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
 
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
-        var e = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        var e = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
         assertEquals(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION, e.getMessage());
     }
 
@@ -683,14 +683,13 @@ class EntityTransferServiceTest {
         shipmentDetails.setReceivingBranch(null);
         shipmentDetails.setHouseBill("QWERT324");
         ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
-        ValidationResponse response = ValidationResponse.builder().success(true).build();
         TenantModel tenantModel = new TenantModel();
         tenantModel.IATAAgent = true;
-        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
 
         when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
 
-        var e = assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(request)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        var e = assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
         assertEquals(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION, e.getMessage());
     }
 
