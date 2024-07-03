@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository
 @Generated
 public interface ILogsHistoryRepository extends MultiTenancyRepository<LogsHistory> {
     Optional<LogsHistory> findByEntityGuid(UUID entityGuid);

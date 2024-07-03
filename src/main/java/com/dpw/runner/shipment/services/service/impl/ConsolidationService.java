@@ -3072,7 +3072,7 @@ public class ConsolidationService implements IConsolidationService {
             log.error("Error while creating LogsHistory : " + ex.getMessage());
         }
     }
-    public void createLogHistoryForShipment(ShipmentDetails shipmentDetails){
+    private void createLogHistoryForShipment(ShipmentDetails shipmentDetails){
         try {
             String entityPayload = jsonHelper.convertToJson(shipmentDetails);
             logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(shipmentDetails.getId())
