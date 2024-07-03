@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -535,6 +536,28 @@ class EntityTransferServiceTest {
     }
 
     @Test
+    void testSendConsolidationValidation_ThrowsException_MissingReceivingBranch() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setReceivingBranch(null);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.getCarrierDetails().setFlightNumber("A123");
+        consolidationDetails.getCarrierDetails().setShippingLine("Air India");
+        ShipmentDetails shipmentDetails = consolidationDetails.getShipmentsList().get(0);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.getCarrierDetails().setFlightNumber("A123");
+        shipmentDetails.getCarrierDetails().setShippingLine("Air India");
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        ValidationResponse response = ValidationResponse.builder().success(true).build();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.IATAAgent = true;
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
+
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        var e = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request)));
+        assertEquals(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION, e.getMessage());
+    }
+
+    @Test
     void testSendShipmentValidation_Success() {
         ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
         shipmentDetails.setHouseBill("QWERT324");
@@ -652,6 +675,23 @@ class EntityTransferServiceTest {
         when(masterDataFactory.getMasterDataService().retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(tenantModel);
         assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
+    }
+
+    @Test
+    void testSendShipmentValidation_ThrowsException_WhenReceivingBranchIsNull() {
+        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setReceivingBranch(null);
+        shipmentDetails.setHouseBill("QWERT324");
+        ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
+        ValidationResponse response = ValidationResponse.builder().success(true).build();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.IATAAgent = true;
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
+
+        when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
+
+        var e = assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(request)));
+        assertEquals(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION, e.getMessage());
     }
 
     @Test

@@ -1424,7 +1424,7 @@ public class EntityTransferService implements IEntityTransferService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(consolidationDetails.get().getReceivingBranch() == null) {
-            throw new ValidationException("Please enter the receiving agent in entity transfer tab before proceeding with the transfer !");
+            throw new ValidationException(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION);
         }
 
         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
@@ -1552,7 +1552,7 @@ public class EntityTransferService implements IEntityTransferService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(shipmentDetails.get().getReceivingBranch() == null) {
-            throw new ValidationException("Please enter the receiving agent in entity transfer tab before proceeding with the transfer !");
+            throw new ValidationException(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION);
         }
 
         if(shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
