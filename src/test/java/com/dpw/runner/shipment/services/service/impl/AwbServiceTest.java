@@ -1907,11 +1907,11 @@ class AwbServiceTest extends CommonMocks {
 
         var mockAWB1 = new Awb();
         mockAWB1.setShipmentId(10L);
-        mockAWB1.setAirMessageStatus(AwbStatus.AWB_GENERATED);
+        mockAWB1.setPrintType(PrintType.ORIGINAL_PRINTED);
 
         var mockAWB2 = new Awb();
         mockAWB2.setShipmentId(12L);
-        mockAWB2.setAirMessageStatus(AwbStatus.AWB_ORIGINAL_PRINTED);
+        mockAWB2.setPrintType(PrintType.DRAFT_PRINTED);
 
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);

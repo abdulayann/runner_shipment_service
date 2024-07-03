@@ -3559,7 +3559,7 @@ public class AwbService implements IAwbService {
             var shipmentIdToNumberMap = shipmentsList.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
             var awbList = awbDao.findByShipmentIdsByQuery(shipmentsList.stream().map(ShipmentDetails::getId).toList());
             for (var awb : awbList) {
-                if (!Objects.equals(awb.getAirMessageStatus().name(), AwbStatus.AWB_ORIGINAL_PRINTED.name()))
+                if (!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED))
                     errorShipments.add(shipmentIdToNumberMap.get(awb.getShipmentId()));
                 shipmentIdToNumberMap.remove(awb.getShipmentId());
             }
