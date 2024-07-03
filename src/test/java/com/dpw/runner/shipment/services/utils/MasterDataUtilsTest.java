@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -1286,6 +1287,40 @@ class MasterDataUtilsTest {
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(UnlocationsResponse.class))).thenReturn(null);
         var response = masterDataUtils.getLocationData(Set.of(locationGuid));
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getCarriersData() {
+        var response = masterDataUtils.getCarriersData(null);
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getCarriersData2() {
+        var response = masterDataUtils.getCarriersData(Set.of());
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getCarriersData3() {
+        String locationGuid = StringUtility.convertToString(UUID.randomUUID());
+        when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(null);
+        var response = masterDataUtils.getCarriersData(Set.of(locationGuid));
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getCarriersData4() {
+        String locationGuid = StringUtility.convertToString(UUID.randomUUID());
+        when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(new ArrayList<>());
+        var response = masterDataUtils.getCarriersData(Set.of(locationGuid));
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }

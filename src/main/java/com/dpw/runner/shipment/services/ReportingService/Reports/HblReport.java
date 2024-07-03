@@ -193,10 +193,11 @@ public class HblReport extends IReport{
                         hblModel.getContainerCountGrouped().put(container.getContainerCode(), container.getContainerCount());
                 }
                 if(container.getPacksType() != null) {
+                    Long packs = !IsStringNullOrEmpty(container.getPacks()) ? Long.parseLong(container.getPacks()) : 0;
                     if(hblModel.getContainerCountGrouped().containsKey(container.getPacksType()))
-                        hblModel.getContainerCountGrouped().put(container.getPacksType(), hblModel.getContainerCountGrouped().get(container.getPacksType()) + Long.valueOf(container.getPacks()));
+                        hblModel.getContainerCountGrouped().put(container.getPacksType(), hblModel.getContainerCountGrouped().get(container.getPacksType()) + packs);
                     else
-                        hblModel.getContainerCountGrouped().put(container.getPacksType(), Long.valueOf(container.getPacks()));
+                        hblModel.getContainerCountGrouped().put(container.getPacksType(), packs);
                 }
                 if(container.getGrossWeightUnit() != null) {
                     double grossWeight = 0;

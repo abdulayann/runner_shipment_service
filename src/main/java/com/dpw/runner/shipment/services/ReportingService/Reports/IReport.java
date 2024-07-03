@@ -961,14 +961,14 @@ public abstract class IReport {
     }
 
     public String getFlightAndDayString(Map<String, CarrierMasterData> carriersMap, String carrierCode, String flightNumber, LocalDateTime etd) {
-        String res = "";
         if(!CommonUtils.IsStringNullOrEmpty(carrierCode) && carriersMap != null && carriersMap.containsKey(carrierCode))
-            res = carriersMap.get(carrierCode).getIataCode() + " ";
-        if(!CommonUtils.IsStringNullOrEmpty(flightNumber))
-            res = res + flightNumber + "/";
-        if(etd != null)
-            res = res + etd.getDayOfMonth();
-        return res;
+            carrierCode = carriersMap.get(carrierCode).getIataCode();
+        else
+            carrierCode = "";
+        if(CommonUtils.IsStringNullOrEmpty(flightNumber))
+            flightNumber = "";
+        String day = etd != null ? String.valueOf(etd.getDayOfMonth()) : "";
+        return String.format("%s %s/%s", carrierCode, flightNumber, day);
     }
 
     public List<String> populateConsigneeData(Map<String, Object> dictionary, PartiesModel shipmentConsignee) {
