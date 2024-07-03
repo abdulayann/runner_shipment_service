@@ -36,4 +36,6 @@ public class EntityTransferConstants {
     public static final String NAME_WO_DIACRITICS = "NameWoDiacritics";
     public static final String NAME = "Name";
 
+    public static final String MISSING_RECEIVING_BRANCH_VALIDATION = "Please enter the receiving agent in entity transfer tab before proceeding with the transfer !";
+
 }

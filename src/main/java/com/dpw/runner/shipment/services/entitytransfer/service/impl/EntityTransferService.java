@@ -1423,6 +1423,10 @@ public class EntityTransferService implements IEntityTransferService {
             log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        if(consolidationDetails.get().getReceivingBranch() == null) {
+            throw new ValidationException(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION);
+        }
+
         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
                 consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
         {
@@ -1547,6 +1551,10 @@ public class EntityTransferService implements IEntityTransferService {
             log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getShipId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        if(shipmentDetails.get().getReceivingBranch() == null) {
+            throw new ValidationException(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION);
+        }
+
         if(shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
                 shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
         {

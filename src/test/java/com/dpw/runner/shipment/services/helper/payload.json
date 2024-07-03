@@ -3067,6 +3067,7 @@
   "COMPLETE_SHIPMENT": {
     "id": 155357,
     "guid": "7d7c8d88-dc94-4012-8d8d-e442174f0b8c",
+    "receivingBranch": 1,
     "transportMode": "SEA",
     "direction": "EXP",
     "shipmentType": "BBK",
@@ -6497,6 +6498,7 @@
   "COMPLETE_CONSOLIDATION": {
     "id": 2258,
     "guid": "435d5a11-5c5b-446d-83a1-5e34cab90a17",
+    "receivingBranch": 1,
     "consolidationNumber": "CONS000234029",
     "consolidationType": "AGT",
     "transportMode": "SEA",
