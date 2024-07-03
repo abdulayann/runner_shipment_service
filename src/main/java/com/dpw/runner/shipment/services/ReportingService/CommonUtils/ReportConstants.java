@@ -608,6 +608,7 @@ public class ReportConstants {
     public static final String BY = "By";
     public static final String TO = "To";
     public static final String ISSUED_BY_NAME = "IssuedByName";
+    public static final String ISSUED_BY_NAME_IN_CAPS = "IssuedByNameInCaps";
     public static final String ISSUED_BY = "IssuedBy";
     public static final String AO_DEPT_CODE = "AODeptCode";
     public static final String SUM_OF_CHARGEABLE_WT = "SumOfChargeableWt";

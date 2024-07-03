@@ -101,7 +101,7 @@ public class CargoManifestAirConsolidationReport extends IReport{
         populateConsolidationFields(cargoManifestAirConsolidationModel.getConsolidationModel(), dictionary);
         dictionary = populateHAWBAndSecurityData(cargoManifestAirConsolidationModel.getShipmentModelList(), cargoManifestAirConsolidationModel.getAwbList(), dictionary, isSecurityData, isShipperAndConsignee, true);
         dictionary.put(TOTAL_GROSS_WEIGHT_UNIT, cargoManifestAirConsolidationModel.getPackSummaryResponse().getTotalPacksWeight());
-        dictionary.put(TOTAL_PACKS_UNIT, cargoManifestAirConsolidationModel.getPackSummaryResponse().getTotalPacks());
+        dictionary.put(TOTAL_PACKS_UNIT, (Constants.MPK).equals(cargoManifestAirConsolidationModel.getPackSummaryResponse().getTotalPacks()) ? Constants.PACKAGES : cargoManifestAirConsolidationModel.getPackSummaryResponse().getTotalPacks());
         dictionary.put(CONSOL_FLIGHT_CARRIER, cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails().getShippingLine());
         dictionary.put(CONSOL_AIRCRAFT_TYPE, cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails().getAircraftType());
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));

@@ -448,6 +448,7 @@ public class HawbReport extends IReport{
                 {
                     dictionary.put(ReportConstants.BY_FIRST, carrierRow.get(carrier).IATACode);
                     dictionary.put(ReportConstants.ISSUED_BY_NAME, carrierRow.get(carrier).ItemDescription);
+                    dictionary.put(ISSUED_BY_NAME_IN_CAPS, (carrierRow.get(carrier).ItemDescription).toUpperCase());
                 }
                 else
                 {
