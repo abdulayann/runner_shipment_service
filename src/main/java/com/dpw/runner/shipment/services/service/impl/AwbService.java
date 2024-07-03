@@ -1367,7 +1367,7 @@ public class AwbService implements IAwbService {
         awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
         awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
-        awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
+        awbCargoInfo.setShippingInformation(StringUtility.isEmpty(shipmentDetails.getOrderManagementNumber()) ? null : String.format(AwbConstants.ORDER_NUMBER, shipmentDetails.getOrderManagementNumber()));
         awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
         if(request.getAwbType().equalsIgnoreCase("DMAWB"))
             awbCargoInfo.setChargeCode(fetchChargeCodes(shipmentDetails.getPaymentTerms()));

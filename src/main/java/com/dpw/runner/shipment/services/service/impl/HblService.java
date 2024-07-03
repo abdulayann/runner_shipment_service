@@ -477,6 +477,7 @@ public class HblService implements IHblService {
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
         hblData.setVoyage(carrierDetails.getVoyage());
+        hblData.setPurchaseOrderNumber(shipmentDetail.getOrderManagementNumber());
         if (!Objects.isNull(additionalDetails.getImportBroker())) {
             Parties broker = additionalDetails.getImportBroker();
             if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME))
