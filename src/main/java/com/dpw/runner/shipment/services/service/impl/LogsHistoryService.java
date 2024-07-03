@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
+import java.util.Base64;
 import java.util.UUID;
 
 @Service
@@ -32,7 +33,7 @@ public class LogsHistoryService implements ILogsHistoryService {
                     .entityId(request.getEntityId())
                     .entityType(request.getEntityType())
                     .entityGuid(request.getEntityGuid())
-                    .entityPayload(entityPayload)
+                    .entityPayload(Base64.getEncoder().encodeToString(entityPayload))
                     .build();
             log.info("LogHistory Request: " + jsonHelper.convertToJson(logsHistory));
             logsHistoryDao.save(logsHistory);
@@ -49,7 +50,7 @@ public class LogsHistoryService implements ILogsHistoryService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         try {
-            String entityPayload = JsonCompression.decompressJson(logsHistory.get().getEntityPayload());
+            String entityPayload = JsonCompression.decompressJson(Base64.getDecoder().decode(logsHistory.get().getEntityPayload()));
             return LogHistoryResponse.builder()
                     .entityId(logsHistory.get().getEntityId())
                     .entityGuid(logsHistory.get().getEntityGuid())
