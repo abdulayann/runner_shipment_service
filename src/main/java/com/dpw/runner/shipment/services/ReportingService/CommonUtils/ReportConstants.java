@@ -904,6 +904,14 @@ public class ReportConstants {
     public static final String DESTINATION_PORT = "DestinationPort";
     public static final String ORIGIN_PORT_NAME_INCAPS = "OriginPortNameInCaps";
     public static final String ORIGIN_PORT_NAME_INCAPS_AIR = "OriginPortNameInCapsAir";
+    public static final String CONSOL_ORIGIN_AIRPORT_CODE = "ConsolOriginAirportCode";
+    public static final String CONSOL_ORIGIN_AIRPORT_CODE_CAPS = "ConsolOriginAirportCodeCaps";
+    public static final String CONSOL_DESTINATION_AIRPORT_CODE = "ConsolDestinationAirportCode";
+    public static final String CONSOL_DESTINATION_AIRPORT_CODE_CAPS = "ConsolDestinationAirportCodeCaps";
+    public static final String SHIPMENT_FIRST_FLIGHT_AND_DAY = "ShipmentFirstFlightAndDay";
+    public static final String SHIPMENT_SECOND_FLIGHT_AND_DAY = "ShipmentSecondFlightAndDay";
+    public static final String CONSOL_FIRST_FLIGHT_AND_DAY = "ConsolFirstFlightAndDay";
+    public static final String CONSOL_SECOND_FLIGHT_AND_DAY = "ConsolSecondFlightAndDay";
     public static final String DESTINATION_PORT_NAME_INCAPS = "DestinationPortNameInCaps";
     public static final String DESTINATION_PORT_NAME_INCAPS_AIR = "DestinationPortNameInCapsAir";
     public static final String SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE = "ShipmentFlightNoWithIATACode";

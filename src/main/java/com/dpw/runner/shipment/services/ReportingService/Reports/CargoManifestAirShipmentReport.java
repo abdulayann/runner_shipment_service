@@ -4,20 +4,20 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestAirShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
@@ -62,6 +62,14 @@ public class CargoManifestAirShipmentReport extends IReport{
         List<Awb> awbList = new ArrayList<>();
         awbList.add(cargoManifestAirShipmentModel.getAwb());
         dictionary = populateHAWBAndSecurityData(List.of(cargoManifestAirShipmentModel.getShipmentDetails()), awbList, dictionary, isSecurityData, isShipperAndConsignee, false);
+        boolean airRoutingTagsAdded = getAirRoutingFlightTags(cargoManifestAirShipmentModel.getShipmentDetails().getRoutingsList(), dictionary, true);
+        CarrierDetailModel carrierDetailModel = cargoManifestAirShipmentModel.getShipmentDetails().getCarrierDetails();
+        if(!airRoutingTagsAdded) {
+            Map<String, CarrierMasterData> carriersMap = new HashMap<>();
+            if(!CommonUtils.IsStringNullOrEmpty(carrierDetailModel.getShippingLine()))
+                carriersMap = masterDataUtils.getCarriersData(Set.of(carrierDetailModel.getShippingLine()));
+            dictionary.put(SHIPMENT_FIRST_FLIGHT_AND_DAY, getFlightAndDayString(carriersMap, carrierDetailModel.getShippingLine(), carrierDetailModel.getFlightNumber(), carrierDetailModel.getEtd()));
+        }
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
         ReportHelper.addTenantDetails(dictionary, cargoManifestAirShipmentModel.getTenantModel());
         PartiesModel originAgent = cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails().getExportBroker();
