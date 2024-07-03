@@ -175,7 +175,7 @@ public class CargoManifestReport extends IReport{
             try {packsUnit = packsUnitDesc.getItemDescription();} catch (Exception ignored) {}
             if(CommonUtils.IsStringNullOrEmpty(packsUnit))
                 packsUnit = cargoManifestModel.shipmentDetails.getPacksUnit();
-            dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, packsUnit);
+            dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, Constants.MPK.equals(packsUnit) ? Constants.PACKAGES : packsUnit);
         }
         try {
             if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine())) {
