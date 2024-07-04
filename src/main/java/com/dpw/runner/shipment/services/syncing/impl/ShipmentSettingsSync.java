@@ -27,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -88,7 +87,8 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     public ResponseEntity<IRunnerResponse> syncProductSequence(ProductSequenceConfig productSequenceConfig, HttpHeaders headers) throws RunnerException {
         ProductSequenceConfigDto productSequenceConfigDto = mapProductSequenceConfig(productSequenceConfig);
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(productSequenceConfigDto).module(SyncingConstants.PRODUCT_SEQUENCE).build());
-        syncService.callSyncAsync(payload, StringUtility.convertToString(productSequenceConfig.getId()), StringUtility.convertToString(productSequenceConfig.getGuid()), "Shipment Settings product sequence Details", headers);
+        String guid = StringUtility.convertToString(productSequenceConfig.getGuid());
+        syncService.pushToKafka(payload, StringUtility.convertToString(productSequenceConfig.getId()), guid, "Product Sequence", guid);
         return ResponseHelper.buildSuccessResponse(productSequenceConfigDto);
     }
 
