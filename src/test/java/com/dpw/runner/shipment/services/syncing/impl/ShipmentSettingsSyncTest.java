@@ -1,16 +1,12 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ProductSequenceConfigDto;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.TenantProductsDto;
@@ -25,16 +21,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
@@ -91,7 +83,6 @@ class ShipmentSettingsSyncTest {
         when(modelMapper.map(any(), eq(ProductSequenceConfigDto.class))).thenReturn(new ProductSequenceConfigDto());
         when(modelMapper.map(any(), eq(TenantProductsDto.class))).thenReturn(new TenantProductsDto());
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
-        doNothing().when(syncService).callSyncAsync(anyString(), any(), any(), any(), any());
 
         // Act
         var response = shipmentSettingsSync.syncProductSequence(inputData, new HttpHeaders());
