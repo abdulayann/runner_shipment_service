@@ -345,7 +345,7 @@ public abstract class IReport {
         if(!Objects.isNull(pod)) {
             dictionary.put(ReportConstants.POD_CODE, pod.getLocCode());
             if (Objects.equals(shipment.getTransportMode(), AIR) && BOOKING_ORDER.equalsIgnoreCase(shipment.getDocument()))
-                dictionary.put(ReportConstants.POL_CODE, pod.getIataCode());
+                dictionary.put(ReportConstants.POD_CODE, pod.getIataCode());
         }
         dictionary.put(ReportConstants.POD_COUNTRY, pod != null ? pod.getCountry() : null);
         dictionary.put(ReportConstants.POL_COUNTRY, pol != null ? pol.getCountry() : null);
@@ -531,13 +531,13 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DESTINATION_NAME_, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
-        dictionary.put(DESTINATION_COUNTRY_NAME, destination != null ? destination.getCountryThreeDigitCode() : null);
 
         dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
         if(destination != null) {
             dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, destination.getName().toUpperCase());
             String destinationCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(destination.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(destination.getCountry()).getItemDescription() : "";
             dictionary.put(ReportConstants.DESTINATION_COUNTRY_NAME_IN_CAPS, destinationCountry.toUpperCase());
+            dictionary.put(DESTINATION_COUNTRY_NAME, destinationCountry);
             dictionary.put(ReportConstants.FPOD_IN_CAPS, destination.getName().toUpperCase());
             dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, destinationCountry.toUpperCase());
             dictionary.put(DESTINATION_CODE_IN_CAPS, StringUtility.toUpperCase(destination.getLocCode()));
