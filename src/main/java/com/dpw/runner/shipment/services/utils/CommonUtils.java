@@ -80,11 +80,14 @@ public class CommonUtils {
         return canvas.getBufferedImage();
     }
 
-    public static byte[] generateBarcodeImage(String barcodeText) throws BarcodeException, OutputException {
-        Barcode barcode = BarcodeFactory.createCode128(barcodeText);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        BarcodeImageHandler.writePNG(barcode, outputStream);
-        return outputStream.toByteArray();
+    public static byte[] generateBarcodeImage(String barcodeText) throws BarcodeException, OutputException, IOException {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Barcode barcode = BarcodeFactory.createCode128(barcodeText);
+            BarcodeImageHandler.writePNG(barcode, outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            throw e;
+        }
     }
 
     public static ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator) {
@@ -217,9 +220,10 @@ public class CommonUtils {
     }
 
     public static byte[] ImageToByte(BufferedImage img) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(img, "jpg", baos);
-        return baos.toByteArray();
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            ImageIO.write(img, "jpg", baos);
+            return baos.toByteArray();
+        }
     }
 
     public static boolean HasUnsupportedCharacters(String input) {
@@ -234,44 +238,83 @@ public class CommonUtils {
     }
 
     public static byte[] concatAndAddContent(List<byte[]> pdfByteContent) throws DocumentException, IOException {
-        OutputStream ms = new ByteArrayOutputStream();
-        Document doc = new Document();
-        PdfCopy copy = new PdfSmartCopy(doc, ms);
-        doc.open();
-        PdfReader reader;
-        for (byte[] dataByte : pdfByteContent) {
-            reader = new PdfReader(dataByte);
-            copy.addDocument(reader);
+
+        Document doc = null;
+        PdfCopy copy = null;
+        try (ByteArrayOutputStream ms = new ByteArrayOutputStream()) {
+            doc = new Document();
+            copy = new PdfSmartCopy(doc, ms);
+            doc.open();
+
+            for (byte[] dataByte : pdfByteContent) {
+                PdfReader reader = null;
+                try {
+                    reader = new PdfReader(dataByte);
+                    copy.addDocument(reader);
+                } finally {
+                    if (reader != null) {
+                        reader.close();
+                    }
+                }
+            }
+            return ms.toByteArray();
+        } finally {
+            if (doc != null) {
+                doc.close();
+            }
+            if (copy != null) {
+                copy.close();
+            }
         }
-        doc.close();
-        return ((ByteArrayOutputStream)ms).toByteArray();
     }
 
     public static byte[] removeLastPage(byte[] bytes) throws IOException, DocumentException {
-        PdfReader r = new PdfReader(bytes);
-        OutputStream ms = new ByteArrayOutputStream();
-        Document doc = new Document();
-        PdfWriter w = PdfWriter.getInstance(doc, ms);
-        doc.open();
-        var pagesToKeep = r.getNumberOfPages();
-        for(int page=1; page<pagesToKeep; page++){
-            doc.newPage();
-            w.getDirectContent().addTemplate(w.getImportedPage(r, page), 0, 0);
+        PdfReader reader = null;
+
+        try (OutputStream ms = new ByteArrayOutputStream()) {
+            reader = new PdfReader(bytes);
+            Document doc = new Document();
+            PdfWriter w = PdfWriter.getInstance(doc, ms);
+            doc.open();
+            var pagesToKeep = reader.getNumberOfPages();
+            for (int page = 1; page < pagesToKeep; page++) {
+                doc.newPage();
+                w.getDirectContent().addTemplate(w.getImportedPage(reader, page), 0, 0);
+            }
+            doc.close();
+            w.close();
+            return ((ByteArrayOutputStream) ms).toByteArray();
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
         }
-        doc.close();
-        return ((ByteArrayOutputStream)ms).toByteArray();
     }
 
     public static byte[] getLastPage(byte[] bytes) throws IOException, DocumentException {
-        PdfReader r = new PdfReader(bytes);
-        OutputStream ms = new ByteArrayOutputStream();
-        Document doc = new Document();
-        PdfWriter w = PdfWriter.getInstance(doc, ms);
-        doc.open();
-        doc.newPage();
-        w.getDirectContent().addTemplate(w.getImportedPage(r, r.getNumberOfPages()), 0, 0);
-        doc.close();
-        return ((ByteArrayOutputStream)ms).toByteArray();
+        PdfReader reader = null;
+        OutputStream ms = null;
+
+        try {
+            reader = new PdfReader(bytes);
+            ms = new ByteArrayOutputStream();
+            Document doc = new Document();
+            PdfWriter writer = PdfWriter.getInstance(doc, ms);
+            doc.open();
+            doc.newPage();
+            writer.getDirectContent().addTemplate(writer.getImportedPage(reader, reader.getNumberOfPages()), 0, 0);
+
+            doc.close();
+            writer.close(); // Close PdfWriter explicitly
+            return ((ByteArrayOutputStream) ms).toByteArray();
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+            if (ms != null) {
+                ms.close();
+            }
+        }
     }
 
     public static void AddWaterMark(PdfContentByte dc, String text, BaseFont font, float fontSize, float angle, BaseColor color, Rectangle realPageSize, Rectangle rect)
@@ -292,18 +335,27 @@ public class CommonUtils {
         dc.restoreState();
     }
 
-    public static byte[] addWatermarkToPdfBytes(byte[] bytes, BaseFont bf, String watermark) throws IOException, DocumentException {
-        OutputStream ms = new ByteArrayOutputStream(10 * 1024);
-        PdfReader reader = new PdfReader(bytes);
-        PdfStamper stamper = new PdfStamper(reader, ms);
-        int times = reader.getNumberOfPages();
-        for (int i = 1; i <= times; i++)
-        {
-            var dc = stamper.getOverContent(i);
-            AddWaterMark(dc, watermark, bf, 50, 35, new BaseColor(70, 70, 255), reader.getPageSizeWithRotation(i), null);
-        }
-        stamper.close();
-        return ((ByteArrayOutputStream)ms).toByteArray();
+     public static byte[] addWatermarkToPdfBytes(byte[] bytes, BaseFont bf, String watermark) throws IOException, DocumentException  {
+         PdfReader reader = null;
+         PdfStamper stamper = null;
+         try (ByteArrayOutputStream ms = new ByteArrayOutputStream(10 * 1024)) {
+             reader = new PdfReader(bytes);
+             stamper = new PdfStamper(reader, ms);
+
+             int numberOfPages = reader.getNumberOfPages();
+             for (int i = 1; i <= numberOfPages; i++) {
+                 PdfContentByte dc = stamper.getOverContent(i);
+                 AddWaterMark(dc, watermark, bf, 50, 35, new BaseColor(70, 70, 255), reader.getPageSizeWithRotation(i), null);
+             }
+             return ms.toByteArray();
+         } finally {
+             if (stamper != null) {
+                 stamper.close();
+             }
+             if (reader != null) {
+                 reader.close();
+             }
+         }
     }
 
     public static ByteArrayResource getByteResource(InputStream inputStream, String fileName) throws IOException {
