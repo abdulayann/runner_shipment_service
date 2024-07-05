@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services;
+package com.dpw.runner.shipment.services.poc;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;

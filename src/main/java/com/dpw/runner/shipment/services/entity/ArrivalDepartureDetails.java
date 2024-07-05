@@ -1,22 +1,14 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.apache.poi.hpsf.Decimal;
-import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.*;
+import org.hibernate.annotations.BatchSize;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.Table;
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 
 @Entity

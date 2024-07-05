@@ -98,7 +98,6 @@ public class ValidatorUtility {
             return errors;
         }
         for (String field : schemaObject.keySet()) {
-            JsonValue fieldValue = jsonObject.get(field);
             JsonObject fieldSchema = schemaObject.getJsonObject(field);
 
             for (String validationProperty : fieldSchema.keySet()) {

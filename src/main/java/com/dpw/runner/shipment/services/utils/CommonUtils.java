@@ -62,6 +62,7 @@ public class CommonUtils {
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
 
+    @Autowired
     public CommonUtils(ObjectMapper mapper) {
         this.mapper = mapper;
     }

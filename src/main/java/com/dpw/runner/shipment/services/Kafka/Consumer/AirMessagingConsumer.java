@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.repository.interfaces.IGenericQueryRepository;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,8 +27,7 @@ import java.util.Objects;
 @Slf4j
 @Generated
 public class AirMessagingConsumer {
-    @Autowired
-    private IGenericQueryRepository genericQueryRepository;
+
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
