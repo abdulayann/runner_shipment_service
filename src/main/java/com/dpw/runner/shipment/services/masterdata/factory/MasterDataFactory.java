@@ -36,5 +36,9 @@ public class MasterDataFactory {
         }
     }
 
+    public IMasterDataService getMDMServiceBean(){
+        return mapperMasterData;
+    }
+
 
 }
