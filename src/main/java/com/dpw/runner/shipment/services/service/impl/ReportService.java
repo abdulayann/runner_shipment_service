@@ -1093,7 +1093,7 @@ public class ReportService implements IReportService {
             }
         }
 
-        OutputStream ms = new ByteArrayOutputStream(MAX_BUFFER_SIZE);
+        ByteArrayOutputStream ms = new ByteArrayOutputStream(MAX_BUFFER_SIZE);
         PdfReader reader = null;
 
         try {
@@ -1115,19 +1115,11 @@ public class ReportService implements IReportService {
             dc.restoreState();
 
             stamper.close();
-            return ((ByteArrayOutputStream) ms).toByteArray();
+            reader.close();
+            return ms.toByteArray();
         } catch (IOException | DocumentException | OutputException | BarcodeException e) {
             log.error("Error adding barcode to PDF: " + e.getMessage());
             throw new RuntimeException("Error adding barcode to PDF", e);
-        } finally {
-            try {
-                if (reader != null) {
-                    reader.close();
-                }
-                ms.close();
-            } catch (IOException e) {
-                log.error("Error closing resources: " + e.getMessage());
-            }
         }
     }
 
@@ -1209,69 +1201,64 @@ public class ReportService implements IReportService {
     }
 
     public byte[] MergeDocumentBytes(byte[] mainDoc, byte[] firstPage, byte[] backPrint, String logoPath, String reportInfo, ShipmentSettingsDetails tenantRow) throws DocumentException, IOException {
-        OutputStream destinationDocumentStream = new ByteArrayOutputStream();
+        ByteArrayOutputStream destinationDocumentStream = new ByteArrayOutputStream();
 
         PdfReader pdfReader1 = null;
         PdfConcatenate pdfConcat = null;
-        try (destinationDocumentStream) {
-            pdfConcat = new PdfConcatenate(destinationDocumentStream);
-            pdfReader1 = null;
-            List<Integer> pages = new ArrayList<>();
-            pages.add(1);
+        pdfConcat = new PdfConcatenate(destinationDocumentStream);
+        pdfReader1 = null;
+        List<Integer> pages = new ArrayList<>();
+        pages.add(1);
 
-            if (firstPage != null) {
-                pdfReader1 = new PdfReader(firstPage);
-                pdfReader1.selectPages(pages);
-                pdfConcat.addPages(pdfReader1);
-            }
+        if (firstPage != null) {
+            pdfReader1 = new PdfReader(firstPage);
+            pdfReader1.selectPages(pages);
+            pdfConcat.addPages(pdfReader1);
+        }
 
-            if (reportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && tenantRow.getPrintAfterEachPage()) {
-                PdfReader pdfReader = new PdfReader(mainDoc);
-                int totalPages = pdfReader.getNumberOfPages();
-                for (int i = 1; i <= totalPages; i++) {
-                    PdfReader pdfReader_maindoc = new PdfReader(mainDoc);
-                    pages = new ArrayList<>();
-                    pages.add(i);
-                    pdfReader_maindoc.selectPages(pages);
-                    pdfConcat.addPages(pdfReader_maindoc);
-
-                    if (backPrint != null) {
-                        PdfReader pdfReader_backdoc = new PdfReader(backPrint);
-                        List<Integer> pages2 = new ArrayList<>();
-                        pages2.add(1);
-                        pdfReader_backdoc.selectPages(pages2);
-                        pdfConcat.addPages(pdfReader_backdoc);
-                    }
-                    pdfReader_maindoc.close();
-                }
-                pdfReader.close();
-            } else {
-                pdfReader1 = new PdfReader(mainDoc);
+        if (reportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && tenantRow.getPrintAfterEachPage()) {
+            PdfReader pdfReader = new PdfReader(mainDoc);
+            int totalPages = pdfReader.getNumberOfPages();
+            for (int i = 1; i <= totalPages; i++) {
+                PdfReader pdfReader_maindoc = new PdfReader(mainDoc);
                 pages = new ArrayList<>();
-                for (int i = 1; i <= pdfReader1.getNumberOfPages(); i++) {
-                    pages.add(i);
-                }
-                pdfReader1.selectPages(pages);
-                pdfConcat.addPages(pdfReader1);
+                pages.add(i);
+                pdfReader_maindoc.selectPages(pages);
+                pdfConcat.addPages(pdfReader_maindoc);
 
                 if (backPrint != null) {
-                    pages = new ArrayList<>();
-                    pages.add(1);
-                    pdfReader1 = new PdfReader(backPrint);
-                    pdfReader1.selectPages(pages);
-                    pdfConcat.addPages(pdfReader1);
+                    PdfReader pdfReader_backdoc = new PdfReader(backPrint);
+                    List<Integer> pages2 = new ArrayList<>();
+                    pages2.add(1);
+                    pdfReader_backdoc.selectPages(pages2);
+                    pdfConcat.addPages(pdfReader_backdoc);
                 }
+                pdfReader_maindoc.close();
             }
+            pdfReader.close();
+        } else {
+            pdfReader1 = new PdfReader(mainDoc);
+            pages = new ArrayList<>();
+            for (int i = 1; i <= pdfReader1.getNumberOfPages(); i++) {
+                pages.add(i);
+            }
+            pdfReader1.selectPages(pages);
+            pdfConcat.addPages(pdfReader1);
 
-            return addImage(((ByteArrayOutputStream) destinationDocumentStream).toByteArray(), logoPath);
-        } finally {
-            if (pdfReader1 != null) {
-                pdfReader1.close();
-            }
-            if (pdfConcat != null) {
-                pdfConcat.close();
+            if (backPrint != null) {
+                pages = new ArrayList<>();
+                pages.add(1);
+                pdfReader1 = new PdfReader(backPrint);
+                pdfReader1.selectPages(pages);
+                pdfConcat.addPages(pdfReader1);
             }
         }
+
+        if(pdfReader1 != null) {
+            pdfReader1.close();
+        }
+        pdfConcat.close();
+        return addImage(destinationDocumentStream.toByteArray(), logoPath);
     }
 
     private Boolean isHblType(String type, String key)
