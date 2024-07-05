@@ -39,15 +39,13 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {
-                }
+                new ParameterizedTypeReference<>() {}
         );
 
         return responseEntity.getBody();
     }
 
-    @NotNull
-    private HttpHeaders getHttpHeaders(String token) {
+    @NotNull HttpHeaders getHttpHeaders(String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", token);
@@ -64,8 +62,7 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {
-                }
+                new ParameterizedTypeReference<>() {}
         );
 
         return responseEntity.getBody();
@@ -81,8 +78,7 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {
-                }
+                new ParameterizedTypeReference<>() {}
         );
 
         return responseEntity.getBody();
@@ -97,8 +93,7 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
-                new ParameterizedTypeReference<>() {
-                }
+                new ParameterizedTypeReference<>() {}
         );
 
         return responseEntity.getBody();
@@ -115,8 +110,7 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {
-                }
+                new ParameterizedTypeReference<>() {}
         );
 
         return responseEntity.getBody();
