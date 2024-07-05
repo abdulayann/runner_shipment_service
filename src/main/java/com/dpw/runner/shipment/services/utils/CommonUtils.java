@@ -80,7 +80,7 @@ public class CommonUtils {
         return canvas.getBufferedImage();
     }
 
-    public static byte[] generateBarcodeImage(String barcodeText) throws BarcodeException, OutputException, IOException {
+    public static byte[] generateBarcodeImage(String barcodeText) throws BarcodeException, OutputException {
         Barcode barcode = BarcodeFactory.createCode128(barcodeText);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         BarcodeImageHandler.writePNG(barcode, outputStream);
