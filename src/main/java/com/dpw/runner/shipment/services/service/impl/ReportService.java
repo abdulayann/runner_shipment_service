@@ -1083,7 +1083,7 @@ public class ReportService implements IReportService {
         return bytes;
     }
 
-    private byte[] addBarCodeInReport(byte[] bytes, String str, int X, int Y, String docType) throws ValidationException {
+    private byte[] addBarCodeInReport(byte[] bytes, String str, int x, int y, String docType) throws ValidationException {
         if (StringUtility.isEmpty(str)) return bytes;
         if (CommonUtils.HasUnsupportedCharacters(str)) {
             if (docType != null) {
@@ -1109,7 +1109,7 @@ public class ReportService implements IReportService {
             byte[] imgBytes1 = CommonUtils.generateBarcodeImage(str);
             Image image1 = Image.getInstance(imgBytes1);
             image1.scaleAbsolute(300, 30);
-            image1.setAbsolutePosition((int) realPageSize.getLeft() + X, realPageSize.getTop() + Y);
+            image1.setAbsolutePosition((int) realPageSize.getLeft() + x, realPageSize.getTop() + y);
             dc.addImage(image1);
 
             dc.restoreState();
