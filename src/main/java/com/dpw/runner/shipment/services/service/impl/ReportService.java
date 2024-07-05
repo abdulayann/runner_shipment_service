@@ -48,6 +48,8 @@ import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
+import net.sourceforge.barbecue.BarcodeException;
+import net.sourceforge.barbecue.output.OutputException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -125,6 +127,8 @@ public class ReportService implements IReportService {
     @Autowired
     @Lazy
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
+
+    private static final int MAX_BUFFER_SIZE = 10 * 1024;
 
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException, RunnerException {
@@ -1079,7 +1083,7 @@ public class ReportService implements IReportService {
         return bytes;
     }
 
-    private byte[] AddBarCodeInReport(byte[] bytes, String str, int X, int Y, String docType) {
+    public byte[] AddBarCodeInReport(byte[] bytes, String str, int X, int Y, String docType) throws ValidationException {
         if (StringUtility.isEmpty(str)) return bytes;
         if (CommonUtils.HasUnsupportedCharacters(str)) {
             if (docType != null) {
@@ -1088,31 +1092,42 @@ public class ReportService implements IReportService {
                 throw new ValidationException("Unsupported characters, Please check and re-generate.");
             }
         }
-        {
-            OutputStream ms = new ByteArrayOutputStream(10 * 1024);
-            PdfReader reader = null;
+
+        OutputStream ms = new ByteArrayOutputStream(MAX_BUFFER_SIZE);
+        PdfReader reader = null;
+
+        try {
+            reader = new PdfReader(bytes);
+            PdfStamper stamper = new PdfStamper(reader, ms);
+            Rectangle realPageSize = reader.getPageSizeWithRotation(1);
+            PdfContentByte dc = stamper.getOverContent(1);
+            PdfGState gstate = new PdfGState();
+            dc.saveState();
+            dc.setGState(gstate);
+
+            // Generate barcode image
+            byte[] imgBytes1 = CommonUtils.generateBarcodeImage(str);
+            Image image1 = Image.getInstance(imgBytes1);
+            image1.scaleAbsolute(300, 30);
+            image1.setAbsolutePosition((int) realPageSize.getLeft() + X, realPageSize.getTop() + Y);
+            dc.addImage(image1);
+
+            dc.restoreState();
+
+            stamper.close();
+            return ((ByteArrayOutputStream) ms).toByteArray();
+        } catch (IOException | DocumentException | OutputException | BarcodeException e) {
+            log.error("Error adding barcode to PDF: " + e.getMessage());
+            throw new RuntimeException("Error adding barcode to PDF", e);
+        } finally {
             try {
-                reader = new PdfReader(bytes);
-                PdfStamper stamper = new PdfStamper(reader, ms);
-                Rectangle realPageSize = reader.getPageSizeWithRotation(1);
-                PdfContentByte dc = stamper.getOverContent(1);
-                PdfGState gstate = new PdfGState();
-                dc.saveState();
-                dc.setGState(gstate);
-                byte[] imgBytes1 = CommonUtils.generateBarcodeImage(str);
-                Image image1 = Image.getInstance(imgBytes1);
-                image1.scaleAbsolute(300, 30);
-                image1.setAbsolutePosition((int) realPageSize.getLeft() + X, realPageSize.getTop() + Y);
-                dc.addImage(image1);
-                dc.restoreState();
-                stamper.close();
-                return ((ByteArrayOutputStream)ms).toByteArray();
-            } catch (IOException | DocumentException e) {
-                log.error(e.getMessage());
-            } catch(Exception e) {
-                log.error(e.getMessage());
+                if (reader != null) {
+                    reader.close();
+                }
+                ms.close();
+            } catch (IOException e) {
+                log.error("Error closing resources: " + e.getMessage());
             }
-            return null;
         }
     }
 
@@ -1193,65 +1208,70 @@ public class ReportService implements IReportService {
 
     }
 
-    public byte[] MergeDocumentBytes(byte[] mainDoc, byte[] firstPage, byte[] backPrint, String logoPath, String ReportInfo, ShipmentSettingsDetails tenantRow) throws DocumentException, IOException {
-        byte[] pdfByteContent;
+    public byte[] MergeDocumentBytes(byte[] mainDoc, byte[] firstPage, byte[] backPrint, String logoPath, String reportInfo, ShipmentSettingsDetails tenantRow) throws DocumentException, IOException {
         OutputStream destinationDocumentStream = new ByteArrayOutputStream();
-        PdfConcatenate pdfConcat = new PdfConcatenate(destinationDocumentStream);
-        PdfReader pdfReader1 = new PdfReader(mainDoc);
-        List<Integer> pages = new ArrayList<>();
-        pages.add(1);
 
-        if (firstPage != null)
-        {
-            pdfReader1 = new PdfReader(firstPage);
-            pdfReader1.selectPages(pages);
-            pdfConcat.addPages(pdfReader1);
-        }
+        PdfReader pdfReader1 = null;
+        PdfConcatenate pdfConcat = null;
+        try (destinationDocumentStream) {
+            pdfConcat = new PdfConcatenate(destinationDocumentStream);
+            pdfReader1 = null;
+            List<Integer> pages = new ArrayList<>();
+            pages.add(1);
 
-        if(ReportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && tenantRow.getPrintAfterEachPage())
-        {
-            PdfReader pdfReader = new PdfReader(mainDoc);
-            int totalPages = pdfReader.getNumberOfPages();
-            for (int i = 1; i <= totalPages; i++){
-                PdfReader pdfReader_maindoc = new PdfReader(mainDoc);
+            if (firstPage != null) {
+                pdfReader1 = new PdfReader(firstPage);
+                pdfReader1.selectPages(pages);
+                pdfConcat.addPages(pdfReader1);
+            }
+
+            if (reportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && tenantRow.getPrintAfterEachPage()) {
+                PdfReader pdfReader = new PdfReader(mainDoc);
+                int totalPages = pdfReader.getNumberOfPages();
+                for (int i = 1; i <= totalPages; i++) {
+                    PdfReader pdfReader_maindoc = new PdfReader(mainDoc);
                     pages = new ArrayList<>();
                     pages.add(i);
                     pdfReader_maindoc.selectPages(pages);
                     pdfConcat.addPages(pdfReader_maindoc);
-                if (backPrint != null)
-                {
-                    PdfReader pdfReader_backdoc = new PdfReader(backPrint);
-                    List<Integer> pages2 = new ArrayList<>();
-                    pages2.add(1);
-                    pdfReader_backdoc.selectPages(pages2);
-                    pdfConcat.addPages(pdfReader_backdoc);
-                }
-            }
-            pdfReader.close();
-        } else
-        {
-            pdfReader1 = new PdfReader(mainDoc);
-            pages = new ArrayList<>();
-            for (int i = 1; i <= pdfReader1.getNumberOfPages(); i++)
-            {
-                pages.add(i);
-            }
-            pdfReader1.selectPages(pages);
-            pdfConcat.addPages(pdfReader1);
 
-            if (backPrint != null)
-            {
+                    if (backPrint != null) {
+                        PdfReader pdfReader_backdoc = new PdfReader(backPrint);
+                        List<Integer> pages2 = new ArrayList<>();
+                        pages2.add(1);
+                        pdfReader_backdoc.selectPages(pages2);
+                        pdfConcat.addPages(pdfReader_backdoc);
+                    }
+                    pdfReader_maindoc.close();
+                }
+                pdfReader.close();
+            } else {
+                pdfReader1 = new PdfReader(mainDoc);
                 pages = new ArrayList<>();
-                pages.add(1);
-                pdfReader1 = new PdfReader(backPrint);
+                for (int i = 1; i <= pdfReader1.getNumberOfPages(); i++) {
+                    pages.add(i);
+                }
                 pdfReader1.selectPages(pages);
                 pdfConcat.addPages(pdfReader1);
+
+                if (backPrint != null) {
+                    pages = new ArrayList<>();
+                    pages.add(1);
+                    pdfReader1 = new PdfReader(backPrint);
+                    pdfReader1.selectPages(pages);
+                    pdfConcat.addPages(pdfReader1);
+                }
+            }
+
+            return addImage(((ByteArrayOutputStream) destinationDocumentStream).toByteArray(), logoPath);
+        } finally {
+            if (pdfReader1 != null) {
+                pdfReader1.close();
+            }
+            if (pdfConcat != null) {
+                pdfConcat.close();
             }
         }
-        pdfReader1.close();
-        pdfConcat.close();
-        pdfByteContent = ((ByteArrayOutputStream)destinationDocumentStream).toByteArray();
-        return addImage(pdfByteContent, logoPath);
     }
 
     private Boolean isHblType(String type, String key)
