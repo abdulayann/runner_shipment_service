@@ -1083,7 +1083,7 @@ public class ReportService implements IReportService {
         return bytes;
     }
 
-    public byte[] AddBarCodeInReport(byte[] bytes, String str, int X, int Y, String docType) throws ValidationException {
+    private byte[] AddBarCodeInReport(byte[] bytes, String str, int X, int Y, String docType) throws ValidationException {
         if (StringUtility.isEmpty(str)) return bytes;
         if (CommonUtils.HasUnsupportedCharacters(str)) {
             if (docType != null) {
@@ -1117,10 +1117,10 @@ public class ReportService implements IReportService {
             stamper.close();
             reader.close();
             return ms.toByteArray();
-        } catch (IOException | DocumentException | OutputException | BarcodeException e) {
-            log.error("Error adding barcode to PDF: " + e.getMessage());
-            throw new RuntimeException("Error adding barcode to PDF", e);
+        } catch (Exception e) {
+            log.error(e.getMessage());
         }
+        return null;
     }
 
     private byte[] getBytesForNeutralAWB(Object json){
