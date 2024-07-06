@@ -301,6 +301,7 @@ class ConsTruckDriverProofTest extends CommonMocks {
         mockUnloc();
         mockCarrier();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(consTruckDriverProof.populateDictionary(truckDriverModel));
     }
 

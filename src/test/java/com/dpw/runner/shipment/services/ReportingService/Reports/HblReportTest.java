@@ -301,6 +301,7 @@ class HblReportTest extends CommonMocks {
         when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(hblReport.getDocumentModel(123L));
     }
 
@@ -456,6 +457,7 @@ class HblReportTest extends CommonMocks {
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -609,6 +611,7 @@ class HblReportTest extends CommonMocks {
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -756,6 +759,7 @@ class HblReportTest extends CommonMocks {
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
         mockShipmentSettings();
+        mockTenantSettings();
         Map<String, Object> response = hblReport.populateDictionary(hblModel);
         assertNotNull(response);
     }

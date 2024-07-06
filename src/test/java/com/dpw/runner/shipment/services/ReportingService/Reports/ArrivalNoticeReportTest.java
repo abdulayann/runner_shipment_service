@@ -358,6 +358,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         mockBill();
         mockCommodity();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 
@@ -399,6 +400,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         mockBill();
         mockCommodity();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 

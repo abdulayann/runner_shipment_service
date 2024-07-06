@@ -48,6 +48,8 @@ import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
+import net.sourceforge.barbecue.BarcodeException;
+import net.sourceforge.barbecue.output.OutputException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -125,6 +127,8 @@ public class ReportService implements IReportService {
     @Autowired
     @Lazy
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
+
+    private static final int MAX_BUFFER_SIZE = 10 * 1024;
 
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException, RunnerException {
@@ -282,7 +286,7 @@ public class ReportService implements IReportService {
                 else dataRetrived.put(ReportConstants.COUNT, null);
                 byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
                 if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
-                byte[] docBytes = AddBarCodeInAWBLableReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER)+copyCount : copyCount, dataRetrived.get(ReportConstants.HAWB_NUMBER)+"");
+                byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER)+copyCount : copyCount, dataRetrived.get(ReportConstants.HAWB_NUMBER)+"");
                 pdf_Bytes.add(docBytes);
             }
             return CommonUtils.concatAndAddContent(pdf_Bytes);
@@ -350,7 +354,7 @@ public class ReportService implements IReportService {
                         mainDocPage = CommonUtils.removeLastPage(mainDocPage);
                     }
                     if(reportRequest.isPrintBarcode())
-                        mainDocPage = AddBarCodeInReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER).toString(), 140, -50, ReportConstants.MAWB);
+                        mainDocPage = addBarCodeInReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER).toString(), 140, -50, ReportConstants.MAWB);
                     pdf_Bytes.add(mainDocPage);
                 }
                 if(lastPage != null)
@@ -1070,16 +1074,16 @@ public class ReportService implements IReportService {
         return ans;
     }
 
-    private byte[] AddBarCodeInAWBLableReport(byte[] bytes, String mawbNumber, String hawbNumber)
+    private byte[] addBarCodeInAWBLableReport(byte[] bytes, String mawbNumber, String hawbNumber)
     {
         if(StringUtility.isNotEmpty(mawbNumber) && mawbNumber.length() > 5)
-            bytes = this.AddBarCodeInReport(bytes, mawbNumber,140,-170, ReportConstants.MAWB);
+            bytes = this.addBarCodeInReport(bytes, mawbNumber,140,-170, ReportConstants.MAWB);
         if(StringUtility.isNotEmpty(hawbNumber))
-            bytes = this.AddBarCodeInReport(bytes, hawbNumber, 140, -490, ReportConstants.HAWB);
+            bytes = this.addBarCodeInReport(bytes, hawbNumber, 140, -490, ReportConstants.HAWB);
         return bytes;
     }
 
-    private byte[] AddBarCodeInReport(byte[] bytes, String str, int X, int Y, String docType) {
+    private byte[] addBarCodeInReport(byte[] bytes, String str, int x, int y, String docType) throws ValidationException {
         if (StringUtility.isEmpty(str)) return bytes;
         if (CommonUtils.HasUnsupportedCharacters(str)) {
             if (docType != null) {
@@ -1088,32 +1092,35 @@ public class ReportService implements IReportService {
                 throw new ValidationException("Unsupported characters, Please check and re-generate.");
             }
         }
-        {
-            OutputStream ms = new ByteArrayOutputStream(10 * 1024);
-            PdfReader reader = null;
-            try {
-                reader = new PdfReader(bytes);
-                PdfStamper stamper = new PdfStamper(reader, ms);
-                Rectangle realPageSize = reader.getPageSizeWithRotation(1);
-                PdfContentByte dc = stamper.getOverContent(1);
-                PdfGState gstate = new PdfGState();
-                dc.saveState();
-                dc.setGState(gstate);
-                byte[] imgBytes1 = CommonUtils.generateBarcodeImage(str);
-                Image image1 = Image.getInstance(imgBytes1);
-                image1.scaleAbsolute(300, 30);
-                image1.setAbsolutePosition((int) realPageSize.getLeft() + X, realPageSize.getTop() + Y);
-                dc.addImage(image1);
-                dc.restoreState();
-                stamper.close();
-                return ((ByteArrayOutputStream)ms).toByteArray();
-            } catch (IOException | DocumentException e) {
-                log.error(e.getMessage());
-            } catch(Exception e) {
-                log.error(e.getMessage());
-            }
-            return null;
+
+        ByteArrayOutputStream ms = new ByteArrayOutputStream(MAX_BUFFER_SIZE);
+        PdfReader reader = null;
+
+        try {
+            reader = new PdfReader(bytes);
+            PdfStamper stamper = new PdfStamper(reader, ms);
+            Rectangle realPageSize = reader.getPageSizeWithRotation(1);
+            PdfContentByte dc = stamper.getOverContent(1);
+            PdfGState gstate = new PdfGState();
+            dc.saveState();
+            dc.setGState(gstate);
+
+            // Generate barcode image
+            byte[] imgBytes1 = CommonUtils.generateBarcodeImage(str);
+            Image image1 = Image.getInstance(imgBytes1);
+            image1.scaleAbsolute(300, 30);
+            image1.setAbsolutePosition((int) realPageSize.getLeft() + x, realPageSize.getTop() + y);
+            dc.addImage(image1);
+
+            dc.restoreState();
+
+            stamper.close();
+            reader.close();
+            return ms.toByteArray();
+        } catch (Exception e) {
+            log.error(e.getMessage());
         }
+        return null;
     }
 
     private byte[] getBytesForNeutralAWB(Object json){
@@ -1141,7 +1148,7 @@ public class ReportService implements IReportService {
             originalCount = -1;
             copyCount = -1;
 
-            byte[] pdfByteContentOriginal = MergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+            byte[] pdfByteContentOriginal = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
             pdfBytes.add(pdfByteContentOriginal);
         }
         else if ( originalCount != 0 )
@@ -1159,7 +1166,7 @@ public class ReportService implements IReportService {
             );
 
             for(int i = 1; i <= originalCount; i++){
-                byte[] pdfByteContentCurrent = MergeDocumentBytes(mainDocParallel.get(i), firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+                byte[] pdfByteContentCurrent = mergeDocumentBytes(mainDocParallel.get(i), firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
                 pdfBytes.add(pdfByteContentCurrent);
             }
 
@@ -1171,7 +1178,7 @@ public class ReportService implements IReportService {
             json.put(ReportConstants.CHARGES, json.get(ReportConstants.COPY_CHARGES));
             json.put(ReportConstants.AS_AGREED, json.get(ReportConstants.COPY_AS_AGREED));
             mainDoc = GetFromDocumentService(json, pages.getMainPageId());
-            byte[] pdfByteContentCopy = MergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+            byte[] pdfByteContentCopy = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
             for (int i = 0; i < copyCount; i++)
             {
                 pdfBytes.add(pdfByteContentCopy);
@@ -1183,7 +1190,7 @@ public class ReportService implements IReportService {
             if (!Objects.isNull(shipmentSettings) && !Objects.isNull(shipmentSettings.getRestrictBlRelease())
                     && shipmentSettings.getRestrictBlRelease() && StringUtility.isNotEmpty(noOfCopies)) {
                 Integer _copy = Integer.parseInt(noOfCopies);
-                byte[] pdfByteContentCopy = MergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+                byte[] pdfByteContentCopy = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
                 while (_copy-- > 1) {
                     pdfBytes.add(pdfByteContentCopy);
                 }
@@ -1193,54 +1200,50 @@ public class ReportService implements IReportService {
 
     }
 
-    public byte[] MergeDocumentBytes(byte[] mainDoc, byte[] firstPage, byte[] backPrint, String logoPath, String ReportInfo, ShipmentSettingsDetails tenantRow) throws DocumentException, IOException {
-        byte[] pdfByteContent;
-        OutputStream destinationDocumentStream = new ByteArrayOutputStream();
+    public byte[] mergeDocumentBytes(byte[] mainDoc, byte[] firstPage, byte[] backPrint, String logoPath, String reportInfo, ShipmentSettingsDetails tenantRow) throws DocumentException, IOException {
+        ByteArrayOutputStream destinationDocumentStream = new ByteArrayOutputStream();
+
         PdfConcatenate pdfConcat = new PdfConcatenate(destinationDocumentStream);
-        PdfReader pdfReader1 = new PdfReader(mainDoc);
+        PdfReader pdfReader1 = null;
         List<Integer> pages = new ArrayList<>();
         pages.add(1);
 
-        if (firstPage != null)
-        {
+        if (firstPage != null) {
             pdfReader1 = new PdfReader(firstPage);
             pdfReader1.selectPages(pages);
             pdfConcat.addPages(pdfReader1);
         }
 
-        if(ReportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && tenantRow.getPrintAfterEachPage())
-        {
+        if (reportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && tenantRow.getPrintAfterEachPage()) {
             PdfReader pdfReader = new PdfReader(mainDoc);
             int totalPages = pdfReader.getNumberOfPages();
-            for (int i = 1; i <= totalPages; i++){
+            for (int i = 1; i <= totalPages; i++) {
                 PdfReader pdfReader_maindoc = new PdfReader(mainDoc);
-                    pages = new ArrayList<>();
-                    pages.add(i);
-                    pdfReader_maindoc.selectPages(pages);
-                    pdfConcat.addPages(pdfReader_maindoc);
-                if (backPrint != null)
-                {
+                pages = new ArrayList<>();
+                pages.add(i);
+                pdfReader_maindoc.selectPages(pages);
+                pdfConcat.addPages(pdfReader_maindoc);
+
+                if (backPrint != null) {
                     PdfReader pdfReader_backdoc = new PdfReader(backPrint);
                     List<Integer> pages2 = new ArrayList<>();
                     pages2.add(1);
                     pdfReader_backdoc.selectPages(pages2);
                     pdfConcat.addPages(pdfReader_backdoc);
                 }
+                pdfReader_maindoc.close();
             }
             pdfReader.close();
-        } else
-        {
+        } else {
             pdfReader1 = new PdfReader(mainDoc);
             pages = new ArrayList<>();
-            for (int i = 1; i <= pdfReader1.getNumberOfPages(); i++)
-            {
+            for (int i = 1; i <= pdfReader1.getNumberOfPages(); i++) {
                 pages.add(i);
             }
             pdfReader1.selectPages(pages);
             pdfConcat.addPages(pdfReader1);
 
-            if (backPrint != null)
-            {
+            if (backPrint != null) {
                 pages = new ArrayList<>();
                 pages.add(1);
                 pdfReader1 = new PdfReader(backPrint);
@@ -1248,10 +1251,12 @@ public class ReportService implements IReportService {
                 pdfConcat.addPages(pdfReader1);
             }
         }
-        pdfReader1.close();
+
+        if(pdfReader1 != null) {
+            pdfReader1.close();
+        }
         pdfConcat.close();
-        pdfByteContent = ((ByteArrayOutputStream)destinationDocumentStream).toByteArray();
-        return addImage(pdfByteContent, logoPath);
+        return addImage(destinationDocumentStream.toByteArray(), logoPath);
     }
 
     private Boolean isHblType(String type, String key)

@@ -511,7 +511,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails);
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = consolidationService.createFromBooking(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -530,6 +530,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
+        mockTenantSettings();
         assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
     }
 
@@ -549,6 +550,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenThrow(new ValidationException("TEST"));
         mockShipmentSettings();
+        mockTenantSettings();
         assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
     }
 
@@ -660,6 +662,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -683,6 +686,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenThrow(new RunnerException("Test"));
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -702,6 +706,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
+        mockTenantSettings();
         assertThrows(ValidationException.class, ()->spyService.create(commonRequestModel));
     }
 
@@ -781,6 +786,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.update(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -826,6 +832,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.update(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -886,6 +893,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         doNothing().when(containerService).afterSaveList(anyList(),anyBoolean());
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -927,6 +935,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -971,6 +980,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1197,6 +1207,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.partialUpdate(commonRequestModel, false);
 
         assertEquals(expectedEntity, response);
@@ -1229,7 +1240,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
         mockShipmentSettings();
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.partialUpdate(commonRequestModel, false);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -1276,6 +1287,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
     }
@@ -1325,6 +1337,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         mockShipmentSettings();
+        mockTenantSettings();
 
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
@@ -1517,6 +1530,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = spyService.calculateAchievedValues(CommonRequestModel.buildRequest(1L));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -2494,7 +2508,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
@@ -2534,7 +2548,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2571,6 +2585,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+        mockTenantSettings();
 
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
@@ -2612,7 +2627,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
@@ -2653,7 +2668,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2691,7 +2706,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
@@ -2734,7 +2749,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
@@ -2777,7 +2792,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2818,7 +2833,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);

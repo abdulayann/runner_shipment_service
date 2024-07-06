@@ -297,6 +297,7 @@ class FreightCertificationReportTest extends CommonMocks {
         populateModel(freightCertificationModel);
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        mockTenantSettings();
         mockBill(true, false);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
         mockBill(false, false);

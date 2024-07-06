@@ -275,6 +275,7 @@ class CustomsInstructionsReportTest extends CommonMocks {
         masterDataMock();
         mockCarrier();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(customsInstructionsReport.populateDictionary(customsInstructionsModel));
     }
 

@@ -69,7 +69,7 @@ public class ShipmentSync implements IShipmentSync {
     public ResponseEntity<IRunnerResponse> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId, boolean isDirectSync) throws RunnerException {
         CustomShipmentSyncRequest cs = createShipmentSyncReq(sd, deletedContGuids, customerBookingNotes);
 
-        String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
+        String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(jsonHelper.convertToJson(cs)).module(SyncingConstants.SHIPMENT).build());
         if (isDirectSync) {
             HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
             syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", httpHeaders);
@@ -249,9 +249,7 @@ public class ShipmentSync implements IShipmentSync {
     private void mapCarrierDetails(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
         if(sd.getCarrierDetails() == null)
             return;
-        modelMapper.typeMap(CarrierDetails.class, CustomShipmentSyncRequest.class)
-                .addMappings(mp -> mp.skip(CustomShipmentSyncRequest::setDestination))
-                .map(sd.getCarrierDetails(), cs);
+        modelMapper.map(sd.getCarrierDetails(), cs);
         cs.setDestinationName(sd.getCarrierDetails().getDestination());
         cs.setDestinationPortName(sd.getCarrierDetails().getDestinationPort());
         cs.setOriginName(sd.getCarrierDetails().getOrigin());

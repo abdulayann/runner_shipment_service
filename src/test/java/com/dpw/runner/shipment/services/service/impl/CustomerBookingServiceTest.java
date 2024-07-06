@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
@@ -36,7 +37,6 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,7 +65,7 @@ import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
-class CustomerBookingServiceTest {
+class CustomerBookingServiceTest extends CommonMocks {
 
     @InjectMocks
     private CustomerBookingService customerBookingService;
@@ -99,8 +99,7 @@ class CustomerBookingServiceTest {
 
     @Mock
     private IBookingChargesDao bookingChargesDao;
-    @Mock
-    private CommonUtils commonUtils;
+
     @Mock
     private IFusionServiceAdapter fusionServiceAdapter;
 
@@ -674,6 +673,7 @@ class CustomerBookingServiceTest {
         when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(inputBooking));
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.empty());
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
+        mockTenantSettings();
         var responseEntity = customerBookingService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -687,6 +687,7 @@ class CustomerBookingServiceTest {
         when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(inputBooking));
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(new ShipmentDetails()));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
+        mockTenantSettings();
         var responseEntity = customerBookingService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -701,6 +702,7 @@ class CustomerBookingServiceTest {
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.empty());
         when(v1Service.getShipment(any())).thenReturn(V1RetrieveResponse.builder().entity(ShipmentRetrieveResponse.builder().guid(UUID.randomUUID()).build()).build());
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
+        mockTenantSettings();
         var responseEntity = customerBookingService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -715,6 +717,7 @@ class CustomerBookingServiceTest {
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(new ShipmentDetails()));
         when(v1Service.getShipment(any())).thenReturn(V1RetrieveResponse.builder().entity(ShipmentRetrieveResponse.builder().guid(UUID.randomUUID()).build()).build());
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
+        mockTenantSettings();
         var responseEntity = customerBookingService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -733,6 +736,7 @@ class CustomerBookingServiceTest {
         when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(inputBooking));
          when(v1Service.fetchShipmentBillingData(any())).thenReturn(mockV1Response);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
+        mockTenantSettings();
         var responseEntity = customerBookingService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -771,6 +775,7 @@ class CustomerBookingServiceTest {
                         .IsCreditLimitWithFusionEnabled(false)
                         .build());
         CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
     }
@@ -783,6 +788,7 @@ class CustomerBookingServiceTest {
                         .IsCreditLimitWithFusionEnabled(false)
                         .build());
         CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
     }
@@ -796,6 +802,7 @@ class CustomerBookingServiceTest {
                         .RestrictedItemsForCreditLimit(List.of())
                         .build());
         CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
     }
@@ -821,7 +828,7 @@ class CustomerBookingServiceTest {
 
         when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(List.of(address)).build());
         when(jsonHelper.convertValueToList(any(),eq(EntityTransferAddress.class))).thenReturn(List.of(address));
-
+        mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
     }
@@ -839,7 +846,7 @@ class CustomerBookingServiceTest {
         creditLimitRequest.setCustomerIdentifierId("12212112");
         creditLimitRequest.setClientOrgCode("FRC00003424");
         creditLimitRequest.setClientAddressCode("FRDO0005605");
-
+        mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
     }
@@ -856,7 +863,7 @@ class CustomerBookingServiceTest {
         CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
         creditLimitRequest.setClientOrgCode("FRC00003424");
         creditLimitRequest.setClientAddressCode("FRDO0005605");
-
+        mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
     }
@@ -890,6 +897,7 @@ class CustomerBookingServiceTest {
         when(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(any())).thenReturn(ResponseEntity.ok(mockUpdateCreditLimitResponse));
         when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
         when(jsonHelper.convertValue(any(), eq(UpdateOrgCreditLimitBookingResponse.class))).thenReturn(mockUpdateCreditLimitResponse);
+        mockTenantSettings();
         var responseEntity = customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -921,6 +929,7 @@ class CustomerBookingServiceTest {
         when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(mockFusionResponse);
         when(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(any())).thenReturn(ResponseEntity.ok(mockUpdateCreditLimitResponse));
         when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
+        mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
@@ -950,6 +959,7 @@ class CustomerBookingServiceTest {
                         .build());
         mockUpdateCreditLimitResponse.setSuccess(false);
         when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(null);
+        mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
     }
@@ -980,6 +990,7 @@ class CustomerBookingServiceTest {
         mockUpdateCreditLimitResponse.setSuccess(true);
         when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(mockFusionResponse);
         when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
+        mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
     }
@@ -1073,6 +1084,7 @@ class CustomerBookingServiceTest {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
         when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().build()));
+        mockTenantSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert
@@ -1102,6 +1114,7 @@ class CustomerBookingServiceTest {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(jsonHelper.convertValue(any(), eq(V1ShipmentCreationResponse.class))).thenReturn(mockV1ShipmentCreationResponse);
         when(bookingIntegrationsUtility.createShipmentInV1(any(), anyBoolean(), anyBoolean(), any(), any())).thenReturn(ResponseEntity.ok(mockV1ShipmentCreationResponse));
+        mockTenantSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert

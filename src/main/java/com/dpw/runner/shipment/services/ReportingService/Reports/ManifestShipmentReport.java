@@ -56,7 +56,7 @@ public class ManifestShipmentReport extends IReport{
         Map<String, Object> dictionary = new HashMap<>();
         populateShipmentFields(manifestShipmentModel.shipmentDetails, dictionary);
         populateConsolidationFields(manifestShipmentModel.consolidationDetails, dictionary);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestShipmentModel.shipmentDetails));
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);

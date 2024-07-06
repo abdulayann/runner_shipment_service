@@ -839,7 +839,7 @@ public class AwbService implements IAwbService {
         // generate Awb Entity
 
         List<AwbSpecialHandlingCodesMappingInfo> sph = null;
-        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && !Strings.isNullOrEmpty(consolidationDetails.getEfreightStatus())
                 && (consolidationDetails.getEfreightStatus().equalsIgnoreCase(Constants.EAW)
          || consolidationDetails.getEfreightStatus().equalsIgnoreCase(Constants.EAP))) {
@@ -1191,7 +1191,7 @@ public class AwbService implements IAwbService {
             }
         }
         List<AwbSpecialHandlingCodesMappingInfo> sph = null;
-        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && !Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getEfreightStatus())
             && (shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase(Constants.EAW) ||
                 (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase(Constants.EAP)))) {

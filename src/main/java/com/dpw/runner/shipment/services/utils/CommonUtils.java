@@ -1,18 +1,19 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
+import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.barbecue.Barcode;
 import net.sourceforge.barbecue.BarcodeException;
 import net.sourceforge.barbecue.BarcodeFactory;
@@ -21,8 +22,6 @@ import net.sourceforge.barbecue.output.OutputException;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
@@ -35,7 +34,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -44,9 +42,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 
 @Component
+@Slf4j
 public class CommonUtils {
-
-    private static ObjectMapper mapper;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -59,12 +56,8 @@ public class CommonUtils {
     @Autowired
     public IShipmentSettingsDao shipmentSettingsDao;
 
-    private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
-    private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
-
-    public CommonUtils(ObjectMapper mapper) {
-        this.mapper = mapper;
-    }
+    @Autowired
+    private TenantSettingsService tenantSettingsService;
 
     public static FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
@@ -172,11 +165,11 @@ public class CommonUtils {
         return request;
     }
 
-    public static <T,P> P convertToClass(T obj, Class<P> clazz) {
-        return mapper.convertValue(obj, clazz);
+    public <T,P> P convertToClass(T obj, Class<P> clazz) {
+        return jsonHelper.convertValue(obj, clazz);
     }
 
-    public static <T,P extends IRunnerResponse > List<P> convertToDtoList(final List<T> lst, Class<P> clazz) {
+    public <T,P extends IRunnerResponse > List<P> convertToDtoList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .toList();
@@ -234,22 +227,27 @@ public class CommonUtils {
     }
 
     public static byte[] concatAndAddContent(List<byte[]> pdfByteContent) throws DocumentException, IOException {
-        OutputStream ms = new ByteArrayOutputStream();
-        Document doc = new Document();
-        PdfCopy copy = new PdfSmartCopy(doc, ms);
+        ByteArrayOutputStream ms = new ByteArrayOutputStream();
+        Document doc = null;
+        PdfCopy copy = null;
+        doc = new Document();
+        copy = new PdfSmartCopy(doc, ms);
         doc.open();
-        PdfReader reader;
+
         for (byte[] dataByte : pdfByteContent) {
+            PdfReader reader = null;
             reader = new PdfReader(dataByte);
             copy.addDocument(reader);
+            reader.close();
         }
         doc.close();
-        return ((ByteArrayOutputStream)ms).toByteArray();
+        copy.close();
+        return ms.toByteArray();
     }
 
     public static byte[] removeLastPage(byte[] bytes) throws IOException, DocumentException {
         PdfReader r = new PdfReader(bytes);
-        OutputStream ms = new ByteArrayOutputStream();
+        ByteArrayOutputStream ms = new ByteArrayOutputStream();
         Document doc = new Document();
         PdfWriter w = PdfWriter.getInstance(doc, ms);
         doc.open();
@@ -258,20 +256,24 @@ public class CommonUtils {
             doc.newPage();
             w.getDirectContent().addTemplate(w.getImportedPage(r, page), 0, 0);
         }
+        w.close();
+        r.close();
         doc.close();
-        return ((ByteArrayOutputStream)ms).toByteArray();
+        return ms.toByteArray();
     }
 
     public static byte[] getLastPage(byte[] bytes) throws IOException, DocumentException {
         PdfReader r = new PdfReader(bytes);
-        OutputStream ms = new ByteArrayOutputStream();
+        ByteArrayOutputStream ms = new ByteArrayOutputStream();
         Document doc = new Document();
         PdfWriter w = PdfWriter.getInstance(doc, ms);
         doc.open();
         doc.newPage();
         w.getDirectContent().addTemplate(w.getImportedPage(r, r.getNumberOfPages()), 0, 0);
+        w.close();
+        r.close();
         doc.close();
-        return ((ByteArrayOutputStream)ms).toByteArray();
+        return ms.toByteArray();
     }
 
     public static void AddWaterMark(PdfContentByte dc, String text, BaseFont font, float fontSize, float angle, BaseColor color, Rectangle realPageSize, Rectangle rect)
@@ -293,7 +295,7 @@ public class CommonUtils {
     }
 
     public static byte[] addWatermarkToPdfBytes(byte[] bytes, BaseFont bf, String watermark) throws IOException, DocumentException {
-        OutputStream ms = new ByteArrayOutputStream(10 * 1024);
+        ByteArrayOutputStream ms = new ByteArrayOutputStream(10 * 1024);
         PdfReader reader = new PdfReader(bytes);
         PdfStamper stamper = new PdfStamper(reader, ms);
         int times = reader.getNumberOfPages();
@@ -303,7 +305,8 @@ public class CommonUtils {
             AddWaterMark(dc, watermark, bf, 50, 35, new BaseColor(70, 70, 255), reader.getPageSizeWithRotation(i), null);
         }
         stamper.close();
-        return ((ByteArrayOutputStream)ms).toByteArray();
+        reader.close();
+        return ms.toByteArray();
     }
 
     public static ByteArrayResource getByteResource(InputStream inputStream, String fileName) throws IOException {
@@ -422,6 +425,16 @@ public class CommonUtils {
             return false;
         var res = a.truncatedTo(ChronoUnit.MINUTES).compareTo(b.truncatedTo(ChronoUnit.MINUTES));
         return res == 0;
+    }
+
+    public V1TenantSettingsResponse getCurrentTenantSettings() {
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(tenantSettingsResponse == null) {
+            tenantSettingsResponse = tenantSettingsService.getV1TenantSettings(TenantContext.getCurrentTenant());
+            TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsResponse);
+            log.info("RequestId: {} | V1TenantSettings: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(TenantSettingsDetailsContext.getCurrentTenantSettings()));
+        }
+        return tenantSettingsResponse;
     }
 
 }

@@ -70,7 +70,7 @@ public class HblReport extends IReport{
         HblModel hblModel = new HblModel();
         hblModel.shipment = getShipment(id);
         hblModel.shipmentSettingsDetails = getShipmentSettings();
-        hblModel.tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        hblModel.tenantSettingsResponse = getCurrentTenantSettings();
         hblModel.user = UserContext.getUser();
         if(hblModel.shipment != null && hblModel.shipment.getConsolidationList() != null && !hblModel.shipment.getConsolidationList().isEmpty())
         {
@@ -232,7 +232,7 @@ public class HblReport extends IReport{
         populateShipmentFields(hblModel.shipment, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         JsonDateFormat(dictionary);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if (hblModel.blObject != null) {
             String blObjectJson = jsonHelper.convertToJson(hblModel.blObject);
             Map<String, Object> blObjectDictionary = jsonHelper.convertJsonToMap(blObjectJson);

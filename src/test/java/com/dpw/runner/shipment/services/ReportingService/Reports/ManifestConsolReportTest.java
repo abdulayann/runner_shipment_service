@@ -288,6 +288,7 @@ class ManifestConsolReportTest extends CommonMocks {
         containerMap.put(HSN_NUMBER, "100");
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentAndContainerResponse.class), any(TypeReference.class));
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(manifestConsolReport.populateDictionary(manifestConsolModel));
     }
 
@@ -341,6 +342,7 @@ class ManifestConsolReportTest extends CommonMocks {
         containerMap.put(HSN_NUMBER, "100");
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentAndContainerResponse.class), any(TypeReference.class));
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(manifestConsolReport.populateDictionary(manifestConsolModel));
     }
 

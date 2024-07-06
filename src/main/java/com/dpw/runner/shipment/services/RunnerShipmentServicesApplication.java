@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services;
 
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -43,6 +45,8 @@ public class RunnerShipmentServicesApplication {
         modelMapper.getConfiguration().setFieldMatchingEnabled(true);
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.getConfiguration().setAmbiguityIgnored(true);
+        modelMapper.typeMap(CarrierDetails.class, CustomShipmentSyncRequest.class)
+                .addMappings(mp -> mp.skip(CustomShipmentSyncRequest::setDestination));
         return modelMapper;
     }
 

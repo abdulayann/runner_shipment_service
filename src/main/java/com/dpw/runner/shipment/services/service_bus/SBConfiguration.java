@@ -9,6 +9,8 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 @Data
@@ -16,12 +18,21 @@ import java.util.function.Consumer;
 @Generated
 public class SBConfiguration {
 
+    Map<String, ServiceBusSenderClient> senderMap = new HashMap<>();
+
     public ServiceBusSenderClient getSenderTopicClient(ISBProperties sbProperties, String topicName) {
-        return new ServiceBusClientBuilder()
+        String key = sbProperties.getConnectionString()+"_"+topicName;
+        ServiceBusSenderClient senderClient = senderMap.get(key);
+        if(senderClient != null) {
+            return senderClient;
+        }
+        ServiceBusSenderClient serviceBusSenderClient = new ServiceBusClientBuilder()
                 .connectionString(sbProperties.getConnectionString())
                 .sender()
                 .topicName(topicName)
                 .buildClient();
+        senderMap.put(key, serviceBusSenderClient);
+        return serviceBusSenderClient;
     }
 
     public ServiceBusProcessorClient getSessionProcessorClient(ISBProperties sbProperties, String topicName, String subName, Consumer<ServiceBusReceivedMessageContext> onMessage, Consumer<ServiceBusErrorContext> onError) {

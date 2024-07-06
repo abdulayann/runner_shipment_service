@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentCANModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
@@ -53,7 +54,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ShipmentCANReportTest {
+class ShipmentCANReportTest extends CommonMocks {
 
     @InjectMocks
     private ShipmentCANReport shipmentCANReport;
@@ -287,8 +288,8 @@ class ShipmentCANReportTest {
         billChargeMap.put(TAX_PERCENTAGE, BigDecimal.TEN);
         billChargeMap.put(TOTAL_AMOUNT, BigDecimal.TEN);
         billChargeMap.put(CHARGE_TYPE_CODE, "20GP");
-
         doReturn(billChargeMap).when(jsonHelper).convertValue(eq(billChargesResponse), any(TypeReference.class));
+        mockTenantSettings();
         assertNotNull(shipmentCANReport.populateDictionary(shipmentCANModel));
     }
 
@@ -460,6 +461,7 @@ class ShipmentCANReportTest {
         billChargeMap.put(CHARGE_TYPE_CODE, "20GP");
 
         doReturn(billChargeMap).when(jsonHelper).convertValue(eq(billChargesResponse), any(TypeReference.class));
+        mockTenantSettings();
         shipmentCANReport.populateDictionary(shipmentCANModel);
         assertNotNull(shipmentCANReport.populateDictionary(shipmentCANModel));
     }
@@ -478,6 +480,7 @@ class ShipmentCANReportTest {
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
         when(shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1))).thenReturn(Arrays.asList(ShipmentSettingsDetails.builder().build()));
+        mockTenantSettings();
         assertNotNull(shipmentCANReport.getDocumentModel(123L));
     }
 
@@ -499,6 +502,7 @@ class ShipmentCANReportTest {
         Awb awb = new Awb();
         awb.setAwbShipmentInfo(AwbShipmentInfo.builder().entityType(HAWB).build());
         when(awbDao.findByShipmentId(any())).thenReturn(Arrays.asList(awb));
+        mockTenantSettings();
         assertNotNull(shipmentCANReport.getDocumentModel(123L));
         assert (true);
     }

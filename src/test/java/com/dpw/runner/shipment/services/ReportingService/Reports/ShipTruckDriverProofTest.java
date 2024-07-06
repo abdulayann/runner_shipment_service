@@ -301,6 +301,7 @@ class ShipTruckDriverProofTest extends CommonMocks {
         mockVessel();
         mockCarrier();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(shipTruckDriverProof.populateDictionary(truckDriverModel));
     }
 

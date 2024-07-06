@@ -301,6 +301,7 @@ class ShipTruckwayBillReportTest extends CommonMocks {
         mockVessel();
         mockCarrier();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(shipTruckwayBillReport.populateDictionary(truckDriverModel));
     }
 

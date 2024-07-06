@@ -713,6 +713,7 @@ class ContainerServiceTest extends CommonMocks {
     void calculateContainerSummary() throws RunnerException{
         List<Containers> containersList = List.of(testContainer);
         mockShipmentSettings();
+        mockTenantSettings();
         ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
         assertNotNull(containerSummaryResponse);
     }
@@ -725,6 +726,7 @@ class ContainerServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setWeightChargeableUnit(null);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeChargeableUnit(null);
         mockShipmentSettings();
+        mockTenantSettings();
         ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
         assertNotNull(containerSummaryResponse);
     }
