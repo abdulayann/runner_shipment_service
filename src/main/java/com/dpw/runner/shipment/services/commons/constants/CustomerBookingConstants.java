@@ -42,5 +42,7 @@ public class CustomerBookingConstants {
     public static final String DATE_TIME_FORMAT = "yyyy/MM/dd'T'hh:mm:ss";
 
     public static final String BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR = "Booking Details is null for Id {} with Request Id {}";
-
+    public static final String CUSTOMER_BOOKING_STRING = "CustomerBooking";
+    public static final String MDM_FINAL_STATUS_FIELD = "finalStatus";
+    public static final String MDM_FINAL_STATUS_APPROVED = "Approved";
 }

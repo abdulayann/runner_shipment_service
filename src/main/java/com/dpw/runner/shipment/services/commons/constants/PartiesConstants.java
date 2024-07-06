@@ -22,6 +22,7 @@ public class PartiesConstants {
     public static final String ADDRESS2 = "Address2";
     public static final String COUNTRY = "Country";
     public static final String CITY = "City";
+    public static final String ID = "Id";
     public static final String CITY_CODE = "CityCode";
     public static final String STATE = "State";
     public static final String ZIP_POST_CODE = "ZipPostCode";
