@@ -46,8 +46,6 @@ import java.util.concurrent.ExecutorService;
 @Component
 public class CommonUtils {
 
-    private static ObjectMapper mapper;
-
     @Autowired
     private ModelMapper modelMapper;
 
@@ -61,10 +59,6 @@ public class CommonUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
-
-    public CommonUtils(ObjectMapper mapper) {
-        this.mapper = mapper;
-    }
 
     public static FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
@@ -172,11 +166,11 @@ public class CommonUtils {
         return request;
     }
 
-    public static <T,P> P convertToClass(T obj, Class<P> clazz) {
-        return mapper.convertValue(obj, clazz);
+    public <T,P> P convertToClass(T obj, Class<P> clazz) {
+        return jsonHelper.convertValue(obj, clazz);
     }
 
-    public static <T,P extends IRunnerResponse > List<P> convertToDtoList(final List<T> lst, Class<P> clazz) {
+    public <T,P extends IRunnerResponse > List<P> convertToDtoList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .toList();

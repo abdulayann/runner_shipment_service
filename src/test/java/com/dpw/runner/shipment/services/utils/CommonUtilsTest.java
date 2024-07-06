@@ -86,7 +86,6 @@ class CommonUtilsTest {
         pdfBytes = new byte[0];
 
         MockitoAnnotations.initMocks(this);
-        commonUtils = new CommonUtils(mapper);
         commonUtils.syncExecutorService = syncExecutorService;
         commonUtils.shipmentSettingsDao = shipmentSettingsDao;
     }
@@ -125,8 +124,6 @@ class CommonUtilsTest {
 
     @Test
     void constructor_WithObjectMapper_SuccessfullyInitializesMapper() {
-        ObjectMapper objectMapperMock = mock(ObjectMapper.class);
-        CommonUtils commonUtils = new CommonUtils(objectMapperMock);
         assertNotNull(commonUtils);
     }
 
@@ -367,11 +364,9 @@ class CommonUtilsTest {
     @Test
     void testConvertToClass() {
         Object obj = new Object();
-        ObjectMapper mapper = mock(ObjectMapper.class);
-        CommonUtils commonUtils1 = new CommonUtils(mapper);
-        when(mapper.convertValue(obj, String.class)).thenReturn("converted");
+        when(jsonHelper.convertValue(obj, String.class)).thenReturn("converted");
 
-        String result = commonUtils1.convertToClass(obj, String.class);
+        String result = commonUtils.convertToClass(obj, String.class);
 
         assertEquals("converted", result);
     }
@@ -380,8 +375,6 @@ class CommonUtilsTest {
     @Test
     void testConvertToEntityList() {
         List<Object> lst = List.of(new Object(), new Object());
-
-        when(mapper.convertValue(any(), eq(MultiTenancy.class))).thenReturn(mock(MultiTenancy.class));
 
         List<MultiTenancy> result = commonUtils.convertToEntityList(lst, MultiTenancy.class);
 

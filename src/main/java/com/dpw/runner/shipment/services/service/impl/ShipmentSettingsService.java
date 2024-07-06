@@ -208,16 +208,16 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             ShipmentSettingsDetailsResponse response = jsonHelper.convertValue(shipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);
             response.setTenantId(oldEntity.get().getTenantId());
             if(hblTermsConditionTemplateList == null) {
-                response.setHblTermsConditionTemplate(convertToDtoList(oldHblTermsConditionTemplateList, HblTermsConditionTemplateResponse.class));
+                response.setHblTermsConditionTemplate(commonUtils.convertToDtoList(oldHblTermsConditionTemplateList, HblTermsConditionTemplateResponse.class));
             }
             if(hblHawbBackPrintTemplateList == null) {
-                response.setHblHawbBackPrintTemplate(convertToDtoList(oldHblHawbBackPrintTemplateList, HblTermsConditionTemplateResponse.class));
+                response.setHblHawbBackPrintTemplate(commonUtils.convertToDtoList(oldHblHawbBackPrintTemplateList, HblTermsConditionTemplateResponse.class));
             }
             if(tenantProductsList == null) {
-                response.setTenantProducts(convertToDtoList(oldTenantProductsList, TenantProductsResponse.class));
+                response.setTenantProducts(commonUtils.convertToDtoList(oldTenantProductsList, TenantProductsResponse.class));
             }
             if(productSequenceConfigList == null) {
-                response.setProductSequenceConfig(convertToDtoList(oldProductSequenceConfigList, ProductSequenceConfigResponse.class));
+                response.setProductSequenceConfig(commonUtils.convertToDtoList(oldProductSequenceConfigList, ProductSequenceConfigResponse.class));
             }
 
             if(hblTermsConditionTemplateList != null) {
@@ -389,25 +389,25 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             ShipmentSettingsDetailsResponse response = jsonHelper.convertValue(shipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);
             response.setTenantId(oldEntity.get().getTenantId());
             if(hblTermsConditionTemplateList == null) {
-                response.setHblTermsConditionTemplate(convertToDtoList(oldHblTermsConditionTemplateList, HblTermsConditionTemplateResponse.class));
+                response.setHblTermsConditionTemplate(commonUtils.convertToDtoList(oldHblTermsConditionTemplateList, HblTermsConditionTemplateResponse.class));
             }
             if(hblHawbBackPrintTemplateList == null) {
-                response.setHblHawbBackPrintTemplate(convertToDtoList(oldHblHawbBackPrintTemplateList, HblTermsConditionTemplateResponse.class));
+                response.setHblHawbBackPrintTemplate(commonUtils.convertToDtoList(oldHblHawbBackPrintTemplateList, HblTermsConditionTemplateResponse.class));
             }
             if(tenantProductsList == null) {
-                response.setTenantProducts(convertToDtoList(oldTenantProductsList, TenantProductsResponse.class));
+                response.setTenantProducts(commonUtils.convertToDtoList(oldTenantProductsList, TenantProductsResponse.class));
             }
             if(productSequenceConfigList == null) {
-                response.setProductSequenceConfig(convertToDtoList(oldProductSequenceConfigList, ProductSequenceConfigResponse.class));
+                response.setProductSequenceConfig(commonUtils.convertToDtoList(oldProductSequenceConfigList, ProductSequenceConfigResponse.class));
             }
 
             if(hblTermsConditionTemplateList != null) {
                 List<HblTermsConditionTemplate> hblTermsConditionTemplates = hblTermsConditionTemplateDao.updateEntityFromSettings(commonUtils.convertToEntityList(hblTermsConditionTemplateList, HblTermsConditionTemplate.class), shipmentSettingsDetails.getId(), true);
-                response.setHblTermsConditionTemplate(convertToDtoList(hblTermsConditionTemplates, HblTermsConditionTemplateResponse.class));
+                response.setHblTermsConditionTemplate(commonUtils.convertToDtoList(hblTermsConditionTemplates, HblTermsConditionTemplateResponse.class));
             }
             if(hblHawbBackPrintTemplateList != null) {
                 List<HblTermsConditionTemplate> hblHawbBackPrintTemplates = hblTermsConditionTemplateDao.updateEntityFromSettings(commonUtils.convertToEntityList(hblHawbBackPrintTemplateList, HblTermsConditionTemplate.class), shipmentSettingsDetails.getId(), false);
-                response.setHblHawbBackPrintTemplate(convertToDtoList(hblHawbBackPrintTemplates, HblTermsConditionTemplateResponse.class));
+                response.setHblHawbBackPrintTemplate(commonUtils.convertToDtoList(hblHawbBackPrintTemplates, HblTermsConditionTemplateResponse.class));
             }
             if(tenantProductsList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsDetails.getId(), "=");
@@ -418,7 +418,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 else
                     oldTenantProductsList = null;
                 List<TenantProducts> tenantProducts = tenantProductsDao.updateEntityFromV1Settings(jsonHelper.convertValueToList(tenantProductsList, TenantProducts.class), shipmentSettingsDetails.getId(), oldTenantProductsList);
-                response.setTenantProducts(convertToDtoList(tenantProducts, TenantProductsResponse.class));
+                response.setTenantProducts(commonUtils.convertToDtoList(tenantProducts, TenantProductsResponse.class));
             }
             if(productSequenceConfigList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsDetails.getId(), "=");
@@ -436,7 +436,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                             Pair<Specification<TenantProducts>, Pageable> pair2 = fetchData(listCommonRequest, TenantProducts.class);
                             Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair2.getLeft(), pair2.getRight());
                             if(tenantProducts != null && !tenantProducts.isEmpty()) {
-                                productSequenceConfig.setTenantProducts(convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
+                                productSequenceConfig.setTenantProducts(commonUtils.convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
                                 productSequenceConfigRequests.add(productSequenceConfig);
                             }
                         }
@@ -445,7 +445,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                     }
                 }
                 List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromV1Settings(commonUtils.convertToEntityList(productSequenceConfigRequests, ProductSequenceConfig.class), shipmentSettingsDetails.getId(), oldProductSequenceConfigList);
-                response.setProductSequenceConfig(convertToDtoList(productSequenceConfigs, ProductSequenceConfigResponse.class));
+                response.setProductSequenceConfig(commonUtils.convertToDtoList(productSequenceConfigs, ProductSequenceConfigResponse.class));
             }
 
             return ResponseHelper.buildSuccessResponse(response);
