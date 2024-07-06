@@ -6,27 +6,19 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Component
 @Slf4j
@@ -43,6 +35,9 @@ public class HblSync implements IHblSync {
 
     @Autowired
     private ISyncService syncService;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public ResponseEntity<?> sync(Hbl hbl, String transactionId) {
@@ -73,7 +68,7 @@ public class HblSync implements IHblSync {
         if(lst == null)
             return null;
         return  lst.stream()
-                .map(item -> convertToClass(item, clazz))
+                .map(item -> commonUtils.convertToClass(item, clazz))
                 .toList();
     }
 }

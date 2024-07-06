@@ -46,6 +46,9 @@ class HblSyncTest {
     @Mock
     private ISyncService syncService;
 
+    @Mock
+    private CommonUtils commonUtils;
+
     /**
      * Method under test: {@link HblSync#sync(Hbl, String)}
      */
@@ -58,12 +61,10 @@ class HblSyncTest {
         hblContainer2.setHazardous(0);
 
         inputHbl.setHblContainer(List.of(hblContainer1, hblContainer2));
-        ObjectMapper mapper = mock(ObjectMapper.class);
-        CommonUtils commonUtils1 = new CommonUtils(mapper);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
         when(jsonHelper.convertValue(any(), eq(HblRequestV2.class))).thenReturn(new HblRequestV2());
         when(modelMapper.map(any(), eq(HblDataRequestV2.class))).thenReturn(new HblRequestV2());
-        when(mapper.convertValue(any(), eq(HblContainerRequestV2.class))).thenReturn(new HblContainerRequestV2());
+        when(commonUtils.convertToClass(any(), eq(HblContainerRequestV2.class))).thenReturn(new HblContainerRequestV2());
 
         var responseEntity = hblSync.sync(inputHbl, StringUtility.convertToString(guid));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
