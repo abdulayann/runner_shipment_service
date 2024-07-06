@@ -47,9 +47,6 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
-import com.dpw.runner.shipment.services.service_bus.ISBProperties;
-import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.AuditLogRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
@@ -208,14 +205,6 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private IEventService eventService;
 
-    @Autowired
-    private ISBUtils sbUtils;
-
-    @Autowired
-    private ISBProperties isbProperties;
-
-    @Autowired
-    private AzureServiceBusTopic azureServiceBusTopic;
     @Autowired
     private MasterDataUtils masterDataUtils;
     @Autowired
