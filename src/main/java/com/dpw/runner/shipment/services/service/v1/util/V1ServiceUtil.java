@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,8 @@ public class V1ServiceUtil {
     IV1Service v1Service;
     @Autowired
     JsonHelper jsonHelper;
+    @Autowired
+    private CommonUtils commonUtils;
 
     public CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         return CreateBookingModuleInV1.builder()
@@ -216,7 +219,7 @@ public class V1ServiceUtil {
     public CheckCreditLimitFromV1Response validateCreditLimit(Parties client, String restrictedItem, UUID shipmentGuid, Boolean taskCreation) {
         try {
             CheckCreditLimitFromV1Response creditLimitResponse = CheckCreditLimitFromV1Response.builder().isValid(true).build();
-            if(Boolean.FALSE.equals(TenantSettingsDetailsContext.getCurrentTenantSettings().getEnableCreditLimitManagement())){
+            if(Boolean.FALSE.equals(commonUtils.getCurrentTenantSettings().getEnableCreditLimitManagement())){
                 return creditLimitResponse;
             }
             Integer clientId = null;

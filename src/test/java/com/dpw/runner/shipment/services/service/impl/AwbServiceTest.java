@@ -227,6 +227,7 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -270,6 +271,7 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -664,6 +666,7 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
 
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -714,6 +717,7 @@ class AwbServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -871,6 +875,7 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(mockAwb, AwbResponse.class)
         );
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -1012,6 +1017,7 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
 
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -1227,6 +1233,7 @@ class AwbServiceTest extends CommonMocks {
                 mockAwbResponse
         );
         mockShipmentSettings();
+        mockTenantSettings();
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -1531,6 +1538,7 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
         mockShipmentSettings();
+        mockTenantSettings();
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -2700,6 +2708,7 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }

@@ -61,7 +61,7 @@ public class ShipmentCANReport extends IReport {
             shipmentCANModel.tenantDetails = getTenant();
             shipmentCANModel.consolidationModel = getFirstConsolidationFromShipmentId(id);
             shipmentCANModel.shipmentSettingsDetails = getShipmentSettings();
-            shipmentCANModel.tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+            shipmentCANModel.tenantSettingsResponse = getCurrentTenantSettings();
             shipmentCANModel.isHBL = getIsHbl(shipmentCANModel.shipmentDetails);
             return shipmentCANModel;
     }
@@ -175,7 +175,7 @@ public class ShipmentCANReport extends IReport {
         }
         TenantModel tenantModel = getTenant();
         dictionary.put(TENANT_NAME, tenantModel.tenantName);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         dictionary.put(PLACE_OF_RECEIPT, shipmentCANModel.shipmentDetails.getCarrierDetails().getOrigin());
         dictionary.put(PLACE_OF_DELIVERY, shipmentCANModel.shipmentDetails.getCarrierDetails().getDestination());
         dictionary.put(TRANSPORT_MODE, shipmentCANModel.shipmentDetails.getTransportMode());

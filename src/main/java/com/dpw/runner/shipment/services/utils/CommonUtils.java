@@ -1,15 +1,16 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +55,9 @@ public class CommonUtils {
 
     @Autowired
     public IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private TenantSettingsService tenantSettingsService;
 
     public static FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
@@ -421,6 +425,16 @@ public class CommonUtils {
             return false;
         var res = a.truncatedTo(ChronoUnit.MINUTES).compareTo(b.truncatedTo(ChronoUnit.MINUTES));
         return res == 0;
+    }
+
+    public V1TenantSettingsResponse getCurrentTenantSettings() {
+        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        if(tenantSettingsResponse == null) {
+            tenantSettingsResponse = tenantSettingsService.getV1TenantSettings(TenantContext.getCurrentTenant());
+            TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsResponse);
+            log.info("RequestId: {} | V1TenantSettings: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(TenantSettingsDetailsContext.getCurrentTenantSettings()));
+        }
+        return tenantSettingsResponse;
     }
 
 }

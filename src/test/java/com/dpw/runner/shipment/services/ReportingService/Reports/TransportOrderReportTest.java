@@ -262,6 +262,7 @@ class TransportOrderReportTest extends CommonMocks {
     void populateDictionary() {
         TransportOrderModel transportOrderModel = new TransportOrderModel();
         populateModel(transportOrderModel);
+        mockTenantSettings();
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
     }
 
@@ -276,6 +277,7 @@ class TransportOrderReportTest extends CommonMocks {
         truckDriverDetailsModel.setTransporterType(Ownership.ThirdParty);
         truckDriverDetailsModels.add(truckDriverDetailsModel);
         shipmentModel.setTruckDriverDetails(truckDriverDetailsModels);
+        mockTenantSettings();
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
     }
 

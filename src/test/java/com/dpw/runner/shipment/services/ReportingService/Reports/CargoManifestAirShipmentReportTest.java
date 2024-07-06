@@ -328,6 +328,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         mockCarrier();
         mockRakc(cargoManifestAirShipmentModel.getShipmentDetails());
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(cargoManifestAirShipmentReport.populateDictionary(cargoManifestAirShipmentModel));
     }
 
@@ -364,6 +365,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         mockCarrier();
         mockRakc(cargoManifestAirShipmentModel.getShipmentDetails());
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(cargoManifestAirShipmentReport.populateDictionary(cargoManifestAirShipmentModel));
     }
 

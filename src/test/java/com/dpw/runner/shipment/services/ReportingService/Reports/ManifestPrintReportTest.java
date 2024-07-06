@@ -273,6 +273,7 @@ class ManifestPrintReportTest extends CommonMocks {
         mockUnlocRow();
         mockUnloc();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(manifestPrintReport.populateDictionary(consolidationManifestPrintModel));
     }
 
@@ -304,6 +305,7 @@ class ManifestPrintReportTest extends CommonMocks {
         mockUnlocRow();
         mockUnloc();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(manifestPrintReport.populateDictionary(consolidationManifestPrintModel));
     }
 
@@ -327,6 +329,7 @@ class ManifestPrintReportTest extends CommonMocks {
         mockUnlocRow();
         mockUnloc();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(manifestPrintReport.populateDictionary(consolidationManifestPrintModel));
     }
 

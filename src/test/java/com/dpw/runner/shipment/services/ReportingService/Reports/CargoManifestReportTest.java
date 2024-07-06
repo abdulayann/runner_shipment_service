@@ -265,7 +265,7 @@ class CargoManifestReportTest extends CommonMocks {
         containerMap.put(TareWeight, BigDecimal.TEN);
         containerMap.put(VGMWeight, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
-
+        mockTenantSettings();
         assertNotNull(cargoManifestReport.populateDictionary(cargoManifestModel));
     }
 

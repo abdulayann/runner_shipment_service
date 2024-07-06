@@ -2,13 +2,16 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
@@ -63,6 +66,9 @@ class CommonUtilsTest {
 
     @InjectMocks
     private CommonUtils commonUtils;
+
+    @Mock
+    private TenantSettingsService tenantSettingsService;
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -470,5 +476,18 @@ class CommonUtilsTest {
     void defaultShipmentSettingsWithValue() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         assertNotNull(commonUtils.getShipmentSettingFromContext());
+    }
+
+    @Test
+    void defaultTenantSettings() {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(null);
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(new V1TenantSettingsResponse());
+        assertNotNull(commonUtils.getCurrentTenantSettings());
+    }
+
+    @Test
+    void defaultTenantSettingsWithValue() {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().build());
+        assertNotNull(commonUtils.getCurrentTenantSettings());
     }
 }

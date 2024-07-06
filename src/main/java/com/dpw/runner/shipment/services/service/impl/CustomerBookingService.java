@@ -326,7 +326,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBooking.setBookingCharges(bookingCharges);
         }
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
-            V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+            V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
             if(Boolean.TRUE.equals(tenantSettingsResponse.getShipmentServiceV2Enabled()))
             {
                 ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
@@ -459,7 +459,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     public ResponseEntity<IRunnerResponse> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws RunnerException {
         CreditLimitRequest creditLimitRequest = (CreditLimitRequest) commonRequestModel.getData();
 
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         List<Object> criteria = new ArrayList<>();
         List<Object> field = new ArrayList<>(List.of(CustomerBookingConstants.TENANT_ID));
         String operator = "=";
@@ -1112,7 +1112,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             var containerTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllContainerTypesInSingleCall(customerBookingResponse)), executorService);
             var chargeTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllChargeTypesInSingleCall(customerBookingResponse)), executorService);
             if(customerBookingResponse.getBookingStatus() == BookingStatus.READY_FOR_SHIPMENT) {
-                V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+                V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
                 Boolean isShipmentV2 = tenantSettingsResponse.getShipmentServiceV2Enabled();
                 if (isShipmentV2) {
                     if (customerBookingResponse.getShipmentEntityIdV2() == null) {

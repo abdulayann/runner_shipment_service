@@ -288,6 +288,7 @@ class PackingListReportTest extends CommonMocks {
         masterDataMock();
         mockCarrier();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(packingListReport.populateDictionary(packingListModel));
     }
 
@@ -320,6 +321,7 @@ class PackingListReportTest extends CommonMocks {
         masterDataMock();
         mockCarrier();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(packingListReport.populateDictionary(packingListModel));
     }
 

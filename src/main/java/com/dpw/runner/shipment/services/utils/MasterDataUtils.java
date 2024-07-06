@@ -1017,7 +1017,7 @@ public class MasterDataUtils{
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         return () -> {
             MDC.setContextMap(mdc);
             RequestAuthContext.setAuthToken(token);

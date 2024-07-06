@@ -397,6 +397,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         mockUnloc();
         mockUnlocation();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
     }
 
@@ -431,6 +432,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         mockUnloc();
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
     }
 

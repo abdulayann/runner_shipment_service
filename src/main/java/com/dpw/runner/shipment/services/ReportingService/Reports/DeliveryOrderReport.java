@@ -128,7 +128,7 @@ public class DeliveryOrderReport extends IReport{
         dictionary.put(ReportConstants.MASTER_BILL_ISSUE_PLACE, deliveryOrderModel.placeOfIssueName);
         dictionary.put(ReportConstants.PPCC, deliveryOrderModel.paymentTerms);
 
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         dictionary.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));

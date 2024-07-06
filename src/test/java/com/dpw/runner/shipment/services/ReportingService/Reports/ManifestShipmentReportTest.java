@@ -281,6 +281,7 @@ class ManifestShipmentReportTest extends CommonMocks {
         mockCarrier();
         mockUnloc();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(manifestShipmentReport.populateDictionary(manifestShipmentModel));
     }
 

@@ -340,6 +340,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
         mockUnloc();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
     }
 
@@ -379,6 +380,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
         mockUnloc();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
     }
 
@@ -399,6 +401,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
         mockUnloc();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
     }
 
@@ -416,6 +419,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         mockCarrier();
         //mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
         mockUnloc();
+        mockTenantSettings();
         assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
     }
 

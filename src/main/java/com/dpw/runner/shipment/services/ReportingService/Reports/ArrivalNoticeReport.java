@@ -77,7 +77,7 @@ public class ArrivalNoticeReport extends IReport {
         dictionary.put(ReportConstants.CONSIGNEE,consignee);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(arrivalNoticeModel.getContainers()));
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, arrivalNoticeModel.getContainers());
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), v1TenantSettingsResponse.getDPWDateFormat()));
         List<Map<String, Object>> valuesContainer = new ArrayList<>();
         for (ShipmentContainers shipmentContainers : arrivalNoticeModel.getContainers()) {
@@ -105,8 +105,8 @@ public class ArrivalNoticeReport extends IReport {
                     .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getBillAmount).filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_FREVENUEBILLCHARGES, arrivalNoticeModel.getArrivalNoticeBillCharges());
-            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA, AmountNumberFormatter.Format(sumOfTaxAmount, currency, TenantSettingsDetailsContext.getCurrentTenantSettings()));
-            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESSUM, AmountNumberFormatter.Format(sumOfBillAmount, currency, TenantSettingsDetailsContext.getCurrentTenantSettings()));
+            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA, AmountNumberFormatter.Format(sumOfTaxAmount, currency, getCurrentTenantSettings()));
+            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESSUM, AmountNumberFormatter.Format(sumOfBillAmount, currency, getCurrentTenantSettings()));
             dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_OVERSEASCURRENCY, currency);
         }
 
@@ -172,7 +172,7 @@ public class ArrivalNoticeReport extends IReport {
                  arrivalNoticeCharge.setChargeTypeDescription(charge.getChargeTypeDescription());
                  arrivalNoticeCharge.setChargeTypeDescriptionLL(GetChargeTypeDescriptionLL(charge.getChargeTypeCode(), chargeTypesWithoutTranslation));
                  if(!Objects.isNull(charge.getOverseasSellAmount())){
-                     arrivalNoticeCharge.setSellAmount(AmountNumberFormatter.Format(charge.getOverseasSellAmount(), charge.getLocalSellCurrency(), TenantSettingsDetailsContext.getCurrentTenantSettings()));
+                     arrivalNoticeCharge.setSellAmount(AmountNumberFormatter.Format(charge.getOverseasSellAmount(), charge.getLocalSellCurrency(), getCurrentTenantSettings()));
                  }
                  if(!Objects.isNull(charge.getLocalTax())){
                      arrivalNoticeCharge.setTaxAmount(charge.getLocalTax());

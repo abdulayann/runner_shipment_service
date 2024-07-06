@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,16 +23,19 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
 
     private IDateTimeChangeLogDao dateTimeChangeLogDao;
 
+    private CommonUtils commonUtils;
+
     @Autowired
-    DateTimeChangeLogService(IDateTimeChangeLogDao dateTimeChangeLogDao) {
+    DateTimeChangeLogService(IDateTimeChangeLogDao dateTimeChangeLogDao, CommonUtils commonUtils) {
         this.dateTimeChangeLogDao = dateTimeChangeLogDao;
+        this.commonUtils = commonUtils;
     }
 
 
     @Override
     public void createEntryFromShipment(ShipmentRequest entity, ShipmentDetails oldEntity) {
 
-        var tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
         // Only process if the feature is enabled
         if(Boolean.TRUE.equals(tenantSettings.getEnableEstimateAndActualDateTimeUpdates())) {
             // refresh all logs when carrier or vessel change

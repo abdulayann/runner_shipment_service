@@ -43,7 +43,7 @@ public class ShippingRequestAirReport extends IReport{
         ShippingRequestAirModel shippingRequestAirModel = (ShippingRequestAirModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         populateShipmentFields(shippingRequestAirModel.shipment, dictionary);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         List<Map<String, Object>> packDictionary = new ArrayList<>();
         List<PackingModel> listOfPacks = shippingRequestAirModel.getShipmentPacking();

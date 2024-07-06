@@ -95,7 +95,7 @@ public class HawbReport extends IReport{
             carrierDetailModel = hawbModel.getConsolidationDetails().getCarrierDetails();
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         //TODO- Tenant data
 //        var tenantDetails = ReportHelper.getOrgAddress(siData.tenant.TenantName, siData.tenant.Address1, siData.tenant.Address2, siData.tenant.City, siData.tenant.Email, siData.tenant.Phone, siData.tenant.ZipPostCode, siData.tenant.State);
 //        dictionary[ReportConstants.AGENT] = tenantDetails;

@@ -297,7 +297,7 @@ class AWBLabelReportTest extends CommonMocks {
         v1DataResponse.entities = unlocationsResponses;
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
-
+        mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 
@@ -325,7 +325,7 @@ class AWBLabelReportTest extends CommonMocks {
         v1DataResponse.entities = unlocationsResponses;
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
-
+        mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 
@@ -353,7 +353,7 @@ class AWBLabelReportTest extends CommonMocks {
         v1DataResponse.entities = unlocationsResponses;
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
-
+        mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 

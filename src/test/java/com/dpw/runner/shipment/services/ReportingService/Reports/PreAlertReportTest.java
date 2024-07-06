@@ -248,6 +248,7 @@ class PreAlertReportTest extends CommonMocks {
 
         when(masterDataUtils.getLocationData(any())).thenReturn(locationMap);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
@@ -375,6 +376,7 @@ class PreAlertReportTest extends CommonMocks {
         dictionary.put("id", "123");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
@@ -484,6 +486,7 @@ class PreAlertReportTest extends CommonMocks {
         dictionary.put("id", "123");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 

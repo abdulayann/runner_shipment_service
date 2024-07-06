@@ -259,6 +259,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         // Test
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -290,6 +291,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
 //        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         mockShipmentSettings();
+        mockTenantSettings();
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
@@ -1939,6 +1941,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
 
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        mockTenantSettings();
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
@@ -1964,7 +1967,7 @@ class ShipmentServiceTest extends CommonMocks {
 
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(Arrays.asList(ShipmentDetails.builder().build()));
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
     }
@@ -2028,7 +2031,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
-
+        mockTenantSettings();
         when(additionalDetailDao.updateEntityFromShipment(any())).thenReturn(additionalDetails);
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
@@ -2057,7 +2060,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         doNothing().when(carrierDetailsMapper).update(any(), any());
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
 
@@ -2087,7 +2090,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         when(truckDriverDetailsDao.updateEntityFromShipment(any(), any())).thenReturn(truckDriverDetailsList);
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
 
@@ -2118,7 +2121,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         when(packingDao.updateEntityFromShipment(any(), any(), any())).thenReturn(Arrays.asList(packing));
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
 
@@ -2146,7 +2149,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         when(elDetailsDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(ELDetails.builder().build()));
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
 
@@ -2178,7 +2181,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         when(eventDao.updateEntityFromOtherEntity(any(), any(), any())).thenReturn(Arrays.asList(events));
         doNothing().when(eventService).updateAtaAtdInShipment(any(), any(), any());
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
 
@@ -2206,7 +2209,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         when(notesDao.updateEntityFromOtherEntity(any(), any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
     }
@@ -2236,7 +2239,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         when(referenceNumbersDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(referenceNumbers));
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
     }
@@ -2266,7 +2269,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         when(routingsDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(routings));
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
     }
@@ -2300,7 +2303,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         when(serviceDetailsDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(serviceDetails));
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
 
@@ -2328,7 +2331,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         when(bookingCarriageDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(BookingCarriage.builder().build()));
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
     }
@@ -2355,6 +2358,7 @@ class ShipmentServiceTest extends CommonMocks {
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createShipmentInV2(customerBookingRequest);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -2416,6 +2420,7 @@ class ShipmentServiceTest extends CommonMocks {
 
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
     }
@@ -2497,6 +2502,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -2545,6 +2551,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -2596,6 +2603,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -2643,6 +2651,7 @@ class ShipmentServiceTest extends CommonMocks {
             when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
             when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
             when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
+            mockTenantSettings();
             ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
             assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
         } else {
@@ -2778,6 +2787,7 @@ class ShipmentServiceTest extends CommonMocks {
         PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing));
         when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -3079,7 +3089,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
 
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
     }
@@ -3107,7 +3117,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
 
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
     }
@@ -3361,7 +3371,7 @@ class ShipmentServiceTest extends CommonMocks {
         PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing));
         when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
         mockShipmentSettings();
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -3400,6 +3410,7 @@ class ShipmentServiceTest extends CommonMocks {
 
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
         mockShipmentSettings();
+        mockTenantSettings();
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
 
@@ -3454,6 +3465,7 @@ class ShipmentServiceTest extends CommonMocks {
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
         when(shipmentDao.save(any(), eq(false))).thenThrow(RunnerException.class);
         mockShipmentSettings();
+        mockTenantSettings();
         assertThrows(ValidationException.class, () -> {
             shipmentService.create(commonRequestModel);
         });
@@ -3644,7 +3656,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetailsResponse);
         doNothing().when(carrierDetailsMapper).update(any(), any());
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
 
@@ -3681,7 +3693,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetailsResponse);
         doNothing().when(carrierDetailsMapper).update(any(), any());
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
 
@@ -3811,6 +3823,7 @@ class ShipmentServiceTest extends CommonMocks {
 
         when(additionalDetailDao.updateEntityFromShipment(any())).thenReturn(additionalDetails);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
     }
@@ -3939,6 +3952,7 @@ class ShipmentServiceTest extends CommonMocks {
         PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing2));
         when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -4105,6 +4119,7 @@ class ShipmentServiceTest extends CommonMocks {
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
@@ -4138,6 +4153,7 @@ class ShipmentServiceTest extends CommonMocks {
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
@@ -4252,6 +4268,7 @@ class ShipmentServiceTest extends CommonMocks {
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
@@ -4598,6 +4615,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(anyList(), eq(Packing.class))).thenReturn(packingList);
         when(packingService.calculatePackSummary(any(), any(), any(), any())).thenReturn(new PackSummaryResponse());
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.calculateAutoUpdateWtVolInShipment(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
@@ -4717,6 +4735,7 @@ class ShipmentServiceTest extends CommonMocks {
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createShipmentInV2(customerBookingRequest);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -4745,7 +4764,7 @@ class ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
 
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, null);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
 
@@ -4775,6 +4794,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         when(hblDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -4804,6 +4824,7 @@ class ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         when(hblDao.findByShipmentId(any())).thenReturn(Arrays.asList(Hbl.builder().build()));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
