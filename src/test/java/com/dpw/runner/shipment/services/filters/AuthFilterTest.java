@@ -136,7 +136,6 @@ class AuthFilterTest {
         user.setPermissions(permissions);
         user.setTenantId(1);
         when(userService.getUserByToken(any(), any())).thenReturn(user);
-        when(tenantSettingsService.getV1TenantSettings(anyInt())).thenReturn(new V1TenantSettingsResponse());
         //when(iShipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
         AddDefaultCharsetFilter.ResponseWrapper servletResponse = mock(AddDefaultCharsetFilter.ResponseWrapper.class);
         authFilter.doFilterInternal(servletRequest, servletResponse, mock(FilterChain.class));
