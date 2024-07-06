@@ -58,8 +58,11 @@ public class SBUtilsImpl implements ISBUtils {
             senderClient.sendMessages(messageBatch);
             log.info("Sent a batch of messages to the topic: {} with messages: {}" , topicName, String.join(", ", messagesList));
         }
+
+        // No need to close
+
         //close the client
-        senderClient.close();
+        //senderClient.close();
     }
 
     @Override
