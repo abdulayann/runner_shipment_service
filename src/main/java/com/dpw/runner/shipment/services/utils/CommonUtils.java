@@ -10,9 +10,9 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
+import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.barbecue.Barcode;
 import net.sourceforge.barbecue.BarcodeException;
 import net.sourceforge.barbecue.BarcodeFactory;
@@ -21,8 +21,6 @@ import net.sourceforge.barbecue.output.OutputException;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
@@ -35,7 +33,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -44,6 +41,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 
 @Component
+@Slf4j
 public class CommonUtils {
 
     @Autowired
@@ -56,9 +54,6 @@ public class CommonUtils {
 
     @Autowired
     public IShipmentSettingsDao shipmentSettingsDao;
-
-    private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
-    private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
 
     public static FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
