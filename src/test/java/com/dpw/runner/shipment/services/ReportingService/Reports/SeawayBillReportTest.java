@@ -275,7 +275,7 @@ class SeawayBillReportTest extends CommonMocks {
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.getData(any())).thenReturn(dictionary);
-
+        mockTenantSettings();
         assertNotNull(seawayBillReport.populateDictionary(seawayBillModel));
     }
 
@@ -306,7 +306,7 @@ class SeawayBillReportTest extends CommonMocks {
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.getData(any())).thenReturn(dictionary);
-
+        mockTenantSettings();
         assertNotNull(seawayBillReport.populateDictionary(seawayBillModel));
     }
 

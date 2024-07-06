@@ -304,6 +304,7 @@ class ShippingRequestAirReportTest extends CommonMocks {
         entityTransferCommodityType.setDescription("Bag");
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferCommodityType.class))).thenReturn(Arrays.asList(entityTransferCommodityType));
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(shippingRequestAirReport.populateDictionary(shippingRequestAirModel));
     }
 

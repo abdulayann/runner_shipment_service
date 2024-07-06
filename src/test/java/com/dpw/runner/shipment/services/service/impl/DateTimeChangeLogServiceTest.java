@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConstants;
@@ -33,7 +34,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class DateTimeChangeLogServiceTest {
+class DateTimeChangeLogServiceTest extends CommonMocks {
 
 
     @Mock
@@ -81,7 +82,7 @@ class DateTimeChangeLogServiceTest {
         dateUpdateRequest.setEtd(ds);
 
         shipmentRequest.setDateUpdateRequest(dateUpdateRequest);
-
+        mockTenantSettings();
         dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, testShipment);
 
         verify(dateTimeChangeLogDao, atLeast(1)).create(any());
@@ -112,7 +113,7 @@ class DateTimeChangeLogServiceTest {
         shipmentRequest.getCarrierDetails().setAtd(mockDateTime);
         shipmentRequest.getCarrierDetails().setEta(mockDateTime);
         shipmentRequest.getCarrierDetails().setEtd(mockDateTime);
-
+        mockTenantSettings();
         dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, testShipment);
 
         verify(dateTimeChangeLogDao, atLeast(1)).create(any());

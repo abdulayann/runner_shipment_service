@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ConsolidatedPackingListModel;
@@ -48,7 +49,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ConsolidatedPackingListReportTest {
+class ConsolidatedPackingListReportTest extends CommonMocks {
 
     @InjectMocks
     private ConsolidatedPackingListReport consolidatedPackingListReport;
@@ -272,7 +273,7 @@ class ConsolidatedPackingListReportTest {
         packListMap.add(packMap);
 
         doReturn(packListMap).when(jsonHelper).convertValue(any(HashSet.class), any(TypeReference.class));
-
+        mockTenantSettings();
         assertNotNull(consolidatedPackingListReport.populateDictionary(consolidatedPackingListModel));
     }
 
@@ -312,7 +313,7 @@ class ConsolidatedPackingListReportTest {
         packListMap.add(packMap);
 
         doReturn(packListMap).when(jsonHelper).convertValue(any(HashSet.class), any(TypeReference.class));
-
+        mockTenantSettings();
         assertNotNull(consolidatedPackingListReport.populateDictionary(consolidatedPackingListModel));
     }
 

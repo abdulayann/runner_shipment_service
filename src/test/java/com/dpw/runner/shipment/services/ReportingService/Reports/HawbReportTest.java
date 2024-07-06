@@ -358,7 +358,7 @@ class HawbReportTest extends CommonMocks {
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
         when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
-
+        mockTenantSettings();
         assertNotNull(hawbReport.populateDictionary(hawbModel));
     }
 
@@ -527,7 +527,7 @@ class HawbReportTest extends CommonMocks {
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
         when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
-
+        mockTenantSettings();
         assertNotNull(hawbReport.populateDictionary(hawbModel));
     }
 
@@ -730,7 +730,7 @@ class HawbReportTest extends CommonMocks {
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
         when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
-
+        mockTenantSettings();
         assertNotNull(hawbReport.populateDictionary(hawbModel));
     }
 

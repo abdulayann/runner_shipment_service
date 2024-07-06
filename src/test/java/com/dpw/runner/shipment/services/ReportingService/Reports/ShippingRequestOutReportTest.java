@@ -274,7 +274,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
         carrierMasterData.setItemValue("Turkish Airlines");
         carrierMasterData.setCarrierContactPerson("Test");
         shippingRequestOutModel.setCarrier(carrierMasterData);
-
+        mockTenantSettings();
         shippingRequestOutModel.setShipmentAndContainer(shippingRequestOutReport.getShipmentAndContainerResponse(Arrays.asList(shipmentModel)));
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -448,6 +448,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
         mockVessel();
         mockCarrier();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(shippingRequestOutReport.populateDictionary(shippingRequestOutModel));
         assert (true);
     }
@@ -648,6 +649,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
 
         mockCarrier();
         mockVessel();
+        mockTenantSettings();
         assertNotNull(shippingRequestOutReport.getDocumentModel(123L));
     }
 
@@ -731,6 +733,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
 
         mockCarrier();
         mockVessel();
+        mockTenantSettings();
         assertNotNull(shippingRequestOutReport.getDocumentModel(123L));
     }
 }

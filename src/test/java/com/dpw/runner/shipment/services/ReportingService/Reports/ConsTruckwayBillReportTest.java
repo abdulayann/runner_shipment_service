@@ -302,6 +302,7 @@ class ConsTruckwayBillReportTest extends CommonMocks {
         mockUnloc();
         mockCarrier();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(consTruckwayBillReport.populateDictionary(truckDriverModel));
     }
 

@@ -186,7 +186,7 @@ public abstract class IReport {
         ship.CustomsSealNumber = row.getCustomsSealNumber();
         ship.ShipperSealNumber = row.getShipperSealNumber();
         ship.HazardousUn = row.getHazardousUn();
-        ship.CargoGrossWeightUnit = String.format("%s %s", ConvertToWeightNumberFormat(row.getGrossWeight(), TenantSettingsDetailsContext.getCurrentTenantSettings()), row.getGrossWeightUnit());
+        ship.CargoGrossWeightUnit = String.format("%s %s", ConvertToWeightNumberFormat(row.getGrossWeight(), getCurrentTenantSettings()), row.getGrossWeightUnit());
 
         try {
             List<MasterListRequest> requests = new ArrayList<>();
@@ -264,7 +264,7 @@ public abstract class IReport {
 
     public void populateBLContainer(ShipmentContainers shipmentContainer, HblContainerDto blObjectContainer) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        V1TenantSettingsResponse tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse tenantSettings = getCurrentTenantSettings();
         Integer decimalPlaces = shipmentSettingsDetails.getDecimalPlaces();
         if(decimalPlaces == null)
             decimalPlaces = 2;
@@ -439,7 +439,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.CONTAINER_COUNT, numberToWords(containerCount).toUpperCase());
         dictionary.put(PICKUP_INSTRUCTION, shipment.getPickupDetails() != null ? shipment.getPickupDetails().getPickupDeliveryInstruction() : null);
         dictionary.put(DELIVERY_INSTRUCTIONS, shipment.getDeliveryDetails() != null ? shipment.getDeliveryDetails().getPickupDeliveryInstruction() : null);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null, tsDateTimeFormat));
         dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null, tsDateTimeFormat));
@@ -1475,7 +1475,7 @@ public abstract class IReport {
             dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notify.stream().map(StringUtility::toUpperCase).toList());
         }
 
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
 
@@ -1564,7 +1564,7 @@ public abstract class IReport {
 
     public List<ContainerCountByCode> getCountByContainerTypeCode(List<ShipmentContainers> commonContainers) {
         Map<String, Long> containerTypeCountMap = new HashMap<>();
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if (commonContainers != null) {
             for(ShipmentContainers container : commonContainers) {
                 if (container.ContainerTypeCode != null) {
@@ -1592,7 +1592,7 @@ public abstract class IReport {
 
     public List<ContainerCountByCode> getCountByCommonContainerTypeCode(List<ContainerModel> commonContainers) {
         Map<String, Long> containerTypeCountMap = new HashMap<>();
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if (commonContainers != null) {
             for (var container : commonContainers) {
                 if (container.getContainerCode() != null) {
@@ -1715,7 +1715,7 @@ public abstract class IReport {
 
     public DateTimeFormatter GetDPWDateFormatOrDefault()
     {
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
@@ -1783,7 +1783,7 @@ public abstract class IReport {
     }
 
     public String ConvertToWeightNumberFormat(BigDecimal weight) {
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         return ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
     }
 
@@ -1804,7 +1804,7 @@ public abstract class IReport {
     }
 
     public String ConvertToVolumeNumberFormat(BigDecimal volume) {
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         return ConvertToVolumeNumberFormat(volume, v1TenantSettingsResponse);
     }
     public static String ConvertToVolumeNumberFormat(Object volume, V1TenantSettingsResponse v1TenantSettingsResponse) {
@@ -2041,7 +2041,7 @@ public abstract class IReport {
 
     public List<ShipmentAndContainerResponse> getShipmentAndContainerResponse(List<ShipmentModel> shipments) {
         List<ShipmentAndContainerResponse> shipmentContainers = new ArrayList<>();
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(shipments == null)
             return shipmentContainers;
 
@@ -2348,7 +2348,7 @@ public abstract class IReport {
         } catch (Exception e) {
             log.error("Error while ");
         }
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         for(var pack : shipment.getPackingList()) {
             Map<String, Object> dict = new HashMap<>();
             if(pack.getCommodity() != null) {
@@ -2457,7 +2457,7 @@ public abstract class IReport {
         List<BillChargesResponse> copyChargesRows = new ArrayList<>();
         dictionary.put(AS_AGREED, false);
         dictionary.put(COPY_AS_AGREED, false);
-        var v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        var v1TenantSettingsResponse = getCurrentTenantSettings();
         String chargesApply = shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getBLChargesDisplay() : null;
 
         if (!Objects.isNull(chargesApply) && chargesApply.equals("AGR")) {
@@ -2874,7 +2874,7 @@ public abstract class IReport {
     }
 
     private String getDate(Map<String, Object> agent) {
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         return ConvertToDPWDateFormat(LocalDateTime.parse(StringUtility.convertToString(agent.get(KCRA_EXPIRY))), v1TenantSettingsResponse.getDPWDateFormat());
     }
 
@@ -2911,7 +2911,7 @@ public abstract class IReport {
     public void populateIGMInfo(ShipmentModel shipment, Map<String, Object> dictionary) {
         if (Objects.isNull(shipment))
             return;
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         var additionalDetails = shipment.getAdditionalDetails();
         if (v1TenantSettingsResponse.isEnableIGMDetails() && Objects.equals(shipment.getDirection(), Constants.IMP) && !Objects.isNull(additionalDetails)) {
             dictionary.put(ReportConstants.IGM_FILE_DATE, additionalDetails.getIGMFileDate());
@@ -3029,5 +3029,9 @@ public abstract class IReport {
         dictionary.put(TI_DELIVERY_GATEIN, ConvertToDPWDateFormat(ti.getDeliveryGateIn()));
         dictionary.put(TI_DELIVERY_GATEOUT, ConvertToDPWDateFormat(ti.getDeliveryGateOut()));
 
+    }
+
+    public V1TenantSettingsResponse getCurrentTenantSettings() {
+        return commonUtils.getCurrentTenantSettings();
     }
 }

@@ -115,9 +115,6 @@ public class AuthFilter extends OncePerRequestFilter {
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         //ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
-        if (!servletRequest.getRequestURI().contains(ShipmentSettingsConstants.SHIPMENT_SETTINGS_API_HANDLE + ApiConstants.SYNC))
-            TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsService.getV1TenantSettings(user.getTenantId()));
-        log.info("RequestId: {} | V1TenantSettings: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(TenantSettingsDetailsContext.getCurrentTenantSettings()));
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {

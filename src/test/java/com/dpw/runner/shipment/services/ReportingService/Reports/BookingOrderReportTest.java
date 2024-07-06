@@ -360,6 +360,7 @@ class BookingOrderReportTest extends CommonMocks {
         mockUnloc();
         mockUnlocation();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(bookingOrderReport.populateDictionary(bookingOrderModel));
     }
 

@@ -46,7 +46,7 @@ public class AWBLabelReport extends IReport{
         AWbLabelModel awbLabelModel = (AWbLabelModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         String mawb = awbLabelModel.shipment.getMasterBill();
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(mawb != null){
             mawb = mawb.replace("-","");
             if(mawb.length() < 11) mawb = appendZero(mawb, 11);

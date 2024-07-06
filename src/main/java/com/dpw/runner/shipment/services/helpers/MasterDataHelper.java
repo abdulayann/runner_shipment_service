@@ -331,7 +331,7 @@ public class MasterDataHelper {
     }
 
     public CompletableFuture<ShipmentBillingListResponse> addBillData(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        if (Objects.isNull(shipmentDetails) || Objects.isNull(TenantSettingsDetailsContext.getCurrentTenantSettings()) || Boolean.TRUE.equals(TenantSettingsDetailsContext.getCurrentTenantSettings().getBillingServiceV2Enabled()))
+        if (Objects.isNull(shipmentDetails) || Objects.isNull(commonUtils.getCurrentTenantSettings()) || Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getBillingServiceV2Enabled()))
             return CompletableFuture.completedFuture(null);
         ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
                 .guidsList(List.of(shipmentDetails.getGuid())).build();

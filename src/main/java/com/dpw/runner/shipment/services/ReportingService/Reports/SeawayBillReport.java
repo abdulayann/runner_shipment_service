@@ -95,7 +95,7 @@ public class SeawayBillReport extends IReport {
 
 
         if (model.shipment.getShipmentContainersList() != null) {
-            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+            V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
             List<Map<String, Object>> values = jsonHelper.convertValue(model.shipment.getShipmentContainersList(), new TypeReference<>() {});
             values.forEach(v -> {
                 if (v.get(GROSS_WEIGHT) != null && v.get(GROSS_WEIGHT).toString() != null)
