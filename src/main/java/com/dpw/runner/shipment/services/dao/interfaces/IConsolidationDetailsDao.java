@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface IConsolidationDetailsDao {
@@ -27,4 +28,5 @@ public interface IConsolidationDetailsDao {
     int updateConsoleBookingFields(ConsoleBookingRequest request);
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
     String getConsolidationNumberFromId(Long id);
+    List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids);
 }
