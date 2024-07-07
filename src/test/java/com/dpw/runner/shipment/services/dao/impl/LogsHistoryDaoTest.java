@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class LogsHistoryDaoTest {
+class LogsHistoryDaoTest {
     @Mock
     private ILogsHistoryRepository logsHistoryRepository;
     @Mock
@@ -89,13 +90,26 @@ public class LogsHistoryDaoTest {
     }
 
     @Test
-    void testFindByEntityGuid() throws IOException {
+    void testFindByEntityGuidAndTimeStamp() throws IOException {
         UUID entityGuid = UUID.randomUUID();
+        LocalDateTime timeStamp = LocalDateTime.now();
         LogsHistory logsHistory = LogsHistory.builder().entityId(1L).entityGuid(entityGuid).entityType(Constants.SHIPMENT)
                 .entityPayload(Base64.getEncoder().encodeToString(JsonCompression.compressJson("ShipmentPayload"))).build();
-        when(logsHistoryRepository.findByEntityGuid(entityGuid)).thenReturn(Optional.of(logsHistory));
-        var response = logsHistoryDao.findByEntityGuid(entityGuid);
+        when(logsHistoryRepository.findByEntityGuidAndTimeStamp(entityGuid, timeStamp)).thenReturn(Optional.of(logsHistory));
+        var response = logsHistoryDao.findByEntityGuidAndTimeStamp(entityGuid, timeStamp);
         assertTrue(response.isPresent());
         assertEquals(logsHistory, response.get());
+    }
+
+    @Test
+    void testFindByEntityGuidsAndTimeStamp() throws IOException {
+        UUID entityGuid = UUID.randomUUID();
+        LocalDateTime timeStamp = LocalDateTime.now();
+        LogsHistory logsHistory = LogsHistory.builder().entityId(1L).entityGuid(entityGuid).entityType(Constants.SHIPMENT)
+                .entityPayload(Base64.getEncoder().encodeToString(JsonCompression.compressJson("ShipmentPayload"))).build();
+        when(logsHistoryRepository.findByEntityGuidsAndTimeStamp(List.of(entityGuid), timeStamp)).thenReturn(List.of(logsHistory));
+        var response = logsHistoryDao.findByEntityGuidsAndTimeStamp(List.of(entityGuid), timeStamp);
+        assertFalse(response.isEmpty());
+        assertEquals(logsHistory, response.get(0));
     }
 }
