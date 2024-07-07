@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.LogsHistoryConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.ILogsHistoryDao;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
@@ -62,8 +63,8 @@ public class LogsHistoryService implements ILogsHistoryService {
                     .entityPayload(entityPayload)
                     .build();
         } catch (Exception ex) {
-            log.error("Failed to decompress the entity json :" + ex.getMessage());
-            throw new RunnerException("Failed to decompress the entity json :" + ex.getMessage());
+            log.error(LogsHistoryConstants.FAILED_TO_DECOMPRESS_JSON + ex.getMessage());
+            throw new RunnerException(LogsHistoryConstants.FAILED_TO_DECOMPRESS_JSON + ex.getMessage());
         }
     }
 
@@ -73,23 +74,18 @@ public class LogsHistoryService implements ILogsHistoryService {
         List<LogHistoryResponse> logHistoryResponses = new ArrayList<>();
         if(logsHistory != null && !logsHistory.isEmpty()) {
             try {
-                logsHistory.forEach(log -> {
-                    String entityPayload = null;
-                    try {
-                        entityPayload = JsonCompression.decompressJson(Base64.getDecoder().decode(log.getEntityPayload()));
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                for (var log: logsHistory) {
+                    String entityPayload = JsonCompression.decompressJson(Base64.getDecoder().decode(log.getEntityPayload()));
                     logHistoryResponses.add(LogHistoryResponse.builder()
-                                .entityId(log.getEntityId())
-                                .entityGuid(log.getEntityGuid())
-                                .entityType(log.getEntityType())
-                                .entityPayload(entityPayload)
-                                .build());
-                });
+                            .entityId(log.getEntityId())
+                            .entityGuid(log.getEntityGuid())
+                            .entityType(log.getEntityType())
+                            .entityPayload(entityPayload)
+                            .build());
+                }
             } catch (Exception ex) {
-                log.error("Failed to decompress the entity json :" + ex.getMessage());
-                throw new RunnerException("Failed to decompress the entity json :" + ex.getMessage());
+                log.error(LogsHistoryConstants.FAILED_TO_DECOMPRESS_JSON + ex.getMessage());
+                throw new RunnerException(LogsHistoryConstants.FAILED_TO_DECOMPRESS_JSON + ex.getMessage());
             }
         }
         return logHistoryResponses;
