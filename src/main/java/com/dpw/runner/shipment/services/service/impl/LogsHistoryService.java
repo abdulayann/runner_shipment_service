@@ -14,7 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -44,8 +48,8 @@ public class LogsHistoryService implements ILogsHistoryService {
     }
 
     @Override
-    public LogHistoryResponse retrieveByEntityGuid(UUID entityGuid) throws RunnerException {
-        var logsHistory = logsHistoryDao.findByEntityGuid(entityGuid);
+    public LogHistoryResponse findByEntityGuidAndTimeStamp(UUID entityGuid, LocalDateTime timeStamp) throws RunnerException {
+        var logsHistory = logsHistoryDao.findByEntityGuidAndTimeStamp(entityGuid, timeStamp);
         if(logsHistory.isEmpty()){
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -61,5 +65,33 @@ public class LogsHistoryService implements ILogsHistoryService {
             log.error("Failed to decompress the entity json :" + ex.getMessage());
             throw new RunnerException("Failed to decompress the entity json :" + ex.getMessage());
         }
+    }
+
+    @Override
+    public List<LogHistoryResponse> findByEntityGuidsAndTimeStamp(List<UUID> entityGuids, LocalDateTime timeStamp) throws RunnerException {
+        var logsHistory = logsHistoryDao.findByEntityGuidsAndTimeStamp(entityGuids, timeStamp);
+        List<LogHistoryResponse> logHistoryResponses = new ArrayList<>();
+        if(logsHistory != null && !logsHistory.isEmpty()) {
+            try {
+                logsHistory.forEach(log -> {
+                    String entityPayload = null;
+                    try {
+                        entityPayload = JsonCompression.decompressJson(Base64.getDecoder().decode(log.getEntityPayload()));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    logHistoryResponses.add(LogHistoryResponse.builder()
+                                .entityId(log.getEntityId())
+                                .entityGuid(log.getEntityGuid())
+                                .entityType(log.getEntityType())
+                                .entityPayload(entityPayload)
+                                .build());
+                });
+            } catch (Exception ex) {
+                log.error("Failed to decompress the entity json :" + ex.getMessage());
+                throw new RunnerException("Failed to decompress the entity json :" + ex.getMessage());
+            }
+        }
+        return logHistoryResponses;
     }
 }

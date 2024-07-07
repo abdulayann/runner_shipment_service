@@ -23,7 +23,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -65,16 +67,28 @@ class LogsHistoryServiceTest {
     @Test
     void testRetrieveByEntityGuid_Success() throws RunnerException, IOException {
         UUID entityGuid = UUID.randomUUID();
+        LocalDateTime time = LocalDateTime.now();
         LogsHistory logsHistory = LogsHistory.builder().entityId(1L).entityGuid(entityGuid).entityType(Constants.SHIPMENT).entityPayload(Base64.getEncoder().encodeToString(JsonCompression.compressJson("ShipmentPayload"))).build();
-        when(logsHistoryDao.findByEntityGuid(entityGuid)).thenReturn(Optional.of(logsHistory));
-        LogHistoryResponse response = logsHistoryService.retrieveByEntityGuid(entityGuid);
+        when(logsHistoryDao.findByEntityGuidAndTimeStamp(entityGuid, time)).thenReturn(Optional.of(logsHistory));
+        LogHistoryResponse response = logsHistoryService.findByEntityGuidAndTimeStamp(entityGuid, time);
         assertEquals(response.getEntityGuid(), entityGuid);
     }
 
     @Test
     void testRetrieveByEntityGuid_DataRetrievalException(){
         UUID entityGuid = UUID.randomUUID();
-        when(logsHistoryDao.findByEntityGuid(entityGuid)).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class, () -> logsHistoryService.retrieveByEntityGuid(entityGuid));
+        LocalDateTime time = LocalDateTime.now();
+        when(logsHistoryDao.findByEntityGuidAndTimeStamp(entityGuid, time)).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> logsHistoryService.findByEntityGuidAndTimeStamp(entityGuid, time));
+    }
+
+    @Test
+    void testFindByEntityGuidsAndTimeStamp_Success() throws RunnerException, IOException {
+        UUID entityGuid = UUID.randomUUID();
+        LocalDateTime time = LocalDateTime.now();
+        LogsHistory logsHistory = LogsHistory.builder().entityId(1L).entityGuid(entityGuid).entityType(Constants.SHIPMENT).entityPayload(Base64.getEncoder().encodeToString(JsonCompression.compressJson("ShipmentPayload"))).build();
+        when(logsHistoryDao.findByEntityGuidsAndTimeStamp(List.of(entityGuid), time)).thenReturn(List.of(logsHistory));
+        List<LogHistoryResponse> response = logsHistoryService.findByEntityGuidsAndTimeStamp(List.of(entityGuid), time);
+        assertEquals(response.get(0).getEntityGuid(), entityGuid);
     }
 }

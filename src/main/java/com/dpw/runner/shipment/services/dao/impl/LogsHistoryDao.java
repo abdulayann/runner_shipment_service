@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +47,12 @@ public class LogsHistoryDao implements ILogsHistoryDao {
     }
 
     @Override
-    public Optional<LogsHistory> findByEntityGuid(UUID entityGuid){
-        return logsHistoryRepository.findByEntityGuid(entityGuid);
+    public Optional<LogsHistory> findByEntityGuidAndTimeStamp(UUID entityGuid, LocalDateTime timeStamp){
+        return logsHistoryRepository.findByEntityGuidAndTimeStamp(entityGuid, timeStamp);
+    }
+
+    @Override
+    public List<LogsHistory> findByEntityGuidsAndTimeStamp(List<UUID> entityGuids, LocalDateTime timeStamp) {
+        return logsHistoryRepository.findByEntityGuidsAndTimeStamp(entityGuids, timeStamp);
     }
 }

@@ -8,9 +8,9 @@ import org.hibernate.annotations.Where;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.Lob;
 import javax.persistence.Table;
 import javax.validation.constraints.Size;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -37,5 +37,17 @@ public class LogsHistory extends MultiTenancy {
 
     @Column(name = "entity_payload")
     private String entityPayload;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        LogsHistory that = (LogsHistory) o;
+        return Objects.equals(this, that);
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(entityId, entityType);
+    }
 
 }
