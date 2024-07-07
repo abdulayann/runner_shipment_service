@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -45,5 +46,8 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
 
     @Query(value = "SELECT consolidation_number FROM consolidation_details WHERE id = ?1", nativeQuery = true)
     String getConsolidationNumberFromId(Long id);
+
+    @Query(value = "SELECT * FROM consolidation_details WHERE guid IN ?1", nativeQuery = true)
+    List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids);
 
 }

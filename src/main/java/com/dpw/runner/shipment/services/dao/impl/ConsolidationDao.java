@@ -528,4 +528,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.getConsolidationNumberFromId(id);
     }
 
+    @Override
+    public List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids) {
+        return consolidationRepository.findConsolidationsByGuids(guids);
+    }
+
 }
