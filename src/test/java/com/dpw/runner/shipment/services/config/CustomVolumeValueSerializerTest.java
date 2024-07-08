@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -30,9 +31,14 @@ class CustomVolumeValueSerializerTest {
     @InjectMocks
     private CustomVolumeValueSerializer customVolumeValueSerializer;
 
+    @Mock
+    private ApplicationContext applicationContext;
+
     @Test
     void testSerializewithCommonUtils() throws IOException {
         BigDecimal input = new BigDecimal("200.111");
+        SpringContext.setApplicationContext(applicationContext);
+        Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
         Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
 
         customVolumeValueSerializer.serialize(input, jsonGenerator, serializerProvider);
@@ -44,6 +50,8 @@ class CustomVolumeValueSerializerTest {
     @Test
     void testSerializeWithNullVolumeDecimalPlace() throws IOException {
         BigDecimal input = new BigDecimal("200.111");
+        SpringContext.setApplicationContext(applicationContext);
+        Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
         Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(null).build());
 
         customVolumeValueSerializer.serialize(input, jsonGenerator, serializerProvider);
