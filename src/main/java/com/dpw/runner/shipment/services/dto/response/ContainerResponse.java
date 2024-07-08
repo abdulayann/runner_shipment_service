@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.config.*;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
+import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
@@ -27,10 +30,10 @@ public class ContainerResponse implements IRunnerResponse {
     private String containerNumber;
     private String sealNumber;
     private String descriptionOfGoods;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal netWeight;
     private String netWeightUnit;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal grossWeight;
     private String grossWeightUnit;
     private BigDecimal measurement;
@@ -48,7 +51,7 @@ public class ContainerResponse implements IRunnerResponse {
     private String customsReleaseCode;
     private String containerStuffingLocation;
     private String containerComments;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomVolumeValueJsonSerializer.class)
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal grossVolume;
     private String grossVolumeUnit;
     private Boolean isReefer;
@@ -84,16 +87,16 @@ public class ContainerResponse implements IRunnerResponse {
     private ContainerStatus status;
     private String extraParams;
     private String remarks;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal allocatedWeight;
     private String allocatedWeightUnit;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomVolumeValueJsonSerializer.class)
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal allocatedVolume;
     private String allocatedVolumeUnit;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal achievedWeight;
     private String achievedWeightUnit;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomVolumeValueJsonSerializer.class)
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal achievedVolume;
     private String achievedVolumeUnit;
     private String weightUtilization;

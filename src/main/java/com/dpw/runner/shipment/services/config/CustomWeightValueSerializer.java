@@ -20,13 +20,9 @@ public class CustomWeightValueSerializer extends JsonSerializer<BigDecimal> {
 
     private CommonUtils commonUtils;
 
-    @Autowired
-    public CustomWeightValueSerializer(CommonUtils commonUtils) {
-        this.commonUtils = commonUtils;
-    }
-
     @Override
     public void serialize(BigDecimal bigDecimal, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+        CommonUtils commonUtils = SpringContext.getBean(CommonUtils.class);
         if(commonUtils == null) {
             log.info("commonUtils is null in CustomWeightValueSerializer");
         }

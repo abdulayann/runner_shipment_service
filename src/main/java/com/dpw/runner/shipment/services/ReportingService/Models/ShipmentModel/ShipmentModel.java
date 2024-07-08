@@ -2,7 +2,10 @@ package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.config.*;
+import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
+import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -117,7 +120,7 @@ public class ShipmentModel implements IDocumentModel {
     @JsonProperty("MasterBill")
     private String masterBill;
     @JsonProperty("NetWeight")
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal netWeight;
     @JsonProperty("NetWeightUnit")
     private String netWeightUnit;
@@ -176,16 +179,16 @@ public class ShipmentModel implements IDocumentModel {
     @JsonProperty("TruckDriverDetails")
     private List<TruckDriverDetailsModel> truckDriverDetails;
     @JsonProperty("Volume")
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomVolumeValueJsonSerializer.class)
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal volume;
     @JsonProperty("VolumeUnit")
     private String volumeUnit;
     @JsonProperty("VolumetricWeight")
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal volumetricWeight;
     @JsonProperty("VolumetricWeightUnit")
     private String volumetricWeightUnit;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     @JsonProperty("Weight")
     private BigDecimal weight;
     @JsonProperty("WeightUnit")

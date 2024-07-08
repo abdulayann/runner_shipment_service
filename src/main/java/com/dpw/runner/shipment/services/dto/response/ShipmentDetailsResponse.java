@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.config.*;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
+import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
@@ -50,19 +53,19 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String assignedTo;
     private String additionalTerms;
     private String goodsDescription;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal weight;
     private String weightUnit;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomVolumeValueJsonSerializer.class)
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal volume;
     private String volumeUnit;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal volumetricWeight;
     private String volumetricWeightUnit;
     @JsonSerialize(using = DecimalPlaceValueSerializer.class)
     private BigDecimal chargable;
     private String chargeableUnit;
-    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal netWeight;
     private String netWeightUnit;
     private Integer noOfPacks;
