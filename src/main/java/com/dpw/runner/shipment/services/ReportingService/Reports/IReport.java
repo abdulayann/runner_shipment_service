@@ -296,6 +296,15 @@ public abstract class IReport {
 
         PickupDeliveryDetailsModel pickup = shipment.getPickupDetails();
         PickupDeliveryDetailsModel delivery = shipment.getDeliveryDetails();
+
+        if(shipment.getTransportMode() != null) {
+            dictionary.put(TI_ISSEA, shipment.getTransportMode().equals(SEA));
+            dictionary.put(TI_ISAIR, shipment.getTransportMode().equals(AIR));
+        }
+
+        if(shipment.getCarrierDetails() != null)
+            dictionary.put(TI_FLIGHT_NUMBER, shipment.getCarrierDetails().getFlightNumber());
+
         if(shipment.getTransportInstructionId() != null)
             addTransportInstructionTags(dictionary , shipment);
         PartiesModel shipmentClient = shipment.getClient();
