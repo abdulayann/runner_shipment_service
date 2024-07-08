@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -29,9 +30,14 @@ class CustomWeightValueSerializerTest {
     @InjectMocks
     private CustomWeightValueSerializer customWeightValueSerializer;
 
+    @Mock
+    private ApplicationContext applicationContext;
+
     @Test
     void testSerializeWithCommonUtils() throws IOException {
         BigDecimal input = new BigDecimal("200.111");
+        SpringContext.setApplicationContext(applicationContext);
+        Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
         Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().weightDecimalPlace(2).build());
 
         customWeightValueSerializer.serialize(input, jsonGenerator, serializerProvider);
@@ -43,6 +49,8 @@ class CustomWeightValueSerializerTest {
     @Test
     void testSerializeWithNullVolumeDecimalPlace() throws IOException {
         BigDecimal input = new BigDecimal("200.111");
+        SpringContext.setApplicationContext(applicationContext);
+        Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
         Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().weightDecimalPlace(null).build());
 
         customWeightValueSerializer.serialize(input, jsonGenerator, serializerProvider);

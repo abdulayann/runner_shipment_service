@@ -1683,6 +1683,7 @@ public class AwbService implements IAwbService {
             }
         }
         awb.setId(resetAwbRequest.getId());
+        awb.setAirMessageResubmitted(false);
         awb = awbDao.save(awb);
         try {
             callV1Sync(awb, SaveStatus.RESET);
