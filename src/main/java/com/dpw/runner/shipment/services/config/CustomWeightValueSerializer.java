@@ -18,8 +18,12 @@ import java.math.RoundingMode;
 @Slf4j
 public class CustomWeightValueSerializer extends JsonSerializer<BigDecimal> {
 
-    @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    public CustomWeightValueSerializer(CommonUtils commonUtils) {
+        this.commonUtils = commonUtils;
+    }
 
     @Override
     public void serialize(BigDecimal bigDecimal, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {

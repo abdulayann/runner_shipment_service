@@ -16,8 +16,12 @@ import org.springframework.beans.factory.annotation.Configurable;
 @Slf4j
 public class CustomVolumeValueSerializer extends JsonSerializer<BigDecimal> {
 
-    @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    public CustomVolumeValueSerializer(CommonUtils commonUtils) {
+        this.commonUtils = commonUtils;
+    }
 
     @Override
     public void serialize(BigDecimal bigDecimal, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {

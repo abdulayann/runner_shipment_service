@@ -1,8 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
-import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.CustomWeightVolumeJsonSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
@@ -20,13 +19,13 @@ import java.util.UUID;
 public class AchievedQuantitiesResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
-    @JsonSerialize(using = CustomWeightValueSerializer.class)
+    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
     private BigDecimal weightVolume;
     private String weightVolumeUnit;
-    @JsonSerialize(using = CustomWeightValueSerializer.class)
+    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
     private BigDecimal consolidatedWeight;
     private String consolidatedWeightUnit;
-    @JsonSerialize(using = CustomVolumeValueSerializer.class)
+    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomVolumeValueJsonSerializer.class)
     private BigDecimal consolidatedVolume;
     private String consolidatedVolumeUnit;
     @JsonSerialize(using = DecimalPlaceValueSerializer.class)

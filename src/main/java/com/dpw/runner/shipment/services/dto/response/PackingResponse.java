@@ -1,8 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
-import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.CustomWeightVolumeJsonSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
@@ -24,10 +23,10 @@ public class PackingResponse implements IRunnerResponse {
     private Integer DGSubstanceId;
     private String packs;
     private String packsType;
-    @JsonSerialize(using = CustomWeightValueSerializer.class)
+    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
     private BigDecimal weight;
     private String weightUnit;
-    @JsonSerialize(using = CustomVolumeValueSerializer.class)
+    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomVolumeValueJsonSerializer.class)
     private BigDecimal volume;
     private String volumeUnit;
     private String inspections;
@@ -54,10 +53,10 @@ public class PackingResponse implements IRunnerResponse {
     private String referenceNumber;
     private String DGClass;
     private Boolean hazardous;
-    @JsonSerialize(using = CustomWeightValueSerializer.class)
+    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomWeightValueJsonSerializer.class)
     private BigDecimal netWeight;
     private String netWeightUnit;
-    @JsonSerialize(using = CustomVolumeValueSerializer.class)
+    @JsonSerialize(using = CustomWeightVolumeJsonSerializer.CustomVolumeValueJsonSerializer.class)
     private BigDecimal volumeWeight;
     private String volumeWeightUnit;
     private String vinNumber;
