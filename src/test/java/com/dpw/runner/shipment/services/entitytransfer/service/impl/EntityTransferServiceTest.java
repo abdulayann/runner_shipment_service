@@ -916,8 +916,8 @@ class EntityTransferServiceTest {
         Set<UUID> shipGuidSet = new HashSet<>(shipGuids);
         Set<UUID> shipGuidSet1 = new HashSet<>(shipGuidSet);
         shipGuidSet1.remove(shipmentDetails.getGuid());
-        Set<UUID> consoleGuids = List.of(shipmentDetails.getConsolidationList().get(0).getGuid(), shipmentDetailsDrt.getConsolidationList().get(0).getGuid(), shipmentDetailsImp.getConsolidationList().get(0).getGuid(),
-                shipmentDetailsImp1.getConsolidationList().get(0).getGuid(), shipmentDetailsExp.getConsolidationList().get(0).getGuid()).stream().collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<UUID> consoleGuids = new LinkedHashSet<>(List.of(shipmentDetails.getConsolidationList().get(0).getGuid(), shipmentDetailsDrt.getConsolidationList().get(0).getGuid(), shipmentDetailsImp.getConsolidationList().get(0).getGuid(),
+                shipmentDetailsImp1.getConsolidationList().get(0).getGuid(), shipmentDetailsExp.getConsolidationList().get(0).getGuid()));
         Set<UUID> consoleGuids1 = new HashSet<>(consoleGuids);
         consoleGuids1.remove(shipmentDetails.getConsolidationList().get(0).getGuid());
 
