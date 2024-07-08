@@ -43,4 +43,7 @@ public class CustomerBookingConstants {
 
     public static final String BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR = "Booking Details is null for Id {} with Request Id {}";
 
+    public static final String RETRIEVE_BY_ORDER_ID_SUCCESSFUL = "Successful Booking Data Retrieval By Order Id";
+    public static final String ORDER_ID = "Order Id";
+
 }

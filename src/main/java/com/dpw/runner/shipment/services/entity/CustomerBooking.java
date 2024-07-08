@@ -244,4 +244,10 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "source_guid")
     private UUID sourceGuid;
+
+    @Column(name = "order_management_id")
+    private String orderManagementId;
+
+    @Column(name = "order_management_number")
+    private String orderManagementNumber;
 }

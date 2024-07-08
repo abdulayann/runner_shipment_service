@@ -26,4 +26,6 @@ public interface ICustomerBookingService {
     ResponseEntity<IRunnerResponse> retryForBilling(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> cloneBooking(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<IRunnerResponse> retrieveByOrderId(String orderId) throws RunnerException;
 }

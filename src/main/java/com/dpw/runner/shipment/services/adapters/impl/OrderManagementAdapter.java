@@ -3,13 +3,17 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -59,6 +63,59 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    @Override
+    public CustomerBookingResponse getOrderForBooking(String orderId) throws RunnerException {
+        try {
+            String url = baseUrl + getOrderUrl + orderId;
+            var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);
+            var bookingResponse = mapOrderToBooking(Objects.requireNonNull(response.getBody()).getOrder());
+            return bookingResponse;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private CustomerBookingResponse mapOrderToBooking(OrderManagementDTO order)
+    {
+        var partyMap = getPartyDetails(List.of(order.getSupplierCode(), order.getBuyerCode(), order.getNotifyPartyCode()));
+        CustomerBookingResponse customerBookingResponse = CustomerBookingResponse.builder()
+                .bookingDate(LocalDateTime.now())
+                .bookingStatus(BookingStatus.PENDING_FOR_KYC)
+                .carrierDetails(CarrierDetailResponse.builder()
+                        .origin(order.getOrigin())
+                        .destination(order.getDestination())
+                        .originPort(order.getOriginPort())
+                        .destinationPort(order.getDestinationPort())
+                        .build())
+                .consignor(partyMap.get(order.getSupplierCode()) != null ? PartiesResponse.builder()
+                        .orgCode(order.getSupplierCode())
+                        .orgData(partyMap.get(order.getSupplierCode()))
+                        .addressCode(order.getSupplierAddressCode())
+                        .addressData(order.getSupplierAddress())
+                        .build() : null)
+                .consignee(partyMap.get(order.getBuyerCode()) != null ? PartiesResponse.builder()
+                        .orgCode(order.getBuyerCode())
+                        .orgData(partyMap.get(order.getBuyerCode()))
+                        .addressCode(order.getBuyerAddressCode())
+                        .addressData(order.getBuyerAddress())
+                        .build() : null)
+                .notifyParty(partyMap.get(order.getNotifyPartyCode()) != null ? PartiesResponse.builder()
+                        .orgCode(order.getNotifyPartyCode())
+                        .orgData(partyMap.get(order.getNotifyPartyCode()))
+                        .addressCode(order.getNotifyPartyAddressCode())
+                        .addressData(order.getNotifyPartyAddress())
+                        .build() : null)
+                .orderManagementId(order.getGuid().toString())
+                .orderManagementNumber(order.getOrderNumber())
+                .transportType(order.getTransportMode())
+                .cargoType(order.getContainerMode())
+                .serviceMode(order.getServiceMode())
+                .incoTerms(order.getIncoTerm())
+                .build();
+        return customerBookingResponse;
     }
 
     private ShipmentDetails generateShipmentFromOrder(OrderManagementDTO order) {

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -119,6 +120,8 @@ public class CustomerBookingService implements ICustomerBookingService {
     private MasterDataFactory masterDataFactory;
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private IOrderManagementAdapter orderManagementAdapter;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -1410,6 +1413,17 @@ public class CustomerBookingService implements ICustomerBookingService {
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> retrieveByOrderId(String orderId) throws RunnerException {
+        try {
+            CustomerBookingResponse response = orderManagementAdapter.getOrderForBooking(orderId);
+            createCustomerBookingResponse(null, response);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e){
+            throw new RunnerException(e.getMessage());
         }
     }
 

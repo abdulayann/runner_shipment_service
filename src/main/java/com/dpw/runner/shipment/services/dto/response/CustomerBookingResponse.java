@@ -89,4 +89,6 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private Boolean isBillCreated;
     private String currentPartyForQuote;
     private UUID sourceGuid;
+    private String orderManagementId;
+    private String orderManagementNumber;
 }
