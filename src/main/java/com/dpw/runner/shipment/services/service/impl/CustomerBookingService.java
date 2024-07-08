@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
+import com.dpw.runner.shipment.services.Kafka.Dto.OrderManageDto;
+import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
@@ -45,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -122,6 +126,10 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IShipmentDao shipmentDao;
     @Autowired
     private IOrderManagementAdapter orderManagementAdapter;
+    @Autowired
+    private KafkaProducer producer;
+    @Value("${order.management.event.kafka.queue}")
+    private String senderQueue;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -225,6 +233,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, customerBooking.getId());
             customerBooking.setBookingCharges(bookingCharges);
         }
+
+        pushCustomerBookingDataToDependentService(customerBooking, true);
         try {
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
@@ -1427,4 +1437,15 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
     }
 
+    public void pushCustomerBookingDataToDependentService(CustomerBooking customerBooking , boolean isCreate) {
+        try {
+            OrderManageDto.OrderManagement orderManagement = OrderManageDto.OrderManagement.builder().orderManagementId(customerBooking.getOrderManagementId()).orderManagementNumber(customerBooking.getOrderManagementNumber()).moduleId(customerBooking.getBookingNumber()).moduleGuid(customerBooking.getGuid().toString()).build();
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(orderManagement, isCreate);
+            log.info("Producing order management data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(customerBooking.getGuid()));
+        }
+        catch (Exception e) {
+            log.error("Error Producing Order Management Data to kafka, error is due to " + e.getMessage());
+        }
+    }
 }
