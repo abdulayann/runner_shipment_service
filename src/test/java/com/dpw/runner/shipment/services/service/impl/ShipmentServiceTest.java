@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.config.SpringContext;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
@@ -71,6 +72,7 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.openapitools.jackson.nullable.JsonNullable;
+import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -208,6 +210,9 @@ class ShipmentServiceTest extends CommonMocks {
     private ArgumentCaptor<Workbook> workbookCaptor;
 
     private ExecutorService executorService;
+
+    @Mock
+    private ApplicationContext applicationContext;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -758,6 +763,8 @@ class ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
         mockShipmentSettings();
         // Test
+        SpringContext.setApplicationContext(applicationContext);
+        Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getShipmentFromConsol(consolidationId, bookingNumber);
         RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
         ShipmentDetailsResponse shipmentResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
@@ -3773,6 +3780,8 @@ class ShipmentServiceTest extends CommonMocks {
         mockShipmentSettings();
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getShipmentFromConsol(consolidationId, bookingNumber);
+        SpringContext.setApplicationContext(applicationContext);
+        Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
         RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
         ShipmentDetailsResponse shipmentResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
         // Assert

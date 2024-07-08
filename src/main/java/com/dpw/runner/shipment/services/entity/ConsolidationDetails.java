@@ -26,7 +26,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-@SQLDelete(sql = "UPDATE containers SET is_deleted = true WHERE id=?")
+@SQLDelete(sql = "UPDATE consolidation_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class ConsolidationDetails extends MultiTenancy {
 

@@ -1173,7 +1173,9 @@ public class ReportConstants {
     public static final String TI_DELIVERY_AGENT = "TI_DeliveryAgent";
     public static final String TI_DELIVERY_AGENT_ADDRESS = "TI_DeliveryAgentAddress";
     public static final String TI_DELIVERY_AGENT_CONTACT = "TI_DeliveryAgentContact";
-
+    public static final String TI_FLIGHT_NUMBER = "flightNumber";
+    public static final String TI_ISSEA = "IsSea";
+    public static final String TI_ISAIR = "IsAir";
 
     public static final String CARRIER_HQ = "CarrierHQ";
 }
