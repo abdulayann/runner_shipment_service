@@ -4177,8 +4177,13 @@ public class ShipmentService implements IShipmentService {
 
         ShipmentDetails shipment = optional.get();
 
-        TrackingServiceApiResponse trackingResponse = trackingServiceAdapter.fetchTrackingData(
-            TrackingRequest.builder().referenceNumber(shipment.getShipmentId()).build());
+        TrackingServiceApiResponse trackingResponse = null;
+        try {
+            trackingResponse = trackingServiceAdapter.fetchTrackingData(
+                    TrackingRequest.builder().referenceNumber(shipment.getShipmentId()).build());
+        } catch (Exception ignored) {
+            log.error("Error getting response from tracking api for date-time changes");
+        }
 
         LocalDateTime trackingAta = null;
         LocalDateTime trackingAtd = null;
