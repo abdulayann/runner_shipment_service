@@ -546,4 +546,10 @@ class ConsolidationDaoTest extends CommonMocks {
         testConsol.setId(3L);
         assertTrue(consolidationsDao.checkSameMblExists(List.of(testConsol, testConsol), testConsol));
     }
+    @Test
+    void testFindConsolidationsByGuids() {
+        when(consolidationRepository.findConsolidationsByGuids(Set.of(testConsol.getGuid()))).thenReturn(List.of(testConsol));
+        var response = consolidationsDao.findConsolidationsByGuids(Set.of(testConsol.getGuid()));
+        assertEquals(List.of(testConsol), response);
+    }
 }
