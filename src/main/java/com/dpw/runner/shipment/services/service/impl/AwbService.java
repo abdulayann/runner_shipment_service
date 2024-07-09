@@ -2520,8 +2520,10 @@ public class AwbService implements IAwbService {
                     }
                 }
             }
-            if(!Objects.isNull(res))
+            if(!IsStringNullOrEmpty(res))
                 res = res + "\n";
+            else
+                res = "";
             res = res + "Dangerous Goods as per attached Shipper’s Declaration " + packs.toString();
         }
         return res;
