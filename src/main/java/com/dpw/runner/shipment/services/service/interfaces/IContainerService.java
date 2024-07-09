@@ -51,4 +51,5 @@ public interface IContainerService extends ICommonService {
     ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws RunnerException;
     Containers calculateUtilization(Containers container);
     ResponseEntity<IRunnerResponse> containerSync(List<Long> request);
+    void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers);
 }

@@ -658,7 +658,7 @@ public class ReportService implements IReportService {
 //                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
 //            }
             shipmentDetails = shipmentDao.update(shipmentDetails, false);
-            shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false);
+            shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false, shipmentDetails.getContainersList());
             try {
                 shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
             } catch (Exception e) {
