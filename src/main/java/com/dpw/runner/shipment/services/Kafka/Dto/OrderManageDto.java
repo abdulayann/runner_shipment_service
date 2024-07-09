@@ -21,5 +21,6 @@ public class OrderManageDto {
         private String moduleGuid;
         private String orderManagementId;
         private String orderManagementNumber;
+        private Integer tenantId;
     }
 }
