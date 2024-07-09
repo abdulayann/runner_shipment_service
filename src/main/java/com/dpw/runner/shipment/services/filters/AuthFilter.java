@@ -144,6 +144,7 @@ public class AuthFilter extends OncePerRequestFilter {
             UserContext.removeUser();
             ShipmentSettingsDetailsContext.remove();
             TenantSettingsDetailsContext.remove();
+            PermissionsContext.removePermissions();
         }
 
     }
