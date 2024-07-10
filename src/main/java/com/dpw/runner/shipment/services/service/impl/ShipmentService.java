@@ -1738,7 +1738,7 @@ public class ShipmentService implements IShipmentService {
         if(updatedContainers != null && updatedContainers.size() > 0) {
             hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
         }
-        pushShipmentDataToDependentService(shipmentDetails, isCreate, shipmentRequest.getIsAutoSellRequired() == null ? false : shipmentRequest.getIsAutoSellRequired(), oldEntity.getContainersList());
+        pushShipmentDataToDependentService(shipmentDetails, isCreate, shipmentRequest.getIsAutoSellRequired() == null ? false : shipmentRequest.getIsAutoSellRequired(), Optional.ofNullable(oldEntity).map(ShipmentDetails::getContainersList).orElse(null));
         
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
             consolidationDetails = shipmentDetails.getConsolidationList().get(0);

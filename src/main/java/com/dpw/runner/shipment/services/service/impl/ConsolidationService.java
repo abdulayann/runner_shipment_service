@@ -3124,7 +3124,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setConsolidationAddresses(updatedFileRepos);
         }
 
-        pushShipmentDataToDependentService(consolidationDetails, isCreate, oldEntity.getContainersList());
+        pushShipmentDataToDependentService(consolidationDetails, isCreate, Optional.ofNullable(oldEntity).map(ConsolidationDetails::getContainersList).orElse(null));
         try {
             if (!isFromBooking)
                 consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);

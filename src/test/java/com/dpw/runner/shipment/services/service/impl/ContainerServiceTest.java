@@ -29,6 +29,10 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service_bus.ISBProperties;
+import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.service_bus.model.ContainerBoomiUniversalJson;
+import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
@@ -47,6 +51,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -131,6 +137,16 @@ class ContainerServiceTest extends CommonMocks {
 
     @Mock
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+
+    @Mock
+    private ISBUtils sbUtils;
+
+    @Mock
+    private ISBProperties isbProperties;
+
+    @Mock
+    private ModelMapper modelMapper;
+
     private static JsonTestUtility jsonTestUtility;
     private static Containers testContainer;
     private static Packing testPacking;
@@ -1304,6 +1320,40 @@ class ContainerServiceTest extends CommonMocks {
     void uploadContainerEvents_Failure_NullId() throws Exception {
         BulkUploadRequest request = new BulkUploadRequest();
         assertThrows(ValidationException.class, () -> containerService.uploadContainerEvents(request));
+    }
+
+    @Test
+    void testPushContainersToDependentServices() {
+        // Arrange
+        Containers c1 = new Containers();
+        c1.setId(1L);
+        c1.setConsolidationId(1L);
+        c1.setContainerNumber("C123");
+        Containers c2 = new Containers();
+        c2.setId(2L);
+        c2.setContainerNumber("C456");
+
+        List<Containers> containersList = Arrays.asList(c1,c2);
+        List<Containers> oldContainers = Arrays.asList(c1);
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setLogicAppIntegrationEnabled(true);
+        v1TenantSettingsResponse.setTransportOrchestratorEnabled(true);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(v1TenantSettingsResponse);
+
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
+        containerBoomiUniversalJson.setHazardous(true);
+
+        when(jsonHelper.convertToJson(any(EventMessage.class))).thenReturn("jsonBody");
+        when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(ConsolidationDetails.builder().referenceNumber("ref123").build()));
+
+        // Act
+        containerService.pushContainersToDependentServices(containersList, oldContainers);
+
+        // Assert
+        verify(producer, times(1)).produceToKafka(eq("jsonBody"), any(), anyString());
+        verify(sbUtils, times(1)).sendMessagesToTopic(eq(isbProperties), any(), anyList());
     }
 
 }

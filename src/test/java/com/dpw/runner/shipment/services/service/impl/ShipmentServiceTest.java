@@ -431,7 +431,7 @@ ShipmentServiceTest extends CommonMocks {
     void pushShipmentDataToDependentService_success() {
         //Test
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
-        shipmentService.pushShipmentDataToDependentService(testShipment, false, false);
+        shipmentService.pushShipmentDataToDependentService(testShipment, false, false, null);
         verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
     }
 
@@ -3303,7 +3303,7 @@ ShipmentServiceTest extends CommonMocks {
         when(trackingServiceAdapter.mapShipmentDataToTrackingServiceData(testShipment)).thenReturn(UniversalTrackingPayload.builder().bookingReferenceNumber("1").build());
         when(jsonHelper.convertToJson(any())).thenReturn("json");
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
-        shipmentService.pushShipmentDataToDependentService(testShipment, false, false);
+        shipmentService.pushShipmentDataToDependentService(testShipment, false, false, null);
         verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
     }
 
@@ -3319,7 +3319,7 @@ ShipmentServiceTest extends CommonMocks {
         when(trackingServiceAdapter.mapEventDetailsForTracking(any(), any(), any(), any())).thenReturn(UniversalTrackingPayload.UniversalEventsPayload.builder().build());
         when(jsonHelper.convertToJson(any())).thenReturn("json");
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
-        shipmentService.pushShipmentDataToDependentService(testShipment, false, false);
+        shipmentService.pushShipmentDataToDependentService(testShipment, false, false, null);
         verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
     }
 
