@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.QuantityPair;
@@ -178,4 +179,73 @@ class OrderManagementAdapterTest {
         assertThrows(RunnerException.class, () -> orderManagementAdapter.getOrder("123"));
     }
 
+    @Test
+    void getOrderForBookingException() throws RunnerException {
+        OrderManagementResponse response = new OrderManagementResponse();
+        QuantityPair quantityPair = new QuantityPair();
+        quantityPair.setAmount(new BigDecimal(23));
+        quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
+        UUID guid = UUID.randomUUID();
+        OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
+                .supplierCode("supCode")
+                .buyerCode("buyCode")
+                .notifyPartyCode("notifyCode")
+                .sendingAgentCode("sendingCode")
+                .receivingAgentCode("receivingCode")
+                .packsAmount(quantityPair)
+                .weightAmount(quantityPair)
+                .volumeAmount(quantityPair)
+                .guid(guid)
+                .build();
+        response.setOrder(orderManagementDTO);
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull123", HttpMethod.GET, null, OrderManagementResponse.class);
+        assertThrows(RunnerException.class, () -> {
+            orderManagementAdapter.getOrderForBooking("1234");
+        });
+    }
+
+    @Test
+    void getOrderForBooking() throws RunnerException {
+        OrderManagementResponse response = new OrderManagementResponse();
+        QuantityPair quantityPair = new QuantityPair();
+        quantityPair.setAmount(new BigDecimal(23));
+        quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
+        UUID guid = UUID.randomUUID();
+        OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
+                .supplierCode("supCode")
+                .buyerCode("buyCode")
+                .notifyPartyCode("notifyCode")
+                .sendingAgentCode("sendingCode")
+                .receivingAgentCode("receivingCode")
+                .packsAmount(quantityPair)
+                .weightAmount(quantityPair)
+                .volumeAmount(quantityPair)
+                .guid(guid)
+                .build();
+        response.setOrder(orderManagementDTO);
+        when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull123", HttpMethod.GET, null, OrderManagementResponse.class);
+        List<Map<String, Object>> responseMap = new ArrayList<>();
+
+        Map<String, Object> hm = new HashMap<>();
+
+        Map<String, Object> hm1 = new HashMap<>();
+        Map<String, Object> hm2 = new HashMap<>();
+        Map<String, Object> hm3 = new HashMap<>();
+
+        hm1.put("OrganizationCode", "supCode");
+        hm2.put("OrganizationCode", "buyCode");
+        hm3.put("OrganizationCode", "notifyCode");
+
+        hm.put("supCode", hm1);
+        hm.put("buyCode", hm2);
+        hm.put("notifyCode", hm3);
+
+        responseMap.add(hm1);
+        responseMap.add(hm2);
+        responseMap.add(hm3);
+
+        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
+        assertNotNull(orderManagementAdapter.getOrderForBooking("123"));
+    }
 }

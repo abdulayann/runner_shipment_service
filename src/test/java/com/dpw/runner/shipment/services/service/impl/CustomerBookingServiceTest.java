@@ -1,7 +1,12 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
+import com.dpw.runner.shipment.services.Kafka.Dto.OrderManageDto;
+import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -98,6 +103,10 @@ class CustomerBookingServiceTest {
     private CommonUtils commonUtils;
     @Mock
     private IFusionServiceAdapter fusionServiceAdapter;
+    @Mock
+    private KafkaProducer producer;
+    @Mock
+    private OrderManagementAdapter orderManagementAdapter;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -1337,5 +1346,51 @@ class CustomerBookingServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(CommonGetRequest.builder().id(1L).build()).build();
         customerBookingService.cloneBooking(commonRequestModel);
         assertNotNull(commonRequestModel);
+    }
+
+    @Test
+    void testCreateKafkaEventGuidNull() throws RunnerException {
+        CustomerBookingRequest request = new CustomerBookingRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBAR-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(mockCustomerBooking, CustomerBookingResponse.class);
+
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(customerBookingResponse), httpResponse);
+    }
+
+    @Test
+    void testCreateKafkaEvent() throws RunnerException {
+        CustomerBookingRequest request = new CustomerBookingRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBAR-random-string")
+                .build();
+
+        mockCustomerBooking.setGuid(UUID.randomUUID());
+        mockCustomerBooking.setId(1L);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(mockCustomerBooking, CustomerBookingResponse.class);
+
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(customerBookingResponse), httpResponse);
     }
 }
