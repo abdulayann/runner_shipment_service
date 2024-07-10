@@ -1,0 +1,1 @@
+UPDATE shipment_details set status = 2 where shipment_id = 'JKTA24040075' and tenant_id = 486;
