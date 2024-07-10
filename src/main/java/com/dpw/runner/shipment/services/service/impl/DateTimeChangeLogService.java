@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IDateTimeChangeLogDao;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.UpstreamDateUpdateRequest;
 import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
@@ -44,6 +45,9 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
                 generateDefaultLogs(entity);
                 return;
             }
+
+            if(entity.getDateUpdateRequest() == null)
+                entity.setDateUpdateRequest(new UpstreamDateUpdateRequest());
 
             // create a new entry in case of changes in ata/atd/eta/etd
             if(entity.getDateUpdateRequest().getAta() != null) {
