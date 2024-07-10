@@ -81,6 +81,11 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     }
 
     @Override
+    public Optional<CustomerBooking> findByOrderManagementId(String orderId) {
+        return customerBookingRepository.findByOrderManagementId(orderId);
+    }
+
+    @Override
     public void delete(CustomerBooking customerBooking) {
         customerBookingRepository.delete(customerBooking);
     }

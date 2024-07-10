@@ -23,4 +23,6 @@ public interface ICustomerBookingDao {
 
     int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated);
     int updateBillStatus(Long id, Boolean isBillCreated);
+
+    Optional<CustomerBooking> findByOrderManagementId(String orderManagementId);
 }

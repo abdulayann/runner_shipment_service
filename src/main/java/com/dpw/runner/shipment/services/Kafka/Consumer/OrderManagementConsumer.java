@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.Kafka.Consumer;
 
+import com.dpw.runner.shipment.services.Kafka.Dto.BookingOrderUpdateDTO;
 import com.dpw.runner.shipment.services.Kafka.Dto.OrderManageDto;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -28,9 +29,22 @@ public class OrderManagementConsumer {
     {
         try {
             log.info("{} | Order Management event message: {}", LoggerEvent.ORDER_MANAGEMENT_EVENT, message);
-            OrderManageDto obj = objectMapper.readValue(message, OrderManageDto.class);
-            if(!Objects.isNull(obj.getPayload()) && Objects.equals(obj.getPayload().getModuleGuid(), Constants.BOOKING) && !Objects.isNull(obj.getPayload().getModuleId()))
-                orderManagementRepository.saveOrderIdAndOrderManagementNumber(UUID.fromString(obj.getPayload().getModuleGuid()), obj.getPayload().getOrderManagementId(), obj.getPayload().getOrderManagementNumber());
+            BookingOrderUpdateDTO obj = objectMapper.readValue(message, BookingOrderUpdateDTO.class);
+            if(!Objects.isNull(obj) && !Objects.isNull(obj.getData()))
+            {
+                BookingOrderUpdateDTO.BookingLinkDelinkOrder bookingLinkDelinkOrder = obj.getData();
+                if(bookingLinkDelinkOrder.getBookingId() != null && bookingLinkDelinkOrder.getTenantId() != null)
+                {
+                    if(Objects.equals(obj.getEvent(), "LINK"))
+                    {
+                        orderManagementRepository.saveOrderIdAndOrderManagementNumber(bookingLinkDelinkOrder.getBookingId(), bookingLinkDelinkOrder.getTenantId(), bookingLinkDelinkOrder.getOrderId(), bookingLinkDelinkOrder.getOrderNumber());
+                    }
+                    else if(Objects.equals(obj.getEvent(), "DELINK"))
+                    {
+                        orderManagementRepository.saveOrderIdAndOrderManagementNumber(bookingLinkDelinkOrder.getBookingId(), bookingLinkDelinkOrder.getTenantId(), null, null);
+                    }
+                }
+            }
             log.info("Passed");
         } catch (Exception ex) {
             log.error("Exception occurred for event: {} for message: {} with exception: {}", LoggerEvent.ORDER_MANAGEMENT_EVENT, message, ex.getLocalizedMessage());

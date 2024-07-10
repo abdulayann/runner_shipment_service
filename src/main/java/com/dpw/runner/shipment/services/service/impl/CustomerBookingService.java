@@ -129,7 +129,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IOrderManagementAdapter orderManagementAdapter;
     @Autowired
     private KafkaProducer producer;
-    @Value("${order.management.event.kafka.queue}")
+    @Value("${booking.event.kafka.queue}")
     private String senderQueue;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
@@ -234,8 +234,18 @@ public class CustomerBookingService implements ICustomerBookingService {
             bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, customerBooking.getId());
             customerBooking.setBookingCharges(bookingCharges);
         }
-
-        pushCustomerBookingDataToDependentService(customerBooking, true);
+        if(request.getOrderManagementId() != null)
+        {
+            Optional<CustomerBooking> booking = customerBookingDao.findByOrderManagementId(request.getOrderManagementId());
+            if(booking.isPresent())
+            {
+                CustomerBooking c = booking.get();
+                c.setOrderManagementId(null);
+                c.setOrderManagementNumber(null);
+                customerBookingDao.save(c);
+            }
+            pushCustomerBookingDataToDependentService(customerBooking, true);
+        }
         try {
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()

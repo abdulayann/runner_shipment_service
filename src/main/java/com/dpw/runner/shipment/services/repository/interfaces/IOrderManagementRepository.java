@@ -13,6 +13,6 @@ import java.util.UUID;
 public interface IOrderManagementRepository extends JpaRepository<SyncQueue, Long> {
     @Modifying
     @Transactional
-    @Query(value = "Update customer_booking set order_management_number = ?3 and order_id = ?2 Where guid = ?1", nativeQuery = true)
-    void saveOrderIdAndOrderManagementNumber(UUID guid, String orderId, String orderManagementNumber);
+    @Query(value = "Update customer_booking set order_management_number = ?4, order_management_id = ?3 where booking_number = ?1 and tenant_id = ?2", nativeQuery = true)
+    void saveOrderIdAndOrderManagementNumber(String bookingNumber, Long tenantId, String orderId, String orderManagementNumber);
 }
