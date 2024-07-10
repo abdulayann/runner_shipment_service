@@ -1351,6 +1351,8 @@ class CustomerBookingServiceTest {
     @Test
     void testCreateKafkaEventGuidNull() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
+        request.setOrderManagementNumber("Odn1");
+        request.setOrderManagementId("Od1");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
@@ -1373,6 +1375,8 @@ class CustomerBookingServiceTest {
     @Test
     void testCreateKafkaEvent() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
+        request.setOrderManagementNumber("Odn1");
+        request.setOrderManagementId("Od1");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
