@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
-import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConstants;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IDateTimeChangeLogDao;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
@@ -43,6 +42,7 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
                 deleteDateTimeLogs(oldEntity.getId());
                 // generate default logs
                 generateDefaultLogs(entity);
+                return;
             }
 
             // create a new entry in case of changes in ata/atd/eta/etd
@@ -92,21 +92,22 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
     private void generateDefaultLogs(ShipmentRequest shipmentDetails) {
         if(Objects.isNull(shipmentDetails) || Objects.isNull(shipmentDetails.getCarrierDetails()))
             return;
+        String source = UserContext.getUser().getUsername();
 
         if(shipmentDetails.getCarrierDetails().getAta() != null) {
-            saveDateTimeChangeLog(DateType.ATA, shipmentDetails.getCarrierDetails().getAta(), shipmentDetails.getId(), DateTimeChangeLogConstants.DEFAULT_SOURCE);
+            saveDateTimeChangeLog(DateType.ATA, shipmentDetails.getCarrierDetails().getAta(), shipmentDetails.getId(), source);
         }
 
         if(shipmentDetails.getCarrierDetails().getAtd() != null) {
-            saveDateTimeChangeLog(DateType.ATD, shipmentDetails.getCarrierDetails().getAtd(), shipmentDetails.getId(), DateTimeChangeLogConstants.DEFAULT_SOURCE);
+            saveDateTimeChangeLog(DateType.ATD, shipmentDetails.getCarrierDetails().getAtd(), shipmentDetails.getId(), source);
         }
 
         if(shipmentDetails.getCarrierDetails().getEta() != null) {
-            saveDateTimeChangeLog(DateType.ETA, shipmentDetails.getCarrierDetails().getEta(), shipmentDetails.getId(), DateTimeChangeLogConstants.DEFAULT_SOURCE);
+            saveDateTimeChangeLog(DateType.ETA, shipmentDetails.getCarrierDetails().getEta(), shipmentDetails.getId(), source);
         }
 
         if(shipmentDetails.getCarrierDetails().getEtd() != null) {
-            saveDateTimeChangeLog(DateType.ETD, shipmentDetails.getCarrierDetails().getEtd(), shipmentDetails.getId(), DateTimeChangeLogConstants.DEFAULT_SOURCE);
+            saveDateTimeChangeLog(DateType.ETD, shipmentDetails.getCarrierDetails().getEtd(), shipmentDetails.getId(), source);
         }
 
     }
