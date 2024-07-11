@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.entity.MawbHawbLink;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

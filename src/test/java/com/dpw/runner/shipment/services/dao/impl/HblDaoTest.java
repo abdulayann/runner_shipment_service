@@ -8,7 +8,10 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.runner.RunWith;
@@ -21,8 +24,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.transaction.Transactional;
 import java.io.IOException;
@@ -37,19 +38,17 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 @ExtendWith(MockitoExtension.class)
 @TestPropertySource("classpath:application-test.properties")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 @Execution(CONCURRENT)
 class HblDaoTest {
 
-    @Container
     private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
     private static JsonTestUtility jsonTestUtility;
 
     static {
-        postgresContainer = new PostgreSQLContainer("postgres:15-alpine")
+        postgresContainer = (PostgreSQLContainer<?>) new PostgreSQLContainer("postgres:15-alpine")
                 .withDatabaseName("integration-tests-db")
                 .withUsername("sa")
-                .withPassword("sa");
+                .withPassword("sa").withReuse(true);
         postgresContainer.start();
     }
 

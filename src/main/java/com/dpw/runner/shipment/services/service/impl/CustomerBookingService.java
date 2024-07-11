@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapte
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -471,10 +470,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         CreditLimitRequest creditLimitRequest = (CreditLimitRequest) commonRequestModel.getData();
 
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-        List<Object> criteria = new ArrayList<>();
-        List<Object> field = new ArrayList<>(List.of(CustomerBookingConstants.TENANT_ID));
-        String operator = "=";
-        criteria.addAll(List.of(field, operator, UserContext.getUser().TenantId));
 
         if (Boolean.FALSE.equals(v1TenantSettingsResponse.getEnableCreditLimitManagement()) || Boolean.FALSE.equals(v1TenantSettingsResponse.getIsCreditLimitWithFusionEnabled())) {
             log.error("EnableCreditLimitManagement Or EnableCreditLimitIntegrationWithFusion is False in Branch settings with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -490,10 +485,9 @@ public class CustomerBookingService implements ICustomerBookingService {
 
             if(creditLimitRequest != null && creditLimitRequest.getCustomerIdentifierId() == null &&  creditLimitRequest.getClientOrgCode() != null){
                 CommonV1ListRequest orgRequest = new CommonV1ListRequest();
-                List<Object> orgCriteria = new ArrayList<>();
                 List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
                 String op = "=";
-                orgCriteria.addAll(List.of(orgField, op, creditLimitRequest.getClientOrgCode()));
+                List<Object> orgCriteria = new ArrayList<>(List.of(orgField, op, creditLimitRequest.getClientOrgCode()));
                 orgRequest.setCriteriaRequests(orgCriteria);
                 V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
                 List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
@@ -505,9 +499,8 @@ public class CustomerBookingService implements ICustomerBookingService {
 
 
                 CommonV1ListRequest addressReq = new CommonV1ListRequest();
-                List<Object>addressCriteria =new ArrayList<>();
                 List<Object> addressField = new ArrayList<>(List.of("AddressShortCode"));
-                addressCriteria.addAll(List.of(addressField, op, creditLimitRequest.getClientAddressCode()));
+                List<Object> addressCriteria = new ArrayList<>(List.of(addressField, op, creditLimitRequest.getClientAddressCode()));
                 finalCriteria.add(addressCriteria);
 
                 finalCriteria.add("and");

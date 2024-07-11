@@ -5,9 +5,6 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
 @Getter
 @Setter
 @Generated

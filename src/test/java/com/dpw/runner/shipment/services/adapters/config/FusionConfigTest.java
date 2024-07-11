@@ -1,13 +1,9 @@
 package com.dpw.runner.shipment.services.adapters.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -24,10 +20,16 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 @ContextConfiguration(classes = {FusionConfig.class})
 @ExtendWith(SpringExtension.class)
 @PropertySource("classpath:application-test.properties")
 @EnableConfigurationProperties
+@Execution(ExecutionMode.CONCURRENT)
 class FusionConfigTest {
     @Autowired
     private FusionConfig fusionConfig;

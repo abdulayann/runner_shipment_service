@@ -1,11 +1,8 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import lombok.*;
-import org.hibernate.annotations.Where;
 
-import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;

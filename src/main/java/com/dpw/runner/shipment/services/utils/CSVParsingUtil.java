@@ -48,7 +48,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -957,10 +956,9 @@ public class CSVParsingUtil<T> {
         CommonV1ListRequest request = new CommonV1ListRequest();
         if (commodityCodesList.isEmpty())
             return;
-        List<Object> criteria = new ArrayList<>();
         List<Object> field = new ArrayList<>(List.of("Code"));
         String operator = Operators.IN.getValue();
-        criteria.addAll(List.of(field, operator, List.of(commodityCodesList)));
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(commodityCodesList)));
         request.setCriteriaRequests(criteria);
         V1DataResponse response = v1Service.fetchCommodityData(request);
         if (response != null) {
@@ -979,10 +977,9 @@ public class CSVParsingUtil<T> {
         CommonV1ListRequest request = new CommonV1ListRequest();
         if (dgSubstanceIdList.isEmpty())
             return;
-        List<Object> criteria = new ArrayList<>();
         List<Object> field = new ArrayList<>(List.of("Id"));
         String operator = Operators.IN.getValue();
-        criteria.addAll(List.of(field, operator, List.of(dgSubstanceIdList)));
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(dgSubstanceIdList)));
         request.setCriteriaRequests(criteria);
         V1DataResponse response = v1Service.fetchDangerousGoodData(request);
         if (response != null) {

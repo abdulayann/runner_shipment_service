@@ -1,9 +1,7 @@
 package com.dpw.runner.shipment.services.commons.requests;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import lombok.*;
 
-import javax.validation.constraints.Min;
 import java.util.List;
 
 @Getter

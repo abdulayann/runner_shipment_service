@@ -62,10 +62,9 @@ public class MasterDataUtils{
     public Map<String, EntityTransferChargeType> getChargeTypes(List<String> chargeCode) {
         if (Objects.isNull(chargeCode) || chargeCode.isEmpty())
             return null;
-        List<Object> criteria = new ArrayList<>();
         List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CHARGE_CODE));
         String operator = Operators.IN.getValue();
-        criteria.addAll(List.of(field, operator, List.of(chargeCode)));
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(chargeCode)));
         V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(CommonV1ListRequest.builder().criteriaRequests(criteria).build());
         List<EntityTransferChargeType> list = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferChargeType.class);
         log.info("ChargeCodes list from V1: " + jsonHelper.convertToJson(list));
@@ -80,25 +79,20 @@ public class MasterDataUtils{
         Set<String> locCodes = new HashSet<>();
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         for (IRunnerResponse response : responseList) {
-            if (response instanceof CustomerBookingResponse) {
-                CustomerBookingResponse bookingResponse = ((CustomerBookingResponse) response);
+            if (response instanceof CustomerBookingResponse bookingResponse) {
                 if (bookingResponse.getCarrierDetails() != null) {
                     locCodes.addAll(createInBulkUnLocationsRequest(bookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()));
                 }
             }
-            else if (response instanceof ShipmentListResponse) {
-                ShipmentListResponse shipmentListResponse = (ShipmentListResponse) response;
+            else if (response instanceof ShipmentListResponse shipmentListResponse) {
                 if (shipmentListResponse.getCarrierDetails() != null) {
                     locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
                 }
                 if (shipmentListResponse.getAdditionalDetails() != null)
                     locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()));
             }
-            else if (response instanceof ConsolidationListResponse) {
-                ConsolidationListResponse consolidationListResponse = (ConsolidationListResponse) response;
-                if (consolidationListResponse.getCarrierDetails() != null) {
-                    locCodes.addAll(createInBulkUnLocationsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
-                }
+            else if (response instanceof ConsolidationListResponse consolidationListResponse && consolidationListResponse.getCarrierDetails() != null) {
+                locCodes.addAll(createInBulkUnLocationsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
             }
         }
 
@@ -106,25 +100,20 @@ public class MasterDataUtils{
         pushToCache(v1Data, CacheConstants.UNLOCATIONS);
 
         for (IRunnerResponse response : responseList) {
-            if (response instanceof CustomerBookingResponse) {
-                CustomerBookingResponse bookingResponse = ((CustomerBookingResponse) response);
+            if (response instanceof CustomerBookingResponse bookingResponse) {
                 if (bookingResponse.getCarrierDetails() != null)
                     bookingResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
 
             }
-            else if (response instanceof ShipmentListResponse) {
-                ShipmentListResponse shipmentListResponse = (ShipmentListResponse) response;
+            else if (response instanceof ShipmentListResponse shipmentListResponse) {
                 if (shipmentListResponse.getCarrierDetails() != null)
                     shipmentListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
 
                 if (shipmentListResponse.getAdditionalDetails() != null)
                     shipmentListResponse.getAdditionalDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()), CacheConstants.UNLOCATIONS));
             }
-            else if (response instanceof ConsolidationListResponse) {
-                ConsolidationListResponse consolidationListResponse = (ConsolidationListResponse) response;
-                if (consolidationListResponse.getCarrierDetails() != null)
-                    consolidationListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
-
+            else if (response instanceof ConsolidationListResponse consolidationListResponse && consolidationListResponse.getCarrierDetails() != null) {
+                consolidationListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
             }
         }
     }
@@ -414,10 +403,9 @@ public class MasterDataUtils{
         if(requests.size() > 0) {
             log.info("Request: {} || ContainersList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CODE));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchContainerTypeData(request);
 
@@ -466,10 +454,9 @@ public class MasterDataUtils{
         if(requests.size() > 0) {
             log.info("Request: {} || CommoditiesList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CODE));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchCommodityData(request);
 
@@ -518,10 +505,9 @@ public class MasterDataUtils{
         if(requests.size() > 0) {
             log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchVesselData(request);
 
@@ -569,10 +555,9 @@ public class MasterDataUtils{
         if(requests.size() > 0) {
             log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ITEM_VALUE));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             CarrierListObject carrierListObject = new CarrierListObject();
             carrierListObject.setListObject(request);
@@ -591,10 +576,9 @@ public class MasterDataUtils{
         if(!requests.isEmpty()) {
             log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.IDENTIFIER1));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             CarrierListObject carrierListObject = new CarrierListObject();
             carrierListObject.setListObject(request);
@@ -737,10 +721,9 @@ public class MasterDataUtils{
         if(requests.size() > 0) {
             log.info("Request: {} || CurrencyList: {}", LoggerHelper.getRequestIdFromMDC(), requests);
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CURRENCY_CODE));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
 
             V1DataResponse response = v1Service.fetchCurrenciesData(request);

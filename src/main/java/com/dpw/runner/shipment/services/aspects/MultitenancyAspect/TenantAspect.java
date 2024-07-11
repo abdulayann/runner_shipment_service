@@ -1,12 +1,10 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
-import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.hibernate.Session;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
@@ -16,20 +14,13 @@ import java.util.Map;
 @Aspect
 @Component
 public class TenantAspect {
-
     @PersistenceContext
     private EntityManager entityManager;
-
-    @Autowired
-    private TenantContext tenantContext;
-
-    @Autowired
-    private PermissionsContext permissionsContext;
 
     @Before("execution(* com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository+.*(..))")
     public void beforeFindOfMultiTenancyRepository() {
 
-        long tenantId = tenantContext.getCurrentTenant();
+        long tenantId = TenantContext.getCurrentTenant();
 
         Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 

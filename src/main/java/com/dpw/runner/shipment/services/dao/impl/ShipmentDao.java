@@ -592,8 +592,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private V1DataResponse fetchCarrier(String shippingLine) {
         CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> criteria = new ArrayList<>();
-        criteria.addAll(List.of(List.of("ItemValue"), "=", shippingLine));
+        List<Object> criteria = new ArrayList<>(List.of(List.of("ItemValue"), "=", shippingLine));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);

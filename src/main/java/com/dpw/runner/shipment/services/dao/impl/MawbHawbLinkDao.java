@@ -1,9 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbHawbLinkDao;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.MawbHawbLink;
-import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IMawbHawbLinkRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

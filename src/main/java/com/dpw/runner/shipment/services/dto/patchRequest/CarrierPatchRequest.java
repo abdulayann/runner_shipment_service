@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @Builder

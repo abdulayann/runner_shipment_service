@@ -26,8 +26,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(MockitoExtension.class)
 @TestPropertySource("classpath:application-test.properties")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 class MawbStocksDaoTest {
 
     private static JsonTestUtility jsonTestUtility;
@@ -47,14 +44,13 @@ class MawbStocksDaoTest {
 
     @Autowired
     private IMawbStocksDao dao;
-    @Container
     private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
 
 
     static {
         postgresContainer.withDatabaseName("integration-tests-db")
                 .withUsername("sa")
-                .withPassword("sa");
+                .withPassword("sa").withReuse(true);
         postgresContainer.start();
     }
 

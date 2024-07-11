@@ -2,8 +2,6 @@ package com.dpw.runner.shipment.services.filters;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -72,7 +70,7 @@ public class AuthFilter extends OncePerRequestFilter {
     public void doFilterInternal(HttpServletRequest servletRequest, HttpServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         try {
         LoggerHelper.putRequestId(UUID.randomUUID().toString());
-        HttpServletRequest req = (HttpServletRequest) servletRequest;
+        HttpServletRequest req = servletRequest;
         log.info("Request For Shipment Service API: {} with RequestId: {}",servletRequest.getRequestURI(), LoggerHelper.getRequestIdFromMDC());
         if(shouldNotFilter(req))
         {
@@ -80,7 +78,7 @@ public class AuthFilter extends OncePerRequestFilter {
             return;
         }
         IUserService userService = getUserServiceFactory.returnUserService();
-        HttpServletResponse res = (HttpServletResponse) servletResponse;
+        HttpServletResponse res = servletResponse;
         long time = System.currentTimeMillis();
         String authToken = req.getHeader("Authorization");
         if(authToken == null)

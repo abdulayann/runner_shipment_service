@@ -1,8 +1,5 @@
 package com.dpw.runner.shipment.services.dto.request.hbl;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.math.BigDecimal;

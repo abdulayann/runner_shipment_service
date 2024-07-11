@@ -1,9 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.utils.Generated;
-import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 @Data

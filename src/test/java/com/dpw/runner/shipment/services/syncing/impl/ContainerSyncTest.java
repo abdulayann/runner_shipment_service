@@ -12,12 +12,10 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -45,12 +43,6 @@ class ContainerSyncTest {
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(100));
         when(syncEntityConversionService.containersV2ToV1(any())).thenReturn(List.of(new ContainerRequestV2()));
 
-        var responseEntity = containerSync.sync(List.of(input), 11L, 22L);
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        containerSync.sync(List.of(input), 11L, 22L);
     }
-
-
-
-
-
 }

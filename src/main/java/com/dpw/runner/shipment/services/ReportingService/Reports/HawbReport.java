@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -938,10 +937,9 @@ public class HawbReport extends IReport{
     private Map<String, EntityTransferCarrier> fetchCarrier(Set<String> values) {
         if (values.size() == 1 && values.contains(null)) return new HashMap<>();
         CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> criteria = new ArrayList<>();
         List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ITEM_VALUE));
         String operator = Operators.IN.getValue();
-        criteria.addAll(List.of(field, operator, List.of(values)));
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(values)));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
