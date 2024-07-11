@@ -114,6 +114,7 @@ public class ConsolidationSync implements IConsolidationSync {
         mapCarrierDetails(response, request);
         mapAchievedQuantities(response, request);
         mapAllocations(response, request);
+        response.setHazardous(request.getHazardous());
 
         response.setPlaceOfIssueString(request.getPlaceOfIssue());
 
