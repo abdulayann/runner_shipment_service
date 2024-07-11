@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
-import org.hibernate.annotations.Generated;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 

@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -158,9 +157,7 @@ public class ArrivalNoticeReport extends IReport {
             for(BillingResponse billingResponse : billingsList) {
                 List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse.getGuid());
                 if(billChargesResponses != null) {
-                    for (BillChargesResponse charge : billChargesResponses) {
-                        charges.add(charge);
-                    }
+                    charges.addAll(billChargesResponses);
                 }
             }
         }

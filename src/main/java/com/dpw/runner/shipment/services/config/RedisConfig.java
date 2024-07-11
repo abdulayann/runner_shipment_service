@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.config;
 
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;

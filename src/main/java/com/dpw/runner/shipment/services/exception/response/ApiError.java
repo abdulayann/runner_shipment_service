@@ -1,8 +1,5 @@
 package com.dpw.runner.shipment.services.exception.response;
 
-import java.util.Arrays;
-import java.util.List;
-
 import com.dpw.runner.shipment.services.utils.Generated;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;

@@ -339,9 +339,8 @@ public class AwbDao implements IAwbDao {
                 if(consoleShipMapping == null || consoleShipMapping.isEmpty()) {
                     return Collections.emptyList();
                 } else {
-                    List<Awb> response = new ArrayList<>();
                     var consoleId = consoleShipMapping.get(0).getConsolidationId();
-                    response.addAll(findByConsolidationIdByQuery(consoleId));
+                    List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
                     var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
                     if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
                         consoleShipMappingList.forEach(x -> response.addAll(findByShipmentIdByQuery(x.getShipmentId())));
@@ -349,9 +348,8 @@ public class AwbDao implements IAwbDao {
                     return response;
                 }
             } else if(awb.get().getConsolidationId() != null) {
-                List<Awb> response = new ArrayList<>();
                 var consoleId = awb.get().getConsolidationId();
-                response.addAll(findByConsolidationIdByQuery(consoleId));
+                List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
                 var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
                 if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
                     consoleShipMappingList.forEach(x -> response.addAll(findByShipmentIdByQuery(x.getShipmentId())));

@@ -13,15 +13,14 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -48,10 +47,9 @@ class PackingSyncTest {
         when(containerDao.findByShipmentId(22L)).thenReturn(List.of(new Containers()));
         when(syncEntityConversionService.packingsV2ToV1(any(), any(), any(), any())).thenReturn(List.of(new PackingRequestV2()));
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(100));
-        var responseEntity = packingSync.sync(List.of(inputPacking), 11L, 22L);
+        packingSync.sync(List.of(inputPacking), 11L, 22L);
 
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-
+        Mockito.verify(containerDao, times(1)).findByShipmentId(any());
     }
 
 
@@ -60,9 +58,8 @@ class PackingSyncTest {
         var inputPacking = new Packing();
         when(syncEntityConversionService.packingsV2ToV1(any(), any(), any(), any())).thenReturn(List.of(new PackingRequestV2()));
 
-        var responseEntity = packingSync.sync(List.of(inputPacking), 11L, null);
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-
+        packingSync.sync(List.of(inputPacking), 11L, null);
+        Mockito.verify(syncEntityConversionService, times(1)).packingsV2ToV1(any(),any(),any(),any());
     }
 
 

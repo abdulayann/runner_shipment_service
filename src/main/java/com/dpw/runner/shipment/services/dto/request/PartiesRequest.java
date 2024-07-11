@@ -2,11 +2,9 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.Containers;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import java.util.List;
 import java.util.Map;
 
 @Data

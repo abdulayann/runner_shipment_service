@@ -1,11 +1,9 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 

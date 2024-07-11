@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.AWbLabelModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -52,7 +51,7 @@ public class AWBLabelReport extends IReport{
             if(mawb.length() < 11) mawb = appendZero(mawb, 11);
             if(mawb.length() >= 3) dictionary.put(ReportConstants.MAWB13, mawb.substring(0,3));
             if(mawb.length() >= 7) dictionary.put(ReportConstants.MAWB47, mawb.substring(3,7));
-            if(mawb.length() >= 11) dictionary.put(ReportConstants.MAWB811, mawb.substring(7,mawb.length()));
+            if(mawb.length() >= 11) dictionary.put(ReportConstants.MAWB811, mawb.substring(7));
             dictionary.put(ReportConstants.MAWB_NUMBER, mawb);
         } else {
             dictionary.put(ReportConstants.MAWB_NUMBER, null);

@@ -9,10 +9,8 @@ import com.dpw.runner.shipment.services.utils.PermissionUtil;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
