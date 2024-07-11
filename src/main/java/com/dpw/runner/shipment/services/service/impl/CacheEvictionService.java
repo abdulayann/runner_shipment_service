@@ -48,10 +48,6 @@ public class CacheEvictionService {
     public void clearCacheByName(CommonRequestModel commonRequestModel) {
         try {
             CacheRequest request = (CacheRequest) commonRequestModel.getData();
-            String key = baseKey + request.getKey();
-            Cache.ValueWrapper wrapper = cacheManager.getCache(CacheConstants.CACHE_KEY_USER).get(key);
-            var cacheValue = Objects.isNull(wrapper) ? StringUtility.getEmptyString() : jsonHelper.convertToJson((V1TenantSettingsResponse) wrapper.get());
-            log.info("EVICT_CACHE_BY_KEY: for key: {} | with cache value: {}", key, cacheValue);
             cacheManager.getCache(CacheConstants.CACHE_KEY_USER).evictIfPresent(baseKey + request.getKey());
         } catch (Exception e) {
             log.error("Error during evicting cache {}", e);
