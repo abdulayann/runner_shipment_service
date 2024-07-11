@@ -1161,9 +1161,14 @@ public class CustomerBookingService implements ICustomerBookingService {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
         return () -> {
-            MDC.setContextMap(mdc);
-            RequestAuthContext.setAuthToken(token);
-            runnable.run();
+            try {
+                MDC.setContextMap(mdc);
+                RequestAuthContext.setAuthToken(token);
+                runnable.run();
+            } finally {
+                RequestAuthContext.removeToken();
+                MDC.clear();
+            }
         };
     }
 
@@ -1180,107 +1185,138 @@ public class CustomerBookingService implements ICustomerBookingService {
 
 //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
-        // Preprocessing
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName() ));
-        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
-        if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + c.getId() )));
-        if (!Objects.isNull(customerBookingResponse.getPackingList()))
-            customerBookingResponse.getPackingList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + c.getId() )));
-        MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-        masterListRequestV2.setMasterListRequests(listRequests);
-        // fetching from V1 in single call
-        Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+        try {
+            // Preprocessing
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName() ));
+            if (!Objects.isNull(customerBookingResponse.getRoutingList()))
+                customerBookingResponse.getRoutingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
+            if (!Objects.isNull(customerBookingResponse.getContainersList()))
+                customerBookingResponse.getContainersList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + c.getId() )));
+            if (!Objects.isNull(customerBookingResponse.getPackingList()))
+                customerBookingResponse.getPackingList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + c.getId() )));
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(listRequests);
+            // fetching from V1 in single call
+            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
 
-        // Postprocessing
-        customerBookingResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CustomerBooking.class.getSimpleName()), CacheConstants.MASTER_LIST, true));
-        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + r.getId() ), CacheConstants.MASTER_LIST, true)));
-        if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST, true)));
-        if (!Objects.isNull(customerBookingResponse.getPackingList()))
-            customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST, true)));
+            // Postprocessing
+            customerBookingResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CustomerBooking.class.getSimpleName()), CacheConstants.MASTER_LIST, true));
+            if (!Objects.isNull(customerBookingResponse.getRoutingList()))
+                customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + r.getId() ), CacheConstants.MASTER_LIST, true)));
+            if (!Objects.isNull(customerBookingResponse.getContainersList()))
+                customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST, true)));
+            if (!Objects.isNull(customerBookingResponse.getPackingList()))
+                customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST, true)));
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllMasterDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
 
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
 //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllLocationDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
-        // Preprocessing
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> locationCodes = new ArrayList<>();
-        if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
-        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
-        // fetching from V1 in single call
-        Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
-        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
-        // Postprocessing
-        if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
-            customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS, true));
-        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + r.getId()), CacheConstants.UNLOCATIONS, true)));
+        try {
+            // Preprocessing
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<String> locationCodes = new ArrayList<>();
+            if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
+            if (!Objects.isNull(customerBookingResponse.getRoutingList()))
+                customerBookingResponse.getRoutingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
+            // fetching from V1 in single call
+            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
+            // Postprocessing
+            if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
+                customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS, true));
+            if (!Objects.isNull(customerBookingResponse.getRoutingList()))
+                customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + r.getId()), CacheConstants.UNLOCATIONS, true)));
 
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllLocationDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
     }
 
 //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllChargeTypesInSingleCall(CustomerBookingResponse customerBookingResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> chargeTypes = new ArrayList<>();
+        try {
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<String> chargeTypes = new ArrayList<>();
 
-        if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
-            customerBookingResponse.getBookingCharges().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingCharges.class, fieldNameKeyMap, BookingCharges.class.getSimpleName() + r.getId() )));
-        Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes);
-        masterDataUtils.pushToCache(v1Data, CacheConstants.CHARGE_TYPE);
+            if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
+                customerBookingResponse.getBookingCharges().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingCharges.class, fieldNameKeyMap, BookingCharges.class.getSimpleName() + r.getId() )));
+            Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CHARGE_TYPE);
 
-        if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
-            customerBookingResponse.getBookingCharges().forEach(r -> r.setChargeTypeMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(BookingCharges.class.getSimpleName() + r.getId()), CacheConstants.CHARGE_TYPE, true)));
+            if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
+                customerBookingResponse.getBookingCharges().forEach(r -> r.setChargeTypeMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(BookingCharges.class.getSimpleName() + r.getId()), CacheConstants.CHARGE_TYPE, true)));
 
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllChargeTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+
     }
 //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(CustomerBookingResponse customerBookingResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> containerTypes = new ArrayList<>();
-        if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
+        try {
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<String> containerTypes = new ArrayList<>();
+            if (!Objects.isNull(customerBookingResponse.getContainersList()))
+                customerBookingResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
 
-        Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
-        masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
 
-        if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.CONTAINER_TYPE, true)));
+            if (!Objects.isNull(customerBookingResponse.getContainersList()))
+                customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.CONTAINER_TYPE, true)));
 
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        }  catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllContainerTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
     }
 
 //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
-        if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
-            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkVesselsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
-            Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);
-            customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS, true));
+        try {
+            if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
+                Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+                List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkVesselsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+                Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
+                masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);
+                customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS, true));
+            }
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
+        }  catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllVesselDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
         }
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
 //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
-        if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
-            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
-            Map v1Data = masterDataUtils.fetchInBulkCarriers(vesselList);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
-            customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER, true));
+        try {
+            if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
+                Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+                List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+                Map v1Data = masterDataUtils.fetchInBulkCarriers(vesselList);
+                masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
+                customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER, true));
+            }
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
+        }  catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
         }
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
     @Override
