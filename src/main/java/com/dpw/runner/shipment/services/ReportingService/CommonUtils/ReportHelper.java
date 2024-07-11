@@ -207,9 +207,7 @@ public class ReportHelper {
 
     public static List<String> getListOfStrings(String... strings) {
         List<String> stringList = new ArrayList<>();
-        for (String str : strings) {
-            stringList.add(str);
-        }
+        stringList.addAll(Arrays.asList(strings));
         return stringList;
     }
 

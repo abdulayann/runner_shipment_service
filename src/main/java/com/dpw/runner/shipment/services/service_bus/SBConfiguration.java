@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.service_bus;
 
 import com.azure.messaging.servicebus.*;
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClientBuilder;
-import com.azure.messaging.servicebus.administration.models.QueueRuntimeProperties;
 import com.azure.messaging.servicebus.administration.models.SubscriptionRuntimeProperties;
 import com.azure.messaging.servicebus.models.ServiceBusReceiveMode;
 import com.dpw.runner.shipment.services.utils.Generated;

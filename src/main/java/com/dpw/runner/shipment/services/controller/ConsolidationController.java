@@ -51,8 +51,8 @@ public class ConsolidationController {
     private final IShipmentService shipmentService;
     private final JsonHelper jsonHelper;
 
-    private class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
+    private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
+    private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
 
     @Autowired
     public ConsolidationController(IConsolidationService consolidationService,
@@ -464,7 +464,7 @@ public class ConsolidationController {
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.SHOW_CREATE_BOOKING_SUCCESSFUL)})
     @GetMapping(ConsolidationConstants.API_RETRIEVE_SHOW_CREATE_BOOKING)
     public ResponseEntity<IRunnerResponse> showCreateBooking(@ApiParam(value = ConsolidationConstants.SHOW_CREATE_BOOKING_OPERATION) @RequestParam String operation) throws RunnerException {
-        return consolidationService.showCreateBooking(operation.toString());
+        return consolidationService.showCreateBooking(operation);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class)})

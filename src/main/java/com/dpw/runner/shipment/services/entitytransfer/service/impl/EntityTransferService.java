@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -12,14 +11,19 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
@@ -35,7 +39,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -72,8 +77,6 @@ public class EntityTransferService implements IEntityTransferService {
     private ModelMapper modelMapper;
     @Autowired
     private IV1Service v1Service;
-    @Autowired
-    private TenantContext tenantContext;
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -192,10 +195,9 @@ public class EntityTransferService implements IEntityTransferService {
     private List<Integer> tenantIdFromOrganizations (List<String> sendToOrg) {
         List<String> guidList = new ArrayList<>();
         CommonV1ListRequest orgRequest = new CommonV1ListRequest();
-        List<Object> orgCriteria = new ArrayList<>();
         List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
         String operator = Operators.IN.getValue();
-        orgCriteria.addAll(List.of(orgField, operator, List.of(sendToOrg)));
+        List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, List.of(sendToOrg)));
         orgRequest.setCriteriaRequests(orgCriteria);
         V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
         List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
@@ -212,9 +214,8 @@ public class EntityTransferService implements IEntityTransferService {
         if(guidList != null || guidList.size() != 0) {
             guidList.forEach(guid -> {
                 CommonV1ListRequest request = new CommonV1ListRequest();
-                List<Object> criteria = new ArrayList<>();
                 List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
-                criteria.addAll(List.of(field, "=", guid));
+                List<Object> criteria = new ArrayList<>(List.of(field, "=", guid));
                 request.setCriteriaRequests(criteria);
                 TenantIdResponse tenantId = v1Service.tenantByGuid(request);
                 tenantIds.add(tenantId.getId());

@@ -402,7 +402,7 @@ public class CommonUtils {
     }
 
     public static <T> Iterable<T> emptyIfNull(Iterable<T> iterable) {
-        return iterable == null ? Collections.<T>emptyList() : iterable;
+        return iterable == null ? Collections.emptyList() : iterable;
     }
 
     public ShipmentSettingsDetails getShipmentSettingFromContext() {

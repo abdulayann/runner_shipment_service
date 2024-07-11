@@ -5,8 +5,6 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import java.util.UUID;
-
 @Data
 @Builder
 @ApiModel("MAWB Stocks Link Request Model")

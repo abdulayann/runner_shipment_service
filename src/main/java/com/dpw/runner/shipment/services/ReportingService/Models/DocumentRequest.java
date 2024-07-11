@@ -10,7 +10,7 @@ public class DocumentRequest implements IRunnerRequest {
     private Options options = new Options();
 
     @Data
-    public class Options {
+    public static class Options {
 
         public Options() {
             type = "pdf";

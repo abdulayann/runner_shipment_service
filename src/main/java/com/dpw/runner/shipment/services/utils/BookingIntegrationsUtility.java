@@ -205,7 +205,7 @@ public class BookingIntegrationsUtility {
                 .route(createRoute(customerBooking))
                 .charges(createCharges(customerBooking))
                 .business_code(customerBooking.getBusinessCode())
-                .bill_to_party(Arrays.asList(createOrgRequest(customerBooking.getCustomer())))
+                .bill_to_party(Collections.singletonList(createOrgRequest(customerBooking.getCustomer())))
                 .parent_contract_id(customerBooking.getParentContractId())
                 .branch_info(ListContractResponse.BranchInfo.builder().
                         id(customerBooking.getSalesBranch()).
@@ -235,7 +235,7 @@ public class BookingIntegrationsUtility {
         if(primaryEmail == null)
             return null;
         if(secondaryEmail == null)
-            return Arrays.asList(primaryEmail);
+            return List.of(primaryEmail);
         return Arrays.asList(primaryEmail, secondaryEmail);
     }
 
@@ -494,29 +494,24 @@ public class BookingIntegrationsUtility {
     }
 
     private CommonV1ListRequest createCriteriaForTwoFields(String field1, Object value1, String field2, Object value2) {
-        List<Object> criteria1 = new ArrayList<>();
         List<Object> field1_ = new ArrayList<>(List.of(field1));
-        criteria1.addAll(List.of(field1_, "=", value1));
+        List<Object> criteria1 = new ArrayList<>(List.of(field1_, "=", value1));
 
-        List<Object> criteria2 = new ArrayList<>();
         List<Object> field2_ = new ArrayList<>(List.of(field2));
-        criteria2.addAll(List.of(field2_, "=", value2));
+        List<Object> criteria2 = new ArrayList<>(List.of(field2_, "=", value2));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(criteria1, "and", criteria2)).build();
     }
 
     private CommonV1ListRequest createCriteriaForThreeFields(String field1, Object value1, String field2, Object value2, String field3, Object value3) {
-        List<Object> criteria1 = new ArrayList<>();
         List<Object> field1_ = new ArrayList<>(List.of(field1));
-        criteria1.addAll(List.of(field1_, "=", value1));
+        List<Object> criteria1 = new ArrayList<>(List.of(field1_, "=", value1));
 
-        List<Object> criteria2 = new ArrayList<>();
         List<Object> field2_ = new ArrayList<>(List.of(field2));
-        criteria2.addAll(List.of(field2_, "=", value2));
+        List<Object> criteria2 = new ArrayList<>(List.of(field2_, "=", value2));
 
-        List<Object> criteria3 = new ArrayList<>();
         List<Object> field3_ = new ArrayList<>(List.of(field3));
-        criteria3.addAll(List.of(field3_, "=", value3));
+        List<Object> criteria3 = new ArrayList<>(List.of(field3_, "=", value3));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(criteria1, "and", criteria2), "and", criteria3)).build();
     }

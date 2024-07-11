@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -1692,8 +1691,7 @@ public abstract class IReport {
             Map<String, Object> dictionaryCopy = new LinkedHashMap<>(dictionary);
             for (Map.Entry<String, Object> entry : dictionaryCopy.entrySet()) {
                 Object value = entry.getValue();
-                if (value != null && value instanceof LocalDateTime) {
-                    LocalDateTime val = (LocalDateTime) value;
+                if (value != null && value instanceof LocalDateTime val) {
                     dictionary.put(entry.getKey(), ConvertToDPWDateFormat(val));
                 }
             }
@@ -2445,9 +2443,7 @@ public abstract class IReport {
             for(BillingResponse billingResponse : billingsList) {
                 List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse.getGuid());
                 if(billChargesResponses != null) {
-                    for (BillChargesResponse charge : billChargesResponses) {
-                        charges.add(charge);
-                    }
+                    charges.addAll(billChargesResponses);
                 }
             }
         }

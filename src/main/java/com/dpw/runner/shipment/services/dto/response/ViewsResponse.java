@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.Data;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 

@@ -5,6 +5,8 @@ import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService
 import com.dpw.runner.shipment.services.service.impl.CacheEvictionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,6 +22,7 @@ import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {CacheEvictionController.class})
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class CacheEvictionControllerTest {
 
     @Mock

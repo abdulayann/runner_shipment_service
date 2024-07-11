@@ -505,10 +505,10 @@ public class HblService implements IHblService {
             }
             if(shipmentDetail.getReferenceNumbersList() != null) {
                 hblData.setInvoiceNumbers(String.join(",",
-                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.INVNO)
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.INVNO))
                                 .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
                 hblData.setLcNumber(String.join(",",
-                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.CON)
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.CON))
                                 .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
             }
 
@@ -783,11 +783,11 @@ public class HblService implements IHblService {
             if(shipmentDetail.getReferenceNumbersList() != null) {
                 if(!hblLock.getInvoiceNumbers())
                     hblData.setInvoiceNumbers(String.join(",",
-                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.INVNO)
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.INVNO))
                                 .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
                 if(!hblLock.getLcNumber())
                     hblData.setLcNumber(String.join(",",
-                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.CON)
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.CON))
                                 .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
             }
 

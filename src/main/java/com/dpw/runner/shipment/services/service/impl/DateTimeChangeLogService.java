@@ -68,9 +68,7 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
 
     @Override
     public List<DateTimeChangeLog> getDateTimeChangeLog(Long shipmentId) {
-        List<DateTimeChangeLog> res = new ArrayList<>();
-        res.addAll(dateTimeChangeLogDao.getLogsForShipmentId(shipmentId));
-        return res;
+        return new ArrayList<>(dateTimeChangeLogDao.getLogsForShipmentId(shipmentId));
     }
 
     @Override

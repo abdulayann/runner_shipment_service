@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.request.hbl;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import lombok.*;
 
 import java.io.Serializable;
