@@ -1017,10 +1017,17 @@ public class MasterDataUtils{
         String token = RequestAuthContext.getAuthToken();
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         return () -> {
-            MDC.setContextMap(mdc);
-            RequestAuthContext.setAuthToken(token);
-            TenantSettingsDetailsContext.setCurrentTenantSettings(v1TenantSettingsResponse);
-            runnable.run();
+            try {
+                MDC.setContextMap(mdc);
+                RequestAuthContext.setAuthToken(token);
+                TenantSettingsDetailsContext.setCurrentTenantSettings(v1TenantSettingsResponse);
+                runnable.run();
+            } finally {
+                MDC.clear();
+                RequestAuthContext.removeToken();
+                TenantSettingsDetailsContext.remove();
+            }
+
         };
     }
 

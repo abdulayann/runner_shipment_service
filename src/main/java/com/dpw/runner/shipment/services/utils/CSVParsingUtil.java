@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -899,76 +900,92 @@ public class CSVParsingUtil<T> {
     }
 
     public void fetchMasterLists(MasterDataType masterDataType, Map<String, Set<String>> masterDataMap) {
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> field = new ArrayList<>(List.of("ItemType"));
-        String operator = "=";
-        List<Object> criteria = List.of(field, operator, masterDataType.getId());
-        request.setCriteriaRequests(criteria);
-        V1DataResponse v1DataResponse = v1Service.fetchMasterData(request);
-        if (v1DataResponse != null) {
-            if (v1DataResponse.entities instanceof List<?>) {
-                List<MasterData> masterDataList = jsonHelper.convertValueToList(v1DataResponse.entities, MasterData.class);
-                if (masterDataList != null && !masterDataList.isEmpty()) {
-                    Set<String> masterDataSet = masterDataList.stream().filter(Objects::nonNull).map(MasterData::getItemValue).collect(Collectors.toSet());
-                    masterDataMap.put(masterDataType.getDescription(), masterDataSet);
+        try {
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> field = new ArrayList<>(List.of("ItemType"));
+            String operator = "=";
+            List<Object> criteria = List.of(field, operator, masterDataType.getId());
+            request.setCriteriaRequests(criteria);
+            V1DataResponse v1DataResponse = v1Service.fetchMasterData(request);
+            if (v1DataResponse != null) {
+                if (v1DataResponse.entities instanceof List<?>) {
+                    List<MasterData> masterDataList = jsonHelper.convertValueToList(v1DataResponse.entities, MasterData.class);
+                    if (masterDataList != null && !masterDataList.isEmpty()) {
+                        Set<String> masterDataSet = masterDataList.stream().filter(Objects::nonNull).map(MasterData::getItemValue).collect(Collectors.toSet());
+                        masterDataMap.put(masterDataType.getDescription(), masterDataSet);
+                    }
                 }
             }
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: fetchMasterLists in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CSVParsingUtil.class.getSimpleName(), ex.getMessage());
         }
     }
 
     public void fetchContainerType(Map<String, Set<String>> masterDataMap) {
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(request);
-        if (v1DataResponse != null) {
-            if (v1DataResponse.entities instanceof List<?>) {
-                List<V1ContainerTypeResponse> containerTypeList = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
-                if (containerTypeList != null && !containerTypeList.isEmpty()) {
-                    Set<String> containerTypeSet = containerTypeList.stream().filter(Objects::nonNull).map(V1ContainerTypeResponse::getCode).collect(Collectors.toSet());
-                    masterDataMap.put(Constants.CONTAINER_TYPES, containerTypeSet);
+        try {
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(request);
+            if (v1DataResponse != null) {
+                if (v1DataResponse.entities instanceof List<?>) {
+                    List<V1ContainerTypeResponse> containerTypeList = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
+                    if (containerTypeList != null && !containerTypeList.isEmpty()) {
+                        Set<String> containerTypeSet = containerTypeList.stream().filter(Objects::nonNull).map(V1ContainerTypeResponse::getCode).collect(Collectors.toSet());
+                        masterDataMap.put(Constants.CONTAINER_TYPES, containerTypeSet);
+                    }
                 }
             }
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: fetchContainerType in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CSVParsingUtil.class.getSimpleName(), ex.getMessage());
         }
     }
 
     public void fetchUnlocationData(List<String> unlocationsList, Map<String, Set<String>> masterDataMap, Map<String, String> locCodeToLocationReferenceGuidMap) {
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        if (unlocationsList.isEmpty()) {
-            return;
-        }
-        List<Object> field = new ArrayList<>(List.of("LocCode"));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(unlocationsList)));
-        request.setCriteriaRequests(criteria);
-        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(request);
-        if (v1DataResponse != null) {
-            if (v1DataResponse.entities instanceof List<?>) {
-                List<UnlocationsResponse> unlocationList = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-                if (unlocationList != null && !unlocationList.isEmpty()) {
-                    Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
-                    locCodeToLocationReferenceGuidMap.putAll(unlocationList.stream().filter(Objects::nonNull).collect(Collectors.toMap(UnlocationsResponse::getLocCode, UnlocationsResponse::getLocationsReferenceGUID)));
-                    masterDataMap.put(Constants.UNLOCATIONS, unlocationSet);
+        try {
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            if (unlocationsList.isEmpty()) {
+                return;
+            }
+            List<Object> field = new ArrayList<>(List.of("LocCode"));
+            String operator = Operators.IN.getValue();
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(unlocationsList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(request);
+            if (v1DataResponse != null) {
+                if (v1DataResponse.entities instanceof List<?>) {
+                    List<UnlocationsResponse> unlocationList = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+                    if (unlocationList != null && !unlocationList.isEmpty()) {
+                        Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
+                        locCodeToLocationReferenceGuidMap.putAll(unlocationList.stream().filter(Objects::nonNull).collect(Collectors.toMap(UnlocationsResponse::getLocCode, UnlocationsResponse::getLocationsReferenceGUID)));
+                        masterDataMap.put(Constants.UNLOCATIONS, unlocationSet);
+                    }
                 }
             }
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: fetchUnlocationData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CSVParsingUtil.class.getSimpleName(), ex.getMessage());
         }
     }
 
     public void fetchCommodityData(List<String> commodityCodesList, Map<String, Set<String>> masterDataMap) {
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        if (commodityCodesList.isEmpty())
-            return;
-        List<Object> field = new ArrayList<>(List.of("Code"));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(commodityCodesList)));
-        request.setCriteriaRequests(criteria);
-        V1DataResponse response = v1Service.fetchCommodityData(request);
-        if (response != null) {
-            if (response.entities instanceof List<?>) {
-                List<CommodityResponse> commodityList = jsonHelper.convertValueToList(response.entities, CommodityResponse.class);
-                if (commodityList != null && !commodityList.isEmpty()) {
-                    Set<String> commoditySet = commodityList.stream().filter(Objects::nonNull).map(CommodityResponse::getCode).collect(Collectors.toSet());
-                    masterDataMap.put("CommodityCodes", commoditySet);
+        try {
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            if (commodityCodesList.isEmpty())
+                return;
+            List<Object> field = new ArrayList<>(List.of("Code"));
+            String operator = Operators.IN.getValue();
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(commodityCodesList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchCommodityData(request);
+            if (response != null) {
+                if (response.entities instanceof List<?>) {
+                    List<CommodityResponse> commodityList = jsonHelper.convertValueToList(response.entities, CommodityResponse.class);
+                    if (commodityList != null && !commodityList.isEmpty()) {
+                        Set<String> commoditySet = commodityList.stream().filter(Objects::nonNull).map(CommodityResponse::getCode).collect(Collectors.toSet());
+                        masterDataMap.put("CommodityCodes", commoditySet);
+                    }
                 }
             }
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: fetchCommodityData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CSVParsingUtil.class.getSimpleName(), ex.getMessage());
         }
     }
 
@@ -998,9 +1015,14 @@ public class CSVParsingUtil<T> {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
         return () -> {
-            MDC.setContextMap(mdc);
-            RequestAuthContext.setAuthToken(token);
-            runnable.run();
+            try {
+                MDC.setContextMap(mdc);
+                RequestAuthContext.setAuthToken(token);
+                runnable.run();
+            } finally {
+                MDC.clear();
+                RequestAuthContext.removeToken();
+            }
         };
     }
 
