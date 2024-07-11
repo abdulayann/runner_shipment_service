@@ -2568,96 +2568,111 @@ public class AwbService implements IAwbService {
     }
 
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
-
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        AtomicInteger count = new AtomicInteger();
-        List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(awbResponse, Awb.class, fieldNameKeyMap, Awb.class.getSimpleName() ));
-        // Populate all the master data in inner objects
-        if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
-            listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() ));
-        if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
-            awbResponse.getAwbRoutingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet())));
-        if (!Objects.isNull(awbResponse.getDefaultAwbShipmentInfo()))
-            listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(awbResponse.getDefaultAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() ));
-        if(!Objects.isNull(awbResponse.getDefaultAwbRoutingInfo()))
-            awbResponse.getDefaultAwbRoutingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet())));
-        if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
-            awbResponse.getAwbPackingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() + count.incrementAndGet() )));
-        if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
-            awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + count.incrementAndGet())));
-
-        MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-        masterListRequestV2.setMasterListRequests(listRequests);
-        masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
-
-        Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
-
-        if(masterDataResponse == null) {
-            awbResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Awb.class.getSimpleName()), CacheConstants.MASTER_LIST));
+        try {
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            AtomicInteger count = new AtomicInteger();
+            List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(awbResponse, Awb.class, fieldNameKeyMap, Awb.class.getSimpleName() ));
+            // Populate all the master data in inner objects
             if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
-                awbResponse.getAwbShipmentInfo().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AwbShipmentInfo.class.getSimpleName()), CacheConstants.MASTER_LIST) );
+                listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() ));
+            if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
+                awbResponse.getAwbRoutingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet())));
+            if (!Objects.isNull(awbResponse.getDefaultAwbShipmentInfo()))
+                listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(awbResponse.getDefaultAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() ));
+            if(!Objects.isNull(awbResponse.getDefaultAwbRoutingInfo()))
+                awbResponse.getDefaultAwbRoutingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet())));
+            if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
+                awbResponse.getAwbPackingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() + count.incrementAndGet() )));
+            if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
+                awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + count.incrementAndGet())));
 
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse);
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(listRequests);
+            masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
+
+            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+
+            if(masterDataResponse == null) {
+                awbResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Awb.class.getSimpleName()), CacheConstants.MASTER_LIST));
+                if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
+                    awbResponse.getAwbShipmentInfo().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AwbShipmentInfo.class.getSimpleName()), CacheConstants.MASTER_LIST) );
+
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occured in CompletableFuture: addAllMasterDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), AwbService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
         }
 
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        AtomicInteger count = new AtomicInteger();
-        List<String> locationCodes = new ArrayList<>();
-        // Populate all the unlocation data in inner objects
-        if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
-        if (!Objects.isNull(awbResponse.getAwbOtherInfo()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbOtherInfo(), AwbOtherInfo.class, fieldNameKeyMap, AwbOtherInfo.class.getSimpleName() )));
-        if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
-            awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + (count.incrementAndGet()))));
-        if (!Objects.isNull(awbResponse.getDefaultAwbShipmentInfo()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getDefaultAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() + Constants.class )));
-        if(!Objects.isNull(awbResponse.getDefaultAwbRoutingInfo()))
-            awbResponse.getDefaultAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + (count.incrementAndGet()))));
-        if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
-            awbResponse.getAwbPackingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() + (count.incrementAndGet()))));
-        if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
-            awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + (count.incrementAndGet()))));
-
-        Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
-        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
-
-        if(masterDataResponse == null) {
+        try {
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            AtomicInteger count = new AtomicInteger();
+            List<String> locationCodes = new ArrayList<>();
+            // Populate all the unlocation data in inner objects
             if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
-                awbResponse.getAwbShipmentInfo().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AwbShipmentInfo.class.getSimpleName()), CacheConstants.UNLOCATIONS_AWB));
-        }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS_AWB, masterDataResponse);
-        }
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
+            if (!Objects.isNull(awbResponse.getAwbOtherInfo()))
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbOtherInfo(), AwbOtherInfo.class, fieldNameKeyMap, AwbOtherInfo.class.getSimpleName() )));
+            if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
+                awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + (count.incrementAndGet()))));
+            if (!Objects.isNull(awbResponse.getDefaultAwbShipmentInfo()))
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getDefaultAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() + Constants.class )));
+            if(!Objects.isNull(awbResponse.getDefaultAwbRoutingInfo()))
+                awbResponse.getDefaultAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + (count.incrementAndGet()))));
+            if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
+                awbResponse.getAwbPackingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() + (count.incrementAndGet()))));
+            if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
+                awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + (count.incrementAndGet()))));
 
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
+
+            if(masterDataResponse == null) {
+                if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
+                    awbResponse.getAwbShipmentInfo().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AwbShipmentInfo.class.getSimpleName()), CacheConstants.UNLOCATIONS_AWB));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS_AWB, masterDataResponse);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occured in CompletableFuture: addAllUnlocationDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), AwbService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
     }
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCallPacksList(Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        Set<String> commodityTypes = new HashSet<>();
-        AtomicInteger count = new AtomicInteger();
-        if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
-            awbResponse.getAwbPackingInfo().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet() )));
+        try {
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> commodityTypes = new HashSet<>();
+            AtomicInteger count = new AtomicInteger();
+            if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
+                awbResponse.getAwbPackingInfo().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet() )));
 
-        Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
+            Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
 
-        if(masterDataResponse == null) {
-            if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
-                awbResponse.getAwbShipmentInfo().setCommodityMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AwbShipmentInfo.class.getSimpleName()), CacheConstants.COMMODITY));
+            if(masterDataResponse == null) {
+                if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
+                    awbResponse.getAwbShipmentInfo().setCommodityMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AwbShipmentInfo.class.getSimpleName()), CacheConstants.COMMODITY));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occured in CompletableFuture: addAllCommodityTypesInSingleCallPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), AwbService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
         }
-        else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse);
-        }
-
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
     @Override

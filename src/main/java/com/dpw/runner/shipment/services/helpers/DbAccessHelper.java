@@ -67,6 +67,7 @@ public class DbAccessHelper {
             }
         }
         log.info("RequestId {}, Received Criteria Request from {} got completed", LoggerHelper.getRequestIdFromMDC(), className.getSimpleName());
+        map.clear();
         return Pair.of(specification, pages);
     }
 
