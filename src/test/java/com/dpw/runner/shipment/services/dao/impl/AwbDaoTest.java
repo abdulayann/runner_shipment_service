@@ -27,57 +27,32 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 
-//@RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
-//@TestPropertySource("classpath:application-test.properties")
-//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-//@Testcontainers
-//@Execution(CONCURRENT)
+@Execution(ExecutionMode.CONCURRENT)
 class AwbDaoTest {
-
-//    @Container
-//    private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
-//
-//    static {
-//        postgresContainer = new PostgreSQLContainer("postgres:15-alpine")
-//                .withDatabaseName("integration-tests-db")
-//                .withUsername("sa")
-//                .withPassword("sa");
-//        postgresContainer.start();
-//    }
 
     @InjectMocks
     private AwbDao awbDao;
@@ -110,22 +85,10 @@ class AwbDaoTest {
 
     @BeforeAll
     static void beforeAll() throws IOException {
-//        postgresContainer.start();
         jsonTestUtility = new JsonTestUtility();
         objectMapperTest = JsonTestUtility.getMapper();
     }
-//
-//    @AfterAll
-//    static void afterAll() {
-//        postgresContainer.stop();
-//    }
 
-//    @DynamicPropertySource
-//    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-//        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-//        registry.add("spring.datasource.username", postgresContainer::getUsername);
-//        registry.add("spring.datasource.password", postgresContainer::getPassword);
-//    }
 
     @BeforeEach
     void setUp() {
