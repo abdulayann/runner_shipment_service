@@ -176,4 +176,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private String bookingOrderAirForMawb;
     private String transportInstructionPickupOrder;
     private String transportInstructionDeliveryOrder;
+    private Boolean enablePartyCheckForConsolidation;
 }

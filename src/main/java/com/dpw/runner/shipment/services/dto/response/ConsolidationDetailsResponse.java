@@ -146,5 +146,8 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private List<String> screeningStatus;
     private String exemptionCodes;
     private String aomFreeText;
+    private PartiesResponse client;
+    private PartiesResponse consigner;
+    private PartiesResponse consignee;
 
 }

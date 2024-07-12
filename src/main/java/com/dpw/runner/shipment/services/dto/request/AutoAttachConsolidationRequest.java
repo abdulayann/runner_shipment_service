@@ -19,4 +19,9 @@ public class AutoAttachConsolidationRequest implements IRunnerRequest {
     private String pod;
     private LocalDateTime eta;
     private LocalDateTime etd;
+    private PartiesRequest client;
+    private PartiesRequest consignee;
+    private PartiesRequest consigner;
+    private String direction;
+    private String shipmentType;
 }
