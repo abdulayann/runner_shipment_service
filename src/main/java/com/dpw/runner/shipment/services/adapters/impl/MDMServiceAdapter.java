@@ -70,6 +70,8 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
                     Map<String, Object> firstDataObject = ((List<Map<String, Object>>) dataList.get("data")).get(0);
                     finalStatus = (String) firstDataObject.get("finalStatus");
                 }
+                log.info("MDM Request {}" , jsonHelper.convertToJson(commonRequestModel));
+                log.info("MDM Response {}", jsonHelper.convertToJson(responseBody));
                 return finalStatus;
             }catch (Exception ex){
                 log.error("Error getting the approval status for the parties : {}", commonRequestModel.getData());

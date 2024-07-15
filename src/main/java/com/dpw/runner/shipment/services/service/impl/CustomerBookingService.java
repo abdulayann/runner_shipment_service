@@ -1466,6 +1466,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             if(party == null) continue;
             var orgId = party.getOrgData() != null ? String.valueOf(party.getOrgData().get(PartiesConstants.ID)) : null;
             var addressId = party.getAddressData() != null ? String.valueOf(party.getAddressData().get(PartiesConstants.ID)) : null;
+            if(orgId == null || addressId == null)
+                continue;
             partiesList.add(ApprovalPartiesRequest.ApprovalParty.builder()
                     .addressId(addressId)
                     .orgId(orgId)
