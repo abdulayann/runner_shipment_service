@@ -3299,7 +3299,6 @@ public class ConsolidationService implements IConsolidationService {
         AutoAttachConsolidationRequest request = (AutoAttachConsolidationRequest) commonRequestModel.getData();
         AutoAttachConsolidationResponse response = new AutoAttachConsolidationResponse();
 
-        ShipmentSettingsDetails  shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         List<Integer> itemTypeList = new ArrayList<>();
         itemTypeList.add(MasterDataType.CONSOLIDATION_CHECK_ORDER.getId());
         itemTypeList.add(MasterDataType.CONSOL_CHECK_ETD_ETD_THRESHOLD.getId());
@@ -3397,8 +3396,8 @@ public class ConsolidationService implements IConsolidationService {
                 Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(consolListRequest, ConsolidationDetails.class, tableNames);
                 Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
                 List<ConsolidationDetailsResponse> consolidationDetailsResponseList = new ArrayList<>();
-                if (Boolean.TRUE.equals(shipmentSettingsDetails.getEnablePartyCheckForConsolidation()) && Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) &&
-                        Objects.equals(request.getDirection(), Constants.DIRECTION_EXP) && Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL)) {
+                if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+                        && (Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL) || Objects.equals(request.getShipmentType(), Constants.SHIPMENT_TYPE_LCL))) {
                     for (var console : consolidationDetailsPage.getContent()) {
                         ConsolidationDetailsResponse consolidationDetailsResponse = this.partyCheckForConsole(console, request);
                         if (consolidationDetailsResponse != null) {
@@ -3427,18 +3426,26 @@ public class ConsolidationService implements IConsolidationService {
 
     private ConsolidationDetailsResponse partyCheckForConsole(ConsolidationDetails consolidationDetails, AutoAttachConsolidationRequest request) {
         List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList();
+        ShipmentSettingsDetails  shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         Parties client = new Parties();
         Parties consigner = new Parties();
         Parties consignee = new Parties();
-        boolean isLcl = false;
+        boolean isLcl = true;
+        boolean isFcl = true;
         if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
             client = shipmentDetailsList.get(0).getClient();
             consigner = shipmentDetailsList.get(0).getConsigner();
             consignee = shipmentDetailsList.get(0).getConsignee();
             if(shipmentDetailsList.size() > 1) {
                 for (var ship : shipmentDetailsList) {
-                    if(Objects.equals(ship.getShipmentType(), Constants.SHIPMENT_TYPE_LCL))
-                        isLcl = true;
+                    if(Objects.equals(ship.getShipmentType(), Constants.CARGO_TYPE_FCL))
+                        isLcl = false;
+                    else if(Objects.equals(ship.getShipmentType(), Constants.SHIPMENT_TYPE_LCL))
+                        isFcl = false;
+                    else {
+                        isLcl = false;
+                        isFcl = false;
+                    }
                     if (!Objects.equals(client.getOrgCode(), ship.getClient().getOrgCode()) || !Objects.equals(client.getAddressCode(), ship.getClient().getAddressCode()))
                         client = new Parties();
                     if(!Objects.equals(consigner.getOrgCode(), ship.getConsigner().getOrgCode()) || !Objects.equals(consigner.getAddressCode(), ship.getConsigner().getAddressCode()))
@@ -3450,15 +3457,22 @@ public class ConsolidationService implements IConsolidationService {
         } else {
             return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
         }
-        if(isLcl) return null;
-        if((request.getClient() != null && request.getClient().getOrgData() != null && Objects.equals(request.getClient().getOrgCode(), client.getOrgCode()) && Objects.equals(request.getClient().getAddressCode(), client.getAddressCode())) ||
+        if(isLcl && Objects.equals(request.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
+            return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+        }
+
+        //Party check added based on flag
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getEnablePartyCheckForConsolidation()) && Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL) && isFcl &&
+                ((request.getClient() != null && request.getClient().getOrgData() != null && Objects.equals(request.getClient().getOrgCode(), client.getOrgCode()) && Objects.equals(request.getClient().getAddressCode(), client.getAddressCode())) ||
                 (request.getConsigner() != null && request.getConsigner().getOrgData() != null && Objects.equals(request.getConsigner().getOrgCode(), consigner.getOrgCode()) && Objects.equals(request.getConsigner().getAddressCode(), consigner.getAddressCode())) ||
-                (request.getConsignee() != null && request.getConsignee().getOrgData() != null && Objects.equals(request.getConsignee().getOrgCode(), consignee.getOrgCode()) && Objects.equals(request.getConsignee().getAddressCode(), consignee.getAddressCode()))) {
+                (request.getConsignee() != null && request.getConsignee().getOrgData() != null && Objects.equals(request.getConsignee().getOrgCode(), consignee.getOrgCode()) && Objects.equals(request.getConsignee().getAddressCode(), consignee.getAddressCode())))) {
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
             response.setClient(jsonHelper.convertValue(client, PartiesResponse.class));
             response.setConsigner(jsonHelper.convertValue(consigner, PartiesResponse.class));
             response.setConsignee(jsonHelper.convertValue(consignee, PartiesResponse.class));
             return response;
+        } else if (isFcl && Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL)) {
+            return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
         }
         return null;
     }

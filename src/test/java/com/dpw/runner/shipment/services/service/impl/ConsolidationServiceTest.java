@@ -2162,7 +2162,9 @@ class ConsolidationServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(true);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
         ShipmentDetails shipmentDetails1 = jsonTestUtility.getCompleteShipment();
+        shipmentDetails1.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipmentDetails1.getConsigner().setOrgCode("NewOrgCode");
         shipmentDetails1.getClient().setAddressCode("NewAddressCode");
         request.setConsignee(modelMapperTest.map(shipmentDetails.getConsignee(), PartiesRequest.class));
@@ -2177,6 +2179,90 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(testConsol, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
         when(jsonHelper.convertValue(new Parties(), PartiesResponse.class)).thenReturn(new PartiesResponse());
         when(jsonHelper.convertValue(shipmentDetails.getConsignee(), PartiesResponse.class)).thenReturn(modelMapperTest.map(shipmentDetails.getConsignee(), PartiesResponse.class));
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_PartiesCheck_LCL() {
+        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
+                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
+                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
+                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
+                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.SHIPMENT_TYPE_LCL).build();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(true);
+        List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
+        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getCompleteShipment();
+        shipmentDetails1.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentDetails1.getConsigner().setOrgCode("NewOrgCode");
+        shipmentDetails1.getClient().setAddressCode("NewAddressCode");
+        request.setConsignee(modelMapperTest.map(shipmentDetails.getConsignee(), PartiesRequest.class));
+        testConsol.setShipmentsList(new ArrayList<>(List.of(shipmentDetails, shipmentDetails1)));
+        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
+
+
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
+        when(jsonHelper.convertValue(testConsol, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_WithoutPartiesCheck_FCL() {
+        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
+                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
+                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
+                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
+                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.CARGO_TYPE_FCL).build();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(false);
+        List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
+        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getCompleteShipment();
+        shipmentDetails1.setShipmentType(Constants.CARGO_TYPE_FCL);
+        request.setConsignee(modelMapperTest.map(shipmentDetails.getConsignee(), PartiesRequest.class));
+        testConsol.setShipmentsList(new ArrayList<>(List.of(shipmentDetails, shipmentDetails1)));
+        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
+
+
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
+        when(jsonHelper.convertValue(testConsol, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_PartiesCheck_LCL_FCL() {
+        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
+                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
+                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
+                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
+                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.CARGO_TYPE_FCL).build();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(true);
+        List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
+        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getCompleteShipment();
+        shipmentDetails1.setShipmentType(Constants.CARGO_TYPE_FCL);
+        request.setConsignee(modelMapperTest.map(shipmentDetails.getConsignee(), PartiesRequest.class));
+        testConsol.setShipmentsList(new ArrayList<>(List.of(shipmentDetails, shipmentDetails1)));
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
+
+
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
