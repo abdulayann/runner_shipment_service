@@ -17,7 +17,7 @@
         <includeCallerData>false</includeCallerData>
     </appender>
 
-    <root level="debug">
+    <root level="info">
 <!--        <appender-ref ref="SYSLOG-TCP" />-->
         <appender-ref ref="ASYNC_CONSOLE" />
     </root>
