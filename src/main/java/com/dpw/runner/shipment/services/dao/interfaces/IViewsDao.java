@@ -14,5 +14,5 @@ public interface IViewsDao {
     void delete(Views views);
     List<Views> findAll();
     List<String> findAllByUsername(String username);
-    Optional<Views> findByCreatedByAndIsDefault(String createdBy);
+    Optional<Views> findByCreatedByAndEntityAndIsDefault(String createdBy, String entity);
 }
