@@ -156,6 +156,7 @@ public class ViewsService implements IViewsService {
                 }
                 else
                 {
+                    filterCriteria = new FilterCriteria();
                     filterCriteria.setInnerFilter(List.of(FilterCriteria.builder().
                             criteria(Criteria.builder()
                                     .fieldName("createdBy")
@@ -164,6 +165,7 @@ public class ViewsService implements IViewsService {
                                     .build()).
                             build()));
                 }
+                criteria.set(0, filterCriteria);
             }
             else
             {
