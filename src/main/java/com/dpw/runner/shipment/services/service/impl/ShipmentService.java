@@ -439,7 +439,12 @@ public class ShipmentService implements IShipmentService {
             var containerDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setContainerTeuData(lst, responseList)), executorService);
             var billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchBillDataForShipments(lst, responseList)), executorService);
             var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
-            CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture, vesselDataFuture).join();
+            var future = CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture, vesselDataFuture);
+            future.exceptionally(throwable -> {
+                log.error("FutureFailed: {} : Exception: {}", ShipmentDetails.class.getSimpleName(), throwable.getMessage());
+                throw new ValidationException(throwable.getMessage());
+            });
+            future.join();
         }
         catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
@@ -3119,8 +3124,13 @@ public class ShipmentService implements IShipmentService {
             var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllContainerTypesInSingleCall(shipmentDetailsResponse, null)), executorService);
             // TODO- Remove this call and sync job staus from billing using producer and consumer
             var billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addBillData(shipmentDetails, shipmentDetailsResponse)), executorService);
-            CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
-                    containerTypeFuture, billDataFuture).join();
+            var future = CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
+                    containerTypeFuture, billDataFuture);
+            future.exceptionally(throwable -> {
+                log.error("FutureFailed: {} : Exception: {}", ShipmentDetails.class.getSimpleName(), throwable.getMessage());
+                throw new ValidationException(throwable.getMessage());
+            });
+            future.join();
             Map<Long, ContainerResponse> map = new HashMap<>();
             List<ContainerResponse> containers = shipmentDetailsResponse.getContainersList();
             if(containers != null)
