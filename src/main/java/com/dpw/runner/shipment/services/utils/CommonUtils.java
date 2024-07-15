@@ -77,7 +77,9 @@ public class CommonUtils {
         Barcode barcode = BarcodeFactory.createCode128(barcodeText);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         BarcodeImageHandler.writePNG(barcode, outputStream);
-        return outputStream.toByteArray();
+        byte[] data = outputStream.toByteArray();
+        outputStream.reset();
+        return data;
     }
 
     public static ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator) {
@@ -212,7 +214,9 @@ public class CommonUtils {
     public static byte[] ImageToByte(BufferedImage img) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(img, "jpg", baos);
-        return baos.toByteArray();
+        byte[] data = baos.toByteArray();
+        baos.reset();
+        return data;
     }
 
     public static boolean HasUnsupportedCharacters(String input) {
@@ -242,7 +246,9 @@ public class CommonUtils {
         }
         doc.close();
         copy.close();
-        return ms.toByteArray();
+        byte[] data = ms.toByteArray();
+        ms.reset();
+        return data;
     }
 
     public static byte[] removeLastPage(byte[] bytes) throws IOException, DocumentException {
@@ -259,7 +265,9 @@ public class CommonUtils {
         w.close();
         r.close();
         doc.close();
-        return ms.toByteArray();
+        byte[] data = ms.toByteArray();
+        ms.reset();
+        return data;
     }
 
     public static byte[] getLastPage(byte[] bytes) throws IOException, DocumentException {
@@ -273,7 +281,9 @@ public class CommonUtils {
         w.close();
         r.close();
         doc.close();
-        return ms.toByteArray();
+        byte[] data = ms.toByteArray();
+        ms.reset();
+        return data;
     }
 
     public static void AddWaterMark(PdfContentByte dc, String text, BaseFont font, float fontSize, float angle, BaseColor color, Rectangle realPageSize, Rectangle rect)
@@ -306,7 +316,9 @@ public class CommonUtils {
         }
         stamper.close();
         reader.close();
-        return ms.toByteArray();
+        byte[] data = ms.toByteArray();
+        ms.reset();
+        return data;
     }
 
     public static ByteArrayResource getByteResource(InputStream inputStream, String fileName) throws IOException {
