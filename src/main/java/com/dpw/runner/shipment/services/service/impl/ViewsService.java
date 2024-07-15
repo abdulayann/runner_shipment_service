@@ -4,10 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ViewsConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IViewsDao;
 import com.dpw.runner.shipment.services.dto.request.ViewsRequest;
@@ -145,8 +142,41 @@ public class ViewsService implements IViewsService {
             var criteria = request.getFilterCriteria();
             if(criteria != null && !criteria.isEmpty())
             {
-
+                var filterCriteria = criteria.get(0);
+                if(filterCriteria != null && filterCriteria.getInnerFilter() != null && !filterCriteria.getInnerFilter().isEmpty())
+                {
+                    filterCriteria.getInnerFilter().add(FilterCriteria.builder().
+                            logicOperator("AND").
+                            criteria(Criteria.builder()
+                                    .fieldName("createdBy")
+                                    .operator("=")
+                                    .value(UserContext.getUser().Username)
+                                    .build()).
+                            build());
+                }
+                else
+                {
+                    filterCriteria.setInnerFilter(List.of(FilterCriteria.builder().
+                            criteria(Criteria.builder()
+                                    .fieldName("createdBy")
+                                    .operator("=")
+                                    .value(UserContext.getUser().Username)
+                                    .build()).
+                            build()));
+                }
             }
+            else
+            {
+                criteria = new ArrayList<>();
+                criteria.add(FilterCriteria.builder().
+                        criteria(Criteria.builder()
+                                .fieldName("createdBy")
+                                .operator("=")
+                                .value(UserContext.getUser().Username)
+                                .build()).
+                        build());
+            }
+            request.setFilterCriteria(criteria);
             Pair<Specification<Views>, Pageable> tuple = fetchData(request, Views.class, tableNames);
             Page<Views> viewsPage = viewsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Views Details list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
