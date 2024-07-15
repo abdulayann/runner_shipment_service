@@ -36,6 +36,8 @@ public class JsonHelper {
 
     private ObjectMapper createMapper = new ObjectMapper();
 
+    private final ObjectMapper mapper2 = new ObjectMapper();
+
     @PostConstruct
     public void intializeMapper() {
         createMapper.registerModule(new JavaTimeModule());
@@ -68,6 +70,14 @@ public class JsonHelper {
         mapper.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
         mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        mapper2.registerModule(new JsonNullableModule());
+        mapper2.registerModule(new JavaTimeModule());
+        mapper2.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        mapper2.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper2.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
+        mapper2.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
+        mapper2.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     }
 
@@ -125,13 +135,6 @@ public class JsonHelper {
     }
 
     public <T,F> F convertValueWithJsonNullable(T object, Class<F> clazz) {
-        ObjectMapper mapper2 = new ObjectMapper();
-        mapper2.registerModule(new JsonNullableModule());
-        mapper2.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        mapper2.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        mapper2.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
-        mapper2.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
-        mapper2.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return mapper2.convertValue(object, clazz);
     }
 
