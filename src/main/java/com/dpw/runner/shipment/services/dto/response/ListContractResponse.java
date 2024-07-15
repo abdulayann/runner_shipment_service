@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -24,6 +25,8 @@ public class ListContractResponse implements IRunnerResponse {
     @JsonProperty("count")
     private Long count;
     private Map<String, UnlocationsResponse> unlocMasterData;
+    @JsonProperty("carrierMasterData")
+    private Map<String, EntityTransferCarrier> carrierMasterData;
 
     @Data
     @Builder
@@ -117,6 +120,10 @@ public class ListContractResponse implements IRunnerResponse {
         private String shipment_movement;
         @JsonProperty("branch_info")
         private BranchInfo branch_info;
+        @JsonProperty("min_transit_hours")
+        private String minTransitHours;
+        @JsonProperty("max_transit_hours")
+        private String maxTransitHours;
     }
 
     @Data

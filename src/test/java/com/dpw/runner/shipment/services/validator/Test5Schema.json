@@ -1,0 +1,75 @@
+{
+  "properties": {
+    "direction": {
+      "enum": ["EXP", "IMP"],
+      "maxSize": 3,
+      "required": true
+    },
+    "status": {
+      "enum": [1, 2, 3, 4],
+      "maxSize": 3,
+      "required": true
+    },
+    "containersList": {
+      "type": "array",
+      "minSize": 1,
+      "maxSize": 3,
+      "array-properties": {
+        "unique": ["containerNumber", "measurement"],
+        "properties": {
+          "containerNumber": {
+            "required": true
+          }
+        }
+      }
+    },
+    "transportMode": {
+      "enum": ["SEA", "AIR", "ROA"],
+      "type": "string",
+      "maxSize": 3,
+      "required": true,
+      "conditional-compare": [
+        {
+          "value": "SEA",
+          "compare": [
+            {"compareTo": "shipmentType", "operator": "in", "value": ["LCL", "FCL"]},
+            {"compareTo": "shipmentType", "operator": "equals", "value": "LCL"},
+            {"compareTo": "shipmentType", "operator": "not-equals", "value": "LCL"},
+            {"compareTo": "status", "operator": "equals", "value": "1"},
+            {"compareTo": "isDomestic", "operator": "equals", "value": "true"}
+          ]
+        },
+        {
+          "value": "SEA",
+          "compare": [
+            {"compareTo": "volume", "operator": "in", "value": [1, 2, 3]},
+            {"compareTo": "volume", "operator": "equals", "value": 2},
+            {"compareTo": "volume", "operator": "not-equals", "value": 10}
+          ]
+        }
+      ]
+    },
+    "carrierDetails": {
+      "type": "object",
+      "properties": {
+        "eta": {
+          "type": "date-time",
+          "compare": [{"operator": "greater-than", "compareTo": "carrierDetails.etd"}]
+        },
+        "origin": {
+          "required": true
+        },
+        "destination": {
+          "required": true
+        }
+      }
+    },
+    "bookingReference": {
+      "type": "string",
+      "required": true
+    },
+    "shipType": {
+      "type": "null"
+    }
+  }
+}

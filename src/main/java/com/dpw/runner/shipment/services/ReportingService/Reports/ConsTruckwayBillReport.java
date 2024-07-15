@@ -54,7 +54,6 @@ public class ConsTruckwayBillReport extends IReport {
             ContainerModel containerModel = new ContainerModel();
             containerModel.setContainerNumber(container.getContainerNumber());
             containerModel.setSealNumber(container.getSealNumber());
-            containerModel.setNoOfPackages(container.getNoOfPackages());
             containerModel.setGrossWeight(getRoundedBigDecimal(container.getGrossWeight(),decimal, RoundingMode.HALF_UP));
             containerModel.setGrossWeightUnit(container.getGrossWeightUnit());
             containerModel.setGrossVolume(getRoundedBigDecimal(container.getGrossVolume(),decimal, RoundingMode.HALF_UP));

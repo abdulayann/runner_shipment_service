@@ -120,4 +120,10 @@ public class PackingModel implements Serializable {
     private Long innerPacksId;
     @JsonProperty("InnerPacksCount")
     private Long innerPacksCount;
+    @JsonProperty("UnNumberAir")
+    private String unNumberAir;
+    @JsonProperty("DgClassAir")
+    private String dgClassAir;
+    @JsonProperty("DgClassAirDescription")
+    private String dgClassAirDescription;
 }

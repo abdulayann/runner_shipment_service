@@ -6,14 +6,17 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsolidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,18 +32,14 @@ import javax.validation.Valid;
 public class EntityTransferController {
 
     private final IEntityTransferService entityTransferService;
-    private final JsonHelper jsonHelper;
-    private class CheckTaskExistResponseClass extends RunnerResponse<CheckTaskExistResponse>{}
-    private class ValidationResponseClass extends RunnerResponse<ValidationResponse>{}
-    private class ImportConsolidationResponseClass extends RunnerResponse<ImportConsolidationResponse>{}
-    private class ImportShipmentResponseClass extends RunnerResponse<ImportShipmentResponse>{}
-    private class SendConsolidationResponseClass extends RunnerResponse<SendConsolidationResponse>{}
-    private class SendShipmentResponseClass extends RunnerResponse<SendShipmentResponse>{}
+    private static class CheckTaskExistResponseClass extends RunnerResponse<CheckTaskExistResponse>{}
+    private static class ValidationResponseClass extends RunnerResponse<ValidationResponse>{}
+    private static class SendConsolidationResponseClass extends RunnerResponse<SendConsolidationResponse>{}
+    private static class SendShipmentResponseClass extends RunnerResponse<SendShipmentResponse>{}
 
     @Autowired
-    public EntityTransferController(IEntityTransferService entityTransferService, JsonHelper jsonHelper) {
+    public EntityTransferController(IEntityTransferService entityTransferService) {
         this.entityTransferService = entityTransferService;
-        this.jsonHelper = jsonHelper;
     }
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT)
@@ -156,6 +155,23 @@ public class EntityTransferController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL, response = CheckTaskExistResponseClass.class)
+    })
+    @PostMapping(EntityTransferConstants.POST_AR_VALIDATION)
+    public ResponseEntity<IRunnerResponse> postArValidation(@RequestBody @Valid PostArValidationRequest request) {
+        String responseMsg;
+        HttpStatus httpStatus = null;
+        try {
+            return entityTransferService.postArValidation(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg, httpStatus);
     }
 
 

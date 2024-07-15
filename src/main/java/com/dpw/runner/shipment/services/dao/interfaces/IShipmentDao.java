@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface IShipmentDao {
@@ -25,4 +26,7 @@ public interface IShipmentDao {
     void saveJobStatus(Long id, String jobStatus);
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
     List<ShipmentDetails> getShipmentNumberFromId(List<Long> shipmentIds);
+    void saveEntityTransfer(Long id, Boolean entityTransfer);
+    List<ShipmentDetails> findShipmentsByGuids(Set<UUID> guids);
+    List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid);
 }

@@ -12,6 +12,7 @@ public class NPMConstants {
     public static final String GET_OFFERS_V8 = "/runner-offers-v8";
     public static final String LIST_SUCCESSFUL = "Successfully Fetched Offers";
     public static final String ANY = "ANY";
+    public static final String SQSN = "SQSN";
     public static final String FAK = "FAK";
     public static final String FCL = "FCL";
     public static final String LCL = "LCL";
@@ -23,4 +24,8 @@ public class NPMConstants {
     public static final String OFFERS_V2 = "OFFERS-V2";
 
     public static final String OFFERS_V8 = "OFFERS-V8";
+
+    public static final String QUOTE_CONTRACTS_DATA_API_HANDLE = "/api/v2/quoteContractsData";
+
+    public static final String QUOTE_CONTRACTS_LIST_SUCCESSFUL = "Successful quote contracts Data List Retrieval";
 }

@@ -51,8 +51,8 @@ public class ConsolidationController {
     private final IShipmentService shipmentService;
     private final JsonHelper jsonHelper;
 
-    private class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
+    private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
+    private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
 
     @Autowired
     public ConsolidationController(IConsolidationService consolidationService,
@@ -105,7 +105,7 @@ public class ConsolidationController {
     public ResponseEntity<IRunnerResponse> list(@RequestBody ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullConsolidation) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
-            if(getFullConsolidation != null && getFullConsolidation) {
+            if(Boolean.TRUE.equals(getFullConsolidation)) {
                 return consolidationService.fullConsolidationsList(CommonRequestModel.buildRequest(listCommonRequest));
             }
             return consolidationService.list(CommonRequestModel.buildRequest(listCommonRequest));
@@ -167,7 +167,7 @@ public class ConsolidationController {
     public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request, @RequestParam(required = false, defaultValue = "false") Boolean fromV1) {
         String responseMsg;
         try {
-            ConsolidationPatchRequest req = jsonHelper.convertValue(request, ConsolidationPatchRequest.class);
+            ConsolidationPatchRequest req = jsonHelper.convertValueWithJsonNullable(request, ConsolidationPatchRequest.class);
             return consolidationService.partialUpdate(CommonRequestModel.buildRequest(req), fromV1);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -464,7 +464,7 @@ public class ConsolidationController {
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.SHOW_CREATE_BOOKING_SUCCESSFUL)})
     @GetMapping(ConsolidationConstants.API_RETRIEVE_SHOW_CREATE_BOOKING)
     public ResponseEntity<IRunnerResponse> showCreateBooking(@ApiParam(value = ConsolidationConstants.SHOW_CREATE_BOOKING_OPERATION) @RequestParam String operation) throws RunnerException {
-        return consolidationService.showCreateBooking(operation.toString());
+        return consolidationService.showCreateBooking(operation);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class)})

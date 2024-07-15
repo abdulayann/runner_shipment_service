@@ -11,6 +11,7 @@ public class EntityTransferConstants {
     public static final String SEND_CONSOLIDATION_VALIDATION = "/send-consolidation-validation";
     public static final String IMPORT_SHIPMENT = "/import-shipment";
     public static final String IMPORT_CONSOLIDATION = "/import-consolidation";
+    public static final String POST_AR_VALIDATION = "/post-ar-validation";
     public static final String SEND_SHIPMENT_SUCCESSFUL = "Shipment is sent successfully";
     public static final String SEND_CONSOLIDATION_SUCCESSFUL = "Consolidation is sent successfully";
     public static final String VALIDATION_SUCCESSFUL = "All validation passes successfully";
@@ -22,6 +23,7 @@ public class EntityTransferConstants {
     public static final String UNLOCATION_CODE = "LocCode";
     public static final String LOCATION_SERVICE_GUID = "LocationsReferenceGUID";
     public static final String ITEM_VALUE = "ItemValue";
+    public static final String IDENTIFIER1 = "Identifier1";
     public static final String CODE = "Code";
     public static final String CURRENCY_CODE = "CurrenyCode";
     public static final String GUID = "Guid";
@@ -33,5 +35,7 @@ public class EntityTransferConstants {
     public static final String ACTIVITY_CODE = "ActivityCode";
     public static final String NAME_WO_DIACRITICS = "NameWoDiacritics";
     public static final String NAME = "Name";
+
+    public static final String MISSING_RECEIVING_BRANCH_VALIDATION = "Please enter the receiving agent in entity transfer tab before proceeding with the transfer !";
 
 }

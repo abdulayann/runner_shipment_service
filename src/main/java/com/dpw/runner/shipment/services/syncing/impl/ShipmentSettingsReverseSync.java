@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.ProductSequenceConfigDto;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.TenantProductsDto;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsReverseSync;
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +24,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@Generated
 public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync {
     @Autowired
     IShipmentSettingsService shipmentSettingsService;

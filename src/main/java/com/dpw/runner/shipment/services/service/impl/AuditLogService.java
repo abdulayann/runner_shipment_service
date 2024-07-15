@@ -112,8 +112,7 @@ public class AuditLogService implements IAuditLogService {
             JsonNode nodeChanges = jsonHelper.convertValue(ct.getChanges(), JsonNode.class);
             Iterator<String> fieldNames = nodeChanges.fieldNames();
             while (fieldNames.hasNext()) {
-                Map<String, Object> clone = new HashMap<>();
-                clone.putAll(asMap);
+                Map<String, Object> clone = new HashMap<>(asMap);
                 String field = fieldNames.next();
                 clone.put("fieldName", field);
                 clone.put(AuditLogConstants.OLD_VALUE, nodeChanges.get(field).get(AuditLogConstants.OLD_VALUE).asText());

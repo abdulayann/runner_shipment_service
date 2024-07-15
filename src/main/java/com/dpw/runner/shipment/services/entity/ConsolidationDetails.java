@@ -26,7 +26,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-@SQLDelete(sql = "UPDATE containers SET is_deleted = true WHERE id=?")
+@SQLDelete(sql = "UPDATE consolidation_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class ConsolidationDetails extends MultiTenancy {
 
@@ -397,4 +397,33 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "efreight_status")
     @MasterData(type = MasterDataType.EFREIGHT_STATUS)
     private String efreightStatus;
+
+    @Column(name = "hazardous")
+    private Boolean hazardous;
+
+    @Column(name = "emergency_contact_number")
+    @Size(max=31, message = "max size is 31 for emergency_contact_number")
+    private String emergencyContactNumber;
+
+    @Column(name = "emergency_contact_number_code")
+    @Size(max=31, message = "max size is 31 for emergency_contact_number_code")
+    private String emergencyContactNumberCode;
+
+    @Column(name = "screening_status")
+    @Size(max=50, message = "max size is 50 for screening_status")
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "screening_status_consol", joinColumns = @JoinColumn(name = "consolidation_details_id"))
+    private List<String> screeningStatus;
+
+    @Column(name = "exemption_codes")
+    @MasterData(type = MasterDataType.EXEMPTION_CODES)
+    private String exemptionCodes;
+
+    @Column(name = "aom_free_text")
+    private String aomFreeText;
+
+    @Column(name = "security_status")
+    private String securityStatus;
+
+
 }

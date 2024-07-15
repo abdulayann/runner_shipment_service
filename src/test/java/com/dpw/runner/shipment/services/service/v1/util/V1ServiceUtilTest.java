@@ -26,6 +26,7 @@ import java.util.Map;
 
 import java.util.UUID;
 
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.junit.jupiter.api.BeforeAll;
 
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,9 @@ class V1ServiceUtilTest {
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
+
+    @MockBean
+    private CommonUtils commonUtils;
 
     @BeforeAll
     static void init() throws IOException {
@@ -157,6 +161,7 @@ class V1ServiceUtilTest {
         var mockResponse = CreditLimitValidateResponse.builder().isValid(true).taskRequiredMessage(true).message("Messasge").build();
 
         when(iV1Service.checkCreditLimit(any())).thenReturn(mockResponse);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
 
         // Act
         CheckCreditLimitFromV1Response actualValidateCreditLimitResult = v1ServiceUtil.validateCreditLimit(client,
@@ -183,7 +188,7 @@ class V1ServiceUtilTest {
         var mockResponse = CreditLimitValidateResponse.builder().isValid(true).taskRequiredMessage(true).message("Messasge").build();
 
         when(iV1Service.checkCreditLimit(any())).thenReturn(mockResponse);
-
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         // Act
         CheckCreditLimitFromV1Response actualValidateCreditLimitResult = v1ServiceUtil.validateCreditLimit(client,
                 "Restricted Item", UUID.randomUUID(), true);
@@ -209,6 +214,7 @@ class V1ServiceUtilTest {
         var mockResponse = CreditLimitValidateResponse.builder().isValid(false).taskRequiredMessage(true).message("Messasge").build();
 
         when(iV1Service.checkCreditLimit(any())).thenReturn(mockResponse);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
 
         // Act
         CheckCreditLimitFromV1Response actualValidateCreditLimitResult = v1ServiceUtil.validateCreditLimit(client,
@@ -255,6 +261,7 @@ class V1ServiceUtilTest {
     @Test
     void testValidateCreditLimit6() {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableCreditLimitManagement(false).build());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         // Act
         CheckCreditLimitFromV1Response actualValidateCreditLimitResult = v1ServiceUtil.validateCreditLimit(Parties.builder().build(),
                 "Restricted Item", UUID.randomUUID(), true);

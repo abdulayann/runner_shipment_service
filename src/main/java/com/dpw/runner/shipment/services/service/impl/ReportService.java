@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -57,13 +58,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -123,6 +124,8 @@ public class ReportService implements IReportService {
     @Autowired
     @Lazy
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
+
+    private static final int MAX_BUFFER_SIZE = 10 * 1024;
 
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException, RunnerException {
@@ -195,6 +198,9 @@ public class ReportService implements IReportService {
             else
                 awbDao.updateAirMessageStatusFromShipmentId(Long.parseLong(reportRequest.getReportId()), AwbStatus.AWB_ORIGINAL_PRINTED.name());
         }
+        // Awb print status set for Hawb and Mawb
+        this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
+
         boolean reportingNewFlow = false;
         Map<String, Object> dataRetrived = new HashMap<>();
         boolean newFlowSuccess = false;
@@ -246,7 +252,15 @@ public class ReportService implements IReportService {
 //        }
 
         //TODO - Need to handle for new flow
-        dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
+        if(report instanceof PickupOrderReport pickupOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())){
+            dataRetrived = pickupOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
+        }
+        else if(report instanceof DeliveryOrderReport deliveryOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())){
+            dataRetrived = deliveryOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
+        }
+        else {
+            dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
+        }
 
         boolean isOriginalPrinted = (boolean) dataRetrived.getOrDefault(ReportConstants.PRINTED_ORIGINAL, false);
         String hbltype = (String)dataRetrived.getOrDefault(ReportConstants.HOUSE_BILL_TYPE, null);
@@ -260,7 +274,7 @@ public class ReportService implements IReportService {
         }
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.AWB_LABEL)){
             List<byte[]> pdf_Bytes = new ArrayList<>();
-            DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null);
+            DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null,false);
             int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
             if(copies < 1) throw new ValidationException("Copy count is less than 1");
             for(int i = 1; i <= copies; i++){
@@ -269,7 +283,7 @@ public class ReportService implements IReportService {
                 else dataRetrived.put(ReportConstants.COUNT, null);
                 byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
                 if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
-                byte[] docBytes = AddBarCodeInAWBLableReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER)+copyCount : copyCount, dataRetrived.get(ReportConstants.HAWB_NUMBER)+"");
+                byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER)+copyCount : copyCount, dataRetrived.get(ReportConstants.HAWB_NUMBER)+"");
                 pdf_Bytes.add(docBytes);
             }
             return CommonUtils.concatAndAddContent(pdf_Bytes);
@@ -318,7 +332,7 @@ public class ReportService implements IReportService {
             if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL)) {
                 return getBytesForNeutralAWB(dataRetrived);
             }
-            DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null);
+            DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null, false);
             byte[] pdfByte_Content = null;
             if(reportRequest.isPrintForParties()){
                 String[] printingForParties = null;
@@ -337,7 +351,7 @@ public class ReportService implements IReportService {
                         mainDocPage = CommonUtils.removeLastPage(mainDocPage);
                     }
                     if(reportRequest.isPrintBarcode())
-                        mainDocPage = AddBarCodeInReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER).toString(), 140, -50, ReportConstants.MAWB);
+                        mainDocPage = addBarCodeInReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER).toString(), 140, -50, ReportConstants.MAWB);
                     pdf_Bytes.add(mainDocPage);
                 }
                 if(lastPage != null)
@@ -347,8 +361,22 @@ public class ReportService implements IReportService {
                 pdfByte_Content = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
                 if(pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             }
-            if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)){
+            var shc = dataRetrived.getOrDefault(ReportConstants.SPECIAL_HANDLING_CODE, null);
+            boolean addWaterMarkForEaw = false;
+            if(shc != null){
+                Pattern pattern = Pattern.compile("\\s*,\\s*");
+                List<String> items = Arrays.asList(pattern.split(shc.toString()));
+                if(!items.isEmpty() && items.contains(Constants.EAW)){
+                    addWaterMarkForEaw = true;
+                }
+            }
+            if(addWaterMarkForEaw && reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name())) {
+                pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_EAW_WATERMARK);
+            }
+            else if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)){
                 pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_WATERMARK);
+            } else if(addWaterMarkForEaw && Boolean.TRUE.equals(isOriginalPrint)) {
+                pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.ORIGINAL_EAW_WATERMARK);
             }
             //Update shipment issue date
             if ((isOriginalPrint || isSurrenderPrint) && reportRequest.getReportKey() != null && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID))
@@ -417,7 +445,7 @@ public class ReportService implements IReportService {
             if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL))
                 return getBytesForNeutralAWB(dataRetrived);
 
-            DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), hbltype, objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, reportRequest.getTransportMode(), reportRequest.getMultiTemplateCode());
+            DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), hbltype, objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, reportRequest.getTransportMode(), reportRequest.getMultiTemplateCode(),false);
             byte[] pdfByte_Content = null;
             byte[] mainDoc_hawb = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
             byte[] firstpage_hawb = GetFromDocumentService(dataRetrived, Pages.getFirstPageId());
@@ -443,6 +471,22 @@ public class ReportService implements IReportService {
                 pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.ORIGINAL_EAW_WATERMARK);
             }
             //Update shipment issue date
+            return pdfByte_Content;
+        }
+        else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_ORDER)) {
+            String consolidationType = dataRetrived.get(ReportConstants.SHIPMENT_TYPE) != null ?
+                dataRetrived.get(ReportConstants.SHIPMENT_TYPE).toString() : null;
+            String transportMode = ReportConstants.SEA;
+
+            if (dataRetrived.containsKey(ReportConstants.TRANSPORT_MODE)){
+                transportMode = dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString();
+            }
+
+            DocPages pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, consolidationType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, transportMode, reportRequest.getMultiTemplateCode(),false);
+
+            byte[] pdfByte_Content = GetFromDocumentService(dataRetrived, pages.getMainPageId());
+            if(pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
+
             return pdfByte_Content;
         }
 
@@ -475,7 +519,7 @@ public class ReportService implements IReportService {
             objectType = dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString();
         }
 
-        DocPages pages = GetFromTenantSettings(reportRequest.getReportInfo(), hbltype, objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, reportRequest.getTransportMode(), reportRequest.getMultiTemplateCode());
+        DocPages pages = GetFromTenantSettings(reportRequest.getReportInfo(), hbltype, objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, reportRequest.getTransportMode(), reportRequest.getMultiTemplateCode(), StringUtility.isNotEmpty(reportRequest.getTransportInstructionId()));
         if (pages == null)
         {
             return null;
@@ -588,7 +632,7 @@ public class ReportService implements IReportService {
 //                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
 //            }
             shipmentDetails = shipmentDao.update(shipmentDetails, false);
-            shipmentService.pushShipmentDataToDependentService(shipmentDetails, false);
+            shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false);
             try {
                 shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
             } catch (Exception e) {
@@ -700,7 +744,7 @@ public class ReportService implements IReportService {
 
 
     public DocPages GetFromTenantSettings(String key, String hblType, String objectType, String printType, String frontTemplateCode, String  backTemplateCode,
-                                          boolean isOriginalPrinted, String transportMode, String multiTemplateCode)
+                                          boolean isOriginalPrinted, String transportMode, String multiTemplateCode, boolean isTransportInstruction)
     {
         List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1, UserContext.getUser().TenantId));
         if (shipmentSettingsDetailsList != null && shipmentSettingsDetailsList.size() >= 1)
@@ -715,7 +759,7 @@ public class ReportService implements IReportService {
                 }
             }
             DocPages page = GetTemplateId(tenant, admin, key, hblType, objectType,
-                    printType, frontTemplateCode, backTemplateCode, isOriginalPrinted, transportMode, multiTemplateCode);
+                    printType, frontTemplateCode, backTemplateCode, isOriginalPrinted, transportMode, multiTemplateCode, isTransportInstruction);
             if (page != null && Strings.isNullOrEmpty(page.getFirstPageId()) && Strings.isNullOrEmpty(page.getMainPageId()) && Strings.isNullOrEmpty(page.getBackPrintId())) {
                 throw new ValidationException("Please upload template in branch settings for: " + key);
             }
@@ -726,7 +770,7 @@ public class ReportService implements IReportService {
     }
 
     public DocPages GetTemplateId(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String DocKey, String HblType, String objectType, String printType,
-                                         String frontTemplateCode, String backTemplateCode, boolean isOriginalPrinted, String transportMode, String multiTemplateCode)
+                                         String frontTemplateCode, String backTemplateCode, boolean isOriginalPrinted, String transportMode, String multiTemplateCode, boolean istransportInstruction)
     {
         switch (DocKey)
         {
@@ -823,7 +867,11 @@ public class ReportService implements IReportService {
                 return setDocPages(null,
                         row.getProofOfDelivery() == null ? adminRow.getProofOfDelivery() : row.getProofOfDelivery(), null, row.getProofOfDelivery() != null, null, null, null);
             case ReportConstants.PICKUP_ORDER:
-                if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+                if(istransportInstruction){
+                    return setDocPages(null,
+                            row.getTransportInstructionPickupOrder() == null ? adminRow.getTransportInstructionPickupOrder() : row.getTransportInstructionPickupOrder(), null, row.getTransportInstructionPickupOrder() != null, null, null, null);
+                }
+                else if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
                     return setDocPages(null,
                             row.getPickupOrderAir() == null ? adminRow.getPickupOrderAir() : row.getPickupOrderAir(), null, row.getPickupOrderAir() != null, null, null, null);
                 }else{
@@ -831,7 +879,11 @@ public class ReportService implements IReportService {
                             row.getPickupOrder() == null ? adminRow.getPickupOrder() : row.getPickupOrder(), null, row.getPickupOrder() != null, null ,null, null);
                 }
             case ReportConstants.DELIVERY_ORDER:
-                if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+                if(istransportInstruction){
+                    return setDocPages(null,
+                            row.getTransportInstructionDeliveryOrder() == null ? adminRow.getTransportInstructionDeliveryOrder() : row.getTransportInstructionDeliveryOrder(), null, row.getTransportInstructionDeliveryOrder() != null, null, null, null);
+                }
+                else if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
                     return setDocPages(null,
                             row.getDeliveryOrderAir() == null ? adminRow.getDeliveryOrderAir() : row.getDeliveryOrderAir(), null, row.getDeliveryOrderAir() != null, null, null, null);
                 }else{
@@ -942,6 +994,20 @@ public class ReportService implements IReportService {
             case ReportConstants.TRANSPORT_ORDER:
                 return setDocPages(null,
                         row.getTransportOrderRoad() == null ? adminRow.getTransportOrderRoad(): row.getTransportOrderRoad(), null, row.getTransportOrderRoad() != null, null, null, null);
+            case ReportConstants.BOOKING_ORDER:
+                if (transportMode.equalsIgnoreCase(ReportConstants.AIR)){
+//                    if(objectType.equalsIgnoreCase(Constants.DMAWB))
+//                        return setDocPages(null,
+//                            row.getBookingOrderAirForMawb() == null ? adminRow.getBookingOrderAirForMawb() : row.getBookingOrderAirForMawb(), null, row.getBookingOrderAirForMawb() != null, null, null, null);
+                    return setDocPages(null,
+                        row.getBookingOrderAir() == null ? adminRow.getBookingOrderAir() : row.getBookingOrderAir(), null, row.getBookingOrderAir() != null, null, null, null);
+                }else{
+//                    if(objectType.equalsIgnoreCase(Constants.DMAWB)) // using key : DMAWB for sea also
+//                        return setDocPages(null,
+//                            row.getBookingOrderForMbl() == null ? adminRow.getBookingOrderForMbl() : row.getBookingOrderForMbl(), null, row.getBookingOrderForMbl() != null, null, null, null);
+                    return setDocPages(null,
+                        row.getBookingOrder() == null ? adminRow.getBookingOrder() : row.getBookingOrder(), null, row.getBookingOrder() != null, null, null, null);
+                }
             default:
         }
 
@@ -1005,16 +1071,16 @@ public class ReportService implements IReportService {
         return ans;
     }
 
-    private byte[] AddBarCodeInAWBLableReport(byte[] bytes, String mawbNumber, String hawbNumber)
+    private byte[] addBarCodeInAWBLableReport(byte[] bytes, String mawbNumber, String hawbNumber)
     {
         if(StringUtility.isNotEmpty(mawbNumber) && mawbNumber.length() > 5)
-            bytes = this.AddBarCodeInReport(bytes, mawbNumber,140,-170, ReportConstants.MAWB);
+            bytes = this.addBarCodeInReport(bytes, mawbNumber,140,-170, ReportConstants.MAWB);
         if(StringUtility.isNotEmpty(hawbNumber))
-            bytes = this.AddBarCodeInReport(bytes, hawbNumber, 140, -490, ReportConstants.HAWB);
+            bytes = this.addBarCodeInReport(bytes, hawbNumber, 140, -490, ReportConstants.HAWB);
         return bytes;
     }
 
-    private byte[] AddBarCodeInReport(byte[] bytes, String str, int X, int Y, String docType) {
+    private byte[] addBarCodeInReport(byte[] bytes, String str, int x, int y, String docType) throws ValidationException {
         if (StringUtility.isEmpty(str)) return bytes;
         if (CommonUtils.HasUnsupportedCharacters(str)) {
             if (docType != null) {
@@ -1023,36 +1089,39 @@ public class ReportService implements IReportService {
                 throw new ValidationException("Unsupported characters, Please check and re-generate.");
             }
         }
-        {
-            OutputStream ms = new ByteArrayOutputStream(10 * 1024);
-            PdfReader reader = null;
-            try {
-                reader = new PdfReader(bytes);
-                PdfStamper stamper = new PdfStamper(reader, ms);
-                Rectangle realPageSize = reader.getPageSizeWithRotation(1);
-                PdfContentByte dc = stamper.getOverContent(1);
-                PdfGState gstate = new PdfGState();
-                dc.saveState();
-                dc.setGState(gstate);
-                byte[] imgBytes1 = CommonUtils.generateBarcodeImage(str);
-                Image image1 = Image.getInstance(imgBytes1);
-                image1.scaleAbsolute(300, 30);
-                image1.setAbsolutePosition((int) realPageSize.getLeft() + X, realPageSize.getTop() + Y);
-                dc.addImage(image1);
-                dc.restoreState();
-                stamper.close();
-                return ((ByteArrayOutputStream)ms).toByteArray();
-            } catch (IOException | DocumentException e) {
-                log.error(e.getMessage());
-            } catch(Exception e) {
-                log.error(e.getMessage());
-            }
-            return null;
+
+        ByteArrayOutputStream ms = new ByteArrayOutputStream(MAX_BUFFER_SIZE);
+        PdfReader reader = null;
+
+        try {
+            reader = new PdfReader(bytes);
+            PdfStamper stamper = new PdfStamper(reader, ms);
+            Rectangle realPageSize = reader.getPageSizeWithRotation(1);
+            PdfContentByte dc = stamper.getOverContent(1);
+            PdfGState gstate = new PdfGState();
+            dc.saveState();
+            dc.setGState(gstate);
+
+            // Generate barcode image
+            byte[] imgBytes1 = CommonUtils.generateBarcodeImage(str);
+            Image image1 = Image.getInstance(imgBytes1);
+            image1.scaleAbsolute(300, 30);
+            image1.setAbsolutePosition((int) realPageSize.getLeft() + x, realPageSize.getTop() + y);
+            dc.addImage(image1);
+
+            dc.restoreState();
+
+            stamper.close();
+            reader.close();
+            return ms.toByteArray();
+        } catch (Exception e) {
+            log.error(e.getMessage());
         }
+        return null;
     }
 
     private byte[] getBytesForNeutralAWB(Object json){
-        DocPages Pages = GetFromTenantSettings(ReportConstants.AWB_NEUTRAL, null, null, null, null, null, false, null, null);;
+        DocPages Pages = GetFromTenantSettings(ReportConstants.AWB_NEUTRAL, null, null, null, null, null, false, null, null,false);;
         return GetFromDocumentService(json, Pages.getMainPageId());
     }
 
@@ -1076,7 +1145,7 @@ public class ReportService implements IReportService {
             originalCount = -1;
             copyCount = -1;
 
-            byte[] pdfByteContentOriginal = MergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+            byte[] pdfByteContentOriginal = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
             pdfBytes.add(pdfByteContentOriginal);
         }
         else if ( originalCount != 0 )
@@ -1094,7 +1163,7 @@ public class ReportService implements IReportService {
             );
 
             for(int i = 1; i <= originalCount; i++){
-                byte[] pdfByteContentCurrent = MergeDocumentBytes(mainDocParallel.get(i), firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+                byte[] pdfByteContentCurrent = mergeDocumentBytes(mainDocParallel.get(i), firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
                 pdfBytes.add(pdfByteContentCurrent);
             }
 
@@ -1106,7 +1175,7 @@ public class ReportService implements IReportService {
             json.put(ReportConstants.CHARGES, json.get(ReportConstants.COPY_CHARGES));
             json.put(ReportConstants.AS_AGREED, json.get(ReportConstants.COPY_AS_AGREED));
             mainDoc = GetFromDocumentService(json, pages.getMainPageId());
-            byte[] pdfByteContentCopy = MergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+            byte[] pdfByteContentCopy = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
             for (int i = 0; i < copyCount; i++)
             {
                 pdfBytes.add(pdfByteContentCopy);
@@ -1118,7 +1187,7 @@ public class ReportService implements IReportService {
             if (!Objects.isNull(shipmentSettings) && !Objects.isNull(shipmentSettings.getRestrictBlRelease())
                     && shipmentSettings.getRestrictBlRelease() && StringUtility.isNotEmpty(noOfCopies)) {
                 Integer _copy = Integer.parseInt(noOfCopies);
-                byte[] pdfByteContentCopy = MergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+                byte[] pdfByteContentCopy = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
                 while (_copy-- > 1) {
                     pdfBytes.add(pdfByteContentCopy);
                 }
@@ -1128,54 +1197,50 @@ public class ReportService implements IReportService {
 
     }
 
-    public byte[] MergeDocumentBytes(byte[] mainDoc, byte[] firstPage, byte[] backPrint, String logoPath, String ReportInfo, ShipmentSettingsDetails tenantRow) throws DocumentException, IOException {
-        byte[] pdfByteContent;
-        OutputStream destinationDocumentStream = new ByteArrayOutputStream();
+    public byte[] mergeDocumentBytes(byte[] mainDoc, byte[] firstPage, byte[] backPrint, String logoPath, String reportInfo, ShipmentSettingsDetails tenantRow) throws DocumentException, IOException {
+        ByteArrayOutputStream destinationDocumentStream = new ByteArrayOutputStream();
+
         PdfConcatenate pdfConcat = new PdfConcatenate(destinationDocumentStream);
-        PdfReader pdfReader1 = new PdfReader(mainDoc);
+        PdfReader pdfReader1 = null;
         List<Integer> pages = new ArrayList<>();
         pages.add(1);
 
-        if (firstPage != null)
-        {
+        if (firstPage != null) {
             pdfReader1 = new PdfReader(firstPage);
             pdfReader1.selectPages(pages);
             pdfConcat.addPages(pdfReader1);
         }
 
-        if(ReportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && tenantRow.getPrintAfterEachPage())
-        {
+        if (reportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && tenantRow.getPrintAfterEachPage()) {
             PdfReader pdfReader = new PdfReader(mainDoc);
             int totalPages = pdfReader.getNumberOfPages();
-            for (int i = 1; i <= totalPages; i++){
+            for (int i = 1; i <= totalPages; i++) {
                 PdfReader pdfReader_maindoc = new PdfReader(mainDoc);
-                    pages = new ArrayList<>();
-                    pages.add(i);
-                    pdfReader_maindoc.selectPages(pages);
-                    pdfConcat.addPages(pdfReader_maindoc);
-                if (backPrint != null)
-                {
+                pages = new ArrayList<>();
+                pages.add(i);
+                pdfReader_maindoc.selectPages(pages);
+                pdfConcat.addPages(pdfReader_maindoc);
+
+                if (backPrint != null) {
                     PdfReader pdfReader_backdoc = new PdfReader(backPrint);
                     List<Integer> pages2 = new ArrayList<>();
                     pages2.add(1);
                     pdfReader_backdoc.selectPages(pages2);
                     pdfConcat.addPages(pdfReader_backdoc);
                 }
+                pdfReader_maindoc.close();
             }
             pdfReader.close();
-        } else
-        {
+        } else {
             pdfReader1 = new PdfReader(mainDoc);
             pages = new ArrayList<>();
-            for (int i = 1; i <= pdfReader1.getNumberOfPages(); i++)
-            {
+            for (int i = 1; i <= pdfReader1.getNumberOfPages(); i++) {
                 pages.add(i);
             }
             pdfReader1.selectPages(pages);
             pdfConcat.addPages(pdfReader1);
 
-            if (backPrint != null)
-            {
+            if (backPrint != null) {
                 pages = new ArrayList<>();
                 pages.add(1);
                 pdfReader1 = new PdfReader(backPrint);
@@ -1183,10 +1248,12 @@ public class ReportService implements IReportService {
                 pdfConcat.addPages(pdfReader1);
             }
         }
-        pdfReader1.close();
+
+        if(pdfReader1 != null) {
+            pdfReader1.close();
+        }
         pdfConcat.close();
-        pdfByteContent = ((ByteArrayOutputStream)destinationDocumentStream).toByteArray();
-        return addImage(pdfByteContent, logoPath);
+        return addImage(destinationDocumentStream.toByteArray(), logoPath);
     }
 
     private Boolean isHblType(String type, String key)
@@ -1370,4 +1437,19 @@ public class ReportService implements IReportService {
         shipmentTagsForExteranlServices.populateRaKcData(dataRetrived, shipmentModel);
         return ResponseHelper.buildSuccessResponse(dataRetrived);
     }
+
+    private void setPrintTypeForAwb(ReportRequest reportRequest, Boolean isOriginalPrint) {
+        if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)) {
+            if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
+                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name());
+            else
+                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name());
+        } else if ((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
+            if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
+                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name());
+            else
+                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name());
+        }
+    }
+
 }

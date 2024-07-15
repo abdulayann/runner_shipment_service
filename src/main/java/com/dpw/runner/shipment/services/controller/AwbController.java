@@ -9,10 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.AwbRequest;
-import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
-import com.dpw.runner.shipment.services.dto.request.FetchAwbListRequest;
-import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
 import com.dpw.runner.shipment.services.dto.response.AwbCalculationResponse;
@@ -287,10 +284,10 @@ public class AwbController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.CHARGE_TYPE_DATA_RETRIEVE_SUCCESSFUL)})
     @GetMapping(ApiConstants.VALIDATE_IATA_AGENT)
-    public ResponseEntity<IRunnerResponse> validateIataAgent(@ApiParam(name = "fromShipment") Boolean fromShipment) {
+    public ResponseEntity<IRunnerResponse> validateIataAgent(@ApiParam(name = "fromShipment") Boolean fromShipment, @ApiParam(name = "Consolidation Id") @RequestParam Optional<Long> consolidationId) {
         String responseMsg = "";
         try {
-            return awbService.validateIataAgent(fromShipment);
+            return awbService.validateIataAgent(fromShipment, consolidationId);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error getting data for Iata validations ";
@@ -309,6 +306,20 @@ public class AwbController {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error getting air messaging logs";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(response = IataFetchRateRequest.class, code = 200, message = AwbConstants.IATA_FETCH_RATE_SUCCESS)})
+    @PostMapping(ApiConstants.FETCH_IATA_RATES)
+    public ResponseEntity<IRunnerResponse> getFetchIataRates(@RequestBody IataFetchRateRequest iataFetchRateRequest) {
+        String responseMsg = "";
+        try {
+            return awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error Fetching Iata Rates";
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

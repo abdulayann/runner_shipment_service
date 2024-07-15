@@ -38,7 +38,7 @@ public class EnumConstantService implements IEnumConstantService {
         for (Ownership dataType : Ownership.values()) {
             enumList.add(EnumConstantResponse.builder().id(dataType.getValue()).description(dataType.getDescription()).name(dataType.name()).build());
         }
-        response.put(Constants.MASTER_LIST, enumList);
+        response.put(Constants.OWNERSHIP, enumList);
 
         enumList = new ArrayList<>();
         for (BookingStatus dataType : BookingStatus.values()) {
@@ -64,13 +64,11 @@ public class EnumConstantService implements IEnumConstantService {
         response.put(Constants.CARRIER_BOOKING_STATUS, enumList);
 
         enumList = new ArrayList<>();
-        for (RAKCType rakcType : RAKCType.values()) {
-            enumList.add(EnumConstantResponse.builder().id(rakcType.getId()).description(rakcType.getDescription()).name(rakcType.name()).build());
+        for(InstructionType instructionType : InstructionType.values()){
+            enumList.add(EnumConstantResponse.builder().id(instructionType.getValue()).description(instructionType.getDescription()).name(instructionType.name()).build());
         }
-        response.put(Constants.RA_KC_TYPE, enumList);
-
+        response.put(Constants.TRANSPORT_INSTRUCTION_TYPES, enumList);
 
         return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
-
     }
 }

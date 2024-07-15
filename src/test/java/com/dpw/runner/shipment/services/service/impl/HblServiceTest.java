@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -71,7 +72,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class HblServiceTest {
+class HblServiceTest extends CommonMocks {
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -98,6 +99,8 @@ class HblServiceTest {
     private IShipmentService shipmentService;
     @Mock
     private SyncConfig syncConfig;
+    @Mock
+    private PartialFetchUtils partialFetchUtils;
 
     @BeforeAll
     static void init() throws IOException {
@@ -198,6 +201,7 @@ class HblServiceTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictHblGen(false).build());
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of());
+        mockShipmentSettings();
         // Test
         Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, null);
         // Assert
@@ -299,7 +303,7 @@ class HblServiceTest {
         when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
         when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
         when(hblDao.save(any())).thenReturn(mockHbl);
-
+        mockShipmentSettings();
         // Test
         Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, inputPacking);
 
@@ -330,7 +334,7 @@ class HblServiceTest {
 
         // Mock
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of());
-
+        mockShipmentSettings();
         // Test
         Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, inputPacking);
 
@@ -775,11 +779,10 @@ class HblServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
         Hbl mockHbl = getHblModel();
         HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
-        Mockito.mockStatic(PartialFetchUtils.class);
         // Mock
         when(hblDao.findById(anyLong())).thenReturn(Optional.of(mockHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
-        when(PartialFetchUtils.fetchPartialListData(any(), any())).thenReturn(any());
+        when(partialFetchUtils.fetchPartialListData(any(), any())).thenReturn(any());
         var responseEntity = hblService.retrieveById(commonRequestModel);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -807,6 +810,7 @@ class HblServiceTest {
         // Mock
         when(shipmentDao.findById(10L)).thenReturn(Optional.of(ShipmentDetails.builder().build()));
         when(hblDao.findByShipmentId(10L)).thenReturn(List.of(mockHbl));
+        mockShipmentSettings();
         Exception e = assertThrows(DataRetrievalFailureException.class, () -> hblService.partialUpdateHBL(commonRequestModel));
         // Assert
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, e.getMessage());
@@ -851,6 +855,7 @@ class HblServiceTest {
         when(hblDao.findByShipmentId(10L)).thenReturn(List.of(mockHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         when(hblDao.save(any())).thenReturn(mockHbl);
+        mockShipmentSettings();
         var responseEntity = hblService.partialUpdateHBL(commonRequestModel);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -870,6 +875,7 @@ class HblServiceTest {
         when(hblDao.findByShipmentId(10L)).thenReturn(List.of(mockHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         when(hblSync.sync(any(), anyString())).thenThrow(new RuntimeException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
+        mockShipmentSettings();
         var responseEntity = hblService.partialUpdateHBL(commonRequestModel);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -892,6 +898,7 @@ class HblServiceTest {
         when(hblDao.findByShipmentId(10L)).thenReturn(List.of(inputHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         when(hblDao.save(any())).thenReturn(inputHbl);
+        mockShipmentSettings();
         var responseEntity = hblService.partialUpdateHBL(commonRequestModel);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -914,6 +921,7 @@ class HblServiceTest {
         when(hblDao.findByShipmentId(10L)).thenReturn(List.of(inputHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         when(hblDao.save(any())).thenReturn(inputHbl);
+        mockShipmentSettings();
         var responseEntity = hblService.partialUpdateHBL(commonRequestModel);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -936,6 +944,7 @@ class HblServiceTest {
         when(hblDao.findByShipmentId(10L)).thenReturn(List.of(inputHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         when(hblDao.save(any())).thenReturn(inputHbl);
+        mockShipmentSettings();
         var responseEntity = hblService.partialUpdateHBL(commonRequestModel);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -958,6 +967,7 @@ class HblServiceTest {
         when(hblDao.findByShipmentId(10L)).thenReturn(List.of(mockHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         when(hblDao.save(any())).thenReturn(mockHbl);
+        mockShipmentSettings();
         var responseEntity = hblService.partialUpdateHBL(commonRequestModel);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -974,6 +984,7 @@ class HblServiceTest {
         when(hblDao.findByShipmentId(10L)).thenReturn(List.of(mockHbl));
         when(hblSync.sync(any(), anyString())).thenReturn(new ResponseEntity<>(HttpStatus.OK));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
+        mockShipmentSettings();
         // test
         var responseEntity =  hblService.partialUpdateHBL(commonRequestModel);
         // Assert

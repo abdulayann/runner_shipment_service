@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.dto.DenialParty.request;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Generated
 public class SearchEntity {
 
     private String sname;

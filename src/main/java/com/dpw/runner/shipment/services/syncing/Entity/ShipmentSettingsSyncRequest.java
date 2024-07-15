@@ -304,4 +304,20 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private String transportOrderRoad;
     @JsonProperty("DisableBlPartiesName")
     private Boolean disableBlPartiesName;
+    @JsonProperty("AirDGFlag")
+    private Boolean airDGFlag;
+    @JsonProperty("IataTactFlag")
+    private Boolean iataTactFlag;
+    @JsonProperty("BookingOrder")
+    private String BookingOrder;
+    @JsonProperty("BookingOrderForMbl")
+    private String BookingOrderForMbl;
+    @JsonProperty("BookingOrderAir")
+    private String BookingOrderAir;
+    @JsonProperty("BookingOrderAirforMawb")
+    private String BookingOrderAirForMawb;
+    @JsonProperty("TransportInstructionPickupOrder")
+    private String transportInstructionPickupOrder;
+    @JsonProperty("TransportInstructionDeliveryOrder")
+    private String transportInstructionDeliveryOrder;
 }

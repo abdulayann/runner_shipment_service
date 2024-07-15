@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +27,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean autoUpdateWtVol;
     private List<BookingCarriageRequest> bookingCarriagesList;
     private String bookingNumber;
+    @JsonDeserialize(using = TrimStringDeserializer.class)
     private String bookingReference;
     private String bookingType;
     private Boolean cargoFinanceBooking;
@@ -50,8 +53,10 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private BigDecimal freightOverseas;
     private String freightOverseasCurrency;
     private String goodsDescription;
+    @JsonDeserialize(using = TrimStringDeserializer.class)
     private String houseBill;
     private Long id;
+    private Integer tenantId;
     private String incoterms;
     private String innerPackUnit;
     private Integer innerPacks;
@@ -64,6 +69,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private List<JobRequest> jobsList;
     private String lockedBy;
     private String marksNum;
+    @JsonDeserialize(using = TrimStringDeserializer.class)
     private String masterBill;
     private BigDecimal netWeight;
     private String netWeightUnit;
@@ -137,4 +143,18 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private String currentPartyForQuote;
+    private String destinationSalesBranch;
+    private String destinationPrimarySalesAgentEmail;
+    private String destinationSecondarySalesAgentEmail;
+    private String destinationCurrentPartyForQuote;
+    private String destinationContractId;
+    private String destinationContractType;
+    private Boolean isAutoSellRequired;
+    private List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsInstructions;
+
+    private UpstreamDateUpdateRequest dateUpdateRequest;
+    private LocalDateTime createdAt;
+    private String createdBy;
+    private LocalDateTime updatedAt;
+    private String updatedBy;
 }

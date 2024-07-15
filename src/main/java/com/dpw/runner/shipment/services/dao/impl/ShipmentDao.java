@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
@@ -84,6 +84,9 @@ public class ShipmentDao implements IShipmentDao {
     @Autowired
     private IV1Service v1Service;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
     @Override
     public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails) , Constants.SHIPMENT, LifecycleHooks.ON_CREATE, false);
@@ -158,7 +161,7 @@ public class ShipmentDao implements IShipmentDao {
     private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
         if (!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()) && (oldShipment != null && !Objects.equals(oldShipment.getStatus(), shipmentDetails.getStatus())) &&
                 Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
-            ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
             if (tenantSettings != null) {
                 String suffix = tenantSettings.getCancelledBLSuffix();
                 if (suffix != null) {
@@ -167,11 +170,7 @@ public class ShipmentDao implements IShipmentDao {
                 }
             }
         }
-        if(!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()))
-            shipmentDetails.setHouseBill(shipmentDetails.getHouseBill().trim());
-        if(!StringUtil.isNullOrEmpty(shipmentDetails.getMasterBill()))
-            shipmentDetails.setMasterBill(shipmentDetails.getMasterBill().trim());
-        errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
+        errors.addAll(applyShipmentValidations(shipmentDetails, fromV1Sync));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if (shipmentDetails.getTransportMode() != null && shipmentDetails.getCarrierDetails() != null) {
@@ -246,13 +245,45 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public Long findMaxId() { return shipmentRepository.findMaxId(); }
 
-    public Set<String> applyShipmentValidations(ShipmentDetails request, ShipmentDetails oldEntity) {
+    private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
+            return true;
+        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+    }
+
+    private boolean checkForDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+            return false;
+        return Boolean.TRUE.equals(request.getContainsHazardous());
+    }
+
+    private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+            return false;
+        return !Boolean.TRUE.equals(request.getContainsHazardous());
+    }
+
+    public Set<String> applyShipmentValidations(ShipmentDetails request, boolean fromV1Sync) {
         Set<String> errors = new LinkedHashSet<>();
 
         if(request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {
             errors.add("Multiple consolidations are attached to the shipment, please verify.");
         }
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+
+        // Non dg Shipments can not have dg packs
+        if(checkForNonDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && request.getPackingList() != null) {
+            for (Packing packing: request.getPackingList()) {
+                if(Boolean.TRUE.equals(packing.getHazardous())) {
+                    errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
+                }
+            }
+        }
+
+        // Non dg user cannot save dg shipment
+        if(!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isDgUser())
+            errors.add("You don't have permission to update DG Shipment");
+        
         // Routings leg no can not be repeated
         if (request.getRoutingsList() != null && request.getRoutingsList().size() > 0) {
             HashSet<Long> hashSet = new HashSet<>();
@@ -561,8 +592,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private V1DataResponse fetchCarrier(String shippingLine) {
         CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> criteria = new ArrayList<>();
-        criteria.addAll(List.of(List.of("ItemValue"), "=", shippingLine));
+        List<Object> criteria = new ArrayList<>(List.of(List.of("ItemValue"), "=", shippingLine));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
@@ -580,6 +610,24 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public List<ShipmentDetails> getShipmentNumberFromId(List<Long> shipmentIds) {
         return shipmentRepository.getShipmentNumberFromId(shipmentIds);
+    }
+
+    @Override
+    @Transactional
+    public void saveEntityTransfer(Long id, Boolean entityTransfer){
+        shipmentRepository.saveEntityTransfer(id, entityTransfer);
+    }
+
+    @Override
+    @Transactional
+    public List<ShipmentDetails> findShipmentsByGuids(Set<UUID> guids) {
+        return shipmentRepository.findShipmentsByGuids(guids);
+    }
+
+    @Override
+    @Transactional
+    public List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid) {
+        return shipmentRepository.findShipmentsBySourceGuids(sourceGuid);
     }
 
 }

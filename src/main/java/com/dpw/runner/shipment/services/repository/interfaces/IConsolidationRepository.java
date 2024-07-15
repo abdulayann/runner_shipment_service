@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -13,10 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 
-@Repository
+@Repository @Generated
 public interface IConsolidationRepository extends MultiTenancyRepository<ConsolidationDetails> {
     List<ConsolidationDetails> findAll();
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
@@ -44,5 +46,8 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
 
     @Query(value = "SELECT consolidation_number FROM consolidation_details WHERE id = ?1", nativeQuery = true)
     String getConsolidationNumberFromId(Long id);
+
+    @Query(value = "SELECT * FROM consolidation_details WHERE guid IN ?1", nativeQuery = true)
+    List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids);
 
 }

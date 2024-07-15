@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -14,11 +13,11 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -63,11 +62,9 @@ public class MasterDataUtils{
     public Map<String, EntityTransferChargeType> getChargeTypes(List<String> chargeCode) {
         if (Objects.isNull(chargeCode) || chargeCode.isEmpty())
             return null;
-        List<Object> criteria = new ArrayList<>();
-        Map<String, EntityTransferChargeType> response = new HashMap<>();
         List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CHARGE_CODE));
         String operator = Operators.IN.getValue();
-        criteria.addAll(List.of(field, operator, List.of(chargeCode)));
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(chargeCode)));
         V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(CommonV1ListRequest.builder().criteriaRequests(criteria).build());
         List<EntityTransferChargeType> list = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferChargeType.class);
         log.info("ChargeCodes list from V1: " + jsonHelper.convertToJson(list));
@@ -79,156 +76,159 @@ public class MasterDataUtils{
      * Master-data methods for list calls*
      */
     public void setLocationData(List<IRunnerResponse> responseList, String onField) {
-        Set<String> locCodes = new HashSet<>();
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        for (IRunnerResponse response : responseList) {
-            if (response instanceof CustomerBookingResponse) {
-                CustomerBookingResponse bookingResponse = ((CustomerBookingResponse) response);
-                if (bookingResponse != null && bookingResponse.getCarrierDetails() != null) {
-                    locCodes.addAll(createInBulkUnLocationsRequest(bookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()));
+        try {
+            Set<String> locCodes = new HashSet<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            for (IRunnerResponse response : responseList) {
+                if (response instanceof CustomerBookingResponse bookingResponse) {
+                    if (bookingResponse.getCarrierDetails() != null) {
+                        locCodes.addAll(createInBulkUnLocationsRequest(bookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()));
+                    }
                 }
-            }
-            else if (response instanceof ShipmentListResponse) {
-                ShipmentListResponse shipmentListResponse = (ShipmentListResponse) response;
-                if (shipmentListResponse != null && shipmentListResponse.getCarrierDetails() != null) {
-                    locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
+                else if (response instanceof ShipmentListResponse shipmentListResponse) {
+                    if (shipmentListResponse.getCarrierDetails() != null) {
+                        locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
+                    }
+                    if (shipmentListResponse.getAdditionalDetails() != null)
+                        locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()));
                 }
-                if (shipmentListResponse != null && shipmentListResponse.getAdditionalDetails() != null)
-                    locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()));
-            }
-            else if (response instanceof ConsolidationListResponse) {
-                ConsolidationListResponse consolidationListResponse = (ConsolidationListResponse) response;
-                if (consolidationListResponse != null && consolidationListResponse.getCarrierDetails() != null) {
+                else if (response instanceof ConsolidationListResponse consolidationListResponse && consolidationListResponse.getCarrierDetails() != null) {
                     locCodes.addAll(createInBulkUnLocationsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
                 }
             }
-        }
 
-        Map<String, EntityTransferUnLocations> v1Data = fetchInBulkUnlocations(locCodes.stream().toList(), onField);
-        pushToCache(v1Data, CacheConstants.UNLOCATIONS);
+            Map<String, EntityTransferUnLocations> v1Data = fetchInBulkUnlocations(locCodes.stream().toList(), onField);
+            pushToCache(v1Data, CacheConstants.UNLOCATIONS);
 
-        for (IRunnerResponse response : responseList) {
-            if (response instanceof CustomerBookingResponse) {
-                CustomerBookingResponse bookingResponse = ((CustomerBookingResponse) response);
-                if (bookingResponse != null && bookingResponse.getCarrierDetails() != null) {
-                    bookingResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
+            for (IRunnerResponse response : responseList) {
+                if (response instanceof CustomerBookingResponse bookingResponse) {
+                    if (bookingResponse.getCarrierDetails() != null)
+                        bookingResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
+
+                } else if (response instanceof ShipmentListResponse shipmentListResponse) {
+                    if (shipmentListResponse.getCarrierDetails() != null)
+                        shipmentListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
+
+                    if (shipmentListResponse.getAdditionalDetails() != null)
+                        shipmentListResponse.getAdditionalDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()), CacheConstants.UNLOCATIONS));
                 }
-            }
-            else if (response instanceof ShipmentListResponse) {
-                ShipmentListResponse shipmentListResponse = (ShipmentListResponse) response;
-                if (shipmentListResponse != null && shipmentListResponse.getCarrierDetails() != null) {
-                    shipmentListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
-                }
-                if (shipmentListResponse != null && shipmentListResponse.getAdditionalDetails() != null)
-                    shipmentListResponse.getAdditionalDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()), CacheConstants.UNLOCATIONS));
-            }
-            else if (response instanceof ConsolidationListResponse) {
-                ConsolidationListResponse consolidationListResponse = (ConsolidationListResponse) response;
-                if (consolidationListResponse != null && consolidationListResponse.getCarrierDetails() != null) {
+                 else if (response instanceof ConsolidationListResponse consolidationListResponse && consolidationListResponse.getCarrierDetails() != null) {
                     consolidationListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
                 }
             }
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: setLocationData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
     }
 
     public void fetchVesselForList(List<IRunnerResponse> responseList) {
-        Set<String> locCodes = new HashSet<>();
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        for (IRunnerResponse response : responseList) {
-            if (response instanceof ShipmentListResponse shipmentListResponse) {
-                if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel())) {
-                    locCodes.addAll(createInBulkVesselsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
+        try {
+            Set<String> locCodes = new HashSet<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            for (IRunnerResponse response : responseList) {
+                if (response instanceof ShipmentListResponse shipmentListResponse) {
+                    if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel())) {
+                        locCodes.addAll(createInBulkVesselsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
+                    }
+                }
+                else if (response instanceof ConsolidationListResponse consolidationListResponse) {
+                    if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel())) {
+                        locCodes.addAll(createInBulkVesselsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
+                    }
                 }
             }
-            else if (response instanceof ConsolidationListResponse consolidationListResponse) {
-                if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel())) {
-                    locCodes.addAll(createInBulkVesselsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
+
+            Map<String, EntityTransferVessels> v1Data = fetchInBulkVessels(locCodes.stream().toList());
+            pushToCache(v1Data, CacheConstants.VESSELS);
+
+            for (IRunnerResponse response : responseList) {
+                if (response instanceof ShipmentListResponse shipmentListResponse) {
+                    if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel()))
+                        shipmentListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
+                }
+                else if (response instanceof ConsolidationListResponse consolidationListResponse) {
+                    if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel()))
+                        consolidationListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
                 }
             }
-        }
-
-        Map<String, EntityTransferVessels> v1Data = fetchInBulkVessels(locCodes.stream().toList());
-        pushToCache(v1Data, CacheConstants.VESSELS);
-
-        for (IRunnerResponse response : responseList) {
-            if (response instanceof ShipmentListResponse shipmentListResponse) {
-                if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel()))
-                    shipmentListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
-            }
-            else if (response instanceof ConsolidationListResponse consolidationListResponse) {
-                if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel()))
-                    consolidationListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
-            }
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: fetchVesselForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
     }
 
     public void setContainerTeuData(List<ShipmentDetails> shipmentDetailsList, List<IRunnerResponse> responseList) {
-        Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
-        for (IRunnerResponse response : responseList)
-            dataMap.put(((ShipmentListResponse) response).getId(), (ShipmentListResponse) response);
+        try {
+            Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
+            for (IRunnerResponse response : responseList)
+                dataMap.put(((ShipmentListResponse) response).getId(), (ShipmentListResponse) response);
 
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        Set<String> containerTypes = new HashSet<>();
+            Set<String> containerTypes = new HashSet<>();
 
-        for(ShipmentDetails shipment : shipmentDetailsList) {
-            if(!Objects.isNull(shipment.getContainersList()) && !shipment.getContainersList().isEmpty())
-                shipment.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
-        }
+            for(ShipmentDetails shipment : shipmentDetailsList) {
+                if(!Objects.isNull(shipment.getContainersList()))
+                    shipment.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
+            }
 
-        Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
-        pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
 
-        BigDecimal teu;
-        for(ShipmentDetails shipment : shipmentDetailsList) {
-            teu = BigDecimal.ZERO;
-            if (shipment.getContainersList() != null) {
-                for(Containers c : shipment.getContainersList()) {
-                    if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
-                        var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
-                        if (!Objects.isNull(cache)) {
-                            EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
-                            if (!Objects.isNull(object.getTeu()))
-                                teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
+            BigDecimal teu;
+            for(ShipmentDetails shipment : shipmentDetailsList) {
+                teu = BigDecimal.ZERO;
+                if (shipment.getContainersList() != null) {
+                    for(Containers c : shipment.getContainersList()) {
+                        if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
+                            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                            if (!Objects.isNull(cache)) {
+                                EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                                if (!Objects.isNull(object.getTeu()))
+                                    teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
+                            }
                         }
                     }
                 }
+                dataMap.get(shipment.getId()).setTeuCount(teu);
             }
-            dataMap.get(shipment.getId()).setTeuCount(teu);
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: setContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
     }
 
     public void setConsolidationContainerTeuData(List<ConsolidationDetails> consolidationDetailsList, List<IRunnerResponse> responseList) {
-        Map<Long, ConsolidationListResponse> dataMap = new HashMap<>();
-        for (IRunnerResponse response : responseList)
-            dataMap.put(((ConsolidationListResponse) response).getId(), (ConsolidationListResponse) response);
+        try {
+            Map<Long, ConsolidationListResponse> dataMap = new HashMap<>();
+            for (IRunnerResponse response : responseList)
+                dataMap.put(((ConsolidationListResponse) response).getId(), (ConsolidationListResponse) response);
 
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        Set<String> containerTypes = new HashSet<>();
+            Set<String> containerTypes = new HashSet<>();
 
-        for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
-            if(!Objects.isNull(consolidationDetails.getContainersList()) && !consolidationDetails.getContainersList().isEmpty())
-                consolidationDetails.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
-        }
+            for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
+                if(!Objects.isNull(consolidationDetails.getContainersList()))
+                    consolidationDetails.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
+            }
 
-        Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
-        pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
 
-        BigDecimal teu;
-        for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
-            teu = BigDecimal.ZERO;
-            if (consolidationDetails.getContainersList() != null) {
-                for(Containers c : consolidationDetails.getContainersList()) {
-                    if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
-                        var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
-                        if (!Objects.isNull(cache)) {
-                            EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
-                            if (!Objects.isNull(object.getTeu()))
-                                teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
+            BigDecimal teu;
+            for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
+                teu = BigDecimal.ZERO;
+                if (consolidationDetails.getContainersList() != null) {
+                    for(Containers c : consolidationDetails.getContainersList()) {
+                        if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
+                            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                            if (!Objects.isNull(cache)) {
+                                EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                                if (!Objects.isNull(object.getTeu()))
+                                    teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
+                            }
                         }
                     }
                 }
+                dataMap.get(consolidationDetails.getId()).setTeuCount(teu);
             }
-            dataMap.get(consolidationDetails.getId()).setTeuCount(teu);
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: setConsolidationContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
     }
 
@@ -272,12 +272,12 @@ public class MasterDataUtils{
     }
     public Map<String, EntityTransferMasterLists> fetchInBulkMasterList(MasterListRequestV2 requests) {
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
-        if(requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
+        if(requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
             log.info("Request: {} || MasterListsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
             masterLists.forEach(masterData -> {
-                String key = masterData.ItemValue + '#' + MasterDataType.masterData(masterData.ItemType).name();
+                String key = masterData.ItemValue + '#' + (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? StringUtility.getEmptyString() : MasterDataType.masterData(masterData.ItemType).name());
                 keyMasterDataMap.put(key, masterData);
             });
         }
@@ -327,9 +327,7 @@ public class MasterDataUtils{
             if (Objects.isNull(unLocationsList))
                 return keyMasterDataMap;
 
-            unLocationsList.forEach(location -> {
-                keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocCode : location.LocationsReferenceGUID, location);
-            });
+            unLocationsList.forEach(location -> keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocCode : location.LocationsReferenceGUID, location));
         }
         return keyMasterDataMap;
     }
@@ -420,10 +418,9 @@ public class MasterDataUtils{
         if(requests.size() > 0) {
             log.info("Request: {} || ContainersList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CODE));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchContainerTypeData(request);
 
@@ -472,10 +469,9 @@ public class MasterDataUtils{
         if(requests.size() > 0) {
             log.info("Request: {} || CommoditiesList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CODE));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchCommodityData(request);
 
@@ -524,10 +520,9 @@ public class MasterDataUtils{
         if(requests.size() > 0) {
             log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchVesselData(request);
 
@@ -575,10 +570,9 @@ public class MasterDataUtils{
         if(requests.size() > 0) {
             log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ITEM_VALUE));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             CarrierListObject carrierListObject = new CarrierListObject();
             carrierListObject.setListObject(request);
@@ -588,6 +582,25 @@ public class MasterDataUtils{
             vesselsList.forEach(vessel -> {
                 keyMasterDataMap.put(vessel.getItemValue(), vessel);
             });
+        }
+        return keyMasterDataMap;
+    }
+
+    public Map<String, EntityTransferCarrier> fetchInBulkCarriersBySCACCode(List<String> requests) {
+        Map<String, EntityTransferCarrier> keyMasterDataMap = new HashMap<>();
+        if(!requests.isEmpty()) {
+            log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.IDENTIFIER1));
+            String operator = Operators.IN.getValue();
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+            request.setCriteriaRequests(criteria);
+            CarrierListObject carrierListObject = new CarrierListObject();
+            carrierListObject.setListObject(request);
+            V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+
+            List<EntityTransferCarrier> carriers = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
+            carriers.forEach(carrier -> keyMasterDataMap.put(carrier.getIdentifier1(), carrier));
         }
         return keyMasterDataMap;
     }
@@ -619,12 +632,8 @@ public class MasterDataUtils{
                 switch (masterDataType) {
                     case CacheConstants.UNLOCATIONS:
                         EntityTransferUnLocations object = (EntityTransferUnLocations) cache.get();
-                        if(isBooking) {
-                            fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
-                        }
-                        else {
-                            fieldNameMasterDataMap.put(key, object.lookupDesc);
-                        }
+                        if(isBooking) fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
+                        else fieldNameMasterDataMap.put(key, object.lookupDesc);
                         fieldNameMasterDataMap.put(key + Constants.COUNTRY, object.Country);
                         fieldNameMasterDataMap.put(key + Constants.NAME, object.NameWoDiacritics);
                         fieldNameMasterDataMap.put(key + Constants.CODE, object.LocCode);
@@ -727,10 +736,9 @@ public class MasterDataUtils{
         if(requests.size() > 0) {
             log.info("Request: {} || CurrencyList: {}", LoggerHelper.getRequestIdFromMDC(), requests);
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CURRENCY_CODE));
             String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
 
             V1DataResponse response = v1Service.fetchCurrenciesData(request);
@@ -783,11 +791,8 @@ public class MasterDataUtils{
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.listCousinBranches(request);
-
             List<TenantModel> tenantModelList = commonUtils.convertToList((List<?>) response.entities, TenantModel.class);
-            tenantModelList.forEach(tenantModel -> {
-                keyMasterDataMap.put(StringUtility.convertToString(tenantModel.tenantId), tenantModel);
-            });
+            tenantModelList.forEach(tenantModel -> keyMasterDataMap.put(StringUtility.convertToString(tenantModel.tenantId), tenantModel));
         }
         return keyMasterDataMap;
     }
@@ -834,10 +839,8 @@ public class MasterDataUtils{
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchDangerousGoodData(request);
 
-            List<EntityTransferDGSubstance> dgSubstanceList = commonUtils.convertToList((List<?>) response.entities, EntityTransferDGSubstance.class);
-            dgSubstanceList.forEach(dgSubstance -> {
-                keyMasterDataMap.put(StringUtility.convertToString(dgSubstance.getId()), dgSubstance);
-            });
+            List<EntityTransferDGSubstance> dgSubstanceList = jsonHelper.convertValueToList(response.entities, EntityTransferDGSubstance.class);
+            dgSubstanceList.forEach(dgSubstance -> keyMasterDataMap.put(StringUtility.convertToString(dgSubstance.getId()), dgSubstance));
         }
         return keyMasterDataMap;
     }
@@ -880,10 +883,8 @@ public class MasterDataUtils{
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchWarehouseData(request);
-            List<WareHouseResponse> wareHousesList = commonUtils.convertToList((List<?>) response.entities, WareHouseResponse.class);
-            wareHousesList.forEach(warehouse -> {
-                keyMasterDataMap.put(StringUtility.convertToString(warehouse.getId()), warehouse);
-            });
+            List<WareHouseResponse> wareHousesList = jsonHelper.convertValueToList(response.entities, WareHouseResponse.class);
+            wareHousesList.forEach(warehouse -> keyMasterDataMap.put(StringUtility.convertToString(warehouse.getId()), warehouse));
         }
         return keyMasterDataMap;
     }
@@ -930,10 +931,9 @@ public class MasterDataUtils{
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchActivityMaster(request);
-            List<ActivityMasterResponse> activityMasterResponseList = commonUtils.convertToList((List<?>) response.entities, ActivityMasterResponse.class);
-            activityMasterResponseList.forEach(activityMaster -> {
-                keyMasterDataMap.put(activityMaster.getActivityCode(), activityMaster);
-            });
+
+            List<ActivityMasterResponse> activityMasterResponseList = jsonHelper.convertValueToList(response.entities, ActivityMasterResponse.class);
+            activityMasterResponseList.forEach(activityMaster -> keyMasterDataMap.put(activityMaster.getActivityCode(), activityMaster));
         }
         return keyMasterDataMap;
     }
@@ -994,10 +994,6 @@ public class MasterDataUtils{
         return requests;
     }
 
-    public MasterListRequest createMasterListRequest(MasterDataType itemType, String itemValue) {
-        if (StringUtility.isEmpty(itemValue)) return null;
-        return MasterListRequest.builder().ItemType(itemType.getDescription()).ItemValue(itemValue).build();
-    }
 
     public Map<String, SalesAgentResponse> fetchInSalesAgentList(List<String> requests) {
         Map<String, SalesAgentResponse> keyMasterDataMap = new HashMap<>();
@@ -1009,10 +1005,9 @@ public class MasterDataUtils{
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchSalesAgentData(request);
-            List<SalesAgentResponse> salesAgentResponseList = commonUtils.convertToList((List<?>) response.entities, SalesAgentResponse.class);
-            salesAgentResponseList.forEach(salesAgentResponse -> {
-                keyMasterDataMap.put(StringUtility.convertToString(salesAgentResponse.getId()), salesAgentResponse);
-            });
+
+            List<SalesAgentResponse> salesAgentResponseList = jsonHelper.convertValueToList(response.entities, SalesAgentResponse.class);
+            salesAgentResponseList.forEach(salesAgentResponse -> keyMasterDataMap.put(StringUtility.convertToString(salesAgentResponse.getId()), salesAgentResponse));
         }
         return keyMasterDataMap;
     }
@@ -1020,17 +1015,24 @@ public class MasterDataUtils{
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         return () -> {
-            MDC.setContextMap(mdc);
-            RequestAuthContext.setAuthToken(token);
-            TenantSettingsDetailsContext.setCurrentTenantSettings(v1TenantSettingsResponse);
-            runnable.run();
+            try {
+                MDC.setContextMap(mdc);
+                RequestAuthContext.setAuthToken(token);
+                TenantSettingsDetailsContext.setCurrentTenantSettings(v1TenantSettingsResponse);
+                runnable.run();
+            } finally {
+                MDC.clear();
+                RequestAuthContext.removeToken();
+                TenantSettingsDetailsContext.remove();
+            }
+
         };
     }
 
     public UnlocationsResponse getUNLocRow(String UNLocCode) {
-        if(UNLocCode == null || UNLocCode.isEmpty())
+        if(StringUtility.isEmpty(UNLocCode))
             return null;
         List <Object> criteria = Arrays.asList(
                 Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
@@ -1041,36 +1043,53 @@ public class MasterDataUtils{
         V1DataResponse response = v1Service.fetchUnlocation(commonV1ListRequest);
 
         List<UnlocationsResponse> unLocationsList = jsonHelper.convertValueToList(response.entities, UnlocationsResponse.class);
-        if(unLocationsList.size() > 0)
-            return unLocationsList.get(0);
-        return null;
+        return unLocationsList.isEmpty() ? null : unLocationsList.get(0);
     }
 
     public Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
         Map<String, UnlocationsResponse> locationMap = new HashMap<>();
         if (Objects.isNull(locCodes))
             return locationMap;
-        if (locCodes.size() > 0) {
+        if (!locCodes.isEmpty()) {
             List<Object> criteria = Arrays.asList(
-                    List.of("LocationsReferenceGUID"),
+                    List.of(EntityTransferConstants.LOCATION_SERVICE_GUID),
                     "In",
                     List.of(locCodes)
             );
             CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
             V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
-                }
-            }
+            if (!Objects.isNull(unlocationsResponse))
+                unlocationsResponse.forEach(location ->  locationMap.put(location.getLocationsReferenceGUID(), location));
         }
         return locationMap;
     }
 
+    public Map<String, CarrierMasterData> getCarriersData(Set<String> carrierCodes) {
+        Map<String, CarrierMasterData> carrierMap = new HashMap<>();
+        if (Objects.isNull(carrierCodes))
+            return carrierMap;
+        if (!carrierCodes.isEmpty()) {
+            List<Object> criteria = Arrays.asList(
+                    List.of(EntityTransferConstants.ITEM_VALUE),
+                    "In",
+                    List.of(carrierCodes)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            CarrierListObject carrierListObject = new CarrierListObject();
+            carrierListObject.setListObject(commonV1ListRequest);
+            carrierListObject.setIsList(true);
+            V1DataResponse v1DataResponse = v1Service.fetchCarrierMasterData(carrierListObject, true);
+            List<CarrierMasterData> carriersResponse = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierMasterData.class);
+            if (!Objects.isNull(carriersResponse))
+                carriersResponse.forEach(carrier ->  carrierMap.put(carrier.getItemValue(), carrier));
+        }
+        return carrierMap;
+    }
+
     public EntityTransferDGSubstance fetchDgSubstanceRow(Integer dgSubstanceId) {
         var dgSubstanceRow = new EntityTransferDGSubstance();
-        if(dgSubstanceId == null)
+        if(Objects.isNull(dgSubstanceId))
             return dgSubstanceRow;
         List<Object> criteria = Arrays.asList(List.of("Id"), "=", dgSubstanceId);
         CommonV1ListRequest listRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
@@ -1108,46 +1127,50 @@ public class MasterDataUtils{
      * @param responseList
      */
     public void fetchBillDataForShipments(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
-        Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
-        for (IRunnerResponse response : responseList)
-            dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
+        try {
+            Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
+            for (IRunnerResponse response : responseList)
+                dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
 
-        if(shipmentDetails != null && shipmentDetails.size() > 0) {
-            List<UUID> guidsList = createBillRequest(shipmentDetails);
-            if (!guidsList.isEmpty()) {
-                ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
-                        .guidsList(guidsList).build();
-                ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
-                pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING);
-            }
+            if(shipmentDetails != null && shipmentDetails.size() > 0) {
+                List<UUID> guidsList = createBillRequest(shipmentDetails);
+                if (!guidsList.isEmpty()) {
+                    ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
+                            .guidsList(guidsList).build();
+                    ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+                    pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING);
+                }
 
-            for (ShipmentDetails details: shipmentDetails) {
-                var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).
-                        get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, details.getGuid().toString()));
+                for (ShipmentDetails details: shipmentDetails) {
+                    var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).
+                            get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, details.getGuid().toString()));
 
-                if (!Objects.isNull(cache)) {
-                    var billingData = (ShipmentBillingListResponse.BillingData) cache.get();
-                    if (!Objects.isNull(billingData)) {
-                        ShipmentListResponse shipmentListResponse = dataMap.get(details.getId());
+                    if (!Objects.isNull(cache)) {
+                        var billingData = (ShipmentBillingListResponse.BillingData) cache.get();
+                        if (!Objects.isNull(billingData)) {
+                            ShipmentListResponse shipmentListResponse = dataMap.get(details.getId());
 
-                        shipmentListResponse.setBillStatus(details.getJobStatus());
-                        shipmentListResponse.setTotalEstimatedCost(billingData.getTotalEstimatedCost());
-                        shipmentListResponse.setTotalEstimatedRevenue(billingData.getTotalEstimatedRevenue());
-                        shipmentListResponse.setTotalEstimatedProfit(billingData.getTotalEstimatedProfit());
-                        shipmentListResponse.setTotalEstimatedProfitPercent(billingData.getTotalEstimatedProfitPercent());
-                        shipmentListResponse.setTotalCost(billingData.getTotalCost());
-                        shipmentListResponse.setTotalRevenue(billingData.getTotalRevenue());
-                        shipmentListResponse.setTotalProfit(billingData.getTotalProfit());
-                        shipmentListResponse.setTotalProfitPercent(billingData.getTotalProfitPercent());
-                        shipmentListResponse.setTotalPostedCost(billingData.getTotalPostedCost());
-                        shipmentListResponse.setTotalPostedRevenue(billingData.getTotalPostedRevenue());
-                        shipmentListResponse.setTotalPostedProfit(billingData.getTotalPostedProfit());
-                        shipmentListResponse.setTotalPostedProfitPercent(billingData.getTotalPostedProfitPercent());
-                        shipmentListResponse.setWayBillNumber(billingData.getWayBillNumber());
+                            shipmentListResponse.setBillStatus(details.getJobStatus());
+                            shipmentListResponse.setTotalEstimatedCost(billingData.getTotalEstimatedCost());
+                            shipmentListResponse.setTotalEstimatedRevenue(billingData.getTotalEstimatedRevenue());
+                            shipmentListResponse.setTotalEstimatedProfit(billingData.getTotalEstimatedProfit());
+                            shipmentListResponse.setTotalEstimatedProfitPercent(billingData.getTotalEstimatedProfitPercent());
+                            shipmentListResponse.setTotalCost(billingData.getTotalCost());
+                            shipmentListResponse.setTotalRevenue(billingData.getTotalRevenue());
+                            shipmentListResponse.setTotalProfit(billingData.getTotalProfit());
+                            shipmentListResponse.setTotalProfitPercent(billingData.getTotalProfitPercent());
+                            shipmentListResponse.setTotalPostedCost(billingData.getTotalPostedCost());
+                            shipmentListResponse.setTotalPostedRevenue(billingData.getTotalPostedRevenue());
+                            shipmentListResponse.setTotalPostedProfit(billingData.getTotalPostedProfit());
+                            shipmentListResponse.setTotalPostedProfitPercent(billingData.getTotalPostedProfitPercent());
+                            shipmentListResponse.setWayBillNumber(billingData.getWayBillNumber());
+                        }
+
                     }
-
                 }
             }
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: fetchBillDataForShipments in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
     }
 
@@ -1169,12 +1192,8 @@ public class MasterDataUtils{
         masterListRequests.getMasterListRequests().add(masterListRequest);
         Object masterDataList = v1Service.fetchMultipleMasterData(masterListRequests).getEntities();
         List<com.dpw.runner.shipment.services.masterdata.dto.MasterData> masterData = new ArrayList<>();
-        if (masterDataList != null) {
-            for (Object data : (ArrayList<?>) masterDataList) {
-                com.dpw.runner.shipment.services.masterdata.dto.MasterData masterDataObject = modelMapper.map(data, com.dpw.runner.shipment.services.masterdata.dto.MasterData.class);
-                masterData.add(masterDataObject);
-            }
-        }
+        if (masterDataList != null)
+            masterData = jsonHelper.convertValueToList(masterDataList, com.dpw.runner.shipment.services.masterdata.dto.MasterData.class);
         if (masterData.isEmpty())
             return null;
         return masterData.get(0);
@@ -1183,14 +1202,14 @@ public class MasterDataUtils{
     public String getVesselName(String code) {
         if (StringUtility.isEmpty(code))
             return null;
-        var resp = fetchInBulkVessels(Arrays.asList(code));
+        var resp = fetchInBulkVessels(List.of(code));
         return resp.containsKey(code) ? resp.get(code).getName() : null;
     }
 
     public String getCarrierName(String code) {
         if (StringUtility.isEmpty(code))
             return null;
-        var resp = fetchInBulkCarriers(Arrays.asList(code));
+        var resp = fetchInBulkCarriers(List.of(code));
         return resp.containsKey(code) ? resp.get(code).getItemDescription() : null;
     }
 

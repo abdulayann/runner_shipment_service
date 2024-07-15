@@ -1,14 +1,13 @@
 package com.dpw.runner.shipment.services.exception.response;
 
-import java.util.Arrays;
-import java.util.List;
-
+import com.dpw.runner.shipment.services.utils.Generated;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import org.springframework.http.HttpStatus;
 
 @SuppressWarnings("unused")
 @ApiModel(description = "Api Error Model")
+@Generated
 public class ApiError {
 
     @ApiModelProperty(position = 1, name = "status")

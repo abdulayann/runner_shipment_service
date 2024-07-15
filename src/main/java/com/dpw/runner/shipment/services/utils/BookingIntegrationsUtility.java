@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -50,6 +51,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 
 /**
  * this helper is used to implement all common methods in all projects like utils function
@@ -57,7 +60,6 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 @EnableAsync(proxyTargetClass = true)
-@Generated
 public class BookingIntegrationsUtility {
 
     @Autowired
@@ -203,23 +205,37 @@ public class BookingIntegrationsUtility {
                 .route(createRoute(customerBooking))
                 .charges(createCharges(customerBooking))
                 .business_code(customerBooking.getBusinessCode())
-                .bill_to_party(Arrays.asList(createOrgRequest(customerBooking.getCustomer())))
+                .bill_to_party(Collections.singletonList(createOrgRequest(customerBooking.getCustomer())))
                 .parent_contract_id(customerBooking.getParentContractId())
                 .branch_info(ListContractResponse.BranchInfo.builder().
                         id(customerBooking.getSalesBranch()).
                         sales_agent_primary_email(customerBooking.getPrimarySalesAgentEmail()).
                         sales_agent_secondary_email(customerBooking.getSecondarySalesAgentEmail()).
                         build())
+                .mainLegCarrierCode(getCarrierSCACCodeFromItemValue(carrierDetails.map(CarrierDetails::getShippingLine).orElse(null)))
+                .minTransitHours(carrierDetails.map(CarrierDetails::getMinTransitHours).orElse(null))
+                .maxTransitHours(carrierDetails.map(CarrierDetails::getMaxTransitHours).orElse(null))
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
 
-    private List<String> createEmailIds(String primaryEmail, String secondaryEmail)
+    private String getCarrierSCACCodeFromItemValue(String itemValue) {
+        if(IsStringNullOrEmpty(itemValue))
+            return null;
+        List<String> carrierCodes = new ArrayList<>();
+        carrierCodes.add(itemValue);
+        Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriers(carrierCodes);
+        if(map.containsKey(itemValue))
+            return map.get(itemValue).Identifier1;
+        return null;
+    }
+
+    public List<String> createEmailIds(String primaryEmail, String secondaryEmail)
     {
         if(primaryEmail == null)
             return null;
         if(secondaryEmail == null)
-            return Arrays.asList(primaryEmail);
+            return List.of(primaryEmail);
         return Arrays.asList(primaryEmail, secondaryEmail);
     }
 
@@ -419,7 +435,7 @@ public class BookingIntegrationsUtility {
                 .load(createLoad(shipmentDetails))
                 .pol(StringUtility.getNullIfEmpty(carrierDetails.getOriginPort()))
                 .pod(StringUtility.getNullIfEmpty(carrierDetails.getDestinationPort()))
-                .carrier_code(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine()))
+                .carrier_code(getCarrierSCACCodeFromItemValue(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine())))
                 .carrier_display_name(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
                 .vessel_name(masterDataUtils.getVesselName(carrierDetails.getVessel()))
                 .air_carrier_details(null)
@@ -478,29 +494,24 @@ public class BookingIntegrationsUtility {
     }
 
     private CommonV1ListRequest createCriteriaForTwoFields(String field1, Object value1, String field2, Object value2) {
-        List<Object> criteria1 = new ArrayList<>();
         List<Object> field1_ = new ArrayList<>(List.of(field1));
-        criteria1.addAll(List.of(field1_, "=", value1));
+        List<Object> criteria1 = new ArrayList<>(List.of(field1_, "=", value1));
 
-        List<Object> criteria2 = new ArrayList<>();
         List<Object> field2_ = new ArrayList<>(List.of(field2));
-        criteria2.addAll(List.of(field2_, "=", value2));
+        List<Object> criteria2 = new ArrayList<>(List.of(field2_, "=", value2));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(criteria1, "and", criteria2)).build();
     }
 
     private CommonV1ListRequest createCriteriaForThreeFields(String field1, Object value1, String field2, Object value2, String field3, Object value3) {
-        List<Object> criteria1 = new ArrayList<>();
         List<Object> field1_ = new ArrayList<>(List.of(field1));
-        criteria1.addAll(List.of(field1_, "=", value1));
+        List<Object> criteria1 = new ArrayList<>(List.of(field1_, "=", value1));
 
-        List<Object> criteria2 = new ArrayList<>();
         List<Object> field2_ = new ArrayList<>(List.of(field2));
-        criteria2.addAll(List.of(field2_, "=", value2));
+        List<Object> criteria2 = new ArrayList<>(List.of(field2_, "=", value2));
 
-        List<Object> criteria3 = new ArrayList<>();
         List<Object> field3_ = new ArrayList<>(List.of(field3));
-        criteria3.addAll(List.of(field3_, "=", value3));
+        List<Object> criteria3 = new ArrayList<>(List.of(field3_, "=", value3));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(criteria1, "and", criteria2), "and", criteria3)).build();
     }

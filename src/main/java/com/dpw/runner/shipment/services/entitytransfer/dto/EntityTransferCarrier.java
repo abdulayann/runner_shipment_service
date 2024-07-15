@@ -28,4 +28,5 @@ public class EntityTransferCarrier implements IEntityTranferBaseEntity, Serializ
     public String AirLinePrefixValue;
     public String CarriersLogo;
     public String ValuenDescAir;
+    public String HeadQuartersDetails;
 }

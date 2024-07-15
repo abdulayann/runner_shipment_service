@@ -158,4 +158,12 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private LocalDateTime raExpiry;
     private String transportOrderRoad;
     private Boolean disableBlPartiesName;
+    private Boolean airDGFlag;
+    private Boolean iataTactFlag;
+    private String bookingOrder;
+    private String bookingOrderForMbl;
+    private String bookingOrderAir;
+    private String bookingOrderAirForMawb;
+    private String transportInstructionPickupOrder;
+    private String transportInstructionDeliveryOrder;
 }

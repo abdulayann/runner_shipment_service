@@ -26,6 +26,9 @@ public class AwbGoodsDescriptionInfoResponse implements IRunnerResponse {
     private UUID guid;
     private List<AwbPackingInfo> awbPackingInfo;
     private Boolean isShipmentCreated;
+    private Boolean disableFetchRates;
+    private Boolean disableRates;
+    private Boolean enableFetchRatesWarning;
 
     //Master Data
     private Map<String, String> masterData;

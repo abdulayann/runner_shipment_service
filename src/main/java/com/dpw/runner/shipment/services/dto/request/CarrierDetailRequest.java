@@ -42,4 +42,7 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private String destinationPort;
     private LocalDateTime vesselBerthingDate;
     private String carrierCountry;
+    private String minTransitHours;
+    private String maxTransitHours;
+    private Boolean carrierAddedFromNpm;
 }

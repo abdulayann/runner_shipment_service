@@ -210,5 +210,17 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "contract_enforced_quantity_limit")
     private Long contractEnforcedQuantityLimit;
+
+    @Column(name = "un_number_air")
+    @Size(max=31, message = "max size is 31 for un_number_air")
+    private String unNumberAir;
+
+    @Column(name = "dg_class_air")
+    @Size(max=31, message = "max size is 31 for dg_class_air")
+    private String dgClassAir;
+
+    @Column(name = "dg_class_air_description")
+    @Size(max=255, message = "max size is 255 for dg_class_air_description")
+    private String dgClassAirDescription;
 }
 

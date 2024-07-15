@@ -508,4 +508,28 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "disable_bl_parties_name")
     private Boolean disableBlPartiesName;
+
+    @Column(name = "air_dg_flag")
+    private Boolean airDGFlag;
+
+    @Column(name = "iata_tact_flag")
+    private Boolean iataTactFlag;
+
+    @Column(name = "booking_order")
+    private String bookingOrder;
+
+    @Column(name = "booking_order_mbl")
+    private String bookingOrderForMbl;
+
+    @Column(name = "booking_order_air")
+    private String bookingOrderAir;
+
+    @Column(name = "booking_order_air_mawb")
+    private String bookingOrderAirForMawb;
+
+    @Column(name = "transport_instruction_pickup_order")
+    private String transportInstructionPickupOrder;
+
+    @Column(name = "transport_instruction_delivery_order")
+    private String transportInstructionDeliveryOrder;
 }

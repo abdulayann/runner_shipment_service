@@ -13,7 +13,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.text.ParseException;
 import java.util.Objects;
 
-@Generated
 @Component
 @Slf4j
 public class TokenUtility {
@@ -31,7 +30,7 @@ public class TokenUtility {
         return claimsSet.getSubject();
     }
 
-    private void validateValidity(JWTClaimsSet claimsSet) throws BadJWTException {
+    public void validateValidity(JWTClaimsSet claimsSet) throws BadJWTException {
         DefaultJWTClaimsVerifier defaultJWTClaimsVerifier=new DefaultJWTClaimsVerifier(claimsSet,null);
         defaultJWTClaimsVerifier.verify(claimsSet,null);
     }

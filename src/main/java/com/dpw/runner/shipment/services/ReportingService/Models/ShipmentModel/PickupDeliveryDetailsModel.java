@@ -5,31 +5,55 @@ import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializ
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
 public class PickupDeliveryDetailsModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("EstimatedPickupOrDelivery")
     @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime estimatedPickupOrDelivery;
+
+    @JsonProperty("EstimatedDelivery")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
+    private LocalDateTime estimatedDelivery;
+
+    @JsonProperty("EstimatedPickup")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
+    private LocalDateTime estimatedPickup;
+
     @JsonProperty("RequiredBy")
     @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime requiredBy;
+
     @JsonProperty("PortTransportAdvised")
     @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime portTransportAdvised;
+
     @JsonProperty("ActualPickupOrDelivery")
     @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime actualPickupOrDelivery;
+
+    @JsonProperty("ActualPickup")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
+    private LocalDateTime actualPickup;
+
+    @JsonProperty("ActualDelivery")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
+    private LocalDateTime actualDelivery;
+
+
     @JsonProperty("PickupOrDelivery")
     @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime pickupOrDelivery;
@@ -87,4 +111,27 @@ public class PickupDeliveryDetailsModel implements IDocumentModel {
     private LocalDateTime loadedTruckGateOutDate;
     @JsonProperty("PickupDeliveryInstruction")
     private String pickupDeliveryInstruction;
+
+    @JsonProperty("DeliveryGateIn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
+    public LocalDateTime deliveryGateIn;
+
+    @JsonProperty("PickupGateIn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
+    public LocalDateTime pickupGateIn;
+
+
+    @JsonProperty("DeliveryGateOut")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
+    public LocalDateTime deliveryGateOut;
+
+    @JsonProperty("PickupGateOut")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
+    public LocalDateTime pickupGateOut;
+
+    @JsonProperty("Remarks")
+    public String remarks;
+
+    @JsonProperty("Parties")
+    private List<PartiesModel> partiesList;
 }

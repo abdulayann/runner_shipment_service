@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
@@ -37,6 +39,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
@@ -52,10 +55,12 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AwbUtilityTest {
+@Execution(CONCURRENT)
+class AwbUtilityTest extends CommonMocks {
 
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails testShipment;
@@ -460,7 +465,7 @@ class AwbUtilityTest {
         EntityTransferCarrier mockCarrier = new EntityTransferCarrier();
         carriersMap.put(mockByCarrier, mockCarrier);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
-
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForConsole(mockAwb, mockConsol);
 
         assertNotNull(expectedResponse);
@@ -549,7 +554,7 @@ class AwbUtilityTest {
         EntityTransferCarrier mockCarrier = new EntityTransferCarrier();
         carriersMap.put(mockByCarrier, mockCarrier);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
-
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForConsole(mockAwb, mockConsol);
 
         assertNotNull(expectedResponse);
@@ -629,7 +634,7 @@ class AwbUtilityTest {
         EntityTransferCarrier mockCarrier = new EntityTransferCarrier();
         carriersMap.put(mockByCarrier, mockCarrier);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
-
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment);
 
         assertNotNull(expectedResponse);
@@ -666,7 +671,7 @@ class AwbUtilityTest {
                 .organizations(responseOrgs).addresses(responseAddrs).build();
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
 
-
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment);
 
         assertNotNull(expectedResponse);
@@ -1024,6 +1029,50 @@ class AwbUtilityTest {
 
         try {
             awbUtility.createEventUpdateForAirMessaging(airMessagingEventDto);
+        }
+        catch (Exception e){
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    void testUpdateAwbStatusForFsuUpdateForAwbWithShipmentId() {
+        AirMessagingEventDto airMessagingEventDto = new AirMessagingEventDto();
+        airMessagingEventDto.setGuid(UUID.randomUUID());
+        airMessagingEventDto.setEventCode(AwbConstants.FSU_LOCK_EVENT_CODE);
+
+        Awb mockAwb = testHawb;
+        mockAwb.setShipmentId(1L);
+        when(awbDao.findByGuid(airMessagingEventDto.getGuid())).thenReturn(Optional.of(mockAwb));
+
+        try {
+            awbUtility.createEventUpdateForAirMessaging(airMessagingEventDto);
+            verify(awbDao, times(1)).updateAirMessageStatus(any(),any());
+        }
+        catch (Exception e){
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    void testUpdateAwbStatusForFsuUpdateForAwbWithConsolidationId() {
+        AirMessagingEventDto airMessagingEventDto = new AirMessagingEventDto();
+        airMessagingEventDto.setGuid(UUID.randomUUID());
+        airMessagingEventDto.setEventCode(AwbConstants.FSU_LOCK_EVENT_CODE);
+
+        Awb mockAwb = testMawb;
+        AwbStatus mockStatus = AwbStatus.AWB_FSU_LOCKED;
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build();
+
+        when(awbDao.findByGuid(airMessagingEventDto.getGuid())).thenReturn(Optional.of(mockAwb));
+        when(consoleShipmentMappingDao.findByConsolidationIdByQuery(testMawb.getConsolidationId())).thenReturn(
+            List.of(consoleShipmentMapping)
+        );
+
+        try {
+            awbUtility.createEventUpdateForAirMessaging(airMessagingEventDto);
+            verify(awbDao, times(1)).updateLinkedHawbAirMessageStatus(mockAwb.getGuid(), mockStatus.name());
+            verify(awbDao, times(1)).updateAirMessageStatus(mockAwb.getGuid(), mockStatus.name());
         }
         catch (Exception e){
             fail(e.getMessage());

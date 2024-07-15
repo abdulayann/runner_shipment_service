@@ -446,4 +446,29 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "current_party_for_quote")
     private String currentPartyForQuote;
+
+    @Column(name = "entity_transfer")
+    private Boolean entityTransfer;
+
+    @Column(name = "destination_sales_branch")
+    private String destinationSalesBranch;
+
+    @Column(name = "destination_primary_sales_agent_email")
+    private String destinationPrimarySalesAgentEmail;
+
+    @Column(name = "destination_secondary_sales_agent_email")
+    private String destinationSecondarySalesAgentEmail;
+
+    @Column(name = "destination_current_party_for_quote")
+    private String destinationCurrentPartyForQuote;
+
+    @Column(name = "destination_contract_id")
+    private String destinationContractId;
+
+    @Column(name = "destination_contract_type")
+    private String destinationContractType;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    private List<PickupDeliveryDetails> pickupDeliveryDetailsInstructions;
+
 }

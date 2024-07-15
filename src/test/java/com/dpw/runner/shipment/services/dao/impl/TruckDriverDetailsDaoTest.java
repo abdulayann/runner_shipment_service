@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -20,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -326,6 +328,39 @@ class TruckDriverDetailsDaoTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
         verify(consoleShipmentMappingDao, times(1)).findByConsolidationId(consolidationId);
+    }
+
+    @Test
+    void saveEntityFromShipmentEntityNotPresent() {
+        TruckDriverDetails truckDriverDetails = new TruckDriverDetails();
+        truckDriverDetails.setId(1L);
+        List<TruckDriverDetails> truckDriverDetailsList = Arrays.asList(truckDriverDetails);
+
+        when(truckDriverDetailsRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class,() -> truckDriverDetailsDao.saveEntityFromShipment(truckDriverDetailsList, 1L));
+    }
+
+    @Test
+    void saveEntityFromShipmentMapNotContainsId() {
+        TruckDriverDetails truckDriverDetails = new TruckDriverDetails();
+        truckDriverDetails.setId(1L);
+        List<TruckDriverDetails> truckDriverDetailsList = Arrays.asList(truckDriverDetails);
+        assertThrows(DataRetrievalFailureException.class,() -> truckDriverDetailsDao.saveEntityFromShipment(truckDriverDetailsList, 1L, new HashMap<>()));
+    }
+
+    @Test
+    void saveEntityFromShipment() {
+        TruckDriverDetails truckDriverDetails = new TruckDriverDetails();
+        truckDriverDetails.setId(1L);
+
+        HashMap<Long, TruckDriverDetails> map = new HashMap<>();
+        map.put(1L, truckDriverDetails);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(truckDriverDetailsRepository.saveAll(any())).thenReturn(Arrays.asList(truckDriverDetails));
+
+        List<TruckDriverDetails> truckDriverDetailsList = Arrays.asList(truckDriverDetails);
+        assertEquals(truckDriverDetailsList, truckDriverDetailsDao.saveEntityFromShipment(truckDriverDetailsList, 1L, map));
     }
 
 }

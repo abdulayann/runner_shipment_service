@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
-import org.apache.kafka.common.protocol.types.Field;
 
 import java.time.LocalDateTime;
 

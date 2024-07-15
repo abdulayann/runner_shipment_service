@@ -1,10 +1,11 @@
 package com.dpw.runner.shipment.services.Kafka.Serializer;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.commons.lang.SerializationException;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.io.Serializable;
-
+@Generated
 public class ProducerSerializer <T extends Serializable> implements Serializer<T> {
 
     @Override

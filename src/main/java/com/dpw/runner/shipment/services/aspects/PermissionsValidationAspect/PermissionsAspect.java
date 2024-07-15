@@ -9,10 +9,8 @@ import com.dpw.runner.shipment.services.utils.PermissionUtil;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -23,11 +21,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 @Aspect
 @Component
 public class PermissionsAspect {
-
-    @Autowired
-    private PermissionsContext permissionsContext;
-    @Autowired
-    private EntityManager entityManager;
 
     @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(commonRequestModel)")
     public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {

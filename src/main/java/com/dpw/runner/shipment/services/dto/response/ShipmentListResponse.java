@@ -51,9 +51,9 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String packsUnit;
     private Integer innerPacks;
     private String innerPackUnit;
-    private Integer freightLocal;
+    private BigDecimal freightLocal;
     private String freightLocalCurrency;
-    private Integer freightOverseas;
+    private BigDecimal freightOverseas;
     private String freightOverseasCurrency;
     private boolean autoUpdateWtVol;
     private boolean containerAutoWeightVolumeUpdate;
@@ -115,5 +115,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private BigDecimal totalPostedProfitPercent;
     private String wayBillNumber;
     private String orderManagementNumber;
+    private String orderManagementId;
     private String jobStatus;
+    private Boolean containsHazardous;
 }

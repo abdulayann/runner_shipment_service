@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -28,8 +29,10 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Generated
 public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long id;
+    private Integer tenantId;
     private UUID guid;
     private String houseBill;
     private String transportMode;
@@ -185,4 +188,13 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private AwbStatus awbStatus;
 
     private String currentPartyForQuote;
+    private Map<String, Object> masterDataMap;
+    private Boolean entityTransfer;
+    private String destinationSalesBranch;
+    private String destinationPrimarySalesAgentEmail;
+    private String destinationSecondarySalesAgentEmail;
+    private String destinationCurrentPartyForQuote;
+    private String destinationContractId;
+    private String destinationContractType;
+    private String updatedBy;
 }

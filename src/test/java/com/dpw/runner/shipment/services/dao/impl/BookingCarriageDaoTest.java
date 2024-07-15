@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -265,5 +267,38 @@ class BookingCarriageDaoTest {
     void delete_ValidBookingCarriage_ThrowsException() {
         doThrow(new RuntimeException("test")).when(jsonHelper).convertToJson(any(BookingCarriage.class));
         bookingCarriageDao.deleteBookingCarriage(Map.of(1L , testData),"bookingCarriage", 1L);
+    }
+
+    @Test
+    void saveEntityFromShipmentEntityNotPresent() {
+        BookingCarriage bookingCarriage = new BookingCarriage();
+        bookingCarriage.setId(1L);
+        List<BookingCarriage> bookingCarriageList = Arrays.asList(bookingCarriage);
+
+        when(bookingCarriageRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class,() -> bookingCarriageDao.saveEntityFromShipment(bookingCarriageList, 1L));
+    }
+
+    @Test
+    void saveEntityFromShipmentMapNotContainsId() {
+        BookingCarriage bookingCarriage = new BookingCarriage();
+        bookingCarriage.setId(1L);
+        List<BookingCarriage> bookingCarriageList = Arrays.asList(bookingCarriage);
+        assertThrows(DataRetrievalFailureException.class,() -> bookingCarriageDao.saveEntityFromShipment(bookingCarriageList, 1L, new HashMap<>()));
+    }
+
+    @Test
+    void saveEntityFromShipment() {
+        BookingCarriage bookingCarriage = new BookingCarriage();
+        bookingCarriage.setId(1L);
+
+        HashMap<Long, BookingCarriage> map = new HashMap<>();
+        map.put(1L, bookingCarriage);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(bookingCarriageRepository.saveAll(any())).thenReturn(Arrays.asList(bookingCarriage));
+
+        List<BookingCarriage> bookingCarriageList = Arrays.asList(bookingCarriage);
+        assertEquals(bookingCarriageList, bookingCarriageDao.saveEntityFromShipment(bookingCarriageList, 1L, map));
     }
 }

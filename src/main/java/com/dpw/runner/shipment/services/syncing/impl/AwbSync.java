@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbHawbLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.MawbHawbLink;
@@ -29,14 +28,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -152,12 +149,4 @@ public class AwbSync implements IAwbSync {
         return linkedHawb;
     }
 
-    private void sendEmail(Awb awb, V1DataSyncResponse response, String message) {
-        try {
-            emailServiceUtility.sendEmailForSyncEntity(String.valueOf(awb.getId()), String.valueOf(awb.getGuid()),
-                    "Awb", String.format("%s%s",response.getError().toString(), message));
-        } catch (Exception ex) {
-            log.error("Not able to send email for sync failure for AWB: " + ex.getMessage());
-        }
-    }
 }

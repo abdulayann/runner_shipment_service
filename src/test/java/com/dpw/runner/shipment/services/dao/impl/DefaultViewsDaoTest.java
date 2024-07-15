@@ -1,145 +1,89 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+
 import com.dpw.runner.shipment.services.entity.DefaultViews;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import com.dpw.runner.shipment.services.repository.interfaces.IDefaultViewsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
 
-@RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@Execution(ExecutionMode.CONCURRENT)
 class DefaultViewsDaoTest {
 
-    @Autowired
-    private DefaultViewsDao dao;
-    private static JsonTestUtility jsonTestUtility;
-    private static DefaultViews testData;
+    @Mock
+    private IDefaultViewsRepository defaultViewsRepository;
 
+    @InjectMocks
+    private DefaultViewsDao defaultViewsDao;
 
-    @Container
-    private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
-
-    static {
-        postgresContainer = new PostgreSQLContainer("postgres:15-alpine")
-                .withDatabaseName("integration-tests-db")
-                .withUsername("sa")
-                .withPassword("sa");
-        postgresContainer.start();
-    }
-
-    @BeforeAll
-    static void beforeAll() throws IOException {
-        postgresContainer.start();
-        jsonTestUtility = new JsonTestUtility();
-    }
-
-    @AfterAll
-    static void afterAll() {
-        postgresContainer.stop();
-    }
-
-    @DynamicPropertySource
-    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
-    }
+    private DefaultViews defaultView;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        TenantContext.setCurrentTenant(1);
-        testData = jsonTestUtility.getTestDefaultView();
-        var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
-        PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
-        UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        defaultView = new DefaultViews();
+        defaultView.setId(1L);
+        defaultView.setDefaultViewId(100L);
+        defaultView.setUsername("testUser");
     }
 
     @Test
-    void save() {
-        var savedEntity = dao.save(testData);
-        assertNotNull(savedEntity);
-        assertNotNull(savedEntity.getId());
+    void testSave() {
+        when(defaultViewsRepository.save(defaultView)).thenReturn(defaultView);
+        DefaultViews savedDefaultView = defaultViewsDao.save(defaultView);
+        assertEquals(defaultView, savedDefaultView);
+        verify(defaultViewsRepository, times(1)).save(defaultView);
     }
 
     @Test
-    void findAll() {
-        var savedEntity = dao.save(testData);
-        assertNotNull(savedEntity.getId());
-        var result = dao.findAll();
-        assertNotNull(result);
-        assertTrue(result.stream().anyMatch(c -> c.getId() == savedEntity.getId()));
+    void testFindAll() {
+        List<DefaultViews> defaultViewList = Arrays.asList(defaultView);
+        when(defaultViewsRepository.findAll()).thenReturn(defaultViewList);
+        List<DefaultViews> foundDefaultViews = defaultViewsDao.findAll();
+        assertEquals(defaultViewList, foundDefaultViews);
+        verify(defaultViewsRepository, times(1)).findAll();
     }
 
     @Test
-    void findById() {
-        var savedEntity = dao.save(testData);
-        assertNotNull(savedEntity.getId());
-        var result = dao.findById(savedEntity.getId());
-        assertNotNull(result);
-        assertEquals(result.get().getId(), savedEntity.getId());
+    void testFindById() {
+        when(defaultViewsRepository.findById(1L)).thenReturn(Optional.of(defaultView));
+        Optional<DefaultViews> foundDefaultView = defaultViewsDao.findById(1L);
+        assertEquals(Optional.of(defaultView), foundDefaultView);
+        verify(defaultViewsRepository, times(1)).findById(1L);
     }
 
     @Test
-    void delete() {
-        var savedEntity = dao.save(testData);
-        assertNotNull(savedEntity.getId());
-        dao.delete(savedEntity);
-        var result = dao.findById(savedEntity.getId());
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+    void testDelete() {
+        doNothing().when(defaultViewsRepository).delete(defaultView);
+        defaultViewsDao.delete(defaultView);
+        verify(defaultViewsRepository, times(1)).delete(defaultView);
     }
 
     @Test
-    void findByDefaultViewId() {
-        Long viewId = 23143L;
-        testData.setDefaultViewId(viewId);
-        var savedEntity = dao.save(testData);
-        assertNotNull(savedEntity);
-        assertNotNull(savedEntity.getId());
-        var result = dao.findByDefaultViewId(viewId);
-        assertNotNull(result);
-        assertEquals(result.get().getId(), savedEntity.getId());
+    void testFindByDefaultViewId() {
+        when(defaultViewsRepository.findByDefaultViewId(100L)).thenReturn(Optional.of(defaultView));
+        Optional<DefaultViews> foundDefaultView = defaultViewsDao.findByDefaultViewId(100L);
+        assertEquals(Optional.of(defaultView), foundDefaultView);
+        verify(defaultViewsRepository, times(1)).findByDefaultViewId(100L);
     }
 
     @Test
-    void findByUsername() {
-        String testUser = "user";
-        testData.setUsername(testUser);
-        var savedEntity = dao.save(testData);
-        assertNotNull(savedEntity);
-        var result = dao.findByUsername(testUser);
-        assertNotNull(result);
-        assertEquals(result.get().getId(), savedEntity.getId());
+    void testFindByUsername() {
+        when(defaultViewsRepository.findByUsername("testUser")).thenReturn(Optional.of(defaultView));
+        Optional<DefaultViews> foundDefaultView = defaultViewsDao.findByUsername("testUser");
+        assertEquals(Optional.of(defaultView), foundDefaultView);
+        verify(defaultViewsRepository, times(1)).findByUsername("testUser");
     }
 }

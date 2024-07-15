@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
@@ -70,7 +72,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class PackingServiceTest {
+class PackingServiceTest extends CommonMocks {
 
     @Mock
     IPackingDao packingDao;
@@ -115,8 +117,6 @@ class PackingServiceTest {
     private CSVParsingUtil<Packing> parser;
     @Mock
     private MasterDataUtils masterDataUtils;
-    @Mock
-    private CommonUtils commonUtils;
 
     @Mock
     private HttpServletResponse response;
@@ -166,6 +166,7 @@ class PackingServiceTest {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         MockitoAnnotations.initMocks(this);
@@ -713,8 +714,46 @@ class PackingServiceTest {
         volumeWeightChargeable.setChargeable(new BigDecimal(434));
         volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        UserContext.getUser().getPermissions().put(PermissionConstants.airDG, true);
         packingService.uploadPacking(bulkUploadRequest);
         verify(packingDao, times(1)).saveAll(any());
+    }
+
+    @Test
+    void uploadPacking_UndgEmpty_DgPermissionError() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass");
+        packingList.get(0).setFlashPoint("23");
+        packingList.get(0).setUNDGContact("");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(), anyMap()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    Map<Long, Long> dgsubstance = (Map<Long, Long>) captor2.getValue();
+                    dgsubstance.clear();
+                    dgsubstance.putAll(jsonTestUtility.getDgSubstanceContactMap());
+
+                    Map<Long, String> dgsubstanceFlashPoint = (Map<Long, String>) captor3.getValue();
+                    dgsubstanceFlashPoint.clear();
+                    dgsubstanceFlashPoint.putAll(jsonTestUtility.getDgSubstanceFlashPoint());
+
+                    return packingList;
+                });
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
@@ -1020,7 +1059,6 @@ class PackingServiceTest {
 
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.convertToList(any(), eq(PackingExcelModel.class))).thenReturn(List.of(PackingExcelModel.builder().build()));
-
         Assertions.assertThrows(RunnerException.class, () -> packingService.downloadPacking(response, request));
     }
 
@@ -1031,7 +1069,6 @@ class PackingServiceTest {
 
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.convertToList(any(), eq(PackingExcelModel.class))).thenReturn(List.of(PackingExcelModel.builder().build()));
-
         Assertions.assertThrows(RunnerException.class, () -> packingService.downloadPacking(response, request));
     }
 
@@ -1042,7 +1079,6 @@ class PackingServiceTest {
 
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.convertToList(any(), eq(PackingExcelModel.class))).thenReturn(List.of(PackingExcelModel.builder().build()));
-
         Assertions.assertThrows(RunnerException.class, () -> packingService.downloadPacking(response, request));
     }
 
@@ -1121,7 +1157,7 @@ class PackingServiceTest {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Packing.class))).thenReturn(testPacking);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1138,7 +1174,7 @@ class PackingServiceTest {
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1153,6 +1189,7 @@ class PackingServiceTest {
                 .newPack(null)
                 .oldContainer(containerRequest).build();
 
+        mockShipmentSettings();
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(commonRequestModel));
@@ -1169,7 +1206,7 @@ class PackingServiceTest {
                 .oldContainer(containerRequest).build();
 
         when(shipmentDao.findById(anyLong())).thenThrow(new RuntimeException());
-
+        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build()));
     }
 
@@ -1180,6 +1217,7 @@ class PackingServiceTest {
                 .oldPack(null)
                 .newPack(null)
                 .oldContainer(null).build();
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
     }
@@ -1187,6 +1225,8 @@ class PackingServiceTest {
     @Test
     void testCalculatePackSummary_Success() throws RunnerException {
         List<Packing> packingList = testPackingList;
+        mockShipmentSettings();
+        mockTenantSettings();
         PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(packingList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
         assertNotNull(packSummaryResponse);
         assertEquals(packSummaryResponse, jsonTestUtility.getTestPackSummaryResponse());
@@ -1195,6 +1235,8 @@ class PackingServiceTest {
     @Test
     void testCalculatePackSummary_AIR_Success() throws RunnerException {
         List<Packing> packingList = testPackingList;
+        mockShipmentSettings();
+        mockTenantSettings();
         PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(packingList, Constants.TRANSPORT_MODE_AIR, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
         assertNotNull(packSummaryResponse);
         assertEquals(packSummaryResponse, jsonTestUtility.getTestPackSummaryAirResponse());

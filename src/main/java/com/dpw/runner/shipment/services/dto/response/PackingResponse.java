@@ -71,6 +71,7 @@ public class PackingResponse implements IRunnerResponse {
     private String chargeableUnit;
     private String customsReleaseCode;
     private String shipmentNumber;
+    private Boolean shipmentHazardous;
     private Long innerPacksId;
     private Long innerPacksCount;
     private String commodityGroup;
@@ -82,5 +83,8 @@ public class PackingResponse implements IRunnerResponse {
     private String handlingInfo;
     private Long contractEnforcedQuantityLimit;
     private String containerDesc;
+    private String unNumberAir;
+    private String dgClassAir;
+    private String dgClassAirDescription;
 }
 

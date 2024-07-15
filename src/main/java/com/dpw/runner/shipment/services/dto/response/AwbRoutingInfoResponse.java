@@ -9,6 +9,7 @@ import java.util.Map;
 
 @Data
 public class AwbRoutingInfoResponse implements IRunnerResponse {
+    private Long leg;
     private Long entityId;
     private String entityType;
     private String origin;

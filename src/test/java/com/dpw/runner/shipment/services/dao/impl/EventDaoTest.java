@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.Events;
@@ -20,39 +19,27 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.checkerframework.checker.nullness.Opt;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
-import org.mockito.*;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.verification.VerificationMode;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.persistence.EntityManager;
-import javax.persistence.Parameter;
 import javax.persistence.Query;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -63,9 +50,7 @@ import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
-//@TestPropertySource("classpath:application-test.properties")
-//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-//@Testcontainers
+@Execution(ExecutionMode.CONCURRENT)
 class EventDaoTest {
 
     private static JsonTestUtility jsonTestUtility;
@@ -94,36 +79,11 @@ class EventDaoTest {
 
     private static ObjectMapper objectMapper;
 
-
-//    @Container
-//    private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
-//
-//    static {
-//        postgresContainer = new PostgreSQLContainer("postgres:15-alpine")
-//                .withDatabaseName("integration-tests-db")
-//                .withUsername("sa")
-//                .withPassword("sa");
-//        postgresContainer.start();
-//    }
-//
     @BeforeAll
     static void beforeAll() throws IOException {
-//        postgresContainer.start();
         jsonTestUtility = new JsonTestUtility();
         objectMapper = JsonTestUtility.getMapper();
     }
-//
-//    @AfterAll
-//    static void afterAll() {
-//        postgresContainer.stop();
-//    }
-//
-//    @DynamicPropertySource
-//    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-//        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-//        registry.add("spring.datasource.username", postgresContainer::getUsername);
-//        registry.add("spring.datasource.password", postgresContainer::getPassword);
-//    }
 
     @BeforeEach
     void setUp() {
@@ -184,62 +144,12 @@ class EventDaoTest {
         testData.setId(1L);
 
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(errors);
-//        when(eventRepository.saveAll(input)).thenReturn(List.of(testData));
 
         var e = assertThrows(ValidationException.class, () -> eventDao.saveAll(input));
 
         assertNotNull(e);
         assertEquals(String.join(",", errors), e.getMessage());
     }
-
-//    @Test
-//    void findAll() {
-//        var r = eventDao.save(testData);
-//        assertNotNull(r.getId());
-//        Specification<Events> spec = (root, query, criteriaBuilder) -> {
-//            return criteriaBuilder.equal(root.get("id"), r.getId());
-//        };
-//        var result = eventDao.findAll(spec, PageRequest.of(0 , 10));
-//        assertNotNull(result);
-//        assertEquals(result.stream().toList().get(0).getId(), r.getId());
-//    }
-//
-//    @Test
-//    void findById() {
-//        var r = eventDao.save(testData);
-//        assertNotNull(r.getId());
-//        var result = eventDao.findById(r.getId());
-//        assertNotNull(result);
-//        assertEquals(result.get(), r);
-//    }
-//
-//    @Test
-//    void findByGuid() {
-//        var r = eventDao.save(testData);
-//        assertNotNull(r.getId());
-//        var result = eventDao.findByGuid(r.getGuid());
-//        assertNotNull(result);
-//        assertEquals(result.get(), r);
-//    }
-//
-//    @Test
-//    void delete() {
-//        var r = eventDao.save(testData);
-//        assertNotNull(r.getId());
-//        eventDao.delete(r);
-//        var result = eventDao.findById(r.getId());
-//        assertNotNull(result);
-//        assertTrue(result.isEmpty());
-//    }
-//
-//    @Test
-//    void updateEntityFromOtherEntity() throws RunnerException {
-//        var r = eventDao.save(testData);
-//        testData.setId(null);
-//        var result = eventDao.updateEntityFromOtherEntity(List.of(testData), 2L, "Shipment");
-//        assertNotNull(result);
-//        assertNotNull(r);
-//    }
 
     @Test
     void findByGuid() {
@@ -273,11 +183,6 @@ class EventDaoTest {
     @Test
     void updateEntityFromOtherEntityWithOldEntityList() {
         testData.setId(1L);
-
-//        Events savedEvent = testData;
-
-//        Page<Events> page = new PageImpl(List.of(savedEvent));
-//        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testData));
 
         try {
@@ -297,11 +202,6 @@ class EventDaoTest {
         oldEvent.setId(1L);
         oldEvent.setGuid(UUID.randomUUID());
 
-//        Events savedEvent = testData;
-
-//        Page<Events> page = new PageImpl(List.of(savedEvent));
-//        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
-//        when(eventRepository.findById(1L)).thenReturn(Optional.of(testData));
         when(eventRepository.findById(2L)).thenReturn(Optional.of(oldEvent));
         when(eventRepository.save(testData)).thenReturn(testData);
         when(eventRepository.save(oldEvent)).thenReturn(oldEvent);
@@ -351,9 +251,7 @@ class EventDaoTest {
         Map<Long, Events> oldEntityMap = new HashMap<>();
         oldEntityMap.put(testData.getId(), testData);
 
-//        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testData));
         when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
-//        when(eventRepository.save(testData)).thenReturn(testData);
         when(eventRepository.saveAll(anyList())).thenReturn(List.of(testData));
 
         var result = eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", oldEntityMap);
@@ -364,10 +262,6 @@ class EventDaoTest {
     void saveEntityFromOtherEntityWithOldEntityMapThrowsException() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Long eventId = 1L;
         testData.setId(eventId);
-
-//        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testData));
-//        when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
-//        when(eventRepository.save(testData)).thenReturn(testData);
 
         var e = assertThrows(DataRetrievalFailureException.class, () ->
                 eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", new HashMap<>()));
@@ -434,6 +328,48 @@ class EventDaoTest {
         eventDao.createEventForAirMessagingEvent(events);
     }
 
+    @Test
+    void createEventForAirMessagingStatus() {
+        eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), 1L, "type", "code", "desc", LocalDateTime.now(), LocalDateTime.now(),  "source", 1, "status", LocalDateTime.now(), LocalDateTime.now());
+        verify(eventRepository, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
 
+    @Test
+    void createEventForAirMessagingEventDatesNotNull() {
+        Events events = new Events();
+        events.setReceivedDate(LocalDateTime.now());
+        events.setScheduledDate(LocalDateTime.now());
+        events.setEstimated(LocalDateTime.now());
+        events.setActual(LocalDateTime.now());
+        Query queryMock = mock(Query.class);
 
+        when(entityManager.createNativeQuery(anyString())).thenReturn(queryMock);
+        when(queryMock.setParameter(anyInt(), any())).thenReturn(queryMock);
+
+        eventDao.createEventForAirMessagingEvent(events);
+        verify(queryMock, times(1)).executeUpdate();
+    }
+
+    @Test
+    void checkIfEventsRowExistsForEntityTypeAndEntityId() {
+        CustomAutoEventRequest customAutoEventRequest = new CustomAutoEventRequest();
+        Events savedEvent = new Events();
+        savedEvent.setEventCode("EventCode");
+
+        Page<Events> page = new PageImpl(List.of());
+        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        assertEquals(false, eventDao.checkIfEventsRowExistsForEntityTypeAndEntityId(customAutoEventRequest));
+    }
+
+    @Test
+    void getTheDataFromEntity() {
+        Events savedEvent = new Events();
+        savedEvent.setEventCode("EventCode");
+
+        Page<Events> page = new PageImpl(List.of(savedEvent));
+        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        assertEquals(List.of(savedEvent), eventDao.getTheDataFromEntity("SHIPMENTS", 1, false));
+    }
 }

@@ -33,4 +33,10 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     private List<OrgRequest> bill_to_party;
     private String parent_contract_id;
     private ListContractResponse.BranchInfo branch_info;
+    @JsonProperty(value = "min_transit_hours")
+    private String minTransitHours;
+    @JsonProperty(value = "max_transit_hours")
+    private String maxTransitHours;
+    @JsonProperty(value = "main_leg_carrier_code")
+    private String mainLegCarrierCode;
 }

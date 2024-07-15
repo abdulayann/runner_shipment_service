@@ -20,63 +20,39 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 
-//@RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
-//@TestPropertySource("classpath:application-test.properties")
-//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-//@Testcontainers
-//@Execution(CONCURRENT)
+@Execution(ExecutionMode.CONCURRENT)
 class AwbDaoTest {
-
-//    @Container
-//    private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
-//
-//    static {
-//        postgresContainer = new PostgreSQLContainer("postgres:15-alpine")
-//                .withDatabaseName("integration-tests-db")
-//                .withUsername("sa")
-//                .withPassword("sa");
-//        postgresContainer.start();
-//    }
 
     @InjectMocks
     private AwbDao awbDao;
@@ -109,22 +85,10 @@ class AwbDaoTest {
 
     @BeforeAll
     static void beforeAll() throws IOException {
-//        postgresContainer.start();
         jsonTestUtility = new JsonTestUtility();
         objectMapperTest = JsonTestUtility.getMapper();
     }
-//
-//    @AfterAll
-//    static void afterAll() {
-//        postgresContainer.stop();
-//    }
 
-//    @DynamicPropertySource
-//    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-//        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-//        registry.add("spring.datasource.username", postgresContainer::getUsername);
-//        registry.add("spring.datasource.password", postgresContainer::getPassword);
-//    }
 
     @BeforeEach
     void setUp() {
@@ -467,6 +431,62 @@ class AwbDaoTest {
         when(awbRepository.updateAirMessageStatusFromConsolidationId(id, status)).thenReturn(responseCount);
 
         var res = awbDao.updateAirMessageStatusFromConsolidationId(id, status);
+
+        assertEquals(responseCount, res);
+    }
+
+    @Test
+    void testUpdatePrintTypeFromConsolidationId() {
+        Long id = 1L;
+        int responseCount = 1;
+        var mockAWB = new Awb();
+        mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
+        when(awbRepository.findByConsolidationId(anyLong())).thenReturn(List.of(mockAWB));
+
+        when(awbRepository.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
+
+        var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name());
+
+        assertEquals(responseCount, res);
+    }
+
+    @Test
+    void testUpdatePrintTypeFromConsolidationId2() {
+        Long id = 1L;
+        int responseCount = 0;
+        var mockAWB = new Awb();
+        mockAWB.setPrintType(PrintType.ORIGINAL_PRINTED);
+
+        when(awbRepository.findByConsolidationId(anyLong())).thenReturn(List.of(mockAWB));
+        var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name());
+
+        assertEquals(responseCount, res);
+    }
+    @Test
+    void testUpdatePrintTypeFromShipmentId() {
+        Long id = 1L;
+        int responseCount = 0;
+
+        var mockAWB = new Awb();
+        mockAWB.setPrintType(PrintType.ORIGINAL_PRINTED);
+
+        when(awbRepository.findByShipmentId(anyLong())).thenReturn(List.of(mockAWB));
+        var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name());
+
+        assertEquals(responseCount, res);
+    }
+
+    @Test
+    void testUpdatePrintTypeFromShipmentId2() {
+        Long id = 1L;
+        int responseCount = 1;
+
+        var mockAWB = new Awb();
+        mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
+
+        when(awbRepository.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
+        when(awbRepository.findByShipmentId(anyLong())).thenReturn(List.of(mockAWB));
+        var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name());
 
         assertEquals(responseCount, res);
     }

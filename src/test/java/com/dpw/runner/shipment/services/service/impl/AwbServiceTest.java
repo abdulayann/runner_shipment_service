@@ -1,17 +1,18 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.Runner;
+import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AirMessagingLogsConstants;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.AwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
@@ -19,23 +20,20 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesM
 import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.AirMessagingStatus;
-import com.dpw.runner.shipment.services.entity.enums.AwbReset;
-import com.dpw.runner.shipment.services.entity.enums.ChargeTypeCode;
-import com.dpw.runner.shipment.services.entitytransfer.dto.ChargeTypeIntegrations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -46,20 +44,21 @@ import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.models.Response;
-import org.checkerframework.checker.units.qual.C;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
@@ -67,16 +66,20 @@ import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AwbServiceTest {
+@Execution(ExecutionMode.CONCURRENT)
+class AwbServiceTest extends CommonMocks {
 
     @Mock
     private IAwbDao awbDao;
@@ -108,6 +111,8 @@ class AwbServiceTest {
     private MasterDataKeyUtils masterDataKeyUtils;
     @Mock
     IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Mock
+    private BridgeServiceAdapter bridgeServiceAdapter;
     @InjectMocks
     private AwbService awbService;
 
@@ -140,6 +145,12 @@ class AwbServiceTest {
         testHawb = jsonTestUtility.getTestHawb();
         testDmawb = jsonTestUtility.getTestDmawb();
         testMawb = jsonTestUtility.getTestMawb();
+        awbService.executorService = Executors.newFixedThreadPool(2);
+    }
+
+    @AfterEach
+    void tearDown() {
+        awbService.executorService.shutdown();
     }
 
     @Test
@@ -218,12 +229,15 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+        mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
     void createAwbSuccessGeneratesRoutingInfoFromCarrierDetails() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
         CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
 
@@ -259,6 +273,8 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+        mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -326,6 +342,82 @@ class AwbServiceTest {
     }
 
     @Test
+    void updateAwb_shipment_SetSciT1() throws RunnerException {
+        AwbRequest request = new AwbRequest(); // Provide necessary data for request
+        request.setAwbNumber("updatedAWBNumber");
+        request.setId(1);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Awb mockAwb = testHawb;
+        Awb mockMawb = testMawb;
+        mockMawb.setId(2L);
+        mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
+        // Mocking
+        when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
+        when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
+        when(awbDao.save(any(Awb.class))).thenReturn(mockAwb);
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+        when(mawbHawbLinkDao.findByHawbId(1L)).thenReturn(List.of(MawbHawbLink.builder().hawbId(1L).mawbId(2L).build()));
+        when(awbDao.findById(2L)).thenReturn(Optional.of(mockMawb));
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), responseEntity);
+    }
+
+    @Test
+    void updateAwb_shipment_RemoveSciT1() throws RunnerException {
+        AwbRequest request = new AwbRequest(); // Provide necessary data for request
+        request.setAwbNumber("updatedAWBNumber");
+        request.setId(1);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Awb mockAwb = testHawb;
+        Awb oldEntity = jsonTestUtility.getTestHawb();
+        oldEntity.getAwbCargoInfo().setSci("T1");
+        Awb mockMawb = testMawb;
+        mockMawb.setId(2L);
+        mockMawb.getAwbCargoInfo().setSci("T1");
+        mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
+        mockAwb.getAwbCargoInfo().setSci(null);
+        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
+        // Mocking
+        when(awbDao.findById(1L)).thenReturn(Optional.of(oldEntity));
+        when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
+        when(awbDao.save(any(Awb.class))).thenReturn(mockAwb);
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+        when(mawbHawbLinkDao.findByHawbId(1L)).thenReturn(List.of(MawbHawbLink.builder().hawbId(1L).mawbId(2L).build()));
+        when(mawbHawbLinkDao.findByMawbId(2L)).thenReturn(List.of(MawbHawbLink.builder().hawbId(1L).mawbId(2L).build()));
+        when(awbDao.findById(2L)).thenReturn(Optional.of(mockMawb));
+        when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(oldEntity)));
+
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), responseEntity);
+    }
+
+    @Test
+    void updateAwb_shipment_RountingException() throws RunnerException {
+        AwbRequest request = new AwbRequest(); // Provide necessary data for request
+        request.setAwbNumber("updatedAWBNumber");
+        request.setId(1);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Awb mockAwb = testHawb;
+        mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
+        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
+        mockAwb.getAwbRoutingInfo().get(0).setLeg(1L);
+        mockAwb.getAwbRoutingInfo().get(1).setLeg(1L);
+        // Mocking
+        when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
+        when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void updateAwb_consolidation() throws RunnerException {
         AwbRequest request = new AwbRequest(); // Provide necessary data for request
         request.setAwbNumber("updatedAWBNumber");
@@ -372,7 +464,7 @@ class AwbServiceTest {
         when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(chargeMasterData);
         when(v1Service.fetchMasterData(any())).thenReturn(mockChargeCodeMasterData);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
         assertNotNull(listResponse.getBody());
@@ -396,6 +488,7 @@ class AwbServiceTest {
 //        when(v1Service.fetchMasterData(any())).thenReturn(mockChargeCodeMasterData);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
         assertNotNull(listResponse.getBody());
@@ -575,6 +668,8 @@ class AwbServiceTest {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
 
+        mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -624,7 +719,8 @@ class AwbServiceTest {
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
-
+        mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -781,6 +877,8 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(mockAwb, AwbResponse.class)
         );
+        mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -921,6 +1019,8 @@ class AwbServiceTest {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
 
+        mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -1135,7 +1235,8 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 mockAwbResponse
         );
-
+        mockShipmentSettings();
+        mockTenantSettings();
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -1171,7 +1272,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
 //        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -1210,7 +1311,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -1247,7 +1348,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -1283,7 +1384,7 @@ class AwbServiceTest {
 //        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
-
+        mockShipmentSettings();
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
@@ -1317,7 +1418,7 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
-
+        mockShipmentSettings();
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
@@ -1439,6 +1540,8 @@ class AwbServiceTest {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
+        mockShipmentSettings();
+        mockTenantSettings();
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -1475,7 +1578,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
 //        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -1510,7 +1613,7 @@ class AwbServiceTest {
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
-
+        mockShipmentSettings();
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
@@ -1549,7 +1652,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -1584,7 +1687,7 @@ class AwbServiceTest {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-
+        mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -1641,8 +1744,21 @@ class AwbServiceTest {
         AwbCalculationResponse generatePaymentResponse = jsonTestUtility.getJson("AWB_CALCULATION_RESPONSE", AwbCalculationResponse.class);
         generatePaymentResponse.getAwbOtherChargesInfo().get(0).setChargeBasis(chargeBasis);
         BigDecimal zero = new BigDecimal(0);
-        if(chargeBasis > 1)
-            generatePaymentResponse.getAwbOtherChargesInfo().get(0).setAmount(zero);
+        var chargeableWt = request.getAwbGoodsDescriptionInfo().get(0).getChargeableWt();
+        var grossWt = request.getAwbGoodsDescriptionInfo().get(0).getGrossWt();
+        var rate = generatePaymentResponse.getAwbOtherChargesInfo().get(0).getRate();
+        if(chargeBasis == 2) {
+            BigDecimal val = rate.multiply(chargeableWt);
+            generatePaymentResponse.getAwbOtherChargesInfo().get(0).setAmount(val);
+            generatePaymentResponse.getAwbPaymentInfo().setTotalPrepaid(val.setScale(1, RoundingMode.HALF_DOWN));
+            generatePaymentResponse.getAwbPaymentInfo().setDueCarrierCharges(val);
+        }
+        if(chargeBasis == 3){
+            BigDecimal val = rate.multiply(grossWt);
+            generatePaymentResponse.getAwbOtherChargesInfo().get(0).setAmount(val);
+            generatePaymentResponse.getAwbPaymentInfo().setTotalPrepaid(val.setScale(1, RoundingMode.HALF_DOWN));
+            generatePaymentResponse.getAwbPaymentInfo().setDueCarrierCharges(val);
+        }
         generatePaymentResponse.getAwbPaymentInfo().setTotalCollect(
             generatePaymentResponse.getAwbPaymentInfo().getTotalPrepaid()
         );
@@ -1694,6 +1810,7 @@ class AwbServiceTest {
 
         Mockito.when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(ShipmentSettingsDetails.builder().volumeChargeableUnit("M3").weightChargeableUnit("KG").build()));
 
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> response = awbService.generateUpdatedNatureAndQuantGoodsField(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, response.getStatusCode());
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
@@ -1751,7 +1868,7 @@ class AwbServiceTest {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(true);
+        var httpResponse = awbService.validateIataAgent(true, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
@@ -1772,10 +1889,50 @@ class AwbServiceTest {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(false);
+        var httpResponse = awbService.validateIataAgent(false, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
+    }
+
+    @Test
+    void testValidateIataAgent2() {
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.IATAAgent = true;
+        mockTenantModel.AgentIATACode = "test-code";
+        mockTenantModel.AgentCASSCode = "test-code";
+        mockTenantModel.PIMAAddress = "test-addr";
+        mockTenantModel.DefaultOrgId = 1L;
+
+        var mockShipmentConsoleMapping1 = ConsoleShipmentMapping.builder().shipmentId(10L).consolidationId(100L).build();
+        var mockShipmentConsoleMapping2 = ConsoleShipmentMapping.builder().shipmentId(11L).consolidationId(100L).build();
+
+        var mockShipmentDetails1 = new ShipmentDetails();
+        mockShipmentDetails1.setId(10L);
+        mockShipmentDetails1.setShipmentId("SHP00001");
+
+        var mockShipmentDetails2 = new ShipmentDetails();
+        mockShipmentDetails2.setId(11L);
+        mockShipmentDetails2.setShipmentId("SHP00011");
+
+        var mockAWB1 = new Awb();
+        mockAWB1.setShipmentId(10L);
+        mockAWB1.setPrintType(PrintType.ORIGINAL_PRINTED);
+
+        var mockAWB2 = new Awb();
+        mockAWB2.setShipmentId(12L);
+        mockAWB2.setPrintType(PrintType.DRAFT_PRINTED);
+
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(mockShipmentConsoleMapping1, mockShipmentConsoleMapping2));
+        when(shipmentDao.getShipmentNumberFromId(anyList())).thenReturn(List.of(mockShipmentDetails1, mockShipmentDetails2));
+        when(awbDao.findByShipmentIdsByQuery(anyList())).thenReturn(List.of(mockAWB1, mockAWB2));
+
+        var throwable = assertThrows(Throwable.class, () -> awbService.validateIataAgent(false, Optional.of(100L)));
+        assertEquals(ValidationException.class.getSimpleName(), throwable.getClass().getSimpleName());
+        assertFalse(throwable.getMessage().isEmpty());
     }
 
     @Test
@@ -1793,7 +1950,7 @@ class AwbServiceTest {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(false);
+        var httpResponse = awbService.validateIataAgent(false, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
@@ -1810,7 +1967,7 @@ class AwbServiceTest {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        var httpResponse = awbService.validateIataAgent(false);
+        var httpResponse = awbService.validateIataAgent(false, Optional.empty());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
@@ -2147,4 +2304,473 @@ class AwbServiceTest {
         assertNotNull(res);
         assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
     }
+
+    static Stream<Arguments> provideRequestsForValidationException() {
+        return Stream.of(
+                Arguments.of(BigDecimal.valueOf(12.0), RateClass.N.getId(), "5.0"),
+                Arguments.of(BigDecimal.valueOf(10.0), RateClass.M.getId(), "52.0"),
+                Arguments.of(BigDecimal.valueOf(100.0), RateClass.Q.getId(), "3.0")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideRequestsForValidationException")
+    void testGetFetchIataRates_Success_case1(BigDecimal chargeableWeight, int rateClass, String rateCharge) throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(chargeableWeight)
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .currency("INR")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 200);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .rates(List.of(IataTactRatesApiResponse.Rates.builder()
+                                .standardCharge(IataTactRatesApiResponse.StandardCharge.builder()
+                                        .minimumCharge(BigDecimal.valueOf(52.0))
+                                        .normalCharge(BigDecimal.valueOf(5.0))
+                                        .weightBreak(List.of(IataTactRatesApiResponse.WeightBreak.builder()
+                                                        .charge(BigDecimal.valueOf(3.0))
+                                                        .weightMeasure(BigDecimal.valueOf(100))
+                                                .build()))
+                                        .build())
+                        .build()))
+                .build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
+        RunnerResponse runnerResponse = (RunnerResponse)responseEntity.getBody();
+        IataFetchRateResponse response = (IataFetchRateResponse) runnerResponse.getData();
+        assertEquals(rateClass, response.getRateClass());
+        assertEquals(rateCharge, response.getRateCharge().toString());
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_case2() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .currency("INR")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 200);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .rates(List.of(IataTactRatesApiResponse.Rates.builder()
+                        .standardCharge(IataTactRatesApiResponse.StandardCharge.builder()
+                                .minimumCharge(BigDecimal.valueOf(52.0))
+                                .normalCharge(BigDecimal.valueOf(5.0))
+                                .weightBreak(List.of(IataTactRatesApiResponse.WeightBreak.builder()
+                                        .charge(BigDecimal.valueOf(3.0))
+                                        .weightMeasure(BigDecimal.valueOf(100))
+                                        .build(),
+                                        IataTactRatesApiResponse.WeightBreak.builder()
+                                                .charge(BigDecimal.valueOf(4.0))
+                                                .weightMeasure(BigDecimal.valueOf(200))
+                                                .build()))
+                                .build())
+                        .build()))
+                .build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
+        RunnerResponse runnerResponse = (RunnerResponse)responseEntity.getBody();
+        IataFetchRateResponse response = (IataFetchRateResponse) runnerResponse.getData();
+        assertEquals(RateClass.Q.getId(), response.getRateClass());
+        assertEquals("3.0", response.getRateCharge().toString());
+    }
+
+    @Test
+    void testGetFetchIataRates_Success_case3() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .currency("INR")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 200);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .rates(List.of())
+                .build();
+        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder().error("IATA did not return any value - please add the rate/ rate class manually").build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.getFetchIataRates(CommonRequestModel.buildRequest(iataFetchRateRequest));
+        assertEquals(ResponseHelper.buildSuccessResponse(iataFetchRateResponse), responseEntity);
+    }
+
+    @Test
+    void testGetFetchIataRates_Failure_Case1() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .currency("INR")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3C").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 400);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .responseType("validation-failed")
+                .errors(List.of(IataTactRatesApiResponse.Errors.builder()
+                                .parameterName("Carrier")
+                                .errorType("InvalidParameterValue")
+                        .message("Value ACC in Carrier is not valid. Please correct and try again")
+                        .build()))
+                .build();
+        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder().error("IATA did not return any value - please add the rate/ rate class manually").build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
+    }
+
+    @Test
+    void testGetFetchIataRates_Failure_Case2() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .currency("INR")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 400);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .responseType("validation-failed")
+                .errors(List.of(IataTactRatesApiResponse.Errors.builder()
+                        .parameterName("Carrier")
+                        .errorType("InvalidParameterValue")
+                        .message("Value ACC in Carrier is not valid. Please correct and try again")
+                        .build()))
+                .build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        when(jsonHelper.convertValue(any(), eq(IataTactRatesApiResponse.class))).thenReturn(iataTactRatesApiResponse);
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
+    }
+
+    @Test
+    void testGetFetchIataRates_Failure_Case3() throws RunnerException {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .currency("INR")
+                .build();
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setIataCode("A12");
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setIataCode("B34");
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").IATACode("A3").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        Map<String, Object> extraResponseParams = new HashMap<>();
+        extraResponseParams.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, 500);
+
+        IataTactRatesApiResponse iataTactRatesApiResponse = IataTactRatesApiResponse.builder()
+                .build();
+
+
+        BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
+                .payload(iataTactRatesApiResponse)
+                .extraResponseParams(extraResponseParams)
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(bridgeServiceResponse);
+        assertThrows(RunnerException.class, () -> awbService.getFetchIataRates(commonRequestModel));
+    }
+
+    @Test
+    void testGetFetchIataRates_Failure_Case4() {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(null)
+                .destinationPort(null)
+                .originPort(null)
+                .flightCarrier(null)
+                .currency(null)
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
+
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
+    }
+
+    @Test
+    void testGetFetchIataRates_Failure_Case5() {
+        IataFetchRateRequest iataFetchRateRequest = IataFetchRateRequest.builder()
+                .chargeableWeight(BigDecimal.valueOf(156.0))
+                .destinationPort("NAKMP_AIR")
+                .originPort("NAGOG_AIR")
+                .flightCarrier("Aegean Airlines")
+                .currency("INR")
+                .build();
+
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocationsReferenceGUID("NAKMP_AIR");
+        UnlocationsResponse unlocationsResponse2 = new UnlocationsResponse();
+        unlocationsResponse2.setLocationsReferenceGUID("NAGOG_AIR");
+        EntityTransferCarrier carrier = EntityTransferCarrier.builder().ItemValue("Aegean Airlines").build();
+
+        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
+        carriersMap.put("Aegean Airlines", carrier);
+
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("NAKMP_AIR", unlocationsResponse1);
+        unlocationsResponseMap.put("NAGOG_AIR", unlocationsResponse2);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(iataFetchRateRequest);
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsResponseMap);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
+        assertThrows(ValidationException.class, () -> awbService.getFetchIataRates(commonRequestModel));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {
+            true, false
+    })
+    void createAwb_success_Dg(boolean hazardous) throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+
+        testShipment.setHouseBill("custom-house-bill");
+        testShipment.setContainsHazardous(hazardous);
+        testShipment.getPackingList().get(0).setHazardous(hazardous);
+        addShipmentDataForAwbGeneration(testShipment);
+
+        Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+//        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
+//        Mockito.when(shipmentDao.save(any(), anyBoolean())).thenReturn(testShipment);
+
+//        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+        when(awbDao.save(any())).thenReturn(testDmawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(List.of(new EntityTransferMasterLists())).build();
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
+                objectMapper.convertValue(testDmawb, AwbResponse.class)
+        );
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testValidateAwbThrowsExceptionIfNotAllHawbGenerated() {
+        Awb mockAwb = testMawb;
+        mockAwb.setAirMessageResubmitted(false);
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build();
+
+        when(consoleShipmentMappingDao.findByConsolidationId(testMawb.getConsolidationId())).thenReturn(
+            List.of(consoleShipmentMapping)
+        );
+        List<String> errors = new ArrayList();
+
+        assertThrows(RunnerException.class, () -> awbService.validateAwb(mockAwb));
+    }
+
+    @Test
+    void testValidateAwbGivesErrorWhenNewShipmentIsAttached() {
+        Awb mockAwb = testMawb;
+        List<String> errors = new ArrayList();
+        mockAwb.setAirMessageResubmitted(true);
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build();
+
+        when(consoleShipmentMappingDao.findByConsolidationId(testMawb.getConsolidationId())).thenReturn(
+            List.of(consoleShipmentMapping)
+        );
+        when(mawbHawbLinkDao.findByMawbId(mockAwb.getId())).thenReturn(Collections.EMPTY_LIST);
+        when(awbDao.findByShipmentId(1L)).thenReturn(List.of(testHawb));
+
+        errors.add("Additional Shipments have been attached, please reset data as required.");
+
+        try{
+            var res = awbService.validateAwb(mockAwb);
+            assertEquals(errors.toString(), res);
+        } catch (Exception e){
+            fail(e);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {Constants.DMAWB, Constants.HAWB})
+    void testValidateAwbGivesErrorIfAirMessageNotResubmitted(String entityType) {
+        Awb mockAwb = testHawb;
+        mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
+        mockAwb.getAwbShipmentInfo().setEntityType(entityType);
+        mockAwb.setAirMessageResubmitted(false);
+
+        List<String> errors = new ArrayList();
+        errors.add(Constants.DMAWB.equalsIgnoreCase(entityType) ? AwbConstants.RESUBMIT_FWB_VALIDATION : AwbConstants.RESUBMIT_FZB_VALIDATION);
+
+        try{
+            var res = awbService.validateAwb(mockAwb);
+            assertEquals(errors.toString(), res);
+        } catch (Exception e){
+            fail(e);
+        }
+
+    }
+
 }

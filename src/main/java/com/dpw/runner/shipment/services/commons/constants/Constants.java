@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.commons.constants;
 import java.util.List;
 
 public class Constants {
+    public static final String TRANSPORT_INSTRUCTION_TYPES = "TransportInstructionTypes";
+
     private Constants(){}
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
@@ -43,6 +45,7 @@ public class Constants {
     public static final String PACKING = "PACKING";
     public static final String MPK = "MPK";
     public static final String CONTAINER = "CONTAINER";
+    public static final String PACKAGES = "Packages";
     public static final String CARRIAGE = "CARRIAGE";
     public static final String PreCarriage = "PreCarriage";
     public static final String SERVICE_DETAILS = "SERVICE_DETAILS";
@@ -169,7 +172,8 @@ public class Constants {
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
     public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
     public static final String CARRIER_BOOKING_STATUS = "CarrierBookingStatus";
-    public static final String RA_KC_TYPE = "RAKCType";
+    public static final String REGULATED_AGENT = "RegulatedAgent";
+    public static final String KNOWN_CONSIGNOR = "KnownConsignor";
 
     /**
      * Events
@@ -345,6 +349,8 @@ public class Constants {
     public static final String CONTAINERS_LIST = "containersList";
     public static final String CONSOLIDATION_LIST = "consolidationList";
     public static final String ORDER_MANAGEMENT_ID = "orderManagementId";
+    public static final String ORDER_NUMBER = "orderNumber";
+    public static final String ORDER_MANAGEMENT_NUMBER = "orderManagementNumber";
     public static final String HANDLING_INFO = "handlingInfo";
     public static final String DESCRIPTION_OF_GOODS = "descriptionOfGoods";
     public static final String BOOKING_STATUS_FIELD = "bookingStatus";
@@ -363,7 +369,7 @@ public class Constants {
     public static final String FAILURE_EXECUTING = "failure executing :(";
     public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
 
-    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,"noOfPackages",NET_WEIGHT,"netWeightUnit",
+    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
             GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
@@ -381,7 +387,7 @@ public class Constants {
             "deliveryAddress", "allocationDate", CREATED_BY, CREATED_AT, UPDATED_BY,
             UPDATED_AT, "eventsList", IS_DELETED, "truckingDetails");
 
-    public static final List<String> ColumnsToBeDeletedForCargo = List.of("sealNumber","noOfPackages", "isOwnContainer", "ownType", IS_DELETED,
+    public static final List<String> ColumnsToBeDeletedForCargo = List.of("sealNumber", "isOwnContainer", "ownType", IS_DELETED,
             "measurement","measurementUnit","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber",
             CONTAINER_CODE,"isReefer",CONTAINER_NUMBER,
@@ -406,4 +412,9 @@ public class Constants {
     public static final String TYPE = "Type";
     public static final String DESCARTES = "Descartes";
     public static final String INTTRA = "INTTRA";
+    public static final String PICKUP_DELIVERY = "PICKUP_DELIVERY";
+    public static final String VIEWS = "Views";
+    public static final String ENTITY = "entity";
+    public static final String NAME_FILTER = "name";
+
 }

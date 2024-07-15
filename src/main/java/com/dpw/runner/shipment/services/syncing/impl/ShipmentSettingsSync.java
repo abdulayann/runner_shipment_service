@@ -27,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -70,11 +69,6 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setHblLock(convertToList(List.of(req.getHblLockSettings()), HblLockDto.class));
         syncRequest.setHawbLock(convertToList(List.of(req.getHawbLockSettings()), HawbLockDto.class));
         syncRequest.setMawbLock(convertToList(List.of(req.getMawbLockSettings()), MawbLockDto.class));
-//        syncRequest.setTenantProducts(convertToList(req.getTenantProducts(), TenantProductsDto.class)); // Removing for now as tenant products and product sequence should not sync from v2 to v1
-//        if(req.getProductSequenceConfig() != null) {
-//            syncRequest.setProductSequenceConfig(req.getProductSequenceConfig().stream()
-//                    .map(this::mapProductSequenceConfig).toList());
-//        }
 
         syncRequest.setShipmentImportApproverRole(req.getShipmentConsoleImportApproverRole());
         syncRequest.setIsLowMarginApprovalRequired(req.getLowMarginApproval());
@@ -93,7 +87,8 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     public ResponseEntity<IRunnerResponse> syncProductSequence(ProductSequenceConfig productSequenceConfig, HttpHeaders headers) throws RunnerException {
         ProductSequenceConfigDto productSequenceConfigDto = mapProductSequenceConfig(productSequenceConfig);
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(productSequenceConfigDto).module(SyncingConstants.PRODUCT_SEQUENCE).build());
-        syncService.callSyncAsync(payload, StringUtility.convertToString(productSequenceConfig.getId()), StringUtility.convertToString(productSequenceConfig.getGuid()), "Shipment Settings product sequence Details", headers);
+        String guid = StringUtility.convertToString(productSequenceConfig.getGuid());
+        syncService.pushToKafka(payload, StringUtility.convertToString(productSequenceConfig.getId()), guid, "Product Sequence", guid);
         return ResponseHelper.buildSuccessResponse(productSequenceConfigDto);
     }
 
@@ -104,8 +99,6 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     }
 
     private ProductSequenceConfigDto mapProductSequenceConfig(ProductSequenceConfig req) {
-        if(req == null)
-            return null;
 
         var res = modelMapper.map(req, ProductSequenceConfigDto.class);
         res.setTenantProductObj(modelMapper.map(req.getTenantProducts(), TenantProductsDto.class));

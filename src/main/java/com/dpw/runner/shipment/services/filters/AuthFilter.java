@@ -4,15 +4,14 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -46,11 +45,9 @@ public class AuthFilter extends OncePerRequestFilter {
     @Autowired
     IShipmentSettingsDao shipmentSettingsDao;
     @Autowired
-    private ModelMapper modelMapper;
-    @Autowired
     private TenantSettingsService tenantSettingsService;
-
-    private static final String VALIDATION_ERROR = "Failed to Validate Auth Token";
+    @Autowired
+    private JsonHelper jsonHelper;
 
     private final String[] ignoredPaths = new String[]{"/actuator/**",
             "/v2/api-docs",
@@ -73,7 +70,7 @@ public class AuthFilter extends OncePerRequestFilter {
     public void doFilterInternal(HttpServletRequest servletRequest, HttpServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         try {
         LoggerHelper.putRequestId(UUID.randomUUID().toString());
-        HttpServletRequest req = (HttpServletRequest) servletRequest;
+        HttpServletRequest req = servletRequest;
         log.info("Request For Shipment Service API: {} with RequestId: {}",servletRequest.getRequestURI(), LoggerHelper.getRequestIdFromMDC());
         if(shouldNotFilter(req))
         {
@@ -81,7 +78,7 @@ public class AuthFilter extends OncePerRequestFilter {
             return;
         }
         IUserService userService = getUserServiceFactory.returnUserService();
-        HttpServletResponse res = (HttpServletResponse) servletResponse;
+        HttpServletResponse res = servletResponse;
         long time = System.currentTimeMillis();
         String authToken = req.getHeader("Authorization");
         if(authToken == null)
@@ -113,8 +110,7 @@ public class AuthFilter extends OncePerRequestFilter {
         UserContext.setUser(user);
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
-        TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsService.getV1TenantSettings(user.getTenantId()));
+        //ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
@@ -141,11 +137,13 @@ public class AuthFilter extends OncePerRequestFilter {
             UserContext.removeUser();
             ShipmentSettingsDetailsContext.remove();
             TenantSettingsDetailsContext.remove();
+            PermissionsContext.removePermissions();
+            SecurityContextHolder.clearContext();
         }
 
     }
 
-    public Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
+    private Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
         List<GrantedAuthority> authorities = new ArrayList<>();
         if(!permissions.isEmpty()) {
             for (String privilege : permissions) {
@@ -154,36 +152,6 @@ public class AuthFilter extends OncePerRequestFilter {
         }
         return authorities;
     }
-
-    private static String getFullURL(HttpServletRequest request) {
-        StringBuilder requestURL = new StringBuilder(request.getRequestURI());
-        String queryString = request.getQueryString();
-        if (queryString == null) {
-            return requestURL.toString();
-        } else {
-            return requestURL.append('?').append(queryString).toString();
-        }
-    }
-
-    public void writeUnauthorizedResponse(HttpServletResponse res, String errormessage) throws IOException {
-        log.info(errormessage);
-        res.setContentType(APPLICATION_JSON);
-        res.setStatus(HttpStatus.UNAUTHORIZED.value());
-        //res.getWriter().write(filterLevelException(new UnAuthorizedException(errormessage)));
-    }
-
-//    private String filterLevelException(Exception er) throws IOException {
-//        BaseResponse baseResponse = new BaseResponse();
-//        baseResponse.setError(null);
-//        baseResponse.setSuccess(false);
-//        baseResponse.setErrorMessage(er.getMessage());
-//        return new ObjectMapper().writeValueAsString(baseResponse);
-//    }
-    private ShipmentSettingsDetails getTenantSettings() {
-        Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
-        return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
-    }
-
 
 }
 

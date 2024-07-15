@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,4 +15,5 @@ import java.util.List;
 @AllArgsConstructor
 public class ConsolidationManifestPrintModel implements IDocumentModel {
     private List<ShipmentModel> shipments;
+    private ConsolidationModel consol;
 }

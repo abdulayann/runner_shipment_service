@@ -98,7 +98,6 @@ public class ValidatorUtility {
             return errors;
         }
         for (String field : schemaObject.keySet()) {
-            JsonValue fieldValue = jsonObject.get(field);
             JsonObject fieldSchema = schemaObject.getJsonObject(field);
 
             for (String validationProperty : fieldSchema.keySet()) {
@@ -250,7 +249,7 @@ public class ValidatorUtility {
 
             if (fieldValue.getValueType() == JsonValue.ValueType.NUMBER) {
                 Integer fieldValueInteger = jsonObject.getInt(at);
-                Integer size = jsonObject.getInt(ValidatorConstants.MIN_VALUE);
+                Integer size = jsonSchema.getInt(ValidatorConstants.MIN_VALUE);
                 if (fieldValueInteger != null && fieldValueInteger < size) {
                     errors.add(String.format(ErrorConstants.INVALID_MIN_VALUE_VALIDATION, at, fieldValueInteger, size));
                 }

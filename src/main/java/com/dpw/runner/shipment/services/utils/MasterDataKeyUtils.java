@@ -116,14 +116,12 @@ public class MasterDataKeyUtils {
             EntityTransferMasterLists object3 = (EntityTransferMasterLists) cache.get();
             boolean isBooking = false;
             String value = null;
-            if(isBooking)
+
+            if(!IsStringNullOrEmpty(object3.getValuenDesc()))
+                value = object3.getValuenDesc();
+            else
                 value = object3.getItemDescription();
-            else {
-                if(!IsStringNullOrEmpty(object3.getValuenDesc()))
-                    value = object3.getValuenDesc();
-                else
-                    value = object3.getItemDescription();
-            }
+
             String[] parts = key.split("#");
             if(parts.length == 2) {
                 Map<String, String> finalValueMap = new HashMap<>();

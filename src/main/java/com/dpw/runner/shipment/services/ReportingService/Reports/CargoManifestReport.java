@@ -7,8 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
@@ -20,6 +18,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -36,6 +35,9 @@ public class CargoManifestReport extends IReport{
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
     @Override
     public Map<String, Object> getData(Long id) {
         CargoManifestModel cargoManifestModel = (CargoManifestModel) getDocumentModel(id);
@@ -46,10 +48,11 @@ public class CargoManifestReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         CargoManifestModel cargoManifestModel = new CargoManifestModel();
         cargoManifestModel.shipmentDetails = getShipment(id);
+        validateAirDGCheck(cargoManifestModel.shipmentDetails); // check
         cargoManifestModel.tenantDetails = getTenant();
         cargoManifestModel.usersDto = UserContext.getUser();
         cargoManifestModel.awb = getHawb(id);
-        cargoManifestModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        cargoManifestModel.shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         return cargoManifestModel;
     }
 
@@ -114,7 +117,7 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.POL, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()));
         dictionary.put(ReportConstants.POD, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()));
         dictionary.put(ReportConstants.FPOD, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()));
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
         if(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd() != null) {
@@ -170,7 +173,7 @@ public class CargoManifestReport extends IReport{
             try {packsUnit = packsUnitDesc.getItemDescription();} catch (Exception ignored) {}
             if(CommonUtils.IsStringNullOrEmpty(packsUnit))
                 packsUnit = cargoManifestModel.shipmentDetails.getPacksUnit();
-            dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, packsUnit);
+            dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, Constants.MPK.equals(packsUnit) ? Constants.PACKAGES : packsUnit);
         }
         try {
             if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine())) {
@@ -224,8 +227,7 @@ public class CargoManifestReport extends IReport{
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, shipmentContainersList);
             List<Map<String, Object>> valuesContainer = new ArrayList<>();
             for (ShipmentContainers shipmentContainers : shipmentContainersList) {
-                String shipContJson = jsonHelper.convertToJson(shipmentContainers);
-                valuesContainer.add(jsonHelper.convertJsonToMap(shipContJson));
+                valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {}));
             }
             for (Map<String, Object> v : valuesContainer) {
                 if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)

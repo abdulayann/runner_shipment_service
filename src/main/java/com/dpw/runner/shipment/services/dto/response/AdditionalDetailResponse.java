@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Generated
 public class AdditionalDetailResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
@@ -147,6 +149,8 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Map<String, String> textData;
     private String exemptionCodes;
     private String aomFreeText;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {

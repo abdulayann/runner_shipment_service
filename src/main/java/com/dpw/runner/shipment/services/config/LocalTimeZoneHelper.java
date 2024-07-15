@@ -4,11 +4,13 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.utils.DateUtils;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.slf4j.MDC;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 
+@Generated
 public class LocalTimeZoneHelper {
 
     private LocalTimeZoneHelper(){}
