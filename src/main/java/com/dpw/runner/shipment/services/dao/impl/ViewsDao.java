@@ -48,8 +48,8 @@ public class ViewsDao implements IViewsDao {
     }
 
     @Override
-    public Optional<Views> findByCreatedByAndIsDefault(String createdBy)
+    public Optional<Views> findByCreatedByAndEntityAndIsDefault(String createdBy, String entity)
     {
-        return Optional.ofNullable(viewsRepository.findByCreatedByAndIsDefault(createdBy));
+        return Optional.ofNullable(viewsRepository.findByCreatedByAndIsDefault(createdBy, entity));
     }
 }
