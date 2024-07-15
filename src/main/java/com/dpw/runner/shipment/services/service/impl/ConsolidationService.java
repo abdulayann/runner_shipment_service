@@ -70,6 +70,7 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -2828,7 +2829,7 @@ public class ConsolidationService implements IConsolidationService {
         for (int i = 0; i < ConsolidationConstants.CONSOLIDATION_HEADER.size(); i++) {
             headerMap.put(ConsolidationConstants.CONSOLIDATION_HEADER.get(i), i);
         }
-        try(Workbook workbook = new XSSFWorkbook()) {
+        try(Workbook workbook = new SXSSFWorkbook(10)) {
             Sheet sheet = workbook.createSheet("ConsolidationList");
             makeHeadersInSheet(sheet, workbook);
 
