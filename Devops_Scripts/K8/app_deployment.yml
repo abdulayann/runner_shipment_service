@@ -29,7 +29,7 @@ spec:
         image: ContainerRegistryURL/ACR_NAME:LATEST_IMAGE
         imagePullPolicy: Always
         command: [/bin/sh, -c]
-        args: [cat /mnt/secrets-store/shipment-service-ENV_NAME-SECRET >> ~/.bashrc && . ~/.bashrc && java HEAP_MIN HEAP_MAX -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -XX:NativeMemoryTracking=detail -XX:G1HeapRegionSize=16M -XX:G1ReservePercent=20 -XX:SoftRefLRUPolicyMSPerMB=50 -XX:+UseG1GC JVM_ALG -XX:+ClassUnloadingWithConcurrentMark -XX:+ClassUnloading -javaagent:/usr/local/newrelic/newrelic.jar -jar /usr/local/lib/runner-shipment-services-0.0.1.jar]
+        args: [cat /mnt/secrets-store/shipment-service-ENV_NAME-SECRET >> ~/.bashrc && . ~/.bashrc && java HEAP_MIN HEAP_MAX -XX:+UseG1GC -javaagent:/usr/local/newrelic/newrelic.jar -jar /usr/local/lib/runner-shipment-services-0.0.1.jar]
         resources:
           requests:
             cpu: MIN_CPU
