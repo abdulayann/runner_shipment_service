@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,5 +17,6 @@ import java.util.UUID;
 @Builder
 public class PostArValidationRequest implements IRunnerRequest {
     private List<UUID> shipmentGuids;
+    @ExcludeTimeZone
     private LocalDateTime timestamp;
 }
