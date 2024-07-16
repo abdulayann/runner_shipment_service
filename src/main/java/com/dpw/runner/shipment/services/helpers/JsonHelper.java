@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.objectMapperMixin.ShipmentMixIn;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,8 @@ public class JsonHelper {
     private ObjectMapper mapper1 = new ObjectMapper();
 
     private ObjectMapper createMapper = new ObjectMapper();
+
+    private final ObjectMapper mapper2 = new ObjectMapper();
 
     @PostConstruct
     public void intializeMapper() {
@@ -68,6 +72,17 @@ public class JsonHelper {
         mapper.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
         mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        SimpleModule module = new SimpleModule();
+        module.addDeserializer(LocalDateTime.class,  new CustomLocalDateTimeDeserializer());
+        mapper2.registerModule(new JsonNullableModule());
+        mapper2.registerModule(new JavaTimeModule());
+        mapper2.registerModule(module);
+        mapper2.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        mapper2.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper2.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
+        mapper2.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
+        mapper2.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     }
 
@@ -125,13 +140,6 @@ public class JsonHelper {
     }
 
     public <T,F> F convertValueWithJsonNullable(T object, Class<F> clazz) {
-        ObjectMapper mapper2 = new ObjectMapper();
-        mapper2.registerModule(new JsonNullableModule());
-        mapper2.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        mapper2.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        mapper2.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
-        mapper2.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
-        mapper2.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return mapper2.convertValue(object, clazz);
     }
 
