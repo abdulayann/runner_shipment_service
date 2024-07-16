@@ -189,6 +189,15 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (customerBooking.getBookingNumber() == null) {
             customerBooking.setBookingNumber(generateBookingNumber(customerBooking.getCargoType()));
         }
+        if(request.getOrderManagementId() != null) {
+            Optional<CustomerBooking> booking = customerBookingDao.findByOrderManagementId(request.getOrderManagementId());
+            if (booking.isPresent()) {
+                CustomerBooking c = booking.get();
+                c.setOrderManagementId(null);
+                c.setOrderManagementNumber(null);
+                customerBookingDao.save(c);
+            }
+        }
         populateTotalRevenueDetails(customerBooking, request);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
@@ -236,14 +245,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
         if(request.getOrderManagementId() != null)
         {
-            Optional<CustomerBooking> booking = customerBookingDao.findByOrderManagementId(request.getOrderManagementId());
-            if(booking.isPresent())
-            {
-                CustomerBooking c = booking.get();
-                c.setOrderManagementId(null);
-                c.setOrderManagementNumber(null);
-                customerBookingDao.save(c);
-            }
             pushCustomerBookingDataToDependentService(customerBooking, true);
         }
         try {
