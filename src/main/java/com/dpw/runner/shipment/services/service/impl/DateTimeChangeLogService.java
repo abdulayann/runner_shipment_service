@@ -42,8 +42,6 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
             if(checkIfCarrierOrVesselChanged(entity, oldEntity)) {
                 deleteDateTimeLogs(oldEntity.getId());
                 // generate default logs
-                generateDefaultLogs(entity);
-                return;
             }
 
             if(entity.getDateUpdateRequest() == null)
@@ -88,29 +86,6 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
             return false;
         return (!Objects.equals(entity.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine()) ||
             !Objects.equals(entity.getCarrierDetails().getVessel(), oldEntity.getCarrierDetails().getVessel()));
-
-    }
-
-    private void generateDefaultLogs(ShipmentRequest shipmentDetails) {
-        if(Objects.isNull(shipmentDetails) || Objects.isNull(shipmentDetails.getCarrierDetails()))
-            return;
-        String source = UserContext.getUser().getUsername();
-
-        if(shipmentDetails.getCarrierDetails().getAta() != null) {
-            saveDateTimeChangeLog(DateType.ATA, shipmentDetails.getCarrierDetails().getAta(), shipmentDetails.getId(), source);
-        }
-
-        if(shipmentDetails.getCarrierDetails().getAtd() != null) {
-            saveDateTimeChangeLog(DateType.ATD, shipmentDetails.getCarrierDetails().getAtd(), shipmentDetails.getId(), source);
-        }
-
-        if(shipmentDetails.getCarrierDetails().getEta() != null) {
-            saveDateTimeChangeLog(DateType.ETA, shipmentDetails.getCarrierDetails().getEta(), shipmentDetails.getId(), source);
-        }
-
-        if(shipmentDetails.getCarrierDetails().getEtd() != null) {
-            saveDateTimeChangeLog(DateType.ETD, shipmentDetails.getCarrierDetails().getEtd(), shipmentDetails.getId(), source);
-        }
 
     }
 

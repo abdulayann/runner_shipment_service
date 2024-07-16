@@ -109,10 +109,7 @@ class DateTimeChangeLogServiceTest extends CommonMocks {
 
         shipmentRequest.setDateUpdateRequest(dateUpdateRequest);
         shipmentRequest.getCarrierDetails().setShippingLine("new shipping line");
-        shipmentRequest.getCarrierDetails().setAta(mockDateTime);
-        shipmentRequest.getCarrierDetails().setAtd(mockDateTime);
-        shipmentRequest.getCarrierDetails().setEta(mockDateTime);
-        shipmentRequest.getCarrierDetails().setEtd(mockDateTime);
+        shipmentRequest.setDateUpdateRequest(dateUpdateRequest);
         mockTenantSettings();
         dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, testShipment);
 
