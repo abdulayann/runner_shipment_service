@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Repository
 @Slf4j
@@ -72,6 +73,11 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     @Override
     public Optional<CustomerBooking> findById(Long id) {
         return customerBookingRepository.findById(id);
+    }
+
+    @Override
+    public Optional<CustomerBooking> findByGuid(UUID id) {
+        return customerBookingRepository.findByGuid(id);
     }
 
     @Override

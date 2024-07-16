@@ -439,12 +439,19 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             double _start = System.currentTimeMillis();
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null || request.getId() == null) {
-                log.error("Request is empty for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if (request == null || (request.getId() == null && request.getGuid() == null)) {
+                log.error("Request Id and Guid are null for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
-            long id = request.getId();
-            Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
+            Long id = request.getId();
+            Optional<CustomerBooking> customerBooking;
+            if(id != null) {
+                customerBooking = customerBookingDao.findById(id);
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                customerBooking = customerBookingDao.findByGuid(guid);
+            }
+
             if (!customerBooking.isPresent()) {
                 log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
