@@ -65,7 +65,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1926,7 +1926,7 @@ public class ShipmentService implements IShipmentService {
             headerMap.put(ShipmentConstants.SHIPMENT_HEADERS.get(i), i);
         }
 
-        try(Workbook workbook = new SXSSFWorkbook(10)) {
+        try(Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("ShipmentList");
             makeHeadersInSheet(sheet, workbook);
 
