@@ -1920,17 +1920,14 @@ public class ShipmentService implements IShipmentService {
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
-        log.error("Workbook LOG : shipments fetched");
-
         log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
         Map<String, Integer> headerMap = new HashMap<>();
         for (int i = 0; i < ShipmentConstants.SHIPMENT_HEADERS.size(); i++) {
             headerMap.put(ShipmentConstants.SHIPMENT_HEADERS.get(i), i);
         }
-        log.error("Workbook LOG : export excel request started");
+
         try(Workbook workbook = new SXSSFWorkbook(10)) {
             Sheet sheet = workbook.createSheet("ShipmentList");
-            log.error("Workbook LOG: Create Sheet Method called");
             makeHeadersInSheet(sheet, workbook);
 
             //Filling the data
@@ -2062,9 +2059,7 @@ public class ShipmentService implements IShipmentService {
             } catch (IOException e) {
                 log.error("Time out " + e.getMessage());
             }
-            log.error("Workbook LOG : finished writing to the buffered reader");
         }
-        log.error("Workbook LOG : request finished");
 
     }
 
