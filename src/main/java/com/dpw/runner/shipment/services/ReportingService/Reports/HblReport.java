@@ -901,13 +901,13 @@ public class HblReport extends IReport{
             if(hblModel.blObject.getHblData().getPackageCount() != null)
                 dictionary.put(PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.blObject.getHblData().getPackageCount()), 0, v1TenantSettingsResponse));
             dictionary.put(PACKS_UNIT, Constants.MPK.equals(hblModel.blObject.getHblData().getPackageType()) ? Constants.PACKAGES : hblModel.blObject.getHblData().getPackageType());
-            dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType()));
+            dictionary.put(PACKS_UNIT_DESC, Constants.MULTI_PACK.equals(masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType())) ? Constants.PACKAGES : masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType()));
             dictionary.put(ReportConstants.DESCRIPTION, hblModel.blObject.getHblData().getCargoDescription());
         } else {
             if(hblModel.shipment.getNoOfPacks() != null)
                 dictionary.put(PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
             dictionary.put(PACKS_UNIT, Constants.MPK.equals(hblModel.shipment.getPacksUnit()) ? Constants.PACKAGES : hblModel.shipment.getPacksUnit());
-            dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.shipment.getPacksUnit()));
+            dictionary.put(PACKS_UNIT_DESC, Constants.MULTI_PACK.equals(masterListDescriptionPacksUnit(hblModel.shipment.getPacksUnit())) ? Constants.PACKAGES : masterListDescriptionPacksUnit(hblModel.shipment.getPacksUnit()));
             dictionary.put(DESCRIPTION, hblModel.shipment.getGoodsDescription());
         }
 

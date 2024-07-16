@@ -23,6 +23,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -266,7 +268,7 @@ class CustomerBookingControllerTest {
         // Mock
         when(customerBookingService.retrieveById(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = customerBookingController.retrieveById(111L);
+        var responseEntity = customerBookingController.retrieveById(Optional.of(111L), Optional.of(UUID.randomUUID().toString()));
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
