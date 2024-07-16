@@ -444,7 +444,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             Long id = request.getId();
-            Optional<CustomerBooking> customerBooking = Optional.ofNullable(null);
+            Optional<CustomerBooking> customerBooking;
             if(id != null) {
                 customerBooking = customerBookingDao.findById(id);
             } else {
