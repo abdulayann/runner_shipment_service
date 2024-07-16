@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 import java.util.Set;
 
 public class ReportConstants {
+    public static final String ROAD = "Road";
+
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
     public static final String IMPORT_SHIPMENT_MANIFEST = "ImportShipmentManifest";
