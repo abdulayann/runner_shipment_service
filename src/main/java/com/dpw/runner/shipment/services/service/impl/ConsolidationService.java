@@ -312,7 +312,8 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("houseBill", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("houseBill").build()),
             Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("voyageOrFlightNumber").build()),
             Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName("createdAt").build()),
-            Map.entry("hazardous", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).build())
+            Map.entry("hazardous", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).build()),
+            Map.entry("shipmentShipmentType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("shipmentType").build())
             );
 
     @Override
@@ -3224,6 +3225,7 @@ public class ConsolidationService implements IConsolidationService {
         consol = ConsolidationDetailsResponse.builder()
                 .consolidationType(Constants.SHIPMENT_TYPE_DRT)
                 .transportMode(transportMode)
+//                .jobType(shipment.getJobType()) // MasterDataType.SHIPMENT_TYPE not mapped to any field in consolidation
                 .containerCategory(shipment.getShipmentType() == null ? tenantSettings.get().getDefaultContainerType() : shipment.getShipmentType())
                 .declarationType(additionalDetails != null ? additionalDetails.getCustomDeclType() : null)
                 .carrierDetails(CarrierDetailResponse.builder()

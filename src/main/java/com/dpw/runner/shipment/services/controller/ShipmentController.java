@@ -450,7 +450,7 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/attach-list-shipment")
-    public ResponseEntity<?> attachListShipment(@Valid @RequestBody @NonNull AttachListShipmentRequest request) {
+    public ResponseEntity<?> attachListShipment(@Valid @RequestBody @NonNull AttachListShipmentRequest request) { // check if UI can add a criteria according to other shipments available
         try {
         return shipmentService.attachListShipment(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {

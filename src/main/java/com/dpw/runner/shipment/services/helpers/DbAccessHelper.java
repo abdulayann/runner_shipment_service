@@ -234,7 +234,7 @@ public class DbAccessHelper {
                     path = map.get(tableNames.get(input.getFieldName()).getTableName());
                 }
             }
-            return createSpecification(tableNames.get(input.getFieldName()).getDataType(), input, path, criteriaBuilder, getFieldName(input.getFieldName(), tableNames));
+            return createSpecification(tableNames.get(input.getFieldName()).getDataType(), input, path, criteriaBuilder, getFieldName(input.getFieldName(), tableNames), query, root);
 
         };
     }
@@ -257,7 +257,7 @@ public class DbAccessHelper {
         return null;
     }
 
-    private static <T> Predicate createSpecification(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
+    private static <T> Predicate createSpecification(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName, CriteriaQuery query, Root root) {
         switch (input.getOperator()) {
             case "=":
                 if (dataType.isAssignableFrom(String.class)) {
@@ -371,6 +371,23 @@ public class DbAccessHelper {
                 return criteriaBuilder.isNull(path.get(fieldName));
             case "ISNOTNULL":
                 return criteriaBuilder.isNotNull(path.get(fieldName));
+            case "ALLMATCH":
+//                Subquery<Long> subquery = query.subquery(Long.class);
+//                Root<T> subRoot = subquery.from(root.getJavaType());
+//                subquery.select(criteriaBuilder.count(subRoot))
+//                        .where(criteriaBuilder.notEqual(path.get(fieldName), input.getValue()));
+//                return criteriaBuilder.equal(subquery, 0L);
+
+                Subquery<Long> subquery = criteriaBuilder.createQuery(Long.class).subquery(Long.class);
+                Class claz = root.getJavaType();
+                Root<T> subRoot = subquery.from(claz);
+                Join<?, ?> join = subRoot.join(fieldName);
+                subquery.select(criteriaBuilder.count(subRoot))
+                        .where(criteriaBuilder.and(
+                                criteriaBuilder.equal(subRoot.get("id"), root.get("id")),
+                                criteriaBuilder.notEqual(join.get(fieldName), input.getValue())));
+                long val = 0L;
+                return criteriaBuilder.equal(subquery, val);
             default:
                 throw new RuntimeException("Operation not supported yet");
         }
@@ -422,7 +439,7 @@ public class DbAccessHelper {
                     query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(sortRequest.getFieldName()))));
                 }
             }
-            return createSpecification(dataTypeMap.get(input.getFieldName()), input, path, criteriaBuilder, input.getFieldName());
+            return createSpecification(dataTypeMap.get(input.getFieldName()), input, path, criteriaBuilder, input.getFieldName(), query, root);
 
         };
     }
