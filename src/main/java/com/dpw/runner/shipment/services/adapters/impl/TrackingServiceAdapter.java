@@ -37,6 +37,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -450,11 +451,15 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     public TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException {
         var headers = new HttpHeaders();
         headers.add(ApiConstants.X_API_KEY, trackingServiceApiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
         var httpEntity = new HttpEntity<>(List.of(TrackingServiceApiRequest.builder().shipmentReference(request.getReferenceNumber()).build()), headers);
 
         try {
+            log.info("Entered tracking call");
             var response = restTemplate.postForEntity(trackingServiceNewFlowEndpoint, httpEntity, TrackingServiceApiResponse.class);
-            return response.getBody();
+            var responseBody = response.getBody();
+            log.info("Received response from tracking {}", responseBody);
+            return responseBody;
         } catch (Exception e){
             log.error("Error while calling tracking endpoint ", e);
             throw new RunnerException(e.getMessage());
