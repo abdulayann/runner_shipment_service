@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -363,6 +364,42 @@ public class AwbDao implements IAwbDao {
     @Override
     public Awb findAwbByGuidByQuery(UUID guid) {
         return awbRepository.findAwbByGuidByQuery(guid);
+    }
+
+    @Override
+    public void updatedEfreightInformationEvent(Long shipmentId, Long consolidationId, String efreighStatus) throws RunnerException {
+        // fetch Awb
+        Awb awb = null;
+        AwbSpecialHandlingCodesMappingInfo sph = null;
+
+        if(shipmentId != null) {
+            var list = findByShipmentId(shipmentId);
+            awb = !list.isEmpty() ? list.get(0) : null;
+            sph = AwbSpecialHandlingCodesMappingInfo.builder()
+                .shcId(efreighStatus)
+                .entityId(shipmentId)
+                .build();
+        }
+        else if (consolidationId != null) {
+            var list = findByConsolidationId(consolidationId);
+            awb = !list.isEmpty() ? list.get(0) : null;
+            sph = AwbSpecialHandlingCodesMappingInfo.builder()
+                .shcId(efreighStatus)
+                .entityId(consolidationId)
+                .build();
+        }
+
+        if(Objects.isNull(awb))
+            return;
+
+        sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
+
+        // set resubmitted false and sph
+        awb.setAirMessageResubmitted(false);
+        awb.setAwbSpecialHandlingCodesMappings(List.of(sph));
+
+        save(awb);
+
     }
 
 }

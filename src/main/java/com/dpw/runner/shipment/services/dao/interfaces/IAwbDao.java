@@ -39,4 +39,5 @@ public interface IAwbDao {
     int updatePrintTypeFromConsolidationId(Long id, String printType);
     int updatePrintTypeFromShipmentId(Long id, String printType);
     List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds);
+    void updatedEfreightInformationEvent(Long shipmentId, Long consolidationId, String efreighStatus) throws RunnerException;
 }

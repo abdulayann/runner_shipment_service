@@ -100,7 +100,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class ShipmentServiceTest extends CommonMocks {
+class
+ShipmentServiceTest extends CommonMocks {
 
     @InjectMocks
     private ShipmentService shipmentService;
@@ -182,6 +183,8 @@ class ShipmentServiceTest extends CommonMocks {
     private IContainerService containerService;
     @Mock
     private IPackingService packingService;
+    @Mock
+    private IAwbService awbService;
     @Mock
     private IOrderManagementAdapter orderManagementAdapter;
     @Mock
@@ -300,6 +303,37 @@ class ShipmentServiceTest extends CommonMocks {
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeUpdate_efreightStausChanged() throws RunnerException {
+        testShipment.setId(1L);
+        ShipmentDetails mockShipment = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        mockShipment.getAdditionalDetails().setEfreightStatus("new value");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        // Mock
+        when(shipmentDao.findById(any()))
+            .thenReturn(
+                Optional.of(
+                    testShipment
+                        .setConsolidationList(new ArrayList<>())
+                        .setContainersList(new ArrayList<>())));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        mockShipmentSettings();
+        mockTenantSettings();
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        verify(awbDao, times(1)).updatedEfreightInformationEvent(anyLong(), eq(null), any());
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 

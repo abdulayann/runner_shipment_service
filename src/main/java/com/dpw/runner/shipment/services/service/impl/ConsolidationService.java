@@ -3075,6 +3075,10 @@ public class ConsolidationService implements IConsolidationService {
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate()) {
                 autoGenerateEvents(consolidationDetails);
             }
+            // Update AWB
+            if(!Objects.isNull(oldEntity) && !Objects.equals(consolidationDetails.getEfreightStatus(), oldEntity.getEfreightStatus())) {
+                awbDao.updatedEfreightInformationEvent(null, id, consolidationDetails.getEfreightStatus());
+            }
         }
 
         if(containerRequestList != null && (shipmentSettingsDetails.getMergeContainers() == null || !shipmentSettingsDetails.getMergeContainers())

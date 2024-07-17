@@ -35,6 +35,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -46,8 +47,8 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -537,6 +538,40 @@ class AwbDaoTest {
         var res = awbDao.findAllLinkedAwbs(inputGuid);
 
         assertEquals(Collections.emptyList(), res);
+    }
+
+
+    @Test
+    void updatedEfreightInformationEventFromShipment() {
+        Long shipmentId = 1L;
+        String efreightStatus = "newEfreightStatus";
+        var mock = Mockito.spy(awbDao);
+
+        when(mock.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
+
+        try {
+            mock.updatedEfreightInformationEvent(shipmentId, null, efreightStatus);
+            verify(mock, times(1)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updatedEfreightInformationEventFromConsolidation() {
+        Long consolidationId = 1L;
+        String efreightStatus = "newEfreightStatus";
+        var mock = Mockito.spy(awbDao);
+
+        when(mock.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
+
+        try {
+            mock.updatedEfreightInformationEvent(null, consolidationId, efreightStatus);
+
+            verify(mock, times(1)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 
 }

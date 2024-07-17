@@ -272,6 +272,7 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private BillingServiceAdapter billingServiceAdapter;
 
+
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
@@ -1638,6 +1639,11 @@ public class ShipmentService implements IShipmentService {
                         containerDao.deleteById(containerId);
                     }
                 }
+            }
+
+            // Update AWB
+            if(!Objects.isNull(oldEntity) && !Objects.equals(shipmentDetails.getAdditionalDetails().getEfreightStatus(), oldEntity.getAdditionalDetails().getEfreightStatus())) {
+                awbDao.updatedEfreightInformationEvent(id, null, shipmentDetails.getAdditionalDetails().getEfreightStatus());
             }
         }
 
