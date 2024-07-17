@@ -1181,4 +1181,7 @@ public class ReportConstants {
 
     public static final String CARRIER_HQ = "CarrierHQ";
     public static final String CON = "CarrierContractNumber";
+
+    public static final String CSD_INFO = "CSDInfo";
+    public static final String ORIGINAL_PRINT_DATE = "OriginalPrintDate";
 }

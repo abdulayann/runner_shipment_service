@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.bridgeService.TactBridgePayl
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -41,6 +42,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.SaveStatus;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
@@ -160,6 +162,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
 
 
 
@@ -1338,7 +1343,40 @@ public class AwbService implements IAwbService {
         awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
         if(request.getAwbType().equalsIgnoreCase("DMAWB"))
             awbCargoInfo.setChargeCode(fetchChargeCodes(shipmentDetails.getPaymentTerms()));
+
+        String csdInfo = populateCsdInfo(shipmentDetails);
+        awbCargoInfo.setCsdInfo(csdInfo);
+
         return awbCargoInfo;
+    }
+
+    private String populateCsdInfo(ShipmentDetails shipment) {
+        Parties originAgent = shipment.getAdditionalDetails().getExportBroker() != null ? shipment.getAdditionalDetails().getExportBroker() : null;
+        OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(Arrays.asList(originAgent));
+
+        Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+        Map<String, Object> addressSendingAgent = null;
+        String raNumber = "";
+        String securityStatus = "";
+        String screeningStatus = "";
+        String csdInfo = "";
+
+        if(addressMap != null && addressMap.get(originAgent.getOrgCode() + "#" + originAgent.getAddressCode()) != null) {
+            addressSendingAgent = addressMap.get(originAgent.getOrgCode() + "#" + originAgent.getAddressCode());
+
+            if(Boolean.TRUE.equals(addressSendingAgent.get(REGULATED_AGENT))) {
+                raNumber = StringUtility.convertToString(addressSendingAgent.get(KCRA_NUMBER));
+            }
+            if(shipment.getSecurityStatus() != null)
+                securityStatus = shipment.getSecurityStatus();
+
+            if(shipment.getAdditionalDetails().getScreeningStatus() != null )
+                screeningStatus = String.join("+", shipment.getAdditionalDetails().getScreeningStatus());
+
+            csdInfo = String.format(AwbConstants.CSD_INFO_FORMAT,raNumber, raNumber, securityStatus, screeningStatus);
+        }
+
+        return csdInfo;
     }
 
     private String getCountryCode(String country) {

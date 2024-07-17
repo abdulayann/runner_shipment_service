@@ -12,6 +12,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -98,4 +99,7 @@ public class Awb extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     @Column(name = "print_type")
     private PrintType printType;
+
+    @Column(name = "original_printed_at")
+    private LocalDateTime originalPrintedAt;
 }

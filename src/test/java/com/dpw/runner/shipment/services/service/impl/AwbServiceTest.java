@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest
 import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -38,6 +39,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsServ
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
@@ -113,6 +115,8 @@ class AwbServiceTest extends CommonMocks {
     IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Mock
     private BridgeServiceAdapter bridgeServiceAdapter;
+    @Mock
+    private V1ServiceUtil v1ServiceUtil;
     @InjectMocks
     private AwbService awbService;
 
@@ -229,6 +233,10 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+
+        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
@@ -273,6 +281,10 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+
+        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
@@ -871,6 +883,10 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(mockAwb, AwbResponse.class)
         );
+
+        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
@@ -1229,6 +1245,10 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 mockAwbResponse
         );
+
+        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -2704,6 +2724,10 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
+
+        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
