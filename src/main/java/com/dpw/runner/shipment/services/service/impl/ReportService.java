@@ -258,6 +258,9 @@ public class ReportService implements IReportService {
         else if(report instanceof DeliveryOrderReport deliveryOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())){
             dataRetrived = deliveryOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
         }
+        else if(report instanceof TransportOrderReport transportOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())){
+            dataRetrived = transportOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
+        }
         else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }

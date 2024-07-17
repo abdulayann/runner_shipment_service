@@ -10,26 +10,27 @@ import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConsta
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOODS_VALUE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Component
 public class TransportOrderReport extends IReport{
 
-    @Autowired
-    private JsonHelper jsonHelper;
-
     @Override
     public Map<String, Object> getData(Long id) throws RunnerException {
         TransportOrderModel cargoManifestModel = (TransportOrderModel) getDocumentModel(id);
+        return populateDictionary(cargoManifestModel);
+    }
+
+    public Map<String, Object> getData(Long id, Long transportInstructionId) throws RunnerException {
+        TransportOrderModel cargoManifestModel = (TransportOrderModel) getDocumentModel(id);
+        cargoManifestModel.shipmentDetails.setTransportInstructionId(transportInstructionId);
         return populateDictionary(cargoManifestModel);
     }
 
@@ -131,6 +132,8 @@ public class TransportOrderReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(shipmentModel.getFreightOverseas(), shipmentModel.getFreightOverseasCurrency(), v1TenantSettingsResponse));
         if(shipmentModel != null && shipmentModel.getFreightOverseasCurrency() != null && !shipmentModel.getFreightOverseasCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, shipmentModel.getFreightOverseasCurrency());
+        if(shipmentModel.getTransportInstructionId() != null)
+            addTransportInstructionTags(dictionary, shipmentModel);
         return dictionary;
     }
 }
