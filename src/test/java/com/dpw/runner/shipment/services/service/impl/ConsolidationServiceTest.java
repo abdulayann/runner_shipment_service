@@ -511,7 +511,6 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails);
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
-        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = consolidationService.createFromBooking(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -530,7 +529,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
-        mockTenantSettings();
+        // mockTenantSettings();
         assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
     }
 
@@ -662,7 +661,6 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
-        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -686,7 +684,6 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenThrow(new RunnerException("Test"));
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
-        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -2563,12 +2560,12 @@ class ConsolidationServiceTest extends CommonMocks {
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
-        Exception e = assertThrows(ValidationException.class, () -> {
-            spyService.create(commonRequestModel);
+        Exception e = assertThrows(RunnerException.class, () -> {
+            spyService.validateRaKcForConsol(consolidationDetails);
         });
 
         assertEquals(errorMessage, e.getMessage());
@@ -2604,8 +2601,7 @@ class ConsolidationServiceTest extends CommonMocks {
         orgAddressResponse.setAddresses(addressMap);
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        mockTenantSettings();
+//        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2640,13 +2636,13 @@ class ConsolidationServiceTest extends CommonMocks {
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
 
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
-        Exception e = assertThrows(ValidationException.class, () -> {
-            spyService.create(commonRequestModel);
+        Exception e = assertThrows(RunnerException.class, () -> {
+            spyService.validateRaKcForConsol(consolidationDetails);
         });
 
         assertEquals(errorMessage, e.getMessage());
@@ -2682,12 +2678,12 @@ class ConsolidationServiceTest extends CommonMocks {
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
-        Exception e = assertThrows(ValidationException.class, () -> {
-            spyService.create(commonRequestModel);
+        Exception e = assertThrows(RunnerException.class, () -> {
+            spyService.validateRaKcForConsol(consolidationDetails);
         });
 
         assertEquals(errorMessage, e.getMessage());
@@ -2720,15 +2716,14 @@ class ConsolidationServiceTest extends CommonMocks {
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
         map.put("KnownConsignor", true);
-        addressMap.put("c1#o1", map);
+        addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
-        Exception e = assertThrows(ValidationException.class, () -> {
-            spyService.create(commonRequestModel);
-        });
+        spyService.validateRaKcForConsol(consolidationDetails);
+        verify(v1ServiceUtil, times(1)).fetchOrgInfoFromV1(anyList());
     }
 
     @Test
@@ -2761,12 +2756,12 @@ class ConsolidationServiceTest extends CommonMocks {
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
-        Exception e = assertThrows(ValidationException.class, () -> {
-            spyService.create(commonRequestModel);
+        Exception e = assertThrows(RunnerException.class, () -> {
+            spyService.validateRaKcForConsol(consolidationDetails);
         });
 
         assertEquals(errorMessage, e.getMessage());
@@ -2804,12 +2799,12 @@ class ConsolidationServiceTest extends CommonMocks {
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
-        Exception e = assertThrows(ValidationException.class, () -> {
-            spyService.create(commonRequestModel);
+        Exception e = assertThrows(RunnerException.class, () -> {
+            spyService.validateRaKcForConsol(consolidationDetails);
         });
 
         assertEquals(errorMessage, e.getMessage());
@@ -2847,12 +2842,11 @@ class ConsolidationServiceTest extends CommonMocks {
         addressMap.put("c1#o1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
-        Exception e = assertThrows(ValidationException.class, () -> {
-            spyService.create(commonRequestModel);
-        });
+        spyService.validateRaKcForConsol(consolidationDetails);
+        verify(v1ServiceUtil, times(1)).fetchOrgInfoFromV1(any());
     }
 
     @Test
@@ -2888,12 +2882,12 @@ class ConsolidationServiceTest extends CommonMocks {
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
-        Exception e = assertThrows(ValidationException.class, () -> {
-            spyService.create(commonRequestModel);
+        Exception e = assertThrows(RunnerException.class, () -> {
+            spyService.validateRaKcForConsol(consolidationDetails);
         });
 
         assertEquals(errorMessage, e.getMessage());

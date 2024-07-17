@@ -86,5 +86,6 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> checkCreditLimitFromV1(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> getDateTimeChangeUpdates(Long shipmentId) throws RunnerException;
+    void validateRaKcDetails(ShipmentDetails shipmentDetails) throws RunnerException;
 
 }

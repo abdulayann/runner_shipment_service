@@ -3749,7 +3749,6 @@ ShipmentServiceTest extends CommonMocks {
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
         when(shipmentDao.save(any(), eq(false))).thenThrow(RunnerException.class);
         mockShipmentSettings();
-        mockTenantSettings();
         assertThrows(ValidationException.class, () -> {
             shipmentService.create(commonRequestModel);
         });
@@ -4105,7 +4104,6 @@ ShipmentServiceTest extends CommonMocks {
         HashMap<String, Map<String, Object>> map = new HashMap();
         map.put("org1#add1", hm);
 
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(OrgAddressResponse.builder().addresses(map).build());
 
         when(additionalDetailDao.updateEntityFromShipment(any())).thenReturn(additionalDetails);
         mockShipmentSettings();

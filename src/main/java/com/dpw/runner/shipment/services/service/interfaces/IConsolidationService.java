@@ -70,4 +70,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> fullConsolidationsList(CommonRequestModel commonRequestModel);
     void checkSciForDetachConsole(Long consoleId) throws RunnerException;
     void checkSciForAttachConsole(Long consoleId) throws RunnerException;
+    void validateRaKcForConsol(ConsolidationDetails consolidationDetails) throws RunnerException;
 }
