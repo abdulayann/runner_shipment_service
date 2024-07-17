@@ -369,6 +369,10 @@ public class Constants {
     public static final String CODE = "_code";
     public static final String FAILURE_EXECUTING = "failure executing :(";
     public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
+    public static final String SCO = "SCO";
+    public static final String SPX = "SPX";
+    public static final String SHR = "SHR";
+
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
             GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",

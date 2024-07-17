@@ -837,14 +837,22 @@ public class AwbService implements IAwbService {
         //var awbPackingInfo = generateMawbPackingInfo(consolidationDetails);
         // generate Awb Entity
 
-        List<AwbSpecialHandlingCodesMappingInfo> sph = null;
+        List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && !Strings.isNullOrEmpty(consolidationDetails.getEfreightStatus())
                 && (consolidationDetails.getEfreightStatus().equalsIgnoreCase(Constants.EAW)
          || consolidationDetails.getEfreightStatus().equalsIgnoreCase(Constants.EAP))) {
-            sph = Arrays.asList(AwbSpecialHandlingCodesMappingInfo
+            sph.add(AwbSpecialHandlingCodesMappingInfo
                     .builder()
                     .shcId(consolidationDetails.getEfreightStatus())
+                    .entityId(consolidationDetails.getId())
+                    .entityType(request.getAwbType())
+                    .build());
+        }
+        if(!Strings.isNullOrEmpty(consolidationDetails.getSecurityStatus()) && AwbConstants.SecurityStatusList.contains(consolidationDetails.getSecurityStatus())) {
+            sph.add(AwbSpecialHandlingCodesMappingInfo
+                    .builder()
+                    .shcId(consolidationDetails.getSecurityStatus())
                     .entityId(consolidationDetails.getId())
                     .entityType(request.getAwbType())
                     .build());
@@ -1189,14 +1197,22 @@ public class AwbService implements IAwbService {
                 log.error("Error performing sync on shipment entity, {}", e);
             }
         }
-        List<AwbSpecialHandlingCodesMappingInfo> sph = null;
+        List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && !Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getEfreightStatus())
             && (shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase(Constants.EAW) ||
                 (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && shipmentDetails.getAdditionalDetails().getEfreightStatus().equalsIgnoreCase(Constants.EAP)))) {
-            sph = Arrays.asList(AwbSpecialHandlingCodesMappingInfo
+            sph.add(AwbSpecialHandlingCodesMappingInfo
                     .builder()
                     .shcId(shipmentDetails.getAdditionalDetails().getEfreightStatus())
+                    .entityId(shipmentDetails.getId())
+                    .entityType(request.getAwbType())
+                    .build());
+        }
+        if(!Strings.isNullOrEmpty(shipmentDetails.getSecurityStatus()) && AwbConstants.SecurityStatusList.contains(shipmentDetails.getSecurityStatus())) {
+            sph.add(AwbSpecialHandlingCodesMappingInfo
+                    .builder()
+                    .shcId(shipmentDetails.getSecurityStatus())
                     .entityId(shipmentDetails.getId())
                     .entityType(request.getAwbType())
                     .build());

@@ -191,6 +191,7 @@ class AwbServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
 
         testShipment.setHouseBill("custom-house-bill");
+        testShipment.setSecurityStatus(Constants.SHR);
         addShipmentDataForAwbGeneration(testShipment);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
@@ -631,6 +632,7 @@ class AwbServiceTest extends CommonMocks {
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
         testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setSecurityStatus(Constants.SCO);
 
         AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
 
