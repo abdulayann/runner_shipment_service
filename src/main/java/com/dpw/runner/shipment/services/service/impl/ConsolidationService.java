@@ -3010,6 +3010,9 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
+    }
+
+    public void validateRaKcForConsol(ConsolidationDetails consolidationDetails) throws RunnerException {
         Parties sendingAgent = consolidationDetails.getSendingAgent();
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {

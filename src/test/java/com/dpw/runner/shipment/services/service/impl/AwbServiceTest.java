@@ -37,6 +37,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -84,6 +85,8 @@ import static org.mockito.Mockito.*;
 @Execution(ExecutionMode.CONCURRENT)
 class AwbServiceTest extends CommonMocks {
 
+    @Mock
+    private IConsolidationService consolidationService;
     @Mock
     private IAwbDao awbDao;
     @Mock
@@ -242,6 +245,25 @@ class AwbServiceTest extends CommonMocks {
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void createAwb_throwsRaKcException() throws RunnerException {
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+
+        testShipment.setHouseBill("custom-house-bill");
+        addShipmentDataForAwbGeneration(testShipment);
+
+        Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+
+        mockTenantSettings();
+        doThrow(new RunnerException("Error while validating RaKC details")).when(shipmentService).validateRaKcDetails(any());
+        var response = awbService.createAwb(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
     @Test
@@ -1034,6 +1056,30 @@ class AwbServiceTest extends CommonMocks {
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void resetAllMawbThrowsRaKcException() throws RunnerException {
+        ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder().id(3L).consolidationId(1L).awbType("MAWB").resetType(AwbReset.ALL).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
+        Long shipmentId = 1L;
+        addConsolDataForMawbGeneration(testConsol);
+        testShipment.setId(shipmentId);
+        testConsol.setShipmentsList(List.of(testShipment));
+
+        AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+
+        when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
+        Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
+        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
+
+        doThrow(new RunnerException()).when(consolidationService).validateRaKcForConsol(any());
+        assertThrows(RunnerException.class, () -> awbService.reset(commonRequestModel));
     }
 
     @Test
