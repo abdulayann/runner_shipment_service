@@ -1180,4 +1180,5 @@ public class ReportConstants {
     public static final String TI_ISAIR = "IsAir";
 
     public static final String CARRIER_HQ = "CarrierHQ";
+    public static final String CON = "CarrierContractNumber";
 }
