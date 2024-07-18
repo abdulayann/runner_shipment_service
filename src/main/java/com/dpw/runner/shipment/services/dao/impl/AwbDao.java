@@ -472,7 +472,7 @@ public class AwbDao implements IAwbDao {
         List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
 
         // Fetch all the awb records with the mapped hawbId
-        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", mawbHawbLinks.stream().map(i -> i.getHawbId()).toList(), "IN");
+        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", mawbHawbLinks.stream().map(MawbHawbLink::getHawbId).toList(), "IN");
         com.nimbusds.jose.util.Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
         Page<Awb> page = findAll(pair.getLeft(), pair.getRight());
 
