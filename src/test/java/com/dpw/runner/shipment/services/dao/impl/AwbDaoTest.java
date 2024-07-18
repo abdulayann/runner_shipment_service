@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -653,6 +654,69 @@ class AwbDaoTest {
 
         mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
         verify(mock, times(1)).save(any());
+    }
+
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T1_mawbLinkNull() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(null);
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(0)).save(any());
+    }
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T1_mawbLinkEmpty() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of());
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(0)).save(any());
+    }
+
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T1_MawbEmpty() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(mock.findById(mawb.getId())).thenReturn(Optional.empty());
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(0)).save(any());
+    }
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T1_mawb_FSUlocked() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        mawb.setAirMessageStatus(AwbStatus.AWB_FSU_LOCKED);
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(mock.findById(mawb.getId())).thenReturn(Optional.of(mawb));
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(0)).save(any());
+    }
+
+    @Test
+    void updateSciFieldFromHawbFrom_Success_SciT1_mawb_awb_sciT1() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mawb.getAwbCargoInfo().setSci("T1");
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(mock.findById(mawb.getId())).thenReturn(Optional.of(mawb));
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(0)).save(any());
     }
 
     @Test
