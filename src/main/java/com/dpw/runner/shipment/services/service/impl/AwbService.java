@@ -1361,21 +1361,29 @@ public class AwbService implements IAwbService {
         String screeningStatus = "";
         String csdInfo = "";
 
-        if(addressMap != null && addressMap.get(originAgent.getOrgCode() + "#" + originAgent.getAddressCode()) != null) {
+        if(addressMap != null && originAgent != null && addressMap.get(originAgent.getOrgCode() + "#" + originAgent.getAddressCode()) != null) {
             addressSendingAgent = addressMap.get(originAgent.getOrgCode() + "#" + originAgent.getAddressCode());
 
-            if(Boolean.TRUE.equals(addressSendingAgent.get(REGULATED_AGENT))) {
-                raNumber = StringUtility.convertToString(addressSendingAgent.get(KCRA_NUMBER));
+            // Agent not expired
+            if(StringUtility.isNotEmpty(StringUtility.convertToString(addressSendingAgent.get(KCRA_EXPIRY)))) {
+                LocalDateTime agentExpiry = LocalDateTime.parse(StringUtility.convertToString(addressSendingAgent.get(KCRA_EXPIRY)));
+
+                if(LocalDateTime.now().isAfter(agentExpiry))
+                    return csdInfo;
+
+                if(Boolean.TRUE.equals(addressSendingAgent.get(REGULATED_AGENT))) {
+                    raNumber = StringUtility.convertToString(addressSendingAgent.get(KCRA_NUMBER));
+                }
+
+                if(shipment.getSecurityStatus() != null)
+                    securityStatus = shipment.getSecurityStatus();
+
+                if(shipment.getAdditionalDetails().getScreeningStatus() != null )
+                    screeningStatus = String.join("+", shipment.getAdditionalDetails().getScreeningStatus());
+
+                csdInfo = String.format(AwbConstants.CSD_INFO_FORMAT,raNumber, securityStatus, screeningStatus, screeningStatus);
             }
-            if(shipment.getSecurityStatus() != null)
-                securityStatus = shipment.getSecurityStatus();
-
-            if(shipment.getAdditionalDetails().getScreeningStatus() != null )
-                screeningStatus = String.join("+", shipment.getAdditionalDetails().getScreeningStatus());
-
-            csdInfo = String.format(AwbConstants.CSD_INFO_FORMAT,raNumber, raNumber, securityStatus, screeningStatus);
         }
-
         return csdInfo;
     }
 

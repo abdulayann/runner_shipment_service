@@ -60,6 +60,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -176,6 +177,28 @@ public class ReportService implements IReportService {
 
                 }
                 return CommonUtils.concatAndAddContent(dataByteList);
+            }
+        }
+
+        // if report info is CargoManifestAirExportShipment check original awb printed before
+        if(Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT)) {
+            Long shipmentId = Long.valueOf(reportRequest.getReportId());
+            var awbList = awbDao.findByShipmentId(shipmentId);
+            if(awbList == null || awbList.isEmpty() || !Objects.equals(PrintType.ORIGINAL_PRINTED, awbList.get(0).getPrintType()))
+                throw new RunnerException("Please print original AWB before proceeding !");
+        }
+
+        // CargoManifestAirExportConsolidation , validate original awb printed for its HAWB
+        if(Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION)) {
+            Long consolidationId = Long.valueOf(reportRequest.getReportId());
+            var awbList = awbDao.findByConsolidationId(consolidationId);
+            if(awbList != null && !awbList.isEmpty()) {
+                List<Awb> linkedHawb = awbDao.getLinkedAwbFromMawb(awbList.get(0).getId());
+                long count = linkedHawb.stream().filter(i -> !Objects.equals(PrintType.ORIGINAL_PRINTED, i.getPrintType())).count();
+
+                if(count > 0) {
+                    throw new RunnerException("Please print original AWB for linked shipments before proceeding !");
+                }
             }
         }
 
@@ -1446,17 +1469,25 @@ public class ReportService implements IReportService {
     }
 
     private void setPrintTypeForAwb(ReportRequest reportRequest, Boolean isOriginalPrint) {
+        var originalPrintedAt = getCurrentTimeInTenantTimeZone();
         if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)) {
             if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
-                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name());
+                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name(), originalPrintedAt);
             else
-                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name());
+                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name(), originalPrintedAt);
         } else if ((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
             if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
-                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name());
+                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name(), originalPrintedAt);
             else
-                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name());
+                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name(), originalPrintedAt);
         }
+    }
+
+    private LocalDateTime getCurrentTimeInTenantTimeZone() {
+        var timeZone = UserContext.getUser().getTimeZoneId();
+        if(timeZone == null)
+            return LocalDateTime.now();
+        return LocalDateTime.now(ZoneId.of(timeZone));
     }
 
 }

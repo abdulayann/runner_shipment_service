@@ -75,6 +75,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -2685,6 +2686,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setHouseBill("custom-house-bill");
         testShipment.setContainsHazardous(hazardous);
         testShipment.getPackingList().get(0).setHazardous(hazardous);
+        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
         addShipmentDataForAwbGeneration(testShipment);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
@@ -2725,7 +2727,18 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
 
+        // mocking for populateCsdInfo
+        testShipment.getAdditionalDetails().setScreeningStatus(List.of("EDD", "ETD", "XRY"));
+        testShipment.setSecurityStatus("SPX");
         OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
+        mockOrgAddressResponse.setAddresses(Map.ofEntries(
+            Map.entry("org#add", Map.ofEntries(
+                Map.entry(REGULATED_AGENT, true),
+                Map.entry(KCRA_NUMBER, 123),
+                Map.entry(KCRA_EXPIRY, LocalDateTime.now().plusDays(1))
+            )
+        )));
+
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
 
         mockShipmentSettings();

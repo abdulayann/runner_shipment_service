@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -48,6 +49,7 @@ import java.util.concurrent.ExecutorService;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -2060,7 +2062,7 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipCargoManifestAirExportDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipCargoManifestAirExportDocumentDataSuccess() throws DocumentException, RunnerException, IOException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2088,13 +2090,81 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
 
+        var mockAwb = jsonTestUtility.getTestHawb();
+        mockAwb.setPrintType(PrintType.ORIGINAL_PRINTED);
+
+        when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(mockAwb));
+
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
     @Test
+    void getShipCargoManifestAirExportDocumentDataFailsWhenOriginalAwbNotPrinted() throws IOException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setAirExportShipmentManifest("123456789");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setAirExportShipmentManifest("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setReportInfo(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
+        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+
+        assertThrows(RunnerException.class, () -> reportService.getDocumentData(commonRequestModel));
+
+    }
+
+    @Test
     void getShipCargoManifestAirConsolidationDocumentData() throws DocumentException, RunnerException, IOException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setAirExportConsoleManifest("123456789");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setAirExportConsoleManifest("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setReportInfo(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
+        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
+
+        var mockMawb = jsonTestUtility.getTestMawb();
+        var mockHawb = jsonTestUtility.getTestHawb();
+
+        when(awbDao.findByConsolidationId(anyLong())).thenReturn(List.of(mockMawb));
+        when(awbDao.getLinkedAwbFromMawb(any())).thenReturn(Arrays.asList(mockHawb));
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        var e = assertThrows(RunnerException.class, () -> reportService.getDocumentData(commonRequestModel));
+        assertNotNull(e.getMessage());
+    }
+
+    @Test
+    void getShipCargoManifestAirConsolidationDocumentDataSuccess() throws DocumentException, RunnerException, IOException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2120,6 +2190,17 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
+
+        var mockMawb = jsonTestUtility.getTestMawb();
+        var mockHawb = jsonTestUtility.getTestHawb();
+        mockHawb.setPrintType(PrintType.ORIGINAL_PRINTED);
+        var mockHawb1 = objectMapper.convertValue(mockHawb, Awb.class);
+        mockHawb1.setPrintType(PrintType.ORIGINAL_PRINTED);
+
+        when(awbDao.findByConsolidationId(anyLong())).thenReturn(List.of(mockMawb));
+        when(awbDao.getLinkedAwbFromMawb(any())).thenReturn(Arrays.asList(mockHawb, mockHawb1));
+
+
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
