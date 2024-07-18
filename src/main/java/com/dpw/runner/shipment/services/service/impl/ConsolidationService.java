@@ -780,7 +780,7 @@ public class ConsolidationService implements IConsolidationService {
         if(consol.isPresent() && mawbs != null && !mawbs.isEmpty()){
             Awb mawb = mawbs.get(0);
             if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)) {
-                if (shipIdList != null && !shipIdList.isEmpty()) {
+                if (!shipIdList.isEmpty()) {
                     List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
                     if (awbs != null && !awbs.isEmpty()) {
                         var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
@@ -809,7 +809,7 @@ public class ConsolidationService implements IConsolidationService {
         List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
         List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consoleId);
-        if(consol.isPresent() && mawbs != null && !mawbs.isEmpty() && shipIdList != null && !shipIdList.isEmpty()){
+        if(consol.isPresent() && mawbs != null && !mawbs.isEmpty() && !shipIdList.isEmpty()){
             Awb mawb = mawbs.get(0);
             if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && !Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
                 List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
@@ -3086,6 +3086,7 @@ public class ConsolidationService implements IConsolidationService {
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate()) {
                 autoGenerateEvents(consolidationDetails);
             }
+        } else {
             // Update AWB
             if(checkForAwbUpdate(consolidationDetails, oldEntity)) {
                 awbDao.updatedAwbInformationEvent(consolidationDetails, oldEntity);
@@ -3138,7 +3139,6 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean checkForAwbUpdate(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
-        if(Objects.isNull(oldEntity)) return false;
         if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) return false;
         if(!Objects.equals(consolidationDetails.getSci(), oldEntity.getSci())) return true;
         return !Objects.equals(consolidationDetails.getEfreightStatus(), oldEntity.getEfreightStatus());

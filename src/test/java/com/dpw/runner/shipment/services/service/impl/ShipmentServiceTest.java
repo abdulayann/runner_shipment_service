@@ -336,6 +336,38 @@ ShipmentServiceTest extends CommonMocks {
         verify(awbDao, times(1)).updatedAwbInformationEvent(any(ShipmentDetails.class), any(ShipmentDetails.class));
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
+    @Test
+    void completeUpdate_SciChanged() throws RunnerException {
+        testShipment.setId(1L);
+        ShipmentDetails mockShipment = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        mockShipment.getAdditionalDetails().setSci("T1");
+        mockShipment.getAdditionalDetails().setEfreightStatus("new value");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        // Mock
+        when(shipmentDao.findById(any()))
+                .thenReturn(
+                        Optional.of(
+                                testShipment
+                                        .setConsolidationList(new ArrayList<>())
+                                        .setContainersList(new ArrayList<>())));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        mockShipmentSettings();
+        mockTenantSettings();
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        verify(awbDao, times(1)).updatedAwbInformationEvent(any(ShipmentDetails.class), any(ShipmentDetails.class));
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
 
     @Test
     void completeUpdate_Failure() throws RunnerException {
