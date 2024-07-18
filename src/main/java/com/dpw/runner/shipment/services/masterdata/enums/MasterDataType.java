@@ -150,7 +150,8 @@ public enum MasterDataType {
     MAWB_CARRIER_AGENT(152, "MAWBCarrier/Agent"),
     SALES_AGENT_MASTER(1014, "SalesAgentMaster"),
     SECURITY_STATUS(159, "SecurityStatus"),
-    EXEMPTION_CODES(160, "ExemptionCodes");
+    EXEMPTION_CODES(160, "ExemptionCodes"),
+    SCI(166, "SCI");
 
     private int id;
     private String description;

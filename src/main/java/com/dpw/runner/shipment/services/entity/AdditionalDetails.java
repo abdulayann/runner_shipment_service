@@ -74,6 +74,10 @@ public class AdditionalDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.EFREIGHT_STATUS)
     private String efreightStatus;
 
+    @Column(name = "sci")
+    @MasterData(type = MasterDataType.SCI)
+    private String sci;
+
     @Column(name = "import_export_shipment_lock")
     private Boolean importExportShipmentLock;
 

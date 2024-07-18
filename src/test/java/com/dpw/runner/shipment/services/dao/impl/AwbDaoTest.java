@@ -9,10 +9,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOCIInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOtherChargesInfo;
@@ -26,6 +24,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,12 +38,14 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -64,6 +65,8 @@ class AwbDaoTest {
     private KafkaProducer producer;
     @Mock
     private JsonHelper jsonHelper;
+    @Mock
+    IMawbHawbLinkDao mawbHawbLinkDao;
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
     @Mock
@@ -542,15 +545,37 @@ class AwbDaoTest {
 
 
     @Test
-    void updatedEfreightInformationEventFromShipment() {
-        Long shipmentId = 1L;
-        String efreightStatus = "newEfreightStatus";
+    void updatedAwbInformationEventFromShipment() {
         var mock = Mockito.spy(awbDao);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+        ShipmentDetails oldEntity = jsonTestUtility.getTestShipment();
+        shipmentDetails.getAdditionalDetails().setSci("T1");
+        shipmentDetails.getAdditionalDetails().setEfreightStatus("new");
 
-        when(mock.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
+        when(mock.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of(mockAwb));
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(new ArrayList<>());
 
         try {
-            mock.updatedEfreightInformationEvent(shipmentId, null, efreightStatus);
+            mock.updatedAwbInformationEvent(shipmentDetails, oldEntity);
+            verify(mock, times(1)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+//
+    @Test
+    void updatedEfreightInformationEventFromConsolidation() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setSci("T1");
+        consolidationDetails.setEfreightStatus("new");
+        var mock = Mockito.spy(awbDao);
+
+        when(mock.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(testMawb));
+
+        try {
+            mock.updatedAwbInformationEvent(consolidationDetails, oldEntity);
+
             verify(mock, times(1)).save(any());
         } catch (Exception e) {
             fail(e);
@@ -558,20 +583,33 @@ class AwbDaoTest {
     }
 
     @Test
-    void updatedEfreightInformationEventFromConsolidation() {
-        Long consolidationId = 1L;
-        String efreightStatus = "newEfreightStatus";
+    void updateSciFieldFromHawbFrom_Success_Sci_T1() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
         var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(mock.findById(mawb.getId())).thenReturn(Optional.of(mawb));
 
-        when(mock.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(1)).save(any());
+    }
 
-        try {
-            mock.updatedEfreightInformationEvent(null, consolidationId, efreightStatus);
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T2() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mawb.getAwbCargoInfo().setSci("T1");
+        mockAwb.getAwbCargoInfo().setSci("T2");
+        var mock = Mockito.spy(awbDao);
+        Page<Awb> awbs = new PageImpl<Awb>(List.of(mockAwb));
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(mock.findById(mawb.getId())).thenReturn(Optional.of(mawb));
+        when(mawbHawbLinkDao.findByMawbId(mawb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(awbs);
 
-            verify(mock, times(1)).save(any());
-        } catch (Exception e) {
-            fail(e);
-        }
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(1)).save(any());
     }
 
 }
