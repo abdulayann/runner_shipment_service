@@ -545,7 +545,7 @@ class AwbDaoTest {
 
 
     @Test
-    void updatedAwbInformationEventFromShipment() {
+    void updatedAwbInformationEventFromShipment_Efreight_sci() {
         var mock = Mockito.spy(awbDao);
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
         ShipmentDetails oldEntity = jsonTestUtility.getTestShipment();
@@ -562,9 +562,24 @@ class AwbDaoTest {
             fail(e);
         }
     }
-//
     @Test
-    void updatedEfreightInformationEventFromConsolidation() {
+    void updatedAwbInformationEventFromShipment_without_change() {
+        var mock = Mockito.spy(awbDao);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+        ShipmentDetails oldEntity = jsonTestUtility.getTestShipment();
+
+        when(mock.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of(mockAwb));
+
+        try {
+            mock.updatedAwbInformationEvent(shipmentDetails, oldEntity);
+            verify(mock, times(1)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updatedEfreightInformationEventFromConsolidation_efreight_Sci() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         consolidationDetails.setSci("T1");
@@ -577,6 +592,51 @@ class AwbDaoTest {
             mock.updatedAwbInformationEvent(consolidationDetails, oldEntity);
 
             verify(mock, times(1)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+    @Test
+    void updatedEfreightInformationEventFromConsolidation_without_change() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        var mock = Mockito.spy(awbDao);
+
+        when(mock.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(testMawb));
+
+        try {
+            mock.updatedAwbInformationEvent(consolidationDetails, oldEntity);
+
+            verify(mock, times(1)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updatedEfreightInformationEventFromConsolidation_without_Mawb() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        var mock = Mockito.spy(awbDao);
+
+        when(mock.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of());
+
+        try {
+            mock.updatedAwbInformationEvent(consolidationDetails, oldEntity);
+
+            verify(mock, times(2)).findByConsolidationId(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updatedEfreightInformationEventFrom_RandomEntity() {
+        Awb awb = new Awb();
+        var mock = Mockito.spy(awbDao);
+        try {
+            mock.updatedAwbInformationEvent(awb, awb);
+            verify(mock, times(0)).save(any());
         } catch (Exception e) {
             fail(e);
         }
