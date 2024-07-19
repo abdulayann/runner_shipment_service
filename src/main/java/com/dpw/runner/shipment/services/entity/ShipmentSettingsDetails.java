@@ -516,7 +516,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private Boolean iataTactFlag;
 
     @Column(name = "enable_lcl_consolidation")
-    private String enableLclConsolidation;
+    private Boolean enableLclConsolidation;
 
     @Column(name = "booking_order")
     private String bookingOrder;

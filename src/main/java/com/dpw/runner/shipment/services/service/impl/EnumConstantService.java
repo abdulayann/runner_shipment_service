@@ -69,6 +69,18 @@ public class EnumConstantService implements IEnumConstantService {
         }
         response.put(Constants.TRANSPORT_INSTRUCTION_TYPES, enumList);
 
+        enumList = new ArrayList<>();
+        for(DateBehaviorType dateBehaviorType : DateBehaviorType.values()){
+            enumList.add(EnumConstantResponse.builder().id(dateBehaviorType.getValue()).description(dateBehaviorType.getDescription()).name(dateBehaviorType.name()).build());
+        }
+        response.put(Constants.DATE_BEHAVIOR_TYPE, enumList);
+
+        enumList = new ArrayList<>();
+        for(ShipmentPackStatus shipmentPackStatus : ShipmentPackStatus.values()){
+            enumList.add(EnumConstantResponse.builder().id(shipmentPackStatus.getValue()).description(shipmentPackStatus.getDescription()).name(shipmentPackStatus.name()).build());
+        }
+        response.put(Constants.SHIPMENT_PACK_STATUS, enumList);
+
         return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
     }
 }

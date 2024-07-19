@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -10,12 +11,10 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.JoinColumn;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "packing")
@@ -222,5 +221,13 @@ public class Packing extends MultiTenancy {
     @Column(name = "dg_class_air_description")
     @Size(max=255, message = "max size is 255 for dg_class_air_description")
     private String dgClassAirDescription;
+
+    @Column(name = "date_type")
+    @Enumerated(EnumType.STRING)
+    private DateBehaviorType dateType;
+
+    @Column(name = "cargo_gate_in_date")
+    private LocalDateTime cargoGateInDate;
+
 }
 

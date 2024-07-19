@@ -998,7 +998,7 @@ public class ConsolidationService implements IConsolidationService {
      * @param console
      * @param oldEntity
      */
-    private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
+    private List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
@@ -1018,7 +1018,8 @@ public class ConsolidationService implements IConsolidationService {
                 (!Objects.equals(console.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
                         !Objects.equals(console.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
                         !Objects.equals(console.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()) ||
-                        !Objects.equals(console.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType())
+                        !Objects.equals(console.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType()) ||
+                        !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs())
                 )))) {
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
@@ -1027,25 +1028,26 @@ public class ConsolidationService implements IConsolidationService {
             Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
             List<ShipmentDetails> shipments = page.getContent();
-            shipments.stream()
-                    .map(i -> {
-                        i.setConsolRef(console.getReferenceNumber());
-                        i.setMasterBill(console.getBol());
-                        i.setDirection(console.getShipmentType());
-                        if (console.getCarrierDetails() != null) {
-                            i.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());
-                            i.getCarrierDetails().setVessel(console.getCarrierDetails().getVessel());
-                            i.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
-                            i.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
-                            if(fromAttachShipment != null && fromAttachShipment){
-                                i.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
-                                i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
-                                i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
-                            }
-                        }
-
-                        return i;
-                    }).toList();
+            for(ShipmentDetails i: shipments) {
+                i.setConsolRef(console.getReferenceNumber());
+                i.setMasterBill(console.getBol());
+                i.setDirection(console.getShipmentType());
+                if (console.getCarrierDetails() != null) {
+                    i.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());
+                    i.getCarrierDetails().setVessel(console.getCarrierDetails().getVessel());
+                    i.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
+                    i.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
+                    i.getCarrierDetails().setCfs(console.getCarrierDetails().getCfs());
+                    if(fromAttachShipment != null && fromAttachShipment){
+                        i.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
+                        i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
+                        i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
+                    }
+                }
+                if(checkConsolidationEligibleForCFSValidation(console) &&
+                        checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), console.getCfsCutOffDate()))
+                    throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
+            }
 
             shipmentDao.saveAll(shipments);
             if(fromAttachShipment != null && fromAttachShipment) {
@@ -1057,7 +1059,9 @@ public class ConsolidationService implements IConsolidationService {
                     }
                 }
             }
+            return shipments;
         }
+        return null;
     }
 
     private ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws RunnerException {
@@ -2979,9 +2983,18 @@ public class ConsolidationService implements IConsolidationService {
         if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
             consolidationDetails.setMawb(consolidationDetails.getBol());
         }
+        List<ShipmentDetails> shipmentDetails = null;
         if(!isCreate){
             calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), oldEntity.getShipmentsList());
-            updateLinkedShipmentData(consolidationDetails, oldEntity, false);
+            shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
+        }
+        if(shipmentDetails == null)
+            shipmentDetails = consolidationDetails.getShipmentsList();
+        if(checkCFSDateValidation(shipmentDetails, consolidationDetails)) {
+            for(ShipmentDetails i: shipmentDetails) {
+                if(checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), consolidationDetails.getCfsCutOffDate()))
+                    throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
+            }
         }
         if(consolidationDetails.getCarrierDetails() != null) {
             if (consolidationDetails.getTransportMode() != null && consolidationDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
@@ -3039,6 +3052,32 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
+    }
+
+    public boolean checkCFSDateValidation(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails) {
+        if(shipmentDetails == null)
+            return false;
+        if(shipmentDetails.isEmpty())
+            return false;
+        return checkConsolidationEligibleForCFSValidation(consolidationDetails);
+    }
+
+    public boolean checkConsolidationEligibleForCFSValidation(ConsolidationDetails consolidationDetails) {
+        if(!Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()))
+            return false;
+        if(!Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()))
+            return false;
+        if(!Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) //  do I need to check if shipment is LCL, I will check only one shipment
+            return false;
+        return commonUtils.getShipmentSettingFromContext().getEnableLclConsolidation();
+    }
+
+    public boolean checkIfShipmentDateGreaterThanConsole(LocalDateTime shipmentDate, LocalDateTime consolidationDate) {
+        if(shipmentDate == null)
+            return false;
+        if(consolidationDate == null)
+            return false;
+        return shipmentDate.isAfter(consolidationDate);
     }
 
     public boolean checkRaStatusFields(ConsolidationDetails consolidationDetails, OrgAddressResponse orgAddressResponse, Parties parties) {

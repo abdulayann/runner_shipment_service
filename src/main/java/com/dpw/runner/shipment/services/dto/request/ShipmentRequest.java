@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.AllArgsConstructor;
@@ -157,4 +159,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String createdBy;
     private LocalDateTime updatedAt;
     private String updatedBy;
+    private DateBehaviorType dateType;
+    private LocalDateTime shipmentGateInDate;
+    private ShipmentPackStatus shipmentPackStatus;
 }

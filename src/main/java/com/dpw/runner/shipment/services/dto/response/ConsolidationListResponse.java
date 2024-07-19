@@ -119,4 +119,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Long containerCount;
     private Set<String> containerNumbers;
     private Boolean hazardous;
+    private LocalDateTime cfsCutOffDate;
 }
