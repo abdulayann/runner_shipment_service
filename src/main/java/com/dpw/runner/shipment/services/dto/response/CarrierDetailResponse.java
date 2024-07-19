@@ -47,6 +47,7 @@ public class CarrierDetailResponse implements IRunnerResponse {
     private String destinationPort;
     private String originPortName;
     private String destinationPortName;
+    private String cfs;
     private Map<String, String> masterData;
     private Map<String, String> unlocationData;
     private Map<String, String> carrierMasterData;

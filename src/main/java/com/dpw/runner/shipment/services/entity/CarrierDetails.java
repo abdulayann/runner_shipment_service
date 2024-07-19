@@ -123,4 +123,9 @@ public class CarrierDetails extends MultiTenancy {
 
     @Column(name = "carrier_added_from_npm")
     private Boolean carrierAddedFromNpm;
+
+    @Size(max=100, message = "max size is 100 for cfs")
+    @Column(name = "cfs")
+    @UnlocationData
+    private String cfs;
 }

@@ -425,5 +425,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "security_status")
     private String securityStatus;
 
+    @Column(name = "cfs_cut_off_date")
+    private LocalDateTime cfsCutOffDate;
 
 }

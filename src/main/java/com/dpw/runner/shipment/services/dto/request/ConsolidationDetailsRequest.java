@@ -129,4 +129,5 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private List<String> screeningStatus;
     private String exemptionCodes;
     private String aomFreeText;
+    private LocalDateTime cfsCutOffDate;
 }

@@ -146,5 +146,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private List<String> screeningStatus;
     private String exemptionCodes;
     private String aomFreeText;
+    private LocalDateTime cfsCutOffDate;
 
 }
