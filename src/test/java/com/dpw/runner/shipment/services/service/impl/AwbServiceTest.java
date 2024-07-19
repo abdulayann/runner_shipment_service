@@ -358,8 +358,6 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
         when(awbDao.save(any(Awb.class))).thenReturn(mockAwb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-        when(mawbHawbLinkDao.findByHawbId(1L)).thenReturn(List.of(MawbHawbLink.builder().hawbId(1L).mawbId(2L).build()));
-        when(awbDao.findById(2L)).thenReturn(Optional.of(mockMawb));
         // Test
         ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
         // Assert
@@ -386,10 +384,6 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
         when(awbDao.save(any(Awb.class))).thenReturn(mockAwb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
-        when(mawbHawbLinkDao.findByHawbId(1L)).thenReturn(List.of(MawbHawbLink.builder().hawbId(1L).mawbId(2L).build()));
-        when(mawbHawbLinkDao.findByMawbId(2L)).thenReturn(List.of(MawbHawbLink.builder().hawbId(1L).mawbId(2L).build()));
-        when(awbDao.findById(2L)).thenReturn(Optional.of(mockMawb));
-        when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(oldEntity)));
 
         // Test
         ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);

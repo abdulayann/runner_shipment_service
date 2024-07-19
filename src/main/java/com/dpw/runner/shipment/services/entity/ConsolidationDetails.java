@@ -425,5 +425,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "security_status")
     private String securityStatus;
 
+    @Column(name = "sci")
+    @MasterData(type = MasterDataType.SCI)
+    private String sci;
+
 
 }
