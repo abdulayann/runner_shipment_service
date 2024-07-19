@@ -841,6 +841,73 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(bookingNumber, shipmentResponse.getBookingNumber());
     }
 
+    @Test
+    void getShipmentFromConsol_success_SEA_FCL() {
+
+        Long consolidationId = 1L;
+        String bookingNumber = "bookingNumber";
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictHblGen(true).build());
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testConsol.setShipmentsList(List.of(shipmentDetails));
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(testConsol, ConsolidationDetailsResponse.class);
+        ConsolidationListResponse consolidationListResponse = objectMapper.convertValue(testConsol, ConsolidationListResponse.class);
+
+        // Mock
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(testConsol));
+        when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
+        when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
+        when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
+        mockShipmentSettings();
+        // Test
+        SpringContext.setApplicationContext(applicationContext);
+        Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getShipmentFromConsol(consolidationId, bookingNumber);
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+        // Assert
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals(Constants.SYSTEM, shipmentResponse.getSource());
+        assertEquals(Constants.SHIPMENT_TYPE_STD, shipmentResponse.getJobType());
+        assertEquals(bookingNumber, shipmentResponse.getBookingNumber());
+    }
+    @Test
+    void getShipmentFromConsol_success_SEA_LCL() {
+
+        Long consolidationId = 1L;
+        String bookingNumber = "bookingNumber";
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictHblGen(true).build());
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        testConsol.setShipmentsList(List.of(shipmentDetails));
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(testConsol, ConsolidationDetailsResponse.class);
+        ConsolidationListResponse consolidationListResponse = objectMapper.convertValue(testConsol, ConsolidationListResponse.class);
+
+        // Mock
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(testConsol));
+        when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
+        when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
+        when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
+        mockShipmentSettings();
+        // Test
+        SpringContext.setApplicationContext(applicationContext);
+        Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getShipmentFromConsol(consolidationId, bookingNumber);
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+        // Assert
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals(Constants.SYSTEM, shipmentResponse.getSource());
+        assertEquals(Constants.SHIPMENT_TYPE_STD, shipmentResponse.getJobType());
+        assertEquals(bookingNumber, shipmentResponse.getBookingNumber());
+    }
+
 
     @Test
     void getMasterDataMappings_success() throws RunnerException, NoSuchFieldException, ClassNotFoundException, IllegalAccessException {
@@ -874,6 +941,98 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(new ShipmentDetails());
+        // Set up shipmentDetailsList as needed for your test
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsList),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+        mockShipmentSettings();
+        // Execute the method under test
+        ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
+
+        // Assert
+        assertEquals(expectedResponse, result);
+    }
+
+    @Test
+    void attachListShipment_success_SEA_FCL() {
+        // Mock data
+        long consolidationId = 1L;
+        AttachListShipmentRequest attachListShipmentRequest = new AttachListShipmentRequest();
+        attachListShipmentRequest.setConsolidationId(consolidationId);
+        attachListShipmentRequest.setEtdMatch(true); // Set other properties as needed
+        attachListShipmentRequest.setEtaMatch(false);
+        attachListShipmentRequest.setScheduleMatch(true);
+        attachListShipmentRequest.setFilterCriteria(new ArrayList<>());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        consolidationDetails.setShipmentsList(List.of(shipmentDetails));
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(new ShipmentDetails());
+        // Set up shipmentDetailsList as needed for your test
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsList),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+        mockShipmentSettings();
+        // Execute the method under test
+        ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
+
+        // Assert
+        assertEquals(expectedResponse, result);
+    }
+
+    @Test
+    void attachListShipment_success_SEA_LCL() {
+        // Mock data
+        long consolidationId = 1L;
+        AttachListShipmentRequest attachListShipmentRequest = new AttachListShipmentRequest();
+        attachListShipmentRequest.setConsolidationId(consolidationId);
+        attachListShipmentRequest.setEtdMatch(true); // Set other properties as needed
+        attachListShipmentRequest.setEtaMatch(false);
+        attachListShipmentRequest.setScheduleMatch(true);
+        attachListShipmentRequest.setFilterCriteria(new ArrayList<>());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        consolidationDetails.setShipmentsList(List.of(shipmentDetails));
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
