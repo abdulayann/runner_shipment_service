@@ -1000,13 +1000,14 @@ public class ConsolidationService implements IConsolidationService {
      */
     private List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+        List<ShipmentDetails> shipments = null;
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
             ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
             Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-            List<ShipmentDetails> shipments = page.getContent();
+            shipments = page.getContent();
             var shipmentlist = shipments.stream().filter(x-> Objects.equals(x.getAdditionalDetails().getEfreightStatus(), Constants.NON)).toList();
             if(shipmentlist != null && !shipmentlist.isEmpty()){
                 throw new RunnerException("EFreight status can only be EAP or NON as one of the Shipment has EFreight status as NON");
@@ -1021,13 +1022,14 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType()) ||
                         !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs())
                 )))) {
-            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
-            List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
-            ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
-            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
-            Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-
-            List<ShipmentDetails> shipments = page.getContent();
+            if(shipments == null) {
+                List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
+                List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
+                ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
+                Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
+                Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+                shipments = page.getContent();
+            }
             for(ShipmentDetails i: shipments) {
                 i.setConsolRef(console.getReferenceNumber());
                 i.setMasterBill(console.getBol());
@@ -1059,9 +1061,8 @@ public class ConsolidationService implements IConsolidationService {
                     }
                 }
             }
-            return shipments;
         }
-        return null;
+        return shipments;
     }
 
     private ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws RunnerException {
@@ -3067,9 +3068,7 @@ public class ConsolidationService implements IConsolidationService {
             return false;
         if(!Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()))
             return false;
-        if(!Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) //  do I need to check if shipment is LCL, I will check only one shipment
-            return false;
-        return commonUtils.getShipmentSettingFromContext().getEnableLclConsolidation();
+        return Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableLclConsolidation());
     }
 
     public boolean checkIfShipmentDateGreaterThanConsole(LocalDateTime shipmentDate, LocalDateTime consolidationDate) {
