@@ -3323,6 +3323,21 @@ public class ShipmentService implements IShipmentService {
             throw new DataRetrievalFailureException("Failed to fetch the consolidation with id " + consolidationId);
 
         var consolidation = modelMapper.map(consolidationResponse.get(), ConsolidationDetailsResponse.class);
+        String containerCategory = consolidation.getContainerCategory();
+        if(Objects.equals(consolidation.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && consolidationResponse.get().getShipmentsList() != null && !consolidationResponse.get().getShipmentsList().isEmpty()){
+            boolean isFcl = true;
+            boolean isLcl = true;
+            for (var ship: consolidationResponse.get().getShipmentsList()){
+                if(!Objects.equals(ship.getShipmentType(), Constants.CARGO_TYPE_FCL))
+                    isFcl = false;
+                if(!Objects.equals(ship.getShipmentType(), Constants.SHIPMENT_TYPE_LCL))
+                    isLcl = false;
+            }
+            if(isFcl)
+                containerCategory = Constants.CARGO_TYPE_FCL;
+            else if (isLcl)
+                containerCategory = Constants.SHIPMENT_TYPE_LCL;
+        }
 
         var origin = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getOrigin() : null;
         var destination = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getDestination() : null;
@@ -3343,7 +3358,7 @@ public class ShipmentService implements IShipmentService {
                 .consolidationList(List.of(modelMapper.map(consolidation, ConsolidationListResponse.class)))
                 .direction(consolidation.getShipmentType() == null ? tenantSettings.getDefaultShipmentType() : consolidation.getShipmentType())
                 .jobType(Constants.SHIPMENT_TYPE_STD)
-                .shipmentType(consolidation.getContainerCategory() == null ? tenantSettings.getDefaultContainerType() : consolidation.getContainerCategory())
+                .shipmentType(containerCategory == null ? tenantSettings.getDefaultContainerType() : containerCategory)
                 .additionalDetails(AdditionalDetailResponse.builder()
                         .SMTPIGMDate(consolidation.getSmtpigmDate())
                         .SMTPIGMNumber(consolidation.getSmtpigmNumber())
@@ -3602,6 +3617,21 @@ public class ShipmentService implements IShipmentService {
     }
 
     private ListCommonRequest setCrieteriaForAttachShipment(AttachListShipmentRequest request, ConsolidationDetails consolidationDetails) {
+        boolean setShipmentTypefilter = false;
+        boolean isFcl = true;
+        boolean isLcl = true;
+        List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList();
+        if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && shipmentDetailsList != null && !shipmentDetailsList.isEmpty()){
+            setShipmentTypefilter = true;
+            for (var ship: shipmentDetailsList) {
+                if(!Objects.equals(ship.getShipmentType(), Constants.CARGO_TYPE_FCL))
+                    isFcl = false;
+                else if (!Objects.equals(ship.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
+                    isLcl = false;
+                }
+            }
+        }
+
         if(request.getFilterCriteria() != null && request.getFilterCriteria().isEmpty()){
             request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
         }
@@ -3619,6 +3649,12 @@ public class ShipmentService implements IShipmentService {
             CommonUtils.andCriteria(Constants.DIRECTION, consolidationDetails.getShipmentType(), "=", defaultRequest);
         else
             CommonUtils.andCriteria(Constants.DIRECTION, "", Constants.IS_NULL, defaultRequest);
+        if(setShipmentTypefilter){
+            if(isFcl)
+                CommonUtils.andCriteria(Constants.SHIPMENT_TYPE, Constants.CARGO_TYPE_FCL,"=" , defaultRequest);
+            else if (isLcl)
+                CommonUtils.andCriteria(Constants.SHIPMENT_TYPE,  Constants.SHIPMENT_TYPE_LCL,"=" , defaultRequest);
+        }
         CommonUtils.andCriteria(Constants.STATUS, 2, "!=", defaultRequest);
         CommonUtils.andCriteria(Constants.STATUS, 3, "!=", defaultRequest);
         if(checkForNonDGConsoleAndAirDgFlagAndNonDGUser(consolidationDetails))
