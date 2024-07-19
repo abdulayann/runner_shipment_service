@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,13 +62,13 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set print_type = ?2 Where consolidation_id = ?1", nativeQuery = true)
-    int updatePrintTypeFromConsolidationId(Long id, String printType);
+    @Query(value = "Update Awb set print_type = ?2, original_printed_at = ?3 Where consolidation_id = ?1", nativeQuery = true)
+    int updatePrintTypeFromConsolidationId(Long id, String printType, LocalDateTime originalPrintedAt);
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set print_type = ?2 Where shipment_id = ?1", nativeQuery = true)
-    int updatePrintTypeFromShipmentId(Long id, String printType);
+    @Query(value = "Update Awb set print_type = ?2, original_printed_at = ?3 Where shipment_id = ?1", nativeQuery = true)
+    int updatePrintTypeFromShipmentId(Long id, String printType, LocalDateTime originalPrintedAt);
 
     @Transactional
     @Modifying

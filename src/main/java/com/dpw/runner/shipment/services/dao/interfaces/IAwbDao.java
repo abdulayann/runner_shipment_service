@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,8 +37,8 @@ public interface IAwbDao {
     Awb findAwbByGuidByQuery(UUID guid);
     int updateAirMessageStatusFromShipmentId(Long id, String airMessageStatus);
     int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus);
-    int updatePrintTypeFromConsolidationId(Long id, String printType);
-    int updatePrintTypeFromShipmentId(Long id, String printType);
+    int updatePrintTypeFromConsolidationId(Long id, String printType, LocalDateTime printedAt);
+    int updatePrintTypeFromShipmentId(Long id, String printType, LocalDateTime printedAt);
     List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds);
     void updatedAwbInformationEvent(Object newEntity, Object oldEntity) throws RunnerException;
     void updateSciFieldFromHawb(Awb awb, Awb oldEntity, boolean isReset, Long awbId) throws RunnerException;

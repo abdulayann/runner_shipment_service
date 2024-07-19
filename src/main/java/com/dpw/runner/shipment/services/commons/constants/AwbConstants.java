@@ -45,5 +45,7 @@ public class AwbConstants {
     public static final String RESUBMIT_FWB_VALIDATION = "MAWB is updated, please resubmit the FWB by printing the original MAWB";
     public static final String ORDER_NUMBER = "ORDER NO: %s";
 
+    // csdInfo format : RA#/Security status/screening status/timestamp of awb print
+    public static final String CSD_INFO_FORMAT = "%s/%s/%s/";
 
 }

@@ -36,6 +36,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -65,6 +66,7 @@ public class AwbDao implements IAwbDao {
 
     @Autowired
     private IEventDao eventDao;
+
     @Override
     public Awb save(Awb awbShipmentInfo) throws RunnerException {
         boolean isCreate = false; // TODO- handle create/update here
@@ -316,16 +318,16 @@ public class AwbDao implements IAwbDao {
     public int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus) {
         return awbRepository.updateAirMessageStatusFromConsolidationId(id, airMessageStatus);
     }
-    public int updatePrintTypeFromConsolidationId(Long id, String printType) {
+    public int updatePrintTypeFromConsolidationId(Long id, String printType, LocalDateTime printedAt) {
         var awbList = findByConsolidationId(id);
         if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
-            return awbRepository.updatePrintTypeFromConsolidationId(id, printType);
+            return awbRepository.updatePrintTypeFromConsolidationId(id, printType, printedAt);
         return 0;
     }
-    public int updatePrintTypeFromShipmentId(Long id, String printType) {
+    public int updatePrintTypeFromShipmentId(Long id, String printType, LocalDateTime printedAt) {
         var awbList = findByShipmentId(id);
         if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
-            return awbRepository.updatePrintTypeFromShipmentId(id, printType);
+            return awbRepository.updatePrintTypeFromShipmentId(id, printType, printedAt);
         return 0;
     }
 
