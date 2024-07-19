@@ -861,6 +861,8 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setNetWeightUnit(autoUpdateWtVolResponse.getNetWeightUnit());
         shipmentRequest.setInnerPacks(autoUpdateWtVolResponse.getInnerPacks());
         shipmentRequest.setInnerPackUnit(autoUpdateWtVolResponse.getInnerPackUnit());
+        shipmentRequest.setOrderManagementId(customerBookingRequest.getOrderManagementId());
+        shipmentRequest.setOrderManagementNumber(customerBookingRequest.getOrderManagementNumber());
 
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }

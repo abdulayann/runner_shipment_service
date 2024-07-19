@@ -1,9 +1,14 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
+import com.dpw.runner.shipment.services.Kafka.Dto.OrderManageDto;
+import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -105,6 +110,10 @@ class CustomerBookingServiceTest extends CommonMocks {
 
     @Mock
     private IFusionServiceAdapter fusionServiceAdapter;
+    @Mock
+    private KafkaProducer producer;
+    @Mock
+    private OrderManagementAdapter orderManagementAdapter;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -1382,5 +1391,55 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(mdmServiceAdapter.getApprovalStausForParties(any())).thenReturn(null);
         var result = customerBookingService.checkForCreditLimitManagement(customerBooking1);
         assertFalse(result);
+    }
+
+    @Test
+    void testCreateKafkaEventGuidNull() throws RunnerException {
+        CustomerBookingRequest request = new CustomerBookingRequest();
+        request.setOrderManagementNumber("Odn1");
+        request.setOrderManagementId("Od1");
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBAR-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(mockCustomerBooking, CustomerBookingResponse.class);
+
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(customerBookingResponse), httpResponse);
+    }
+
+    @Test
+    void testCreateKafkaEvent() throws RunnerException {
+        CustomerBookingRequest request = new CustomerBookingRequest();
+        request.setOrderManagementNumber("Odn1");
+        request.setOrderManagementId("Od1");
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBAR-random-string")
+                .build();
+
+        mockCustomerBooking.setGuid(UUID.randomUUID());
+        mockCustomerBooking.setId(1L);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(mockCustomerBooking, CustomerBookingResponse.class);
+
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(customerBookingResponse), httpResponse);
     }
 }

@@ -1,10 +1,15 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
+import com.dpw.runner.shipment.services.Kafka.Dto.OrderManageDto;
+import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -46,6 +51,7 @@ import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -124,6 +130,12 @@ public class CustomerBookingService implements ICustomerBookingService {
     private MasterDataFactory masterDataFactory;
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private IOrderManagementAdapter orderManagementAdapter;
+    @Autowired
+    private KafkaProducer producer;
+    @Value("${booking.event.kafka.queue}")
+    private String senderQueue;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -182,6 +194,15 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (customerBooking.getBookingNumber() == null) {
             customerBooking.setBookingNumber(generateBookingNumber(customerBooking.getCargoType()));
         }
+        if(request.getOrderManagementId() != null) {
+            Optional<CustomerBooking> booking = customerBookingDao.findByOrderManagementId(request.getOrderManagementId());
+            if (booking.isPresent()) {
+                CustomerBooking c = booking.get();
+                c.setOrderManagementId(null);
+                c.setOrderManagementNumber(null);
+                customerBookingDao.save(c);
+            }
+        }
         populateTotalRevenueDetails(customerBooking, request);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
@@ -226,6 +247,10 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, customerBooking.getId());
             customerBooking.setBookingCharges(bookingCharges);
+        }
+        if(request.getOrderManagementId() != null)
+        {
+            pushCustomerBookingDataToDependentService(customerBooking, true);
         }
         try {
             auditLogService.addAuditLog(
@@ -1490,4 +1515,26 @@ public class CustomerBookingService implements ICustomerBookingService {
         return StringUtils.equals(finalStatus , CustomerBookingConstants.MDM_FINAL_STATUS_APPROVED);
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> retrieveByOrderId(String orderId) throws RunnerException {
+        try {
+            CustomerBookingResponse response = orderManagementAdapter.getOrderForBooking(orderId);
+            createCustomerBookingResponse(null, response);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e){
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    public void pushCustomerBookingDataToDependentService(CustomerBooking customerBooking , boolean isCreate) {
+        try {
+            OrderManageDto.OrderManagement orderManagement = OrderManageDto.OrderManagement.builder().orderManagementId(customerBooking.getOrderManagementId()).orderManagementNumber(customerBooking.getOrderManagementNumber()).moduleId(customerBooking.getBookingNumber()).moduleGuid(customerBooking.getGuid().toString()).tenantId(TenantContext.getCurrentTenant()).build();
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(orderManagement, isCreate);
+            log.info("Producing order management data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(customerBooking.getGuid()));
+        }
+        catch (Exception e) {
+            log.error("Error Producing Order Management Data to kafka, error is due to " + e.getMessage());
+        }
+    }
 }

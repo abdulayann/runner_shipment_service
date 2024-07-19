@@ -74,4 +74,6 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private Boolean isNotifyConsigneeEqual;
     private String currentPartyForQuote;
     private UUID sourceGuid;
+    private String orderManagementId;
+    private String orderManagementNumber;
 }
