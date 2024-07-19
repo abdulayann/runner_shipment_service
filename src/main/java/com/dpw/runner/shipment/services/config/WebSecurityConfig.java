@@ -22,16 +22,23 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final String[] ignoredPaths = new String[]
     {
-        "/actuator/**",
-        "/v2/api-docs",
-        "/swagger-resources",
-        "/swagger-resources/**",
-        "/configuration/ui",
-        "/configuration/security",
-        "/swagger-ui.html",
-        "/webjars/**",
-        "/api/v2/enums/**",
-        "/api/v2/cache/**"
+            "/actuator/**",
+            "/v2/api-docs",
+            "/swagger-resources",
+            "/swagger-resources/**",
+            "/configuration/ui",
+            "/configuration/security",
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/swagger-ui",
+            "/webjars/**",
+            "/api/v2/enums/**",
+            "/api/v2/cache/**",
+            "/**/swagger-ui.html",
+            "/**/webjars/**",
+            "/**/swagger-resources",
+            "/**/swagger-resources/**",
+            "/**/v2/api-docs", "/**/configuration/ui", "/**/configuration/security", "/**/swagger-ui/**", "/**/v3/api-docs/**"
     };
 
     @Override

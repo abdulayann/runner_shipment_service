@@ -1,12 +1,14 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.Commons;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import io.swagger.annotations.ApiModel;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Data
+@ApiModel
 public class ShipmentResponse implements IRunnerResponse
 {
     public String masterBill;

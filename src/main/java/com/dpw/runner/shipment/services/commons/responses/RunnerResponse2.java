@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.commons.responses;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,8 +13,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ApiModel(description = "Details about the response")
-public class RunnerResponse<T> implements IRunnerResponse {
+@ApiModel(description = "Details about the response1")
+public class RunnerResponse2 {
 
     @ApiModelProperty(position = 1, name = "success")
     private boolean success;
@@ -24,7 +23,7 @@ public class RunnerResponse<T> implements IRunnerResponse {
     private String requestId;
 
     @ApiModelProperty(position = 3, name = "data")
-    private T data;
+    private Object data;
 
     @ApiModelProperty(position = 4, name = "pageNo")
     private int pageNo;
@@ -34,10 +33,4 @@ public class RunnerResponse<T> implements IRunnerResponse {
 
     @ApiModelProperty(position = 6, name = "error")
     private ApiError error;
-
-    @SuppressWarnings("unchecked")
-    public T getData(@SuppressWarnings("rawtypes") Class clazz) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return (T) objectMapper.convertValue(data, clazz);
-    }
 }

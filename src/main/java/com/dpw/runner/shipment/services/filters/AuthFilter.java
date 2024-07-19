@@ -56,12 +56,21 @@ public class AuthFilter extends OncePerRequestFilter {
             "/configuration/ui",
             "/configuration/security",
             "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/swagger-ui",
             "/webjars/**",
             "/api/v2/enums/**",
-            "/api/v2/cache/**"};
+            "/api/v2/cache/**",
+            "/**/swagger-ui.html",
+            "/**/webjars/**",
+            "/**/swagger-resources",
+            "/**/swagger-resources/**",
+            "/**/v2/api-docs", "/**/configuration/ui", "/**/configuration/security", "/**/swagger-ui/**", "/**/v3/api-docs/**"
+            };
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        log.info("Recieved request "+ request.getServletPath());
         return Arrays.stream(ignoredPaths)
                 .anyMatch(e -> new AntPathMatcher().match(e, request.getServletPath()));
     }
