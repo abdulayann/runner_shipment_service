@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ManifestConsolMo
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.helper.ICarrierMasterData;
@@ -65,7 +64,7 @@ public class ManifestConsolReport extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ManifestConsolModel model = (ManifestConsolModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         populateConsolidationFields(model.getConsolidation() , dictionary);
         List<PackingModel> packingList = GetAllShipmentsPacks(model.getShipmentDetailsList());

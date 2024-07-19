@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -64,7 +63,7 @@ public class ConsolidatedPackingListReport extends IReport {
         ConsolidatedPackingListModel cplData = (ConsolidatedPackingListModel) documentModel;
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(cplData.getConsolidationDetails(), GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         List<String> exporter = getOrgAddressWithPhoneEmail(jsonHelper.convertValue(
                 cplData.getConsolidationDetails().getSendingAgent(), PartiesModel.class

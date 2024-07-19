@@ -12,13 +12,10 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.Parties;
@@ -29,15 +26,19 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
-import com.dpw.runner.shipment.services.masterdata.response.*;
+import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
+import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
+import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
+import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -49,13 +50,13 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class FreightCertificationReportTest extends CommonMocks {
 
     @InjectMocks
@@ -297,6 +298,7 @@ class FreightCertificationReportTest extends CommonMocks {
         populateModel(freightCertificationModel);
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        mockTenantSettings();
         mockBill(true, false);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
         mockBill(false, false);

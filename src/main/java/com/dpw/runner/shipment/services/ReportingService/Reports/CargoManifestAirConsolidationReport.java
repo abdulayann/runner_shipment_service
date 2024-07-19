@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestAirConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -12,10 +13,10 @@ import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,10 +25,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -100,8 +98,16 @@ public class CargoManifestAirConsolidationReport extends IReport{
         Map<String, Object> dictionary = new HashMap<>();
         populateConsolidationFields(cargoManifestAirConsolidationModel.getConsolidationModel(), dictionary);
         dictionary = populateHAWBAndSecurityData(cargoManifestAirConsolidationModel.getShipmentModelList(), cargoManifestAirConsolidationModel.getAwbList(), dictionary, isSecurityData, isShipperAndConsignee, true);
+        boolean airRoutingTagsAdded = getAirRoutingFlightTags(cargoManifestAirConsolidationModel.getConsolidationModel().getRoutingsList(), dictionary, false);
+        CarrierDetailModel carrierDetailModel = cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails();
+        if(!airRoutingTagsAdded) {
+            Map<String, CarrierMasterData> carriersMap = new HashMap<>();
+            if(!CommonUtils.IsStringNullOrEmpty(carrierDetailModel.getShippingLine()))
+                carriersMap = masterDataUtils.getCarriersData(Set.of(carrierDetailModel.getShippingLine()));
+            dictionary.put(CONSOL_FIRST_FLIGHT_AND_DAY, getFlightAndDayString(carriersMap, carrierDetailModel.getShippingLine(), carrierDetailModel.getFlightNumber(), carrierDetailModel.getEtd()));
+        }
         dictionary.put(TOTAL_GROSS_WEIGHT_UNIT, cargoManifestAirConsolidationModel.getPackSummaryResponse().getTotalPacksWeight());
-        dictionary.put(TOTAL_PACKS_UNIT, cargoManifestAirConsolidationModel.getPackSummaryResponse().getTotalPacks());
+        dictionary.put(TOTAL_PACKS_UNIT, (Constants.MPK).equals(cargoManifestAirConsolidationModel.getPackSummaryResponse().getTotalPacks()) ? Constants.PACKAGES : cargoManifestAirConsolidationModel.getPackSummaryResponse().getTotalPacks());
         dictionary.put(CONSOL_FLIGHT_CARRIER, cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails().getShippingLine());
         dictionary.put(CONSOL_AIRCRAFT_TYPE, cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails().getAircraftType());
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));

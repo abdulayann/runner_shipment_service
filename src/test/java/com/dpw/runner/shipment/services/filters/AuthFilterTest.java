@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.impl.UserServiceMavani;
@@ -57,6 +58,9 @@ class AuthFilterTest {
 
     @InjectMocks
     private AuthFilter authFilter;
+
+    @Mock
+    private JsonHelper jsonHelper;
 
     @Test
     void testShouldNotFilter() throws ServletException {
@@ -121,6 +125,7 @@ class AuthFilterTest {
         when(tokenUtility.getUserIdAndBranchId(Mockito.<String>any())).thenReturn("abc");
         DefaultMultipartHttpServletRequest servletRequest = mock(DefaultMultipartHttpServletRequest.class);
         when(servletRequest.getServletPath()).thenReturn("https://example.org/example");
+        when(servletRequest.getRequestURI()).thenReturn("https://example.org/example");
         when(servletRequest.getHeader(Mockito.<String>any())).thenReturn("def");
         IUserService userService = mock(IUserService.class);
         when(getUserServiceFactory.returnUserService()).thenReturn(userService);
@@ -131,7 +136,6 @@ class AuthFilterTest {
         user.setPermissions(permissions);
         user.setTenantId(1);
         when(userService.getUserByToken(any(), any())).thenReturn(user);
-        when(tenantSettingsService.getV1TenantSettings(anyInt())).thenReturn(new V1TenantSettingsResponse());
         //when(iShipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
         AddDefaultCharsetFilter.ResponseWrapper servletResponse = mock(AddDefaultCharsetFilter.ResponseWrapper.class);
         authFilter.doFilterInternal(servletRequest, servletResponse, mock(FilterChain.class));

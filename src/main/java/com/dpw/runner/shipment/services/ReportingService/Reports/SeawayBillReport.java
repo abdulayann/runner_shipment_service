@@ -3,8 +3,6 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -17,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.addCommaWithoutDecimal;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddressWithPhoneEmail;
 
 @Component
@@ -95,7 +92,7 @@ public class SeawayBillReport extends IReport {
 
 
         if (model.shipment.getShipmentContainersList() != null) {
-            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+            V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
             List<Map<String, Object>> values = jsonHelper.convertValue(model.shipment.getShipmentContainersList(), new TypeReference<>() {});
             values.forEach(v -> {
                 if (v.get(GROSS_WEIGHT) != null && v.get(GROSS_WEIGHT).toString() != null)

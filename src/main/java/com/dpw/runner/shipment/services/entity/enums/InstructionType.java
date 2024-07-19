@@ -2,7 +2,8 @@ package com.dpw.runner.shipment.services.entity.enums;
 
 public enum InstructionType {
     Pickup(1, "Pickup"),
-    Delivery(2, "Delivery");
+    Delivery(2, "Delivery"),
+    CrossBorder(3, "CrossBorder");
 
     private final int value;
     private final String description;

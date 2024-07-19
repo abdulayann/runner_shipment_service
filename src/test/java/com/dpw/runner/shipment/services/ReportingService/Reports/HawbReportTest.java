@@ -43,6 +43,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -62,6 +64,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class HawbReportTest extends CommonMocks {
 
     private static JsonTestUtility jsonTestUtility;
@@ -358,7 +361,7 @@ class HawbReportTest extends CommonMocks {
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
         when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
-
+        mockTenantSettings();
         assertNotNull(hawbReport.populateDictionary(hawbModel));
     }
 
@@ -527,7 +530,7 @@ class HawbReportTest extends CommonMocks {
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
         when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
-
+        mockTenantSettings();
         assertNotNull(hawbReport.populateDictionary(hawbModel));
     }
 
@@ -730,7 +733,7 @@ class HawbReportTest extends CommonMocks {
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
         when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
-
+        mockTenantSettings();
         assertNotNull(hawbReport.populateDictionary(hawbModel));
     }
 

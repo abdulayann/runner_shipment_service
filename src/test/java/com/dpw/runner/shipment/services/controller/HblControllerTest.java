@@ -9,6 +9,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {HblController.class})
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class HblControllerTest {
 
     @Mock

@@ -35,7 +35,6 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -713,6 +712,7 @@ class ContainerServiceTest extends CommonMocks {
     void calculateContainerSummary() throws RunnerException{
         List<Containers> containersList = List.of(testContainer);
         mockShipmentSettings();
+        mockTenantSettings();
         ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
         assertNotNull(containerSummaryResponse);
     }
@@ -725,6 +725,7 @@ class ContainerServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setWeightChargeableUnit(null);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeChargeableUnit(null);
         mockShipmentSettings();
+        mockTenantSettings();
         ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
         assertNotNull(containerSummaryResponse);
     }
@@ -1217,7 +1218,6 @@ class ContainerServiceTest extends CommonMocks {
                 });
         when(shipmentDao.findById(any())).thenReturn(Optional.empty());
         when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
-        when(containerSync.sync(any(), any(), any())).thenAnswer(invocation -> {return new ResponseEntity<>(HttpStatus.OK);});
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -1256,7 +1256,6 @@ class ContainerServiceTest extends CommonMocks {
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
         when(shipmentDao.findById(any())).thenReturn(Optional.empty());
         when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
-        when(containerSync.sync(any(), any(), any())).thenAnswer(invocation -> {return new ResponseEntity<>(HttpStatus.OK);});
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 

@@ -20,7 +20,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationRespon
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
@@ -34,6 +33,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -149,8 +149,10 @@ public class CustomerBookingController {
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     @PreAuthorize("hasAuthority('" + PermissionConstants.customerBookingView + "')")
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID) @RequestParam Optional<Long> id, @ApiParam(value = CustomerBookingConstants.BOOKING_GUID) @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         ResponseEntity<IRunnerResponse> response = customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
         return response;
     }

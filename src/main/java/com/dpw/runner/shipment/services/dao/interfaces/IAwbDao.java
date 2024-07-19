@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,5 +36,10 @@ public interface IAwbDao {
     Awb findAwbByGuidByQuery(UUID guid);
     int updateAirMessageStatusFromShipmentId(Long id, String airMessageStatus);
     int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus);
-
+    int updatePrintTypeFromConsolidationId(Long id, String printType);
+    int updatePrintTypeFromShipmentId(Long id, String printType);
+    List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds);
+    void updatedAwbInformationEvent(Object newEntity, Object oldEntity) throws RunnerException;
+    void updateSciFieldFromHawb(Awb awb, Awb oldEntity, boolean isReset, Long awbId) throws RunnerException;
+    List<Awb> getLinkedAwbFromMawb(Long mawbId);
 }

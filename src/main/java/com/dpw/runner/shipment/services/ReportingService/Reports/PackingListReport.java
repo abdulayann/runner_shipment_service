@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PackingListModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -62,7 +61,7 @@ public class PackingListReport extends IReport {
     @Override
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         PackingListModel model = (PackingListModel) documentModel;
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         var shipment = model.getShipmentDetails();
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(shipment));
 

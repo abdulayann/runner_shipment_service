@@ -27,6 +27,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -44,6 +46,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class PickupOrderReportTest extends CommonMocks {
 
     @InjectMocks
@@ -299,7 +302,7 @@ class PickupOrderReportTest extends CommonMocks {
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
-
+        mockTenantSettings();
         assertNotNull(pickupOrderReport.populateDictionary(pickUpOrderReportModel));
     }
 

@@ -44,7 +44,9 @@ public class Constants {
     public static final String ROUTING = "ROUTING";
     public static final String PACKING = "PACKING";
     public static final String MPK = "MPK";
+    public static final String MULTI_PACK = "Multi Pack";
     public static final String CONTAINER = "CONTAINER";
+    public static final String PACKAGES = "Packages";
     public static final String CARRIAGE = "CARRIAGE";
     public static final String PreCarriage = "PreCarriage";
     public static final String SERVICE_DETAILS = "SERVICE_DETAILS";

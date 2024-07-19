@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ICustomerBookingDao {
 
@@ -15,6 +16,7 @@ public interface ICustomerBookingDao {
     Page<CustomerBooking> findAll(Specification<CustomerBooking> spec, Pageable pageable);
 
     Optional<CustomerBooking> findById(Long id);
+    Optional<CustomerBooking> findByGuid(UUID id);
 
     void delete(CustomerBooking customerBooking);
 

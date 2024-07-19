@@ -7,8 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
@@ -119,7 +117,7 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.POL, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()));
         dictionary.put(ReportConstants.POD, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()));
         dictionary.put(ReportConstants.FPOD, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()));
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
         if(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd() != null) {
@@ -175,7 +173,7 @@ public class CargoManifestReport extends IReport{
             try {packsUnit = packsUnitDesc.getItemDescription();} catch (Exception ignored) {}
             if(CommonUtils.IsStringNullOrEmpty(packsUnit))
                 packsUnit = cargoManifestModel.shipmentDetails.getPacksUnit();
-            dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, packsUnit);
+            dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, Constants.MPK.equals(packsUnit) ? Constants.PACKAGES : packsUnit);
         }
         try {
             if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine())) {

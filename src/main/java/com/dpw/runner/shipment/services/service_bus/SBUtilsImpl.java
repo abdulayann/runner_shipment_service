@@ -10,9 +10,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 @Component
@@ -58,8 +55,6 @@ public class SBUtilsImpl implements ISBUtils {
             senderClient.sendMessages(messageBatch);
             log.info("Sent a batch of messages to the topic: {} with messages: {}" , topicName, String.join(", ", messagesList));
         }
-        //close the client
-        senderClient.close();
     }
 
     @Override
@@ -76,8 +71,7 @@ public class SBUtilsImpl implements ISBUtils {
         log.info("Error when receiving messages from namespace: '{}'. Entity: '{}'",
                  context.getFullyQualifiedNamespace(), context.getEntityPath());
 
-        if (context.getException() instanceof ServiceBusException) {
-            ServiceBusException exception = (ServiceBusException) context.getException();
+        if (context.getException() instanceof ServiceBusException exception) {
             log.info("Error source: {}, reason {}", context.getErrorSource(),
                      exception.getReason());
         } else {

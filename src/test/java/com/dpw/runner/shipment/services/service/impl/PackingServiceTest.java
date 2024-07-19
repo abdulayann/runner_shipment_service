@@ -1226,6 +1226,7 @@ class PackingServiceTest extends CommonMocks {
     void testCalculatePackSummary_Success() throws RunnerException {
         List<Packing> packingList = testPackingList;
         mockShipmentSettings();
+        mockTenantSettings();
         PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(packingList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
         assertNotNull(packSummaryResponse);
         assertEquals(packSummaryResponse, jsonTestUtility.getTestPackSummaryResponse());
@@ -1235,6 +1236,7 @@ class PackingServiceTest extends CommonMocks {
     void testCalculatePackSummary_AIR_Success() throws RunnerException {
         List<Packing> packingList = testPackingList;
         mockShipmentSettings();
+        mockTenantSettings();
         PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(packingList, Constants.TRANSPORT_MODE_AIR, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
         assertNotNull(packSummaryResponse);
         assertEquals(packSummaryResponse, jsonTestUtility.getTestPackSummaryAirResponse());

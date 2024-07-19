@@ -511,7 +511,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails);
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = consolidationService.createFromBooking(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -530,6 +530,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
+        mockTenantSettings();
         assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
     }
 
@@ -549,6 +550,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenThrow(new ValidationException("TEST"));
         mockShipmentSettings();
+        mockTenantSettings();
         assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
     }
 
@@ -660,6 +662,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -683,6 +686,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenThrow(new RunnerException("Test"));
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -702,6 +706,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
+        mockTenantSettings();
         assertThrows(ValidationException.class, ()->spyService.create(commonRequestModel));
     }
 
@@ -781,6 +786,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.update(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -826,6 +832,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.update(commonRequestModel);
 
         assertEquals(expectedEntity, response);
@@ -886,6 +893,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         doNothing().when(containerService).afterSaveList(anyList(),anyBoolean());
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -927,6 +935,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -971,6 +980,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1197,6 +1207,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.partialUpdate(commonRequestModel, false);
 
         assertEquals(expectedEntity, response);
@@ -1229,7 +1240,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
         mockShipmentSettings();
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.partialUpdate(commonRequestModel, false);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -1276,6 +1287,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
     }
@@ -1284,9 +1296,11 @@ class ConsolidationServiceTest extends CommonMocks {
     void testCompleteUpdate_Success_Air() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsRequest.class);
+        copy.setEfreightStatus("newEfreightStatus");
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setEfreightStatus("newEfreightStatus");
         ConsolidationDetailsResponse expectedResponse = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsResponse.class);
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         oldEntity.getCarrierDetails().setShippingLine("ABC Airline");
@@ -1309,7 +1323,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         Mockito.doReturn(Optional.of(oldEntity)).when(spyService).retrieveByIdOrGuid(any());
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
-        when(jsonHelper.convertToJson(consolidationDetails)).thenReturn("");
+        when(jsonHelper.convertToJson(oldEntity)).thenReturn("");
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
         when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(awb));
         when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
@@ -1325,6 +1339,62 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         mockShipmentSettings();
+        mockTenantSettings();
+
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
+        assertEquals(expectedEntity, responseEntity);
+    }
+
+    @Test
+    void testCompleteUpdate_Success_Air_Sci() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsRequest.class);
+        copy.setSci("T1");
+        copy.setEfreightStatus("newEfreightStatus");
+        commonRequestModel.setData(copy);
+
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setSci("T1");
+        consolidationDetails.setEfreightStatus("newEfreightStatus");
+        ConsolidationDetailsResponse expectedResponse = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsResponse.class);
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        oldEntity.getCarrierDetails().setShippingLine("ABC Airline");
+
+        Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
+        EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
+        keyMasterDataMap.put("20GP", containerTypeMasterData);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setIataTactFlag(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
+                .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        Mockito.doReturn(Optional.of(oldEntity)).when(spyService).retrieveByIdOrGuid(any());
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(jsonHelper.convertToJson(oldEntity)).thenReturn("");
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(awb));
+        when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(commonUtils.convertToEntityList(anyList(), any(), anyBoolean())).thenReturn(List.of());
+        when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(consolidationDetails.getContainersList());
+        when(packingDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getPackingList());
+        when(eventDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getEventsList());
+        when(referenceNumbersDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getReferenceNumbersList());
+        when(routingsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getRoutingsList());
+        when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getConsolidationAddresses());
+        when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
+        mockShipmentSettings();
+        mockTenantSettings();
 
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
@@ -1517,6 +1587,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = spyService.calculateAchievedValues(CommonRequestModel.buildRequest(1L));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -2494,7 +2565,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
@@ -2534,7 +2605,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2571,6 +2642,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+        mockTenantSettings();
 
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
@@ -2612,7 +2684,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
@@ -2653,7 +2725,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2691,7 +2763,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
@@ -2734,7 +2806,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
@@ -2777,7 +2849,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
@@ -2818,7 +2890,7 @@ class ConsolidationServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-
+        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
         Exception e = assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
@@ -2829,12 +2901,132 @@ class ConsolidationServiceTest extends CommonMocks {
     @Test
     void testCheckSciForDetachConsole_Success() throws RunnerException {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
         consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
         Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
         Awb hawb = Awb.builder().consolidationId(2L).awbCargoInfo(AwbCargoInfo.builder().sci("T2").build()).build();
         when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
         when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
         when(awbDao.findByShipmentIdList(List.of(2L))).thenReturn(List.of(hawb));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(awbDao, times(1)).save(any());
+    }
+    @Test
+    void testCheckSciForDetachConsole_ConsoleEmpty() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+    @Test
+    void testCheckSciForDetachConsole_mawbNull() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(null);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+    @Test
+    void testCheckSciForDetachConsole_mawbEmpty() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of());
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+    @Test
+    void testCheckSciForDetachConsole_awb_null() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(awbDao.findByShipmentIdList(List.of(2L))).thenReturn(null);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(awbDao, times(1)).findByShipmentIdList(any());
+    }
+    @Test
+    void testCheckSciForDetachConsole_awb_empty() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(awbDao.findByShipmentIdList(List.of(2L))).thenReturn(new ArrayList<>());
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(awbDao, times(1)).findByShipmentIdList(any());
+    }
+    @Test
+    void testCheckSciForDetachConsole_isShipSciT1_empty() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        Awb hawb = Awb.builder().consolidationId(2L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(awbDao.findByShipmentIdList(List.of(2L))).thenReturn(List.of(hawb));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(awbDao, times(1)).findByShipmentIdList(any());
+    }
+
+    @Test
+    void testCheckSciForDetachConsole_FSU_Locked() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).airMessageStatus(AwbStatus.AWB_FSU_LOCKED).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+    @Test
+    void testCheckSciForDetachConsole_mawb_sciT2() throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T2").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForDetachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+
+    @Test
+    void testCheckSciForDetachConsole_Success1() throws RunnerException {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(new ArrayList<>());
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         consolidationService.checkSciForDetachConsole(1L);
         verify(awbDao, times(1)).save(any());
     }
@@ -2842,13 +3034,78 @@ class ConsolidationServiceTest extends CommonMocks {
     @Test
     void testCheckSciForAttachConsole_Success () throws RunnerException {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
         consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
         Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci(null).build()).build();
         Awb hawb = Awb.builder().consolidationId(2L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
         when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
         when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
         when(awbDao.findByShipmentIdList(List.of(2L))).thenReturn(List.of(hawb));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         consolidationService.checkSciForAttachConsole(1L);
         verify(awbDao, times(1)).save(any());
+    }
+
+    @Test
+    void testCheckSciForAttachConsole_ConsoleEmpty () throws RunnerException {
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+        consolidationService.checkSciForAttachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+    @Test
+    void testCheckSciForAttachConsole_Mawb_Null () throws RunnerException {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(null);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForAttachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+    @Test
+    void testCheckSciForAttachConsole_Mawb_Empty () throws RunnerException {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of());
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForAttachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+    @Test
+    void testCheckSciForAttachConsole_ShipId_Null () throws RunnerException {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci(null).build()).build();
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForAttachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+    @Test
+    void testCheckSciForAttachConsole_Mawb_FSU_Locked () throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).airMessageStatus(AwbStatus.AWB_FSU_LOCKED).awbCargoInfo(AwbCargoInfo.builder().sci(null).build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForAttachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+
+    @Test
+    void testCheckSciForAttachConsole_Mawb_SciT1 () throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consoleShipmentMappingList.add(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build());
+        Awb mawb = Awb.builder().consolidationId(1L).awbCargoInfo(AwbCargoInfo.builder().sci("T1").build()).build();
+        when(consoleShipmentMappingDao.findByConsolidationId(1L)).thenReturn(consoleShipmentMappingList);
+        when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(mawb));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        consolidationService.checkSciForAttachConsole(1L);
+        verify(consolidationDetailsDao, times(1)).findById(any());
     }
 }

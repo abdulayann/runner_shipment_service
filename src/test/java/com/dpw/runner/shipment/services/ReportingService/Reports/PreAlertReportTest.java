@@ -29,6 +29,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
@@ -49,6 +51,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class PreAlertReportTest extends CommonMocks {
 
     @InjectMocks
@@ -248,6 +251,7 @@ class PreAlertReportTest extends CommonMocks {
 
         when(masterDataUtils.getLocationData(any())).thenReturn(locationMap);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
@@ -375,6 +379,7 @@ class PreAlertReportTest extends CommonMocks {
         dictionary.put("id", "123");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 
@@ -484,6 +489,7 @@ class PreAlertReportTest extends CommonMocks {
         dictionary.put("id", "123");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(preAlertReport.populateDictionary(preAlertModel));
     }
 

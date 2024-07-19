@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -428,9 +427,8 @@ public class ContainerService implements IContainerService {
                 ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId())).get();
                 request.setTransportMode(shipmentDetails.getTransportMode());
                 request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
-                List<Long> containerId = new ArrayList<>();
                 mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
-                containerId.addAll(mappings.stream().map(mapping -> mapping.getContainerId()).collect(Collectors.toList()));
+                List<Long> containerId = new ArrayList<>(mappings.stream().map(ShipmentsContainersMapping::getContainerId).toList());
 
                 ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
                 Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
@@ -1085,8 +1083,10 @@ public class ContainerService implements IContainerService {
                         boolean flag = true;
                         if(x.getShipmentsList() != null && x.getShipmentsList().size() > 0) {
                             for(ShipmentDetails shipmentDetails : x.getShipmentsList()) {
-                                if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL))
+                                if (shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
                                     flag = false;
+                                    break;
+                                }
                             }
                         }
                         if (flag)
@@ -1242,7 +1242,7 @@ public class ContainerService implements IContainerService {
             String toWeightUnit = Constants.WEIGHT_UNIT_KG;
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+            V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
                 toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))

@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingRequestAirModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
@@ -43,7 +42,7 @@ public class ShippingRequestAirReport extends IReport{
         ShippingRequestAirModel shippingRequestAirModel = (ShippingRequestAirModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         populateShipmentFields(shippingRequestAirModel.shipment, dictionary);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         List<Map<String, Object>> packDictionary = new ArrayList<>();
         List<PackingModel> listOfPacks = shippingRequestAirModel.getShipmentPacking();

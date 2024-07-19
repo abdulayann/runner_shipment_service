@@ -14,6 +14,8 @@ import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingServi
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,6 +23,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,6 +32,7 @@ import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {MasterDataController.class})
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class CustomerBookingControllerTest {
 
     @Mock
@@ -263,7 +268,7 @@ class CustomerBookingControllerTest {
         // Mock
         when(customerBookingService.retrieveById(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = customerBookingController.retrieveById(111L);
+        var responseEntity = customerBookingController.retrieveById(Optional.of(111L), Optional.of(UUID.randomUUID().toString()));
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

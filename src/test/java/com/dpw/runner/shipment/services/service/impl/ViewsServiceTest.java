@@ -18,6 +18,8 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -37,6 +39,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class ViewsServiceTest {
 
     @Mock
@@ -65,7 +68,7 @@ class ViewsServiceTest {
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
         ViewsResponse viewsResponse = new ViewsResponse();
-        when(viewsDao.findByCreatedByAndIsDefault(anyString())).thenReturn(Optional.of(views));
+        when(viewsDao.findByCreatedByAndEntityAndIsDefault(anyString(), any())).thenReturn(Optional.of(views));
         when(viewsDao.save(views)).thenReturn(views);
         when(jsonHelper.convertValue(any(ViewsRequest.class), eq(Views.class))).thenReturn(views);
         when(jsonHelper.convertValue(any(Views.class), eq(ViewsResponse.class))).thenReturn(viewsResponse);
@@ -121,7 +124,7 @@ class ViewsServiceTest {
         views.setCreatedBy("user");
         ViewsResponse viewsResponse = new ViewsResponse();
         when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
-        when(viewsDao.findByCreatedByAndIsDefault(anyString())).thenReturn(Optional.of(views));
+        when(viewsDao.findByCreatedByAndEntityAndIsDefault(anyString(), any())).thenReturn(Optional.of(views));
         when(viewsDao.save(any(Views.class))).thenReturn(views);
         when(jsonHelper.convertValue(any(ViewsRequest.class), eq(Views.class))).thenReturn(views);
         when(jsonHelper.convertValue(any(Views.class), eq(ViewsResponse.class))).thenReturn(viewsResponse);

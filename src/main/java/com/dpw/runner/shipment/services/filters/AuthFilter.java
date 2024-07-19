@@ -4,15 +4,14 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -47,6 +46,8 @@ public class AuthFilter extends OncePerRequestFilter {
     IShipmentSettingsDao shipmentSettingsDao;
     @Autowired
     private TenantSettingsService tenantSettingsService;
+    @Autowired
+    private JsonHelper jsonHelper;
 
     private final String[] ignoredPaths = new String[]{"/actuator/**",
             "/v2/api-docs",
@@ -69,7 +70,7 @@ public class AuthFilter extends OncePerRequestFilter {
     public void doFilterInternal(HttpServletRequest servletRequest, HttpServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         try {
         LoggerHelper.putRequestId(UUID.randomUUID().toString());
-        HttpServletRequest req = (HttpServletRequest) servletRequest;
+        HttpServletRequest req = servletRequest;
         log.info("Request For Shipment Service API: {} with RequestId: {}",servletRequest.getRequestURI(), LoggerHelper.getRequestIdFromMDC());
         if(shouldNotFilter(req))
         {
@@ -77,7 +78,7 @@ public class AuthFilter extends OncePerRequestFilter {
             return;
         }
         IUserService userService = getUserServiceFactory.returnUserService();
-        HttpServletResponse res = (HttpServletResponse) servletResponse;
+        HttpServletResponse res = servletResponse;
         long time = System.currentTimeMillis();
         String authToken = req.getHeader("Authorization");
         if(authToken == null)
@@ -110,7 +111,6 @@ public class AuthFilter extends OncePerRequestFilter {
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         //ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
-        TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsService.getV1TenantSettings(user.getTenantId()));
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
@@ -137,6 +137,8 @@ public class AuthFilter extends OncePerRequestFilter {
             UserContext.removeUser();
             ShipmentSettingsDetailsContext.remove();
             TenantSettingsDetailsContext.remove();
+            PermissionsContext.removePermissions();
+            SecurityContextHolder.clearContext();
         }
 
     }
@@ -150,12 +152,6 @@ public class AuthFilter extends OncePerRequestFilter {
         }
         return authorities;
     }
-
-    private ShipmentSettingsDetails getTenantSettings() {
-        Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
-        return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
-    }
-
 
 }
 

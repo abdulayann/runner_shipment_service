@@ -4,9 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
 import io.swagger.annotations.ApiResponse;
@@ -27,7 +25,7 @@ import javax.validation.Valid;
 public class TaskController {
 
     private final ITasksService tasksService;
-    private class MyResponseClass extends RunnerResponse<DependentServiceResponse> {}
+    private static class MyResponseClass extends RunnerResponse<DependentServiceResponse> {}
     @Autowired
     public TaskController(ITasksService tasksService) {
         this.tasksService = tasksService;

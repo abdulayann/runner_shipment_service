@@ -40,6 +40,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -56,6 +58,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class CargoManifestAirShipmentReportTest extends CommonMocks {
 
     @InjectMocks
@@ -328,6 +331,44 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         mockCarrier();
         mockRakc(cargoManifestAirShipmentModel.getShipmentDetails());
         mockShipmentSettings();
+        mockTenantSettings();
+        assertNotNull(cargoManifestAirShipmentReport.populateDictionary(cargoManifestAirShipmentModel));
+    }
+
+    @Test
+    void populateDictionary2() {
+        CargoManifestAirShipmentModel cargoManifestAirShipmentModel = new CargoManifestAirShipmentModel();
+        cargoManifestAirShipmentModel.setTenantModel(new TenantModel());
+
+        Awb awb = new Awb();
+        awb.setAwbCargoInfo(new AwbCargoInfo());
+
+        AwbSpecialHandlingCodesMappingInfo awbSpecialHandlingCodesMappingInfo = new AwbSpecialHandlingCodesMappingInfo();
+        awbSpecialHandlingCodesMappingInfo.setShcId("123");
+        awb.setAwbSpecialHandlingCodesMappings(Arrays.asList(awbSpecialHandlingCodesMappingInfo));
+        cargoManifestAirShipmentModel.setAwb(awb);
+        populateModel(cargoManifestAirShipmentModel);
+        RoutingsModel routingsModel = new RoutingsModel();
+        routingsModel.setLeg(1L);
+        routingsModel.setMode(Constants.TRANSPORT_MODE_AIR);
+        routingsModel.setCarrier("test");
+        RoutingsModel routingsModel2 = new RoutingsModel();
+        routingsModel2.setLeg(2L);
+        routingsModel2.setMode(Constants.TRANSPORT_MODE_AIR);
+        routingsModel2.setCarrier("test2");
+        List<RoutingsModel> routingsModels = new ArrayList<>();
+        routingsModels.add(routingsModel);
+        routingsModels.add(routingsModel2);
+        cargoManifestAirShipmentModel.getShipmentDetails().setRoutingsList(routingsModels);
+        mockVessel();
+
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        masterDataMock();
+        mockCarrier();
+        mockRakc(cargoManifestAirShipmentModel.getShipmentDetails());
+        mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(cargoManifestAirShipmentReport.populateDictionary(cargoManifestAirShipmentModel));
     }
 

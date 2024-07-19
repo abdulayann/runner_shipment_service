@@ -37,6 +37,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -54,6 +56,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class HblReportTest extends CommonMocks {
 
     @InjectMocks
@@ -301,6 +304,7 @@ class HblReportTest extends CommonMocks {
         when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(hblReport.getDocumentModel(123L));
     }
 
@@ -335,7 +339,13 @@ class HblReportTest extends CommonMocks {
         shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
                 .id(12L)
-                .agentDetail(new PartiesModel())
+                .partiesList(List.of(
+                        PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build(),
+                        PartiesModel.builder().type("IMA").orgData(Map.of("FullName", "name", "ContactPhone", "99")).addressData(Map.of()).build(),
+                        PartiesModel.builder().type("DAG").orgData(Map.of("FullName", "name", "ContactPhone","88")).addressData(Map.of()).build()
+                ))
+                .sourceDetail(PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build())
+                .transporterDetail(PartiesModel.builder().type("EXA").build())
                 .actualPickup(LocalDateTime.now())
                 .actualDelivery(LocalDateTime.now())
                 .build()));
@@ -450,6 +460,7 @@ class HblReportTest extends CommonMocks {
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -603,6 +614,7 @@ class HblReportTest extends CommonMocks {
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -750,6 +762,7 @@ class HblReportTest extends CommonMocks {
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
         mockShipmentSettings();
+        mockTenantSettings();
         Map<String, Object> response = hblReport.populateDictionary(hblModel);
         assertNotNull(response);
     }

@@ -2,9 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
-import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
@@ -15,7 +13,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
-import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
@@ -25,6 +22,8 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -47,6 +46,7 @@ import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {MasterDataController.class})
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class ShipmentControllerTest {
 
     @Mock
@@ -962,6 +962,26 @@ class ShipmentControllerTest {
         var responseEntity = shipmentController.fetchEmails(123L, 2121L);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getDateTimeChanges() throws RunnerException {
+        // Mock
+        when(shipmentService.getDateTimeChangeUpdates(anyLong())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.getDateTimeChanges(123L);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getDateTimeChangesFails() throws RunnerException {
+        // Mock
+        when(shipmentService.getDateTimeChangeUpdates(anyLong())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentController.getDateTimeChanges(123L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 }

@@ -2,13 +2,16 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
@@ -64,6 +67,9 @@ class CommonUtilsTest {
     @InjectMocks
     private CommonUtils commonUtils;
 
+    @Mock
+    private TenantSettingsService tenantSettingsService;
+
     private PdfContentByte dc;
     private BaseFont font;
     private Rectangle realPageSize;
@@ -86,7 +92,6 @@ class CommonUtilsTest {
         pdfBytes = new byte[0];
 
         MockitoAnnotations.initMocks(this);
-        commonUtils = new CommonUtils(mapper);
         commonUtils.syncExecutorService = syncExecutorService;
         commonUtils.shipmentSettingsDao = shipmentSettingsDao;
     }
@@ -125,8 +130,6 @@ class CommonUtilsTest {
 
     @Test
     void constructor_WithObjectMapper_SuccessfullyInitializesMapper() {
-        ObjectMapper objectMapperMock = mock(ObjectMapper.class);
-        CommonUtils commonUtils = new CommonUtils(objectMapperMock);
         assertNotNull(commonUtils);
     }
 
@@ -367,11 +370,9 @@ class CommonUtilsTest {
     @Test
     void testConvertToClass() {
         Object obj = new Object();
-        ObjectMapper mapper = mock(ObjectMapper.class);
-        CommonUtils commonUtils1 = new CommonUtils(mapper);
-        when(mapper.convertValue(obj, String.class)).thenReturn("converted");
+        when(jsonHelper.convertValue(obj, String.class)).thenReturn("converted");
 
-        String result = commonUtils1.convertToClass(obj, String.class);
+        String result = commonUtils.convertToClass(obj, String.class);
 
         assertEquals("converted", result);
     }
@@ -380,8 +381,6 @@ class CommonUtilsTest {
     @Test
     void testConvertToEntityList() {
         List<Object> lst = List.of(new Object(), new Object());
-
-        when(mapper.convertValue(any(), eq(MultiTenancy.class))).thenReturn(mock(MultiTenancy.class));
 
         List<MultiTenancy> result = commonUtils.convertToEntityList(lst, MultiTenancy.class);
 
@@ -477,5 +476,18 @@ class CommonUtilsTest {
     void defaultShipmentSettingsWithValue() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         assertNotNull(commonUtils.getShipmentSettingFromContext());
+    }
+
+    @Test
+    void defaultTenantSettings() {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(null);
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(new V1TenantSettingsResponse());
+        assertNotNull(commonUtils.getCurrentTenantSettings());
+    }
+
+    @Test
+    void defaultTenantSettingsWithValue() {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().build());
+        assertNotNull(commonUtils.getCurrentTenantSettings());
     }
 }

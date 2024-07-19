@@ -37,6 +37,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -55,6 +57,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class ShippingRequestOutReportTest extends CommonMocks {
 
     @InjectMocks
@@ -274,7 +277,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
         carrierMasterData.setItemValue("Turkish Airlines");
         carrierMasterData.setCarrierContactPerson("Test");
         shippingRequestOutModel.setCarrier(carrierMasterData);
-
+        mockTenantSettings();
         shippingRequestOutModel.setShipmentAndContainer(shippingRequestOutReport.getShipmentAndContainerResponse(Arrays.asList(shipmentModel)));
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -448,6 +451,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
         mockVessel();
         mockCarrier();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(shippingRequestOutReport.populateDictionary(shippingRequestOutModel));
         assert (true);
     }
@@ -648,6 +652,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
 
         mockCarrier();
         mockVessel();
+        mockTenantSettings();
         assertNotNull(shippingRequestOutReport.getDocumentModel(123L));
     }
 
@@ -731,6 +736,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
 
         mockCarrier();
         mockVessel();
+        mockTenantSettings();
         assertNotNull(shippingRequestOutReport.getDocumentModel(123L));
     }
 }

@@ -7,13 +7,10 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
 import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -55,7 +52,7 @@ public class ManifestPrintReport extends IReport {
         }
         ConsolidationModel consol = manifestPrintModel.getConsol();
         populateConsolidationFields(consol, dictionary);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestPrintModel.getShipments().toArray(new ShipmentModel[0])));
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);

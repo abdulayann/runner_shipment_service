@@ -17,7 +17,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import java.util.List;
-import java.util.Map;
 
 
 @Entity

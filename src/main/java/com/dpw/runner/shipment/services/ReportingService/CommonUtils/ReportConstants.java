@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 import java.util.Set;
 
 public class ReportConstants {
+    public static final String ROAD = "Road";
+
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
     public static final String IMPORT_SHIPMENT_MANIFEST = "ImportShipmentManifest";
@@ -608,6 +610,7 @@ public class ReportConstants {
     public static final String BY = "By";
     public static final String TO = "To";
     public static final String ISSUED_BY_NAME = "IssuedByName";
+    public static final String ISSUED_BY_NAME_IN_CAPS = "IssuedByNameInCaps";
     public static final String ISSUED_BY = "IssuedBy";
     public static final String AO_DEPT_CODE = "AODeptCode";
     public static final String SUM_OF_CHARGEABLE_WT = "SumOfChargeableWt";
@@ -903,6 +906,14 @@ public class ReportConstants {
     public static final String DESTINATION_PORT = "DestinationPort";
     public static final String ORIGIN_PORT_NAME_INCAPS = "OriginPortNameInCaps";
     public static final String ORIGIN_PORT_NAME_INCAPS_AIR = "OriginPortNameInCapsAir";
+    public static final String CONSOL_ORIGIN_AIRPORT_CODE = "ConsolOriginAirportCode";
+    public static final String CONSOL_ORIGIN_AIRPORT_CODE_CAPS = "ConsolOriginAirportCodeCaps";
+    public static final String CONSOL_DESTINATION_AIRPORT_CODE = "ConsolDestinationAirportCode";
+    public static final String CONSOL_DESTINATION_AIRPORT_CODE_CAPS = "ConsolDestinationAirportCodeCaps";
+    public static final String SHIPMENT_FIRST_FLIGHT_AND_DAY = "ShipmentFirstFlightAndDay";
+    public static final String SHIPMENT_SECOND_FLIGHT_AND_DAY = "ShipmentSecondFlightAndDay";
+    public static final String CONSOL_FIRST_FLIGHT_AND_DAY = "ConsolFirstFlightAndDay";
+    public static final String CONSOL_SECOND_FLIGHT_AND_DAY = "ConsolSecondFlightAndDay";
     public static final String DESTINATION_PORT_NAME_INCAPS = "DestinationPortNameInCaps";
     public static final String DESTINATION_PORT_NAME_INCAPS_AIR = "DestinationPortNameInCapsAir";
     public static final String SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE = "ShipmentFlightNoWithIATACode";
@@ -1164,7 +1175,10 @@ public class ReportConstants {
     public static final String TI_DELIVERY_AGENT = "TI_DeliveryAgent";
     public static final String TI_DELIVERY_AGENT_ADDRESS = "TI_DeliveryAgentAddress";
     public static final String TI_DELIVERY_AGENT_CONTACT = "TI_DeliveryAgentContact";
-
+    public static final String TI_FLIGHT_NUMBER = "flightNumber";
+    public static final String TI_ISSEA = "IsSea";
+    public static final String TI_ISAIR = "IsAir";
 
     public static final String CARRIER_HQ = "CarrierHQ";
+    public static final String CON = "CarrierContractNumber";
 }

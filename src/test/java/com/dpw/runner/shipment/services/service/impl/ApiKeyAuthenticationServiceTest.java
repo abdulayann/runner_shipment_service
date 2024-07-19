@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
@@ -15,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(SpringExtension.class)
 @PropertySource("classpath:application-test.properties")
 @EnableConfigurationProperties
+@Execution(ExecutionMode.CONCURRENT)
 class ApiKeyAuthenticationServiceTest {
     @Autowired
     private ApiKeyAuthenticationService apiKeyAuthenticationService;

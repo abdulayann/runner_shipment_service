@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
@@ -70,7 +69,7 @@ public class HblReport extends IReport{
         HblModel hblModel = new HblModel();
         hblModel.shipment = getShipment(id);
         hblModel.shipmentSettingsDetails = getShipmentSettings();
-        hblModel.tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        hblModel.tenantSettingsResponse = getCurrentTenantSettings();
         hblModel.user = UserContext.getUser();
         if(hblModel.shipment != null && hblModel.shipment.getConsolidationList() != null && !hblModel.shipment.getConsolidationList().isEmpty())
         {
@@ -193,10 +192,11 @@ public class HblReport extends IReport{
                         hblModel.getContainerCountGrouped().put(container.getContainerCode(), container.getContainerCount());
                 }
                 if(container.getPacksType() != null) {
+                    Long packs = !IsStringNullOrEmpty(container.getPacks()) ? Long.parseLong(container.getPacks()) : 0;
                     if(hblModel.getContainerCountGrouped().containsKey(container.getPacksType()))
-                        hblModel.getContainerCountGrouped().put(container.getPacksType(), hblModel.getContainerCountGrouped().get(container.getPacksType()) + Long.valueOf(container.getPacks()));
+                        hblModel.getContainerCountGrouped().put(container.getPacksType(), hblModel.getContainerCountGrouped().get(container.getPacksType()) + packs);
                     else
-                        hblModel.getContainerCountGrouped().put(container.getPacksType(), Long.valueOf(container.getPacks()));
+                        hblModel.getContainerCountGrouped().put(container.getPacksType(), packs);
                 }
                 if(container.getGrossWeightUnit() != null) {
                     double grossWeight = 0;
@@ -231,7 +231,7 @@ public class HblReport extends IReport{
         populateShipmentFields(hblModel.shipment, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         JsonDateFormat(dictionary);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if (hblModel.blObject != null) {
             String blObjectJson = jsonHelper.convertToJson(hblModel.blObject);
             Map<String, Object> blObjectDictionary = jsonHelper.convertJsonToMap(blObjectJson);
@@ -900,14 +900,14 @@ public class HblReport extends IReport{
         if(hblModel.isHbl) {
             if(hblModel.blObject.getHblData().getPackageCount() != null)
                 dictionary.put(PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.blObject.getHblData().getPackageCount()), 0, v1TenantSettingsResponse));
-            dictionary.put(PACKS_UNIT, hblModel.blObject.getHblData().getPackageType());
-            dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType()));
+            dictionary.put(PACKS_UNIT, Constants.MPK.equals(hblModel.blObject.getHblData().getPackageType()) ? Constants.PACKAGES : hblModel.blObject.getHblData().getPackageType());
+            dictionary.put(PACKS_UNIT_DESC, Constants.MULTI_PACK.equals(masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType())) ? Constants.PACKAGES : masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType()));
             dictionary.put(ReportConstants.DESCRIPTION, hblModel.blObject.getHblData().getCargoDescription());
         } else {
             if(hblModel.shipment.getNoOfPacks() != null)
                 dictionary.put(PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
-            dictionary.put(PACKS_UNIT, hblModel.shipment.getPacksUnit());
-            dictionary.put(PACKS_UNIT_DESC, masterListDescriptionPacksUnit(hblModel.shipment.getPacksUnit()));
+            dictionary.put(PACKS_UNIT, Constants.MPK.equals(hblModel.shipment.getPacksUnit()) ? Constants.PACKAGES : hblModel.shipment.getPacksUnit());
+            dictionary.put(PACKS_UNIT_DESC, Constants.MULTI_PACK.equals(masterListDescriptionPacksUnit(hblModel.shipment.getPacksUnit())) ? Constants.PACKAGES : masterListDescriptionPacksUnit(hblModel.shipment.getPacksUnit()));
             dictionary.put(DESCRIPTION, hblModel.shipment.getGoodsDescription());
         }
 

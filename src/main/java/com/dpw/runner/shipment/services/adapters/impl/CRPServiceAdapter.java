@@ -2,12 +2,10 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.response.RunnerResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +14,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.net.URI;
 import java.util.Objects;

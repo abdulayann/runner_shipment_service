@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -578,7 +577,7 @@ public class PackingService implements IPackingService {
             String toWeightUnit = Constants.WEIGHT_UNIT_KG;
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+            V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
                 toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))

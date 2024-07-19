@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -72,6 +73,10 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "efreight_status")
     @MasterData(type = MasterDataType.EFREIGHT_STATUS)
     private String efreightStatus;
+
+    @Column(name = "sci")
+    @MasterData(type = MasterDataType.SCI)
+    private String sci;
 
     @Column(name = "import_export_shipment_lock")
     private Boolean importExportShipmentLock;
@@ -279,6 +284,7 @@ public class AdditionalDetails extends MultiTenancy {
     //@MasterData(type = MasterDataType.SCREENING_STATUS)
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "screening_status", joinColumns = @JoinColumn(name = "shipment_additional_details_id"))
+    @BatchSize(size = 50)
     private List<String> screeningStatus;
 
     @Column(name = "paid_place")

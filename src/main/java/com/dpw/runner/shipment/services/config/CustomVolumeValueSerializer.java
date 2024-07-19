@@ -9,18 +9,15 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 
 @Configurable
 @Slf4j
 public class CustomVolumeValueSerializer extends JsonSerializer<BigDecimal> {
 
-    @Autowired
-    private CommonUtils commonUtils;
-
     @Override
     public void serialize(BigDecimal bigDecimal, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+        CommonUtils commonUtils = SpringContext.getBean(CommonUtils.class);
         if(commonUtils == null) {
             log.info("commonUtils is null in CustomWeightValueSerializer");
         }

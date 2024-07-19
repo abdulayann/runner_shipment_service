@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -95,7 +94,7 @@ public class HawbReport extends IReport{
             carrierDetailModel = hawbModel.getConsolidationDetails().getCarrierDetails();
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         //TODO- Tenant data
 //        var tenantDetails = ReportHelper.getOrgAddress(siData.tenant.TenantName, siData.tenant.Address1, siData.tenant.Address2, siData.tenant.City, siData.tenant.Email, siData.tenant.Phone, siData.tenant.ZipPostCode, siData.tenant.State);
 //        dictionary[ReportConstants.AGENT] = tenantDetails;
@@ -448,6 +447,7 @@ public class HawbReport extends IReport{
                 {
                     dictionary.put(ReportConstants.BY_FIRST, carrierRow.get(carrier).IATACode);
                     dictionary.put(ReportConstants.ISSUED_BY_NAME, carrierRow.get(carrier).ItemDescription);
+                    dictionary.put(ISSUED_BY_NAME_IN_CAPS, (carrierRow.get(carrier).ItemDescription).toUpperCase());
                 }
                 else
                 {
@@ -937,10 +937,9 @@ public class HawbReport extends IReport{
     private Map<String, EntityTransferCarrier> fetchCarrier(Set<String> values) {
         if (values.size() == 1 && values.contains(null)) return new HashMap<>();
         CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> criteria = new ArrayList<>();
         List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ITEM_VALUE));
         String operator = Operators.IN.getValue();
-        criteria.addAll(List.of(field, operator, List.of(values)));
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(values)));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);

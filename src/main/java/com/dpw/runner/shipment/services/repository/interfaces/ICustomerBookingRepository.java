@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository @Generated
 public interface ICustomerBookingRepository extends MultiTenancyRepository<CustomerBooking> {
@@ -21,6 +22,11 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
 
     default Optional<CustomerBooking> findById(Long id) {
         Specification<CustomerBooking> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
+
+    default Optional<CustomerBooking> findByGuid(UUID id) {
+        Specification<CustomerBooking> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
         return findOne(spec);
     }
 

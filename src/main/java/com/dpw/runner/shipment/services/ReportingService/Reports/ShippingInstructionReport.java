@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingInstructionModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
@@ -113,7 +112,7 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(POFD, getPortDetails(model.getShipment().getCarrierDetails().getDestination()));
             dictionary.put(PO_DELIVERY, getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
             String formatPattern = "dd/MMM/y";
-            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+            V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
             if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
                 formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
             dictionary.put(ETD, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEtd(), formatPattern));
@@ -140,7 +139,7 @@ public class ShippingInstructionReport extends IReport{
         BigDecimal totalWeight = BigDecimal.ZERO;
         String unitOfTotalWeight = null;
         boolean breakFlagForWeight = false;
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         if (model.getShipment().getPackingList() != null) {
 

@@ -9,20 +9,21 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,8 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+
 @Repository
 @Slf4j
 public class AwbDao implements IAwbDao {
@@ -44,6 +47,8 @@ public class AwbDao implements IAwbDao {
     private IAwbRepository awbRepository;
     @Autowired
     private JsonHelper jsonHelper;
+    @Autowired
+    IMawbHawbLinkDao mawbHawbLinkDao;
     @Autowired
     private KafkaProducer producer;
     @Value("${awbKafka.queue}")
@@ -138,6 +143,11 @@ public class AwbDao implements IAwbDao {
     }
 
     @Override
+    public List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds) {
+        return awbRepository.findByShipmentIdsByQuery(shipmentIds);
+    }
+    
+    @Override
     public List<Awb> findByConsolidationIdByQuery(Long consolidationId) {
         return awbRepository.findByConsolidationIdByQuery(consolidationId);
     }
@@ -207,7 +217,6 @@ public class AwbDao implements IAwbDao {
                             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                             this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent");
-
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
                                 this.pushToKafkaForAirMessaging(shipAwb, ship, null);
@@ -307,6 +316,18 @@ public class AwbDao implements IAwbDao {
     public int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus) {
         return awbRepository.updateAirMessageStatusFromConsolidationId(id, airMessageStatus);
     }
+    public int updatePrintTypeFromConsolidationId(Long id, String printType) {
+        var awbList = findByConsolidationId(id);
+        if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
+            return awbRepository.updatePrintTypeFromConsolidationId(id, printType);
+        return 0;
+    }
+    public int updatePrintTypeFromShipmentId(Long id, String printType) {
+        var awbList = findByShipmentId(id);
+        if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
+            return awbRepository.updatePrintTypeFromShipmentId(id, printType);
+        return 0;
+    }
 
     @Override
     public int updateUserDetails(UUID guid, String userDisplayName, String userMailId) {
@@ -322,9 +343,8 @@ public class AwbDao implements IAwbDao {
                 if(consoleShipMapping == null || consoleShipMapping.isEmpty()) {
                     return Collections.emptyList();
                 } else {
-                    List<Awb> response = new ArrayList<>();
                     var consoleId = consoleShipMapping.get(0).getConsolidationId();
-                    response.addAll(findByConsolidationIdByQuery(consoleId));
+                    List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
                     var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
                     if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
                         consoleShipMappingList.forEach(x -> response.addAll(findByShipmentIdByQuery(x.getShipmentId())));
@@ -332,9 +352,8 @@ public class AwbDao implements IAwbDao {
                     return response;
                 }
             } else if(awb.get().getConsolidationId() != null) {
-                List<Awb> response = new ArrayList<>();
                 var consoleId = awb.get().getConsolidationId();
-                response.addAll(findByConsolidationIdByQuery(consoleId));
+                List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
                 var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
                 if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
                     consoleShipMappingList.forEach(x -> response.addAll(findByShipmentIdByQuery(x.getShipmentId())));
@@ -348,6 +367,120 @@ public class AwbDao implements IAwbDao {
     @Override
     public Awb findAwbByGuidByQuery(UUID guid) {
         return awbRepository.findAwbByGuidByQuery(guid);
+    }
+
+    @Override
+    public void updatedAwbInformationEvent(Object newEntity, Object oldEntity) throws RunnerException {
+        // fetch Awb
+        Awb awb = null;
+        AwbSpecialHandlingCodesMappingInfo sph = null;
+
+        if(newEntity instanceof ShipmentDetails shipmentDetails) {
+            ShipmentDetails oldShipment = (ShipmentDetails) oldEntity;
+            var list = findByShipmentId(shipmentDetails.getId());
+            awb = !list.isEmpty() ? list.get(0) : null;
+            if(Objects.isNull(awb))
+                return;
+
+            if(!Objects.equals(shipmentDetails.getAdditionalDetails().getEfreightStatus(), oldShipment.getAdditionalDetails().getEfreightStatus())) {
+                sph = AwbSpecialHandlingCodesMappingInfo.builder()
+                        .shcId(shipmentDetails.getAdditionalDetails().getEfreightStatus())
+                        .entityId(shipmentDetails.getId())
+                        .build();
+
+                sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
+
+                // set resubmitted false and sph
+                awb.setAirMessageResubmitted(false);
+                awb.setAwbSpecialHandlingCodesMappings(List.of(sph));
+            }
+            if(!Objects.equals(shipmentDetails.getAdditionalDetails().getSci(), oldShipment.getAdditionalDetails().getSci())){
+                awb.getAwbCargoInfo().setSci(shipmentDetails.getAdditionalDetails().getSci());
+                awb.setAirMessageResubmitted(false);
+                updateSciFieldFromHawb(awb, null, false, awb.getId());
+            }
+        }
+        else if (newEntity instanceof ConsolidationDetails consolidationDetails) {
+            ConsolidationDetails oldConsolidation = (ConsolidationDetails) oldEntity;
+            var list = findByConsolidationId(consolidationDetails.getId());
+            awb = !list.isEmpty() ? list.get(0) : null;
+            if(Objects.isNull(awb))
+                return;
+
+            if(!Objects.equals(consolidationDetails.getEfreightStatus(), oldConsolidation.getEfreightStatus())) {
+                sph = AwbSpecialHandlingCodesMappingInfo.builder()
+                        .shcId(consolidationDetails.getEfreightStatus())
+                        .entityId(consolidationDetails.getId())
+                        .build();
+
+                sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
+
+                // set resubmitted false and sph
+                awb.setAirMessageResubmitted(false);
+                awb.setAwbSpecialHandlingCodesMappings(List.of(sph));
+            }
+            if(!Objects.equals(consolidationDetails.getSci(), oldConsolidation.getSci())){
+                awb.getAwbCargoInfo().setSci(consolidationDetails.getSci());
+                awb.setAirMessageResubmitted(false);
+            }
+        }
+
+        if(Objects.isNull(awb))
+            return;
+
+        save(awb);
+
+    }
+
+    public void updateSciFieldFromHawb(Awb awb, Awb oldEntity, boolean isReset, Long awbId) throws RunnerException {
+        if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
+            List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
+            if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
+                Long mawbId = mawbHawbLinks.get(0).getMawbId();
+                Optional<Awb> mawb = findById(mawbId);
+                if(mawb.isPresent() && !Objects.equals(mawb.get().getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && !Objects.equals(mawb.get().getAwbCargoInfo().getSci(), awb.getAwbCargoInfo().getSci())){
+                    mawb.get().getAwbCargoInfo().setSci(awb.getAwbCargoInfo().getSci());
+                    mawb.get().setAirMessageResubmitted(false);
+                    save(mawb.get());
+                }
+            }
+        } else if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && !Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1) && ((oldEntity != null && Objects.equals(oldEntity.getAwbCargoInfo().getSci(), AwbConstants.T1)) || isReset || oldEntity == null)){
+            List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
+            if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
+                Long mawbId = mawbHawbLinks.get(0).getMawbId();
+                List<Awb> hawbsList = getLinkedAwbFromMawb(mawbId);
+                boolean updateSci = false;
+                if(hawbsList != null && !hawbsList.isEmpty()){
+                    Optional<Awb> hawb = hawbsList.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1) && !Objects.equals(x.getId(), awbId)).findAny();
+                    if(!hawb.isPresent()){
+                        updateSci = true;
+                    }
+                }
+                if(updateSci) {
+                    Optional<Awb> mawb = findById(mawbId);
+                    if (mawb.isPresent() && !Objects.equals(mawb.get().getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.get().getAwbCargoInfo().getSci(), AwbConstants.T1)) {
+                        mawb.get().getAwbCargoInfo().setSci(null);
+                        mawb.get().setAirMessageResubmitted(false);
+                        save(mawb.get());
+                    }
+                }
+            }
+        }
+    }
+    @Override
+    public List<Awb> getLinkedAwbFromMawb(Long mawbId) {
+        List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
+
+        // Fetch all the awb records with the mapped hawbId
+        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", mawbHawbLinks.stream().map(MawbHawbLink::getHawbId).toList(), "IN");
+        com.nimbusds.jose.util.Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
+        Page<Awb> page = findAll(pair.getLeft(), pair.getRight());
+
+        List<Awb> linkedHawb = new ArrayList<>();
+        if(!page.isEmpty())
+            linkedHawb = page.getContent();
+
+        return linkedHawb;
     }
 
 }

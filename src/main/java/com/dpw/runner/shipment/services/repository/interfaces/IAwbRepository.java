@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +23,8 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
 
     @Query(value = "SELECT * FROM awb WHERE shipment_id = ?1", nativeQuery = true)
     List<Awb> findByShipmentIdByQuery(Long shipmentId);
+    @Query(value = "SELECT * FROM awb WHERE shipment_id IN ?1", nativeQuery = true)
+    List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds);
     @Query(value = "SELECT * FROM awb WHERE consolidation_id = ?1", nativeQuery = true)
     List<Awb> findByConsolidationIdByQuery(Long consolidationId);
     Optional<Awb> findByGuid(UUID guid);
@@ -60,6 +61,16 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
 
     @Transactional
     @Modifying
+    @Query(value = "Update Awb set print_type = ?2 Where consolidation_id = ?1", nativeQuery = true)
+    int updatePrintTypeFromConsolidationId(Long id, String printType);
+
+    @Transactional
+    @Modifying
+    @Query(value = "Update Awb set print_type = ?2 Where shipment_id = ?1", nativeQuery = true)
+    int updatePrintTypeFromShipmentId(Long id, String printType);
+
+    @Transactional
+    @Modifying
     @Query(value = "Update Awb set user_mail_id = ?3, user_display_name = ?2 Where guid = ?1", nativeQuery = true)
     int updateUserDetails(UUID guid, String userDisplayName, String userMailId);
 
@@ -68,5 +79,12 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
 
     @Query(value = "SELECT * FROM awb WHERE shipment_id IN ?1", nativeQuery = true)
     List<Awb> findByShipmentIdList(List<Long> shipmentIds);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE Awb a SET a.airMessageResubmitted = false " +
+        "WHERE (:shipmentId IS NULL OR a.shipmentId = :shipmentId) " +
+        "AND (:consolidationId IS NULL OR a.consolidationId = :consolidationId)")
+    int setAirMessagingResubmittedFalse(Long shipmentId, Long consolidationId);
 
 }

@@ -30,6 +30,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -50,7 +52,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class ReportServiceTest {
+@Execution(ExecutionMode.CONCURRENT)
+class ReportServiceTest {
 
     @InjectMocks
     private ReportService reportService;
@@ -138,6 +141,9 @@ public class ReportServiceTest {
 
     @Mock
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
+
+    @Mock
+    private TransportOrderReport transportOrderReport;
 
     private final String path = "src/test/java/com/dpw/runner/shipment/services/files/";
 
@@ -2599,6 +2605,41 @@ public class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        byte[] data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+
+    @Test
+    void getTransportInstructionTransportOrderDocumentData() throws DocumentException, RunnerException, IOException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setDeliveryOrder("122456789");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setDeliveryOrder("12345622789");
+        shipmentSettingsDetails2.setTransportInstructionPickupOrder("12312113");
+        shipmentSettingsDetails2.setTransportInstructionDeliveryOrder("12323123");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setTransportInstructionId("12323");
+        reportRequest.setReportInfo(ReportConstants.DELIVERY_ORDER);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(transportOrderReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123334");
+        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.ROAD);
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);

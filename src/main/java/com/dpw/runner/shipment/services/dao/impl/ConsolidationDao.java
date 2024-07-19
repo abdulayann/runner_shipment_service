@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -118,7 +117,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private void onSave(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean fromV1Sync, boolean creatingFromDgShipment) {
-        errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole, creatingFromDgShipment));
+        errors.addAll(applyConsolidationValidations(consolidationDetails, creatingFromDgShipment, fromV1Sync));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if (consolidationDetails.getTransportMode() != null && consolidationDetails.getCarrierDetails() != null) {
@@ -216,7 +215,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return Boolean.TRUE.equals(request.getHazardous());
     }
 
-    private Set<String> applyConsolidationValidations(ConsolidationDetails request, ConsolidationDetails oldEntity, boolean creatingFromDgShipment) {
+    private Set<String> applyConsolidationValidations(ConsolidationDetails request, boolean creatingFromDgShipment, boolean fromV1Sync) {
         Set<String> errors = new LinkedHashSet<>();
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
@@ -247,7 +246,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         // Dg consolidation validations
-        if(checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+        if(!fromV1Sync && checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
 
             // Non dg user cannot save dg consolidation
             if(!UserContext.isDgUser())
@@ -527,6 +526,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     public String getConsolidationNumberFromId(Long id) {
         return consolidationRepository.getConsolidationNumberFromId(id);
+    }
+
+    @Override
+    public List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids) {
+        return consolidationRepository.findConsolidationsByGuids(guids);
     }
 
 }

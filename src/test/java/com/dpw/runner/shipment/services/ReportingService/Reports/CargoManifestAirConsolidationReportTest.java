@@ -43,6 +43,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -61,6 +63,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class CargoManifestAirConsolidationReportTest extends CommonMocks {
 
     @InjectMocks
@@ -340,6 +343,47 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
         mockUnloc();
         mockShipmentSettings();
+        mockTenantSettings();
+        assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
+    }
+
+    @Test
+    void populateDictionary2() {
+        CargoManifestAirConsolidationModel cargoManifestAirConsolidationModel = new CargoManifestAirConsolidationModel();
+        cargoManifestAirConsolidationModel.setTenantModel(new TenantModel());
+        cargoManifestAirConsolidationModel.setPackSummaryResponse(new PackSummaryResponse());
+
+        Awb awb = new Awb();
+        awb.setAwbCargoInfo(new AwbCargoInfo());
+
+        AwbSpecialHandlingCodesMappingInfo awbSpecialHandlingCodesMappingInfo = new AwbSpecialHandlingCodesMappingInfo();
+        awbSpecialHandlingCodesMappingInfo.setShcId("123");
+        awb.setAwbSpecialHandlingCodesMappings(Arrays.asList(awbSpecialHandlingCodesMappingInfo));
+        cargoManifestAirConsolidationModel.setAwbList(Arrays.asList(awb));
+        populateModel(cargoManifestAirConsolidationModel);
+        RoutingsModel routingsModel = new RoutingsModel();
+        routingsModel.setLeg(1L);
+        routingsModel.setMode(Constants.TRANSPORT_MODE_AIR);
+        routingsModel.setCarrier("test");
+        RoutingsModel routingsModel2 = new RoutingsModel();
+        routingsModel2.setLeg(2L);
+        routingsModel2.setMode(Constants.TRANSPORT_MODE_AIR);
+        routingsModel2.setCarrier("test2");
+        List<RoutingsModel> routingsModels = new ArrayList<>();
+        routingsModels.add(routingsModel);
+        routingsModels.add(routingsModel2);
+        cargoManifestAirConsolidationModel.getConsolidationModel().setRoutingsList(routingsModels);
+        mockVessel();
+        cargoManifestAirConsolidationReport.setSecurityData(false);
+
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        masterDataMock();
+        mockCarrier();
+        mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
+        mockUnloc();
+        mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
     }
 
@@ -360,6 +404,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
         mockUnloc();
         mockShipmentSettings();
+        mockTenantSettings();
         assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
     }
 
@@ -377,6 +422,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         mockCarrier();
         //mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
         mockUnloc();
+        mockTenantSettings();
         assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
     }
 

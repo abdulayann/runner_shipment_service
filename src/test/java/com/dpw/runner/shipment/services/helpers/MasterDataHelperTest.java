@@ -888,6 +888,7 @@ class MasterDataHelperTest {
         data.put(shipmentDetails.getGuid().toString(), billingData);
         shipmentBillingListResponse.setData(data);
         when(iV1Service.fetchShipmentBillingData(any())).thenReturn(shipmentBillingListResponse);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(shipmentDetails, new ShipmentDetailsResponse());
         assertEquals(shipmentBillingListResponse, response.get());
     }
@@ -910,6 +911,7 @@ class MasterDataHelperTest {
         data.put(shipmentDetails.getGuid().toString(), billingData);
         shipmentBillingListResponse.setData(data);
         when(iV1Service.fetchShipmentBillingData(any())).thenReturn(shipmentBillingListResponse);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(shipmentDetails, new ShipmentDetailsResponse());
         assertEquals(shipmentBillingListResponse, response.get());
     }

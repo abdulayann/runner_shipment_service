@@ -7,8 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.FreightCertifica
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -112,7 +110,7 @@ public class FreightCertificationReport extends IReport{
                 }
             }
         }
-        V1TenantSettingsResponse tenantSettingsRow = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse tenantSettingsRow = getCurrentTenantSettings();
 
         List<String> tenantsDataList = getListOfStrings(freightCertificationModel.tenantDetails.tenantName, freightCertificationModel.tenantDetails.address1, freightCertificationModel.tenantDetails.address2,
                 freightCertificationModel.tenantDetails.city, freightCertificationModel.tenantDetails.state, freightCertificationModel.tenantDetails.zipPostCode, freightCertificationModel.tenantDetails.country,
