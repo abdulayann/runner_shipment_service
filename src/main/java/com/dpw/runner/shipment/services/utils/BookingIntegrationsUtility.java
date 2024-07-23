@@ -39,6 +39,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -80,6 +81,11 @@ public class BookingIntegrationsUtility {
     private MasterDataFactory masterDataFactory;
     @Autowired
     private EmailServiceUtility emailServiceUtility;
+
+    @Value("#{'${platform.failure.notification.to}'.split(',')}")
+    private List<String> failureNotificationEmailTo;
+    @Value("#{'${platform.failure.notification.cc}'.split(',')}")
+    private List<String> failureNotificationEmailCC;
 
     static Integer maxAttempts = 5;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
@@ -526,7 +532,7 @@ public class BookingIntegrationsUtility {
 
     private void sendFailureAlerts(String request, String response, String bookingNumber) {
         try {
-            emailServiceUtility.sendEmail(String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_BODY, bookingNumber, request, response), String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_SUBJECT, bookingNumber), List.of("wasim.jafar.dtu@gmail.com"), null, null, null);
+            emailServiceUtility.sendEmail(String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_BODY, bookingNumber, request, response), String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_SUBJECT, bookingNumber), failureNotificationEmailTo, failureNotificationEmailCC, null, null);
         } catch (Exception e) {
             log.error(e.getMessage());
         }
