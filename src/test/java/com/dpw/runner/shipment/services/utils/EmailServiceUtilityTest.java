@@ -49,7 +49,22 @@ class EmailServiceUtilityTest {
         when(emailConfig.getSession()).thenReturn(session);
         when(emailConfig.getTransport(any(Session.class))).thenReturn(transport);
 
-        emailServiceUtility.sendEmail("Body", "Subject", List.of("test@example.com"), null, "test.txt");
+        emailServiceUtility.sendEmail("Body", "Subject", List.of("test@example.com"), List.of("test@example.com"), null, "test.txt");
+
+        verify(emailConfig).getSession();
+        verify(emailConfig).getTransport(any(Session.class));
+        verify(transport).sendMessage(any(), any());
+        verify(transport).close();
+    }
+
+    @Test
+    void sendEmail_WithoutAttachment_WithoutCC() throws MessagingException, IOException {
+        Session session = Session.getDefaultInstance(new Properties());
+
+        when(emailConfig.getSession()).thenReturn(session);
+        when(emailConfig.getTransport(any(Session.class))).thenReturn(transport);
+
+        emailServiceUtility.sendEmail("Body", "Subject", List.of("test@example.com"), null, null, "test.txt");
 
         verify(emailConfig).getSession();
         verify(emailConfig).getTransport(any(Session.class));
@@ -65,7 +80,7 @@ class EmailServiceUtilityTest {
         when(emailConfig.getSession()).thenReturn(session);
         when(emailConfig.getTransport(any(Session.class))).thenReturn(transport);
 
-        emailServiceUtility.sendEmail("Body", "Subject", List.of("test@example.com"), file, "test.txt");
+        emailServiceUtility.sendEmail("Body", "Subject", List.of("test@example.com"), null, file, "test.txt");
 
         verify(emailConfig).getSession();
         verify(emailConfig).getTransport(any(Session.class));

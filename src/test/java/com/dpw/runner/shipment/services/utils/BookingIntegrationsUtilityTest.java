@@ -92,7 +92,6 @@ class BookingIntegrationsUtilityTest {
     @Test
     void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType() throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
-
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
         when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
@@ -204,6 +203,14 @@ class BookingIntegrationsUtilityTest {
         shipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
         verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
+    }
+
+    @Test
+    void testUpdateBookingInPlatform_fromShipment_Offline() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.RUNNER);
+        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
+        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
     }
 
     @Test
