@@ -39,4 +39,6 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean EnableAirMessaging;
     private Integer CurrencyDecimalPlace;
     private Boolean EnableEstimateAndActualDateTimeUpdates;
+    private Boolean LogicAppIntegrationEnabled;
+    private Boolean TransportOrchestratorEnabled;
 }

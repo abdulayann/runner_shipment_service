@@ -635,7 +635,7 @@ public class ConsolidationService implements IConsolidationService {
             beforeSave(entity, oldEntity.get(), false);
             entity = consolidationDetailsDao.update(entity, false);
             syncConsole(entity, false);
-            pushShipmentDataToDependentService(entity, false);
+            pushShipmentDataToDependentService(entity, false, oldEntity.get().getContainersList());
             return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
         }
         catch (Exception e) {
@@ -931,7 +931,7 @@ public class ConsolidationService implements IConsolidationService {
                     log.error("Error performing sync on consolidation entity, {}", e);
                 }
             }
-            pushShipmentDataToDependentService(entity, false);
+            pushShipmentDataToDependentService(entity, false, oldEntity.get().getContainersList());
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
@@ -2726,7 +2726,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
         consolidationSync.syncLockStatus(consolidationDetails);
-        pushShipmentDataToDependentService(consolidationDetails, false);
+        pushShipmentDataToDependentService(consolidationDetails, false, consolidationDetails.getContainersList());
 
         return ResponseHelper.buildSuccessResponse();
     }
@@ -2872,7 +2872,7 @@ public class ConsolidationService implements IConsolidationService {
                 entity.setConsolidationAddresses(updatedParties);
             }
             if(!dataMigration)
-                pushShipmentDataToDependentService(entity, isCreate);
+                pushShipmentDataToDependentService(entity, isCreate, oldEntity.get().getContainersList());
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
@@ -3166,7 +3166,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setConsolidationAddresses(updatedFileRepos);
         }
 
-        pushShipmentDataToDependentService(consolidationDetails, isCreate);
+        pushShipmentDataToDependentService(consolidationDetails, isCreate, Optional.ofNullable(oldEntity).map(ConsolidationDetails::getContainersList).orElse(null));
         try {
             if (!isFromBooking)
                 consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);
@@ -3207,7 +3207,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate)
+    public void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, List<Containers> oldContainers)
     {
         try {
             if(consolidationDetails.getTenantId() == null)
@@ -3243,6 +3243,12 @@ public class ConsolidationService implements IConsolidationService {
             }
         } catch (Exception e) {
             log.error(e.getMessage());
+        }
+        try {
+            containerService.pushContainersToDependentServices(consolidationDetails.getContainersList(), oldContainers);
+        }
+        catch (Exception e) {
+            log.error("Error producing message due to " + e.getMessage());
         }
     }
 

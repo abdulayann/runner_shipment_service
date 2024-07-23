@@ -93,7 +93,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
-class ConsolidationServiceTest extends CommonMocks {
+  class ConsolidationServiceTest extends CommonMocks {
 
     @Mock
     private PartialFetchUtils partialFetchUtils;
@@ -2656,7 +2656,7 @@ class ConsolidationServiceTest extends CommonMocks {
         when(trackingServiceAdapter.getAllEvents(null,consolidationDetails, consolidationDetails.getReferenceNumber())).thenReturn(List.of());
         when(trackingServiceAdapter.mapEventDetailsForTracking(anyString(), anyString(), anyString(), anyList())).thenReturn(eventsPayload);
         doNothing().when(trackingServiceAdapter).publishUpdatesToTrackingServiceQueue("", true);
-        spyService.pushShipmentDataToDependentService(consolidationDetails, true);
+        spyService.pushShipmentDataToDependentService(consolidationDetails, true, null);
         verify(trackingServiceAdapter, times(1)).publishUpdatesToTrackingServiceQueue("", false);
         verify(trackingServiceAdapter, times(1)).publishUpdatesToTrackingServiceQueue("", true);
     }
@@ -2667,7 +2667,7 @@ class ConsolidationServiceTest extends CommonMocks {
         var spyService = Mockito.spy(consolidationService);
         when(producer.getKafkaResponse(any(), anyBoolean())).thenThrow(new RuntimeException());
         when(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails)).thenThrow(new RuntimeException());
-        spyService.pushShipmentDataToDependentService(consolidationDetails, true);
+        spyService.pushShipmentDataToDependentService(consolidationDetails, true, null);
         verify(producer, times(1)).getKafkaResponse(any(), anyBoolean());
         verify(trackingServiceAdapter, times(1)).checkIfConsolContainersExist(consolidationDetails);
     }

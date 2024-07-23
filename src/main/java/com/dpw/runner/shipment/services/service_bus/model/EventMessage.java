@@ -1,14 +1,13 @@
 package com.dpw.runner.shipment.services.service_bus.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Builder
 @Data
 @Getter @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class EventMessage {
     @JsonProperty("MessageType")
     private String messageType;
@@ -18,4 +17,7 @@ public class EventMessage {
 
     @JsonProperty("Request")
     private Object request;
+
+    @JsonProperty("ContainerUpdateRequest")
+    private ContainerUpdateRequest containerUpdateRequest;
 }
