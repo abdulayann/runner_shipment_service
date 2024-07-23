@@ -376,13 +376,8 @@ public class HblReport extends IReport{
             dictionary.put(DELIVERY_PHONE, getValueFromMap(notifyParty.getAddressData(), MOBILE));
             dictionary.put(DELIVERY_FAX, getValueFromMap(notifyParty.getAddressData(), FAX));
 
-            if (!Objects.isNull(hblModel.shipment.getIsNotifyConsigneeEqual()) && hblModel.shipment.getIsNotifyConsigneeEqual()) {
-                dictionary.put(NOTIFY_PARTY, "Same as Consignee");
-                dictionary.put(NOTIFY_PARTY_CAPS, "SAME AS CONSIGNEE");
-            } else {
-                dictionary.put(NOTIFY_PARTY, dictionary.get(NOTIFY_PARTY_ADDRESS));
-                dictionary.put(NOTIFY_PARTY_CAPS, notifyPartyAddress.stream().map(String::toUpperCase).toList());
-            }
+            dictionary.put(NOTIFY_PARTY, dictionary.get(NOTIFY_PARTY_ADDRESS));
+            dictionary.put(NOTIFY_PARTY_CAPS, notifyPartyAddress.stream().map(String::toUpperCase).toList());
         }
         List<String> consigner = null;
         List<String> consignee = null;
