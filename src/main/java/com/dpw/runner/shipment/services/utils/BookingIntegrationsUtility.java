@@ -86,6 +86,8 @@ public class BookingIntegrationsUtility {
     private List<String> failureNotificationEmailTo;
     @Value("#{'${platform.failure.notification.cc}'.split(',')}")
     private List<String> failureNotificationEmailCC;
+    @Value("${spring.profiles.active}")
+    private String currentEnvironment;
 
     static Integer maxAttempts = 5;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
@@ -532,7 +534,7 @@ public class BookingIntegrationsUtility {
 
     private void sendFailureAlerts(String request, String response, String bookingNumber) {
         try {
-            emailServiceUtility.sendEmail(String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_BODY, bookingNumber, request, response), String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_SUBJECT, bookingNumber), failureNotificationEmailTo, failureNotificationEmailCC, null, null);
+            emailServiceUtility.sendEmail(String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_BODY, bookingNumber, request, response), String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_SUBJECT, currentEnvironment, bookingNumber), failureNotificationEmailTo, failureNotificationEmailCC, null, null);
         } catch (Exception e) {
             log.error(e.getMessage());
         }
