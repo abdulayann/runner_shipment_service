@@ -80,4 +80,11 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     @Query(value = "SELECT * FROM awb WHERE shipment_id IN ?1", nativeQuery = true)
     List<Awb> findByShipmentIdList(List<Long> shipmentIds);
 
+    @Transactional
+    @Modifying
+    @Query("UPDATE Awb a SET a.airMessageResubmitted = false " +
+        "WHERE (:shipmentId IS NULL OR a.shipmentId = :shipmentId) " +
+        "AND (:consolidationId IS NULL OR a.consolidationId = :consolidationId)")
+    int setAirMessagingResubmittedFalse(Long shipmentId, Long consolidationId);
+
 }

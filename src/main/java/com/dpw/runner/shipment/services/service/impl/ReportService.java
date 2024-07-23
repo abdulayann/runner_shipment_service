@@ -258,6 +258,9 @@ public class ReportService implements IReportService {
         else if(report instanceof DeliveryOrderReport deliveryOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())){
             dataRetrived = deliveryOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
         }
+        else if(report instanceof TransportOrderReport transportOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())){
+            dataRetrived = transportOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
+        }
         else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
@@ -1113,7 +1116,9 @@ public class ReportService implements IReportService {
 
             stamper.close();
             reader.close();
-            return ms.toByteArray();
+            byte[] data = ms.toByteArray();
+            ms.reset();
+            return data;
         } catch (Exception e) {
             log.error(e.getMessage());
         }
@@ -1253,7 +1258,9 @@ public class ReportService implements IReportService {
             pdfReader1.close();
         }
         pdfConcat.close();
-        return addImage(destinationDocumentStream.toByteArray(), logoPath);
+        byte[] data = destinationDocumentStream.toByteArray();
+        destinationDocumentStream.reset();
+        return addImage(data, logoPath);
     }
 
     private Boolean isHblType(String type, String key)

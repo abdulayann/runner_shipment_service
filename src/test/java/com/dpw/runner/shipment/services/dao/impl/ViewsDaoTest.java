@@ -107,8 +107,8 @@ class ViewsDaoTest {
 
     @Test
     void findByCreatedByAndIsDefault() {
-        when(viewsRepository.findByCreatedByAndIsDefault(any())).thenReturn(new Views());
-        Optional<Views> views = viewsDao.findByCreatedByAndIsDefault("egy");
+        when(viewsRepository.findByCreatedByAndIsDefault(any(), any())).thenReturn(new Views());
+        Optional<Views> views = viewsDao.findByCreatedByAndEntityAndIsDefault("egy", "abc");
         assertTrue(views.isPresent());
     }
 

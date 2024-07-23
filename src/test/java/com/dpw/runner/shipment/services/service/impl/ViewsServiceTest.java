@@ -68,7 +68,7 @@ class ViewsServiceTest {
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
         ViewsResponse viewsResponse = new ViewsResponse();
-        when(viewsDao.findByCreatedByAndIsDefault(anyString())).thenReturn(Optional.of(views));
+        when(viewsDao.findByCreatedByAndEntityAndIsDefault(anyString(), any())).thenReturn(Optional.of(views));
         when(viewsDao.save(views)).thenReturn(views);
         when(jsonHelper.convertValue(any(ViewsRequest.class), eq(Views.class))).thenReturn(views);
         when(jsonHelper.convertValue(any(Views.class), eq(ViewsResponse.class))).thenReturn(viewsResponse);
@@ -124,7 +124,7 @@ class ViewsServiceTest {
         views.setCreatedBy("user");
         ViewsResponse viewsResponse = new ViewsResponse();
         when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
-        when(viewsDao.findByCreatedByAndIsDefault(anyString())).thenReturn(Optional.of(views));
+        when(viewsDao.findByCreatedByAndEntityAndIsDefault(anyString(), any())).thenReturn(Optional.of(views));
         when(viewsDao.save(any(Views.class))).thenReturn(views);
         when(jsonHelper.convertValue(any(ViewsRequest.class), eq(Views.class))).thenReturn(views);
         when(jsonHelper.convertValue(any(Views.class), eq(ViewsResponse.class))).thenReturn(viewsResponse);

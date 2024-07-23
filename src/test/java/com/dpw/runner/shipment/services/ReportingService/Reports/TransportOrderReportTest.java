@@ -29,6 +29,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
@@ -38,9 +39,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -123,6 +124,7 @@ class TransportOrderReportTest extends CommonMocks {
         shipmentModel.setConsignee(partiesModel);
         shipmentModel.setConsigner(partiesModel);
         shipmentModel.setClient(partiesModel);
+        shipmentModel.setTransportInstructionId(12L);
 
         CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
         carrierDetailModel.setOrigin("test");
@@ -296,5 +298,18 @@ class TransportOrderReportTest extends CommonMocks {
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         mockShipmentSettings();
         assertNotNull(transportOrderReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void testGetData_LargeTransportInstructionId() throws RunnerException {
+        Long largeTransportInstructionId = Long.MAX_VALUE;
+        var spyService = Mockito.spy(transportOrderReport);
+        Map<String, Object> dictionary = new HashMap<String, Object>();
+        TransportOrderModel model = new TransportOrderModel();
+        populateModel(model);
+        doReturn(model).when(spyService).getDocumentModel(any());
+        doReturn(dictionary).when(spyService).populateDictionary(any());
+        Map<String, Object> result = spyService.getData(1L, largeTransportInstructionId);
+        assertNotNull(result, "The result should not be null");
     }
 }

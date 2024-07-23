@@ -777,21 +777,28 @@ public class ConsolidationService implements IConsolidationService {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
         List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
         List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
-        if(mawbs != null && !mawbs.isEmpty()){
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consoleId);
+        if(consol.isPresent() && mawbs != null && !mawbs.isEmpty()){
             Awb mawb = mawbs.get(0);
-            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getPrintType(), PrintType.ORIGINAL_PRINTED) && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)) {
-                if (shipIdList != null && !shipIdList.isEmpty()) {
+            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)) {
+                if (!shipIdList.isEmpty()) {
                     List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
                     if (awbs != null && !awbs.isEmpty()) {
                         var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
                         if (isShipmentSciT1.isEmpty()) {
+                            mawb.setAirMessageResubmitted(false);
                             mawb.getAwbCargoInfo().setSci(null);
                             awbDao.save(mawb);
+                            consol.get().setSci(null);
+                            consolidationDetailsDao.save(consol.get(), false);
                         }
                     }
                 } else {
                     mawb.getAwbCargoInfo().setSci(null);
+                    mawb.setAirMessageResubmitted(false);
                     awbDao.save(mawb);
+                    consol.get().setSci(null);
+                    consolidationDetailsDao.save(consol.get(), false);
                 }
             }
         }
@@ -802,15 +809,19 @@ public class ConsolidationService implements IConsolidationService {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
         List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
         List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
-        if(mawbs != null && !mawbs.isEmpty() && shipIdList != null && !shipIdList.isEmpty()){
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consoleId);
+        if(consol.isPresent() && mawbs != null && !mawbs.isEmpty() && !shipIdList.isEmpty()){
             Awb mawb = mawbs.get(0);
-            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getPrintType(), PrintType.ORIGINAL_PRINTED) && !Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
+            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && !Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
                 List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
                 if(awbs != null && !awbs.isEmpty()) {
                     var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
                     if (!isShipmentSciT1.isEmpty()) {
                         mawb.getAwbCargoInfo().setSci(AwbConstants.T1);
+                        mawb.setAirMessageResubmitted(false);
                         awbDao.save(mawb);
+                        consol.get().setSci(AwbConstants.T1);
+                        consolidationDetailsDao.save(consol.get(), false);
                     }
                 }
             }
@@ -3076,6 +3087,11 @@ public class ConsolidationService implements IConsolidationService {
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate()) {
                 autoGenerateEvents(consolidationDetails);
             }
+        } else {
+            // Update AWB
+            if(checkForAwbUpdate(consolidationDetails, oldEntity)) {
+                awbDao.updatedAwbInformationEvent(consolidationDetails, oldEntity);
+            }
         }
 
         if(containerRequestList != null && (shipmentSettingsDetails.getMergeContainers() == null || !shipmentSettingsDetails.getMergeContainers())
@@ -3121,6 +3137,12 @@ public class ConsolidationService implements IConsolidationService {
                     CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
             });
         }
+    }
+
+    private boolean checkForAwbUpdate(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
+        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) return false;
+        if(!Objects.equals(consolidationDetails.getSci(), oldEntity.getSci())) return true;
+        return !Objects.equals(consolidationDetails.getEfreightStatus(), oldEntity.getEfreightStatus());
     }
 
     private void createLogHistoryForConsole(ConsolidationDetails consolidationDetails){

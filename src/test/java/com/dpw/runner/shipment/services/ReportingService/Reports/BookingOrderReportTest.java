@@ -288,7 +288,10 @@ class BookingOrderReportTest extends CommonMocks {
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
         referenceNumbersModel.setType(INVNO);
-        shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
+        ReferenceNumbersModel referenceNumbersModel2 = new ReferenceNumbersModel();
+        referenceNumbersModel2.setType("CON");
+        referenceNumbersModel2.setReferenceNumber("abcde");
+        shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel, referenceNumbersModel2));
     }
 
     private Hbl populateHbl(){

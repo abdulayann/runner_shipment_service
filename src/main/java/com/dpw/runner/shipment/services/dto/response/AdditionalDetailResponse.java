@@ -40,6 +40,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private BigDecimal spotRate;
     private String spotRateType;
     private String efreightStatus;
+    private String sci;
     private Boolean importExportShipmentLock;
     private String CHAJobNumber;
     private String ADCode;

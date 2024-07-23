@@ -248,7 +248,7 @@ public class AwbService implements IAwbService {
                         i.setAwbNumber(awb.getAwbNumber());
                     }
                 }
-                this.updateSciFieldFromHawb(awb, oldEntity.get(), false, id);
+                awbDao.updateSciFieldFromHawb(awb, oldEntity.get(), false, id);
             }
             awb = awbDao.save(awb);
 
@@ -276,40 +276,6 @@ public class AwbService implements IAwbService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
-    }
-
-    private void updateSciFieldFromHawb(Awb awb, Awb oldEntity, boolean isReset, Long awbId) throws RunnerException {
-        if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
-            List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
-            if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
-                Long mawbId = mawbHawbLinks.get(0).getMawbId();
-                Optional<Awb> mawb = awbDao.findById(mawbId);
-                if(mawb.isPresent() && !Objects.equals(mawb.get().getPrintType(), PrintType.ORIGINAL_PRINTED)){
-                    mawb.get().getAwbCargoInfo().setSci(awb.getAwbCargoInfo().getSci());
-                    awbDao.save(mawb.get());
-                }
-            }
-        } else if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && !Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1) && ((oldEntity != null && Objects.equals(oldEntity.getAwbCargoInfo().getSci(), AwbConstants.T1)) || isReset)){
-            List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
-            if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
-                Long mawbId = mawbHawbLinks.get(0).getMawbId();
-                List<Awb> hawbsList = getLinkedAwbFromMawb(mawbId);
-                boolean updateSci = false;
-                if(hawbsList != null && !hawbsList.isEmpty()){
-                    Optional<Awb> hawb = hawbsList.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1) && !Objects.equals(x.getId(), awbId)).findAny();
-                    if(!hawb.isPresent()){
-                        updateSci = true;
-                    }
-                }
-                if(updateSci) {
-                    Optional<Awb> mawb = awbDao.findById(mawbId);
-                    if (mawb.isPresent() && !Objects.equals(mawb.get().getPrintType(), PrintType.ORIGINAL_PRINTED) && Objects.equals(mawb.get().getAwbCargoInfo().getSci(), AwbConstants.T1)) {
-                        mawb.get().getAwbCargoInfo().setSci(null);
-                        awbDao.save(mawb.get());
-                    }
-                }
-            }
-        }
     }
 
     private void validateAwbBeforeUpdate(Awb awb) {
@@ -863,6 +829,7 @@ public class AwbService implements IAwbService {
                 .awbSpecialHandlingCodesMappings(sph)
                 .build();
         awb.setAwbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo()));
+        awb.getAwbCargoInfo().setSci(consolidationDetails.getSci());
         return awb;
     }
 
@@ -1216,6 +1183,7 @@ public class AwbService implements IAwbService {
                 .awbSpecialHandlingCodesMappings(sph)
                 .build();
         awb.setAwbCargoInfo(generateAwbCargoInfo(shipmentDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo()));
+        awb.getAwbCargoInfo().setSci(shipmentDetails.getAdditionalDetails().getSci());
         return awb;
     }
 
@@ -1640,7 +1608,7 @@ public class AwbService implements IAwbService {
                 else {
                     awb = generateAwb(createAwbRequest);
                     awb.setPrintType(printType);
-                    this.updateSciFieldFromHawb(awb, null, true, awbId);
+                    awbDao.updateSciFieldFromHawb(awb, null, true, awbId);
                 }
                 awb.setGuid(awbGuid);
                 awb.setAirMessageStatus(airMessageStatus);
@@ -2838,7 +2806,7 @@ public class AwbService implements IAwbService {
         if (!Objects.isNull(goodsDescriptionInfos)) {
             Map<UUID, List<AwbPackingInfo>> guidBasedAwbPackingList = new HashMap<>();
             if (!Objects.isNull(packsInfo)) {
-                if(!Objects.isNull(request.getIsFromShipment()) && Boolean.TRUE.equals(request.getIsFromShipment()) && goodsDescriptionInfos.get(0).getEntityType().equals(Constants.DMAWB)){
+                if(!Objects.isNull(request.getIsFromShipment()) && Boolean.TRUE.equals(request.getIsFromShipment()) && Objects.equals(goodsDescriptionInfos.get(0).getEntityType(), Constants.DMAWB)){
                     if(goodsDescriptionInfos.size() == 1){
                         request.setPackUpdate(true);
                         guidBasedAwbPackingList.put(goodsDescriptionInfos.get(0).getGuid(), packsInfo);

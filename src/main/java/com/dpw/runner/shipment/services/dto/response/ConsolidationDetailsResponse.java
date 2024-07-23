@@ -149,5 +149,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private PartiesResponse client;
     private PartiesResponse consigner;
     private PartiesResponse consignee;
+    private String sci;
 
 }
