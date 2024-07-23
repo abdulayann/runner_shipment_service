@@ -50,7 +50,12 @@ public class CustomerBookingConstants {
     public static final String RETRIEVE_BY_ORDER_ID_SUCCESSFUL = "Successful Booking Data Retrieval By Order Id";
     public static final String ORDER_ID = "Order Id";
 
-    public static final String PLATFORM_FAILURE_EMAIL_SUBJECT = "Reverse Integration from Runner to Platform Failed on Env: %s for Booking Number: %s";
-    public static final String PLATFORM_FAILURE_EMAIL_BODY = "Hi, \n\nReverse Integration from Runner to Platform Failed for Booking Number: %s. \n\nRequest Sent: %s \n\nResponse Received: %s \n\nRegards, \nCargoes Runner Team";
+    public static final String PLATFORM_FAILURE_EMAIL_SUBJECT = "Reverse Integration Sync failed for Booking ID %s";
+    public static final String PLATFORM_FAILURE_EMAIL_BODY = "An error has occurred for Customer Reference No. BOOKING_ID  during the reverse sync process to the platform. The details of the error are as follows:\n\nBooking ID: BOOKING_ID\n\nShipment ID: SHIPMENT_ID\n\nPlatform Response: RESPONSE\n\nRunner Request: REQUEST \n\nRequest to resolve the issue at the earliest.\n\nRegards, \nCargoes Runner";
 
+    public static final String SHIPMENT_ID = "SHIPMENT_ID";
+    public static final String BOOKING_NUMBER = "BOOKING_ID";
+    public static final String RESPONSE = "RESPONSE";
+    public static final String REQUEST = "REQUEST";
+    public static final String SHIPMENT_NOT_CREATED = "Shipment Not created";
 }

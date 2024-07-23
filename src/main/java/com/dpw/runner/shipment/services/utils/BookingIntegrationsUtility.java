@@ -82,12 +82,12 @@ public class BookingIntegrationsUtility {
     @Autowired
     private EmailServiceUtility emailServiceUtility;
 
+    @Value("${platform.failure.notification.enabled}")
+    private Boolean isFailureNotificationEnabled;
     @Value("#{'${platform.failure.notification.to}'.split(',')}")
     private List<String> failureNotificationEmailTo;
     @Value("#{'${platform.failure.notification.cc}'.split(',')}")
     private List<String> failureNotificationEmailCC;
-    @Value("${spring.profiles.active}")
-    private String currentEnvironment;
 
     static Integer maxAttempts = 5;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
@@ -114,7 +114,7 @@ public class BookingIntegrationsUtility {
         } catch (Exception ex) {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, ex.getLocalizedMessage());
             log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
-            sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(ex.getLocalizedMessage()), customerBooking.getBookingNumber());
+            sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(ex.getLocalizedMessage()), customerBooking.getBookingNumber(), null);
         }
     }
 
@@ -125,7 +125,7 @@ public class BookingIntegrationsUtility {
         } catch (Exception e) {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
             log.error("Booking Update error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), e.getMessage());
-            sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), customerBooking.getBookingNumber());
+            sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), customerBooking.getBookingNumber(), null);
         }
     }
 
@@ -137,7 +137,7 @@ public class BookingIntegrationsUtility {
             } catch (Exception e) {
                 this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
                 log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
-                sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingNumber());
+                sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingNumber(), shipmentDetails.getShipmentId());
             }
         }
     }
@@ -532,9 +532,15 @@ public class BookingIntegrationsUtility {
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(criteria1, "and", criteria2), "and", criteria3)).build();
     }
 
-    private void sendFailureAlerts(String request, String response, String bookingNumber) {
+    private void sendFailureAlerts(String request, String response, String bookingNumber, String shipmentId) {
         try {
-            emailServiceUtility.sendEmail(String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_BODY, bookingNumber, request, response), String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_SUBJECT, currentEnvironment, bookingNumber), failureNotificationEmailTo, failureNotificationEmailCC, null, null);
+            var body = CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_BODY;
+            body = body.replace(CustomerBookingConstants.BOOKING_NUMBER, bookingNumber);
+            body = body.replace(CustomerBookingConstants.SHIPMENT_ID, Objects.isNull(shipmentId) ? CustomerBookingConstants.SHIPMENT_NOT_CREATED : shipmentId);
+            body = body.replace(CustomerBookingConstants.RESPONSE, response);
+            body = body.replace(CustomerBookingConstants.REQUEST, request);
+            if (Boolean.TRUE.equals(isFailureNotificationEnabled))
+                emailServiceUtility.sendEmail(body, String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_SUBJECT, bookingNumber), failureNotificationEmailTo, failureNotificationEmailCC, null, null);
         } catch (Exception e) {
             log.error(e.getMessage());
         }

@@ -92,7 +92,6 @@ class BookingIntegrationsUtilityTest {
     @Test
     void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType() throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
-
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
         when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
