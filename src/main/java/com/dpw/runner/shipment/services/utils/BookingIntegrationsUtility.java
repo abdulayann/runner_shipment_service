@@ -78,6 +78,8 @@ public class BookingIntegrationsUtility {
     private IShipmentService shipmentService;
     @Autowired
     private MasterDataFactory masterDataFactory;
+    @Autowired
+    private EmailServiceUtility emailServiceUtility;
 
     static Integer maxAttempts = 5;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
@@ -94,35 +96,41 @@ public class BookingIntegrationsUtility {
     );
 
     public void createBookingInPlatform(CustomerBooking customerBooking) {
+        var request = createPlatformCreateRequest(customerBooking);
         try {
-            platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
+            platformServiceAdapter.createAtPlatform(request);
             int count = customerBookingDao.updateIsPlatformBookingCreated(customerBooking.getId(), true);
-            if(count == 0){
+            if(count == 0)
                 throw new ValidationException("No booking found to update IsPlatformBookingCreated flag");
-            }
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.SUCCESS, "SAVED SUCESSFULLY");
         } catch (Exception ex) {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, ex.getLocalizedMessage());
             log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
+            sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(ex.getLocalizedMessage()), customerBooking.getBookingNumber());
         }
     }
 
     public void updateBookingInPlatform(CustomerBooking customerBooking) {
+        var request = createPlatformUpdateRequest(customerBooking);
         try {
-            platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
+            platformServiceAdapter.updateAtPlaform(request);
         } catch (Exception e) {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
             log.error("Booking Update error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), e.getMessage());
+            sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), customerBooking.getBookingNumber());
         }
     }
 
     public void updateBookingInPlatform(ShipmentDetails shipmentDetails) {
-        try {
-            if (Objects.equals(shipmentDetails.getBookingType(), CustomerBookingConstants.ONLINE))
-                platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequestFromShipment(shipmentDetails));
-        } catch (Exception e) {
-            this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
-            log.error("Booking Update error from Platform for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
+        if (Objects.equals(shipmentDetails.getBookingType(), CustomerBookingConstants.ONLINE)) {
+            var request = createPlatformUpdateRequestFromShipment(shipmentDetails);
+            try {
+                platformServiceAdapter.updateAtPlaform(request);
+            } catch (Exception e) {
+                this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
+                log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
+                sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingNumber());
+            }
         }
     }
 
@@ -516,5 +524,11 @@ public class BookingIntegrationsUtility {
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(criteria1, "and", criteria2), "and", criteria3)).build();
     }
 
-
+    private void sendFailureAlerts(String request, String response, String bookingNumber) {
+        try {
+            emailServiceUtility.sendEmail(String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_BODY, bookingNumber, request, response), String.format(CustomerBookingConstants.PLATFORM_FAILURE_EMAIL_SUBJECT, bookingNumber), List.of("wasim.jafar.dtu@gmail.com"), null, null, null);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
 }

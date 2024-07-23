@@ -50,4 +50,7 @@ public class CustomerBookingConstants {
     public static final String RETRIEVE_BY_ORDER_ID_SUCCESSFUL = "Successful Booking Data Retrieval By Order Id";
     public static final String ORDER_ID = "Order Id";
 
+    public static final String PLATFORM_FAILURE_EMAIL_SUBJECT = "Reverse Integration from Runner to Platform Failed for Booking Number: %s";
+    public static final String PLATFORM_FAILURE_EMAIL_BODY = "Hi, \n\nReverse Integration from Runner to Platform Failed for Booking Number: %s. \n\nRequest Sent: %s \n\nResponse Received: %s \n\nRegards, \nCargoes Runner Team";
+
 }

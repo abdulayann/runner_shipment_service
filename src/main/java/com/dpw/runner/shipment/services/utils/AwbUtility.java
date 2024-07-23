@@ -749,7 +749,7 @@ public class AwbUtility {
         }
         body = body + "\n \n Please rectify the data as per the failure comment and resend the messages by clicking on the \"Print\" button in the MAWB. \n \n" +
                         "Thank you!\n" + "Cargoes Runner";
-        emailServiceUtility.sendEmail(body, subject, emailIds, null, null);
+        emailServiceUtility.sendEmail(body, subject, emailIds, null, null, null);
     }
 
     private void updateAwbStatusForFsuUpdate(Awb awb, String eventCode, List<ConsoleShipmentMapping> consoleShipmentMappings) {
