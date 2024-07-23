@@ -2309,6 +2309,7 @@ class ConsolidationServiceTest extends CommonMocks {
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
 
+        mockShipmentSettings();
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
@@ -2368,7 +2369,7 @@ class ConsolidationServiceTest extends CommonMocks {
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
-
+        mockShipmentSettings();
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
@@ -2395,7 +2396,7 @@ class ConsolidationServiceTest extends CommonMocks {
         testConsol.setShipmentsList(new ArrayList<>(List.of(shipmentDetails, shipmentDetails1)));
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
-
+        mockShipmentSettings();
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));

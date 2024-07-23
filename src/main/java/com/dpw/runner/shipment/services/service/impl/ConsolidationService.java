@@ -3490,7 +3490,7 @@ public class ConsolidationService implements IConsolidationService {
 
     private ConsolidationDetailsResponse partyCheckForConsole(ConsolidationDetails consolidationDetails, AutoAttachConsolidationRequest request) {
         List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList();
-        ShipmentSettingsDetails  shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails  shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         Parties client;
         Parties consigner;
         Parties consignee;
