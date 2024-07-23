@@ -1576,6 +1576,9 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
         }
 
+    }
+
+    public void validateRaKcDetails(ShipmentDetails shipmentDetails) throws RunnerException {
         Parties consignor = shipmentDetails.getConsigner();
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {

@@ -37,10 +37,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.SaveStatus;
@@ -86,6 +83,9 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 @Service
 @Slf4j
 public class AwbService implements IAwbService {
+
+    @Autowired
+    private IConsolidationService consolidationService;
 
     @Autowired
     private IAwbDao awbDao;
@@ -166,7 +166,7 @@ public class AwbService implements IAwbService {
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
 
-
+    private static final String errorMessage = "You cannot generate the AWB without adding the screening/ Security status for RA KC shipments";
 
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
@@ -821,6 +821,12 @@ public class AwbService implements IAwbService {
                     .build());
         }
 
+        try {
+            consolidationService.validateRaKcForConsol(consolidationDetails);
+        }catch (Exception e) {
+            throw new RunnerException(errorMessage);
+        }
+
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
         Awb awb = Awb.builder()
                 .awbNumber(consolidationDetails.getMawb())
@@ -1172,6 +1178,12 @@ public class AwbService implements IAwbService {
                     .entityId(shipmentDetails.getId())
                     .entityType(request.getAwbType())
                     .build());
+        }
+
+        try{
+            shipmentService.validateRaKcDetails(shipmentDetails);
+        }catch (Exception ex){
+            throw new RunnerException(errorMessage);
         }
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
