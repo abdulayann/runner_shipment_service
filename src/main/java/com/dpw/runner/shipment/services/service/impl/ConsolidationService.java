@@ -3449,9 +3449,9 @@ public class ConsolidationService implements IConsolidationService {
     private ConsolidationDetailsResponse partyCheckForConsole(ConsolidationDetails consolidationDetails, AutoAttachConsolidationRequest request) {
         List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList();
         ShipmentSettingsDetails  shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-        Parties client = new Parties();
-        Parties consigner = new Parties();
-        Parties consignee = new Parties();
+        Parties client;
+        Parties consigner;
+        Parties consignee;
         boolean isLcl = true;
         boolean isFcl = true;
         if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
