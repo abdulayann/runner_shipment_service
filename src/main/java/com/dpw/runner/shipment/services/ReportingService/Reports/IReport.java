@@ -3005,6 +3005,9 @@ public abstract class IReport {
         dictionary.put(TI_DELIVERY_AGENT_ADDRESS, deliveryAgent.isPresent() ? getFormattedAddress(deliveryAgent.get(),false) : "");
         dictionary.put(TI_DELIVERY_AGENT_CONTACT, deliveryAgent.isPresent() ? ReportHelper.getValueFromMap(deliveryAgent.get().getAddressData(), ReportConstants.CONTACT_PHONE) : "");
 
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
+
         dictionary.put(TI_TRANSPORTCOMPANY, ti.getTransporterDetail() != null && ti.getTransporterDetail().getOrgData() != null ? ti.getTransporterDetail().getOrgData().get(FULL_NAME) : "");
         dictionary.put(TI_PICKUPFROM, ti.getSourceDetail() != null && ti.getSourceDetail().getOrgData() != null ? ti.getSourceDetail().getOrgData().get(FULL_NAME) : "");
         dictionary.put(TI_DELIVERTO, ti.getDestinationDetail() != null && ti.getDestinationDetail().getOrgData() != null ? ti.getDestinationDetail().getOrgData().get(FULL_NAME) : "");
@@ -3016,16 +3019,15 @@ public abstract class IReport {
         dictionary.put(TI_DELIVERTOCONTACT, ti.getDestinationDetail() != null ? ReportHelper.getValueFromMap(ti.getDestinationDetail().getAddressData(), CONTACT_PHONE) : "");
         dictionary.put(TI_REMARKS, ti.getRemarks());
         dictionary.put(TI_PORTTRANSPORTADVISED, ti.getPortTransportAdvised());
-        dictionary.put(TI_REQUIREDBY, ti.getRequiredBy());
-        dictionary.put(TI_ESTIMATEDPICKUP, ConvertToDPWDateFormat(ti.getEstimatedPickup()));
-        dictionary.put(TI_ESTIMATEDDELIVERY, ConvertToDPWDateFormat(ti.getEstimatedDelivery()));
-        dictionary.put(TI_ACTUALPICKUP, ConvertToDPWDateFormat(ti.getActualPickup()));
-        dictionary.put(TI_ACTUALDELIVERY, ConvertToDPWDateFormat(ti.getActualDelivery()));
-        dictionary.put(TI_PICKUP_GATEIN, ConvertToDPWDateFormat(ti.getPickupGateIn()));
-        dictionary.put(TI_PICKUP_GATEOUT, ConvertToDPWDateFormat(ti.getPickupGateOut()));
-        dictionary.put(TI_DELIVERY_GATEIN, ConvertToDPWDateFormat(ti.getDeliveryGateIn()));
-        dictionary.put(TI_DELIVERY_GATEOUT, ConvertToDPWDateFormat(ti.getDeliveryGateOut()));
-
+        dictionary.put(TI_REQUIREDBY, ConvertToDPWDateFormat(ti.getRequiredBy(), tsDateTimeFormat, true));
+        dictionary.put(TI_ESTIMATEDPICKUP, ConvertToDPWDateFormat(ti.getEstimatedPickup() , tsDateTimeFormat, true));
+        dictionary.put(TI_ESTIMATEDDELIVERY, ConvertToDPWDateFormat(ti.getEstimatedDelivery() , tsDateTimeFormat, true));
+        dictionary.put(TI_ACTUALPICKUP, ConvertToDPWDateFormat(ti.getActualPickup() , tsDateTimeFormat, true));
+        dictionary.put(TI_ACTUALDELIVERY, ConvertToDPWDateFormat(ti.getActualDelivery() , tsDateTimeFormat, true));
+        dictionary.put(TI_PICKUP_GATEIN, ConvertToDPWDateFormat(ti.getPickupGateIn() , tsDateTimeFormat, true));
+        dictionary.put(TI_PICKUP_GATEOUT, ConvertToDPWDateFormat(ti.getPickupGateOut() , tsDateTimeFormat, true));
+        dictionary.put(TI_DELIVERY_GATEIN, ConvertToDPWDateFormat(ti.getDeliveryGateIn() , tsDateTimeFormat, true));
+        dictionary.put(TI_DELIVERY_GATEOUT, ConvertToDPWDateFormat(ti.getDeliveryGateOut() , tsDateTimeFormat, true));
     }
 
     public V1TenantSettingsResponse getCurrentTenantSettings() {
