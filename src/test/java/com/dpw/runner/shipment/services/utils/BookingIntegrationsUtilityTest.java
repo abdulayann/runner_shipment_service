@@ -207,6 +207,14 @@ class BookingIntegrationsUtilityTest {
     }
 
     @Test
+    void testUpdateBookingInPlatform_fromShipment_Offline() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.RUNNER);
+        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
+        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
+    }
+
+    @Test
     void testUpdateBookingInPlatform_fromShipment_LCL_DifferentShipmentStatus_successfulUpdate() throws RunnerException {
 
         var bookedShipment = jsonTestUtility.getTestShipment();
