@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
+import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
@@ -70,9 +71,8 @@ class NPMControllerTest {
     void fetchContracts() throws RunnerException {
         // Mock
         when(npmService.fetchContracts(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        when(jsonHelper.convertValue(any(), eq(ListContractRequest.class))).thenReturn(ListContractRequest.builder().build());
         // Test
-        var responseEntity = npmController.fetchContracts(ListContractRequest.builder().build());
+        var responseEntity = npmController.fetchContracts(ListContractsWithFilterRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -81,9 +81,8 @@ class NPMControllerTest {
     void fetchContracts2() throws RunnerException {
         // Mock
         when(npmService.fetchContracts(any())).thenThrow(new RuntimeException());
-        when(jsonHelper.convertValue(any(), eq(ListContractRequest.class))).thenReturn(ListContractRequest.builder().build());
         // Test
-        var responseEntity = npmController.fetchContracts(ListContractRequest.builder().build());
+        var responseEntity = npmController.fetchContracts(ListContractsWithFilterRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -92,9 +91,8 @@ class NPMControllerTest {
     void fetchContracts3() throws RunnerException {
         // Mock
         when(npmService.fetchContracts(any())).thenThrow(new RuntimeException("RuntimeException"));
-        when(jsonHelper.convertValue(any(), eq(ListContractRequest.class))).thenReturn(ListContractRequest.builder().build());
         // Test
-        var responseEntity = npmController.fetchContracts(ListContractRequest.builder().build());
+        var responseEntity = npmController.fetchContracts(ListContractsWithFilterRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
