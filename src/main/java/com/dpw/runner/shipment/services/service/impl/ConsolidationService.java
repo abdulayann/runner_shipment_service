@@ -3286,7 +3286,7 @@ public class ConsolidationService implements IConsolidationService {
         String transportMode = shipment.getTransportMode() == null ? tenantSettings.get().getDefaultTransportMode(): shipment.getTransportMode();
 
         consol = ConsolidationDetailsResponse.builder()
-                .consolidationType(Constants.SHIPMENT_TYPE_DRT)
+                .consolidationType(shipment.getJobType())
                 .transportMode(transportMode)
                 .containerCategory(shipment.getShipmentType() == null ? tenantSettings.get().getDefaultContainerType() : shipment.getShipmentType())
                 .declarationType(additionalDetails != null ? additionalDetails.getCustomDeclType() : null)
