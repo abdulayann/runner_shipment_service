@@ -12,7 +12,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.nimbusds.jose.util.Pair;
-import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMPTY_STRING;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Component
@@ -61,19 +61,19 @@ public class ManifestPrintReport extends IReport {
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedWeight() != null) {
             dictionary.put(ReportConstants.PWEIGHT_UNIT, ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidatedWeight(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
         } else {
-            dictionary.put(ReportConstants.PWEIGHT_UNIT, StringUtil.EMPTY_STRING);
+            dictionary.put(ReportConstants.PWEIGHT_UNIT, EMPTY_STRING);
         }
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedVolume() != null) {
             dictionary.put(ReportConstants.PVOLUME_UNIT, ConvertToVolumeNumberFormat(consol.getAchievedQuantities().getConsolidatedVolume(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
         } else {
-            dictionary.put(ReportConstants.PVOLUME_UNIT, StringUtil.EMPTY_STRING);
+            dictionary.put(ReportConstants.PVOLUME_UNIT, EMPTY_STRING);
         }
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidationChargeQuantity() != null) {
             dictionary.put(ReportConstants.PCHARGE_UNIT, ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidationChargeQuantity(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidationChargeQuantityUnit());
         } else {
-            dictionary.put(ReportConstants.PCHARGE_UNIT, StringUtil.EMPTY_STRING);
+            dictionary.put(ReportConstants.PCHARGE_UNIT, EMPTY_STRING);
         }
 
         var containersList = consol.getContainersList();

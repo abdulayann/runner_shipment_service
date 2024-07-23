@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.dto.request.reportService.MailAuditLogRe
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
-import io.netty.util.internal.StringUtil;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -74,7 +74,7 @@ public class NotificationRestClient {
         List<String> bccEmailsList = getEmailsListFromString(params.getBccEmails());
 
 
-        var subject = !StringUtil.isNullOrEmpty(sub) ? sub : "CargoRunner Notifications";
+        var subject = !StringUtility.isEmpty(sub) ? sub : "CargoRunner Notifications";
         try {
             var user = UserContext.getUser();
             MailAuditLogRequest request = MailAuditLogRequest.builder()
