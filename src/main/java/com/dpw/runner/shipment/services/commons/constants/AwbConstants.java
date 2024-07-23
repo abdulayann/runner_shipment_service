@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import java.util.List;
+
 public class AwbConstants {
     private AwbConstants(){}
     public static final String AWB_API_HANDLE = "/api/v2/awb";
@@ -44,6 +46,7 @@ public class AwbConstants {
     public static final String RESUBMIT_FZB_VALIDATION = "HAWB is updated, please resubmit the FZB by printing the original MAWB";
     public static final String RESUBMIT_FWB_VALIDATION = "MAWB is updated, please resubmit the FWB by printing the original MAWB";
     public static final String ORDER_NUMBER = "ORDER NO: %s";
+    public static final List<String> SecurityStatusList = List.of("SPX", "SHR", "SCO");
 
     // csdInfo format : RA#/Security status/screening status/timestamp of awb print
     public static final String CSD_INFO_FORMAT = "%s/%s/%s/";
