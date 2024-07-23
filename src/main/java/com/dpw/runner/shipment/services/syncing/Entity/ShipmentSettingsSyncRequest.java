@@ -322,4 +322,6 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private String transportInstructionPickupOrder;
     @JsonProperty("TransportInstructionDeliveryOrder")
     private String transportInstructionDeliveryOrder;
+    @JsonProperty("EnablePartyCheckForConsolidation")
+    private Boolean enablePartyCheckForConsolidation;
 }
