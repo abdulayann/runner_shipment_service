@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
+import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
@@ -183,7 +184,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Override
     public ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
-            ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
+            ListContractsWithFilterRequest listContractsWithFilterRequest = (ListContractsWithFilterRequest) commonRequestModel.getData();
+            ListContractRequest listContractRequest = listContractsWithFilterRequest.getListContractRequest();
             String url = npmBaseUrl + npmContracts;
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
@@ -194,6 +196,18 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 if(list != null && !list.isEmpty())
                 {
                     list = list.stream().filter(c -> c.getValidTill() != null && LocalDateTime.now().isBefore(c.getValidTill())).toList();
+                    if(listContractsWithFilterRequest.getCargoType() != null)
+                    {
+                        list = list.stream().filter(c -> listContractsWithFilterRequest.getCargoType().equals(c.getProduct_type())).toList();
+                    }
+                    if(listContractsWithFilterRequest.getOrigin() != null)
+                    {
+                        list = list.stream().filter(c -> listContractsWithFilterRequest.getOrigin().equals(c.getOrigin())).toList();
+                    }
+                    if(listContractsWithFilterRequest.getDestination() != null)
+                    {
+                        list = list.stream().filter(c -> listContractsWithFilterRequest.getDestination().equals(c.getDestination())).toList();
+                    }
                     npmContractsResponse.setContracts(list);
                 }
             }

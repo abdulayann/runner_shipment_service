@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
+import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
@@ -509,108 +510,7 @@ class NPMServiceAdapterTest {
      * {@link NPMServiceAdapter#fetchContracts(CommonRequestModel)}
      */
     @Test
-    void testFetchContracts() throws RunnerException, RestClientException {
-        // Arrange
-        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
-        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
-                .thenReturn(new ResponseEntity<>(HttpStatus.CONTINUE));
-        CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
-                CommonRequestModel.CommonRequestModelBuilder.class);
-        when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
-        ArrayList<IRunnerRequest> dataList = new ArrayList<>();
-        CommonRequestModel commonRequestModel = dataResult.dataList(dataList)
-                .dependentData("Dependent Data")
-                .guid("1234")
-                .id(1L)
-                .build();
-
-        // Act
-        ResponseEntity<IRunnerResponse> actualFetchContractsResult = nPMServiceAdapter.fetchContracts(commonRequestModel);
-
-        // Assert
-        verify(commonRequestModelBuilder).data(isA(IRunnerRequest.class));
-        verify(jsonHelper, atLeast(1)).convertToJson(isNull());
-        verify(restTemplate3).exchange(isA(RequestEntity.class), isA(Class.class));
-        assertNull(((DependentServiceResponse) actualFetchContractsResult.getBody()).getError());
-        assertNull(((DependentServiceResponse) actualFetchContractsResult.getBody()).getRequestId());
-        assertEquals(0L, ((DependentServiceResponse) actualFetchContractsResult.getBody()).getNumberOfRecords());
-        assertEquals(0L, ((DependentServiceResponse) actualFetchContractsResult.getBody()).getPageNo());
-        assertEquals(0L, ((DependentServiceResponse) actualFetchContractsResult.getBody()).getPageSize());
-        assertEquals(HttpStatus.OK, actualFetchContractsResult.getStatusCode());
-        assertTrue(((DependentServiceResponse) actualFetchContractsResult.getBody()).isSuccess());
-        assertTrue(actualFetchContractsResult.hasBody());
-        assertTrue(actualFetchContractsResult.getHeaders().isEmpty());
-        assertEquals(dataList, ((DependentServiceResponse) actualFetchContractsResult.getBody()).getData());
-    }
-
-    /**
-     * Method under test:
-     * {@link NPMServiceAdapter#fetchContracts(CommonRequestModel)}
-     */
-    @Test
-    void testFetchContracts2() throws RunnerException, RestClientException {
-        // Arrange
-        NpmErrorResponse buildResult = NpmErrorResponse.builder().errorMessage("An error occurred").success(true).build();
-        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<NpmErrorResponse>>any()))
-                .thenReturn(buildResult);
-        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
-        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
-                .thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
-        CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
-                CommonRequestModel.CommonRequestModelBuilder.class);
-        when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
-        CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
-                .dependentData("Dependent Data")
-                .guid("1234")
-                .id(1L)
-                .build();
-
-        // Act and Assert
-        assertThrows(NPMException.class, () -> nPMServiceAdapter.fetchContracts(commonRequestModel));
-        verify(commonRequestModelBuilder).data(isA(IRunnerRequest.class));
-        verify(jsonHelper, atLeast(1)).convertToJson(Mockito.<NpmErrorResponse>any());
-        verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
-        verify(restTemplate3).exchange(isA(RequestEntity.class), isA(Class.class));
-    }
-
-    /**
-     * Method under test:
-     * {@link NPMServiceAdapter#fetchContracts(CommonRequestModel)}
-     */
-    @Test
-    void testFetchContracts3() throws RunnerException, RestClientException {
-        // Arrange
-        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<NpmErrorResponse>>any()))
-                .thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
-        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
-        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
-                .thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
-        CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
-                CommonRequestModel.CommonRequestModelBuilder.class);
-        when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
-        CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
-                .dependentData("Dependent Data")
-                .guid("1234")
-                .id(1L)
-                .build();
-
-        // Act and Assert
-        assertThrows(HttpClientErrorException.class, () -> nPMServiceAdapter.fetchContracts(commonRequestModel));
-        verify(commonRequestModelBuilder).data(isA(IRunnerRequest.class));
-        verify(jsonHelper, atLeast(1)).convertToJson(isNull());
-        verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
-        verify(restTemplate3).exchange(isA(RequestEntity.class), isA(Class.class));
-    }
-
-    /**
-     * Method under test:
-     * {@link NPMServiceAdapter#fetchContracts(CommonRequestModel)}
-     */
-    @Test
-    void testFetchContracts4() throws RunnerException {
+    void testFetchContracts() throws RunnerException {
         // Arrange
         NpmErrorResponse buildResult = NpmErrorResponse.builder().errorMessage("An error occurred").success(true).build();
         when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<NpmErrorResponse>>any()))
@@ -627,7 +527,7 @@ class NPMServiceAdapterTest {
     }
 
     @Test
-    void testFetchContracts5() throws RunnerException {
+    void testFetchContracts2() throws RunnerException {
         NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
         List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
         contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
@@ -648,7 +548,34 @@ class NPMServiceAdapterTest {
         unlocations.add(unlocationsResponse1);
         when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new ListContractRequest()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ListContractsWithFilterRequest.builder().listContractRequest(new ListContractRequest()).build()).build();
+        var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testFetchContracts3() throws RunnerException {
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").validTill(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        npmContractsResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(npmContractsResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(npmContractsResponse);
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocationsReferenceGUID("2");
+        unlocations.add(unlocationsResponse1);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ListContractsWithFilterRequest.builder().listContractRequest(new ListContractRequest()).cargoType("LCL").origin("a").destination("b").build()).build();
         var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
