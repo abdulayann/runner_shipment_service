@@ -1611,11 +1611,11 @@ public class ContainerService implements IContainerService {
 
     public void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers) {
         Map<Long, String> oldContsMap = new HashMap<>();
-        if(oldContainers != null && oldContainers.size() > 0) {
+        if(oldContainers != null && !oldContainers.isEmpty()) {
             oldContsMap = oldContainers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         }
         V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
-        if(containersList != null && containersList.size() > 0 && (Boolean.TRUE.equals(v1TenantSettingsResponse.getLogicAppIntegrationEnabled())
+        if(containersList != null && !containersList.isEmpty() && (Boolean.TRUE.equals(v1TenantSettingsResponse.getLogicAppIntegrationEnabled())
             || Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled()))) {
             EventMessage eventMessage = new EventMessage();
             eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);

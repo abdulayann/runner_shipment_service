@@ -3818,7 +3818,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void updateCatch() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(RunnerException.class, () -> {
             shipmentService.update(commonRequestModel);
         });
     }
