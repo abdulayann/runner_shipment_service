@@ -73,6 +73,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.NoTransactionException;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -669,6 +670,43 @@ class ConsolidationServiceTest extends CommonMocks {
     }
 
     @Test
+    void testCompleteUpdate_Success_LCLConsolidation() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+        ShipmentDetails shipmentDetails2 = new ShipmentDetails();
+        ShipmentRequest shipmentDetails1 = new ShipmentRequest();
+        shipmentDetails1.setShipmentGateInDate(LocalDateTime.now());
+        shipmentDetails2.setShipmentGateInDate(LocalDateTime.now());
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        copy.setCfsCutOffDate(LocalDateTime.MIN);
+        copy.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        copy.setShipmentType(Constants.DIRECTION_EXP);
+        List<ShipmentRequest> shipmentRequests = new ArrayList<>();
+        shipmentRequests.add(shipmentDetails1);
+        copy.setShipmentsList(shipmentRequests);
+        copy.setContainersList(null);
+
+        consolidationDetails.setCfsCutOffDate(LocalDateTime.MIN);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        List<ShipmentDetails> shipmentDetailsRequests = new ArrayList<>();
+        shipmentDetailsRequests.add(shipmentDetails2);
+        consolidationDetails.setShipmentsList(shipmentDetailsRequests);
+        consolidationDetails.setContainersList(null);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        mockShipmentSettings();
+        mockTenantSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableLclConsolidation(true);
+        assertThrows(NoTransactionException.class, () -> spyService.completeUpdate(commonRequestModel));
+    }
+
+    @Test
     void testCreate_SyncFailure() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -897,6 +935,50 @@ class ConsolidationServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testAttachShipments_Success_Sea_LCLConsole() throws RunnerException {
+        List<Long> shipmentIds = List.of(1L, 2L);
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setConsolidationId(1L);
+        consoleShipmentMapping.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Containers containers = new Containers();
+        containers.setId(1L);
+        shipmentDetails.setContainersList(List.of(containers));
+        shipmentDetails.setId(2L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setCarrierDetails(new CarrierDetails());
+        shipmentDetails.setShipmentGateInDate(LocalDateTime.now());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.setCfsCutOffDate(LocalDateTime.MIN);
+
+        ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
+        consoleShipmentMapping1.setShipmentId(2L);
+        consoleShipmentMapping1.setConsolidationId(1L);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setCarrierDetails(new CarrierDetails());
+
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
+        when(consoleShipmentMappingDao.assignShipments(anyLong(), any(), any())).thenReturn(List.of(2L));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
+        doNothing().when(containerService).afterSaveList(anyList(),anyBoolean());
+        mockShipmentSettings();
+        mockTenantSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableLclConsolidation(true);
+        assertThrows(RunnerException.class, () -> consolidationService.attachShipments(1L, shipmentIds));
     }
 
     @Test
@@ -3107,5 +3189,30 @@ class ConsolidationServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         consolidationService.checkSciForAttachConsole(1L);
         verify(consolidationDetailsDao, times(1)).findById(any());
+    }
+
+    @Test
+    void checkCFSDateValidation() {
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(testShipment);
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testConsol.setShipmentType(Constants.DIRECTION_EXP);
+        mockShipmentSettings();
+        assertFalse(consolidationService.checkCFSDateValidation(shipmentDetailsList, testConsol));
+    }
+
+    @Test
+    void checkIfShipmentDateGreaterThanConsole() {
+        assertTrue(consolidationService.checkIfShipmentDateGreaterThanConsole(LocalDateTime.now(), LocalDateTime.MIN));
+    }
+
+    @Test
+    void checkIfShipmentDateGreaterThanConsole_nullShipDate() {
+        assertFalse(consolidationService.checkIfShipmentDateGreaterThanConsole(null, LocalDateTime.now()));
+    }
+
+    @Test
+    void checkIfShipmentDateGreaterThanConsole_null() {
+        assertFalse(consolidationService.checkIfShipmentDateGreaterThanConsole(LocalDateTime.now(), null));
     }
 }

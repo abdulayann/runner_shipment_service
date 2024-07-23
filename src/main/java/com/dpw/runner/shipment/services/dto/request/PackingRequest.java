@@ -2,10 +2,12 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -77,4 +79,6 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private String unNumberAir;
     private String dgClassAir;
     private String dgClassAirDescription;
+    private DateBehaviorType dateType;
+    private LocalDateTime cargoGateInDate;
 }

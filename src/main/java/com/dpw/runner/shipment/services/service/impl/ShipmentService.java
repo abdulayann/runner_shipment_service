@@ -99,6 +99,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINS_HAZARDOUS;
+import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus.SAILED;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
@@ -1463,7 +1465,61 @@ public class ShipmentService implements IShipmentService {
 
         dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, oldEntity);
 
+        if(checkIfLCLConsolidationEligible(shipmentDetails))
+            updateShipmentGateInDateAndStatusFromPacks(packingRequest, shipmentDetails);
+
         return syncConsole;
+    }
+
+    public boolean checkIfLCLConsolidationEligible(ShipmentDetails shipmentDetails) {
+        if(!Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
+            return false;
+        if(!Constants.DIRECTION_EXP.equals(shipmentDetails.getDirection()))
+            return false;
+        if(!Constants.SHIPMENT_TYPE_LCL.equals(shipmentDetails.getShipmentType()))
+            return false;
+        return Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableLclConsolidation());
+    }
+
+    private void updateShipmentGateInDateAndStatusFromPacks(List<PackingRequest> packingRequests, ShipmentDetails shipmentDetails) {
+        shipmentDetails.setShipmentPackStatus(null);
+        if(packingRequests != null && !packingRequests.isEmpty()) {
+            shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.BOOKED);
+            boolean fullGated = true;
+            boolean partialGated = false;
+            boolean fullAssigned = true;
+            boolean partialAssigned = false;
+            LocalDateTime maxDate = null;
+            for (PackingRequest packingRequest: packingRequests) {
+                if(packingRequest.getCargoGateInDate() != null) {
+                    if(ACTUAL.equals(packingRequest.getDateType()))
+                        partialGated = true;
+                    else
+                        fullGated = false;
+                    if(maxDate == null || packingRequest.getCargoGateInDate().isAfter(maxDate)) {
+                        shipmentDetails.setShipmentGateInDate(packingRequest.getCargoGateInDate());
+                        shipmentDetails.setDateType(packingRequest.getDateType());
+                        maxDate = packingRequest.getCargoGateInDate();
+                    }
+                }
+                else
+                    fullGated = false;
+                if(packingRequest.getContainerId() != null)
+                    partialAssigned = true;
+                else
+                    fullAssigned = false;
+            }
+            if(partialAssigned)
+                shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.PARTIALLY_ASSIGNED);
+            if(fullAssigned)
+                shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.ASSIGNED);
+            if(partialGated)
+                shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.PARTIAL_CARGO_GATE_IN);
+            if(fullGated)
+                shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.CARGO_GATED_IN);
+        }
+        if(shipmentDetails.getCarrierDetails() != null && shipmentDetails.getCarrierDetails().getAtd() != null)
+            shipmentDetails.setShipmentPackStatus(SAILED);
     }
 
     private boolean checkOriginalPrintedForJobTypeChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
@@ -3525,6 +3581,7 @@ public class ShipmentService implements IShipmentService {
             response.setShipmentCreatedOn(LocalDateTime.now());
             response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
             response.setAutoUpdateWtVol(true);
+            response.setDateType(DateBehaviorType.ESTIMATED);
             //Generate HBL
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL(null));

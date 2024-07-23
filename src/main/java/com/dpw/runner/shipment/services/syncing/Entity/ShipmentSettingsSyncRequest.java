@@ -308,6 +308,8 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private Boolean airDGFlag;
     @JsonProperty("IataTactFlag")
     private Boolean iataTactFlag;
+    @JsonProperty("EnableLCLConsolidation")
+    private Boolean enableLclConsolidation;
     @JsonProperty("BookingOrder")
     private String BookingOrder;
     @JsonProperty("BookingOrderForMbl")

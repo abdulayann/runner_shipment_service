@@ -9,6 +9,8 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -197,4 +199,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String destinationContractId;
     private String destinationContractType;
     private String updatedBy;
+    private DateBehaviorType dateType;
+    private LocalDateTime shipmentGateInDate;
+    private ShipmentPackStatus shipmentPackStatus;
 }

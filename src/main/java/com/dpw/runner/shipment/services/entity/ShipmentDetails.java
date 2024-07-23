@@ -4,6 +4,8 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -470,5 +472,16 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<PickupDeliveryDetails> pickupDeliveryDetailsInstructions;
+
+     @Column(name = "date_type")
+     @Enumerated(EnumType.STRING)
+     private DateBehaviorType dateType;
+
+     @Column(name = "shipment_gate_in_date")
+     private LocalDateTime shipmentGateInDate;
+
+     @Column(name = "shipment_pack_status")
+     @Enumerated(EnumType.STRING)
+     private ShipmentPackStatus shipmentPackStatus;
 
 }

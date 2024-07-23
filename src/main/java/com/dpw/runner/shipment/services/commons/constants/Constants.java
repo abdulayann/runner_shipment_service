@@ -173,6 +173,8 @@ public class Constants {
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
     public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
     public static final String CARRIER_BOOKING_STATUS = "CarrierBookingStatus";
+    public static final String DATE_BEHAVIOR_TYPE = "DateBehaviorType";
+    public static final String SHIPMENT_PACK_STATUS = "ShipmentPackStatus";
     public static final String REGULATED_AGENT = "RegulatedAgent";
     public static final String KNOWN_CONSIGNOR = "KnownConsignor";
 

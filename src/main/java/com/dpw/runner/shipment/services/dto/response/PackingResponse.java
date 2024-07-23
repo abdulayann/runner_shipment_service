@@ -4,11 +4,13 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -86,5 +88,10 @@ public class PackingResponse implements IRunnerResponse {
     private String unNumberAir;
     private String dgClassAir;
     private String dgClassAirDescription;
+    private Boolean assigned;
+    private DateBehaviorType dateType;
+    private LocalDateTime cargoGateInDate;
+
+    public boolean getAssigned() {return containerId != null;}
 }
 
