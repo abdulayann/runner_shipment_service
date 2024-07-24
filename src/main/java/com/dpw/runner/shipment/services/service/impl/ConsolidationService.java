@@ -3525,11 +3525,11 @@ public class ConsolidationService implements IConsolidationService {
                         isLcl = false;
                         isFcl = false;
                     }
-                    if (!Objects.equals(client.getOrgCode(), ship.getClient().getOrgCode()) || !Objects.equals(client.getAddressCode(), ship.getClient().getAddressCode()))
+                    if (client == null || ship.getClient() == null || (!Objects.equals(client.getOrgCode(), ship.getClient().getOrgCode()) || !Objects.equals(client.getAddressCode(), ship.getClient().getAddressCode())))
                         client = new Parties();
-                    if(!Objects.equals(consigner.getOrgCode(), ship.getConsigner().getOrgCode()) || !Objects.equals(consigner.getAddressCode(), ship.getConsigner().getAddressCode()))
+                    if(consigner == null || ship.getConsigner() == null || (!Objects.equals(consigner.getOrgCode(), ship.getConsigner().getOrgCode()) || !Objects.equals(consigner.getAddressCode(), ship.getConsigner().getAddressCode())))
                         consigner = new Parties();
-                    if(!Objects.equals(consignee.getOrgCode(), ship.getConsignee().getOrgCode()) || !Objects.equals(consignee.getAddressCode(), ship.getConsignee().getAddressCode()))
+                    if(consignee == null || ship.getConsignee() == null || (!Objects.equals(consignee.getOrgCode(), ship.getConsignee().getOrgCode()) || !Objects.equals(consignee.getAddressCode(), ship.getConsignee().getAddressCode())))
                         consignee = new Parties();
                 }
             }
@@ -3542,9 +3542,9 @@ public class ConsolidationService implements IConsolidationService {
 
         //Party check added based on flag
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getEnablePartyCheckForConsolidation()) && Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL) && isFcl &&
-                ((request.getClient() != null && request.getClient().getOrgData() != null && Objects.equals(request.getClient().getOrgCode(), client.getOrgCode()) && Objects.equals(request.getClient().getAddressCode(), client.getAddressCode())) ||
-                (request.getConsigner() != null && request.getConsigner().getOrgData() != null && Objects.equals(request.getConsigner().getOrgCode(), consigner.getOrgCode()) && Objects.equals(request.getConsigner().getAddressCode(), consigner.getAddressCode())) ||
-                (request.getConsignee() != null && request.getConsignee().getOrgData() != null && Objects.equals(request.getConsignee().getOrgCode(), consignee.getOrgCode()) && Objects.equals(request.getConsignee().getAddressCode(), consignee.getAddressCode())))) {
+                ((request.getClient() != null && request.getClient().getOrgCode() != null && Objects.equals(request.getClient().getOrgCode(), client.getOrgCode()) && Objects.equals(request.getClient().getAddressCode(), client.getAddressCode())) ||
+                (request.getConsigner() != null && request.getConsigner().getOrgCode() != null && Objects.equals(request.getConsigner().getOrgCode(), consigner.getOrgCode()) && Objects.equals(request.getConsigner().getAddressCode(), consigner.getAddressCode())) ||
+                (request.getConsignee() != null && request.getConsignee().getOrgCode() != null && Objects.equals(request.getConsignee().getOrgCode(), consignee.getOrgCode()) && Objects.equals(request.getConsignee().getAddressCode(), consignee.getAddressCode())))) {
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
             response.setClient(jsonHelper.convertValue(client, PartiesResponse.class));
             response.setConsigner(jsonHelper.convertValue(consigner, PartiesResponse.class));
