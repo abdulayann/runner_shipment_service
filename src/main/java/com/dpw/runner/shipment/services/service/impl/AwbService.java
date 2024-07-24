@@ -1403,13 +1403,29 @@ public class AwbService implements IAwbService {
                     raNumber = StringUtility.convertToString(addressSendingAgent.get(KCRA_NUMBER));
                 }
 
-                if(shipment.getSecurityStatus() != null)
+                if(shipment.getSecurityStatus() != null) {
                     securityStatus = shipment.getSecurityStatus();
+                    // Set security status as SPX whenever we get Exemption Cargo
+                    if(AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS.equalsIgnoreCase(securityStatus))
+                        securityStatus = AwbConstants.SPX;
+                }
 
-                if(shipment.getAdditionalDetails().getScreeningStatus() != null )
-                    screeningStatus = String.join("+", shipment.getAdditionalDetails().getScreeningStatus());
+                if(shipment.getAdditionalDetails().getScreeningStatus() != null ) {
+                    screeningStatus = String.join("+",
+                        shipment.getAdditionalDetails().getScreeningStatus().stream()
+                            // Ignore the NOT screening status from the result set
+                            .filter(i -> !AwbConstants.NOT_SCREENING_STATUS.equalsIgnoreCase(i))
+                            .map(i -> {
+                                var res = i;
+                                // Add the free text value whenever AOM is selected as screening status
+                                if (AwbConstants.AOM_SCREENING_STATUS.equalsIgnoreCase(i))
+                                    res += String.format(" (%s)", shipment.getAdditionalDetails().getAomFreeText());
+                                return res;
+                        }).toList()
+                    );
+                }
 
-                csdInfo = String.format(AwbConstants.CSD_INFO_FORMAT,raNumber, securityStatus, screeningStatus, screeningStatus);
+                csdInfo = String.format(AwbConstants.CSD_INFO_FORMAT,raNumber, securityStatus, screeningStatus);
             }
         }
         return csdInfo;
