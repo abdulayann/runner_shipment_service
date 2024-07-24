@@ -1508,11 +1508,11 @@ public class CustomerBookingService implements ICustomerBookingService {
                     .build());
         }
         approvalPartiesRequest.setCreditDetailsRequests(partiesList);
-        approvalPartiesRequest.setOperation("POST_AR");
+        approvalPartiesRequest.setOperation("CUS_BK");
 
         String finalStatus = mdmServiceAdapter.getApprovalStausForParties(CommonRequestModel.builder().data(approvalPartiesRequest).build());
 
-        return StringUtils.equals(finalStatus , CustomerBookingConstants.MDM_FINAL_STATUS_APPROVED);
+        return StringUtils.equals(finalStatus , CustomerBookingConstants.MDM_FINAL_STATUS_APPROVED) || StringUtils.equals(finalStatus , CustomerBookingConstants.MDM_FINAL_STATUS_NO_APPROVAL_NEEDED);
     }
 
     @Override

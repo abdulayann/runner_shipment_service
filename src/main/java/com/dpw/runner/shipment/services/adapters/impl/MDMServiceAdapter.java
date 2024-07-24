@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -68,6 +69,8 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
                 String finalStatus = null;
                 if (dataList != null && !dataList.isEmpty()) {
                     Map<String, Object> firstDataObject = ((List<Map<String, Object>>) dataList.get("data")).get(0);
+                    if (Boolean.FALSE.equals(firstDataObject.get("isRestricted")))
+                        return CustomerBookingConstants.MDM_FINAL_STATUS_NO_APPROVAL_NEEDED;
                     finalStatus = (String) firstDataObject.get("finalStatus");
                 }
                 log.info("MDM Request {}" , jsonHelper.convertToJson(commonRequestModel));

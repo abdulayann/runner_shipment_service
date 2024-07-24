@@ -45,6 +45,7 @@ public class CustomerBookingConstants {
     public static final String CUSTOMER_BOOKING_STRING = "BOOKING";
     public static final String MDM_FINAL_STATUS_FIELD = "finalStatus";
     public static final String MDM_FINAL_STATUS_APPROVED = "Approved";
+    public static final String MDM_FINAL_STATUS_NO_APPROVAL_NEEDED = "NoApproval";
     public static final String BOOKING_GUID = "Booking Guid";
 
     public static final String RETRIEVE_BY_ORDER_ID_SUCCESSFUL = "Successful Booking Data Retrieval By Order Id";
