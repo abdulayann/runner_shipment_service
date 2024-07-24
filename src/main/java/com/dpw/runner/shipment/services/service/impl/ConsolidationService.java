@@ -3550,7 +3550,7 @@ public class ConsolidationService implements IConsolidationService {
             response.setConsigner(jsonHelper.convertValue(consigner, PartiesResponse.class));
             response.setConsignee(jsonHelper.convertValue(consignee, PartiesResponse.class));
             return response;
-        } else if (isFcl && Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL)) {
+        } else if (Boolean.FALSE.equals(shipmentSettingsDetails.getEnablePartyCheckForConsolidation()) && isFcl && Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL)) {
             return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
         }
         return null;
