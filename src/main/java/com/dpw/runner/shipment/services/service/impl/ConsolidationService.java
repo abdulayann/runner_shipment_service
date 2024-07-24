@@ -3542,9 +3542,9 @@ public class ConsolidationService implements IConsolidationService {
 
         //Party check added based on flag
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getEnablePartyCheckForConsolidation()) && Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL) && isFcl &&
-                ((request.getClient() != null && request.getClient().getOrgCode() != null && Objects.equals(request.getClient().getOrgCode(), client.getOrgCode()) && Objects.equals(request.getClient().getAddressCode(), client.getAddressCode())) ||
-                (request.getConsigner() != null && request.getConsigner().getOrgCode() != null && Objects.equals(request.getConsigner().getOrgCode(), consigner.getOrgCode()) && Objects.equals(request.getConsigner().getAddressCode(), consigner.getAddressCode())) ||
-                (request.getConsignee() != null && request.getConsignee().getOrgCode() != null && Objects.equals(request.getConsignee().getOrgCode(), consignee.getOrgCode()) && Objects.equals(request.getConsignee().getAddressCode(), consignee.getAddressCode())))) {
+                ((request.getClient() != null && request.getClient().getOrgCode() != null && client != null && Objects.equals(request.getClient().getOrgCode(), client.getOrgCode()) && Objects.equals(request.getClient().getAddressCode(), client.getAddressCode())) ||
+                (request.getConsigner() != null && request.getConsigner().getOrgCode() != null && consigner != null && Objects.equals(request.getConsigner().getOrgCode(), consigner.getOrgCode()) && Objects.equals(request.getConsigner().getAddressCode(), consigner.getAddressCode())) ||
+                (request.getConsignee() != null && request.getConsignee().getOrgCode() != null && consignee != null && Objects.equals(request.getConsignee().getOrgCode(), consignee.getOrgCode()) && Objects.equals(request.getConsignee().getAddressCode(), consignee.getAddressCode())))) {
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
             response.setClient(jsonHelper.convertValue(client, PartiesResponse.class));
             response.setConsigner(jsonHelper.convertValue(consigner, PartiesResponse.class));
