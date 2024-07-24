@@ -311,9 +311,8 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request, String oldEntity) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         populateTotalRevenueDetails(customerBooking, request);
-
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-        if(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT) && Boolean.TRUE.equals(tenantSettingsResponse.getEnableCreditLimitManagement()) && !checkForCreditLimitManagement(customerBooking)){
+        if(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT) && !checkForCreditLimitManagement(customerBooking)){
             throw new RunnerException("Request for credit limit has not been approved. Hence cannot proceed.");
         }
 
@@ -1508,11 +1507,11 @@ public class CustomerBookingService implements ICustomerBookingService {
                     .build());
         }
         approvalPartiesRequest.setCreditDetailsRequests(partiesList);
-        approvalPartiesRequest.setOperation("POST_AR");
+        approvalPartiesRequest.setOperation("CUS_BK");
 
         String finalStatus = mdmServiceAdapter.getApprovalStausForParties(CommonRequestModel.builder().data(approvalPartiesRequest).build());
 
-        return StringUtils.equals(finalStatus , CustomerBookingConstants.MDM_FINAL_STATUS_APPROVED);
+        return StringUtils.equals(finalStatus , CustomerBookingConstants.MDM_FINAL_STATUS_APPROVED) || StringUtils.equals(finalStatus , CustomerBookingConstants.MDM_FINAL_STATUS_NO_APPROVAL_NEEDED);
     }
 
     @Override
