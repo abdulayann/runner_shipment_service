@@ -3018,7 +3018,7 @@ public abstract class IReport {
         dictionary.put(TI_DELIVERTOADDRESS, getFormattedAddress(ti.getDestinationDetail(),false));
         dictionary.put(TI_DELIVERTOCONTACT, ti.getDestinationDetail() != null ? ReportHelper.getValueFromMap(ti.getDestinationDetail().getAddressData(), CONTACT_PHONE) : "");
         dictionary.put(TI_REMARKS, ti.getRemarks());
-        dictionary.put(TI_PORTTRANSPORTADVISED, ti.getPortTransportAdvised());
+        dictionary.put(TI_PORTTRANSPORTADVISED, ConvertToDPWDateFormat(ti.getPortTransportAdvised(), tsDateTimeFormat, true));
         dictionary.put(TI_REQUIREDBY, ConvertToDPWDateFormat(ti.getRequiredBy(), tsDateTimeFormat, true));
         dictionary.put(TI_ESTIMATEDPICKUP, ConvertToDPWDateFormat(ti.getEstimatedPickup() , tsDateTimeFormat, true));
         dictionary.put(TI_ESTIMATEDDELIVERY, ConvertToDPWDateFormat(ti.getEstimatedDelivery() , tsDateTimeFormat, true));
