@@ -136,10 +136,8 @@ public class MasterDataUtils{
                         locCodes.addAll(createInBulkVesselsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
                     }
                 }
-                else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse) {
-                    if (consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
-                        locCodes.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()));
-                    }
+                else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
+                    locCodes.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()));
                 }
             }
 
@@ -155,9 +153,8 @@ public class MasterDataUtils{
                     if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel()))
                         consolidationListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
                 }
-                else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse) {
-                    if (consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel()))
-                        consolidationDetailsResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
+                else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
+                    consolidationDetailsResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
                 }
             }
         } catch (Exception ex) {

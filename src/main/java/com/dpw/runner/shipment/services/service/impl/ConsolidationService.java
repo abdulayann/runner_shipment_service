@@ -3486,9 +3486,7 @@ public class ConsolidationService implements IConsolidationService {
                         console.getCarrierDetails().setVoyage("");
                 }
                 List<IRunnerResponse> responseList = new ArrayList<>();
-                consolidationDetailsResponseList.forEach(consolidationDetails -> {
-                    responseList.add(consolidationDetails);
-                });
+                consolidationDetailsResponseList.forEach(responseList::add);
                 try {
                     var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
                     CompletableFuture.allOf(vesselDataFuture).join();
