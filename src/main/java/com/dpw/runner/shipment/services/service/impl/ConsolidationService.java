@@ -3485,7 +3485,16 @@ public class ConsolidationService implements IConsolidationService {
                     if(console.getCarrierDetails().getVoyage() == null)
                         console.getCarrierDetails().setVoyage("");
                 }
-                response.setConsolidationDetailsList(consolidationDetailsResponseList);
+                List<IRunnerResponse> responseList = new ArrayList<>();
+                consolidationDetailsResponseList.forEach(responseList::add);
+                try {
+                    var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
+                    CompletableFuture.allOf(vesselDataFuture).join();
+                }
+                catch (Exception ex) {
+                    log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
+                }
+                response.setConsolidationDetailsList(responseList);
                 return ResponseHelper.buildSuccessResponse(response, consolidationDetailsPage.getTotalPages(),
                         consolidationDetailsPage.getTotalElements());
             }
