@@ -58,4 +58,8 @@ public class CarrierDetailResponse implements IRunnerResponse {
     private String minTransitHours;
     private String maxTransitHours;
     private Boolean carrierAddedFromNpm;
+    private String originLocCode;
+    private String destinationLocCode;
+    private String originPortLocCode;
+    private String destinationPortLocCode;
 }

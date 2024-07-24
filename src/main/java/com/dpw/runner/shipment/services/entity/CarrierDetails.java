@@ -128,4 +128,20 @@ public class CarrierDetails extends MultiTenancy {
     @Column(name = "cfs")
     @UnlocationData
     private String cfs;
+
+    @Size(max=64, message = "max size is 64 for origin_loc_code")
+    @Column(name = "origin_loc_code")
+    private String originLocCode;
+
+    @Size(max=64, message = "max size is 64 for destination_loc_code")
+    @Column(name = "destination_loc_code")
+    private String destinationLocCode;
+
+    @Size(max=64, message = "max size is 64 for origin_port_loc_code")
+    @Column(name = "origin_port_loc_code")
+    private String originPortLocCode;
+
+    @Size(max=64, message = "max size is 64 for destination_port_loc_code")
+    @Column(name = "destination_port_loc_code")
+    private String destinationPortLocCode;
 }

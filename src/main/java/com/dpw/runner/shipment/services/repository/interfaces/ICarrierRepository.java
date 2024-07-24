@@ -1,22 +1,16 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.utils.Generated;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-
-@Repository @Generated
-public interface ICarrierRepository extends MultiTenancyRepository<CarrierDetails> {
-    List<CarrierDetails> findAll();
-    Page<CarrierDetails> findAll(Specification<CarrierDetails> spec, Pageable pageable);
-    default Optional<CarrierDetails> findById(Long id) {
-        Specification<CarrierDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
-        return findOne(spec);
-    }
+@Generated
+public interface ICarrierRepository extends JpaRepository<CarrierDetails, Long> {
+    @Modifying @Transactional
+    @Query(value = "Update carrier_details set origin_loc_code = ?2, origin_port_loc_code = ?3, " +
+            "destination_loc_code = ?4, destination_port_loc_code = ?5 Where id = ?1", nativeQuery = true)
+    void saveUnLocCodes(Long id, String originLoc, String originPortLoc, String destinationLoc, String destinationPortLoc);
 }
