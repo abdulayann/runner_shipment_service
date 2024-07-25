@@ -1522,7 +1522,7 @@ public class ShipmentService implements IShipmentService {
                 if(shipmentDetails.getShipmentGateInDate().isAfter(shipmentDetails.getConsolidationList().get(0).getCfsCutOffDate()))
                     throw new RunnerException("Shipment Gate In date should not be greater than the CFS Cut Off Date entered at the consolidation level.");
             }
-            else if(shipmentDetails.getCarrierDetails().getEtd() != null)
+            else if(shipmentDetails.getCarrierDetails().getEtd() != null && shipmentDetails.getShipmentGateInDate().isAfter(shipmentDetails.getCarrierDetails().getEtd()))
                 throw new RunnerException("Shipment Gate In Date cannot be greater than ETD.");
         }
     }
