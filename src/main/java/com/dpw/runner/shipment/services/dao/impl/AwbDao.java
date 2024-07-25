@@ -329,17 +329,21 @@ public class AwbDao implements IAwbDao {
     public int updatePrintTypeFromConsolidationId(Long id, String printType, LocalDateTime printedAt) {
         var awbList = findByConsolidationId(id);
         if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
-            return awbRepository.updatePrintTypeFromConsolidationId(id, printType, awbList.get(0).getOriginalPrintedAt());
-        else if (!awbList.isEmpty() && Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
-            return awbRepository.updatePrintTypeFromConsolidationId(id, printType, printedAt);
+            return awbRepository.updatePrintTypeFromConsolidationId(id, printType);
+        else if (!awbList.isEmpty() && Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED)) {
+            awbRepository.updatePrintDateFromConsolidationId(id, printedAt);
+            return awbRepository.updatePrintTypeFromConsolidationId(id, printType);
+        }
         return 0;
     }
     public int updatePrintTypeFromShipmentId(Long id, String printType, LocalDateTime printedAt) {
         var awbList = findByShipmentId(id);
         if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
-            return awbRepository.updatePrintTypeFromShipmentId(id, printType, awbList.get(0).getOriginalPrintedAt());
-        else if (!awbList.isEmpty() && Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
-            return awbRepository.updatePrintTypeFromShipmentId(id, printType, printedAt);
+            return awbRepository.updatePrintTypeFromShipmentId(id, printType);
+        else if (!awbList.isEmpty() && Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED)) {
+            awbRepository.updatePrintDateFromShipmentId(id, printedAt);
+            return awbRepository.updatePrintTypeFromShipmentId(id, printType);
+        }
         return 0;
     }
 
