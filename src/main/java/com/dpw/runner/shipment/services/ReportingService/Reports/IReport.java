@@ -1492,7 +1492,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.PORT_OF_DISCHARGE, hblDataDto.getPortOfDischarge());
         dictionary.put(ReportConstants.MARKS_N_NUMS, hblDataDto.getMarksAndNumbers());
         dictionary.put(ReportConstants.MARKS_N_NUMS_CAPS, hblDataDto.getMarksAndNumbers() != null ? hblDataDto.getMarksAndNumbers().toUpperCase() : null);
-        dictionary.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblDataDto.getPackageCount()), 0, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(hblDataDto.getPackageCount() == null ? null : BigDecimal.valueOf(hblDataDto.getPackageCount()), 0, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.PACKS_UNIT, Constants.MPK.equals(hblDataDto.getPackageType()) ? Constants.PACKAGES : hblDataDto.getPackageType());
         if(StringUtility.isNotEmpty(hblDataDto.getCargoDescription())) {
             dictionary.put(ReportConstants.DESCRIPTION, hblDataDto.getCargoDescription());
