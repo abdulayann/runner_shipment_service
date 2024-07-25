@@ -99,6 +99,9 @@ class CargoManifestReportTest extends CommonMocks {
     @Mock
     private IAwbRepository awbRepository;
 
+    @Mock
+    private IAwbDao awbDao;
+
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();

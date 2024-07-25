@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -59,6 +60,9 @@ class MawbReportTest extends CommonMocks {
     private IAwbRepository awbRepository;
 
     @Mock
+    private IAwbDao awbDao;
+
+    @Mock
     private IAwbService awbService;
 
     private static JsonTestUtility jsonTestUtility;
@@ -102,7 +106,7 @@ class MawbReportTest extends CommonMocks {
     void getDocumentModel() {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
-        when(awbRepository.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
+        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
@@ -138,7 +142,7 @@ class MawbReportTest extends CommonMocks {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        when(awbRepository.findByConsolidationId(any())).thenReturn(null);
+        when(awbDao.findByConsolidationId(any())).thenReturn(null);
         mawbReport.isDMawb = true;
         mockShipmentSettings();
         Assertions.assertNotNull(mawbReport.getDocumentModel(123L));
