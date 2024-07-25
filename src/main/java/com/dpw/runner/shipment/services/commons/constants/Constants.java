@@ -205,6 +205,8 @@ public class Constants {
     public static final String CUSTOM_CITY = "customCity";
     public static final String ACTIVITY_TYPE = "ActivityType";
     public static final String SALES_AGENT = "SalesAgent";
+    public static final String TENANT_MASTER_DATA = "TenantIdData";
+    public static final String MASTER_DATA = "MasterData";
 
 
     public static final String DEFAULT_DATE_FORMAT = "MM/dd/yyyy";
