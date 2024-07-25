@@ -13,6 +13,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.Objects;
 
 @Component
 @Slf4j
@@ -55,7 +56,8 @@ public class CacheEvictionService {
     public void clearCacheByName(String prefixKey, String suffixKey) {
         try {
             log.info("clearCacheByName for key {}::{}", prefixKey, baseKey + suffixKey);
-            cacheManager.getCache(prefixKey).evictIfPresent(baseKey + suffixKey);
+            var cache = cacheManager.getCache(prefixKey);
+            if (!Objects.isNull(cache))  cache.evictIfPresent(baseKey + suffixKey);
         } catch (Exception e) {
             log.error("Error during evicting cache with key: {}::{} with exception: {}",prefixKey, baseKey + suffixKey, e.getMessage());
         }
