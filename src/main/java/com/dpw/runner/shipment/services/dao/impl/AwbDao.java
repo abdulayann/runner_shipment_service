@@ -326,21 +326,21 @@ public class AwbDao implements IAwbDao {
     public int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus) {
         return awbRepository.updateAirMessageStatusFromConsolidationId(id, airMessageStatus);
     }
-    public int updatePrintTypeFromConsolidationId(Long id, String printType, LocalDateTime printedAt) {
+    public int updatePrintTypeFromConsolidationId(Long id, String printType, Boolean isOriginal, LocalDateTime printedAt) {
         var awbList = findByConsolidationId(id);
         if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
             return awbRepository.updatePrintTypeFromConsolidationId(id, printType);
-        else if (!awbList.isEmpty() && Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED)) {
+        else if (!awbList.isEmpty() && Boolean.TRUE.equals(isOriginal)) {
             awbRepository.updatePrintDateFromConsolidationId(id, printedAt);
             return awbRepository.updatePrintTypeFromConsolidationId(id, printType);
         }
         return 0;
     }
-    public int updatePrintTypeFromShipmentId(Long id, String printType, LocalDateTime printedAt) {
+    public int updatePrintTypeFromShipmentId(Long id, String printType, Boolean isOriginal, LocalDateTime printedAt) {
         var awbList = findByShipmentId(id);
         if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
             return awbRepository.updatePrintTypeFromShipmentId(id, printType);
-        else if (!awbList.isEmpty() && Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED)) {
+        else if (!awbList.isEmpty() && Boolean.TRUE.equals(isOriginal)) {
             awbRepository.updatePrintDateFromShipmentId(id, printedAt);
             return awbRepository.updatePrintTypeFromShipmentId(id, printType);
         }

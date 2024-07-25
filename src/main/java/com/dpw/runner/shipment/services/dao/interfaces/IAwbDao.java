@@ -37,8 +37,8 @@ public interface IAwbDao {
     Awb findAwbByGuidByQuery(UUID guid);
     int updateAirMessageStatusFromShipmentId(Long id, String airMessageStatus);
     int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus);
-    int updatePrintTypeFromConsolidationId(Long id, String printType, LocalDateTime printedAt);
-    int updatePrintTypeFromShipmentId(Long id, String printType, LocalDateTime printedAt);
+    int updatePrintTypeFromConsolidationId(Long id, String printType, Boolean isOriginal, LocalDateTime printedAt);
+    int updatePrintTypeFromShipmentId(Long id, String printType, Boolean isOriginal, LocalDateTime printedAt);
     List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds);
     void updatedAwbInformationEvent(Object newEntity, Object oldEntity) throws RunnerException;
     void updateSciFieldFromHawb(Awb awb, Awb oldEntity, boolean isReset, Long awbId) throws RunnerException;

@@ -1473,14 +1473,14 @@ public class ReportService implements IReportService {
         var originalPrintedAt = getCurrentTimeInTenantTimeZone();
         if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)) {
             if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
-                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name(), originalPrintedAt);
+                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name(), isOriginalPrint, originalPrintedAt);
             else
-                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name(), originalPrintedAt);
+                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name(), isOriginalPrint, originalPrintedAt);
         } else if ((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
             if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
-                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name(), null);
+                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name(), isOriginalPrint, null);
             else
-                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name(), null);
+                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name(), isOriginalPrint, null);
         }
     }
 
