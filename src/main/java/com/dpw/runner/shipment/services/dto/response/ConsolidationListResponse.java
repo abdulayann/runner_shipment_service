@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -119,5 +121,6 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Long containerCount;
     private Set<String> containerNumbers;
     private Boolean hazardous;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cfsCutOffDate;
 }
