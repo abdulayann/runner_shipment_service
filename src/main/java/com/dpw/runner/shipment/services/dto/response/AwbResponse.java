@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,4 +44,5 @@ public class AwbResponse implements IRunnerResponse {
     private List<String> shcIdList;
     private AwbStatus airMessageStatus;
     private AwbStatus linkedHawbAirMessageStatus;
+    private LocalDateTime originalPrintedAt;
 }
