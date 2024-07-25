@@ -3270,6 +3270,8 @@ public class ShipmentService implements IShipmentService {
             if(checkForDGShipmentAndAirDgFlag(shipmentDetails.get()) && !isDgUser())
                 throw new ValidationException("You do not have necessary permissions for this.");
             ShipmentRequest cloneShipmentDetails = jsonHelper.convertValue(shipmentDetails.get(), ShipmentRequest.class);
+            cloneShipmentDetails.setId(null);
+            cloneShipmentDetails.setGuid(null);
             cloneShipmentDetails.setHouseBill(null);
             cloneShipmentDetails.setBookingNumber(null);
             cloneShipmentDetails.setContainersList(null);
