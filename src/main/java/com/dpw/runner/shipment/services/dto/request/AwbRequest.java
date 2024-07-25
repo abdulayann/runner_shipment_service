@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,4 +39,5 @@ public class AwbRequest implements IRunnerRequest {
     private List<String> shcIdList;
     private AwbStatus airMessageStatus;
     private AwbStatus linkedHawbAirMessageStatus;
+    private LocalDateTime originalPrintedAt;
 }

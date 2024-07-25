@@ -1407,7 +1407,7 @@ public class AwbService implements IAwbService {
                     securityStatus = shipment.getSecurityStatus();
                     // Set security status as SPX whenever we get Exemption Cargo
                     if(AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS.equalsIgnoreCase(securityStatus))
-                        securityStatus = AwbConstants.SPX;
+                        securityStatus = AwbConstants.SPX + String.format("/%s", shipment.getAdditionalDetails().getExemptionCodes());
                 }
 
                 if(shipment.getAdditionalDetails().getScreeningStatus() != null ) {
