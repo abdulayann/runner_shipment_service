@@ -206,6 +206,9 @@ ShipmentServiceTest extends CommonMocks {
     @Mock
     private BillingServiceAdapter billingServiceAdapter;
 
+    @Mock
+    private ICarrierDetailsDao carrierDetailsDao;
+
     @Captor
     private ArgumentCaptor<Workbook> workbookCaptor;
 
@@ -5340,6 +5343,7 @@ ShipmentServiceTest extends CommonMocks {
         unlocationsMap.put("test", new UnlocationsResponse());
         when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsMap);
         shipmentService.updateUnLocData(carrierDetails, null);
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5355,6 +5359,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test");
         oldCarrierDetails.setDestinationPort("test");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5370,6 +5375,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test");
         oldCarrierDetails.setDestinationPort("test");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5385,6 +5391,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test1");
         oldCarrierDetails.setDestinationPort("test");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5400,6 +5407,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test");
         oldCarrierDetails.setDestinationPort("test1");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5415,12 +5423,14 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test");
         oldCarrierDetails.setDestinationPort("test");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
 
     @Test
     void testUpdateUnLocData1() {
         CarrierDetails carrierDetails = new CarrierDetails();
         shipmentService.updateUnLocData(carrierDetails, null);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
 
 }
