@@ -3390,6 +3390,7 @@ public class ConsolidationService implements IConsolidationService {
         List<String> applicableTransportModesList = applicableTransportModes.orElse(null);
 
         boolean isConditionSatisfied = false;
+        boolean isMasterBillPresent = false;
         ListCommonRequest consolListRequest = null;
 
         if(!Strings.isNullOrEmpty(request.getTransportMode()) && applicableTransportModesList != null &&
@@ -3399,6 +3400,7 @@ public class ConsolidationService implements IConsolidationService {
             if(!Strings.isNullOrEmpty(request.getMasterBill())){
                 consolListRequest = CommonUtils.andCriteria("bol", request.getMasterBill(), "=", consolListRequest);
                 isConditionSatisfied = true;
+                isMasterBillPresent = true;
                 response.setFilteredDetailName("Master Bill");
             } else if(request.getEta() != null && request.getEtd() != null){
                 var thresholdDetails = masterLists.stream()
@@ -3466,7 +3468,7 @@ public class ConsolidationService implements IConsolidationService {
                 Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(consolListRequest, ConsolidationDetails.class, tableNames);
                 Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
                 List<ConsolidationDetailsResponse> consolidationDetailsResponseList = new ArrayList<>();
-                if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+                if (!isMasterBillPresent && Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
                         && (Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL) || Objects.equals(request.getShipmentType(), Constants.SHIPMENT_TYPE_LCL))) {
                     for (var console : consolidationDetailsPage.getContent()) {
                         ConsolidationDetailsResponse consolidationDetailsResponse = this.partyCheckForConsole(console, request);
@@ -3515,6 +3517,14 @@ public class ConsolidationService implements IConsolidationService {
             client = shipmentDetailsList.get(0).getClient();
             consigner = shipmentDetailsList.get(0).getConsigner();
             consignee = shipmentDetailsList.get(0).getConsignee();
+            if(Objects.equals(shipmentDetailsList.get(0).getShipmentType(), Constants.CARGO_TYPE_FCL))
+                isLcl = false;
+            else if(Objects.equals(shipmentDetailsList.get(0).getShipmentType(), Constants.SHIPMENT_TYPE_LCL))
+                isFcl = false;
+            else {
+                isLcl = false;
+                isFcl = false;
+            }
             if(shipmentDetailsList.size() > 1) {
                 for (var ship : shipmentDetailsList) {
                     if(Objects.equals(ship.getShipmentType(), Constants.CARGO_TYPE_FCL))

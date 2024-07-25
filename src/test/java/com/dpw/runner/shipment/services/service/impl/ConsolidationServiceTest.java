@@ -2352,6 +2352,40 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
+    void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_PartiesCheck_BLK() {
+        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
+                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
+                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
+                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
+                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.SHIPMENT_TYPE_LCL).build();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(true);
+        List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
+        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_BLK);
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getCompleteShipment();
+        shipmentDetails1.setShipmentType(Constants.SHIPMENT_TYPE_BLK);
+        shipmentDetails1.getConsigner().setOrgCode("NewOrgCode");
+        shipmentDetails1.getClient().setAddressCode("NewAddressCode");
+        request.setConsignee(modelMapperTest.map(shipmentDetails.getConsignee(), PartiesRequest.class));
+        testConsol.setShipmentsList(new ArrayList<>(List.of(shipmentDetails, shipmentDetails1)));
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
+
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+        mockShipmentSettings();
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_WithoutPartiesCheck_FCL() {
         AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
                 .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
