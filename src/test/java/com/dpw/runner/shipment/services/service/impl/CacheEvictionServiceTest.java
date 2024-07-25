@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.CacheRequest;
@@ -149,4 +150,10 @@ class CacheEvictionServiceTest {
         assertThrows(CacheEvictionException.class, () -> cacheEvictionService.clearCacheByName(commonRequestModel));
     }
 
+    @Test
+    void testClearCacheByName1() {
+        boolean isSuccess = true;
+        cacheEvictionService.clearCacheByName(CacheConstants.CACHE_KEY_USER, CacheConstants.SHIPMENT_SETTINGS + "69");
+        assertTrue(isSuccess);
+    }
 }

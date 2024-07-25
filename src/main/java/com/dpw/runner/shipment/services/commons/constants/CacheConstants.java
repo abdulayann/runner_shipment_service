@@ -13,6 +13,8 @@ public class CacheConstants {
     public static final String GET_USER_BY_TOKEN = "getUserByToken";
     public static final String USER_DEFINITION = "UserDefinition:";
     public static final String GET_TENANT_SETTINGS = "getV1TenantSettings";
+    public static final String GET_SHIPMENT_SETTINGS = "getSettingsByTenantIdWithCache";
+    public static final String SHIPMENT_SETTINGS = "ShipmentSettings:";
     public static final String TENANT_SETTINGS = "TenantSettings:";
     public static final String UNLOCATIONS = "Unlocations";
     public static final String UNLOCATIONS_AWB = "UnlocationsAWB";

@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsRepository;
+import com.dpw.runner.shipment.services.service.impl.CacheEvictionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +43,8 @@ class ShipmentSettingsDaoTest {
     @Mock
     private IShipmentSettingsRepository shipmentSettingsRepository;
 
+    @Mock
+    private CacheEvictionService cacheEvictionService;
     @InjectMocks
     private ShipmentSettingsDao shipmentSettingsDao;
 
@@ -165,6 +168,13 @@ class ShipmentSettingsDaoTest {
         when(shipmentSettingsRepository.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
         Integer shipmentConsoleImportApprovarRole = shipmentSettingsDao.getShipmentConsoleImportApprovarRole(1);
         assertEquals(1, shipmentConsoleImportApprovarRole);
+    }
+
+    @Test
+    void getSettingsByTenantIdWithCache() {
+        when(shipmentSettingsRepository.findByTenantId(any())).thenReturn(Optional.of(testShipmentSettingsDetails));
+        Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIdWithCache(1);
+        assertEquals(Optional.of(testShipmentSettingsDetails), shipmentSettingsDetails);
     }
 
 }

@@ -33,6 +33,11 @@ public class CustomKeyGenerator implements KeyGenerator {
                         .append(StringUtility.convertToString(params[0]));
                 break;
 
+            case CacheConstants.GET_SHIPMENT_SETTINGS:
+                keyBuilder.append(CacheConstants.SHIPMENT_SETTINGS)
+                        .append(StringUtility.convertToString(params[0]));
+                break;
+
             default:
                 keyBuilder.append(method.getName())
                         .append("_");

@@ -1614,7 +1614,7 @@ public class ContainerService implements IContainerService {
         if(oldContainers != null && !oldContainers.isEmpty()) {
             oldContsMap = oldContainers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         }
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(containersList != null && !containersList.isEmpty() && (Boolean.TRUE.equals(v1TenantSettingsResponse.getLogicAppIntegrationEnabled())
             || Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled()))) {
             EventMessage eventMessage = new EventMessage();

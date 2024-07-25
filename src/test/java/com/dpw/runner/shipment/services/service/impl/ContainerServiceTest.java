@@ -1339,7 +1339,7 @@ class ContainerServiceTest extends CommonMocks {
         V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
         v1TenantSettingsResponse.setLogicAppIntegrationEnabled(true);
         v1TenantSettingsResponse.setTransportOrchestratorEnabled(true);
-        TenantSettingsDetailsContext.setCurrentTenantSettings(v1TenantSettingsResponse);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
 
         ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
         containerBoomiUniversalJson.setHazardous(true);

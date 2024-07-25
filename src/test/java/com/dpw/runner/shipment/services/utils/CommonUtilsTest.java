@@ -467,8 +467,7 @@ class CommonUtilsTest {
 
     @Test
     void defaultShipmentSettings() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(null);
-        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
+        when(shipmentSettingsDao.getSettingsByTenantIdWithCache(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
         assertNotNull(commonUtils.getShipmentSettingFromContext());
     }
 
@@ -487,7 +486,7 @@ class CommonUtilsTest {
 
     @Test
     void defaultTenantSettingsWithValue() {
-        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().build());
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         assertNotNull(commonUtils.getCurrentTenantSettings());
     }
 }

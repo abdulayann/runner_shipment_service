@@ -110,7 +110,6 @@ public class AuthFilter extends OncePerRequestFilter {
         UserContext.setUser(user);
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
-        //ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
@@ -135,7 +134,6 @@ public class AuthFilter extends OncePerRequestFilter {
             TenantContext.removeTenant();
             RequestAuthContext.removeToken();
             UserContext.removeUser();
-            ShipmentSettingsDetailsContext.remove();
             TenantSettingsDetailsContext.remove();
             PermissionsContext.removePermissions();
             SecurityContextHolder.clearContext();
