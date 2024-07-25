@@ -1300,7 +1300,6 @@ public class ShipmentService implements IShipmentService {
         catch (Exception e) {
             log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierDetails.getId(), e.getMessage());
         }
-        log.info("updateUnLocData ended at {}", LocalDateTime.now());
     }
 
     public void createLogHistoryForShipment(ShipmentDetails shipmentDetails){

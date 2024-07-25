@@ -43,6 +43,7 @@ import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -5327,4 +5328,99 @@ ShipmentServiceTest extends CommonMocks {
 
         assertEquals(HttpStatus.OK, res.getStatusCode());
     }
+
+    @Test
+    void testUpdateUnLocData() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("test", new UnlocationsResponse());
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsMap);
+        shipmentService.updateUnLocData(carrierDetails, null);
+    }
+
+    @Test
+    void testUpdateUnLocData_Data1() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test1");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test");
+        shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
+    }
+
+    @Test
+    void testUpdateUnLocData_Data2() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test1");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test");
+        shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
+    }
+
+    @Test
+    void testUpdateUnLocData_Data3() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test1");
+        oldCarrierDetails.setDestinationPort("test");
+        shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
+    }
+
+    @Test
+    void testUpdateUnLocData_Data4() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test1");
+        shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
+    }
+
+    @Test
+    void testUpdateUnLocData_Data5() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test");
+        shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
+    }
+
+    @Test
+    void testUpdateUnLocData1() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        shipmentService.updateUnLocData(carrierDetails, null);
+    }
+
 }
