@@ -35,6 +35,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 
+import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -66,6 +67,9 @@ public class AwbDao implements IAwbDao {
 
     @Autowired
     private IEventDao eventDao;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Override
     public Awb save(Awb awbShipmentInfo) throws RunnerException {
@@ -128,11 +132,15 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public List<Awb> findByShipmentId(Long shipmentId) {
+        entityManager.clear();
         return awbRepository.findByShipmentId(shipmentId);
     }
 
     @Override
-    public List<Awb> findByConsolidationId(Long consolidationId) {return awbRepository.findByConsolidationId(consolidationId);}
+    public List<Awb> findByConsolidationId(Long consolidationId) {
+        entityManager.clear();
+        return awbRepository.findByConsolidationId(consolidationId);
+    }
 
     @Override
     public List<Awb> findByShipmentIdList(List<Long> shipmentIds) {
@@ -321,12 +329,16 @@ public class AwbDao implements IAwbDao {
     public int updatePrintTypeFromConsolidationId(Long id, String printType, LocalDateTime printedAt) {
         var awbList = findByConsolidationId(id);
         if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
+            return awbRepository.updatePrintTypeFromConsolidationId(id, printType, awbList.get(0).getOriginalPrintedAt());
+        else if (!awbList.isEmpty() && Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
             return awbRepository.updatePrintTypeFromConsolidationId(id, printType, printedAt);
         return 0;
     }
     public int updatePrintTypeFromShipmentId(Long id, String printType, LocalDateTime printedAt) {
         var awbList = findByShipmentId(id);
         if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
+            return awbRepository.updatePrintTypeFromShipmentId(id, printType, awbList.get(0).getOriginalPrintedAt());
+        else if (!awbList.isEmpty() && Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
             return awbRepository.updatePrintTypeFromShipmentId(id, printType, printedAt);
         return 0;
     }

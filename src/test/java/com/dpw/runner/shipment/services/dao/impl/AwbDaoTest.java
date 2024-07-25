@@ -45,6 +45,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -81,6 +82,8 @@ class AwbDaoTest {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Mock
     private IEventDao eventDao;
+    @Mock
+    private EntityManager entityManager;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -448,8 +451,9 @@ class AwbDaoTest {
         Long id = 1L;
         int responseCount = 1;
         var mockAWB = new Awb();
-        mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
         LocalDateTime printedAt = LocalDateTime.now();
+        mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
+        mockAWB.setOriginalPrintedAt(printedAt);
 
         when(awbRepository.findByConsolidationId(anyLong())).thenReturn(List.of(mockAWB));
 
@@ -494,8 +498,9 @@ class AwbDaoTest {
         int responseCount = 1;
 
         var mockAWB = new Awb();
-        mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
         LocalDateTime printedAt = LocalDateTime.of(2024,12,12,12,12);
+        mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
+        mockAWB.setOriginalPrintedAt(printedAt);
 
         when(awbRepository.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name(), printedAt)).thenReturn(responseCount);
         when(awbRepository.findByShipmentId(anyLong())).thenReturn(List.of(mockAWB));

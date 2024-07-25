@@ -1619,14 +1619,14 @@ public abstract class IReport {
     }
 
     public Awb getHawb(Long Id) {
-        List<Awb> awb = awbRepository.findByShipmentId(Id);
+        List<Awb> awb = awbDao.findByShipmentId(Id);
         if (awb != null && !awb.isEmpty())
             return awb.get(0);
         return null;
     }
 
     public Awb getMawb(Long Id) {
-        List<Awb> awb = awbRepository.findByConsolidationId(Id);
+        List<Awb> awb = awbDao.findByConsolidationId(Id);
         if(awb != null && !awb.isEmpty()) {
             awbService.getMawnLinkPacks(awb.get(0));
             return awb.get(0);
