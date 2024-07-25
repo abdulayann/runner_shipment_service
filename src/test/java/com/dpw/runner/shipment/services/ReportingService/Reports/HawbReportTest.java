@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -102,6 +103,9 @@ class HawbReportTest extends CommonMocks {
 
     @Mock
     private MasterDataUtils masterDataUtils;
+
+    @Mock
+    private IAwbDao awbDao;
 
     @BeforeAll
     static void init() throws IOException {
@@ -749,7 +753,7 @@ class HawbReportTest extends CommonMocks {
         shipmentModel.setContainsHazardous(true);
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        when(awbRepository.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
+        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
         mockShipmentSettings();
         assertNotNull(hawbReport.getDocumentModel(123L));
     }

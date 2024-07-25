@@ -54,6 +54,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
@@ -1477,9 +1478,9 @@ public class ReportService implements IReportService {
                 awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED.name(), originalPrintedAt);
         } else if ((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
             if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
-                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name(), originalPrintedAt);
+                awbDao.updatePrintTypeFromConsolidationId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name(), null);
             else
-                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name(), originalPrintedAt);
+                awbDao.updatePrintTypeFromShipmentId(Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED.name(), null);
         }
     }
 
