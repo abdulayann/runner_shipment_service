@@ -1,4 +1,4 @@
-UPDATE shishipment_details SET status = 2 WHERE id in (2238,
+UPDATE shipment_details SET status = 2 WHERE id in (2238,
 2642,
 1678,
 3156,
