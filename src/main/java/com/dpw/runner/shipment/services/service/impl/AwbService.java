@@ -1647,6 +1647,7 @@ public class AwbService implements IAwbService {
         AwbStatus airMessageStatus = awb.getAirMessageStatus();
         AwbStatus linkedHawbAirMessageStatus = awb.getLinkedHawbAirMessageStatus();
         PrintType printType = awb.getPrintType();
+        LocalDateTime originalPrintedAt = awb.getOriginalPrintedAt();
         var isAirMessagingSent = false; //awb.getIsAirMessagingSent();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
@@ -1741,6 +1742,7 @@ public class AwbService implements IAwbService {
         }
         awb.setId(resetAwbRequest.getId());
         awb.setAirMessageResubmitted(false);
+        awb.setOriginalPrintedAt(originalPrintedAt);
         awb = awbDao.save(awb);
         try {
             callV1Sync(awb, SaveStatus.RESET);

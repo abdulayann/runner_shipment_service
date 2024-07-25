@@ -459,7 +459,7 @@ class AwbDaoTest {
 
         when(awbRepository.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
 
-        var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name(), printedAt);
+        var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name(), true, printedAt);
 
         assertEquals(responseCount, res);
     }
@@ -473,7 +473,7 @@ class AwbDaoTest {
         LocalDateTime printedAt = LocalDateTime.now();
 
         when(awbRepository.findByConsolidationId(anyLong())).thenReturn(List.of(mockAWB));
-        var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name(), printedAt);
+        var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name(), true, printedAt);
 
         verify(awbRepository, times(1)).updatePrintDateFromConsolidationId(anyLong(), any());
 
@@ -489,7 +489,7 @@ class AwbDaoTest {
         LocalDateTime printedAt = LocalDateTime.now();
 
         when(awbRepository.findByShipmentId(anyLong())).thenReturn(List.of(mockAWB));
-        var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name(), printedAt);
+        var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name(), true, printedAt);
 
         verify(awbRepository, times(1)).updatePrintDateFromShipmentId(anyLong(), any());
 
@@ -508,7 +508,7 @@ class AwbDaoTest {
 
         when(awbRepository.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
         when(awbRepository.findByShipmentId(anyLong())).thenReturn(List.of(mockAWB));
-        var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name(), printedAt);
+        var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name(), true, printedAt);
 
         assertEquals(responseCount, res);
     }
