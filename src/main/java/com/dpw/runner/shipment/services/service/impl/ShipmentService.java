@@ -1477,7 +1477,7 @@ public class ShipmentService implements IShipmentService {
         return Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableLclConsolidation());
     }
 
-    private void updateShipmentGateInDateAndStatusFromPacks(List<PackingRequest> packingRequests, ShipmentDetails shipmentDetails) {
+    private void updateShipmentGateInDateAndStatusFromPacks(List<PackingRequest> packingRequests, ShipmentDetails shipmentDetails) throws RunnerException {
         shipmentDetails.setShipmentPackStatus(null);
         if(packingRequests != null && !packingRequests.isEmpty()) {
             shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.BOOKED);
@@ -1516,6 +1516,15 @@ public class ShipmentService implements IShipmentService {
         }
         if(shipmentDetails.getCarrierDetails() != null && shipmentDetails.getCarrierDetails().getAtd() != null)
             shipmentDetails.setShipmentPackStatus(SAILED);
+        if(shipmentDetails.getShipmentGateInDate() != null) {
+            if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()
+                    && shipmentDetails.getConsolidationList().get(0).getCfsCutOffDate() != null) {
+                if(shipmentDetails.getShipmentGateInDate().isAfter(shipmentDetails.getConsolidationList().get(0).getCfsCutOffDate()))
+                    throw new RunnerException("Shipment Gate In date should not be greater than the CFS Cut Off Date entered at the consolidation level.");
+            }
+            else if(shipmentDetails.getCarrierDetails().getEtd() != null)
+                throw new RunnerException("Shipment Gate In Date cannot be greater than ETD.");
+        }
     }
 
     private boolean checkOriginalPrintedForJobTypeChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {

@@ -200,6 +200,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String destinationContractType;
     private String updatedBy;
     private DateBehaviorType dateType;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
 }

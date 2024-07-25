@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
@@ -90,6 +91,7 @@ public class PackingResponse implements IRunnerResponse {
     private String dgClassAirDescription;
     private Boolean assigned;
     private DateBehaviorType dateType;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoGateInDate;
 
     public boolean getAssigned() {return containerId != null;}

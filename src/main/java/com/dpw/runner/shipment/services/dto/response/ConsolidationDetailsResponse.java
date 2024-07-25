@@ -150,6 +150,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private PartiesResponse consigner;
     private PartiesResponse consignee;
     private String sci;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cfsCutOffDate;
 
 }
