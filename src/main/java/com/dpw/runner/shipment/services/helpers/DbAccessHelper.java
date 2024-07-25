@@ -340,6 +340,10 @@ public class DbAccessHelper {
                 return criteriaBuilder.like(criteriaBuilder.lower(path.get(fieldName)),
                         "%" + ((String) input.getValue()).toLowerCase() + "%");
 
+            case "STARTSWITH":
+                return criteriaBuilder.like(criteriaBuilder.lower(path.get(fieldName)),
+                        ((String) input.getValue()).toLowerCase() + "%");
+
             case "IN":
                 if (dataType.isAssignableFrom(UUID.class) && input.getValue() != null && input.getValue() instanceof List) {
                     List<UUID> querySet = ((List<?>) input.getValue()).stream()
