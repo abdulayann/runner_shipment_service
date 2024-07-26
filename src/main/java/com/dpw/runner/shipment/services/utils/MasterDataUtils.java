@@ -60,6 +60,8 @@ public class MasterDataUtils{
     @Autowired
     private CommonUtils commonUtils;
 
+    private static Map<String, Map<String, List<String>>> entityFieldsMasterDataMap = new HashMap<>();
+
     public Map<String, EntityTransferChargeType> getChargeTypes(List<String> chargeCode) {
         if (Objects.isNull(chargeCode) || chargeCode.isEmpty())
             return null;
@@ -245,33 +247,30 @@ public class MasterDataUtils{
             return requests;
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        for(Field field : mainClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(MasterData.class))
-            {
-                try {
-                    Field field1 = Class.forName(entityPayload.getClass().getName()).getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String itemValue = (String) field1.get(entityPayload);
-                    String itemType = field.getDeclaredAnnotation(MasterData.class).type().getDescription();
-                    String itemTypeName = field.getDeclaredAnnotation(MasterData.class).type().name();
-                    String cascadeField = field.getDeclaredAnnotation(MasterData.class).cascade();
-                    String cascade = null;
+        List<String> fields = fetchFieldsMap(mainClass, Constants.MASTER_DATA);
+        for (String field: fields){
+            try {
+                Field field1 = Class.forName(entityPayload.getClass().getName()).getDeclaredField(field);
+                field1.setAccessible(true);
+                String itemValue = (String) field1.get(entityPayload);
+                String itemType = mainClass.getDeclaredField(field).getDeclaredAnnotation(MasterData.class).type().getDescription();
+                String itemTypeName = mainClass.getDeclaredField(field).getDeclaredAnnotation(MasterData.class).type().name();
+                String cascadeField = mainClass.getDeclaredField(field).getDeclaredAnnotation(MasterData.class).cascade();
+                String cascade = null;
 
-                    if(!cascadeField.equals("")){
-                        Field field2 = entityPayload.getClass().getDeclaredField(cascadeField);
-                        field2.setAccessible(true);
-                        cascade = (String) field2.get(entityPayload);
-                    }
-                    if(itemValue != null) {
-                        String key = itemValue + '#' + itemTypeName;
-                        Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
-                        if (Objects.isNull(value))  requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
-                        fieldNameKeyMap.put(field.getName(), key);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                if(!cascadeField.equals("")){
+                    Field field2 = entityPayload.getClass().getDeclaredField(cascadeField);
+                    field2.setAccessible(true);
+                    cascade = (String) field2.get(entityPayload);
                 }
+                if(itemValue != null) {
+                    String key = itemValue + '#' + itemTypeName;
+                    Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
+                    if (Objects.isNull(value))  requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
+                    fieldNameKeyMap.put(field, key);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -299,22 +298,19 @@ public class MasterDataUtils{
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         List<String> locCodesList = new ArrayList<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        for(Field field  : mainClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(UnlocationData.class))
-            {
-                try {
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String locCode = (String) field1.get(entityPayload);
-                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode));
-                    if(locCode != null && !locCode.equals("")) {
-                        if (Objects.isNull(cacheValue))  locCodesList.add(locCode);
-                        fieldNameKeyMap.put(field.getName(), locCode);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.UNLOCATIONS);
+        for (String field: fields){
+            try {
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                String locCode = (String) field1.get(entityPayload);
+                Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode));
+                if(locCode != null && !locCode.equals("")) {
+                    if (Objects.isNull(cacheValue))  locCodesList.add(locCode);
+                    fieldNameKeyMap.put(field, locCode);
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -348,23 +344,20 @@ public class MasterDataUtils{
         List<String> itemValueList = new ArrayList<>();
         log.info("chargeTypeMasterData");
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        for(Field field  : mainClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CHARGE_TYPE_MASTER_DATA))
-            {
-                try {
-                    log.info("ChargeField: "+field.getName());
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String itemValue = (String) field1.get(entityPayload);
-                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CHARGE_TYPE, itemValue));
-                    if(itemValue != null && !itemValue.equals("")) {
-                        if(Objects.isNull(cacheValue)) itemValueList.add(itemValue);
-                        fieldNameKeyMap.put(field.getName(), itemValue);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.CHARGE_TYPE_MASTER_DATA);
+        for (String field: fields){
+            try {
+                log.info("ChargeField: "+field);
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                String itemValue = (String) field1.get(entityPayload);
+                Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CHARGE_TYPE, itemValue));
+                if(itemValue != null && !itemValue.equals("")) {
+                    if(Objects.isNull(cacheValue)) itemValueList.add(itemValue);
+                    fieldNameKeyMap.put(field, itemValue);
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -398,23 +391,20 @@ public class MasterDataUtils{
         List<String> itemValueList = new ArrayList<>();
         log.info("containerCodeMasterData");
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        for(Field field  : mainClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CONTAINER_TYPE_MASTER_DATA))
-            {
-                try {
-                    log.info("ContainerField: "+field.getName());
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String itemValue = (String) field1.get(entityPayload);
-                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, itemValue));
-                    if(itemValue != null && !itemValue.equals("")) {
-                        if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
-                        fieldNameKeyMap.put(field.getName(), itemValue);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.CONTAINER_TYPE_MASTER_DATA);
+        for (String field: fields){
+            try {
+                log.info("ContainerField: "+field);
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                String itemValue = (String) field1.get(entityPayload);
+                Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, itemValue));
+                if(itemValue != null && !itemValue.equals("")) {
+                    if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
+                    fieldNameKeyMap.put(field, itemValue);
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -448,23 +438,20 @@ public class MasterDataUtils{
         List<String> itemValueList = new ArrayList<>();
         log.info("commodityCodeMasterData");
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        for(Field field  : mainClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.COMMODITY_TYPE_MASTER_DATA))
-            {
-                try {
-                    log.info("CommodityField: "+field.getName());
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String itemValue = (String) field1.get(entityPayload);
-                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.COMMODITY, itemValue));
-                    if(itemValue != null && !itemValue.equals("")) {
-                        if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
-                        fieldNameKeyMap.put(field.getName(), itemValue);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.COMMODITY_TYPE_MASTER_DATA);
+        for (String field: fields){
+            try {
+                log.info("CommodityField: "+field);
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                String itemValue = (String) field1.get(entityPayload);
+                Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.COMMODITY, itemValue));
+                if(itemValue != null && !itemValue.equals("")) {
+                    if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
+                    fieldNameKeyMap.put(field, itemValue);
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -499,27 +486,94 @@ public class MasterDataUtils{
         List<String> itemValueList = new ArrayList<>();
         log.info("vesselsMasterData");
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        for(Field field  : mainClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.VESSEL_MASTER_DATA))
-            {
-                try {
-                    log.info("VesselField: "+field.getName());
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String itemValue = (String) field1.get(entityPayload);
-                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.VESSELS, itemValue));
-                    if(itemValue != null && !itemValue.equals("")) {
-                        if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
-                        fieldNameKeyMap.put(field.getName(), itemValue);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.VESSEL_MASTER_DATA);
+        for (String field: fields){
+            try {
+                log.info("VesselField: "+field);
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                String itemValue = (String) field1.get(entityPayload);
+                Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.VESSELS, itemValue));
+                if(itemValue != null && !itemValue.isEmpty()) {
+                    if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
+                    fieldNameKeyMap.put(field, itemValue);
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return itemValueList;
+    }
+
+    public List<String> fetchFieldsMap(Class mainClass,String masterDataType) {
+        if(entityFieldsMasterDataMap.containsKey(mainClass.getSimpleName()) && entityFieldsMasterDataMap.get(mainClass.getSimpleName()).containsKey(masterDataType)){
+            return entityFieldsMasterDataMap.get(mainClass.getSimpleName()).get(masterDataType);
+        } else {
+            List<String> fields = new ArrayList<>();
+            for (Field field : mainClass.getDeclaredFields()) {
+                switch (masterDataType) {
+                    case Constants.VESSEL_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.VESSEL_MASTER_DATA))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.CHARGE_TYPE_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CHARGE_TYPE_MASTER_DATA))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.COMMODITY_TYPE_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.COMMODITY_TYPE_MASTER_DATA))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.CURRENCY_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CURRENCY_MASTER_DATA))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.CONTAINER_TYPE_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CONTAINER_TYPE_MASTER_DATA))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.CARRIER_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CARRIER_MASTER_DATA))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.DG_SUBSTANCE:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.DG_SUBSTANCE))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.WARE_HOUSE_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.WARE_HOUSE_DATA))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.ACTIVITY_TYPE:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.ACTIVITY_TYPE))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.SALES_AGENT:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.SALES_AGENT))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.TENANT_MASTER_DATA:
+                        if (field.isAnnotationPresent(TenantIdData.class))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.UNLOCATIONS:
+                        if (field.isAnnotationPresent(UnlocationData.class))
+                            fields.add(field.getName());
+                        break;
+                    case Constants.MASTER_DATA:
+                        if (field.isAnnotationPresent(MasterData.class))
+                            fields.add(field.getName());
+                        break;
+                    default:
+                }
+            }
+            if(!entityFieldsMasterDataMap.containsKey(mainClass.getSimpleName())){
+                entityFieldsMasterDataMap.put(mainClass.getSimpleName(), new HashMap<>());
+            }
+            entityFieldsMasterDataMap.get(mainClass.getSimpleName()).put(masterDataType, fields);
+            return fields;
+        }
     }
 
     public Map<String, EntityTransferVessels> fetchInBulkVessels(List<String> requests) {
@@ -549,23 +603,20 @@ public class MasterDataUtils{
         List<String> itemValueList = new ArrayList<>();
         log.info("CarrierMasterData");
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        for(Field field  : mainClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CARRIER_MASTER_DATA))
-            {
-                try {
-                    log.info("CarrierField: "+field.getName());
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String itemValue = (String) field1.get(entityPayload);
-                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CARRIER, itemValue));
-                    if(itemValue != null && !itemValue.equals("")) {
-                        if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
-                        fieldNameKeyMap.put(field.getName(), itemValue);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.CARRIER_MASTER_DATA);
+        for (String field: fields){
+            try {
+                log.info("CarrierField: "+field);
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                String itemValue = (String) field1.get(entityPayload);
+                Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CARRIER, itemValue));
+                if(itemValue != null && !itemValue.equals("")) {
+                    if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
+                    fieldNameKeyMap.put(field, itemValue);
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -716,22 +767,19 @@ public class MasterDataUtils{
             return requests;
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        for(Field field : mainClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CURRENCY_MASTER_DATA))
-            {
-                try {
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String currencyCode = (String) field1.get(entityPayload);
-                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CURRENCIES, currencyCode));
-                    if(currencyCode != null && !currencyCode.equals("")) {
-                        if (Objects.isNull(cacheValue)) requests.add(currencyCode);
-                        fieldNameKeyMap.put(field.getName(), currencyCode);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.CURRENCY_MASTER_DATA);
+        for (String field: fields){
+            try {
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                String currencyCode = (String) field1.get(entityPayload);
+                Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CURRENCIES, currencyCode));
+                if(currencyCode != null && !currencyCode.equals("")) {
+                    if (Objects.isNull(cacheValue)) requests.add(currencyCode);
+                    fieldNameKeyMap.put(field, currencyCode);
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -764,24 +812,23 @@ public class MasterDataUtils{
 
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        for(Field field : mainClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(TenantIdData.class)) {
-                try {
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    Long tenantId = null;
-                    if(field1.get(entityPayload) != null) {
-                        if(!IsStringNullOrEmpty(field1.get(entityPayload).toString()))
-                            tenantId = Long.parseLong(field1.get(entityPayload).toString());
-                    }
-                    if(tenantId != null) {
-                        Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.TENANTS, StringUtility.convertToString(tenantId)));
-                        if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(tenantId));
-                        fieldNameKeyMap.put(field.getName(), StringUtility.convertToString(tenantId));
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.TENANT_MASTER_DATA);
+        for (String field: fields){
+            try {
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                Long tenantId = null;
+                if(field1.get(entityPayload) != null) {
+                    if(!IsStringNullOrEmpty(field1.get(entityPayload).toString()))
+                        tenantId = Long.parseLong(field1.get(entityPayload).toString());
                 }
+                if(tenantId != null) {
+                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.TENANTS, StringUtility.convertToString(tenantId)));
+                    if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(tenantId));
+                    fieldNameKeyMap.put(field, StringUtility.convertToString(tenantId));
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -811,24 +858,23 @@ public class MasterDataUtils{
 
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        for(Field field : mainClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.DG_SUBSTANCE)) {
-                try {
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    Long dgSubstanceId = null;
-                    if(field1.get(entityPayload) != null) {
-                        if(!IsStringNullOrEmpty(field1.get(entityPayload).toString()))
-                            dgSubstanceId = Long.parseLong(field1.get(entityPayload).toString());
-                    }
-                    if(dgSubstanceId != null) {
-                        Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.DG_SUBSTANCES, StringUtility.convertToString(dgSubstanceId)));
-                        if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(dgSubstanceId));
-                        fieldNameKeyMap.put(field.getName(), StringUtility.convertToString(dgSubstanceId));
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.DG_SUBSTANCE);
+        for (String field: fields){
+            try {
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                Long dgSubstanceId = null;
+                if(field1.get(entityPayload) != null) {
+                    if(!IsStringNullOrEmpty(field1.get(entityPayload).toString()))
+                        dgSubstanceId = Long.parseLong(field1.get(entityPayload).toString());
                 }
+                if(dgSubstanceId != null) {
+                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.DG_SUBSTANCES, StringUtility.convertToString(dgSubstanceId)));
+                    if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(dgSubstanceId));
+                    fieldNameKeyMap.put(field, StringUtility.convertToString(dgSubstanceId));
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -859,21 +905,19 @@ public class MasterDataUtils{
 
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-
-        for(Field field : mainClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.WARE_HOUSE_DATA))  {
-                try {
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    Long wareHouseId = (Long) field1.get(entityPayload);
-                    if(wareHouseId != null) {
-                        Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.WAREHOUSES, StringUtility.convertToString(wareHouseId)));
-                        if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(wareHouseId));
-                        fieldNameKeyMap.put(field.getName(), StringUtility.convertToString(wareHouseId));
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.WARE_HOUSE_DATA);
+        for (String field: fields){
+            try {
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                Long wareHouseId = (Long) field1.get(entityPayload);
+                if(wareHouseId != null) {
+                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.WAREHOUSES, StringUtility.convertToString(wareHouseId)));
+                    if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(wareHouseId));
+                    fieldNameKeyMap.put(field, StringUtility.convertToString(wareHouseId));
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -952,21 +996,19 @@ public class MasterDataUtils{
 
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-
-        for(Field field : mainClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.ACTIVITY_TYPE))  {
-                try {
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String activityId = (String) field1.get(entityPayload);
-                    if(StringUtility.isNotEmpty(activityId)) {
-                        Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.ACTIVITY_TYPE, activityId));
-                        if (Objects.isNull(cacheValue)) requests.add(activityId);
-                        fieldNameKeyMap.put(field.getName(), activityId);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.ACTIVITY_TYPE);
+        for (String field: fields){
+            try {
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                String activityId = (String) field1.get(entityPayload);
+                if(StringUtility.isNotEmpty(activityId)) {
+                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.ACTIVITY_TYPE, activityId));
+                    if (Objects.isNull(cacheValue)) requests.add(activityId);
+                    fieldNameKeyMap.put(field, activityId);
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -980,21 +1022,19 @@ public class MasterDataUtils{
 
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-
-        for(Field field : mainClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.SALES_AGENT))  {
-                try {
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    Long salesAgentId = (Long) field1.get(entityPayload);
-                    if(salesAgentId != null) {
-                        Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.SALES_AGENT, StringUtility.convertToString(salesAgentId)));
-                        if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(salesAgentId));
-                        fieldNameKeyMap.put(field.getName(), StringUtility.convertToString(salesAgentId));
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.SALES_AGENT);
+        for (String field: fields){
+            try {
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                Long salesAgentId = (Long) field1.get(entityPayload);
+                if(salesAgentId != null) {
+                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.SALES_AGENT, StringUtility.convertToString(salesAgentId)));
+                    if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(salesAgentId));
+                    fieldNameKeyMap.put(field, StringUtility.convertToString(salesAgentId));
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
