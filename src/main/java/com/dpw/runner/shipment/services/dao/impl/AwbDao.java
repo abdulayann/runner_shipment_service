@@ -34,6 +34,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
@@ -132,13 +133,11 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public List<Awb> findByShipmentId(Long shipmentId) {
-        entityManager.clear();
         return awbRepository.findByShipmentId(shipmentId);
     }
 
     @Override
     public List<Awb> findByConsolidationId(Long consolidationId) {
-        entityManager.clear();
         return awbRepository.findByConsolidationId(consolidationId);
     }
 
@@ -345,6 +344,33 @@ public class AwbDao implements IAwbDao {
             return awbRepository.updatePrintTypeFromShipmentId(id, printType);
         }
         return 0;
+    }
+
+    @Override
+    @Transactional
+    public void updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt) {
+        Awb awb = null;
+        List<Awb> awbList;
+        if(shipmentId != null) {
+            awbList = findByShipmentId(shipmentId);
+        }
+        else {
+            awbList = findByConsolidationId(consolidationId);
+        }
+        awb = !awbList.isEmpty() ? awbList.get(0) : null;
+
+        if(awb != null) {
+            // if not original printed
+            if(!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED))
+                awb.setPrintType(printType);
+            if(Boolean.TRUE.equals(isOriginal))
+                awb.setOriginalPrintedAt(printedAt);
+            try {
+                save(awb);
+            } catch (Exception e) {
+                log.error("Exception occurred while saving print information for awb : {}", e.getMessage());
+            }
+        }
     }
 
     @Override

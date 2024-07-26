@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_INFO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL_PRINT_DATE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
@@ -251,6 +253,8 @@ public class CargoManifestReport extends IReport{
         if(cargoManifestModel.awb != null) {
             AwbCargoInfo cargoInfoRows = cargoManifestModel.awb.getAwbCargoInfo();
             dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
+            dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
+            dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(cargoManifestModel.awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat()));
         }
         populateRaKcData(dictionary, cargoManifestModel.shipmentDetails);
 
