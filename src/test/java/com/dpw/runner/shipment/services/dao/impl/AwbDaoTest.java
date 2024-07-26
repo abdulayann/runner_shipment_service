@@ -753,4 +753,70 @@ class AwbDaoTest {
         verify(mock, times(1)).save(any());
     }
 
+    @Test
+    void updateAwbPrintInformationForShipment() {
+        Long shipmentId = 1L;
+        var mock = Mockito.spy(awbDao);
+        LocalDateTime mockDateTime = LocalDateTime.now();
+        mockAwb.setPrintType(PrintType.ORIGINAL_PRINTED);
+        when(mock.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
+
+        mock.updateAwbPrintInformation(shipmentId, null, PrintType.ORIGINAL_PRINTED, true, mockDateTime);
+
+        try {
+            verify(mock, times(1)).save(mockAwb);
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updateAwbPrintInformationDoesntUpdatePrintTypeIfAlreadyPrintedOriginal() {
+        Long shipmentId = 1L;
+        var mock = Mockito.spy(awbDao);
+        LocalDateTime mockDateTime = LocalDateTime.now();
+        mockAwb.setPrintType(PrintType.ORIGINAL_PRINTED);
+        when(mock.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
+
+        mock.updateAwbPrintInformation(shipmentId, null, PrintType.DRAFT_PRINTED, false, mockDateTime);
+
+        try {
+            verify(mock, times(1)).save(mockAwb);
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updateAwbPrintInformationSaveThrowsException() {
+        Long shipmentId = 1L;
+        var mock = Mockito.spy(awbDao);
+        LocalDateTime mockDateTime = LocalDateTime.now();
+        mockAwb.setPrintType(PrintType.ORIGINAL_PRINTED);
+        mockAwb.setId(1L);
+        when(mock.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
+        when(awbRepository.save(any())).thenThrow(new RuntimeException("error"));
+
+        mock.updateAwbPrintInformation(shipmentId, null, PrintType.DRAFT_PRINTED, false, mockDateTime);
+    }
+
+    @Test
+    void updateAwbPrintInformationForConsolidation() {
+        Long consolidationId = 1L;
+        var mock = Mockito.spy(awbDao);
+        LocalDateTime mockDateTime = LocalDateTime.now();
+        when(mock.findByConsolidationId(consolidationId)).thenReturn(List.of(mockAwb));
+
+        mock.updateAwbPrintInformation(null, consolidationId, PrintType.ORIGINAL_PRINTED, true, mockDateTime);
+
+        try {
+            verify(mock, times(1)).save(mockAwb);
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
 }
