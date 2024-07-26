@@ -790,7 +790,7 @@ class AwbDaoTest {
     }
 
     @Test
-    void updateAwbPrintInformationSaveThrowsException() {
+    void updateAwbPrintInformationSaveThrowsException() throws RunnerException {
         Long shipmentId = 1L;
         var mock = Mockito.spy(awbDao);
         LocalDateTime mockDateTime = LocalDateTime.now();
@@ -800,6 +800,8 @@ class AwbDaoTest {
         when(awbRepository.save(any())).thenThrow(new RuntimeException("error"));
 
         mock.updateAwbPrintInformation(shipmentId, null, PrintType.DRAFT_PRINTED, false, mockDateTime);
+
+        verify(mock, times(1)).save(mockAwb);
     }
 
     @Test

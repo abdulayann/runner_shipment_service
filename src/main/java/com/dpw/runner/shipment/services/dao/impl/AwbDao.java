@@ -363,7 +363,7 @@ public class AwbDao implements IAwbDao {
             // if not original printed
             if(!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED))
                 awb.setPrintType(printType);
-            if(isOriginal)
+            if(Boolean.TRUE.equals(isOriginal))
                 awb.setOriginalPrintedAt(printedAt);
             try {
                 save(awb);
