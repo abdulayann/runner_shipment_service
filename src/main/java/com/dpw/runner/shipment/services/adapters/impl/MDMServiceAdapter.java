@@ -6,8 +6,10 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +19,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -30,7 +34,6 @@ import java.util.Map;
 public class MDMServiceAdapter implements IMDMServiceAdapter {
     private final RestTemplate restTemplate;
     private final String baseUrl;
-    private final String creditDetailsUrl;
 
     @Autowired
     JsonHelper jsonHelper;
@@ -38,17 +41,27 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Value("${mdm.creditDetails}")
+    String creditConfigUrl;
+
+    @Value("${mdm.createShipmentTaskFromBooking}")
+    String createShipmentTaskFromBookingUrl;
+
+    RetryTemplate retryTemplate = RetryTemplate.builder()
+            .maxAttempts(3)
+            .fixedBackoff(1000)
+            .retryOn(Exception.class)
+            .build();
+
     public MDMServiceAdapter(@Qualifier("restTemplateForMDM") RestTemplate restTemplate,
-                                @Value("${mdm.baseUrl}") String baseUrl,
-                                @Value("${mdm.creditDetails}") String creditConfigUrl) {
+                                @Value("${mdm.baseUrl}") String baseUrl) {
         this.restTemplate = restTemplate;
         this.baseUrl = baseUrl;
-        this.creditDetailsUrl = creditConfigUrl;
     }
 
     @Override
     public ResponseEntity<IRunnerResponse> getCreditInfo(CommonRequestModel commonRequestModel) throws RunnerException {
-        String url = baseUrl + creditDetailsUrl;
+        String url = baseUrl + creditConfigUrl;
         ApprovalPartiesRequest request = (ApprovalPartiesRequest) commonRequestModel.getData();
         try {
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
@@ -82,6 +95,27 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             }
         }
         return null;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> createShipmentTaskFromBooking(CommonRequestModel commonRequestModel) throws RunnerException {
+        String url = baseUrl + createShipmentTaskFromBookingUrl;
+        CreateShipmentTaskFromBookingTaskRequest request = (CreateShipmentTaskFromBookingTaskRequest) commonRequestModel.getData();
+        try {
+            log.info("Calling MDM createShipmentTaskFromBooking api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            var resp = retryTemplate.execute((RetryCallback<ResponseEntity<IRunnerResponse>, Exception>) context -> {
+                ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
+                        RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
+                        DependentServiceResponse.class
+                );
+                return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
+            });
+            log.info("MDM createShipmentTaskFromBooking api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(resp)));
+            return resp;
+        } catch (Exception ex) {
+            log.error("MDM Credit Details Failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
     }
 
 }

@@ -10,4 +10,5 @@ public interface IMDMServiceAdapter {
 
     String getApprovalStausForParties(CommonRequestModel commonRequestModel) throws RunnerException;
 
+    ResponseEntity<IRunnerResponse> createShipmentTaskFromBooking(CommonRequestModel commonRequestModel) throws RunnerException;
 }

@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
@@ -371,6 +372,15 @@ public class CustomerBookingService implements ICustomerBookingService {
                     customerBooking.setShipmentGuid(StringUtility.convertToString(shipmentResponse.getGuid()));
                     customerBooking.setShipmentCreatedDate(LocalDateTime.now());
                     customerBooking = customerBookingDao.save(customerBooking);
+
+                    mdmServiceAdapter.createShipmentTaskFromBooking(
+                            CommonRequestModel.buildRequest(
+                                    CreateShipmentTaskFromBookingTaskRequest.builder()
+                                            .currentEntityType(CustomerBookingConstants.CUSTOMER_BOOKING_STRING)
+                                            .currentEntityUuid(StringUtility.convertToString(customerBooking.getGuid()))
+                                            .newEntityType(Constants.SHIPMENT)
+                                            .newEntityUuid(StringUtility.convertToString(shipmentResponse.getGuid()))
+                                            .build()));
                 }
             }
             else
