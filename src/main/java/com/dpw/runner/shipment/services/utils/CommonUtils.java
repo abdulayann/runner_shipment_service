@@ -418,16 +418,7 @@ public class CommonUtils {
     }
 
     public ShipmentSettingsDetails getShipmentSettingFromContext() {
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-        if(shipmentSettingsDetails == null) {
-            shipmentSettingsDetails = getTenantSettings();
-            ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
-        }
-        return shipmentSettingsDetails;
-    }
-
-    private ShipmentSettingsDetails getTenantSettings() {
-        Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
+        Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.getSettingsByTenantIdWithCache(TenantContext.getCurrentTenant());
         return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
     }
 
@@ -440,13 +431,7 @@ public class CommonUtils {
     }
 
     public V1TenantSettingsResponse getCurrentTenantSettings() {
-        V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
-        if(tenantSettingsResponse == null) {
-            tenantSettingsResponse = tenantSettingsService.getV1TenantSettings(TenantContext.getCurrentTenant());
-            TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsResponse);
-            log.info("RequestId: {} | V1TenantSettings: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(TenantSettingsDetailsContext.getCurrentTenantSettings()));
-        }
-        return tenantSettingsResponse;
+        return tenantSettingsService.getV1TenantSettings(TenantContext.getCurrentTenant());
     }
 
 }

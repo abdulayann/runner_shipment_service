@@ -25,6 +25,8 @@ import java.util.List;
 @SQLDelete(sql = "UPDATE shipment_setting SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class ShipmentSettingsDetails extends MultiTenancy {
+    private static final long serialVersionUID = 1L;
+
     @Column(name = "house_bill_number_lock")
     private Boolean houseBillNumberLock;
 

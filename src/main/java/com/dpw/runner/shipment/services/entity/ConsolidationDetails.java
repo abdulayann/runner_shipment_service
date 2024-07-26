@@ -279,47 +279,47 @@ public class ConsolidationDetails extends MultiTenancy {
     @UnlocationData
     private String placeOfIssue;
 
-    @OneToOne(targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = CarrierDetails.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
-    @OneToOne(targetEntity = AchievedQuantities.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = AchievedQuantities.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "achieved_quantities_id", referencedColumnName = "id")
     private AchievedQuantities achievedQuantities;
 
-    @OneToOne(targetEntity = Allocations.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Allocations.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "allocations_id", referencedColumnName = "id")
     private Allocations allocations;
 
-    @OneToOne(targetEntity = ArrivalDepartureDetails.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = ArrivalDepartureDetails.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "arrival_details_id", referencedColumnName = "id")
     private ArrivalDepartureDetails arrivalDetails;
 
-    @OneToOne(targetEntity = ArrivalDepartureDetails.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = ArrivalDepartureDetails.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "departure_details_id", referencedColumnName = "id")
     private ArrivalDepartureDetails departureDetails;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "sending_agent_id", referencedColumnName = "id")
     @OrganizationData
     private Parties sendingAgent;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "receiving_agent_id", referencedColumnName = "id")
     @OrganizationData
     private Parties receivingAgent;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "borrowed_from_id", referencedColumnName = "id")
     @OrganizationData
     private Parties borrowedFrom;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "creditor_id", referencedColumnName = "id")
     @OrganizationData
     private Parties creditor;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "co_load_with_id", referencedColumnName = "id")
     @OrganizationData
     private Parties coLoadWith;
@@ -413,6 +413,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max=50, message = "max size is 50 for screening_status")
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "screening_status_consol", joinColumns = @JoinColumn(name = "consolidation_details_id"))
+    @BatchSize(size = 10)
     private List<String> screeningStatus;
 
     @Column(name = "exemption_codes")
