@@ -2153,6 +2153,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
 
         var mockMawb = jsonTestUtility.getTestMawb();
+        mockMawb.setPrintType(PrintType.ORIGINAL_PRINTED);
         var mockHawb = jsonTestUtility.getTestHawb();
 
         when(awbDao.findByConsolidationId(anyLong())).thenReturn(List.of(mockMawb));
@@ -2192,6 +2193,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
 
         var mockMawb = jsonTestUtility.getTestMawb();
+        mockMawb.setPrintType(PrintType.ORIGINAL_PRINTED);
         var mockHawb = jsonTestUtility.getTestHawb();
         mockHawb.setPrintType(PrintType.ORIGINAL_PRINTED);
         var mockHawb1 = objectMapper.convertValue(mockHawb, Awb.class);

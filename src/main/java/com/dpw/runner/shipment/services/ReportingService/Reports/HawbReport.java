@@ -271,7 +271,8 @@ public class HawbReport extends IReport{
                     masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
                 dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-                dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat()));
+                if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
+                    dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat()));
 
             }
             List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo = hawbModel.awb.getAwbGoodsDescriptionInfo();
