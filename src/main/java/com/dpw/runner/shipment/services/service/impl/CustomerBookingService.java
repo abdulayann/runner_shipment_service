@@ -1485,6 +1485,10 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBookingResponse.setShipmentCreatedDate(null);
             customerBookingResponse.setIsBillCreated(null);
 
+            //fields related to order
+            customerBookingResponse.setOrderManagementId(null);
+            customerBookingResponse.setOrderManagementNumber(null);
+
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
 
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
