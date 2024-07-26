@@ -2714,11 +2714,13 @@ public class ShipmentService implements IShipmentService {
                     try{
                         shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber, shipmentDetails);
                     } catch (Exception ignored) {
-                        //
+                        log.error("Execption during common sequence {}", ignored.getMessage());
+                        log.error("Execption occurred for common sequence {}", ignored.getStackTrace());
                         shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
                     }
                 }
                 if(StringUtility.isEmpty(shipmentId)) {
+                    log.info("CR-ID {} || no common sequence found", LoggerHelper.getRequestIdFromMDC());
                     shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
                 }
             }
