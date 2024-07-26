@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +30,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @PropertySource("classpath:application-qa.properties")
@@ -53,7 +54,7 @@ class MDMServiceAdapterTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        mdmServiceAdapter = new MDMServiceAdapter(restTemplate, baseUrl, creditDetailsUrl);
+        mdmServiceAdapter = new MDMServiceAdapter(restTemplate, baseUrl);
         mdmServiceAdapter.jsonHelper = this.jsonHelper;
         mdmServiceAdapter.objectMapper = this.objectMapper;
     }
@@ -160,5 +161,46 @@ class MDMServiceAdapterTest {
         String result = mdmServiceAdapter.getApprovalStausForParties(commonRequestModel);
 
         assertNull(result);
+    }
+
+
+    @Test
+    void createShipmentTaskFromBooking_Success() throws Exception {
+        // Arrange
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        CreateShipmentTaskFromBookingTaskRequest request = CreateShipmentTaskFromBookingTaskRequest.builder().build();
+        when(commonRequestModel.getData()).thenReturn(request);
+        String jsonRequest = "{}";
+        when(jsonHelper.convertToJson(any())).thenReturn(jsonRequest);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().build();
+        ResponseEntity<DependentServiceResponse> responseEntity = new ResponseEntity<>(dependentServiceResponse, HttpStatus.OK);
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+                .thenReturn(responseEntity);
+        IRunnerResponse runnerResponse = mock(IRunnerResponse.class);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = mdmServiceAdapter.createShipmentTaskFromBooking(commonRequestModel);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(jsonHelper, times(2)).convertToJson(request);
+        verify(restTemplate).exchange(any(RequestEntity.class), eq(DependentServiceResponse.class));
+    }
+
+    @Test
+    void createShipmentTaskFromBooking_Exception() throws Exception {
+        // Arrange
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        CreateShipmentTaskFromBookingTaskRequest request = CreateShipmentTaskFromBookingTaskRequest.builder().build();
+        when(commonRequestModel.getData()).thenReturn(request);
+        String jsonRequest = "{}";
+        when(jsonHelper.convertToJson(any())).thenReturn(jsonRequest);
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+                .thenThrow(new RuntimeException("MDM Service Error"));
+
+        // Act & Assert
+        mdmServiceAdapter.createShipmentTaskFromBooking(commonRequestModel);
+        verify(jsonHelper,times(4)).convertToJson(request);
+        verify(restTemplate,times(3)).exchange(any(RequestEntity.class), eq(DependentServiceResponse.class));
     }
 }
