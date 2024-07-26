@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -118,4 +119,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String orderManagementId;
     private String jobStatus;
     private Boolean containsHazardous;
+    private ShipmentPackStatus shipmentPackStatus;
 }
