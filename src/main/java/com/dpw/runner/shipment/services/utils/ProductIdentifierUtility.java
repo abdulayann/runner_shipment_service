@@ -84,6 +84,7 @@ public class ProductIdentifierUtility {
     var productSequence = GetCommonProductSequence(transportMode, productProcessTypes);
     if (productSequence != null) {
       var regexPrefix = productSequence.getPrefix();
+      log.info("CR-ID {} || prefix for common sequence {}", LoggerHelper.getRequestIdFromMDC(), regexPrefix);
       sequenceNumber = RegexToSequenceNumber(productSequence, transportMode);
     }
     return sequenceNumber;
@@ -101,6 +102,7 @@ public class ProductIdentifierUtility {
     List<TenantProducts> tenantProductList = tenantProducts.getContent();
 
     if (tenantProductList.size() > 0) {
+      log.info("CR-ID {} || common sequence found", LoggerHelper.getRequestIdFromMDC());
       var tenantProductIds = tenantProductList.stream().map(TenantProducts::getId).toList();
       listRequest = getCommonProductSequenceListCriteria(tenantProductIds, productProcessTypes, transportMode);
 
@@ -110,6 +112,7 @@ public class ProductIdentifierUtility {
               Map.entry("transportMode", RunnerEntityMapping.builder().tableName("tenantProducts").dataType(List.class).fieldName("transportModes").build()),
               Map.entry(Constants.PRODUCT_PROCESS_TYPES, RunnerEntityMapping.builder().tableName("ProductSequenceConfig").dataType(ProductProcessTypes.class).fieldName(Constants.PRODUCT_PROCESS_TYPES).build())
           );
+      log.info("CR-ID {} || retrieving product for common sequence", LoggerHelper.getRequestIdFromMDC());
       Pair<Specification<ProductSequenceConfig>, Pageable> productSequenceConfigPair =
           fetchData(listRequest, ProductSequenceConfig.class, tableNames);
         returnProduct = productSequenceConfigDao.findAndLock(productSequenceConfigPair.getLeft(), productSequenceConfigPair.getRight());
