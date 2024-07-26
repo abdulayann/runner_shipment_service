@@ -512,59 +512,59 @@ public class MasterDataUtils{
             List<String> fields = new ArrayList<>();
             for (Field field : mainClass.getDeclaredFields()) {
                 switch (masterDataType) {
-                    case Constants.VESSEL_MASTER_DATA -> {
+                    case Constants.VESSEL_MASTER_DATA:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.VESSEL_MASTER_DATA))
                             fields.add(field.getName());
-                    }
-                    case Constants.CHARGE_TYPE_MASTER_DATA -> {
+                        break;
+                    case Constants.CHARGE_TYPE_MASTER_DATA:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CHARGE_TYPE_MASTER_DATA))
                             fields.add(field.getName());
-                    }
-                    case Constants.COMMODITY_TYPE_MASTER_DATA -> {
+                        break;
+                    case Constants.COMMODITY_TYPE_MASTER_DATA:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.COMMODITY_TYPE_MASTER_DATA))
                             fields.add(field.getName());
-                    }
-                    case Constants.CURRENCY_MASTER_DATA -> {
+                        break;
+                    case Constants.CURRENCY_MASTER_DATA:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CURRENCY_MASTER_DATA))
                             fields.add(field.getName());
-                    }
-                    case Constants.CONTAINER_TYPE_MASTER_DATA -> {
+                        break;
+                    case Constants.CONTAINER_TYPE_MASTER_DATA:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CONTAINER_TYPE_MASTER_DATA))
                             fields.add(field.getName());
-                    }
-                    case Constants.CARRIER_MASTER_DATA -> {
+                        break;
+                    case Constants.CARRIER_MASTER_DATA:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CARRIER_MASTER_DATA))
                             fields.add(field.getName());
-                    }
-                    case Constants.DG_SUBSTANCE -> {
+                        break;
+                    case Constants.DG_SUBSTANCE:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.DG_SUBSTANCE))
                             fields.add(field.getName());
-                    }
-                    case Constants.WARE_HOUSE_DATA -> {
+                        break;
+                    case Constants.WARE_HOUSE_DATA:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.WARE_HOUSE_DATA))
                             fields.add(field.getName());
-                    }
-                    case Constants.ACTIVITY_TYPE -> {
+                        break;
+                    case Constants.ACTIVITY_TYPE:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.ACTIVITY_TYPE))
                             fields.add(field.getName());
-                    }
-                    case Constants.SALES_AGENT -> {
+                        break;
+                    case Constants.SALES_AGENT:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.SALES_AGENT))
                             fields.add(field.getName());
-                    }
-                    case Constants.TENANT_MASTER_DATA -> {
+                        break;
+                    case Constants.TENANT_MASTER_DATA:
                         if (field.isAnnotationPresent(TenantIdData.class))
                             fields.add(field.getName());
-                    }
-                    case Constants.UNLOCATIONS -> {
+                        break;
+                    case Constants.UNLOCATIONS:
                         if (field.isAnnotationPresent(UnlocationData.class))
                             fields.add(field.getName());
-                    }
-                    case Constants.MASTER_DATA -> {
+                        break;
+                    case Constants.MASTER_DATA:
                         if (field.isAnnotationPresent(MasterData.class))
                             fields.add(field.getName());
-                    }
-                    default -> {}
+                        break;
+                    default:
                 }
             }
             if(!entityFieldsMasterDataMap.containsKey(mainClass.getSimpleName())){
