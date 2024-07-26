@@ -1975,7 +1975,7 @@ public class ShipmentService implements IShipmentService {
         ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
         if(Boolean.TRUE.equals(shipmentSettings.getShipConsolidationContainerEnabled())) {
             ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-            consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_DRT);
+            consolidationDetails.setConsolidationType(shipmentDetails.getJobType());
             consolidationDetails.setTransportMode(shipmentDetails.getTransportMode());
             if((shipmentSettings.getConsolidationLite() == null || !shipmentSettings.getConsolidationLite())
                     && !Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
