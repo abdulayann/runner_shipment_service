@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
+import com.dpw.runner.shipment.services.commons.dto.response.ListContractResponse;
 
 public interface IQuoteContractsService extends ICommonService{
 

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.commons.dto.request.awb.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

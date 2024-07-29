@@ -2,10 +2,10 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.config.BridgeServiceConfig;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.bridgeService.AuthLoginRequest;
-import com.dpw.runner.shipment.services.dto.request.bridgeService.TactBridgePayload;
-import com.dpw.runner.shipment.services.dto.response.bridgeService.AuthLoginResponse;
-import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
+import com.dpw.runner.shipment.services.commons.dto.request.bridgeService.AuthLoginRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.bridgeService.TactBridgePayload;
+import com.dpw.runner.shipment.services.commons.dto.response.bridgeService.AuthLoginResponse;
+import com.dpw.runner.shipment.services.commons.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;

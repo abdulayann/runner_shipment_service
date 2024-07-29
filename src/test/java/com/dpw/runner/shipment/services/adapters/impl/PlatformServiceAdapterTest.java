@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.platform.PlatformCreateRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.platform.PlatformUpdateRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.junit.jupiter.api.Test;

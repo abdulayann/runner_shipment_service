@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
-import com.dpw.runner.shipment.services.dto.request.HblRequest;
-import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.HblGenerateRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.HblRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;

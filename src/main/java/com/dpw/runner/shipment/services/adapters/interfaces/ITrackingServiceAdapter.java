@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.adapters.interfaces;
 
-import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse;
-import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
-import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
+import com.dpw.runner.shipment.services.commons.dto.TrackingService.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.commons.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.commons.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;

@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;

@@ -2,11 +2,11 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
-import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
-import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.CreditLimitRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.crp.CRPListRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.crp.CRPRetrieveRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;

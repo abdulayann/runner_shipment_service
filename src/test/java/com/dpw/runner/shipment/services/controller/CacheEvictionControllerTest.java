@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.dto.request.CacheRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.CacheRequest;
 import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
 import com.dpw.runner.shipment.services.service.impl.CacheEvictionService;
 import org.junit.jupiter.api.Test;

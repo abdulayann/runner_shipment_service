@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.dto.request.IntegrationResponseRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.IntegrationResponseRequest;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IIntegrationResponseService;
 import org.junit.jupiter.api.Test;

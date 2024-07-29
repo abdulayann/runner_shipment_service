@@ -1,13 +1,13 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
+import com.dpw.runner.shipment.services.commons.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.AttachListShipmentRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.CheckCreditLimitFromV1Request;
+import com.dpw.runner.shipment.services.commons.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.commons.dto.v1.request.TIContainerListRequest;
+import com.dpw.runner.shipment.services.commons.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;

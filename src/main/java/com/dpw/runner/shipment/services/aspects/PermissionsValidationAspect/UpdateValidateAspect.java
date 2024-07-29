@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.utils.V1PermissionMapUtil;
 import org.aspectj.lang.JoinPoint;

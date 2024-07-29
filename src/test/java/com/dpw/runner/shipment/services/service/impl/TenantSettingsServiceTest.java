@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.commons.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.commons.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

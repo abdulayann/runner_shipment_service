@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services.masterdata;
 
 
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.FlightScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.commons.dto.v1.request.CreateConsolidationTaskRequest;
+import com.dpw.runner.shipment.services.commons.dto.v1.request.CreateShipmentTaskRequest;
+import com.dpw.runner.shipment.services.commons.dto.v1.request.FlightScheduleRequest;
+import com.dpw.runner.shipment.services.commons.dto.v1.response.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;

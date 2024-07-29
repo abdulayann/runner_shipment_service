@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.IntegrationResponseCon
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.IntegrationResponseRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.IntegrationResponseRequest;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IIntegrationResponseService;
 import io.swagger.annotations.ApiResponse;

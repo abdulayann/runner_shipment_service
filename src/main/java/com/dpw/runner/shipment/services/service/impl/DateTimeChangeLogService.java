@@ -1,9 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IDateTimeChangeLogDao;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.UpstreamDateUpdateRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.UpstreamDateUpdateRequest;
 import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;

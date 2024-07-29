@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.EnumConstantResponse;
-import com.dpw.runner.shipment.services.dto.response.EnumResponse;
+import com.dpw.runner.shipment.services.commons.dto.response.EnumConstantResponse;
+import com.dpw.runner.shipment.services.commons.dto.response.EnumResponse;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;

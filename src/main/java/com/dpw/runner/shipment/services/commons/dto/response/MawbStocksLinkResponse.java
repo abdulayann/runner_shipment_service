@@ -1,0 +1,19 @@
+package com.dpw.runner.shipment.services.commons.dto.response;
+
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import lombok.Data;
+
+import java.util.UUID;
+
+@Data
+public class MawbStocksLinkResponse implements IRunnerResponse {
+    private Long id;
+    private UUID guid;
+    private Long parentId;
+    private String mawbNumber;
+    private String status;
+    private String seqNumber;
+    private String entityType;
+    private Integer entityId;
+    private String shipConsNumber;
+}

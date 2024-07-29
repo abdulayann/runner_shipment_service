@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.dto.request.HblReleaseTypeMappingListRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.HblReleaseTypeMappingListRequest;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblReleaseTypeMappingService;
 import org.junit.jupiter.api.Test;

@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.dto.response.QuoteContractsResponse;
+import com.dpw.runner.shipment.services.commons.dto.response.QuoteContractsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;

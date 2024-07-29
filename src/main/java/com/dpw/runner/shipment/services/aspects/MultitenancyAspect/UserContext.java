@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.commons.dto.request.UsersDto;
 import org.springframework.stereotype.Component;
 
 import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;

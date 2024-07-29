@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
-import com.dpw.runner.shipment.services.dto.request.ProductSequenceConfigRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.ProductSequenceConfigRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;

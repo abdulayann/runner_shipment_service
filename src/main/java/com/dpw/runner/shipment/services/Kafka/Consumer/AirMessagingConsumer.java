@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.commons.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.repository.interfaces.IGenericQueryRepository;

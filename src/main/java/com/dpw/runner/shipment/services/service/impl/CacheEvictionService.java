@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.dto.request.CacheRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.CacheRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.CacheEvictionException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;

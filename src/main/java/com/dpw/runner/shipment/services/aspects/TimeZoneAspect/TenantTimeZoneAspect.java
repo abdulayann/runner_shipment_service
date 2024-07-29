@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.aspects.TimeZoneAspect;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.commons.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.utils.DateUtils;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import lombok.extern.slf4j.Slf4j;

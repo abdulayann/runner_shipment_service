@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.masterdata.helper.impl.mapper;
 
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
+import com.dpw.runner.shipment.services.commons.dto.v1.request.CreateConsolidationTaskRequest;
+import com.dpw.runner.shipment.services.commons.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;

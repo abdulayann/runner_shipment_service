@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

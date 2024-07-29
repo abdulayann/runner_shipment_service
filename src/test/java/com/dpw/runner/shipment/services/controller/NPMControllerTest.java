@@ -1,11 +1,11 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
-import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.ListContractRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.ListContractsWithFilterRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.npm.NPMAutoSellRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.npm.NPMFetchOffersRequestFromUI;
+import com.dpw.runner.shipment.services.commons.dto.request.npm.NPMImportRatesRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;

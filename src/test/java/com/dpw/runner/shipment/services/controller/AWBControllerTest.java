@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest;
-import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.*;
+import com.dpw.runner.shipment.services.commons.dto.request.awb.CustomAwbRetrieveRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.awb.GenerateAwbPaymentInfoRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;

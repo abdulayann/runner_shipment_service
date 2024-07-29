@@ -2,12 +2,12 @@ package com.dpw.runner.shipment.services.helper;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.ReportRequest;
-import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
+import com.dpw.runner.shipment.services.commons.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.commons.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.commons.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
+import com.dpw.runner.shipment.services.commons.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;

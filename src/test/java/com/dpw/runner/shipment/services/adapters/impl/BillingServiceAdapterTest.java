@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
+import com.dpw.runner.shipment.services.commons.dto.response.billing.BillingSummary;
+import com.dpw.runner.shipment.services.commons.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.mapper;
 
-import com.dpw.runner.shipment.services.dto.patchRequest.BookingCarriagePatchRequest;
-import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
+import com.dpw.runner.shipment.services.commons.dto.patchRequest.BookingCarriagePatchRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.BookingCarriageRequest;
+import com.dpw.runner.shipment.services.commons.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import org.mapstruct.*;
 

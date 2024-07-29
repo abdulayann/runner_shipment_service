@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.commons.dto.v1.response.V1TenantSettingsResponse;
 import org.springframework.stereotype.Component;
 
 @Component

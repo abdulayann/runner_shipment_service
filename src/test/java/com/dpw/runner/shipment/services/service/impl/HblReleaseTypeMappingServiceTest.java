@@ -20,7 +20,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IHblReleaseTypeMappingDao
 import java.util.ArrayList;
 import java.util.List;
 
-import com.dpw.runner.shipment.services.dto.request.HblReleaseTypeMappingListRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.HblReleaseTypeMappingListRequest;
 import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

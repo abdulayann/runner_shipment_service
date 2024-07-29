@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.mapper;
 
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
-import com.dpw.runner.shipment.services.dto.response.AuditLogResponse;
+import com.dpw.runner.shipment.services.commons.dto.response.AuditLogResponse;
 import com.dpw.runner.shipment.services.entity.AuditLog;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.mapstruct.*;

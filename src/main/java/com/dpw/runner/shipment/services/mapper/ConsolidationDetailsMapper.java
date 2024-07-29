@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.mapper;
 
-import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
-import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.commons.dto.patchRequest.ConsolidationPatchRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.*;
+import com.dpw.runner.shipment.services.commons.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import org.mapstruct.*;
 

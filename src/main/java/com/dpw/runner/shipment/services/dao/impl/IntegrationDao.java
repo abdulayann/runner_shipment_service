@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
-import com.dpw.runner.shipment.services.dto.request.IntegrationResponseRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.IntegrationResponseRequest;
 import com.dpw.runner.shipment.services.entity.IntegrationResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IIntegrationRespsonseRepository;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.DocumentService;
 
 import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
-import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
-import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
-import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
+import com.dpw.runner.shipment.services.commons.dto.request.TemplateUploadRequest;
+import com.dpw.runner.shipment.services.commons.dto.response.TemplateUploadResponse;
+import com.dpw.runner.shipment.services.commons.dto.response.UploadDocumentResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.Generated;

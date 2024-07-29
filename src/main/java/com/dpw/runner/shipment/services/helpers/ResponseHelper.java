@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.responses.*;
-import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
+import com.dpw.runner.shipment.services.commons.dto.response.ByteArrayResourceResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

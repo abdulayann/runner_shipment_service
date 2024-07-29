@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.responses.ApiError;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.reportService.MailAuditLogRequest;
+import com.dpw.runner.shipment.services.commons.dto.request.reportService.MailAuditLogRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

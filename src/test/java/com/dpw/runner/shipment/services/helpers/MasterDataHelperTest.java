@@ -2,12 +2,12 @@ package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.commons.dto.response.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.commons.dto.v1.response.ShipmentBillingListResponse;
+import com.dpw.runner.shipment.services.commons.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
@@ -1023,7 +1023,7 @@ class MasterDataHelperTest {
         containerResponse.setAllocatedWeightUnit("42");
         containerResponse.setAllocationDate(LocalDate.of(1970, 1, 1).atStartOfDay());
         containerResponse.setBookingId(3L);
-        containerResponse.setCarrierSealNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setCarrierSealNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         containerResponse.setChargeable(new BigDecimal("2.3"));
         containerResponse.setChargeableUnit("42");
         containerResponse.setCommodityCode("42");
@@ -1034,11 +1034,11 @@ class MasterDataHelperTest {
         containerResponse.setContainerCodeData(new HashMap<>());
         containerResponse.setContainerComments("42");
         containerResponse.setContainerCount(0L);
-        containerResponse.setContainerNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setContainerNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         containerResponse.setContainerStuffingLocation("42");
         containerResponse.setContractEnforcedQuantityLimit(-1L);
-        containerResponse.setCustomsReleaseCode("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
-        containerResponse.setCustomsSealNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setCustomsReleaseCode("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
+        containerResponse.setCustomsSealNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         PartiesResponse.PartiesResponseBuilder entityTypeResult = PartiesResponse.builder()
                 .entityId(1L)
                 .entityType("Entity Type");
@@ -1060,14 +1060,14 @@ class MasterDataHelperTest {
         containerResponse.setHazardous(false);
         containerResponse.setHazardousUn("42");
         containerResponse.setHblDeliveryMode("42");
-        containerResponse.setHblNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setHblNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         containerResponse.setHsCode("42");
         containerResponse.setId(3L);
-        containerResponse.setInnerPackageMeasurementUnit("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setInnerPackageMeasurementUnit("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         containerResponse.setInnerPackageNumber("Inner Package Number");
-        containerResponse.setInnerPackageType("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setInnerPackageType("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         containerResponse.setInvoiceCurrency("Invoice Currency");
-        containerResponse.setInvoiceNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setInvoiceNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         containerResponse.setInvoiceValue(new BigDecimal("2.3"));
         containerResponse.setIsAttached(false);
         containerResponse.setIsContractEnforced(false);
@@ -1094,7 +1094,7 @@ class MasterDataHelperTest {
         containerResponse.setPackageLength(new BigDecimal("2.3"));
         containerResponse.setPacks("42");
         containerResponse.setPacksType("42");
-        containerResponse.setPacrNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setPacrNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         PartiesResponse.PartiesResponseBuilder entityTypeResult2 = PartiesResponse.builder()
                 .entityId(1L)
                 .entityType("Entity Type");
@@ -1104,18 +1104,18 @@ class MasterDataHelperTest {
         PartiesResponse pickupAddress = orgCodeResult2.orgData(new HashMap<>()).tenantId(1).type("Type").build();
         containerResponse.setPickupAddress(pickupAddress);
         containerResponse.setRemarks("42");
-        containerResponse.setSealNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
-        containerResponse.setSerialNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
-        containerResponse.setShipperSealNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setSealNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
+        containerResponse.setSerialNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
+        containerResponse.setShipperSealNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         containerResponse.setStatus(ContainerStatus.DISCHARGED_FROM_BARGE);
         containerResponse.setTareWeight(new BigDecimal("2.3"));
         containerResponse.setTareWeightUnit("42");
         containerResponse.setTenantId(3L);
-        containerResponse.setTerminalOperatorSealNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setTerminalOperatorSealNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         containerResponse.setTextFieldData(new HashMap<>());
         containerResponse.setTransportMode("42");
         containerResponse.setUnlocationData(new HashMap<>());
-        containerResponse.setVeterinarySealNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
+        containerResponse.setVeterinarySealNumber("com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse");
         containerResponse.setVolumeUtilization("42");
         containerResponse.setWeightUtilization("42");
 
@@ -1148,10 +1148,10 @@ class MasterDataHelperTest {
         packingResponse.setConsolidationId(3L);
         packingResponse.setContainerDesc("42");
         packingResponse.setContainerId(3L);
-        packingResponse.setContainerNumber("com.dpw.runner.shipment.services.dto.response.PackingResponse");
+        packingResponse.setContainerNumber("com.dpw.runner.shipment.services.commons.dto.response.PackingResponse");
         packingResponse.setContractEnforcedQuantityLimit(-1L);
         packingResponse.setCountryCode("US");
-        packingResponse.setCustomsReleaseCode("com.dpw.runner.shipment.services.dto.response.PackingResponse");
+        packingResponse.setCustomsReleaseCode("com.dpw.runner.shipment.services.commons.dto.response.PackingResponse");
         packingResponse.setDGClass("42");
         packingResponse.setDGGoodsId(3);
         packingResponse.setDGSubstanceId(3);
@@ -1167,7 +1167,7 @@ class MasterDataHelperTest {
         packingResponse.setHeightUnit("42");
         packingResponse.setId(3L);
         packingResponse.setInnerPackageNumber("Inner Package Number");
-        packingResponse.setInnerPackageType("com.dpw.runner.shipment.services.dto.response.PackingResponse");
+        packingResponse.setInnerPackageType("com.dpw.runner.shipment.services.commons.dto.response.PackingResponse");
         packingResponse.setInnerPacksCount(0L);
         packingResponse.setInnerPacksId(3L);
         packingResponse.setInspections("42");
@@ -1188,14 +1188,14 @@ class MasterDataHelperTest {
         packingResponse.setPackingOrder("42");
         packingResponse.setPacks("42");
         packingResponse.setPacksType("42");
-        packingResponse.setReferenceNumber("com.dpw.runner.shipment.services.dto.response.PackingResponse");
+        packingResponse.setReferenceNumber("com.dpw.runner.shipment.services.commons.dto.response.PackingResponse");
         packingResponse.setShipmentId(3L);
-        packingResponse.setShipmentNumber("com.dpw.runner.shipment.services.dto.response.PackingResponse");
+        packingResponse.setShipmentNumber("com.dpw.runner.shipment.services.commons.dto.response.PackingResponse");
         packingResponse.setTransportMode("42");
         packingResponse.setUNDGContact("42");
-        packingResponse.setUnNumberAir("com.dpw.runner.shipment.services.dto.response.PackingResponse");
+        packingResponse.setUnNumberAir("com.dpw.runner.shipment.services.commons.dto.response.PackingResponse");
         packingResponse.setUnlocationData(new HashMap<>());
-        packingResponse.setVinNumber("com.dpw.runner.shipment.services.dto.response.PackingResponse");
+        packingResponse.setVinNumber("com.dpw.runner.shipment.services.commons.dto.response.PackingResponse");
         packingResponse.setVolume(new BigDecimal("2.3"));
         packingResponse.setVolumeUnit("42");
         packingResponse.setVolumeWeight(new BigDecimal("2.3"));
