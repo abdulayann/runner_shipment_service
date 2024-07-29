@@ -345,7 +345,7 @@ public class CommonUtils {
         return s == null || s.isEmpty();
     }
 
-    public static <T> boolean IsListNullOrEmpty(List<T> list) {
+    public static <T> boolean listIsNullOrEmpty(List<T> list) {
         return list == null || list.isEmpty();
     }
 

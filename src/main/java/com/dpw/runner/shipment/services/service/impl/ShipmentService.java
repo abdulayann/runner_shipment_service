@@ -1465,6 +1465,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.getCarrierDetails().setVessel(consolidationDetails1.getCarrierDetails().getVessel());
                 shipmentDetails.getCarrierDetails().setShippingLine(consolidationDetails1.getCarrierDetails().getShippingLine());
                 shipmentDetails.getCarrierDetails().setAircraftType(consolidationDetails1.getCarrierDetails().getAircraftType());
+                shipmentDetails.getCarrierDetails().setCfs(consolidationDetails1.getCarrierDetails().getCfs());
             }
             var console = shipmentDetails.getConsolidationList().get(0);
             List<Awb> awb = awbDao.findByConsolidationId(console.getId());

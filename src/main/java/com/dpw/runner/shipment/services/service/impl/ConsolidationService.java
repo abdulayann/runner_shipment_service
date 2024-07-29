@@ -1058,7 +1058,7 @@ public class ConsolidationService implements IConsolidationService {
 
     private List<ShipmentDetails> getShipmentsList(Long consoleId) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consoleId);
-        List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
+        List<Long> shipmentIdList = consoleShipmentMappings.stream().map(ConsoleShipmentMapping :: getShipmentId).toList();
         ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
         Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
@@ -2992,7 +2992,7 @@ public class ConsolidationService implements IConsolidationService {
         if(checkConsolidationEligibleForCFSValidation(consolidationDetails)) {
             if(shipmentDetails == null)
                 shipmentDetails = getShipmentsList(consolidationDetails.getId());
-            if(!IsListNullOrEmpty(shipmentDetails)) {
+            if(!listIsNullOrEmpty(shipmentDetails)) {
                 for(ShipmentDetails i: shipmentDetails) {
                     if(checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), consolidationDetails.getCfsCutOffDate()))
                         throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");

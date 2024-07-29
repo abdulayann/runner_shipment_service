@@ -705,6 +705,44 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
+    void testCompleteUpdate_Success_LCLConsolidation_cutoffvalidation() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+        ShipmentDetails shipmentDetails2 = new ShipmentDetails();
+        ShipmentRequest shipmentDetails1 = new ShipmentRequest();
+        shipmentDetails1.setShipmentGateInDate(LocalDateTime.now());
+        shipmentDetails2.setShipmentGateInDate(LocalDateTime.now());
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        copy.setCfsCutOffDate(LocalDateTime.MIN);
+        copy.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        copy.setShipmentType(Constants.DIRECTION_EXP);
+        List<ShipmentRequest> shipmentRequests = new ArrayList<>();
+        shipmentRequests.add(shipmentDetails1);
+        copy.setShipmentsList(shipmentRequests);
+        copy.setContainersList(null);
+
+        consolidationDetails.setCfsCutOffDate(LocalDateTime.MIN);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        List<ShipmentDetails> shipmentDetailsRequests = new ArrayList<>();
+        shipmentDetailsRequests.add(shipmentDetails2);
+        consolidationDetails.setShipmentsList(shipmentDetailsRequests);
+        consolidationDetails.setContainersList(null);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails2)));
+        mockShipmentSettings();
+        mockTenantSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableLclConsolidation(true);
+        assertThrows(NoTransactionException.class, () -> spyService.completeUpdate(commonRequestModel));
+    }
+
+    @Test
     void testCreate_SyncFailure() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
