@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Builder;
 import lombok.Data;
 
@@ -20,6 +22,7 @@ public class UpstreamDateUpdateResponse implements IRunnerResponse {
     @Data
     @Builder
     public static class DateAndLogResponse implements Serializable {
+        @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
         private LocalDateTime updatedDate;
         private List<DateTimeChangeLogResponse> changeLogs;
     }
