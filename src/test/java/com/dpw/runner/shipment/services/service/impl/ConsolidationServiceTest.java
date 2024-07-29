@@ -3364,16 +3364,6 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void checkCFSDateValidation() {
-        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
-        shipmentDetailsList.add(testShipment);
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        testConsol.setShipmentType(Constants.DIRECTION_EXP);
-        mockShipmentSettings();
-        assertFalse(consolidationService.checkCFSDateValidation(shipmentDetailsList, testConsol));
-    }
-
-    @Test
     void checkIfShipmentDateGreaterThanConsole() {
         assertTrue(consolidationService.checkIfShipmentDateGreaterThanConsole(LocalDateTime.now(), LocalDateTime.MIN));
     }

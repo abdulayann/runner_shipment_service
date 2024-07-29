@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -9,7 +10,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
@@ -343,6 +343,10 @@ public class CommonUtils {
 
     public static boolean IsStringNullOrEmpty(String s){
         return s == null || s.isEmpty();
+    }
+
+    public static <T> boolean IsListNullOrEmpty(List<T> list) {
+        return list == null || list.isEmpty();
     }
 
     public static Integer getIntFromString(String s) {

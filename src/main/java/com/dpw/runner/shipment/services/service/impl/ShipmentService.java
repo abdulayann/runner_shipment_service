@@ -3517,6 +3517,7 @@ public class ShipmentService implements IShipmentService {
                         .aircraftType(aircrafType)
                         .destination(destination)
                         .flightNumber(consolCarrier != null ? consolCarrier.getFlightNumber() : null)
+                        .cfs(consolidation.getCarrierDetails().getCfs())
                         .build())
                 .weight(consolAllocation != null ? consolAllocation.getWeight() : null)
                 .weightUnit(consolAllocation != null ? consolAllocation.getWeightUnit() : tenantSettings.getWeightChargeableUnit())
