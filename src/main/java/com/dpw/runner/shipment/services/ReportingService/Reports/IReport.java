@@ -913,7 +913,7 @@ public abstract class IReport {
             dictionary = new HashMap<>();
         dictionary.put(SHIPMENT, shipAwbDataList);
         // Add csd info and print date inside the cargo manifest doc
-        if(!awbList.isEmpty() && awbList.get(0).getAwbCargoInfo() != null) {
+        if(!awbList.isEmpty() && !Objects.isNull(awbList.get(0)) && awbList.get(0).getAwbCargoInfo() != null) {
             var awb = awbList.get(0);
             var cargoInfoRows = awb.getAwbCargoInfo();
             dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
