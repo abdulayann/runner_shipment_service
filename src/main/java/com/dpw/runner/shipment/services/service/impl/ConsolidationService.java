@@ -87,7 +87,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.text.html.Option;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -1005,12 +1004,7 @@ public class ConsolidationService implements IConsolidationService {
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         List<ShipmentDetails> shipments = null;
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
-            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
-            List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
-            ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
-            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
-            Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-            shipments = page.getContent();
+            shipments = getShipmentsList(console.getId());
             var shipmentlist = shipments.stream().filter(x-> Objects.equals(x.getAdditionalDetails().getEfreightStatus(), Constants.NON)).toList();
             if(shipmentlist != null && !shipmentlist.isEmpty()){
                 throw new RunnerException("EFreight status can only be EAP or NON as one of the Shipment has EFreight status as NON");
@@ -1025,14 +1019,8 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType()) ||
                         !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs())
                 )))) {
-            if(shipments == null) {
-                List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
-                List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).toList();
-                ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
-                Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
-                Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-                shipments = page.getContent();
-            }
+            if(shipments == null)
+                shipments = getShipmentsList(console.getId());
             for(ShipmentDetails i: shipments) {
                 i.setConsolRef(console.getReferenceNumber());
                 i.setMasterBill(console.getBol());
@@ -1066,6 +1054,15 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         return shipments;
+    }
+
+    private List<ShipmentDetails> getShipmentsList(Long consoleId) {
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+        List<Long> shipmentIdList = consoleShipmentMappings.stream().map(ConsoleShipmentMapping :: getShipmentId).toList();
+        ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
+        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
+        Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+        return page.getContent();
     }
 
     private ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws RunnerException {
@@ -2992,12 +2989,14 @@ public class ConsolidationService implements IConsolidationService {
             calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), oldEntity.getShipmentsList());
             shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
         }
-        if(shipmentDetails == null)
-            shipmentDetails = consolidationDetails.getShipmentsList();
-        if(checkCFSDateValidation(shipmentDetails, consolidationDetails)) {
-            for(ShipmentDetails i: shipmentDetails) {
-                if(checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), consolidationDetails.getCfsCutOffDate()))
-                    throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
+        if(checkConsolidationEligibleForCFSValidation(consolidationDetails)) {
+            if(shipmentDetails == null)
+                shipmentDetails = getShipmentsList(consolidationDetails.getId());
+            if(!listIsNullOrEmpty(shipmentDetails)) {
+                for(ShipmentDetails i: shipmentDetails) {
+                    if(checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), consolidationDetails.getCfsCutOffDate()))
+                        throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
+                }
             }
         }
         if(consolidationDetails.getCarrierDetails() != null) {
@@ -3070,14 +3069,6 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
-    }
-
-    public boolean checkCFSDateValidation(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails) {
-        if(shipmentDetails == null)
-            return false;
-        if(shipmentDetails.isEmpty())
-            return false;
-        return checkConsolidationEligibleForCFSValidation(consolidationDetails);
     }
 
     public boolean checkConsolidationEligibleForCFSValidation(ConsolidationDetails consolidationDetails) {
