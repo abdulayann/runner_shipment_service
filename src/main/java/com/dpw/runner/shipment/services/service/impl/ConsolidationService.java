@@ -3291,6 +3291,8 @@ public class ConsolidationService implements IConsolidationService {
                 .voyage(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVoyage() : null)
                 .eta(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEta() : null)
                 .etd(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEtd() : null)
+                .carrier(shipmentCarrierDetails != null ? shipmentCarrierDetails.getShippingLine() : null)
+                .flightNumber(shipmentCarrierDetails != null ? shipmentCarrierDetails.getFlightNumber() : null)
                 .build();
 
 
