@@ -1385,6 +1385,7 @@ import static org.mockito.Mockito.*;
         var spyService = Mockito.spy(consolidationService);
 
         Mockito.doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(jsonHelper.convertToJson(consolidationDetails)).thenReturn("");
         when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
@@ -1439,6 +1440,7 @@ import static org.mockito.Mockito.*;
         var spyService = Mockito.spy(consolidationService);
 
         Mockito.doReturn(Optional.of(oldEntity)).when(spyService).retrieveByIdOrGuid(any());
+        when(jsonHelper.convertValue(oldEntity, ConsolidationDetails.class)).thenReturn(oldEntity);
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(jsonHelper.convertToJson(oldEntity)).thenReturn("");
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
@@ -1494,6 +1496,7 @@ import static org.mockito.Mockito.*;
         var spyService = Mockito.spy(consolidationService);
 
         Mockito.doReturn(Optional.of(oldEntity)).when(spyService).retrieveByIdOrGuid(any());
+        when(jsonHelper.convertValue(oldEntity, ConsolidationDetails.class)).thenReturn(oldEntity);
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(jsonHelper.convertToJson(oldEntity)).thenReturn("");
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));

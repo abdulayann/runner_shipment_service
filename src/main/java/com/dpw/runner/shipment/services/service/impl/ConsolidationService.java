@@ -963,6 +963,7 @@ public class ConsolidationService implements IConsolidationService {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            ConsolidationDetails oldConvertedConsolidation = jsonHelper.convertValue(oldEntity.get(), ConsolidationDetails.class);
 
             beforeSave(entity, oldEntity.get(), false);
 
@@ -982,7 +983,7 @@ public class ConsolidationService implements IConsolidationService {
                 log.error("Error writing audit service log", e);
             }
 
-            afterSave(entity, oldEntity.get(), consolidationDetailsRequest, false, shipmentSettingsDetails, false);
+            afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false);
             this.createLogHistoryForConsole(entity);
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
