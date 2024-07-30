@@ -889,8 +889,13 @@ public abstract class IReport {
             if(awb != null) {
                 if(awb.getAwbSpecialHandlingCodesMappings() != null && !awb.getAwbSpecialHandlingCodesMappings().isEmpty())
                     dict.put(SPH, awb.getAwbSpecialHandlingCodesMappings().stream().map(AwbSpecialHandlingCodesMappingInfo::getShcId).collect(Collectors.toSet()));
-                if(awb.getAwbCargoInfo() != null)
-                    dict.put(SCI, awb.getAwbCargoInfo().getSci());
+                if(awb.getAwbCargoInfo() != null) {
+                    var cargoInfoRows = awb.getAwbCargoInfo();
+                    dict.put(SCI, cargoInfoRows.getSci());
+                    dict.put(CSD_INFO, cargoInfoRows.getCsdInfo());
+                    if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
+                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat()));
+                }
             }
             dict.put(WITH_CONSIGNOR, isShipperAndConsignee);
             if(shipmentModel.getDirection().equals(IMP)) {
@@ -912,14 +917,6 @@ public abstract class IReport {
         if(dictionary == null)
             dictionary = new HashMap<>();
         dictionary.put(SHIPMENT, shipAwbDataList);
-        // Add csd info and print date inside the cargo manifest doc
-        if(!awbList.isEmpty() && !Objects.isNull(awbList.get(0)) && awbList.get(0).getAwbCargoInfo() != null) {
-            var awb = awbList.get(0);
-            var cargoInfoRows = awb.getAwbCargoInfo();
-            dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-            if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
-                dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat()));
-        }
         return dictionary;
     }
 
