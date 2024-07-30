@@ -578,7 +578,7 @@ public class AwbUtility {
             if(Boolean.TRUE.equals(allStatusReceived) && (Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(status, AwbStatus.AIR_MESSAGE_FAILED))) {
                 try {
                     this.sendAirMessagingFailureEmail(masterAwb, awbsList);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     log.error("Send Email for Air Messaging Failure : " + e.getMessage());
                 }
             }
@@ -641,7 +641,7 @@ public class AwbUtility {
             if(Boolean.TRUE.equals(allStatusReceived) && (Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(consoleStatus, AwbStatus.AIR_MESSAGE_FAILED))) {
                 try {
                     this.sendAirMessagingFailureEmail(masterAwb, awbsList);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     log.error("Send Email for Air Messaging Failure : " + e.getMessage());
                 }
             }
@@ -714,7 +714,8 @@ public class AwbUtility {
             entityNumber = consolidationDetailsDao.getConsolidationNumberFromId(awb.getConsolidationId());
         }
 
-        List<String> emailIds = List.of(awb.getUserMailId());
+        List<String> emailIds = new ArrayList<>();
+        emailIds.add(awb.getUserMailId());
         AirMessagingLogs masterAirMessagingLogs = airMessagingLogsService.getRecentLogForEntityGuid(awb.getGuid());
         String subject = "Air message failure notification for "+ mawbNumber;
         String body = "Dear " + userName +",\n \n \n" +
