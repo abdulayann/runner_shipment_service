@@ -392,7 +392,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry("consolidationId", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_LIST).dataType(Long.class).fieldName("id").build()),
             Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("voyageOrFlightNumber").build()),
             Map.entry("shipperRef", RunnerEntityMapping.builder().tableName(Constants.PICKUP_DETAILS).dataType(String.class).fieldName("shipperRef").build()),
-            Map.entry(CONTAINS_HAZARDOUS, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).build())
+            Map.entry(CONTAINS_HAZARDOUS, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).build()),
+            Map.entry("shipmentPackStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(ShipmentPackStatus.class).build())
     );
 
     @Override
@@ -3119,8 +3120,11 @@ public class ShipmentService implements IShipmentService {
                     List<Notes> updatedNotes = notesDao.saveEntityFromOtherEntity(jsonHelper.convertValueToList(customerBookingNotes, Notes.class), id, Constants.CUSTOMER_BOOKING);
                 }
             }
+            List<Containers> oldConts = null;
+            if(oldEntity.isPresent())
+                oldConts = oldEntity.get().getContainersList();
             if(!dataMigration)
-                pushShipmentDataToDependentService(entity, isCreate, false, oldEntity.get().getContainersList());
+                pushShipmentDataToDependentService(entity, isCreate, false, oldConts);
             ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
