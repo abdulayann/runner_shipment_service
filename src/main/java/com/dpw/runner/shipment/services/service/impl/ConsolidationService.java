@@ -3479,18 +3479,18 @@ public class ConsolidationService implements IConsolidationService {
             if (isConditionSatisfied){
                 Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(consolListRequest, ConsolidationDetails.class, tableNames);
                 Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
-                List<ConsolidationDetailsResponse> consolidationDetailsResponseList = new ArrayList<>();
+                List<AutoAttachConsoleResponse> consolidationDetailsResponseList = new ArrayList<>();
                 if (!isMasterBillPresent && Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
                         && (Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL) || Objects.equals(request.getShipmentType(), Constants.SHIPMENT_TYPE_LCL))) {
                     for (var console : consolidationDetailsPage.getContent()) {
-                        ConsolidationDetailsResponse consolidationDetailsResponse = this.partyCheckForConsole(console, request);
+                        AutoAttachConsoleResponse consolidationDetailsResponse = this.partyCheckForConsole(console, request);
                         if (consolidationDetailsResponse != null) {
                             consolidationDetailsResponseList.add(consolidationDetailsResponse);
                         }
                     }
                 }
                 else {
-                    consolidationDetailsResponseList = jsonHelper.convertValueToList(consolidationDetailsPage.getContent(), ConsolidationDetailsResponse.class);
+                    consolidationDetailsResponseList = jsonHelper.convertValueToList(consolidationDetailsPage.getContent(), AutoAttachConsoleResponse.class);
                 }
 
                 for (var console : consolidationDetailsResponseList){
@@ -3509,15 +3509,15 @@ public class ConsolidationService implements IConsolidationService {
                     log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
                 }
                 response.setConsolidationDetailsList(responseList);
-                return ResponseHelper.buildSuccessResponse(response, consolidationDetailsPage.getTotalPages(),
-                        consolidationDetailsPage.getTotalElements());
+                return ResponseHelper.buildSuccessResponse(response, 1,
+                        response.getConsolidationDetailsList() != null ? response.getConsolidationDetailsList().size(): 0);
             }
         }
 
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    private ConsolidationDetailsResponse partyCheckForConsole(ConsolidationDetails consolidationDetails, AutoAttachConsolidationRequest request) {
+    private AutoAttachConsoleResponse partyCheckForConsole(ConsolidationDetails consolidationDetails, AutoAttachConsolidationRequest request) {
         List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList();
         ShipmentSettingsDetails  shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         Parties client;
@@ -3556,10 +3556,10 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         } else {
-            return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+            return modelMapper.map(consolidationDetails, AutoAttachConsoleResponse.class);
         }
         if(isLcl && Objects.equals(request.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
-            return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+            return modelMapper.map(consolidationDetails, AutoAttachConsoleResponse.class);
         }
 
         //Party check added based on flag
@@ -3567,13 +3567,13 @@ public class ConsolidationService implements IConsolidationService {
                 ((request.getClient() != null && request.getClient().getOrgCode() != null && client != null && Objects.equals(request.getClient().getOrgCode(), client.getOrgCode()) && Objects.equals(request.getClient().getAddressCode(), client.getAddressCode())) ||
                 (request.getConsigner() != null && request.getConsigner().getOrgCode() != null && consigner != null && Objects.equals(request.getConsigner().getOrgCode(), consigner.getOrgCode()) && Objects.equals(request.getConsigner().getAddressCode(), consigner.getAddressCode())) ||
                 (request.getConsignee() != null && request.getConsignee().getOrgCode() != null && consignee != null && Objects.equals(request.getConsignee().getOrgCode(), consignee.getOrgCode()) && Objects.equals(request.getConsignee().getAddressCode(), consignee.getAddressCode())))) {
-            ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+            AutoAttachConsoleResponse response = modelMapper.map(consolidationDetails, AutoAttachConsoleResponse.class);
             response.setClient(jsonHelper.convertValue(client, PartiesResponse.class));
             response.setConsigner(jsonHelper.convertValue(consigner, PartiesResponse.class));
             response.setConsignee(jsonHelper.convertValue(consignee, PartiesResponse.class));
             return response;
         } else if (Boolean.FALSE.equals(shipmentSettingsDetails.getEnablePartyCheckForConsolidation()) && isFcl && Objects.equals(request.getShipmentType(), Constants.CARGO_TYPE_FCL)) {
-            return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+            return modelMapper.map(consolidationDetails, AutoAttachConsoleResponse.class);
         }
         return null;
     }

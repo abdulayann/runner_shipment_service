@@ -1996,7 +1996,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(EntityTransferVessels::new);
 
-        masterDataUtils.fetchVesselForList(List.of(ConsolidationDetailsResponse.builder().carrierDetails(CarrierDetailResponse.builder().vessel(UUID.randomUUID().toString()).build()).build()));
+        masterDataUtils.fetchVesselForList(List.of(AutoAttachConsoleResponse.builder().carrierDetails(CarrierDetailResponse.builder().vessel(UUID.randomUUID().toString()).build()).build()));
 
         assertTrue(isSuccess);
     }

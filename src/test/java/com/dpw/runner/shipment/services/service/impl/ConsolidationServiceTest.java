@@ -2235,13 +2235,13 @@ import static org.mockito.Mockito.*;
                 .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
                 .pod(testConsol.getCarrierDetails().getDestinationPort()).build();
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
-        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        AutoAttachConsoleResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, AutoAttachConsoleResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
-        when(jsonHelper.convertValueToList(Arrays.asList(testConsol), ConsolidationDetailsResponse.class)).thenReturn(Arrays.asList(consolidationDetailsResponse));
+        when(jsonHelper.convertValueToList(Arrays.asList(testConsol), AutoAttachConsoleResponse.class)).thenReturn(Arrays.asList(consolidationDetailsResponse));
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -2255,13 +2255,13 @@ import static org.mockito.Mockito.*;
                 .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
                 .pod(testConsol.getCarrierDetails().getDestinationPort()).build();
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
-        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        AutoAttachConsoleResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, AutoAttachConsoleResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
-        when(jsonHelper.convertValueToList(Arrays.asList(testConsol), ConsolidationDetailsResponse.class)).thenReturn(Arrays.asList(consolidationDetailsResponse));
+        when(jsonHelper.convertValueToList(Arrays.asList(testConsol), AutoAttachConsoleResponse.class)).thenReturn(Arrays.asList(consolidationDetailsResponse));
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -2276,13 +2276,13 @@ import static org.mockito.Mockito.*;
                 .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.CARGO_TYPE_FCL).build();
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(true);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
-        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        AutoAttachConsoleResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, AutoAttachConsoleResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
-        when(jsonHelper.convertValue(testConsol, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+        when(modelMapper.map(testConsol, AutoAttachConsoleResponse.class)).thenReturn(consolidationDetailsResponse);
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -2305,7 +2305,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails1.getClient().setAddressCode("NewAddressCode");
         request.setConsignee(modelMapperTest.map(shipmentDetails.getConsignee(), PartiesRequest.class));
         testConsol.setShipmentsList(new ArrayList<>(List.of(shipmentDetails, shipmentDetails1)));
-        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        AutoAttachConsoleResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, AutoAttachConsoleResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
 
@@ -2313,7 +2313,7 @@ import static org.mockito.Mockito.*;
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
-        when(jsonHelper.convertValue(testConsol, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+        when(modelMapper.map(testConsol, AutoAttachConsoleResponse.class)).thenReturn(consolidationDetailsResponse);
         when(jsonHelper.convertValue(new Parties(), PartiesResponse.class)).thenReturn(new PartiesResponse());
         when(jsonHelper.convertValue(shipmentDetails.getConsignee(), PartiesResponse.class)).thenReturn(modelMapperTest.map(shipmentDetails.getConsignee(), PartiesResponse.class));
 
@@ -2338,14 +2338,14 @@ import static org.mockito.Mockito.*;
         shipmentDetails1.getClient().setAddressCode("NewAddressCode");
         request.setConsignee(modelMapperTest.map(shipmentDetails.getConsignee(), PartiesRequest.class));
         testConsol.setShipmentsList(new ArrayList<>(List.of(shipmentDetails, shipmentDetails1)));
-        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        AutoAttachConsoleResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, AutoAttachConsoleResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
 
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
-        when(jsonHelper.convertValue(testConsol, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+        when(modelMapper.map(testConsol, AutoAttachConsoleResponse.class)).thenReturn(consolidationDetailsResponse);
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -2400,7 +2400,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails1.setShipmentType(Constants.CARGO_TYPE_FCL);
         request.setConsignee(modelMapperTest.map(shipmentDetails.getConsignee(), PartiesRequest.class));
         testConsol.setShipmentsList(new ArrayList<>(List.of(shipmentDetails, shipmentDetails1)));
-        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
+        AutoAttachConsoleResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, AutoAttachConsoleResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
         Runnable mockRunnable = mock(Runnable.class);
@@ -2413,7 +2413,7 @@ import static org.mockito.Mockito.*;
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
-        when(jsonHelper.convertValue(testConsol, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+        when(modelMapper.map(testConsol, AutoAttachConsoleResponse.class)).thenReturn(consolidationDetailsResponse);
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
