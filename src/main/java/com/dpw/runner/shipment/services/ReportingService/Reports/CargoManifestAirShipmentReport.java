@@ -61,7 +61,6 @@ public class CargoManifestAirShipmentReport extends IReport{
         dictionary.put(ReportConstants.AIRCRAFT_TYPE, cargoManifestAirShipmentModel.getShipmentDetails().getCarrierDetails().getAircraftType());
         List<Awb> awbList = new ArrayList<>();
         awbList.add(cargoManifestAirShipmentModel.getAwb());
-        // TODO: add parent level security
         if(isSecurityData)
             dictionary.put(IS_SECURITY, true);
         else
