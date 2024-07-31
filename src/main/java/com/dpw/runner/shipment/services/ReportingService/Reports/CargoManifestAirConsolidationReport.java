@@ -97,6 +97,10 @@ public class CargoManifestAirConsolidationReport extends IReport{
         CargoManifestAirConsolidationModel cargoManifestAirConsolidationModel = (CargoManifestAirConsolidationModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         populateConsolidationFields(cargoManifestAirConsolidationModel.getConsolidationModel(), dictionary);
+        if(isSecurityData)
+            dictionary.put(IS_CONSOL_SECURITY, true);
+        else
+            dictionary.put(IS_CONSOL_SECURITY, false);
         dictionary = populateHAWBAndSecurityData(cargoManifestAirConsolidationModel.getShipmentModelList(), cargoManifestAirConsolidationModel.getAwbList(), dictionary, isSecurityData, isShipperAndConsignee, true);
         boolean airRoutingTagsAdded = getAirRoutingFlightTags(cargoManifestAirConsolidationModel.getConsolidationModel().getRoutingsList(), dictionary, false);
         CarrierDetailModel carrierDetailModel = cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails();
