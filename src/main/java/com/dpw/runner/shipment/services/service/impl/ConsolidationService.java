@@ -2871,8 +2871,11 @@ public class ConsolidationService implements IConsolidationService {
                 List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(consolidationAddresses, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES, oldParties.stream().toList());
                 entity.setConsolidationAddresses(updatedParties);
             }
+            List<Containers> oldConts = null;
+            if(oldEntity.isPresent())
+                oldConts = oldEntity.get().getContainersList();
             if(!dataMigration)
-                pushShipmentDataToDependentService(entity, isCreate, oldEntity.get().getContainersList());
+                pushShipmentDataToDependentService(entity, isCreate, oldConts);
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
