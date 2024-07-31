@@ -38,7 +38,6 @@ public class AirMessagingConsumer {
     @KafkaListener(topics = {"#{'${air.messaging.event.kafka.queue}'}"}, groupId = "#{'${air.messaging.event.kafka.subs}'}")
     public void consume(ConsumerRecord<String, String> message)
     {
-        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
         try {
             log.info("{} | Air event message: {}", LoggerEvent.KAFKA_AIR_MESSAGING_EVENT, message);
             message.headers().forEach(header -> {
@@ -65,8 +64,6 @@ public class AirMessagingConsumer {
             log.info("Passed");
         } catch (Exception ex) {
             log.error("Exception occurred for event: {} for message: {} with exception: {}", LoggerEvent.KAFKA_AIR_MESSAGING_EVENT, message, ex.getLocalizedMessage());
-        } finally {
-            UserContext.removeUser();
         }
     }
 }
