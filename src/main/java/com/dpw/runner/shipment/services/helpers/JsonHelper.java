@@ -1,8 +1,9 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.commons.objectMapperMixin.ShipmentMixIn;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;

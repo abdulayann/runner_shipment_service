@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.entity.MawbHawbLink;
-import com.dpw.runner.shipment.services.entity.Validations;
+import com.dpw.runner.shipment.services.commons.entity.MawbHawbLink;
+import com.dpw.runner.shipment.services.commons.entity.Validations;
 import com.dpw.runner.shipment.services.repository.interfaces.IMawbHawbLinkRepository;
 import com.nimbusds.jose.util.Pair;
 import org.junit.jupiter.api.Test;

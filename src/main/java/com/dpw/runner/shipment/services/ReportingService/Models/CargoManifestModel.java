@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.ReportingService.Models;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.commons.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.commons.entity.Awb;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentSettingsDetails;
 
 public class CargoManifestModel implements IDocumentModel{
     public ShipmentModel shipmentDetails;

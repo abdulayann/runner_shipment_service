@@ -2,16 +2,17 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.dao.impl.ProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.entity.enums.ProductType;
+import com.dpw.runner.shipment.services.commons.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.commons.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.commons.entity.enums.ProductType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
@@ -118,7 +119,7 @@ public class ProductIdentifierUtility {
   }
 
   public ProductSequenceConfig getShipmentProductWithOutContainerType(
-      ShipmentDetails shipmentDetails, ProductProcessTypes processType, List<TenantProducts> tenantProducts) {
+          ShipmentDetails shipmentDetails, ProductProcessTypes processType, List<TenantProducts> tenantProducts) {
     ShipmentDetails shipmentsRow1 = new ShipmentDetails();
     shipmentsRow1.setTransportMode(shipmentDetails.getTransportMode());
     shipmentsRow1.setDirection(shipmentDetails.getDirection());

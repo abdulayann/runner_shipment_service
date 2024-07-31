@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.commons.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.commons.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.commons.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.commons.dto.v1.request.ShipmentBillingListRequest;
@@ -15,7 +16,7 @@ import com.dpw.runner.shipment.services.commons.dto.v1.response.ActivityMasterRe
 import com.dpw.runner.shipment.services.commons.dto.v1.response.SalesAgentResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.ShipmentBillingListResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;

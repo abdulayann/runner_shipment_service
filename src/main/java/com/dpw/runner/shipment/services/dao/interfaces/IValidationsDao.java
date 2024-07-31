@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.Validations;
-import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.commons.entity.Validations;
+import com.dpw.runner.shipment.services.commons.entity.enums.LifecycleHooks;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;

@@ -5,8 +5,8 @@ import com.dpw.runner.shipment.services.commons.dto.GeneralAPIRequests.CarrierLi
 import com.dpw.runner.shipment.services.commons.dto.v1.request.*;
 import com.dpw.runner.shipment.services.commons.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.commons.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.commons.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;

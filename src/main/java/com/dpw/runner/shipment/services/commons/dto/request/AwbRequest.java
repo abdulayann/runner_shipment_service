@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.commons.dto.request;
 
 import com.dpw.runner.shipment.services.commons.dto.request.awb.*;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.AwbStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 

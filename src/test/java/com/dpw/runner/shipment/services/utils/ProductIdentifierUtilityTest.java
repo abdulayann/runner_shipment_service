@@ -2,13 +2,14 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.impl.ProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
 import com.dpw.runner.shipment.services.commons.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.entity.enums.ProductType;
+import com.dpw.runner.shipment.services.commons.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.commons.entity.enums.ProductType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import org.junit.jupiter.api.BeforeAll;

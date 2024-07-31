@@ -4,12 +4,13 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -251,7 +252,7 @@ public class ConsolidationSync implements IConsolidationSync {
         ArrivalDepartureDetails response = response_.getArrivalDepartureDetails();
 
         // Arrival Details
-        com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request1 = request_.getArrivalDetails();
+        com.dpw.runner.shipment.services.commons.entity.ArrivalDepartureDetails request1 = request_.getArrivalDetails();
 
         if(request1 != null) {
             if(request1.getContainerYardId() != null)
@@ -273,7 +274,7 @@ public class ConsolidationSync implements IConsolidationSync {
         }
 
         // Departure Details
-        com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request2 = request_.getDepartureDetails();
+        com.dpw.runner.shipment.services.commons.entity.ArrivalDepartureDetails request2 = request_.getDepartureDetails();
 
         if(request2 != null) {
             if(request2.getContainerYardId() != null)

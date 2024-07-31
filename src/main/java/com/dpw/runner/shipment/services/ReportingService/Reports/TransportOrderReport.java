@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TransportOrderMo
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.commons.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import org.springframework.stereotype.Component;

@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.commons.entity.MawbStocksLink;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;

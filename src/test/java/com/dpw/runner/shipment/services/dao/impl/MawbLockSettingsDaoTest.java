@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.entity.MawbLockSettings;
+import com.dpw.runner.shipment.services.commons.entity.MawbLockSettings;
 import com.dpw.runner.shipment.services.repository.interfaces.IMawbLockSettingsRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -5,8 +5,8 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Co
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.commons.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.commons.entity.Hbl;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;

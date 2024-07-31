@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IHblLockSettingsDao;
-import com.dpw.runner.shipment.services.entity.HblLockSettings;
+import com.dpw.runner.shipment.services.commons.entity.HblLockSettings;
 import com.dpw.runner.shipment.services.repository.interfaces.IHblLockSettingsRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

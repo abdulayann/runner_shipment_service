@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
-import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.commons.entity.TenantProducts;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.repository.interfaces.ITenantProductsRepository;
 import com.nimbusds.jose.util.Pair;

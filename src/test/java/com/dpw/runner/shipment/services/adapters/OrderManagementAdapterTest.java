@@ -11,8 +11,8 @@ import com.dpw.runner.shipment.services.commons.dto.response.OrderManagement.Ord
 import com.dpw.runner.shipment.services.commons.dto.response.OrderManagement.QuantityPair;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;

@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
+import com.dpw.runner.shipment.services.commons.entity.HblReleaseTypeMapping;
 import com.dpw.runner.shipment.services.repository.interfaces.IHblReleaseTypeMappingRepository;
 
 import java.time.LocalDate;

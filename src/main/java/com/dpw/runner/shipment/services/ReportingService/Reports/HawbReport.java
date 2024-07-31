@@ -14,9 +14,9 @@ import com.dpw.runner.shipment.services.commons.dto.GeneralAPIRequests.CarrierLi
 import com.dpw.runner.shipment.services.commons.dto.request.awb.*;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
-import com.dpw.runner.shipment.services.entity.enums.RateClass;
+import com.dpw.runner.shipment.services.commons.entity.Awb;
+import com.dpw.runner.shipment.services.commons.entity.enums.ChargesDue;
+import com.dpw.runner.shipment.services.commons.entity.enums.RateClass;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
-import com.dpw.runner.shipment.services.entity.QuoteContracts;
+import com.dpw.runner.shipment.services.commons.entity.QuoteContracts;
 import com.dpw.runner.shipment.services.utils.Generated;
 
 import java.util.List;

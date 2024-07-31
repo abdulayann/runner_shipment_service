@@ -9,7 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IDefaultViewsDao;
 import com.dpw.runner.shipment.services.commons.dto.request.DefaultViewsRequest;
 import com.dpw.runner.shipment.services.commons.dto.response.DefaultViewsResponse;
-import com.dpw.runner.shipment.services.entity.DefaultViews;
+import com.dpw.runner.shipment.services.commons.entity.DefaultViews;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;

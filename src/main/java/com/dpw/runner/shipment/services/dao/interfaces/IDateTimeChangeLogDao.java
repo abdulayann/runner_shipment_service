@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
+import com.dpw.runner.shipment.services.commons.entity.DateTimeChangeLog;
 
 import java.util.List;
 

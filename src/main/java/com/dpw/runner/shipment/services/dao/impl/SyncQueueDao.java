@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.ISyncQueueDao;
-import com.dpw.runner.shipment.services.entity.SyncQueue;
+import com.dpw.runner.shipment.services.commons.entity.SyncQueue;
 import com.dpw.runner.shipment.services.repository.interfaces.ISyncQueueRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;

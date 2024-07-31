@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.dpw.runner.shipment.services.commons.dto.request.HblReleaseTypeMappingListRequest;
-import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
+import com.dpw.runner.shipment.services.commons.entity.HblReleaseTypeMapping;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;

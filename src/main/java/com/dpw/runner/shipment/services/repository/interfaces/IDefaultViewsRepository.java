@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
-import com.dpw.runner.shipment.services.entity.DefaultViews;
+import com.dpw.runner.shipment.services.commons.entity.DefaultViews;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.jpa.repository.JpaRepository;
 

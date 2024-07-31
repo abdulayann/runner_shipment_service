@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.commons.entity.ELDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

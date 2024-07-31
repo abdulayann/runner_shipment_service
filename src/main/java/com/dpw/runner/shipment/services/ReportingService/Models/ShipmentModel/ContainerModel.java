@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
-import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;

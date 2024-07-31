@@ -1,11 +1,11 @@
 package com.dpw.runner.shipment.services.validator.custom.validations;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.commons.entity.BookingCharges;
+import com.dpw.runner.shipment.services.commons.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.commons.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.commons.entity.Parties;
+import com.dpw.runner.shipment.services.commons.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.MandatoryFieldException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.commons.dto.request;
 
-import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.utils.ExcelCell;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

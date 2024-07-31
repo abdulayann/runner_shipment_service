@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.commons.entity.commons.BaseEntity;
 import lombok.Data;
 import lombok.Getter;
 import org.hibernate.annotations.Filter;

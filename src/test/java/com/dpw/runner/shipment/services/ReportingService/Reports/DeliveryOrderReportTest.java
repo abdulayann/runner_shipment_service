@@ -24,11 +24,11 @@ import com.dpw.runner.shipment.services.commons.dto.v1.response.AddressTranslati
 import com.dpw.runner.shipment.services.commons.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
+import com.dpw.runner.shipment.services.commons.entity.Hbl;
+import com.dpw.runner.shipment.services.commons.entity.Parties;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.commons.entity.enums.MeasurementBasis;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;

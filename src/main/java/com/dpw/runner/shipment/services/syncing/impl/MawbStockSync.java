@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
-import com.dpw.runner.shipment.services.entity.MawbStocks;
+import com.dpw.runner.shipment.services.commons.entity.MawbStocks;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.syncing.Entity.MawbStocksV2;

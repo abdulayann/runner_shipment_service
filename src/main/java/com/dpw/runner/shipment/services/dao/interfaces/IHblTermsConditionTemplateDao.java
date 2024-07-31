@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
+import com.dpw.runner.shipment.services.commons.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
 import java.util.List;

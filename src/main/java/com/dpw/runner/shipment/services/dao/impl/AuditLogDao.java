@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
-import com.dpw.runner.shipment.services.entity.AuditLog;
+import com.dpw.runner.shipment.services.commons.entity.AuditLog;
 import com.dpw.runner.shipment.services.repository.interfaces.IAuditLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

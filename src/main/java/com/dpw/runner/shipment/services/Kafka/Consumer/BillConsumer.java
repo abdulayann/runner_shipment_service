@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.Kafka.Consumer;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.BillDto;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.commons.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.repository.interfaces.IGenericQueryRepository;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;

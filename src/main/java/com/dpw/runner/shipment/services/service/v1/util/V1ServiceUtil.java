@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.commons.dto.request.CreateBookingModuleInV1;
@@ -9,7 +10,7 @@ import com.dpw.runner.shipment.services.commons.dto.v1.request.AddressTranslatio
 import com.dpw.runner.shipment.services.commons.dto.v1.request.CreditLimitValidateRequest;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.CreditLimitValidateResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;

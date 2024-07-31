@@ -11,8 +11,8 @@ import com.dpw.runner.shipment.services.commons.dto.request.ProductSequenceConfi
 import com.dpw.runner.shipment.services.commons.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.commons.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.commons.dto.response.ShipmentSettingsDetailsResponse;
-import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.commons.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;

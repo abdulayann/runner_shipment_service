@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdap
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -14,8 +15,8 @@ import com.dpw.runner.shipment.services.commons.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.commons.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.commons.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.commons.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;

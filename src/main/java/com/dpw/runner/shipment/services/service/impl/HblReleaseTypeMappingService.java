@@ -7,7 +7,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblReleaseTypeMappingDao;
 import com.dpw.runner.shipment.services.commons.dto.request.HblReleaseTypeMappingListRequest;
 import com.dpw.runner.shipment.services.commons.dto.response.HblReleaseTypeMappingResponse;
-import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
+import com.dpw.runner.shipment.services.commons.entity.HblReleaseTypeMapping;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblReleaseTypeMappingService;

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.commons.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.enums.AwbReset;
+import com.dpw.runner.shipment.services.commons.entity.enums.AwbReset;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 

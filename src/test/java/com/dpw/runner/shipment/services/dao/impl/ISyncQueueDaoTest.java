@@ -4,8 +4,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.SyncQueue;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.commons.entity.SyncQueue;
 import com.dpw.runner.shipment.services.repository.interfaces.ISyncQueueRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IQuoteContractsDao;
 import com.dpw.runner.shipment.services.commons.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.commons.dto.response.QuoteContractsResponse;
-import com.dpw.runner.shipment.services.entity.QuoteContracts;
+import com.dpw.runner.shipment.services.commons.entity.QuoteContracts;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;

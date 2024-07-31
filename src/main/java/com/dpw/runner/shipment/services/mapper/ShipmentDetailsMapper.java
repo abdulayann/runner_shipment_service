@@ -3,7 +3,8 @@ package com.dpw.runner.shipment.services.mapper;
 import com.dpw.runner.shipment.services.commons.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.commons.dto.request.*;
 import com.dpw.runner.shipment.services.commons.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import org.mapstruct.*;
 
 @Mapper(

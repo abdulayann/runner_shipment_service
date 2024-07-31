@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.commons.dto.response;
 import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.commons.dto.request.awb.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import lombok.Data;
 

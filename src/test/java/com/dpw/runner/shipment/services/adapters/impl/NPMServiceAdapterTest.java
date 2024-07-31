@@ -20,10 +20,10 @@ import com.dpw.runner.shipment.services.commons.dto.response.ShipmentDetailsResp
 import com.dpw.runner.shipment.services.commons.dto.response.npm.NPMContractsResponse;
 import com.dpw.runner.shipment.services.commons.dto.response.npm.NPMFetchLangChargeCodeResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.commons.entity.BookingCharges;
+import com.dpw.runner.shipment.services.commons.entity.Containers;
+import com.dpw.runner.shipment.services.commons.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.commons.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;

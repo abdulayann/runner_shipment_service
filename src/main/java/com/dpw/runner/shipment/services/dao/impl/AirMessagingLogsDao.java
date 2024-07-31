@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IAirMessagingLogsDao;
-import com.dpw.runner.shipment.services.entity.AirMessagingLogs;
+import com.dpw.runner.shipment.services.commons.entity.AirMessagingLogs;
 import com.dpw.runner.shipment.services.repository.interfaces.IAirMessagingLogsRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

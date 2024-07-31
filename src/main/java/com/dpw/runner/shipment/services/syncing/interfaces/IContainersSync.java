@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.interfaces;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentsContainersMapping;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 

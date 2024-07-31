@@ -1,7 +1,11 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.commons.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.commons.entity.Containers;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;

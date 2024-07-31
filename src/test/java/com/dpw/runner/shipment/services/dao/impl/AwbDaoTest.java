@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.commons.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.commons.dto.request.awb.AwbOCIInfo;
@@ -16,9 +17,9 @@ import com.dpw.runner.shipment.services.commons.dto.request.awb.AwbOtherChargesI
 import com.dpw.runner.shipment.services.commons.dto.request.awb.AwbShipmentInfo;
 import com.dpw.runner.shipment.services.commons.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.commons.dto.response.AwbResponse;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.PrintType;
+import com.dpw.runner.shipment.services.commons.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;

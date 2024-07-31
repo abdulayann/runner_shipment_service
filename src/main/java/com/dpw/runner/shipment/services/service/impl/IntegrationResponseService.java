@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.commons.dto.request.IntegrationResponseRequest;
 import com.dpw.runner.shipment.services.commons.dto.response.IntegrationResponsesResponse;
-import com.dpw.runner.shipment.services.entity.IntegrationResponse;
+import com.dpw.runner.shipment.services.commons.entity.IntegrationResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IIntegrationResponseService;

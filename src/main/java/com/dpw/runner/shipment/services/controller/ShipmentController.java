@@ -17,7 +17,7 @@ import com.dpw.runner.shipment.services.commons.dto.response.CheckCreditLimitFro
 import com.dpw.runner.shipment.services.commons.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.commons.dto.v1.request.TIListRequest;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;

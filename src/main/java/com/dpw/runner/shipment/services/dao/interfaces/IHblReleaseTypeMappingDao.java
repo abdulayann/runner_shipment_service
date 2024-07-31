@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
+import com.dpw.runner.shipment.services.commons.entity.HblReleaseTypeMapping;
 
 import java.util.List;
 

@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.commons.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.commons.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.commons.entity.enums.Status;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 

@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.commons.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.enums.GenerationType;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.commons.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.commons.entity.enums.ProductProcessTypes;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 

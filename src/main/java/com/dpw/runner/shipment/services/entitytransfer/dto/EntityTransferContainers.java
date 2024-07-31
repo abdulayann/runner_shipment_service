@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import lombok.*;
 

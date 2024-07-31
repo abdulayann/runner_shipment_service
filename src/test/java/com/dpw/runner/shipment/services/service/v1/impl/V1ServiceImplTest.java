@@ -12,8 +12,8 @@ import com.dpw.runner.shipment.services.commons.dto.request.CreateBookingModuleI
 import com.dpw.runner.shipment.services.commons.dto.v1.request.*;
 import com.dpw.runner.shipment.services.commons.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.commons.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;

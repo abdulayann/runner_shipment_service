@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.LogsHistoryConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.ILogsHistoryDao;
 import com.dpw.runner.shipment.services.commons.dto.request.LogHistoryRequest;
 import com.dpw.runner.shipment.services.commons.dto.response.LogHistoryResponse;
-import com.dpw.runner.shipment.services.entity.LogsHistory;
+import com.dpw.runner.shipment.services.commons.entity.LogsHistory;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;

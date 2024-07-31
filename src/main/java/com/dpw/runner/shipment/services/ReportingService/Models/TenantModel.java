@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
-import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
-import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
+import com.dpw.runner.shipment.services.commons.entity.enums.DigitGrouping;
+import com.dpw.runner.shipment.services.commons.entity.enums.GroupingNumber;
 import lombok.Getter;
 
 import java.io.Serializable;

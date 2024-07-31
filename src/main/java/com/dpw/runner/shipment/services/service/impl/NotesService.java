@@ -11,7 +11,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.commons.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.commons.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.commons.entity.Notes;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;

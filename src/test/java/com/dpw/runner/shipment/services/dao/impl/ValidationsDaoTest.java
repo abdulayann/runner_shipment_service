@@ -5,9 +5,9 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.Validations;
-import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.commons.entity.Validations;
+import com.dpw.runner.shipment.services.commons.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.repository.interfaces.IValidationsRepository;
 import com.nimbusds.jose.util.Pair;
 import org.junit.jupiter.api.BeforeEach;

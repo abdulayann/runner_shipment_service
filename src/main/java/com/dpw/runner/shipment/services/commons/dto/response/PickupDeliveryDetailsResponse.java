@@ -3,8 +3,8 @@ package com.dpw.runner.shipment.services.commons.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomLocalTimeSerializer;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.enums.InstructionType;
+import com.dpw.runner.shipment.services.commons.entity.Parties;
+import com.dpw.runner.shipment.services.commons.entity.enums.InstructionType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 

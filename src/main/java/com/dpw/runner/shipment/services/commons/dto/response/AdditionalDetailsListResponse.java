@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.commons.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
-import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
-import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.commons.entity.enums.AndesStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.LGDStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.Ownership;
 import lombok.Data;
 
 import java.math.BigDecimal;

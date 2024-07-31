@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Models;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.commons.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.commons.entity.Awb;
 import lombok.Data;
 
 import java.util.List;

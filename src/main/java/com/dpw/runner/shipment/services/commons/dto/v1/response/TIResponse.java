@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.commons.dto.v1.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.enums.TransportInstructionTemplateType;
+import com.dpw.runner.shipment.services.commons.entity.enums.TransportInstructionTemplateType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 

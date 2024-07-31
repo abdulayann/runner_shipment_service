@@ -18,6 +18,8 @@ import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.commons.dto.request.*;
 import com.dpw.runner.shipment.services.commons.dto.response.*;
+import com.dpw.runner.shipment.services.commons.entity.*;
+import com.dpw.runner.shipment.services.commons.entity.enums.*;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -33,8 +35,7 @@ import com.dpw.runner.shipment.services.commons.dto.v1.request.AddressTranslatio
 import com.dpw.runner.shipment.services.commons.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.commons.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.commons.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;

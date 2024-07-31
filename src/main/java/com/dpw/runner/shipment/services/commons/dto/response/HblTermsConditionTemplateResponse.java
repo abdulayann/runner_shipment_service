@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.commons.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
+import com.dpw.runner.shipment.services.commons.entity.enums.TypeOfHblPrint;
 import lombok.Data;
 
 @Data

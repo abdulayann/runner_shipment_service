@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.commons.entity.Hbl;
 
 import java.util.List;
 import java.util.Optional;

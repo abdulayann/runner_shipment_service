@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IDateTimeChangeLogDao;
-import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
+import com.dpw.runner.shipment.services.commons.entity.DateTimeChangeLog;
 import com.dpw.runner.shipment.services.repository.interfaces.IDateTimeChangeLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;

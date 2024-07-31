@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.interfaces;
 
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.commons.entity.Packing;
 
 import java.util.List;
 

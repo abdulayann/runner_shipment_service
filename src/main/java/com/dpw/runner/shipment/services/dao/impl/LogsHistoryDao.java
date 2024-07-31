@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.ILogsHistoryDao;
-import com.dpw.runner.shipment.services.entity.LogsHistory;
+import com.dpw.runner.shipment.services.commons.entity.LogsHistory;
 import com.dpw.runner.shipment.services.repository.interfaces.ILogsHistoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

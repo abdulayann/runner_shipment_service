@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
-import com.dpw.runner.shipment.services.entity.AirMessagingLogs;
+import com.dpw.runner.shipment.services.commons.entity.AirMessagingLogs;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;

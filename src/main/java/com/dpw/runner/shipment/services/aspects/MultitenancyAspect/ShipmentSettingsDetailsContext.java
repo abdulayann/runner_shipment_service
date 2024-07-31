@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentSettingsDetails;
 import org.springframework.stereotype.Component;
 
 @Component

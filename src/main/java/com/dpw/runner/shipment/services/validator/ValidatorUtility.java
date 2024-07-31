@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.validator;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IValidationsDao;
-import com.dpw.runner.shipment.services.entity.Validations;
-import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.commons.entity.Validations;
+import com.dpw.runner.shipment.services.commons.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.dpw.runner.shipment.services.validator.constants.ValidatorConstants;

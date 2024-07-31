@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.commons.requests;
 
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.commons.entity.commons.BaseEntity;
 import lombok.*;
 
 @Builder

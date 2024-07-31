@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 
-import com.dpw.runner.shipment.services.entity.DefaultViews;
+import com.dpw.runner.shipment.services.commons.entity.DefaultViews;
 import com.dpw.runner.shipment.services.repository.interfaces.IDefaultViewsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

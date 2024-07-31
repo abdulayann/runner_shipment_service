@@ -9,7 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.commons.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.commons.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.commons.entity.Events;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;

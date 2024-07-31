@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
-import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
-import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.commons.entity.enums.AndesStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.LGDStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import lombok.*;
 

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.commons.dto.request.npm;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.commons.entity.Awb;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 

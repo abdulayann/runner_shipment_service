@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.DefaultViews;
+import com.dpw.runner.shipment.services.commons.entity.DefaultViews;
 
 import java.util.List;
 import java.util.Optional;

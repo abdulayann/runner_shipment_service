@@ -18,11 +18,11 @@ import com.dpw.runner.shipment.services.commons.dto.v1.response.SendEntityRespon
 import com.dpw.runner.shipment.services.commons.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.commons.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.commons.entity.Awb;
+import com.dpw.runner.shipment.services.commons.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.commons.entity.Hbl;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.commons.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;

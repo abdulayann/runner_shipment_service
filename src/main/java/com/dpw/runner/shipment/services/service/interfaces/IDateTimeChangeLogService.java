@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.enums.DateType;
+import com.dpw.runner.shipment.services.commons.entity.DateTimeChangeLog;
+import com.dpw.runner.shipment.services.commons.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.commons.entity.enums.DateType;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.entity.SequenceIncrementor;
+import com.dpw.runner.shipment.services.commons.entity.SequenceIncrementor;
 import com.dpw.runner.shipment.services.repository.interfaces.ISequenceIncrementorRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

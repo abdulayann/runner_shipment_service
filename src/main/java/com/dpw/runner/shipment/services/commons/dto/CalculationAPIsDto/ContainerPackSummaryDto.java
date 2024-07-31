@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.commons.dto.CalculationAPIsDto;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.Data;

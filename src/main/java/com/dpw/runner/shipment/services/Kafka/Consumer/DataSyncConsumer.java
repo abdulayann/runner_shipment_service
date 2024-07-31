@@ -1,8 +1,7 @@
 package com.dpw.runner.shipment.services.Kafka.Consumer;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.SyncKafkaDto;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.service.impl.SyncService;
+import com.dpw.runner.shipment.services.commons.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;

@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.commons.dto.request.platformBooking;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.commons.entity.enums.BookingStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;

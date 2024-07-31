@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.commons.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.enums.GenerationType;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.commons.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.commons.entity.enums.ProductProcessTypes;
 import lombok.Data;
 
 import java.time.LocalDateTime;
