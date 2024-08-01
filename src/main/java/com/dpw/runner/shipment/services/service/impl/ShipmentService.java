@@ -1658,7 +1658,7 @@ public class ShipmentService implements IShipmentService {
                     Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
                     int countOfExpiredParties = 0;
                     for(var entry : addressMap.entrySet()) {
-                        if (StringUtility.isNotEmpty(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)))) {
+                        if (entry.getValue() != null && StringUtility.isNotEmpty(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)))) {
                             LocalDateTime agentExpiry = LocalDateTime.parse(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)));
                             // if any one of the agent is not expired will apply the validations as is
                             if (LocalDateTime.now().isAfter(agentExpiry))
