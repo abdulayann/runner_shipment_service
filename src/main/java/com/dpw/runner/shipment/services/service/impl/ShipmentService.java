@@ -1693,16 +1693,21 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public boolean checkRaStatusFields(ShipmentDetails shipmentDetails, OrgAddressResponse orgAddressResponse, Parties parties) {
+    public boolean checkRaStatusFields(ShipmentDetails shipmentDetails, OrgAddressResponse orgAddressResponse, Parties parties) throws ValidationException{
         Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
         if (addressMap.containsKey(parties.getOrgCode() + "#" + parties.getAddressCode())) {
             Map<String, Object> addressConsignorAgent = addressMap.get(parties.getOrgCode() + "#" + parties.getAddressCode());
             if (addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
                 var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
-                if (rakcType != null && Boolean.TRUE.equals(rakcType) && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
+                if (rakcType != null && Boolean.TRUE.equals(rakcType)){
+                    if(shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
                         shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
-                        shipmentDetails.getSecurityStatus() == null)) {
-                    return false;
+                        shipmentDetails.getSecurityStatus() == null){
+                        return false;
+                    }
+                    else if(shipmentDetails.getAdditionalDetails().getScreeningStatus() != null && shipmentDetails.getAdditionalDetails().getScreeningStatus().size() == 1 && shipmentDetails.getAdditionalDetails().getScreeningStatus().get(0).equals("VCK")){
+                        throw new ValidationException("Please select an additional screening status along with VCK.");
+                    }
                 }
             }
         }
