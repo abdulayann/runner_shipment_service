@@ -831,6 +831,8 @@ public class AwbService implements IAwbService {
 
         try {
             consolidationService.validateRaKcForConsol(consolidationDetails);
+        }catch (ValidationException ex){
+            throw new RunnerException(ex.getMessage());
         }catch (Exception e) {
             throw new RunnerException(errorMessage);
         }
@@ -1198,6 +1200,8 @@ public class AwbService implements IAwbService {
 
         try{
             shipmentService.validateRaKcDetails(shipmentDetails);
+        }catch (ValidationException ex){
+            throw new RunnerException(ex.getMessage());
         }catch (Exception ex){
             throw new RunnerException(errorMessage);
         }

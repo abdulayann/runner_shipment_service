@@ -3060,10 +3060,14 @@ public class ConsolidationService implements IConsolidationService {
                         Map<String, Object> addressConsignorAgent = addressMap.get(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode());
                         if (addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
                             var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
-                            if (rakcType != null && Boolean.TRUE.equals(rakcType) && (consolidationDetails.getScreeningStatus() == null ||
+                            if (rakcType != null && Boolean.TRUE.equals(rakcType)){
+                                if(consolidationDetails.getScreeningStatus() == null ||
                                     consolidationDetails.getScreeningStatus().isEmpty() ||
-                                    consolidationDetails.getSecurityStatus() == null || consolidationDetails.getSecurityStatus().isEmpty())) {
-                                throw new RunnerException("Screening Status and Security Status is mandatory for RA consignor.");
+                                    consolidationDetails.getSecurityStatus() == null || consolidationDetails.getSecurityStatus().isEmpty()){
+                                    throw new RunnerException("Screening Status and Security Status is mandatory for RA consignor.");
+                                }else if(consolidationDetails.getScreeningStatus() != null && consolidationDetails.getScreeningStatus().size() == 1 && consolidationDetails.getScreeningStatus().get(0).equals("VCK")){
+                                    throw new ValidationException("Please select an additional screening status along with VCK.");
+                                }
                             }
                         }
                     }
