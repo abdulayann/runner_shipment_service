@@ -2,15 +2,20 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +63,9 @@ public class CommonUtils {
 
     @Autowired
     private TenantSettingsService tenantSettingsService;
+
+    @Autowired
+    private IV1Service iv1Service;
 
     public static FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
@@ -436,6 +444,49 @@ public class CommonUtils {
 
     public V1TenantSettingsResponse getCurrentTenantSettings() {
         return tenantSettingsService.getV1TenantSettings(TenantContext.getCurrentTenant());
+    }
+
+    public InterBranchDto getInterBranchContext() {
+        return InterBranchContext.getContext();
+    }
+
+    public void setInterBranchContextForHub() {
+        /***
+         * Check current branch should be enabled both
+         * Set isHub = true && coloadStationsTenantIds (TenantSettings + Current)
+         */
+        var tenantSettings = getCurrentTenantSettings();
+        var interBranchDto = InterBranchDto.builder().build();
+
+        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled()) && Boolean.TRUE.equals(tenantSettings.getIsHubEnabled())) {
+            interBranchDto.getColoadStationsTenantIds().addAll(tenantSettings.getColoadingBranchIds());
+            interBranchDto.setHub(true);
+        }
+
+        InterBranchContext.setContext(interBranchDto);
+    }
+
+    public void setInterBranchContextForColoadStation() {
+        /***
+         * Check current branch should be enabled both IsMAWBColoadingEnabled
+         * Set isCoLoadStation = true && hubTenantIds (TenantSettings + Current)
+         */
+        var tenantSettings = getCurrentTenantSettings();
+        var interBranchDto = InterBranchDto.builder().build();
+
+        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            interBranchDto.setHubTenantIds(fetchColoadingDetails().stream().map(CoLoadingMAWBDetailsResponse::getParentTenantId).toList());
+            interBranchDto.setCoLoadStation(true);
+        }
+
+        InterBranchContext.setContext(interBranchDto);
+    }
+
+    private List<CoLoadingMAWBDetailsResponse> fetchColoadingDetails() {
+        List<Object> criteria = new ArrayList<>(List.of(List.of("ChildTenantId"), "=", TenantContext.getCurrentTenant()));
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(100).criteriaRequests(criteria).build();
+        var v1Response = iv1Service.getCoLoadingStations(commonV1ListRequest);
+        return jsonHelper.convertValueToList(v1Response.entities, CoLoadingMAWBDetailsResponse.class);
     }
 
 }
