@@ -20,11 +20,11 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
     Page<ConsoleShipmentMapping> findAll(Specification<ConsoleShipmentMapping> spec, Pageable pageable);
 
     @Modifying
-    @Query(value = "SELECT * FROM console_shipment_mapping WHERE consolidation_id = ?1", nativeQuery = true)
+    @Query(value = "SELECT * FROM console_shipment_mapping WHERE consolidation_id = ?1 AND is_attachment_done = true", nativeQuery = true)
     List<ConsoleShipmentMapping> findByConsolidationIdByQuery(Long consolidationId);
 
     @Modifying
-    @Query(value = "SELECT * FROM console_shipment_mapping WHERE shipment_id = ?1", nativeQuery = true)
+    @Query(value = "SELECT * FROM console_shipment_mapping WHERE shipment_id = ?1 AND is_attachment_done = true", nativeQuery = true)
     List<ConsoleShipmentMapping> findByShipmentIdByQuery(Long shipmentId);
 
 }
