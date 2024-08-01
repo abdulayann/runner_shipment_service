@@ -20,4 +20,10 @@ public class ConsoleShipmentMapping extends BaseEntity {
 
     @Column(name = "shipment_id")
     private Long shipmentId;
+
+    @Column(name = "is_attachment_done")
+    private Boolean isAttachmentDone;
+
+    @Column(name = "request_type")
+    private Integer requestedType;
 }
