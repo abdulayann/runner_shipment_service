@@ -10,6 +10,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+import org.hibernate.annotations.WhereJoinTable;
 
 import javax.persistence.*;
 import javax.validation.constraints.Size;
@@ -365,6 +366,7 @@ public class ConsolidationDetails extends MultiTenancy {
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     @JsonIgnoreProperties(value = "consolidationList", allowSetters = true)
     @BatchSize(size = 50)
+    @WhereJoinTable(clause = "is_attachment_done = 'True'")
     private List<ShipmentDetails> shipmentsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")

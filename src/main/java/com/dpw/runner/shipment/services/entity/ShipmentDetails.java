@@ -15,12 +15,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.*;
 
 import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -349,6 +349,7 @@ public class ShipmentDetails extends MultiTenancy {
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
     @JsonIgnoreProperties(value = {"shipmentsList", "containersList"}, allowSetters = true)
+    @WhereJoinTable(clause = "is_attachment_done = 'True'")
     private List<ConsolidationDetails> consolidationList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")

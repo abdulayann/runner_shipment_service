@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.v1.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -41,6 +42,10 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean EnableEstimateAndActualDateTimeUpdates;
     private Boolean LogicAppIntegrationEnabled;
     private Boolean TransportOrchestratorEnabled;
+    private Boolean IsMAWBColoadingEnabled;
+    @JsonProperty("IsColoadingMAWBStationEnabled")
+    private Boolean IsHubEnabled;
+    private List<Long> ColoadingBranchIds;
     private Boolean FetchRatesMandate;
     private Boolean CarrierChangeAllowed;
 }
