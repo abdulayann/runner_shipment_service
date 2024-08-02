@@ -2875,6 +2875,50 @@ public abstract class IReport {
         }
     }
 
+    public void populateRaKcDataConsolidation(Map<String, Object> dictionary, ConsolidationModel consolidationModel) {
+        Parties partiesModelSendingAgent = consolidationModel.getSendingAgent() != null ? modelMapper.map(consolidationModel.getSendingAgent(), Parties.class) : null;
+
+        List<Parties> parties = Arrays.asList(
+            partiesModelSendingAgent
+        );
+
+        OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(parties);
+        Map<String, Object> addressReceivingAgent = null;
+
+        Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+        if(partiesModelSendingAgent != null) {
+            addressReceivingAgent = addressMap.get(partiesModelSendingAgent.getOrgCode() + "#" + partiesModelSendingAgent.getAddressCode());
+        }
+
+        processAgent(addressReceivingAgent, dictionary, ONE, ORIGIN_AGENT);
+
+        if (consolidationModel.getSendingAgent() != null) {
+
+            if(consolidationModel.getExemptionCodes() != null) {
+                dictionary.put(EXEMPTION_CARGO, consolidationModel.getExemptionCodes());
+            }
+            if(consolidationModel.getScreeningStatus() != null && !consolidationModel.getScreeningStatus().isEmpty()) {
+                Set<String> screeningCodes = consolidationModel.getScreeningStatus().stream().collect(Collectors.toSet());
+                if(screeningCodes.contains(Constants.AOM)){
+                    screeningCodes.remove(Constants.AOM);
+                    String aomString = Constants.AOM;
+                    if(consolidationModel.getAomFreeText() != null) {
+                        aomString =  aomString + " (" + consolidationModel.getAomFreeText() + ")";
+                    }
+                    screeningCodes.add(aomString);
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                } else {
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                }
+
+            }
+        }
+
+        if(consolidationModel.getSecurityStatus() != null ) {
+            dictionary.put(CONSIGNMENT_STATUS, consolidationModel.getSecurityStatus());
+        }
+    }
+
     private String getDate(Map<String, Object> agent) {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         return ConvertToDPWDateFormat(LocalDateTime.parse(StringUtility.convertToString(agent.get(KCRA_EXPIRY))), v1TenantSettingsResponse.getDPWDateFormat());

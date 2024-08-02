@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.Column;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -230,4 +231,12 @@ public class ConsolidationModel implements IDocumentModel {
     private String emergencyContactNumber;
     @JsonProperty("EmergencyContactNumberCode")
     private String emergencyContactNumberCode;
+    @JsonProperty("screeningStatus")
+    private List<String> screeningStatus;
+    @JsonProperty("exemptionCodes")
+    private String exemptionCodes;
+    @JsonProperty("aomFreeText")
+    private String aomFreeText;
+    @JsonProperty("securityStatus")
+    private String securityStatus;
 }
