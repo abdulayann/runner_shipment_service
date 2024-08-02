@@ -3726,6 +3726,9 @@ public class ShipmentService implements IShipmentService {
             log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getConsolidationId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
+            commonUtils.setInterBranchContextForHub();
+        }
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         ListCommonRequest listRequest = setCrieteriaForAttachShipment(request, consolidationDetails.get());
@@ -4436,6 +4439,51 @@ public class ShipmentService implements IShipmentService {
         }
 
         return ResponseHelper.buildSuccessResponse(upstreamDateUpdateResponse);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        if (consolidationDetails.isEmpty()) {
+            log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
+        }
+        if (request.getFilterCriteria() == null)
+            request.setFilterCriteria(new ArrayList<>());
+        if (request.getFilterCriteria() != null && request.getFilterCriteria().isEmpty()) {
+            request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
+        }
+
+        Map<Long, ConsoleShipmentMapping> requestedTypeMap = new HashMap<>();
+        // InterBranch Logic
+        if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
+            commonUtils.setInterBranchContextForHub();
+            var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+            if (consoleShipMappingList == null || consoleShipMappingList.isEmpty()) {
+                return ResponseHelper.buildListSuccessResponse(new ArrayList<>(), 1, 0);
+            }
+            requestedTypeMap = consoleShipMappingList.stream().collect(Collectors.toMap(ConsoleShipmentMapping::getShipmentId, Function.identity(), (existingValue, newValue) -> existingValue));
+            List<Long> shipIds = consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+            CommonUtils.andCriteria("id", shipIds, "IN", request);
+        } else {
+            CommonUtils.andCriteria("consolidationId", consoleId, "=", request);
+        }
+        var response = list(CommonRequestModel.buildRequest(request));
+        if (response.getBody() instanceof List<?> responseList) {
+            for (var resp : responseList) {
+                if (resp instanceof ShipmentListResponse shipmentListResponse && (requestedTypeMap.containsKey(shipmentListResponse.getId()))) {
+                    shipmentListResponse.setRequestedType(requestedTypeMap.get(shipmentListResponse.getId()).getRequestedType().getDescription());
+                    shipmentListResponse.setRequestedBy(requestedTypeMap.get(shipmentListResponse.getId()).getCreatedBy());
+                    shipmentListResponse.setRequestedOn(requestedTypeMap.get(shipmentListResponse.getId()).getCreatedAt());
+                }
+            }
+        }
+        return response;
     }
 
 }

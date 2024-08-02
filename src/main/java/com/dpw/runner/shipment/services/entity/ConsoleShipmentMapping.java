@@ -1,11 +1,10 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import lombok.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Getter
@@ -24,6 +23,7 @@ public class ConsoleShipmentMapping extends BaseEntity {
     @Column(name = "is_attachment_done")
     private Boolean isAttachmentDone;
 
+    @Enumerated(EnumType.ORDINAL)
     @Column(name = "request_type")
-    private Integer requestedType;
+    private ShipmentRequestedType requestedType;
 }

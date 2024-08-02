@@ -551,4 +551,15 @@ public class ShipmentController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_CONSOLE_SHIPMENT_LIST)
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = true) Long consoleId) {
+        log.info("Received Cosole Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        try {
+            return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+        }
+    }
 }
