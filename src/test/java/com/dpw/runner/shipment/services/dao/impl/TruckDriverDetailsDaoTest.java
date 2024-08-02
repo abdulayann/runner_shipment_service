@@ -296,8 +296,8 @@ class TruckDriverDetailsDaoTest {
         // Arrange
         long consolidationId = 123L;
         List<ConsoleShipmentMapping> consoleShipmentMappings = List.of(
-                new ConsoleShipmentMapping(1L, 1L),
-                new ConsoleShipmentMapping(2L, 2L)
+                new ConsoleShipmentMapping(1L, 1L, true, null),
+                new ConsoleShipmentMapping(2L, 2L, true, null)
         );
         when(consoleShipmentMappingDao.findByConsolidationId(consolidationId)).thenReturn(consoleShipmentMappings);
 
