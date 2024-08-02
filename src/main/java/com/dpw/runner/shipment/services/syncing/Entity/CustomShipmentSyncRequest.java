@@ -555,4 +555,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private LocalDateTime insertDate;
     @JsonProperty("UpdateDate")
     private LocalDateTime updateDate;
+    @JsonProperty("OrderNumber")
+    private String orderNumber;
+    @JsonProperty("OrderManagementNumber")
+    private String orderManagementNumber;
 }
