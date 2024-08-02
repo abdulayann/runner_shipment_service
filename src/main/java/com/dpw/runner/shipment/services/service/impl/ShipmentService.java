@@ -1657,15 +1657,17 @@ public class ShipmentService implements IShipmentService {
                 if (orgAddressResponse != null) {
                     Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
                     int countOfExpiredParties = 0;
+                    int countOfShipmentRaKcParties = 0;
                     for(var entry : addressMap.entrySet()) {
                         if (entry.getValue() != null && StringUtility.isNotEmpty(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)))) {
                             LocalDateTime agentExpiry = LocalDateTime.parse(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)));
                             // if any one of the agent is not expired will apply the validations as is
+                            countOfShipmentRaKcParties++;
                             if (LocalDateTime.now().isAfter(agentExpiry))
                                 countOfExpiredParties++;
                         }
                     }
-                    if(countOfExpiredParties == orgList.size())
+                    if(countOfExpiredParties == countOfShipmentRaKcParties && countOfExpiredParties > 0)
                         return;
                     if(consignor != null) {
                         if (addressMap.containsKey(consignor.getOrgCode() + "#" + consignor.getAddressCode())) {
@@ -1676,6 +1678,9 @@ public class ShipmentService implements IShipmentService {
                                         shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
                                         shipmentDetails.getSecurityStatus() == null)) {
                                     throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
+                                }
+                                else if(shipmentDetails.getAdditionalDetails().getScreeningStatus() != null && shipmentDetails.getAdditionalDetails().getScreeningStatus().size() == 1 && shipmentDetails.getAdditionalDetails().getScreeningStatus().get(0).equals("VCK")) {
+                                    throw new ValidationException("Please select an additional screening status along with VCK.");
                                 }
                             }
                         }
