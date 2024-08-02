@@ -6,17 +6,22 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.InvoiceBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -68,7 +73,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
      * @return a BillingSummary object containing the billing summary information.
      */
     @Override
-    public BillingSummary fetchBillingBulkSummary(InvoiceBulkSummaryRequest request) {
+    public List<BillingSummary> fetchBillingBulkSummary(InvoiceBulkSummaryRequest request) {
         // Construct the URL for the billing bulk summary endpoint
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingBulkSummary();
         log.info("Sending billing bulk summary request to URL: {}", url);
@@ -80,25 +85,26 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         try {
             // Send the POST request and get the response body
             log.info("Executing POST request...");
-            var response = this.restTemplate.postForEntity(url, httpEntity, BillingSummaryResponse.class).getBody();
+            ResponseEntity<BillingEntityResponse> responseEntity = restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
 
-            // Initialize an empty BillingSummary object
-            BillingSummary billingSummary = new BillingSummary();
+            // Check the response status and body
+            BillingEntityResponse billingEntityResponse = responseEntity.getBody();
+            if (responseEntity.getStatusCode().is2xxSuccessful() && billingEntityResponse != null) {
+                log.info("Received billingEntityResponse from billing service");
+                log.debug("Response data: {}", billingEntityResponse.getData());
 
-            // If the response is not null, map the response data to the BillingSummary object
-            if (Objects.nonNull(response)) {
-                log.info("Received response from billing service");
-                log.debug("Response data: {}", response.getData());
-                billingSummary = modelMapper.map(response.getData(), BillingSummary.class);
+                // Convert the billingSummary object to a List<Map<String, Object>>
+                List<Map<String, Object>> billingSummaryListMap = (List<Map<String, Object>>) billingEntityResponse.getData().get("billingSummary");
+
+                // Map the list of maps to a list of BillingSummary objects
+                return modelMapper.map(billingSummaryListMap, new TypeToken<List<BillingSummary>>() {}.getType());
             } else {
-                log.warn("Received null response from billing service");
+                log.warn("Received non-successful response from billing service: {}", responseEntity.getStatusCode());
+                return List.of();
             }
-
-            // Return the billing summary
-            return billingSummary;
         } catch (Exception e) {
-            log.error("Error occurred while fetching billing bulk summary: {}", e.getMessage());
-            throw new BillingException(e.getMessage());
+            log.error("Error occurred while fetching billing bulk summary", e);
+            throw new BillingException("Error occurred while fetching billing bulk summary", e);
         }
     }
 
