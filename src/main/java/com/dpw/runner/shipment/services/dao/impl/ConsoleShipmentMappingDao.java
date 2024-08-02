@@ -24,7 +24,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
 
     @Override
     public List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId) {
-        return consoleShipmentsMappingRepository.findByConsolidationId(consolidationId);
+        return consoleShipmentsMappingRepository.findByConsolidationIdByQuery(consolidationId);
     }
 
     private void deleteByConsolidationIdAndShipmentIdIn(Long consolidationId, List<Long> shipmentIds) {
@@ -33,7 +33,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
 
     @Override
     public List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId) {
-        return consoleShipmentsMappingRepository.findByShipmentId(shipmentId);
+        return consoleShipmentsMappingRepository.findByShipmentIdByQuery(shipmentId);
     }
 
     @Override

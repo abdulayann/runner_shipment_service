@@ -12,8 +12,6 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 @Generated
 public interface IConsoleShipmentsMappingRepository extends JpaRepository<ConsoleShipmentMapping, Long> {
-    List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId);
-    List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);
     @Modifying
     @Query(value = "DELETE FROM console_shipment_mapping csm WHERE csm.consolidation_id = ?1 AND csm.shipment_id IN (?2)", nativeQuery = true)
     void deleteByConsolidationIdAndShipmentIdIn(Long consolidationId, List<Long> shipmentIds);
