@@ -1,0 +1,17 @@
+package com.dpw.runner.shipment.services.adapters.config;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+@Component
+@ConfigurationProperties(prefix = "billing")
+@Data
+public class BillingServiceUrlConfig {
+
+    private String baseUrl;
+    private String getInvoiceData;
+    private String externalCreateOrUpdate;
+    private String chargeTypeFilter;
+    private String billSummary;
+}
