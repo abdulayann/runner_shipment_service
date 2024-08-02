@@ -200,7 +200,7 @@ public class ExternalBillPayloadRequest implements IRunnerRequest {
         private String chargeTypeId;
         private String chargeTypeGuid;
         private String details;
-        //to display bill charges in sorted order based on it
+        private String chargeTypeCode;
         private Integer sequenceNumber;
         private String paymentTypeCode;
         private Boolean isFromConsolidation = false;
