@@ -319,6 +319,21 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
     }
 
+    private void mockRaKc(ConsolidationModel consolidationModel) {
+        Parties parties = new Parties();
+        parties.setOrgCode("Test");
+        parties.setAddressCode("Test");
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> addressDataMap = new HashMap<>();
+        addressDataMap.put(REGULATED_AGENT, true);
+        addressDataMap.put(KCRA_NUMBER, ONE);
+        addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
+        addressMap.put(parties.getOrgCode()+"#"+parties.getAddressCode(), addressDataMap);
+        OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
+        orgAddressResponse.setAddresses(addressMap);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+    }
+
     @Test
     void populateDictionary() {
         CargoManifestAirConsolidationModel cargoManifestAirConsolidationModel = new CargoManifestAirConsolidationModel();
@@ -420,7 +435,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         masterDataMock();
         mockCarrier();
-        //mockRakc(cargoManifestAirConsolidationModel.getShipmentModelList().get(0));
+        mockRaKc(cargoManifestAirConsolidationModel.getConsolidationModel());
         mockUnloc();
         mockTenantSettings();
         assertNotNull(cargoManifestAirConsolidationReport.populateDictionary(cargoManifestAirConsolidationModel));
