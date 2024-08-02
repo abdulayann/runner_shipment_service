@@ -90,4 +90,5 @@ public interface IShipmentService extends ICommonService {
     void validateRaKcDetails(ShipmentDetails shipmentDetails) throws RunnerException;
     ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId);
 
+    ResponseEntity<IRunnerResponse> getAllShipments(Long consoleId);
 }
