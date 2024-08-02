@@ -562,4 +562,17 @@ public class ShipmentController {
             return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }
     }
+
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.ALL_SHIPMENT_COUNT, response = UpstreamDateUpdateResponse.class)})
+    @GetMapping(ApiConstants.GET_ALL_SHIPMENTS_COUNT)
+    public ResponseEntity<IRunnerResponse> getAllShipments(@RequestParam(required = true) Long consoleId) {
+        log.info("Request received for count of all shipments");
+        try {
+            return shipmentService.getAllShipments(consoleId);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
 }

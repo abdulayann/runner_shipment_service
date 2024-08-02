@@ -105,6 +105,8 @@ public class ApiConstants {
     // Bridge service
     public static final String X_CLIENT_TYPE = "X-Client-Type";
 
+    public static final String GET_ALL_SHIPMENTS_COUNT = "/all/shipments/count";
+
 
 
 }

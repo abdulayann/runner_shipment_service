@@ -4493,4 +4493,33 @@ public class ShipmentService implements IShipmentService {
         return response;
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> getAllShipments(Long consoleId) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        Long attachedShipmentCurrentBranchCount = 0L, attachedShipmentInterBranchCount = 0L, pendingAttachmentCount = 0L;
+        AllShipmentCountResponse allShipmentCountResponse = new AllShipmentCountResponse();
+        if(consolidationDetails.isPresent()) {
+            if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
+                commonUtils.setInterBranchContextForHub();
+            }
+            List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+            for(ConsoleShipmentMapping consoleShipmentMapping: consoleShipmentMappingList) {
+                if(consoleShipmentMapping.getRequestedType() == null) {
+                    attachedShipmentCurrentBranchCount++;
+                } else if(consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED) || consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED)) {
+                    attachedShipmentInterBranchCount++;
+                } else if(consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED) || consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)) {
+                    pendingAttachmentCount++;
+                }
+            }
+            allShipmentCountResponse.setAttachedShipmentCurrentBranchCount(attachedShipmentCurrentBranchCount);
+            allShipmentCountResponse.setAttachedShipmentInterBranchCount(attachedShipmentInterBranchCount);
+            allShipmentCountResponse.setPendingAttachmentCount(pendingAttachmentCount);
+        } else {
+            log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        return ResponseHelper.buildSuccessResponse(allShipmentCountResponse);
+    }
+
 }
