@@ -120,4 +120,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String jobStatus;
     private Boolean containsHazardous;
     private ShipmentPackStatus shipmentPackStatus;
+    private String requestedType;
+    private String requestedBy;
+    private LocalDateTime requestedOn;
 }

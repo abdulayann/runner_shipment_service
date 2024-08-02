@@ -34,7 +34,7 @@ public class ApiConstants {
     public static final String API_UPDATE_BOOKING = "/update/booking";
 
     public static final String API_LIST = "/list";
-
+    public static final String API_CONSOLE_SHIPMENT_LIST = "/console-shipment-list";
     public static final String API_DELETE = "/delete";
     public static final String API_SAVE_FROM_V1 = "/save/v1";
     public static final String API_PARTIAL_UPDATE = "/patch";
