@@ -88,7 +88,7 @@ class ConsoleShipmentMappingDaoTest {
     void testFindByConsolidationId() {
         Long consolidationId = 1L;
         List<ConsoleShipmentMapping> listResponse = List.of(testConsoleShipmentMapping);
-        when(consoleShipmentsMappingRepository.findByConsolidationId(consolidationId)).thenReturn(listResponse);
+        when(consoleShipmentsMappingRepository.findByConsolidationIdByQuery(consolidationId)).thenReturn(listResponse);
         var result = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
         assertEquals(listResponse, result);
     }
@@ -97,7 +97,7 @@ class ConsoleShipmentMappingDaoTest {
     void testFindByShipmentId() {
         Long shipmentId = 1L;
         List<ConsoleShipmentMapping> listResponse = List.of(testConsoleShipmentMapping);
-        when(consoleShipmentsMappingRepository.findByShipmentId(shipmentId)).thenReturn(listResponse);
+        when(consoleShipmentsMappingRepository.findByShipmentIdByQuery(shipmentId)).thenReturn(listResponse);
         var result = consoleShipmentMappingDao.findByShipmentId(shipmentId);
         assertEquals(listResponse, result);
     }
@@ -129,7 +129,7 @@ class ConsoleShipmentMappingDaoTest {
     @Test
     void assignShipments() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
-        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationId(any());
+        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
         List<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null);
         assertEquals(shipIds, response);
@@ -138,7 +138,7 @@ class ConsoleShipmentMappingDaoTest {
     @Test
     void assignShipments_MappingsNull() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
-        doReturn(null).when(consoleShipmentsMappingRepository).findByConsolidationId(any());
+        doReturn(null).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
         List<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null);
         assertEquals(shipIds, response);
@@ -147,7 +147,7 @@ class ConsoleShipmentMappingDaoTest {
     @Test
     void assignShipments_MappingsEmpty() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
-        doReturn(new ArrayList<>()).when(consoleShipmentsMappingRepository).findByConsolidationId(any());
+        doReturn(new ArrayList<>()).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
         List<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null);
         assertEquals(shipIds, response);
@@ -164,7 +164,7 @@ class ConsoleShipmentMappingDaoTest {
     @Test
     void updateShipmentsMappings() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
-        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationId(any());
+        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
         assertDoesNotThrow(() -> consoleShipmentMappingDao.updateShipmentsMappings(1L, shipIds));
     }
@@ -172,7 +172,7 @@ class ConsoleShipmentMappingDaoTest {
     @Test
     void updateShipmentsMappings_Cases() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
-        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationId(any());
+        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(1L);
         assertDoesNotThrow(() -> consoleShipmentMappingDao.updateShipmentsMappings(1L, shipIds));
     }
