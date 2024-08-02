@@ -1119,7 +1119,7 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         try {
             ConsolidationDetails consolidationDetails = getConsoleForCalculations((ConsoleCalculationsRequest) commonRequestModel.getData());
-            consolidationDetails = calculateConsolUtilization(consolidationDetails);
+            consolidationDetails = commonUtils.calculateConsolUtilization(consolidationDetails);
             ConsoleCalculationsResponse response = getConsoleCalculationsResponse(consolidationDetails);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -1165,7 +1165,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.getAchievedQuantities().setConsolidatedVolume(val);
                 consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(consolidationDetails.getAllocations().getVolumeUnit());
             }
-            consolidationDetails = calculateConsolUtilization(consolidationDetails);
+            consolidationDetails = commonUtils.calculateConsolUtilization(consolidationDetails);
             ConsoleCalculationsResponse response = getConsoleCalculationsResponse(consolidationDetails);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -1377,6 +1377,10 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, List<ShipmentDetails> shipmentDetailsList) throws Exception {
+        // Not to process the achieved values in case of AIR transport mode
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
+            return;
+        }
         if (consolidationDetails.getOverride() != null && consolidationDetails.getOverride()) {
             return;
         }
@@ -1442,7 +1446,7 @@ public class ConsolidationService implements IConsolidationService {
         consolidationDetails.getAchievedQuantities().setConsolidatedVolume(sumVolume);
         consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(volumeChargeableUnit);
 
-        consolidationDetails = calculateConsolUtilization(consolidationDetails);
+        consolidationDetails = commonUtils.calculateConsolUtilization(consolidationDetails);
 
         String transportMode = consolidationDetails.getTransportMode();
         if(consolidationDetails.getAllocations() == null)
@@ -1498,6 +1502,23 @@ public class ConsolidationService implements IConsolidationService {
         try {
             List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
             PackSummaryResponse response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getContainerCategory(), new ShipmentMeasurementDetailsDto());
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<IRunnerResponse> calculatePackUtilisation(CommonRequestModel commonRequestModel) throws RunnerException {
+        String responseMsg;
+        CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
+        try {
+            var shipmentRequest = request.getShipmentRequest();
+            List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
+            PackSummaryResponse response = packingService.calculatePacksUtilisationForConsolidation(shipmentRequest, packingList, request.getConsolidationId());
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -3006,6 +3027,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         List<ShipmentDetails> shipmentDetails = null;
         if(!isCreate){
+            // This method will only work for non air transport modes , validation check moved inside the method
             calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), oldEntity.getShipmentsList());
             shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
         }
@@ -3044,6 +3066,22 @@ public class ConsolidationService implements IConsolidationService {
                 awbDao.save(awb);
             }
         }
+
+        // TODO : Revisit this
+        /*
+        If achieved quantity goes over allocated values, we put the auto attach flag as false,
+        but this flag can be changed by user without restriction
+         */
+        if(!Objects.isNull(consolidationDetails.getAchievedQuantities()) && !Objects.isNull(consolidationDetails.getAllocations())) {
+            // Will the allocated and achieved be always in same units e?
+            boolean disableAutoAttach = false;
+            disableAutoAttach = disableAutoAttach || (consolidationDetails.getAllocations().getWeight().compareTo(consolidationDetails.getAchievedQuantities().getConsolidatedWeight()) <= 0);
+            disableAutoAttach = disableAutoAttach || (consolidationDetails.getAllocations().getVolume().compareTo(consolidationDetails.getAchievedQuantities().getConsolidatedVolume()) <= 0);
+
+            if(disableAutoAttach);
+            //            consolidationDetails.setAutoAttachShipment(true);
+        }
+
 
     }
 

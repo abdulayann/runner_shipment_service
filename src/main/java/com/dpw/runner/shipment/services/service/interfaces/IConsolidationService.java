@@ -51,6 +51,7 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> calculateContainerSummary(CommonRequestModel commonRequestModel) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> calculatePackSummary(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> calculatePackUtilisation(CommonRequestModel commonRequestModel) throws RunnerException;
     VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException;
     ResponseEntity<IRunnerResponse> listPacksForAssignDetach(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> assignPacksAndShipments(CommonRequestModel commonRequestModel);

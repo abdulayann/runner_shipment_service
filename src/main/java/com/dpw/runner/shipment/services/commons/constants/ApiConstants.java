@@ -71,6 +71,7 @@ public class ApiConstants {
     public static final String GET_MASTER_DATA_MAPPING = "/get/masterDataMapping";
     public static final String CALCULATE_CONTAINER_SUMMARY = "/container/summary";
     public static final String CALCULATE_PACK_SUMMARY = "/pack/summary";
+    public static final String  GET_PACK_UTILISATION = "/get/packUtilisation";
     public static final String CALCULATE_AUTO_UPDATE_WT_VOL_SHIPMENT = "/calculate/auto";
     public static final String CALCULATE_WT_VOL_SHIPMENT_ON_CHANGES = "/calculate/changes";
     public static final String LIST_PACKS_FOR_ASSIGN_DETACH = "/list/packs";
