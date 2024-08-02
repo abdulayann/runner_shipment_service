@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
@@ -35,4 +36,5 @@ public interface IPackingService extends ICommonService {
     ResponseEntity<IRunnerResponse> autoCalculateVolume(CommonRequestModel commonRequestModel) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel commonRequestModel) throws RunnerException;
+    PackSummaryResponse calculatePacksUtilisationForConsolidation(ShipmentRequest shipmentRequest, List<Packing> packingList, Long consolidationId) throws RunnerException;
 }
