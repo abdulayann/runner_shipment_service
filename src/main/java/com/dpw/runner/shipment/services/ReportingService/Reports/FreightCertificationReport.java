@@ -1,5 +1,17 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHAPartyDescription;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME1;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INVOICE_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_AMOUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_AMOUNT_CURRENCY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.addTenantDetails;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getListOfStrings;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
@@ -7,19 +19,17 @@ import com.dpw.runner.shipment.services.ReportingService.Models.FreightCertifica
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,9 +37,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class FreightCertificationReport extends IReport{
@@ -45,6 +55,9 @@ public class FreightCertificationReport extends IReport{
 
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private IBillingServiceAdapter billingServiceAdapter;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -138,9 +151,10 @@ public class FreightCertificationReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(freightCertificationModel.shipmentDetails.getFreightOverseas(), freightCertificationModel.shipmentDetails.getFreightOverseasCurrency(), tenantSettingsRow));
         if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightOverseasCurrency() != null && !freightCertificationModel.shipmentDetails.getFreightOverseasCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, freightCertificationModel.shipmentDetails.getFreightOverseasCurrency());
-        if(freightCertificationModel.shipmentDetails.getShipmentAddresses() != null && freightCertificationModel.shipmentDetails.getShipmentAddresses().size() > 0) {
-            for (PartiesModel shipmentAddress: freightCertificationModel.shipmentDetails.getShipmentAddresses()) {
-                if(shipmentAddress.getType().equals(CUSTOM_HOUSE_AGENT) && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
+        if (freightCertificationModel.shipmentDetails.getShipmentAddresses() != null && freightCertificationModel.shipmentDetails.getShipmentAddresses().size() > 0) {
+            for (PartiesModel shipmentAddress : freightCertificationModel.shipmentDetails.getShipmentAddresses()) {
+                if (shipmentAddress.getType().equals(CUSTOM_HOUSE_AGENT) && shipmentAddress.getOrgData() != null
+                        && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
                     dictionary.put(CHAPartyDescription, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
                 }
             }
@@ -148,22 +162,20 @@ public class FreightCertificationReport extends IReport{
         populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
 
         List<BillingResponse> billingsList = getBillingData(freightCertificationModel.shipmentDetails.getGuid());
-        LocalDateTime lastDate = LocalDateTime.MIN;
+
+        // Fetch the last posted invoice date
+        LocalDateTime lastDate = billingServiceAdapter.fetchLastPostedInvoiceDate(InvoiceSummaryRequest.builder()
+                .moduleGuid(freightCertificationModel.shipmentDetails.getGuid().toString())
+                .moduleType(Constants.SHIPMENT).build());
+
         double totalAmount = 0;
         String currency = null;
-        if(billingsList != null && billingsList.size() > 0) {
-            for (BillingResponse bill: billingsList) {
-                List<ArObjectResponse> arObjectsList = getArObjectData(bill.getGuid());
-                if(arObjectsList != null && arObjectsList.size() > 0) {
-                    for (ArObjectResponse arObject: arObjectsList) {
-                        if(arObject.getInvoiceDate() != null && arObject.getInvoiceDate().isAfter(lastDate))
-                            lastDate = arObject.getInvoiceDate();
-                    }
-                }
+        if (billingsList != null && billingsList.size() > 0) {
+            for (BillingResponse bill : billingsList) {
                 List<BillChargesResponse> billChargesList = getBillChargesData(bill.getGuid());
                 boolean currencyFlag = false;
-                if(billChargesList != null && billChargesList.size() > 0) {
-                    for (BillChargesResponse billCharge: billChargesList) {
+                if (billChargesList != null && billChargesList.size() > 0) {
+                    for (BillChargesResponse billCharge : billChargesList) {
                         ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge.getChargeTypeId());
                         if(chargeTypesResponse != null && Objects.equals(chargeTypesResponse.getServices(), "Freight")) {
                             if(billCharge.getOverseasSellAmount() != null) {

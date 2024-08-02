@@ -1,11 +1,41 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INVNO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KNOWN_CONSIGNOR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REGULATED_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TWO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.FreightCertificationModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -26,13 +56,22 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
-import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,17 +82,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -85,6 +113,9 @@ class FreightCertificationReportTest extends CommonMocks {
 
     @Mock
     private V1ServiceUtil v1ServiceUtil;
+
+    @Mock
+    private BillingServiceAdapter billingServiceAdapter;
 
     @BeforeAll
     static void init() throws IOException {
@@ -296,7 +327,10 @@ class FreightCertificationReportTest extends CommonMocks {
         freightCertificationModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         freightCertificationModel.setUserdisplayname(UserContext.getUser().DisplayName);
         populateModel(freightCertificationModel);
+        UUID randomUUID = UUID.randomUUID();
+        freightCertificationModel.shipmentDetails.setGuid(randomUUID);
 
+        when(billingServiceAdapter.fetchLastPostedInvoiceDate(any())).thenReturn(LocalDateTime.now());
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         mockTenantSettings();
         mockBill(true, false);
@@ -343,15 +377,6 @@ class FreightCertificationReportTest extends CommonMocks {
         dependentServiceResponse = DependentServiceResponse.builder().data(billChargesResponseList).build();
         when(v1MasterData.fetchBillChargesList(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class)).thenReturn(billChargesResponseList);
-
-        ArObjectResponse arObjectResponse = new ArObjectResponse();
-        if(setBillData) {
-            arObjectResponse.setInvoiceDate(LocalDateTime.now());
-        }
-        List<ArObjectResponse> arObjectResponseList = Arrays.asList(arObjectResponse);
-        dependentServiceResponse = DependentServiceResponse.builder().data(arObjectResponseList).build();
-        when(v1MasterData.fetchArObjectList(any())).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), ArObjectResponse.class)).thenReturn(arObjectResponseList);
 
         ChargeTypesResponse chargeTypesResponse = new ChargeTypesResponse();
         if(setBillData) {
