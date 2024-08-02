@@ -115,4 +115,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
             }
         }
     }
+
+    @Override
+    @Transactional
+    public void updateConsoleShipments(ShipmentRequestedType shipmentRequestedType, Long consoleId, Long shipmentId) {
+        Integer shipmentRequestedTypeValue = shipmentRequestedType.getValue();
+        consoleShipmentsMappingRepository.updateConsoleShipmentStatus(shipmentRequestedTypeValue, consoleId, shipmentId);
+    }
 }

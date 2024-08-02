@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,4 +25,6 @@ public interface IConsoleShipmentMappingDao {
     List<ConsoleShipmentMapping> findByConsolidationIdByQuery(Long consolidationId);
 
     List<ConsoleShipmentMapping> findByShipmentIdByQuery(Long shipmentId);
+
+    void updateConsoleShipments(ShipmentRequestedType shipmentRequestedType, Long consoleId, Long shipmentId);
 }

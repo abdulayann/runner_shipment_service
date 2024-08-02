@@ -4522,4 +4522,22 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(allShipmentCountResponse);
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> updateConsoleShipments(UpdateConsoleShipmentRequest request) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
+        if(consolidationDetails.isPresent()) {
+            if (request.isForHub() && Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
+                commonUtils.setInterBranchContextForHub();
+            }
+            request.getListOfShipments().stream().forEach(shipmentId -> {
+                consoleShipmentMappingDao.updateConsoleShipments(request.getShipmentRequestedType(), request.getConsoleId(), shipmentId);
+            });
+        } else {
+            log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        return ResponseHelper.buildSuccessResponse();
+    }
+
 }
