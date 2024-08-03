@@ -1119,7 +1119,7 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         try {
             ConsolidationDetails consolidationDetails = getConsoleForCalculations((ConsoleCalculationsRequest) commonRequestModel.getData());
-            consolidationDetails = commonUtils.calculateConsolUtilization(consolidationDetails);
+            consolidationDetails = calculateConsolUtilization(consolidationDetails);
             ConsoleCalculationsResponse response = getConsoleCalculationsResponse(consolidationDetails);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -1165,7 +1165,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.getAchievedQuantities().setConsolidatedVolume(val);
                 consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(consolidationDetails.getAllocations().getVolumeUnit());
             }
-            consolidationDetails = commonUtils.calculateConsolUtilization(consolidationDetails);
+            consolidationDetails = calculateConsolUtilization(consolidationDetails);
             ConsoleCalculationsResponse response = getConsoleCalculationsResponse(consolidationDetails);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -1446,7 +1446,7 @@ public class ConsolidationService implements IConsolidationService {
         consolidationDetails.getAchievedQuantities().setConsolidatedVolume(sumVolume);
         consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(volumeChargeableUnit);
 
-        consolidationDetails = commonUtils.calculateConsolUtilization(consolidationDetails);
+        consolidationDetails = calculateConsolUtilization(consolidationDetails);
 
         String transportMode = consolidationDetails.getTransportMode();
         if(consolidationDetails.getAllocations() == null)
@@ -3067,21 +3067,11 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
-        // TODO : Revisit this
         /*
-        If achieved quantity goes over allocated values, we put the auto attach flag as false,
-        but this flag can be changed by user without restriction
+        if utilisation percentage is higher than 100, we set the auto attach shipment flag as false
+        same is being done in shipment service after save.
          */
-        if(!Objects.isNull(consolidationDetails.getAchievedQuantities()) && !Objects.isNull(consolidationDetails.getAllocations())) {
-            // Will the allocated and achieved be always in same units e?
-            boolean disableAutoAttach = false;
-            disableAutoAttach = disableAutoAttach || (consolidationDetails.getAllocations().getWeight().compareTo(consolidationDetails.getAchievedQuantities().getConsolidatedWeight()) <= 0);
-            disableAutoAttach = disableAutoAttach || (consolidationDetails.getAllocations().getVolume().compareTo(consolidationDetails.getAchievedQuantities().getConsolidatedVolume()) <= 0);
-
-            if(disableAutoAttach);
-            //            consolidationDetails.setAutoAttachShipment(true);
-        }
-
+        commonUtils.updateConsolOpenForAttachment(consolidationDetails);
 
     }
 
