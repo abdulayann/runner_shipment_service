@@ -29,6 +29,7 @@ public class V1AuthHelper {
         headers.add("X-USER-NAME", UserContext.getUser().getUsername());
         headers.add("X-TENANT-ID", StringUtility.convertToString(UserContext.getUser().getTenantId()));
         headers.add("SourceServiceType", "Shipment");
+        headers.add("X-SYNC-REQUEST", "true");
         return headers;
     }
     
@@ -39,6 +40,7 @@ public class V1AuthHelper {
         headers.add("X-USER-NAME", userName);
         headers.add("X-TENANT-ID", StringUtility.convertToString(tenantId));
         headers.add("SourceServiceType", "Shipment");
+        headers.add("X-SYNC-REQUEST", "true");
         return headers;
     }
 }
