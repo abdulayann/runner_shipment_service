@@ -163,6 +163,8 @@ public class ShipmentSync implements IShipmentSync {
         else cs.setIsNotifyPartyFreeTextAddress(false);
 
         cs.setDeletedContGuids(deletedContGuids);
+        cs.setOrderNumber(sd.getOrderManagementId());
+        cs.setOrderManagementNumber(sd.getOrderManagementNumber());
         return cs;
     }
     @Override

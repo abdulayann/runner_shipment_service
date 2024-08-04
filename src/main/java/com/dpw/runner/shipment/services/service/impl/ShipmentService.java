@@ -3032,7 +3032,7 @@ public class ShipmentService implements IShipmentService {
                 entity = shipmentDao.update(entity, true);
             }
 
-            shipmentDao.saveCreatedDateAndUser(id, createdBy, entity.getShipmentCreatedOn());
+            shipmentDao.saveCreatedDateAndUser(id, createdBy, shipmentRequest.getCreatedAt());
 
             createAuditLog(entity, oldEntityJsonString, operation);
             if (dataMigration) {

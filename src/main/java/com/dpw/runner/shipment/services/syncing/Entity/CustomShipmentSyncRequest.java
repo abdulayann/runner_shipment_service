@@ -549,4 +549,14 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String emergencyContactNumber;
     @JsonProperty("EmergencyContactNumberCode")
     private String emergencyContactNumberCode;
+
+    // InsertDate/ UpdateDate
+    @JsonProperty("InsertDate")
+    private LocalDateTime insertDate;
+    @JsonProperty("UpdateDate")
+    private LocalDateTime updateDate;
+    @JsonProperty("OrderNumber")
+    private String orderNumber;
+    @JsonProperty("OrderManagementNumber")
+    private String orderManagementNumber;
 }

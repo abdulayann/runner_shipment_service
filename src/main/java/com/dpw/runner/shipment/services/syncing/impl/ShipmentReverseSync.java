@@ -85,6 +85,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setConsignorCountry(cs.getConsignorCountryFilter());
             sd.setNotifyPartyCountry(cs.getNotifyPartyCountryFilter());
             sd.setShipmentCreatedOn(cs.getCreatedDate());
+            sd.setCreatedAt(cs.getInsertDate());
             sd.setVolumetricWeight(cs.getVolumeWeight());
             sd.setVolumetricWeightUnit(cs.getWeightVolumeUnit());
             if(!IsStringNullOrEmpty(cs.getPrevShipmentStatusString()))

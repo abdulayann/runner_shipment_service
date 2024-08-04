@@ -1127,6 +1127,7 @@ public class ReportConstants {
     public static final String SI_CUT_OFF_TIME = "SICutOffTime";
     public static final String TERMINAL = "Terminal";
     public static final String IS_SECURITY = "IsSecurity";
+    public static final String IS_CONSOL_SECURITY = "IsConsolSecurity";
     public static final String AUM = "AUM";
     public static final String SPH = "SPH";
     public static final String ORG_DATA_NOT_AVAILABLE = "Org data not available";
