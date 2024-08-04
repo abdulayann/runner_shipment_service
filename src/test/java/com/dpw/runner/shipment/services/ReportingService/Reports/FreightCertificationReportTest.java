@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pi
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -116,6 +117,9 @@ class FreightCertificationReportTest extends CommonMocks {
 
     @Mock
     private BillingServiceAdapter billingServiceAdapter;
+
+    @Mock
+    private BillingServiceUrlConfig billingServiceUrlConfig;
 
     @BeforeAll
     static void init() throws IOException {
@@ -331,6 +335,7 @@ class FreightCertificationReportTest extends CommonMocks {
         freightCertificationModel.shipmentDetails.setGuid(randomUUID);
 
         when(billingServiceAdapter.fetchLastPostedInvoiceDate(any())).thenReturn(LocalDateTime.now());
+        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         mockTenantSettings();
         mockBill(true, false);

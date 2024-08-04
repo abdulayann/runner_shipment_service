@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.FreightCertifica
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -26,6 +27,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
@@ -58,6 +60,9 @@ public class FreightCertificationReport extends IReport{
 
     @Autowired
     private IBillingServiceAdapter billingServiceAdapter;
+
+    @Autowired
+    private BillingServiceUrlConfig billingServiceUrlConfig;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -164,14 +169,26 @@ public class FreightCertificationReport extends IReport{
         List<BillingResponse> billingsList = getBillingData(freightCertificationModel.shipmentDetails.getGuid());
 
         // Fetch the last posted invoice date
-        LocalDateTime lastDate = billingServiceAdapter.fetchLastPostedInvoiceDate(InvoiceSummaryRequest.builder()
-                .moduleGuid(freightCertificationModel.shipmentDetails.getGuid().toString())
-                .moduleType(Constants.SHIPMENT).build());
+        LocalDateTime lastDate = Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration()) ?
+                billingServiceAdapter.fetchLastPostedInvoiceDate(InvoiceSummaryRequest.builder()
+                        .moduleGuid(freightCertificationModel.shipmentDetails.getGuid().toString())
+                        .moduleType(Constants.SHIPMENT).build())
+                : LocalDateTime.MIN;
 
         double totalAmount = 0;
         String currency = null;
         if (billingsList != null && billingsList.size() > 0) {
             for (BillingResponse bill : billingsList) {
+                if (Boolean.FALSE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
+                    List<ArObjectResponse> arObjectsList = getArObjectData(bill.getGuid());
+                    if (arObjectsList != null && arObjectsList.size() > 0) {
+                        for (ArObjectResponse arObject : arObjectsList) {
+                            if (arObject.getInvoiceDate() != null && arObject.getInvoiceDate().isAfter(lastDate)) {
+                                lastDate = arObject.getInvoiceDate();
+                            }
+                        }
+                    }
+                }
                 List<BillChargesResponse> billChargesList = getBillChargesData(bill.getGuid());
                 boolean currencyFlag = false;
                 if (billChargesList != null && billChargesList.size() > 0) {
