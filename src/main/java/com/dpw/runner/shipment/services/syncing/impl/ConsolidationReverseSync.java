@@ -99,12 +99,13 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     private void mapReverseShipmentGuids(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
         if(request == null || request.getShipmentGuids() == null)
             return;
-        List<ShipmentRequest> req = new ArrayList<>();
-        request.getShipmentGuids().forEach((key, value) -> {
-            ShipmentRequest shipmentRequest = new ShipmentRequest();
-            shipmentRequest.setGuid(key);
-            req.add(shipmentRequest);
-        });
+        List<ShipmentRequest> req = request.getShipmentGuids().stream()
+                .map(item -> {
+                    ShipmentRequest p = new ShipmentRequest();
+                    p.setGuid(item);
+                    return p;
+                })
+                .toList();
         response.setShipmentsList(req);
     }
 

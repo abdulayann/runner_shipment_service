@@ -8,7 +8,6 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -19,7 +18,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("SourceGuid")
     private UUID SourceGuid;
     @JsonProperty("ConsolidationGuids")
-    private Map<UUID, Integer> consolidationGuids;
+    private List<UUID> ConsolidationGuids;
     @JsonProperty("HouseBill")
     private String HouseBill;
     @JsonProperty("TransportMode")
@@ -437,8 +436,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private LocalDateTime ShipmentCompletedOn;
     @JsonProperty("SourceTenantId")
     private Integer SourceTenantId;
-    @JsonProperty("TenantId")
-    private Integer tenantId;
     @JsonProperty("TriangulationPartner")
     private Integer TriangulationPartner;
 
