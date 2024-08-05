@@ -17,13 +17,13 @@ public class InterBranchDto {
      * consolidation on all the hub branches where current branch is registered as coload
      */
     private boolean isCoLoadStation;
-    private List<Long> hubTenantIds;
+    private List<Integer> hubTenantIds;
 
     /**
      * When standing on hub/central branch, I want to access all the shipments available for current branch, along with
      * shipments on all the coloading stations.
      */
     private boolean isHub;
-    private List<Long> coloadStationsTenantIds;
+    private List<Integer> coloadStationsTenantIds;
 
 }

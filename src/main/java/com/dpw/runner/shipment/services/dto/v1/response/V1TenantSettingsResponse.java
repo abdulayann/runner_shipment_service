@@ -43,9 +43,8 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean LogicAppIntegrationEnabled;
     private Boolean TransportOrchestratorEnabled;
     private Boolean IsMAWBColoadingEnabled;
-    @JsonProperty("IsColoadingMAWBStationEnabled")
-    private Boolean IsHubEnabled;
-    private List<Long> ColoadingBranchIds;
+    private Boolean IsColoadingMAWBStationEnabled;
+    private List<Integer> ColoadingBranchIds;
     private Boolean FetchRatesMandate;
     private Boolean CarrierChangeAllowed;
 }
