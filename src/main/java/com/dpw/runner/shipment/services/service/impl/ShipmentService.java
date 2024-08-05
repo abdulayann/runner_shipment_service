@@ -1642,13 +1642,8 @@ public class ShipmentService implements IShipmentService {
             }
 
             if(shipmentDetails.getId() != null && shipmentDetails.getAdditionalDetails() != null) {
-                if(shipmentDetails.getAdditionalDetails().getImportBroker() != null || shipmentDetails.getAdditionalDetails().getExportBroker() != null) {
-                    if(shipmentDetails.getAdditionalDetails().getImportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getImportBroker().getAddressCode())) {
-                        orgList.add(shipmentDetails.getAdditionalDetails().getImportBroker());
-                    }
-                    if(shipmentDetails.getAdditionalDetails().getExportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getExportBroker().getAddressCode())) {
-                        orgList.add(shipmentDetails.getAdditionalDetails().getExportBroker());
-                    }
+                if(shipmentDetails.getAdditionalDetails().getExportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getExportBroker().getAddressCode())) {
+                    orgList.add(shipmentDetails.getAdditionalDetails().getExportBroker());
                 }
             }
 
