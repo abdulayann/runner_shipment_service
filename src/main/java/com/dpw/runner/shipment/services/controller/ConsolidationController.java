@@ -258,6 +258,21 @@ public class ConsolidationController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
+    @PostMapping(ApiConstants.GET_PACK_UTILISATION)
+    public ResponseEntity<IRunnerResponse> calculatePackUtilisation(@RequestBody CalculatePackSummaryRequest calculatePackSummaryRequest) {
+        String responseMsg;
+        try {
+            return consolidationService.calculatePackUtilisation(CommonRequestModel.buildRequest(calculatePackSummaryRequest));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL, response = RunnerResponse.class) })
     @PostMapping(ApiConstants.LIST_PACKS_FOR_ASSIGN_DETACH)
     public ResponseEntity<IRunnerResponse> listPacksForAssignDetach(@RequestBody ConsolePacksListRequest request) {

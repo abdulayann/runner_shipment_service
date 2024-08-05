@@ -1799,7 +1799,7 @@ public class ShipmentService implements IShipmentService {
         if(isCreate && Boolean.TRUE.equals(shipmentSettingsDetails.getAutoEventCreate()))
             autoGenerateCreateEvent(shipmentDetails);
 
-        ConsolidationDetails consolidationDetails = updateLinkedShipmentData(shipmentDetails, oldEntity);
+        ConsolidationDetails consolidationDetails = updateLinkedShipmentData(shipmentDetails, oldEntity, shipmentRequest);
         if(!Objects.isNull(consolidationDetails)) {
             shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
             syncConsole = true;
@@ -2747,7 +2747,7 @@ public class ShipmentService implements IShipmentService {
             entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             validateBeforeSave(entity);
 
-            ConsolidationDetails consolidationDetails = updateLinkedShipmentData(entity, oldEntity.get());
+            ConsolidationDetails consolidationDetails = updateLinkedShipmentData(entity, oldEntity.get(), null);
             if(!Objects.isNull(consolidationDetails)) {
                 entity.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
             }
@@ -3932,7 +3932,7 @@ public class ShipmentService implements IShipmentService {
      * @param current_shipment
      * @param old_shipment
      */
-    private ConsolidationDetails updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) throws RunnerException {
+    private ConsolidationDetails updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity, ShipmentRequest shipmentRequest) throws RunnerException {
         List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
         ConsolidationDetails consolidationDetails;
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
@@ -3964,6 +3964,11 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
             consolidationDetails.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
             consolidationDetails.setShipmentType(shipment.getDirection());
+            if(shipmentRequest != null && shipmentRequest.getConsolidationAchievedQuantities() != null) {
+                consolidationDetails.setAchievedQuantities(jsonHelper.convertValue(shipmentRequest.getConsolidationAchievedQuantities(), AchievedQuantities.class));
+                commonUtils.updateConsolOpenForAttachment(consolidationDetails);
+            }
+
             if(makeConsoleDG)
                 consolidationDetails.setHazardous(true);
             List<Long> shipmentIdList = getShipmentIdsExceptCurrentShipment(consolidationList.get(0).getId(), shipment);

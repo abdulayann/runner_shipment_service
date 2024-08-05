@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.CalculationAPIsDto;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import lombok.Data;
@@ -8,7 +9,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class CalculatePackSummaryRequest implements IRunnerRequest {
+public class CalculatePackUtilizationRequest implements IRunnerRequest {
     private List<PackingRequest> packingList;
     private String transportMode;
     private String shipmentType;
@@ -17,4 +18,5 @@ public class CalculatePackSummaryRequest implements IRunnerRequest {
     // extra fields for inter branch pack updates
     private ShipmentRequest shipmentRequest;
     private Long consolidationId;
+    private AllocationsRequest allocationsRequest;
 }

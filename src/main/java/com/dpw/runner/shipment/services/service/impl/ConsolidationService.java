@@ -1377,6 +1377,10 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, List<ShipmentDetails> shipmentDetailsList) throws Exception {
+        // Not to process the achieved values in case of AIR transport mode
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
+            return;
+        }
         if (consolidationDetails.getOverride() != null && consolidationDetails.getOverride()) {
             return;
         }
@@ -1498,6 +1502,24 @@ public class ConsolidationService implements IConsolidationService {
         try {
             List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
             PackSummaryResponse response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getContainerCategory(), new ShipmentMeasurementDetailsDto());
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<IRunnerResponse> calculatePackUtilisation(CommonRequestModel commonRequestModel) throws RunnerException {
+        String responseMsg;
+        CalculatePackUtilizationRequest request = (CalculatePackUtilizationRequest) commonRequestModel.getData();
+        try {
+            var shipmentRequest = request.getShipmentRequest();
+            List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
+            PackSummaryResponse packSummaryResponse = packingService.calculatePacksUtilisationForConsolidation(request);
+            CalculatePackUtilizationResponse response = jsonHelper.convertValue(packSummaryResponse, CalculatePackUtilizationResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -3006,6 +3028,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         List<ShipmentDetails> shipmentDetails = null;
         if(!isCreate){
+            // This method will only work for non air transport modes , validation check moved inside the method
             calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), oldEntity.getShipmentsList());
             shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
         }
@@ -3044,6 +3067,12 @@ public class ConsolidationService implements IConsolidationService {
                 awbDao.save(awb);
             }
         }
+
+        /*
+        if utilisation percentage is higher than 100, we set the auto attach shipment flag as false
+        same is being done in shipment service after save.
+         */
+        commonUtils.updateConsolOpenForAttachment(consolidationDetails);
 
     }
 
