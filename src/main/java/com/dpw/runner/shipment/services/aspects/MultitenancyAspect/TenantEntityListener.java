@@ -86,8 +86,8 @@ public class TenantEntityListener {
 
             InterBranchDto interBranchDto = commonUtils.getInterBranchContext();
             if(!Objects.isNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
-                if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains((long)TenantContext.getCurrentTenant()))
-                        || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains((long)TenantContext.getCurrentTenant()))) {
+                if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(TenantContext.getCurrentTenant()))
+                        || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(TenantContext.getCurrentTenant()))) {
                     throw new RuntimeException("Authorization has been denied for this request, tenantId mismatch");
                 }
             }

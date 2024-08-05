@@ -35,7 +35,7 @@ public class TenantAspect {
         
         InterBranchDto interBranchDto = commonUtils.getInterBranchContext();
         if(!Objects.isNull(interBranchDto)) {
-            var tenantIds = new ArrayList<>(Arrays.asList((long) TenantContext.getCurrentTenant()));
+            var tenantIds = new ArrayList<>(Arrays.asList(TenantContext.getCurrentTenant()));
             if (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !Objects.isNull(interBranchDto.getHubTenantIds()))
                 tenantIds.addAll(interBranchDto.getHubTenantIds());
             if (Boolean.TRUE.equals(interBranchDto.isHub()) && !Objects.isNull(interBranchDto.getColoadStationsTenantIds()))
@@ -43,7 +43,7 @@ public class TenantAspect {
 
             entityManager.unwrap(Session.class)
                     .enableFilter(MultiTenancy.MULTI_BRANCH_FILTER_NAME)
-                    .setParameter(MultiTenancy.TENANT_PARAMETER_NAME, tenantIds);
+                    .setParameterList(MultiTenancy.TENANT_PARAMETER_NAME, tenantIds.stream().map(Integer::longValue).toList());
         }
 
         else if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantListPermission) && !permissions.containsKey(PermissionConstants.crossTenantRetrievePermission) && !permissions.containsKey(PermissionConstants.companySuperAdmin)) {

@@ -3726,10 +3726,10 @@ public class ShipmentService implements IShipmentService {
             log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getConsolidationId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
             commonUtils.setInterBranchContextForHub();
         }
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         ListCommonRequest listRequest = setCrieteriaForAttachShipment(request, consolidationDetails.get());
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listRequest, ShipmentDetails.class, tableNames);
@@ -3814,7 +3814,7 @@ public class ShipmentService implements IShipmentService {
         filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
         innerFilters.add(filterCriteria);
 
-        if(request.getEtaMatch()){
+        if(Boolean.TRUE.equals(request.getEtaMatch())){
             innerFilers1 = new ArrayList<>();
             if(!Objects.isNull(consolidationDetails.getCarrierDetails().getEta()))
                 criteria = Criteria.builder().fieldName("eta").operator("=").value(consolidationDetails.getCarrierDetails().getEta()).build();
@@ -3828,7 +3828,7 @@ public class ShipmentService implements IShipmentService {
             filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
             innerFilters.add(filterCriteria);
         }
-        if(request.getEtdMatch()){
+        if(Boolean.TRUE.equals(request.getEtdMatch())){
             innerFilers1 = new ArrayList<>();
             if(!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd()))
                 criteria = Criteria.builder().fieldName("etd").operator("=").value(consolidationDetails.getCarrierDetails().getEtd()).build();
@@ -3842,7 +3842,7 @@ public class ShipmentService implements IShipmentService {
             filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
             innerFilters.add(filterCriteria);
         }
-        if(request.getScheduleMatch()){
+        if(Boolean.TRUE.equals(request.getScheduleMatch())){
             if(Objects.equals(consolidationDetails.getTransportMode(),Constants.TRANSPORT_MODE_AIR)){
                 innerFilers1 = new ArrayList<>();
                 if(!Objects.isNull(consolidationDetails.getCarrierDetails().getFlightNumber()))
