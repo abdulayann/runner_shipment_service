@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-@Generated @InterBranchEntity
+@Generated
 public interface IShipmentSettingsRepository extends MultiTenancyRepository<ShipmentSettingsDetails> {
     Page<ShipmentSettingsDetails> findAll(Specification<ShipmentSettingsDetails> spec, Pageable pageable);
     Optional<ShipmentSettingsDetails> findByGuid(UUID guid);
