@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.HashSet;
 import java.util.List;
 
 public interface IConsoleShipmentMappingDao {
@@ -12,7 +13,7 @@ public interface IConsoleShipmentMappingDao {
 
     List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);
 
-    List<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> consoleShipmentMappings);
+    HashSet<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> consoleShipmentMappings, HashSet<Long> interBranchShipIds);
 
     List<Long> detachShipments(Long consolidationId, List<Long> shipIds);
 
