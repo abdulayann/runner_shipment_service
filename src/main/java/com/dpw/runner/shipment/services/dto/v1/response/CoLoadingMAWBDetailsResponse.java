@@ -10,7 +10,7 @@ public class CoLoadingMAWBDetailsResponse implements Serializable {
     @JsonProperty("Id")
     private Long id;
     @JsonProperty("ParentTenantId")
-    private Long parentTenantId;
+    private Integer parentTenantId;
     @JsonProperty("ChildTenantId")
-    private Long childTenantId;
+    private Integer childTenantId;
 }

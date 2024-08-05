@@ -451,15 +451,17 @@ public class CommonUtils {
     }
 
     public void setInterBranchContextForHub() {
-        /***
+        /**
          * Check current branch should be enabled both
          * Set isHub = true && coloadStationsTenantIds (TenantSettings + Current)
          */
         var tenantSettings = getCurrentTenantSettings();
         var interBranchDto = InterBranchDto.builder().build();
 
-        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled()) && Boolean.TRUE.equals(tenantSettings.getIsHubEnabled())) {
-            interBranchDto.getColoadStationsTenantIds().addAll(tenantSettings.getColoadingBranchIds());
+        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
+                && Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled())
+                && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
+            interBranchDto.setColoadStationsTenantIds(tenantSettings.getColoadingBranchIds());
             interBranchDto.setHub(true);
         }
 
@@ -467,14 +469,15 @@ public class CommonUtils {
     }
 
     public void setInterBranchContextForColoadStation() {
-        /***
+        /**
          * Check current branch should be enabled both IsMAWBColoadingEnabled
          * Set isCoLoadStation = true && hubTenantIds (TenantSettings + Current)
          */
         var tenantSettings = getCurrentTenantSettings();
-        var interBranchDto = InterBranchDto.builder().build();
+        var interBranchDto = InterBranchDto.builder().hubTenantIds(Arrays.asList()).build();
 
-        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
+            && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
             interBranchDto.setHubTenantIds(fetchColoadingDetails().stream().map(CoLoadingMAWBDetailsResponse::getParentTenantId).toList());
             interBranchDto.setCoLoadStation(true);
         }
