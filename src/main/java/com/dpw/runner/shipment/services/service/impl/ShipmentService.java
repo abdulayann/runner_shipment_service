@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
@@ -3720,16 +3721,12 @@ public class ShipmentService implements IShipmentService {
     @Override
     public ResponseEntity<IRunnerResponse> attachListShipment(CommonRequestModel commonRequestModel){
         AttachListShipmentRequest request = (AttachListShipmentRequest) commonRequestModel.getData();
-
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId());
         if (!consolidationDetails.isPresent()) {
             log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getConsolidationId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
-            commonUtils.setInterBranchContextForHub();
-        }
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         ListCommonRequest listRequest = setCrieteriaForAttachShipment(request, consolidationDetails.get());
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listRequest, ShipmentDetails.class, tableNames);
@@ -3738,7 +3735,8 @@ public class ShipmentService implements IShipmentService {
             spec = spec.and(notInConsoleMappingTable());
         else
             spec = spec.and(notInConsoleMappingTable()).and(notInContainerMappingTable());
-
+        if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
+            commonUtils.setInterBranchContextForHub();
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(spec , tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
                 convertEntityListToDtoList(shipmentDetailsPage.getContent()),
@@ -4467,7 +4465,7 @@ public class ShipmentService implements IShipmentService {
         if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
             commonUtils.setInterBranchContextForHub();
             if(!isAttached) {
-                var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+                var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdAll(consoleId);
                 if (consoleShipMappingList == null || consoleShipMappingList.isEmpty()) {
                     return ResponseHelper.buildListSuccessResponse(new ArrayList<>(), 1, 0);
                 }
@@ -4481,9 +4479,11 @@ public class ShipmentService implements IShipmentService {
             CommonUtils.andCriteria("consolidationId", consoleId, "=", request);
         }
         var response = list(CommonRequestModel.buildRequest(request));
-        if (response.getBody() instanceof List<?> responseList) {
-            for (var resp : responseList) {
-                if (resp instanceof ShipmentListResponse shipmentListResponse && (requestedTypeMap.containsKey(shipmentListResponse.getId()))) {
+        if (response.getBody() instanceof RunnerListResponse<?> responseList) {
+            for (var resp : responseList.getData()) {
+                if (resp instanceof ShipmentListResponse shipmentListResponse
+                        && requestedTypeMap.containsKey(shipmentListResponse.getId())
+                        && !Objects.isNull(requestedTypeMap.get(shipmentListResponse.getId()).getRequestedType())) {
                     shipmentListResponse.setRequestedType(requestedTypeMap.get(shipmentListResponse.getId()).getRequestedType().getDescription());
                     shipmentListResponse.setRequestedBy(requestedTypeMap.get(shipmentListResponse.getId()).getCreatedBy());
                     shipmentListResponse.setRequestedOn(requestedTypeMap.get(shipmentListResponse.getId()).getCreatedAt());

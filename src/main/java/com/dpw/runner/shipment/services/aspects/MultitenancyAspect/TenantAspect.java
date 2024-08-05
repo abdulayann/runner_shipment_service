@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.InterBranchEntity;
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.hibernate.Session;
@@ -18,6 +20,7 @@ import java.util.*;
 
 @Aspect
 @Component
+@Slf4j
 public class TenantAspect {
     @PersistenceContext
     private EntityManager entityManager;
@@ -26,7 +29,16 @@ public class TenantAspect {
     private CommonUtils commonUtils;
 
     @Before("execution(* com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository+.*(..))")
-    public void beforeFindOfMultiTenancyRepository() {
+    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint) {
+
+        try {
+            entityManager.unwrap(Session.class).disableFilter(MultiTenancy.TENANT_FILTER_NAME);
+            entityManager.unwrap(Session.class).disableFilter(MultiTenancy.MULTI_BRANCH_FILTER_NAME);
+        } catch (Exception ex) {
+            log.error("{}", ex.getLocalizedMessage());
+        }
+
+        Class clazz = joinPoint.getSignature().getDeclaringType();
 
         long tenantId = TenantContext.getCurrentTenant();
 
@@ -34,7 +46,9 @@ public class TenantAspect {
         
         
         InterBranchDto interBranchDto = commonUtils.getInterBranchContext();
-        if(!Objects.isNull(interBranchDto)) {
+        if(!Objects.isNull(interBranchDto)
+                && !Objects.isNull(clazz.getAnnotation(InterBranchEntity.class)))
+        {
             var tenantIds = new ArrayList<>(Arrays.asList(TenantContext.getCurrentTenant()));
             if (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !Objects.isNull(interBranchDto.getHubTenantIds()))
                 tenantIds.addAll(interBranchDto.getHubTenantIds());
