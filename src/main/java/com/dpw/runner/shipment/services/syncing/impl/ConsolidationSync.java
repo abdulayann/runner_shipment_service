@@ -167,6 +167,7 @@ public class ConsolidationSync implements IConsolidationSync {
         else response.setIsSendingAgentFreeTextAddress(false);
 
         response.setGuid(request.getGuid());
+        response.setTenantId(request.getTenantId());
         return response;
     }
 
