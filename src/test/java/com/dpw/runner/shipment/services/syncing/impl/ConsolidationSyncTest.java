@@ -131,7 +131,6 @@ class ConsolidationSyncTest {
         var mockShipment = new ShipmentDetails();
         mockShipment.setId(11L);
         mockShipment.setGuid(UUID.randomUUID());
-        mockShipment.setTenantId(1);
 
         var mockShipmentConsoleMapping = new ConsoleShipmentMapping();
         mockShipmentConsoleMapping.setConsolidationId(22L);
@@ -194,7 +193,6 @@ class ConsolidationSyncTest {
         var mockShipment = new ShipmentDetails();
         mockShipment.setId(11L);
         mockShipment.setGuid(UUID.randomUUID());
-        mockShipment.setTenantId(1);
 
         var mockShipmentConsoleMapping = new ConsoleShipmentMapping();
         mockShipmentConsoleMapping.setConsolidationId(22L);
@@ -250,7 +248,6 @@ class ConsolidationSyncTest {
         var mockShipment = new ShipmentDetails();
         mockShipment.setId(11L);
         mockShipment.setGuid(UUID.randomUUID());
-        mockShipment.setTenantId(1);
 
         var mockShipmentConsoleMapping = new ConsoleShipmentMapping();
         mockShipmentConsoleMapping.setConsolidationId(22L);
@@ -329,7 +326,6 @@ class ConsolidationSyncTest {
         var mockShipment = new ShipmentDetails();
         mockShipment.setId(11L);
         mockShipment.setGuid(UUID.randomUUID());
-        mockShipment.setTenantId(1);
 
         var mockShipmentConsoleMapping = new ConsoleShipmentMapping();
         mockShipmentConsoleMapping.setConsolidationId(22L);
@@ -414,7 +410,6 @@ class ConsolidationSyncTest {
         var mockShipment = new ShipmentDetails();
         mockShipment.setId(11L);
         mockShipment.setGuid(UUID.randomUUID());
-        mockShipment.setTenantId(1);
 
         var mockShipmentConsoleMapping = new ConsoleShipmentMapping();
         mockShipmentConsoleMapping.setConsolidationId(22L);
