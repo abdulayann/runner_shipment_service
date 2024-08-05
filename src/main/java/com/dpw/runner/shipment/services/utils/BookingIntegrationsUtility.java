@@ -89,11 +89,11 @@ public class BookingIntegrationsUtility {
     @Value("#{'${platform.failure.notification.cc}'.split(',')}")
     private List<String> failureNotificationEmailCC;
     @Value("${platform.business.code.FCL}")
-    private String FclBusinessCode;
+    private String fclBusinessCode;
     @Value("${platform.business.code.LCL}")
-    private String LclBusinessCode;
+    private String lclBusinessCode;
     @Value("${platform.business.code.LSE}")
-    private String LseBusinessCode;
+    private String lseBusinessCode;
 
     static Integer maxAttempts = 5;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
@@ -570,9 +570,9 @@ public class BookingIntegrationsUtility {
     private String getBusinessCode(String cargoType)
     {
         return switch (cargoType) {
-            case "FCL" -> FclBusinessCode;
-            case "LCL" -> LclBusinessCode;
-            case "LSE" -> LseBusinessCode;
+            case "FCL" -> fclBusinessCode;
+            case "LCL" -> lclBusinessCode;
+            case "LSE" -> lseBusinessCode;
             default -> null;
         };
     }
