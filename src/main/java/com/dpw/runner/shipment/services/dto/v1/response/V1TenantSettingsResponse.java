@@ -41,4 +41,6 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean EnableEstimateAndActualDateTimeUpdates;
     private Boolean LogicAppIntegrationEnabled;
     private Boolean TransportOrchestratorEnabled;
+    private Boolean FetchRatesMandate;
+    private Boolean CarrierChangeAllowed;
 }

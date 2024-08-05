@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.validator.custom.validations;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -8,12 +10,15 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.MandatoryFieldException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.dpw.runner.shipment.services.CommonMocks;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class CustomerBookingValidationsTest {
+class CustomerBookingValidationsTest extends CommonMocks {
 
     @InjectMocks
     CustomerBookingValidations customerBookingValidations;
@@ -304,6 +309,9 @@ class CustomerBookingValidationsTest {
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutServiceMode));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutCarrierDestinationPort));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutCarrierOriginPort));
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder().FetchRatesMandate(true).build());
+        mockTenantSettings();
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutBookingCharges));
         customerBookingValidations.onSave(oldEntity,newEntity_withBookingCharges);
 

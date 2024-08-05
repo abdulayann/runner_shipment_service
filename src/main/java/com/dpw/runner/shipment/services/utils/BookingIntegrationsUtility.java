@@ -88,6 +88,12 @@ public class BookingIntegrationsUtility {
     private List<String> failureNotificationEmailTo;
     @Value("#{'${platform.failure.notification.cc}'.split(',')}")
     private List<String> failureNotificationEmailCC;
+    @Value("${platform.business.code.FCL}")
+    private String FCLBusinessCode;
+    @Value("${platform.business.code.LCL}")
+    private String LCLBusinessCode;
+    @Value("${platform.business.code.LSE}")
+    private String LSEBusinessCode;
 
     static Integer maxAttempts = 5;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
@@ -217,10 +223,7 @@ public class BookingIntegrationsUtility {
                 .created_at(customerBooking.getCreatedAt())
                 .customer_org_id(customerBooking.getCustomer().getOrgCode())
                 .customer_email(customerBooking.getCustomerEmail())
-                .load(createLoad(customerBooking))
-                .route(createRoute(customerBooking))
-                .charges(createCharges(customerBooking))
-                .business_code(customerBooking.getBusinessCode())
+                .business_code(StringUtility.isNotEmpty(customerBooking.getBusinessCode()) ? customerBooking.getBusinessCode() : getBusinessCode(customerBooking.getCargoType()))
                 .bill_to_party(Collections.singletonList(createOrgRequest(customerBooking.getCustomer())))
                 .parent_contract_id(customerBooking.getParentContractId())
                 .branch_info(ListContractResponse.BranchInfo.builder().
@@ -232,6 +235,18 @@ public class BookingIntegrationsUtility {
                 .minTransitHours(carrierDetails.map(CarrierDetails::getMinTransitHours).orElse(null))
                 .maxTransitHours(carrierDetails.map(CarrierDetails::getMaxTransitHours).orElse(null))
                 .build();
+        if((!Objects.isNull(customerBooking.getContainersList()) && !customerBooking.getContainersList().isEmpty()) || (!Objects.isNull(customerBooking.getPackingList()) && !customerBooking.getPackingList().isEmpty()))
+        {
+            platformCreateRequest.setLoad(createLoad(customerBooking));
+        }
+        if(!Objects.isNull(customerBooking.getRoutingList()) && !customerBooking.getRoutingList().isEmpty())
+        {
+            platformCreateRequest.setRoute(createRoute(customerBooking));
+        }
+        if(!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty())
+        {
+            platformCreateRequest.setCharges(createCharges(customerBooking));
+        }
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
 
@@ -427,8 +442,6 @@ public class BookingIntegrationsUtility {
                 .booking_reference_code(customerBooking.getBookingNumber())
                 .origin_code(carrierDetails.map(c -> c.getOrigin()).orElse(null))
                 .destination_code(carrierDetails.map(c -> c.getDestination()).orElse(null))
-                .load(createLoad(customerBooking))
-                .charges(createCharges(customerBooking))
                 .customer_email(customerBooking.getCustomerEmail())
                 .pol(carrierDetails.map(c -> c.getOriginPort()).orElse(null))
                 .pod(carrierDetails.map(c -> c.getDestinationPort()).orElse(null))
@@ -439,6 +452,14 @@ public class BookingIntegrationsUtility {
                 .eta(carrierDetails.map(c -> c.getEta()).orElse(null))
                 .ets(carrierDetails.map(c -> c.getEtd()).orElse(null))
                 .build();
+        if((!Objects.isNull(customerBooking.getContainersList()) && !customerBooking.getContainersList().isEmpty()) || (!Objects.isNull(customerBooking.getPackingList()) && !customerBooking.getPackingList().isEmpty()))
+        {
+            platformUpdateRequest.setLoad(createLoad(customerBooking));
+        }
+        if(!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty())
+        {
+            platformUpdateRequest.setCharges(createCharges(customerBooking));
+        }
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }
 
@@ -544,5 +565,15 @@ public class BookingIntegrationsUtility {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    private String getBusinessCode(String cargoType)
+    {
+        return switch (cargoType) {
+            case "FCL" -> FCLBusinessCode;
+            case "LCL" -> LCLBusinessCode;
+            case "LSE" -> LSEBusinessCode;
+            default -> null;
+        };
     }
 }
