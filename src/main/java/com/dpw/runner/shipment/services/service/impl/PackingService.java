@@ -15,10 +15,8 @@ import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
@@ -1017,16 +1015,19 @@ public class PackingService implements IPackingService {
 
 
     /**
-     * @param shipmentRequest
-     * @param consolPacks (updated packs of consol if changed in ui)
-     * @param consolidationId
+     * @param request
      * Api for giving out utilisation calculation of a given consolidation whenever packs are updated from the shipment
      * This will help consumer to identify the percentage of utilisation and act accordingly
      * This is just a calculation api , nothing's saved back into DB
      *
      * @return PackSummaryResponse
      */
-    public PackSummaryResponse calculatePacksUtilisationForConsolidation(ShipmentRequest shipmentRequest, List<Packing> consolPacks, Long consolidationId) throws RunnerException {
+    public PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest request) throws RunnerException {
+        var consolidationId = request.getConsolidationId();
+        var shipmentRequest = request.getShipmentRequest();
+        var consolPacks = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
+        var allocated = jsonHelper.convertValue(request.getAllocationsRequest(), Allocations.class);
+
         Optional<ConsolidationDetails> optionalConsol = consolidationDao.findById(consolidationId);
         ConsolidationDetails consol = null;
         PackSummaryResponse packSummaryResponse = null;
@@ -1040,6 +1041,7 @@ public class PackingService implements IPackingService {
             return null;
 
         consol = optionalConsol.get();
+        consol.setAllocations(allocated);
         achievedQuantities = consol.getAchievedQuantities();
 
         if(shipmentRequest != null) {
@@ -1060,7 +1062,7 @@ public class PackingService implements IPackingService {
             achievedQuantities.setConsolidatedWeight(packSummaryResponse.getAchievedWeight());
             achievedQuantities.setConsolidatedVolume(packSummaryResponse.getAchievedVolume());
             consol = commonUtils.calculateConsolUtilization(consol);
-            packSummaryResponse.setConsolidationAchievedQuantities(consol.getAchievedQuantities());
+            packSummaryResponse.setConsolidationAchievedQuantities(jsonHelper.convertValue(consol.getAchievedQuantities(), AchievedQuantitiesResponse.class));
         }
 
         return packSummaryResponse;
