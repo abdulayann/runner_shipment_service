@@ -26,6 +26,8 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
     @Query(value = "SELECT * FROM console_shipment_mapping WHERE shipment_id = ?1 AND is_attachment_done = true", nativeQuery = true)
     List<ConsoleShipmentMapping> findByShipmentIdByQuery(Long shipmentId);
 
+    List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId);
+
     @Modifying
     @Transactional
     @Query(value = "UPDATE console_shipment_mapping SET request_type = ?1 WHERE consolidation_id = ?2 AND shipment_id = ?3", nativeQuery = true)

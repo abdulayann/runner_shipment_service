@@ -47,6 +47,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
         return consoleShipmentsMappingRepository.findByShipmentIdByQuery(shipmentId);
     }
 
+    @Override
+    public List<ConsoleShipmentMapping> findByConsolidationIdAll(Long consolidationId) {
+        return consoleShipmentsMappingRepository.findByConsolidationId(consolidationId);
+    }
+
     private ConsoleShipmentMapping save(ConsoleShipmentMapping consoleShipmentMapping) {
         return consoleShipmentsMappingRepository.save(consoleShipmentMapping);
     }
@@ -56,7 +61,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public HashSet<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, HashSet<Long> interBranchShipIds) {
+    public HashSet<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchShipIds) {
         if(mappings == null)
             mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);

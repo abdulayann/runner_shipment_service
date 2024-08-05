@@ -123,4 +123,6 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Boolean hazardous;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cfsCutOffDate;
+    private Boolean openForAttachment;
+    private Boolean interBranchConsole;
 }

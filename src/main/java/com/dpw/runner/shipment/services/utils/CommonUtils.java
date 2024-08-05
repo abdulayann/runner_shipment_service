@@ -459,6 +459,10 @@ public class CommonUtils {
         return InterBranchContext.getContext();
     }
 
+    public void removeInterBranchContext() {
+        InterBranchContext.removeContext();
+    }
+
     public void setInterBranchContextForHub() {
         /**
          * Check current branch should be enabled both
