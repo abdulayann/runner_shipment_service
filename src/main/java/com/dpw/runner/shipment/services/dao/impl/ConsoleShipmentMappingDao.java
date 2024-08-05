@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsoleShipmentsMappingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -55,7 +56,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public List<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings) {
+    public HashSet<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, HashSet<Long> interBranchShipIds) {
         if(mappings == null)
             mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
@@ -69,10 +70,16 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 ConsoleShipmentMapping entity = new ConsoleShipmentMapping();
                 entity.setShipmentId(id);
                 entity.setConsolidationId(consolidationId);
+                if(interBranchShipIds.contains(id)) {
+                    entity.setIsAttachmentDone(false);
+                    entity.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
+                } else {
+                    entity.setIsAttachmentDone(true);
+                }
                 save(entity);
             }
         }
-        return new ArrayList<>(shipmentIds);
+        return shipmentIds;
     }
 
     @Override

@@ -88,6 +88,6 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> getDateTimeChangeUpdates(Long shipmentId) throws RunnerException;
     void validateRaKcDetails(ShipmentDetails shipmentDetails) throws RunnerException;
-    ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId);
+    ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, boolean isAttached);
 
 }

@@ -4442,7 +4442,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId) {
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, boolean isAttached) {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
         if (consolidationDetails.isEmpty()) {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
@@ -4453,9 +4453,7 @@ public class ShipmentService implements IShipmentService {
             log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
         }
-        if (request.getFilterCriteria() == null)
-            request.setFilterCriteria(new ArrayList<>());
-        if (request.getFilterCriteria() != null && request.getFilterCriteria().isEmpty()) {
+        if (request.getFilterCriteria().isEmpty()) {
             request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
         }
 
@@ -4463,13 +4461,17 @@ public class ShipmentService implements IShipmentService {
         // InterBranch Logic
         if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
             commonUtils.setInterBranchContextForHub();
-            var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
-            if (consoleShipMappingList == null || consoleShipMappingList.isEmpty()) {
-                return ResponseHelper.buildListSuccessResponse(new ArrayList<>(), 1, 0);
+            if(!isAttached) {
+                var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+                if (consoleShipMappingList == null || consoleShipMappingList.isEmpty()) {
+                    return ResponseHelper.buildListSuccessResponse(new ArrayList<>(), 1, 0);
+                }
+                requestedTypeMap = consoleShipMappingList.stream().collect(Collectors.toMap(ConsoleShipmentMapping::getShipmentId, Function.identity(), (existingValue, newValue) -> existingValue));
+                List<Long> shipIds = consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+                CommonUtils.andCriteria("id", shipIds, "IN", request);
+            } else {
+                CommonUtils.andCriteria("consolidationId", consoleId, "=", request);
             }
-            requestedTypeMap = consoleShipMappingList.stream().collect(Collectors.toMap(ConsoleShipmentMapping::getShipmentId, Function.identity(), (existingValue, newValue) -> existingValue));
-            List<Long> shipIds = consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
-            CommonUtils.andCriteria("id", shipIds, "IN", request);
         } else {
             CommonUtils.andCriteria("consolidationId", consoleId, "=", request);
         }
