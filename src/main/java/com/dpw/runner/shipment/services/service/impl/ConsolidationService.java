@@ -1514,11 +1514,12 @@ public class ConsolidationService implements IConsolidationService {
 
     public ResponseEntity<IRunnerResponse> calculatePackUtilisation(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
-        CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
+        CalculatePackUtilizationRequest request = (CalculatePackUtilizationRequest) commonRequestModel.getData();
         try {
             var shipmentRequest = request.getShipmentRequest();
             List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
-            PackSummaryResponse response = packingService.calculatePacksUtilisationForConsolidation(shipmentRequest, packingList, request.getConsolidationId());
+            PackSummaryResponse packSummaryResponse = packingService.calculatePacksUtilisationForConsolidation(request);
+            CalculatePackUtilizationResponse response = jsonHelper.convertValue(packSummaryResponse, CalculatePackUtilizationResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {

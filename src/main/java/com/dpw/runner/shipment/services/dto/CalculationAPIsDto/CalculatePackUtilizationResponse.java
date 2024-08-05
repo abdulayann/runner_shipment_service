@@ -8,7 +8,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class PackSummaryResponse implements IRunnerResponse {
+public class CalculatePackUtilizationResponse implements IRunnerResponse {
     private String totalPacks;
     private String totalPacksWeight;
     private String totalPacksVolume;
@@ -16,8 +16,6 @@ public class PackSummaryResponse implements IRunnerResponse {
     private String packsChargeableWeight;
 
     // Consolidation achieved summary
-    private BigDecimal achievedWeight;
-    private BigDecimal achievedVolume;
     private AllocationsResponse allocationsResponse;
     private AchievedQuantitiesResponse consolidationAchievedQuantities;
 }
