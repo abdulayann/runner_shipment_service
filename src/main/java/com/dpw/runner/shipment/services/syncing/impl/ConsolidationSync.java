@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -10,13 +9,14 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.Entity.ArrivalDepartureDetails;
+import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -80,11 +80,11 @@ public class ConsolidationSync implements IConsolidationSync {
         CustomConsolidationRequest response = createConsoleSyncReq(request);
         String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
         if (isDirectSync) {
-            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
+            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(request.getCreatedBy(), request.getTenantId());
             syncService.callSyncAsync(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", httpHeaders);
         }
         else
-            syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId);
+            syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId, request.getTenantId(), request.getCreatedBy());
        return ResponseHelper.buildSuccessResponse(response);
     }
 
@@ -92,7 +92,8 @@ public class ConsolidationSync implements IConsolidationSync {
     public void syncLockStatus(ConsolidationDetails consolidationDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(consolidationDetails.getGuid()).lockStatus(consolidationDetails.getIsLocked()).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.CONSOLIDATION_LOCK).build());
-        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", StringUtility.convertToString(consolidationDetails.getGuid()));
+        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", StringUtility.convertToString(consolidationDetails.getGuid()),
+                consolidationDetails.getTenantId(), consolidationDetails.getCreatedBy());
     }
 
     @Override
@@ -136,7 +137,7 @@ public class ConsolidationSync implements IConsolidationSync {
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair1.getLeft(), pair1.getRight());
             if(shipmentDetailsPage != null && !shipmentDetailsPage.isEmpty()) {
                 var map = shipmentDetailsPage.getContent().stream().collect(toMap(ShipmentDetails::getId, ShipmentDetails::getGuid));
-                response.setShipmentGuids(map.values().stream().toList());
+                response.setShipmentGuids(shipmentDetailsPage.getContent().stream().collect(toMap(BaseEntity::getGuid, MultiTenancy::getTenantId)));
                 mapTruckDriverDetail(response, request, shipmentIds, map);
             }
         }
