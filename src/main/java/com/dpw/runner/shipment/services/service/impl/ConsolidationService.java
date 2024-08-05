@@ -655,6 +655,19 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> attachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        if(consol.isEmpty())
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        ConsolidationDetails consolidationDetails = consol.get();
+        // InterBranch context
+        if(Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
+            commonUtils.setInterBranchContextForHub();
+        }
+        ListCommonRequest shiplistCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
+        Pair<Specification<ShipmentDetails>, Pageable> shipPair = fetchData(shiplistCommonRequest, ShipmentDetails.class);
+        Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
+
+        HashSet<Long> interBranchShipIds = interBranchShipmentIds(shipmentDetailsList.stream().toList());
 
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
@@ -668,39 +681,31 @@ public class ConsolidationService implements IConsolidationService {
                         return ResponseHelper.buildFailedResponse("Multiple consolidations are attached to the shipment, please verify.");
                 }
             }
-            List<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds, consoleShipmentMappings);
-            for(Long shipId : attachedShipmentIds) {
-                ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).get();
-                if(shipmentDetails.getContainersList() != null) {
-                    List<Containers> containersList = shipmentDetails.getContainersList();
-                    for(Containers container : containersList) {
-                        container.setConsolidationId(consolidationId);
+            HashSet<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds);
+            for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
+                if(attachedShipmentIds.contains(shipmentDetails.getId())) {
+                    if (shipmentDetails.getContainersList() != null) {
+                        List<Containers> containersList = shipmentDetails.getContainersList();
+                        for (Containers container : containersList) {
+                            container.setConsolidationId(consolidationId);
+                        }
+                        containersList = containerDao.saveAll(containersList);
+                        containerService.afterSaveList(containersList, false);
                     }
-                    containersList = containerDao.saveAll(containersList);
-                    containerService.afterSaveList(containersList, false);
-                }
-                if(shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getPackingList() != null) {
-                    List<Packing> packingList = shipmentDetails.getPackingList();
-                    for(Packing packing : packingList) {
-                        packing.setConsolidationId(consolidationId);
+                    if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getPackingList() != null) {
+                        List<Packing> packingList = shipmentDetails.getPackingList();
+                        for (Packing packing : packingList) {
+                            packing.setConsolidationId(consolidationId);
+                        }
+                        packingList = packingDao.saveAll(packingList);
                     }
-                    packingList = packingDao.saveAll(packingList);
+                    this.createLogHistoryForShipment(shipmentDetails);
                 }
-                this.createLogHistoryForShipment(shipmentDetails);
             }
             this.checkSciForAttachConsole(consolidationId);
         }
-        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        ConsolidationDetails consolidationDetails = null;
-        if(consol.isPresent())
-            consolidationDetails = consol.get();
-        else
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails)) {
-            ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
-            listCommonRequest = andCriteria("containsHazardous", true, "=", listCommonRequest);
-            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
-            Page<ShipmentDetails> shipments = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            List<ShipmentDetails> shipments = shipmentDetailsList.stream().filter(x -> Boolean.TRUE.equals(x.getContainsHazardous())).toList();
             if(shipments != null && !shipments.isEmpty()) {
                 consolidationDetails.setHazardous(true);
                 consolidationDetailsDao.update(consolidationDetails, false);
@@ -714,6 +719,16 @@ public class ConsolidationService implements IConsolidationService {
             log.error("Error Syncing Consol");
         }
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private HashSet<Long> interBranchShipmentIds(List<ShipmentDetails> shipmentDetails) {
+        HashSet<Long> shipIds = new HashSet<>();
+        shipmentDetails.forEach(ship -> {
+            if(!Objects.equals(ship.getTenantId(), UserContext.getUser().TenantId)){
+                shipIds.add(ship.getId());
+            }
+        });
+        return shipIds;
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
