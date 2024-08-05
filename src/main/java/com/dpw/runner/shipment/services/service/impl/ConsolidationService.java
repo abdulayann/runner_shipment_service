@@ -660,16 +660,15 @@ public class ConsolidationService implements IConsolidationService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         ConsolidationDetails consolidationDetails = consol.get();
         // InterBranch context
-        if(Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
-            commonUtils.setInterBranchContextForHub();
-        }
         ListCommonRequest shiplistCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
         Pair<Specification<ShipmentDetails>, Pageable> shipPair = fetchData(shiplistCommonRequest, ShipmentDetails.class);
+        setInterBranchContext(consolidationDetails.getInterBranchConsole());
         Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
+        var interBranchShipIds = shipmentDetailsList.stream()
+                .filter(c -> !Objects.equals(c.getTenantId(), UserContext.getUser().TenantId))
+                .map(ShipmentDetails::getId).collect(Collectors.toSet());
 
-        HashSet<Long> interBranchShipIds = interBranchShipmentIds(shipmentDetailsList.stream().toList());
-
-        if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
+        if(consolidationId != null && shipmentIds != null && !shipmentIds.isEmpty()) {
             ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> oldConsoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
@@ -703,6 +702,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
             this.checkSciForAttachConsole(consolidationId);
+            updateLinkedShipmentData(consolidationDetails, null, true);
         }
         if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails)) {
             List<ShipmentDetails> shipments = shipmentDetailsList.stream().filter(x -> Boolean.TRUE.equals(x.getContainsHazardous())).toList();
@@ -711,7 +711,6 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetailsDao.update(consolidationDetails, false);
             }
         }
-        updateLinkedShipmentData(consolidationDetails, null, true);
         try {
             consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
         }
@@ -719,6 +718,11 @@ public class ConsolidationService implements IConsolidationService {
             log.error("Error Syncing Consol");
         }
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private void setInterBranchContext(boolean isInterBranchConsole) {
+        if (Boolean.TRUE.equals(isInterBranchConsole))
+            commonUtils.setInterBranchContextForHub();
     }
 
     private HashSet<Long> interBranchShipmentIds(List<ShipmentDetails> shipmentDetails) {
@@ -1020,8 +1024,10 @@ public class ConsolidationService implements IConsolidationService {
     private List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         List<ShipmentDetails> shipments = null;
+        setInterBranchContext(console.getInterBranchConsole());
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
             shipments = getShipmentsList(console.getId());
+            commonUtils.removeInterBranchContext();
             var shipmentlist = shipments.stream().filter(x-> Objects.equals(x.getAdditionalDetails().getEfreightStatus(), Constants.NON)).toList();
             if(shipmentlist != null && !shipmentlist.isEmpty()){
                 throw new RunnerException("EFreight status can only be EAP or NON as one of the Shipment has EFreight status as NON");
@@ -3252,7 +3258,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             String entityPayload = jsonHelper.convertToJson(shipmentDetails);
             logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(shipmentDetails.getId())
-                    .entityType(Constants.SHIPMENT).entityGuid(shipmentDetails.getGuid()).entityPayload(entityPayload).build());
+                    .entityType(Constants.SHIPMENT).entityGuid(shipmentDetails.getGuid()).entityPayload(entityPayload).tenantId(shipmentDetails.getTenantId()).build());
         } catch (Exception ex) {
             log.error("Error while creating LogsHistory : " + ex.getMessage());
         }
