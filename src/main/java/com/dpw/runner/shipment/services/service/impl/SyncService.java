@@ -78,19 +78,14 @@ public class SyncService implements ISyncService {
     }
 
     @Override
-    public void pushToKafka(String json, String id, String guid, String entity, String transactionId, Integer tenantId, String username) {
+    public void pushToKafka(String json, String id, String guid, String entity, String transactionId) {
         try {
             SyncKafkaDto request = SyncKafkaDto.builder()
-                    .data(json).id(id).guid(guid).entity(entity).tenantId(tenantId)
-                    .userName(username).transactionId(transactionId).build();
+                    .data(json).id(id).guid(guid).entity(entity).tenantId(TenantContext.getCurrentTenant())
+                    .userName(UserContext.getUser().getUsername()).transactionId(transactionId).build();
             producer.produceToKafka(jsonHelper.convertToJson(request), senderQueue, transactionId);
         } catch (Exception ex) {
             log.error("Exception occurred during event: {} for entity: {} with exception: {} with data: {}", LoggerEvent.KAFKA_PUSH_FOR_V1_SYNC, entity, ex.getLocalizedMessage(), json);
         }
-    }
-
-    @Override
-    public void pushToKafka(String json, String id, String guid, String entity, String transactionId) {
-        pushToKafka(json, id, guid, entity, transactionId, TenantContext.getCurrentTenant(), UserContext.getUser().getUsername());
     }
 }

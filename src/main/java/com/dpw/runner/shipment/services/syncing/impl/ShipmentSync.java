@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
@@ -62,7 +64,7 @@ public class ShipmentSync implements IShipmentSync {
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         if (isDirectSync) {
-            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId());
+            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
             syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", httpHeaders);
         }
         else
@@ -174,7 +176,7 @@ public class ShipmentSync implements IShipmentSync {
     @Override
     public ResponseEntity<IRunnerResponse> syncFromBooking(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes) throws RunnerException {
         CustomShipmentSyncRequest cs = createShipmentSyncReq(sd, deletedContGuids, customerBookingNotes);
-        HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId());
+        HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
         String shipment = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         if (!Objects.isNull(sd.getConsolidationList()) && !sd.getConsolidationList().isEmpty()) {
             var console = consolidationDetailsDao.findById(sd.getConsolidationList().get(0).getId());
@@ -196,11 +198,12 @@ public class ShipmentSync implements IShipmentSync {
 
     private void mapConsolidationGuids(CustomShipmentSyncRequest response, ShipmentDetails request) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(request.getId());
-        response.setConsolidationGuids(new HashMap<>());
-        consoleShipmentMappings.forEach(mapping -> {
-            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(mapping.getConsolidationId()).get();
-            response.getConsolidationGuids().put(consolidationDetails.getGuid(), consolidationDetails.getTenantId());
-        });
+        List<UUID> req = consoleShipmentMappings.stream()
+                .map(item -> {
+                    return consolidationDetailsDao.findById(item.getConsolidationId()).get().getGuid()  ;
+                })
+                .toList();
+        response.setConsolidationGuids(req);
     }
 
     private PartyRequestV2 mapPartyObject(Parties sourcePartyObject) {
@@ -217,7 +220,7 @@ public class ShipmentSync implements IShipmentSync {
         if(sd.getContainersList() != null && !sd.getContainersList().isEmpty())
             map = sd.getContainersList().stream().collect(toMap(Containers::getId, Containers::getGuid));
         if(cs.getConsolidationGuids() != null && !cs.getConsolidationGuids().isEmpty())
-            consolGuid = cs.getConsolidationGuids().entrySet().iterator().next().getKey();
+            consolGuid = cs.getConsolidationGuids().get(0);
         UUID finalConsolGuid = consolGuid;
         Map<Long, UUID> finalMap = map;
         List<TruckDriverDetailsRequestV2> req = sd.getTruckDriverDetails().stream()
