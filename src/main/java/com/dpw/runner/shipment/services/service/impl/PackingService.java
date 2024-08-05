@@ -1052,6 +1052,7 @@ public class PackingService implements IPackingService {
             packingList.addAll(jsonHelper.convertValueToList(shipmentRequest.getPackingList(), Packing.class));
         }
         else if (attachingShipments != null && !attachingShipments.isEmpty()) {
+            packingList.addAll(consol.getPackingList());
             packingList.addAll(getShipmentPacks(attachingShipments));
         }
         else {
