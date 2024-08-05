@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -1016,17 +1017,17 @@ public class PackingService implements IPackingService {
 
     /**
      * @param request
+     * @return PackSummaryResponse
      * Api for giving out utilisation calculation of a given consolidation whenever packs are updated from the shipment
      * This will help consumer to identify the percentage of utilisation and act accordingly
      * This is just a calculation api , nothing's saved back into DB
-     *
-     * @return PackSummaryResponse
      */
     public PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest request) throws RunnerException {
         var consolidationId = request.getConsolidationId();
         var shipmentRequest = request.getShipmentRequest();
-        var consolPacks = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
+        var updatedConsolPacks = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
         var allocated = jsonHelper.convertValue(request.getAllocationsRequest(), Allocations.class);
+        var attachingShipments = request.getShipmentIdList();
 
         Optional<ConsolidationDetails> optionalConsol = consolidationDao.findById(consolidationId);
         ConsolidationDetails consol = null;
@@ -1050,8 +1051,12 @@ public class PackingService implements IPackingService {
             // Add the current updated packs of the shipment
             packingList.addAll(jsonHelper.convertValueToList(shipmentRequest.getPackingList(), Packing.class));
         }
+        else if (attachingShipments != null && !attachingShipments.isEmpty()) {
+            packingList.addAll(getShipmentPacks(attachingShipments));
+        }
         else {
-            packingList.addAll(consolPacks);
+            // Default case of packs updated from consol
+            packingList.addAll(updatedConsolPacks);
         }
 
         // only process the below calculation if the consolidation is air , exp , co-loading = true, allocated != null
@@ -1080,6 +1085,22 @@ public class PackingService implements IPackingService {
             flag = false;
 
         return flag;
+    }
+
+    /**
+     * @param shipmentIds
+     * @return packingList of shipments that are TO-BE attached
+     */
+    private List<Packing> getShipmentPacks(List<Long> shipmentIds) {
+        commonUtils.setInterBranchContextForHub();
+        ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
+        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+        Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+
+        var packingList = shipmentsPage.getContent().stream().map(ShipmentDetails::getPackingList).flatMap(i -> i.stream()).toList();
+        InterBranchContext.removeContext();
+
+        return packingList;
     }
 
 }

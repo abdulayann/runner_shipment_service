@@ -16,6 +16,7 @@ public class CalculatePackUtilizationRequest implements IRunnerRequest {
     private String containerCategory;
 
     // extra fields for inter branch pack updates
+    List<Long> shipmentIdList;
     private ShipmentRequest shipmentRequest;
     private Long consolidationId;
     private AllocationsRequest allocationsRequest;
