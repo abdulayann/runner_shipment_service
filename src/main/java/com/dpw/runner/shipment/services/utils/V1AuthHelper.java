@@ -27,6 +27,7 @@ public class V1AuthHelper {
         headers.add(ApiConstants.X_API_KEY, xApiKey);
         headers.add("X-USER-NAME", UserContext.getUser().getUsername());
         headers.add("X-TENANT-ID", StringUtility.convertToString(UserContext.getUser().getTenantId()));
+        headers.add("X-SYNC-REQUEST", "true");
         return headers;
     }
     
@@ -36,6 +37,7 @@ public class V1AuthHelper {
         headers.add(ApiConstants.X_API_KEY, xApiKey);
         headers.add("X-USER-NAME", userName);
         headers.add("X-TENANT-ID", StringUtility.convertToString(tenantId));
+        headers.add("X-SYNC-REQUEST", "true");
         return headers;
     }
 }
