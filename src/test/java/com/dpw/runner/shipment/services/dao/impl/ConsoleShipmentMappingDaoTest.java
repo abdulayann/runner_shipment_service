@@ -28,7 +28,9 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -131,17 +133,17 @@ class ConsoleShipmentMappingDaoTest {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
-        List<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null);
-        assertEquals(shipIds, response);
+        HashSet<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null, Set.of());
+        assertEquals(shipIds, response.stream().toList());
     }
 
     @Test
     void assignShipments_MappingsNull() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         doReturn(null).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
-        List<Long> shipIds = List.of(2L);
-        List<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null);
-        assertEquals(shipIds, response);
+        List<Long> shipIds = List.of(2L, 3L);
+        HashSet<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null, Set.of(3L));
+        assertEquals(shipIds, response.stream().toList());
     }
 
     @Test
@@ -149,16 +151,16 @@ class ConsoleShipmentMappingDaoTest {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         doReturn(new ArrayList<>()).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
-        List<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null);
-        assertEquals(shipIds, response);
+        HashSet<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null, Set.of());
+        assertEquals(shipIds, response.stream().toList());
     }
 
     @Test
     void assignShipments_Branches() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         List<Long> shipIds = new ArrayList<>();
-        List<Long> response = consoleShipmentMappingDao.assignShipments(1L, new ArrayList<>(), consoleShipmentMappingList);
-        assertEquals(shipIds, response);
+        HashSet<Long> response = consoleShipmentMappingDao.assignShipments(1L, new ArrayList<>(), consoleShipmentMappingList, Set.of());
+        assertEquals(shipIds, response.stream().toList());
     }
 
     @Test
