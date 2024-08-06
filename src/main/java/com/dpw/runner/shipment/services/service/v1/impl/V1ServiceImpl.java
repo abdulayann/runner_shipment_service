@@ -4,9 +4,7 @@ import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
@@ -27,7 +25,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.HblTaskCreationResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse.BillingData;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -48,14 +45,8 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1658,57 +1649,21 @@ public class V1ServiceImpl implements IV1Service {
 
     @Override
     public ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request) {
-        if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
-            ShipmentBillingListResponse shipmentBillingListResponse = new ShipmentBillingListResponse();
-
-            List<BillingSummary> billingSummaries = billingServiceAdapter.fetchBillingBulkSummary(BillingBulkSummaryRequest.builder()
-                    .moduleGuids(request.getGuidsList().stream().map(UUID::toString).toList())
-                    .moduleType(Constants.SHIPMENT).build());
-
-            Map<String, BillingSummary> billingSummaryMap = billingSummaries.stream()
-                    .collect(Collectors.toMap(BillingSummary::getModuleGuid, summary -> summary));
-
-            billingSummaryMap.forEach((shipmentGuid, v2BillingData) -> {
-                BillingData v1BillingData = new BillingData();
-                v1BillingData.setTotalEstimatedCost(v2BillingData.getTotalEstimatedCost());
-                v1BillingData.setTotalEstimatedRevenue(v2BillingData.getTotalEstimatedRevenue());
-                v1BillingData.setTotalEstimatedProfit(v2BillingData.getTotalEstimatedProfit());
-                v1BillingData.setTotalEstimatedProfitPercent(v2BillingData.getTotalEstimatedProfitPercent());
-                v1BillingData.setTotalCost(BigDecimal.valueOf(v2BillingData.getTotalCost()));
-                v1BillingData.setTotalRevenue(BigDecimal.valueOf(v2BillingData.getTotalRevenue()));
-                v1BillingData.setTotalProfit(v2BillingData.getTotalProfit());
-                v1BillingData.setTotalProfitPercent(v2BillingData.getTotalProfitPercent());
-                v1BillingData.setTotalPostedCost(v2BillingData.getTotalPostedCost());
-                v1BillingData.setTotalPostedRevenue(v2BillingData.getTotalPostedRevenue());
-                v1BillingData.setTotalPostedProfit(v2BillingData.getTotalPostedProfit());
-                v1BillingData.setTotalPostedProfitPercent(v2BillingData.getTotalPostedProfitPercent());
-                v1BillingData.setId(null); // TODO: SUBHAM fetch id of Shipment
-
-                Map<String, BillingData> data = Optional.ofNullable(shipmentBillingListResponse.getData()).orElseGet(HashMap::new);
-                data.put(shipmentGuid, v1BillingData);
-                shipmentBillingListResponse.setData(data);
-            });
-            return shipmentBillingListResponse;
-
-        } else {
-
-            ResponseEntity<ShipmentBillingListResponse> shipmentResponse = null;
-
-            try {
-                long time = System.currentTimeMillis();
-                HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-                shipmentResponse = this.restTemplate.postForEntity(this.SHIPMENT_BILLING_DATA, entity, ShipmentBillingListResponse.class);
-                log.info(JOIN_REGEX, TOKEN_TIME_TAKEN_IN_FETCH_SHIPMENT_BILLING_DATA_FUNCTION_MSG, (System.currentTimeMillis() - time));
-                return shipmentResponse.getBody();
-            } catch (HttpStatusCodeException var6) {
-                if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                    throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
-                } else {
-                    throw new V1ServiceException(var6.getMessage());
-                }
-            } catch (Exception var7) {
-                throw new V1ServiceException(var7.getMessage());
+        ResponseEntity<ShipmentBillingListResponse> shipmentResponse = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            shipmentResponse = this.restTemplate.postForEntity(this.SHIPMENT_BILLING_DATA, entity, ShipmentBillingListResponse.class);
+            log.info(JOIN_REGEX, TOKEN_TIME_TAKEN_IN_FETCH_SHIPMENT_BILLING_DATA_FUNCTION_MSG, (System.currentTimeMillis() - time));
+            return shipmentResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            } else {
+                throw new V1ServiceException(var6.getMessage());
             }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
         }
     }
 
