@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -15,8 +14,8 @@ public class V1AuthHelper {
     @Value("${v1service.dataSync.xApiKey}")
     private String xApiKey;
 
-    public final static String SOURCE_SERVICE_TYPE = "SourceServiceType";
-    public final static String SHIPMENT = "Shipment";
+    public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
+    public static final String SHIPMENT = "Shipment";
 
     public static HttpHeaders getHeaders() {
         HttpHeaders headers = new HttpHeaders();
