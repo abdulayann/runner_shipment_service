@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.Generated;
+import org.apache.http.auth.AuthenticationException;
+
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.PrePersist;
 import javax.persistence.PreRemove;
@@ -16,7 +18,7 @@ import java.util.Objects;
 @Generated
 public class TenantEntityListener {
 
-
+    public final static String AUTH_DENIED = "Authorization has been denied for this request, tenantId mismatch";
 
     @PrePersist
     public void prePersist(Object object) {
@@ -41,7 +43,7 @@ public class TenantEntityListener {
     }
 
     @PreUpdate
-    public void preUpdate(Object object) {
+    public void preUpdate(Object object) throws AuthenticationException {
         if(object instanceof MultiTenancy) {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
@@ -58,18 +60,18 @@ public class TenantEntityListener {
             if(!Objects.isNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
                 if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(TenantContext.getCurrentTenant()))
                     || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(TenantContext.getCurrentTenant()))) {
-                    throw new RuntimeException("Authorization has been denied for this request, tenantId mismatch");
+                    throw new AuthenticationException(AUTH_DENIED);
                 }
             }
             else if(! permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantUpdatePermission) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
-                throw new RuntimeException("Authorization has been denied for this request, tenantId mismatch");
+                throw new AuthenticationException(AUTH_DENIED);
 
 
         }
     }
 
     @PreRemove
-    public void preRemove(Object object) {
+    public void preRemove(Object object) throws AuthenticationException {
         if(object instanceof MultiTenancy) {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
@@ -80,11 +82,13 @@ public class TenantEntityListener {
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
-            if(!Objects.isNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
-                if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(TenantContext.getCurrentTenant()))
-                        || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(TenantContext.getCurrentTenant()))) {
-                    throw new RuntimeException("Authorization has been denied for this request, tenantId mismatch");
-                }
+            if (!Objects.isNull(interBranchDto) &&
+                    !Objects.equals(TenantContext.getCurrentTenant(), tenantId) &&
+                    ((Boolean.TRUE.equals(interBranchDto.isHub()) &&
+                            !interBranchDto.getColoadStationsTenantIds().contains(TenantContext.getCurrentTenant())) ||
+                            (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) &&
+                                    !interBranchDto.getHubTenantIds().contains(TenantContext.getCurrentTenant())))) {
+                throw new AuthenticationException(AUTH_DENIED);
             }
 
             if(! permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))

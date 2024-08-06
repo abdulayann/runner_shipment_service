@@ -2025,13 +2025,16 @@ public class V1ServiceImpl implements IV1Service {
 
     @Override
     public V1DataResponse getCoLoadingStations(Object request) {
-        ResponseEntity masterDataResponse = null;
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.GET_CO_LOAD_STATIONS, entity, V1DataResponse.class, new Object[0]);
-            log.info("Token time taken in getColoadingStations() function " + (System.currentTimeMillis() - time));
-            return (V1DataResponse) masterDataResponse.getBody();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.GET_CO_LOAD_STATIONS, entity, V1DataResponse.class);
+            long elapsedTime = System.currentTimeMillis() - time;
+            if(log.isInfoEnabled()) {
+                log.info(String.format("Token time taken in getColoadingStations() function: %d ms", elapsedTime));
+            }
+            return masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
