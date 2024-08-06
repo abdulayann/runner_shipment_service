@@ -285,6 +285,10 @@ import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeCostDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeRevenueDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.CurrencyExchangeRateDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.ExchangeRateType;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxType;
 import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
@@ -1449,7 +1453,35 @@ public abstract class IReport {
             v1BillCharge.setOverseasSellCurrency(revenueDetails.getOverseasSellCurrency());
             v1BillCharge.setLocalSellAmount(revenueDetails.getLocalSellAmount());
             v1BillCharge.setLocalSellCurrency(revenueDetails.getLocalSellCurrency());
-            //TODO: SUBHAM some values are missing here
+            v1BillCharge.setOverseasTax(revenueDetails.getOverseasTax());
+            v1BillCharge.setSellExchange(
+                    revenueDetails.getCurrencyExchangeRateDetails().stream()
+                            .filter(currencyExRate -> ExchangeRateType.CUSTOMER.equals(currencyExRate.getType())).findFirst()
+                            .map(CurrencyExchangeRateDetailsResponse::getExchangeRate).orElse(null)
+            );
+            v1BillCharge.setTaxType1(
+                    revenueDetails.getTaxDetails().stream()
+                            .filter(tax -> TaxType.IGST.equals(tax.getTaxType()) || TaxType.VAT.equals(tax.getTaxType())).findFirst()
+                            .map(TaxDetailsResponse::getAmount).orElse(null)
+            );
+            v1BillCharge.setTaxType2(
+                    revenueDetails.getTaxDetails().stream()
+                            .filter(tax -> TaxType.SGST.equals(tax.getTaxType())).findFirst()
+                            .map(TaxDetailsResponse::getAmount).orElse(null)
+            );
+            v1BillCharge.setTaxType3(
+                    revenueDetails.getTaxDetails().stream()
+                            .filter(tax -> TaxType.CGST.equals(tax.getTaxType())).findFirst()
+                            .map(TaxDetailsResponse::getAmount).orElse(null)
+            );
+            v1BillCharge.setTaxType4(
+                    revenueDetails.getTaxDetails().stream()
+                            .filter(tax -> TaxType.UGST.equals(tax.getTaxType())).findFirst()
+                            .map(TaxDetailsResponse::getAmount).orElse(null)
+            );
+            v1BillCharge.setLocalTax(revenueDetails.getTaxAmount());
+            v1BillCharge.setMeasurementBasis(null); //TODO: SUBHAM check for cost/revenue MeasurementBasis
+
             v1BillCharge.setPaymentType(billingBillCharge.getPaymentTypeCode());
             v1BillCharge.setChargeTypeCode(chargeTypeDetails.getChargeCode());
             v1BillCharge.setChargeTypeDescription(chargeTypeDetails.getChargeCodeDescription());
@@ -1474,7 +1506,7 @@ public abstract class IReport {
 
     public ChargeTypesResponse getChargeTypesData(BillChargesResponse billChargesResponse) {
         if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
-            ChargeTypesResponse chargeTypesResponse = new ChargeTypesResponse();
+            ChargeTypesResponse v1ChargeType = new ChargeTypesResponse();
 
             ChargeTypeFilterRequest request = new ChargeTypeFilterRequest();
             request.setGuidList(List.of(billChargesResponse.getBillingChargeTypeGuid()));
@@ -1482,8 +1514,11 @@ public abstract class IReport {
 
             List<ChargeTypeBaseResponse> chargeTypesFromBilling = billingServiceAdapter.fetchChargeTypes(request);
             ChargeTypeBaseResponse chargeTypeFromBilling = chargeTypesFromBilling.stream().findFirst().orElse(null);
-            // todo: SUBHAM add respective mapping
-            return chargeTypesResponse;
+            v1ChargeType.setServices(
+                    Optional.ofNullable(chargeTypeFromBilling)
+                            .map(ChargeTypeBaseResponse::getChargeGroup).orElse(null)
+            );
+            return v1ChargeType;
         } else {
             List<Object> criteria = Arrays.asList(
                     List.of("Id"),

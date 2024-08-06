@@ -17,17 +17,17 @@ public class BillChargesResponse {
     @JsonProperty("LocalSellCurrency")
     private String localSellCurrency;
     @JsonProperty("OverseasTax")
-    private BigDecimal overseasTax; //TODO: SUBHAM doubt if its for cost / revenue
+    private BigDecimal overseasTax;
     @JsonProperty("SellExchange")
-    private BigDecimal sellExchange; //TODO: SUBHAM doubt which value is this
+    private BigDecimal sellExchange;
     @JsonProperty("TaxType1")
-    private BigDecimal taxType1; //TODO: SUBHAM doubt which value is this
+    private BigDecimal taxType1;
     @JsonProperty("TaxType2")
-    private BigDecimal taxType2; //TODO: SUBHAM doubt which value is this
+    private BigDecimal taxType2;
     @JsonProperty("TaxType3")
-    private BigDecimal taxType3; //TODO: SUBHAM doubt which value is this
+    private BigDecimal taxType3;
     @JsonProperty("TaxType4")
-    private BigDecimal taxType4; //TODO: SUBHAM doubt which value is this
+    private BigDecimal taxType4;
     @JsonProperty("PaymentType")
     private String paymentType;
     @JsonProperty("ChargeTypeCode")
@@ -35,7 +35,7 @@ public class BillChargesResponse {
     @JsonProperty("ChargeTypeDescription")
     private String chargeTypeDescription;
     @JsonProperty("LocalTax")
-    private BigDecimal localTax; //TODO: SUBHAM doubt which value is this
+    private BigDecimal localTax;
     @JsonProperty("MeasurementBasis")
     private String measurementBasis; //TODO: SUBHAM doubt which value is this
     @JsonProperty("LocalCostCurrency")

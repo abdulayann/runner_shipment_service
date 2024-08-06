@@ -4,8 +4,10 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -74,6 +76,22 @@ public class BillChargesBaseResponse implements IRunnerResponse {
     private String rateSource;
 
     @Getter
+    @AllArgsConstructor
+    public enum TaxType {
+        IGST, CGST, UGST, SGST, VAT
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public enum ExchangeRateType {
+        VENDOR("VENDOR"),
+        CUSTOMER("CUSTOMER"),
+        REPORT("REPORT"),
+        REVENUE_VENDOR("REVENUE_VENDOR");
+        private final String value;
+    }
+
+    @Getter
     @Setter
     @Builder
     @NoArgsConstructor
@@ -130,6 +148,38 @@ public class BillChargesBaseResponse implements IRunnerResponse {
         private Boolean isTaxPercentageOverride;
         private Boolean isOverrideSystemTax;
         private String billChargesStatus;
+
+        private List<CurrencyExchangeRateDetailsResponse> currencyExchangeRateDetails;
+        private List<TaxDetailsResponse> taxDetails;
+    }
+
+    @Getter
+    @Setter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class TaxDetailsResponse implements Serializable {
+
+        private TaxType taxType;
+        private BigDecimal percentage;
+        private BigDecimal amount;
+        private BigDecimal overseasAmount;
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class CurrencyExchangeRateDetailsResponse implements Serializable {
+
+        private ExchangeRateType type;//VENDOR/CUSTOMER/REPORT/REVENUE_VENDOR
+        private String currency;
+        private BigDecimal currencyQuantity;
+        private String baseCurrency;
+        private BigDecimal baseCurrencyQuantity;
+        private String source;
+        private BigDecimal exchangeRate;
+        private Boolean isReciprocalCurrency;
     }
 
     @Getter
