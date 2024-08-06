@@ -3,15 +3,15 @@ package com.dpw.runner.shipment.services.entity.enums;
 public enum MeasurementBasis {
 
     ContainerCount(1, "ContainerCount"),
-    Weight(1, "Weight"),
-    Volume(1, "Volume"),
-    Chargeable(1, "Chargeable"),
-    LowestBill(1, "LowestBill"),
-    Package(1, "Package"),
-    Shipment(1, "Shipment"),
-    TEU(1, "TEU"),
-    ChargePercentage(1, "ChargePercentage"),
-    Custom(1, "Custom"),
+    Weight(2, "Weight"),
+    Volume(3, "Volume"),
+    Chargeable(4, "Chargeable"),
+    LowestBill(5, "LowestBill"),
+    Package(6, "Package"),
+    Shipment(7, "Shipment"),
+    TEU(8, "TEU"),
+    ChargePercentage(9, "ChargePercentage"),
+    Custom(10, "Custom"),
     ContainerType(11, "ContainerType");
 
     private final int value;
