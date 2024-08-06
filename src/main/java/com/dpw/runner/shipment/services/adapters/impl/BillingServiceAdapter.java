@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapt
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
@@ -65,12 +66,12 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     /**
      * Fetches the last posted invoice date based on the provided invoice summary request.
      *
-     * @param invoiceSummaryRequest the request object containing invoice summary details
+     * @param request the LastPostedInvoiceDateRequest request object
      * @return the last posted invoice date, or null if not found
      * @throws BillingException if there is an error during the request
      */
     @Override
-    public LocalDateTime fetchLastPostedInvoiceDate(InvoiceSummaryRequest invoiceSummaryRequest) {
+    public LocalDateTime fetchLastPostedInvoiceDate(LastPostedInvoiceDateRequest request) {
         LocalDateTime lastPostedInvoiceDate = null;
 
         // Construct the URL for the last posted invoice date endpoint
@@ -78,8 +79,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         log.info("Sending last posted invoice date request to URL: {}", url);
 
         // Create an HttpEntity object with the request payload and authentication headers
-        HttpEntity<InvoiceSummaryRequest> httpEntity = new HttpEntity<>(invoiceSummaryRequest, V1AuthHelper.getHeaders());
-        log.debug("Request payload: {}", invoiceSummaryRequest);
+        HttpEntity<LastPostedInvoiceDateRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+        log.debug("Request payload: {}", request);
 
         try {
             // Execute the POST request and get the response entity

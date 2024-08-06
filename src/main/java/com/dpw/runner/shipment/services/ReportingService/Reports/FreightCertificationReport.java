@@ -24,7 +24,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapt
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
@@ -169,9 +169,10 @@ public class FreightCertificationReport extends IReport{
         List<BillingResponse> billingsList = getBillingData(freightCertificationModel.shipmentDetails.getGuid());
 
         // Fetch the last posted invoice date
+        // Since there is only 1 shipment fetch lastDate once.
         LocalDateTime lastDate = Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration()) ?
-                billingServiceAdapter.fetchLastPostedInvoiceDate(InvoiceSummaryRequest.builder()
-                        .moduleGuid(freightCertificationModel.shipmentDetails.getGuid().toString())
+                billingServiceAdapter.fetchLastPostedInvoiceDate(LastPostedInvoiceDateRequest.builder()
+                        .moduleGuid(freightCertificationModel.getShipmentDetails().getGuid().toString())
                         .moduleType(Constants.SHIPMENT).build())
                 : LocalDateTime.MIN;
 
