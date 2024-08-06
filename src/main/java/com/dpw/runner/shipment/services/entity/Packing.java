@@ -143,7 +143,7 @@ public class Packing extends MultiTenancy {
     private String DGClass;
 
     @Column(name = "hazardous")
-    private Boolean hazardous;
+    private Boolean hazardous = false;
 
     @Column(name = "net_weight")
     private BigDecimal netWeight;
