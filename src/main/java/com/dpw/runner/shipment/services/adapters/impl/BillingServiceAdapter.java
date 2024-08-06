@@ -54,6 +54,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     @Autowired
     private BillingServiceUrlConfig billingServiceUrlConfig;
 
+    private static final String NULL_RESPONSE_ERROR = "Received null response from billing service or response data is null";
+
     @Override
     public Boolean fetchActiveInvoices(CommonGetRequest request) throws RunnerException {
 
@@ -108,7 +110,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         };
         BillingListResponse<BillChargesBaseResponse> billingListResponse = executePostRequest(url, httpEntity, responseType);
         if (billingListResponse == null || billingListResponse.getData() == null) {
-            throw new BillingException("Received null response from billing service or response data is null");
+            throw new BillingException(NULL_RESPONSE_ERROR);
         }
 
         Type listType = new TypeToken<List<BillChargesBaseResponse>>() {
@@ -124,7 +126,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         };
         BillingEntityResponse billingEntityResponse = executePostRequest(url, httpEntity, responseType);
         if (billingEntityResponse == null || billingEntityResponse.getData() == null) {
-            throw new BillingException("Received null response from billing service or response data is null");
+            throw new BillingException(NULL_RESPONSE_ERROR);
         }
 
         return modelMapper.map(billingEntityResponse.getData(), BillBaseResponse.class);
@@ -138,7 +140,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         };
         BillingListResponse<ChargeTypeBaseResponse> listResponse = executePostRequest(url, httpEntity, responseType);
         if (listResponse == null || listResponse.getData() == null) {
-            throw new BillingException("Received null response from billing service or response data is null");
+            throw new BillingException(NULL_RESPONSE_ERROR);
         }
 
         Type listType = new TypeToken<List<ChargeTypeBaseResponse>>() {
