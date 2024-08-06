@@ -1296,10 +1296,14 @@ public class ShipmentService implements IShipmentService {
                 UnlocationsResponse pod = unlocationsMap.get(carrierDetails.getDestinationPort());
                 UnlocationsResponse origin = unlocationsMap.get(carrierDetails.getOrigin());
                 UnlocationsResponse destination = unlocationsMap.get(carrierDetails.getDestination());
-                carrierDetails.setOriginLocCode(origin.getLocCode());
-                carrierDetails.setDestinationLocCode(destination.getLocCode());
-                carrierDetails.setOriginPortLocCode(pol.getLocCode());
-                carrierDetails.setDestinationPortLocCode(pod.getLocCode());
+                if(origin != null)
+                    carrierDetails.setOriginLocCode(origin.getLocCode());
+                if(destination != null)
+                    carrierDetails.setDestinationLocCode(destination.getLocCode());
+                if(pol != null)
+                    carrierDetails.setOriginPortLocCode(pol.getLocCode());
+                if(pod != null)
+                    carrierDetails.setDestinationPortLocCode(pod.getLocCode());
                 carrierDetailsDao.saveUnLocCodes(carrierDetails);
             }
         }

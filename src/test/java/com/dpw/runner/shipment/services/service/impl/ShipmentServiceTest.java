@@ -5339,7 +5339,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test");
         oldCarrierDetails.setDestinationPort("test");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
-        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5355,7 +5355,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test");
         oldCarrierDetails.setDestinationPort("test");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
-        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5371,7 +5371,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test1");
         oldCarrierDetails.setDestinationPort("test");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
-        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5387,7 +5387,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test");
         oldCarrierDetails.setDestinationPort("test1");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
-        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5410,7 +5410,7 @@ ShipmentServiceTest extends CommonMocks {
     void testUpdateUnLocData1() {
         CarrierDetails carrierDetails = new CarrierDetails();
         shipmentService.updateUnLocData(carrierDetails, null);
-        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
 }
