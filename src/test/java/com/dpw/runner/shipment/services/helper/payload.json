@@ -724,6 +724,7 @@
   },
   "CONSOLIDATION": {
     "id": 1,
+    "interBranchConsole": false,
     "guid": "1d27fe99-0874-4587-9a83-460bb5ba31f0",
     "consolidationNumber": "CONS000231188",
     "consolidationType": "AGT",
@@ -8931,6 +8932,7 @@
   },
   "CONSOLIDATION_AIR": {
     "id": 2097,
+    "interBranchConsole": false,
     "guid": "e03fa08a-b80b-46f2-909c-20970cf8c1aa",
     "consolidationNumber": "CONS000233659",
     "consolidationType": "DRT",
