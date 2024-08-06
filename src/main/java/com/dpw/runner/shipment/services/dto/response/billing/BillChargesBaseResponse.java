@@ -1,9 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response.billing;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
@@ -57,17 +55,12 @@ public class BillChargesBaseResponse implements IRunnerResponse {
     private String arOriginalInvoiceNumber;
     private String apInvoiceNumber;
     private String taxInvoiceNumber;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime moduleInsertDate;
     private String shipper;
     private String consignee;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime etd;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime eta;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime createdAt;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime updatedAt;
     private String billId;
     private String billGuid;
@@ -121,7 +114,6 @@ public class BillChargesBaseResponse implements IRunnerResponse {
         private String originalArInvoiceNo;
         private boolean noTax;
         private boolean taxMasterOverride;
-        @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
         private LocalDateTime dueDate;
         private String comments;
         private String paymentTermsCode;
@@ -181,12 +173,9 @@ public class BillChargesBaseResponse implements IRunnerResponse {
         private String invoiceNumber;
         private String supplierInvoiceReference;
         private String placeOfSupply;
-        @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
         private LocalDateTime invoiceDate;
-        @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
         private LocalDateTime dueDate;
         private Boolean isDueDateAutoPopulated;
-        @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
         private LocalDateTime documentRecordDate;
         private String comments;
         private BigDecimal reportingAmount;
@@ -197,7 +186,6 @@ public class BillChargesBaseResponse implements IRunnerResponse {
         private String chequeBook;
         private String payTypes;
         private BigDecimal costCurrencyExchangeUpdate;
-        @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
         private LocalDateTime taxDate;
         private String tdsMasterId;
         private BigDecimal tdsAmount;

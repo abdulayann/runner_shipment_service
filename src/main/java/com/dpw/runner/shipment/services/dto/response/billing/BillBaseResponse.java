@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.billing;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -34,13 +32,9 @@ public class BillBaseResponse implements IRunnerResponse {
     private String jobNumber;
     private String localReferenceNo;
     private Boolean isActive;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime openDate;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime closeDate;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime createdDate;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime createdAt;
     private String jobStatus;
     private String remarks;
@@ -168,9 +162,7 @@ public class BillBaseResponse implements IRunnerResponse {
         private boolean isPosted;
         private String invoiceNumber;
         private BigDecimal estimatedCost;
-        @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
         private LocalDateTime invoiceDate;
-        @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
         private LocalDateTime dueDate;
         private String creditorName;
         private String currency;
@@ -190,7 +182,6 @@ public class BillBaseResponse implements IRunnerResponse {
         private boolean isPosted;
         private String invoiceNumber;
         private BigDecimal estimatedRevenue;
-        @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
         private LocalDateTime dueDate;
         private String debtorName;
         //debtor/Customer/BillToParty invoice currency

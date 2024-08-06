@@ -107,6 +107,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         ParameterizedTypeReference<BillingListResponse<BillChargesBaseResponse>> responseType = new ParameterizedTypeReference<>() {
         };
         BillingListResponse<BillChargesBaseResponse> billingListResponse = executePostRequest(url, httpEntity, responseType);
+        if (billingListResponse == null || billingListResponse.getData() == null) {
+            throw new BillingException("Received null response from billing service or response data is null");
+        }
+
         Type listType = new TypeToken<List<BillChargesBaseResponse>>() {
         }.getType();
         return modelMapper.map(billingListResponse.getData(), listType);
@@ -119,6 +123,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         ParameterizedTypeReference<BillingEntityResponse> responseType = new ParameterizedTypeReference<>() {
         };
         BillingEntityResponse billingEntityResponse = executePostRequest(url, httpEntity, responseType);
+        if (billingEntityResponse == null || billingEntityResponse.getData() == null) {
+            throw new BillingException("Received null response from billing service or response data is null");
+        }
+
         return modelMapper.map(billingEntityResponse.getData(), BillBaseResponse.class);
     }
 
@@ -129,6 +137,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         ParameterizedTypeReference<BillingListResponse<ChargeTypeBaseResponse>> responseType = new ParameterizedTypeReference<>() {
         };
         BillingListResponse<ChargeTypeBaseResponse> listResponse = executePostRequest(url, httpEntity, responseType);
+        if (listResponse == null || listResponse.getData() == null) {
+            throw new BillingException("Received null response from billing service or response data is null");
+        }
+
         Type listType = new TypeToken<List<ChargeTypeBaseResponse>>() {
         }.getType();
         return modelMapper.map(listResponse.getData(), listType);

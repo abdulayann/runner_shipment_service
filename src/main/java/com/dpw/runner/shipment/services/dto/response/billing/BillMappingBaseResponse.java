@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.billing;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -26,11 +24,8 @@ public class BillMappingBaseResponse implements IRunnerResponse {
     private String shipmentType;
     private String transportMode;
     private String jobType;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime etdDate;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime etaDate;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime moduleInsertDate;
     private String referenceNumber;
     private String shipper;
