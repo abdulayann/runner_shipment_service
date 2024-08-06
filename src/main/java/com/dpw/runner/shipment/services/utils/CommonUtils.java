@@ -540,8 +540,8 @@ public class CommonUtils {
 
     public void updateConsolOpenForAttachment(ConsolidationDetails consolidationDetails) {
         if(!Objects.isNull(consolidationDetails.getAchievedQuantities())) {
-            Integer weightUtilization = consolidationDetails.getAchievedQuantities().getWeightUtilization() != null ? Integer.valueOf(consolidationDetails.getAchievedQuantities().getWeightUtilization()) : 0;
-            Integer volumeUtilization = consolidationDetails.getAchievedQuantities().getVolumeUtilization() != null ? Integer.valueOf(consolidationDetails.getAchievedQuantities().getVolumeUtilization()) : 0;
+            Double weightUtilization = consolidationDetails.getAchievedQuantities().getWeightUtilization() != null ? Double.valueOf(consolidationDetails.getAchievedQuantities().getWeightUtilization()) : 0;
+            Double volumeUtilization = consolidationDetails.getAchievedQuantities().getVolumeUtilization() != null ? Double.valueOf(consolidationDetails.getAchievedQuantities().getVolumeUtilization()) : 0;
             if(weightUtilization > 100 || volumeUtilization > 100)
                 consolidationDetails.setOpenForAttachment(false);
         }

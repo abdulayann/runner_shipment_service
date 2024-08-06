@@ -18,6 +18,8 @@ public class PackSummaryResponse implements IRunnerResponse {
     // Consolidation achieved summary
     private BigDecimal achievedWeight;
     private BigDecimal achievedVolume;
+    private BigDecimal allocatedWeight;
+    private BigDecimal allocatedVolume;
     private AllocationsResponse allocationsResponse;
     private AchievedQuantitiesResponse consolidationAchievedQuantities;
 }
