@@ -1,9 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IDefaultViewsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IViewsDao;
@@ -231,16 +230,37 @@ class ViewsServiceTest {
     void list() {
 
         ListCommonRequest request = new ListCommonRequest(); // Provide necessary data for request
+        request.setFilterCriteria(List.of(FilterCriteria.builder().
+                criteria(Criteria.builder()
+                        .fieldName(Constants.CREATED_BY)
+                        .operator("=")
+                        .value(UserContext.getUser().Username)
+                        .build()).
+                build()));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
-        List<Views> viewsList = List.of(Views.builder().build()); // Provide necessary data for views list
-        when(viewsDao.findAll(any(), any())).thenReturn(new PageImpl<>(viewsList));
-        ViewsResponse viewsResponse = new ViewsResponse();
-        when(jsonHelper.convertValue(any(), eq(ViewsResponse.class))).thenReturn(viewsResponse);
         ResponseEntity<IRunnerResponse> responseEntity = viewsService.list(commonRequestModel);
 
         assertNotNull(responseEntity.getBody());
 
+    }
+
+    @Test
+    void list2() {
+        ListCommonRequest request = new ListCommonRequest(); // Provide necessary data for request
+        request.setFilterCriteria(List.of(FilterCriteria.builder().
+                innerFilter(List.of(FilterCriteria.builder().build()))
+                .criteria(Criteria.builder()
+                        .fieldName(Constants.CREATED_BY)
+                        .operator("=")
+                        .value(UserContext.getUser().Username)
+                        .build()).
+                build()));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        ResponseEntity<IRunnerResponse> responseEntity = viewsService.list(commonRequestModel);
+
+        assertNotNull(responseEntity.getBody());
     }
 
     @Test
