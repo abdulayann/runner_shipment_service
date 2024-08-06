@@ -4,17 +4,25 @@ import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.dto.request.InvoiceBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse.BillingData;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -66,20 +74,20 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     /**
      * Fetches the billing summary for a bulk set of modules.
      * <p>
-     * This method takes an InvoiceBulkSummaryRequest object, sends a POST request to the billing service to retrieve the summary, and maps the response to a BillingSummary object
+     * This method takes an BillingBulkSummaryRequest object, sends a POST request to the billing service to retrieve the summary, and maps the response to a BillingSummary object
      * if the response is not null.
      *
-     * @param request the InvoiceBulkSummaryRequest containing module GUIDs and module type for which the billing summary is requested.
+     * @param request the BillingBulkSummaryRequest containing module GUIDs and module type for which the billing summary is requested.
      * @return a BillingSummary object containing the billing summary information.
      */
     @Override
-    public List<BillingSummary> fetchBillingBulkSummary(InvoiceBulkSummaryRequest request) {
+    public List<BillingSummary> fetchBillingBulkSummary(BillingBulkSummaryRequest request) {
         // Construct the URL for the billing bulk summary endpoint
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingBulkSummary();
         log.info("Sending billing bulk summary request to URL: {}", url);
 
         // Create an HttpEntity object with the request payload and authentication headers
-        HttpEntity<InvoiceBulkSummaryRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+        HttpEntity<BillingBulkSummaryRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
         log.debug("Request payload: {}", request);
 
         try {
@@ -91,10 +99,11 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             BillingEntityResponse billingEntityResponse = responseEntity.getBody();
             if (responseEntity.getStatusCode().is2xxSuccessful() && billingEntityResponse != null) {
                 log.info("Received billingEntityResponse from billing service");
-                log.debug("Response data: {}", billingEntityResponse.getData());
+                Map<String, Object> data = billingEntityResponse.getData();
+                log.debug("Response data: {}", data);
 
                 // Convert the billingSummary object to a List<Map<String, Object>>
-                List<Map<String, Object>> billingSummaryListMap = (List<Map<String, Object>>) billingEntityResponse.getData().get("billingSummary");
+                List<Map<String, Object>> billingSummaryListMap = (List<Map<String, Object>>) data.get("billingSummary");
 
                 // Map the list of maps to a list of BillingSummary objects
                 return modelMapper.map(billingSummaryListMap, new TypeToken<List<BillingSummary>>() {}.getType());
@@ -124,5 +133,41 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 (!Objects.equals(null, billingSummary.getDisbursementCost()) && Double.compare(billingSummary.getDisbursementCost(), 0.0) > 0) ||
                 (!Objects.equals(null, billingSummary.getCumulativeGP()) && Double.compare(billingSummary.getCumulativeGP(), 0.0) > 0) ||
                 (!Objects.equals(null, billingSummary.getCumulativeGPPercentage()) && Double.compare(billingSummary.getCumulativeGPPercentage(), 0.0) > 0);
+    }
+
+    @Override
+    public ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request) {
+            ShipmentBillingListResponse shipmentBillingListResponse = new ShipmentBillingListResponse();
+
+            List<BillingSummary> billingSummaries = fetchBillingBulkSummary(BillingBulkSummaryRequest.builder()
+                    .moduleGuids(request.getGuidsList().stream().map(UUID::toString).toList())
+                    .moduleType(Constants.SHIPMENT).build());
+
+            Map<String, BillingSummary> billingSummaryMap = billingSummaries.stream()
+                    .collect(Collectors.toMap(BillingSummary::getModuleGuid, summary -> summary));
+
+            billingSummaryMap.forEach((shipmentGuid, v2BillingData) -> {
+                BillingData v1BillingData = new BillingData();
+                v1BillingData.setTotalEstimatedCost(v2BillingData.getTotalEstimatedCost());
+                v1BillingData.setTotalEstimatedRevenue(v2BillingData.getTotalEstimatedRevenue());
+                v1BillingData.setTotalEstimatedProfit(v2BillingData.getTotalEstimatedProfit());
+                v1BillingData.setTotalEstimatedProfitPercent(v2BillingData.getTotalEstimatedProfitPercent());
+                v1BillingData.setTotalCost(BigDecimal.valueOf(v2BillingData.getTotalCost()));
+                v1BillingData.setTotalRevenue(BigDecimal.valueOf(v2BillingData.getTotalRevenue()));
+                v1BillingData.setTotalProfit(v2BillingData.getTotalProfit());
+                v1BillingData.setTotalProfitPercent(v2BillingData.getTotalProfitPercent());
+                v1BillingData.setTotalPostedCost(v2BillingData.getTotalPostedCost());
+                v1BillingData.setTotalPostedRevenue(v2BillingData.getTotalPostedRevenue());
+                v1BillingData.setTotalPostedProfit(v2BillingData.getTotalPostedProfit());
+                v1BillingData.setTotalPostedProfitPercent(v2BillingData.getTotalPostedProfitPercent());
+                v1BillingData.setId(null); // TODO: SUBHAM fetch id of Shipment
+
+                Map<String, BillingData> data = Optional.ofNullable(shipmentBillingListResponse.getData()).orElseGet(HashMap::new);
+                data.put(shipmentGuid, v1BillingData);
+                shipmentBillingListResponse.setData(data);
+            });
+            return shipmentBillingListResponse;
+
+
     }
 }

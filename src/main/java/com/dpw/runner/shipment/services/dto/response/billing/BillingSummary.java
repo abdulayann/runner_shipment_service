@@ -67,6 +67,8 @@ public class BillingSummary {
     private Double cumulativeGP;
     @JsonProperty("cumulativeGPPercentage")
     private Double cumulativeGPPercentage;
+    @JsonProperty("moduleGuid")
+    private String moduleGuid;
 }
 
 

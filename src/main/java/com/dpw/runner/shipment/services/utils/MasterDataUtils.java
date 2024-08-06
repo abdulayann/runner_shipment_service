@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.utils;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -78,6 +80,10 @@ public class MasterDataUtils{
 
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private BillingServiceUrlConfig billingServiceUrlConfig;
+    @Autowired
+    private BillingServiceAdapter billingServiceAdapter;
     @Autowired
     private JsonHelper jsonHelper;
 
@@ -1215,7 +1221,7 @@ public class MasterDataUtils{
                 if (!guidsList.isEmpty()) {
                     ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
                             .guidsList(guidsList).build();
-                    ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+                    ShipmentBillingListResponse shipmentBillingListResponse = getShipmentBillingListResponse(shipmentBillingListRequest);
                     pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING);
                 }
 
@@ -1249,6 +1255,13 @@ public class MasterDataUtils{
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchBillDataForShipments in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
+    }
+
+    private ShipmentBillingListResponse getShipmentBillingListResponse(ShipmentBillingListRequest shipmentBillingListRequest) {
+        if (billingServiceUrlConfig.getEnableBillingIntegration()) {
+            return billingServiceAdapter.fetchShipmentBillingData(shipmentBillingListRequest);
+        }
+        return v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
     }
 
     private List<UUID> createBillRequest(List<ShipmentDetails> shipmentDetails) {

@@ -44,7 +44,7 @@ public class ShipmentBillingListResponse implements Serializable {
         @JsonProperty("TotalPostedProfitPercent")
         private BigDecimal TotalPostedProfitPercent;
         @JsonProperty("Id")
-        private Long Id;//
+        private Long Id;
     }
 
 }

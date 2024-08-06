@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.request.billing;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import java.util.List;
@@ -9,14 +9,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+
 @Getter
 @Setter
 @ToString
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class InvoiceBulkSummaryRequest implements IRunnerRequest {
-
+public class BillingBulkSummaryRequest implements IRunnerRequest {
     private String moduleType;
     private List<String> moduleGuids;
 }
