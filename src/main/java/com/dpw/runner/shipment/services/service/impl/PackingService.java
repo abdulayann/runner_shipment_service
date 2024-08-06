@@ -240,8 +240,37 @@ public class PackingService implements IPackingService {
             packingList.stream().forEach(packing -> {
                 packing.setConsolidationId(request.getConsolidationId());
             });
+            var utilizationResponse = calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest.builder()
+                .consolidationId(request.getConsolidationId())
+                .packingList(jsonHelper.convertValueToList(packingList, PackingRequest.class))
+                .build());
+
+            if(utilizationResponse != null && utilizationResponse.getConsolidationAchievedQuantities() != null) {
+                Double wtUtilization = utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization()) : 0;
+                Double volUtilization = utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization()) : 0;
+                Boolean updateConsolOpenForAttachment = false;
+                if(wtUtilization >= 100) {
+                    if(!Boolean.TRUE.equals(request.getOverride()))
+                        throw new ValidationException((String.format("Entered Pack weight %s exceeds the allocated weight %s",utilizationResponse.getAchievedWeight(), utilizationResponse.getAllocatedWeight())));
+                    else
+                        updateConsolOpenForAttachment = true;
+                }
+                else if(volUtilization >= 100) {
+                    if(!Boolean.TRUE.equals(request.getOverride()))
+                        throw new ValidationException(String.format("Entered Pack Volume %s exceeds the allocated volume %s",utilizationResponse.getAchievedVolume(), utilizationResponse.getAllocatedVolume()));
+                    else
+                        updateConsolOpenForAttachment = true;
+                }
+
+                Optional<ConsolidationDetails> optional = consolidationDao.findById(request.getConsolidationId());
+                if(Boolean.TRUE.equals(updateConsolOpenForAttachment) && optional.isPresent()) {
+                    var consol = optional.get();
+                    consol.setOpenForAttachment(false);
+                    consolidationDao.save(consol, false);
+                }
+            }
         }
-        catch(IOException e) {
+        catch(IOException | ValidationException e) {
             throw new RunnerException(e.getMessage());
         }
 
@@ -1069,6 +1098,8 @@ public class PackingService implements IPackingService {
             achievedQuantities.setConsolidatedVolume(packSummaryResponse.getAchievedVolume());
             consol = commonUtils.calculateConsolUtilization(consol);
             packSummaryResponse.setConsolidationAchievedQuantities(jsonHelper.convertValue(consol.getAchievedQuantities(), AchievedQuantitiesResponse.class));
+            packSummaryResponse.setAllocatedWeight(consol.getAllocations().getWeight());
+            packSummaryResponse.setAllocatedVolume(consol.getAllocations().getVolume());
         }
 
         return packSummaryResponse;

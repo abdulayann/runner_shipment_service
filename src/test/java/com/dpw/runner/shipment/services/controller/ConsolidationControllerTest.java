@@ -647,6 +647,36 @@ class ConsolidationControllerTest {
     }
 
     @Test
+    void calculatePackUtilisation() throws RunnerException {
+        // Mock
+        when(consolidationService.calculatePackUtilisation(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = consolidationController.calculatePackUtilisation(new CalculatePackUtilizationRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculatePackUtilisation2() throws RunnerException {
+        // Mock
+        when(consolidationService.calculatePackUtilisation(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = consolidationController.calculatePackUtilisation(new CalculatePackUtilizationRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculatePackUtilisation3() throws RunnerException {
+        // Mock
+        when(consolidationService.calculatePackUtilisation(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = consolidationController.calculatePackUtilisation(new CalculatePackUtilizationRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void calculateContainerSummary() throws RunnerException {
         // Mock
         when(consolidationService.calculateContainerSummary(any())).thenReturn(ResponseHelper.buildSuccessResponse());

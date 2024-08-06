@@ -11362,5 +11362,14 @@
     "failedBookings": [],
     "failedBillOfLadings": [],
     "invalidInputs": []
+  },
+  "CONSOLIDATION_ALLOCATION" : {
+    "id": 2109,
+    "guid": "fe65ec4a-10af-4ab3-8109-fbb0b3614a47",
+    "chargeableUnit": "M3",
+    "weight": 100.00,
+    "weightUnit": "KG",
+    "volume": 100.00,
+    "volumeUnit": "M3"
   }
 }

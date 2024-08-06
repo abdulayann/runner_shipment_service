@@ -260,10 +260,10 @@ public class ConsolidationController {
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
     @PostMapping(ApiConstants.GET_PACK_UTILISATION)
-    public ResponseEntity<IRunnerResponse> calculatePackUtilisation(@RequestBody CalculatePackSummaryRequest calculatePackSummaryRequest) {
+    public ResponseEntity<IRunnerResponse> calculatePackUtilisation(@RequestBody CalculatePackUtilizationRequest calculatePackUtilizationRequest) {
         String responseMsg;
         try {
-            return consolidationService.calculatePackUtilisation(CommonRequestModel.buildRequest(calculatePackSummaryRequest));
+            return consolidationService.calculatePackUtilisation(CommonRequestModel.buildRequest(calculatePackUtilizationRequest));
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
