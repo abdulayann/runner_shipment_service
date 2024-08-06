@@ -399,7 +399,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String efreightStatus;
 
     @Column(name = "hazardous")
-    private Boolean hazardous;
+    private Boolean hazardous = false;
 
     @Column(name = "emergency_contact_number")
     @Size(max=31, message = "max size is 31 for emergency_contact_number")
