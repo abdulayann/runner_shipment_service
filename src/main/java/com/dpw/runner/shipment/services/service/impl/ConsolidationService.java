@@ -720,7 +720,7 @@ public class ConsolidationService implements IConsolidationService {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    private void setInterBranchContext(boolean isInterBranchConsole) {
+    private void setInterBranchContext(Boolean isInterBranchConsole) {
         if (Boolean.TRUE.equals(isInterBranchConsole))
             commonUtils.setInterBranchContextForHub();
     }
@@ -982,6 +982,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
+            setInterBranchContext(entity.getInterBranchConsole());
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             ConsolidationDetails oldConvertedConsolidation = jsonHelper.convertValue(oldEntity.get(), ConsolidationDetails.class);
 
@@ -1027,7 +1028,6 @@ public class ConsolidationService implements IConsolidationService {
         setInterBranchContext(console.getInterBranchConsole());
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
             shipments = getShipmentsList(console.getId());
-            commonUtils.removeInterBranchContext();
             var shipmentlist = shipments.stream().filter(x-> Objects.equals(x.getAdditionalDetails().getEfreightStatus(), Constants.NON)).toList();
             if(shipmentlist != null && !shipmentlist.isEmpty()){
                 throw new RunnerException("EFreight status can only be EAP or NON as one of the Shipment has EFreight status as NON");

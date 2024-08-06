@@ -48,7 +48,7 @@ public class TenantEntityListener {
 
             if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && !Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
-            else
+            else if (Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
 
             if(tenantId == null)
@@ -56,8 +56,8 @@ public class TenantEntityListener {
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
             if(!Objects.isNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
-                if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(TenantContext.getCurrentTenant()))
-                    || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(TenantContext.getCurrentTenant()))) {
+                if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
+                    || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId))) {
                     throw new RuntimeException("Authorization has been denied for this request, tenantId mismatch");
                 }
             }
@@ -76,13 +76,13 @@ public class TenantEntityListener {
 
             if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
-            else
+            else if (Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
             if(!Objects.isNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
-                if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(TenantContext.getCurrentTenant()))
-                        || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(TenantContext.getCurrentTenant()))) {
+                if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
+                        || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId))) {
                     throw new RuntimeException("Authorization has been denied for this request, tenantId mismatch");
                 }
             }
