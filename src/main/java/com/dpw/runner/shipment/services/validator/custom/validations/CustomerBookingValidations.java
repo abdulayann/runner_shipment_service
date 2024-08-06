@@ -1,11 +1,14 @@
 package com.dpw.runner.shipment.services.validator.custom.validations;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.MandatoryFieldException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -13,6 +16,9 @@ import java.util.Objects;
 @Service
 @Slf4j
 public class CustomerBookingValidations {
+
+    @Autowired
+    private CommonUtils commonUtils;
 
     public void onSave(CustomerBooking oldEntity, CustomerBooking newEntity) {
         if (!Objects.isNull(oldEntity) && !Objects.equals(oldEntity.getBookingNumber(), newEntity.getBookingNumber())) {
@@ -63,8 +69,13 @@ public class CustomerBookingValidations {
         if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POD"));
 
-        if (Objects.isNull(entity.getBookingCharges()) || entity.getBookingCharges().isEmpty())
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Bill charge"));
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+
+        if(Boolean.TRUE.equals(v1TenantSettingsResponse.getFetchRatesMandate()))
+        {
+            if (Objects.isNull(entity.getBookingCharges()) || entity.getBookingCharges().isEmpty())
+                throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Bill charge"));
+        }
     }
 
     private void validateOnPendingForCreditCheck(CustomerBooking entity) {
