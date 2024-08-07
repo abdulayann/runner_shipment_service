@@ -786,7 +786,6 @@ class CustomerBookingServiceTest extends CommonMocks {
         mockV1Response.setData(dataMap);
         inputBooking.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         inputBooking.setShipmentGuid(guid);
-        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
         when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(inputBooking));
          when(v1Service.fetchShipmentBillingData(any())).thenReturn(mockV1Response);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));

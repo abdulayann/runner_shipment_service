@@ -1256,7 +1256,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                     if (customerBookingResponse.getShipmentEntityId() == null) {
                         if (customerBookingResponse.getShipmentGuid() != null) {
                             ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder().guidsList(Arrays.asList(UUID.fromString(customerBookingResponse.getShipmentGuid()))).build();
-                            ShipmentBillingListResponse shipmentBillingListResponse = getShipmentBillingListResponse(shipmentBillingListRequest);
+                            ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
                             if (shipmentBillingListResponse.getData() != null && !shipmentBillingListResponse.getData().isEmpty()) {
                                 ShipmentBillingListResponse.BillingData billingData = shipmentBillingListResponse.getData().get(customerBookingResponse.getShipmentGuid());
                                 customerBookingResponse.setShipmentEntityId(StringUtility.convertToString(billingData.getId()));
@@ -1270,13 +1270,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         } catch (Exception ex) {
             log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", customerBooking.getBookingNumber(), ex.getMessage());
         }
-    }
-
-    private ShipmentBillingListResponse getShipmentBillingListResponse(ShipmentBillingListRequest shipmentBillingListRequest) {
-        if (billingServiceUrlConfig.getEnableBillingIntegration()) {
-            return billingServiceAdapter.fetchShipmentBillingData(shipmentBillingListRequest);
-        }
-        return v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
     }
 
     public Runnable withMdc(Runnable runnable) {
