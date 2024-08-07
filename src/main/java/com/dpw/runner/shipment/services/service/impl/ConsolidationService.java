@@ -3097,24 +3097,30 @@ public class ConsolidationService implements IConsolidationService {
                 if (orgAddressResponse != null) {
                     Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
                     int countOfExpiredParties = 0;
+                    int countOfRaKCParties = 0;
                     for(var entry : addressMap.entrySet()) {
-                        if (StringUtility.isNotEmpty(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)))) {
+                        if (entry.getValue() != null && StringUtility.isNotEmpty(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)))) {
                             LocalDateTime agentExpiry = LocalDateTime.parse(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)));
                             // if any one of the agent is not expired will apply the validations as is
+                            countOfRaKCParties++;
                             if (LocalDateTime.now().isAfter(agentExpiry))
                                 countOfExpiredParties++;
                         }
                     }
-                    if(countOfExpiredParties == orgList.size())
+                    if(countOfExpiredParties == countOfRaKCParties && countOfExpiredParties > 0)
                         return;
                     if (sendingAgent != null && addressMap.containsKey(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode())) {
                         Map<String, Object> addressConsignorAgent = addressMap.get(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode());
                         if (addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
                             var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
-                            if (rakcType != null && Boolean.TRUE.equals(rakcType) && (consolidationDetails.getScreeningStatus() == null ||
+                            if (rakcType != null && Boolean.TRUE.equals(rakcType)){
+                                if(consolidationDetails.getScreeningStatus() == null ||
                                     consolidationDetails.getScreeningStatus().isEmpty() ||
-                                    consolidationDetails.getSecurityStatus() == null || consolidationDetails.getSecurityStatus().isEmpty())) {
-                                throw new RunnerException("Screening Status and Security Status is mandatory for RA consignor.");
+                                    consolidationDetails.getSecurityStatus() == null || consolidationDetails.getSecurityStatus().isEmpty()){
+                                    throw new RunnerException("Screening Status and Security Status is mandatory for RA consignor.");
+                                }else if(consolidationDetails.getScreeningStatus() != null && consolidationDetails.getScreeningStatus().size() == 1 && consolidationDetails.getScreeningStatus().get(0).equals("VCK")){
+                                    throw new ValidationException("Please select an additional screening status along with VCK.");
+                                }
                             }
                         }
                     }

@@ -1298,10 +1298,14 @@ public class ShipmentService implements IShipmentService {
                 UnlocationsResponse pod = unlocationsMap.get(carrierDetails.getDestinationPort());
                 UnlocationsResponse origin = unlocationsMap.get(carrierDetails.getOrigin());
                 UnlocationsResponse destination = unlocationsMap.get(carrierDetails.getDestination());
-                carrierDetails.setOriginLocCode(origin.getLocCode());
-                carrierDetails.setDestinationLocCode(destination.getLocCode());
-                carrierDetails.setOriginPortLocCode(pol.getLocCode());
-                carrierDetails.setDestinationPortLocCode(pod.getLocCode());
+                if(origin != null)
+                    carrierDetails.setOriginLocCode(origin.getLocCode());
+                if(destination != null)
+                    carrierDetails.setDestinationLocCode(destination.getLocCode());
+                if(pol != null)
+                    carrierDetails.setOriginPortLocCode(pol.getLocCode());
+                if(pod != null)
+                    carrierDetails.setDestinationPortLocCode(pod.getLocCode());
                 carrierDetailsDao.saveUnLocCodes(carrierDetails);
             }
         }
@@ -1644,13 +1648,8 @@ public class ShipmentService implements IShipmentService {
             }
 
             if(shipmentDetails.getId() != null && shipmentDetails.getAdditionalDetails() != null) {
-                if(shipmentDetails.getAdditionalDetails().getImportBroker() != null || shipmentDetails.getAdditionalDetails().getExportBroker() != null) {
-                    if(shipmentDetails.getAdditionalDetails().getImportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getImportBroker().getAddressCode())) {
-                        orgList.add(shipmentDetails.getAdditionalDetails().getImportBroker());
-                    }
-                    if(shipmentDetails.getAdditionalDetails().getExportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getExportBroker().getAddressCode())) {
-                        orgList.add(shipmentDetails.getAdditionalDetails().getExportBroker());
-                    }
+                if(shipmentDetails.getAdditionalDetails().getExportBroker() != null && StringUtility.isNotEmpty(shipmentDetails.getAdditionalDetails().getExportBroker().getAddressCode())) {
+                    orgList.add(shipmentDetails.getAdditionalDetails().getExportBroker());
                 }
             }
 
@@ -1659,15 +1658,17 @@ public class ShipmentService implements IShipmentService {
                 if (orgAddressResponse != null) {
                     Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
                     int countOfExpiredParties = 0;
+                    int countOfShipmentRaKcParties = 0;
                     for(var entry : addressMap.entrySet()) {
-                        if (StringUtility.isNotEmpty(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)))) {
+                        if (entry.getValue() != null && StringUtility.isNotEmpty(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)))) {
                             LocalDateTime agentExpiry = LocalDateTime.parse(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)));
                             // if any one of the agent is not expired will apply the validations as is
+                            countOfShipmentRaKcParties++;
                             if (LocalDateTime.now().isAfter(agentExpiry))
                                 countOfExpiredParties++;
                         }
                     }
-                    if(countOfExpiredParties == orgList.size())
+                    if(countOfExpiredParties == countOfShipmentRaKcParties && countOfExpiredParties > 0)
                         return;
                     if(consignor != null) {
                         if (addressMap.containsKey(consignor.getOrgCode() + "#" + consignor.getAddressCode())) {
@@ -1678,6 +1679,9 @@ public class ShipmentService implements IShipmentService {
                                         shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
                                         shipmentDetails.getSecurityStatus() == null)) {
                                     throw new RunnerException("Screening Status and Security Status is mandatory for KC consginor.");
+                                }
+                                else if(shipmentDetails.getAdditionalDetails().getScreeningStatus() != null && shipmentDetails.getAdditionalDetails().getScreeningStatus().size() == 1 && shipmentDetails.getAdditionalDetails().getScreeningStatus().get(0).equals("VCK")) {
+                                    throw new ValidationException("Please select an additional screening status along with VCK.");
                                 }
                             }
                         }
@@ -1695,16 +1699,21 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public boolean checkRaStatusFields(ShipmentDetails shipmentDetails, OrgAddressResponse orgAddressResponse, Parties parties) {
+    public boolean checkRaStatusFields(ShipmentDetails shipmentDetails, OrgAddressResponse orgAddressResponse, Parties parties) throws ValidationException{
         Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
         if (addressMap.containsKey(parties.getOrgCode() + "#" + parties.getAddressCode())) {
             Map<String, Object> addressConsignorAgent = addressMap.get(parties.getOrgCode() + "#" + parties.getAddressCode());
             if (addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
                 var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
-                if (rakcType != null && Boolean.TRUE.equals(rakcType) && (shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
+                if (rakcType != null && Boolean.TRUE.equals(rakcType)){
+                    if(shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
                         shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty() ||
-                        shipmentDetails.getSecurityStatus() == null)) {
-                    return false;
+                        shipmentDetails.getSecurityStatus() == null){
+                        return false;
+                    }
+                    else if(shipmentDetails.getAdditionalDetails().getScreeningStatus() != null && shipmentDetails.getAdditionalDetails().getScreeningStatus().size() == 1 && shipmentDetails.getAdditionalDetails().getScreeningStatus().get(0).equals("VCK")){
+                        throw new ValidationException("Please select an additional screening status along with VCK.");
+                    }
                 }
             }
         }
