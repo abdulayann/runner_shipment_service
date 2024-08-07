@@ -345,6 +345,8 @@ public class V1ServiceImpl implements IV1Service {
     private String ADDRESS_RETRIEVE;
     @Value("${v1service.url.base}${v1service.url.getColoadingStations}")
     private String GET_CO_LOAD_STATIONS;
+    @Value("${v1service.url.base}${v1service.url.getEmailTemplates}")
+    private String GET_EMAIL_TEMPLATES;
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -2061,6 +2063,22 @@ public class V1ServiceImpl implements IV1Service {
                 log.info(String.format("Token time taken in getColoadingStations() function: %d ms", elapsedTime));
             }
             return masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse getEmailTemplates(Object request) {
+        ResponseEntity masterDataResponse = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.GET_EMAIL_TEMPLATES, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in getEmailTemplates() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
