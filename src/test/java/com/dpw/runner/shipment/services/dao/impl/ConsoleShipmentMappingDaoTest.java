@@ -33,8 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -204,6 +203,14 @@ class ConsoleShipmentMappingDaoTest {
         Long consolId = 1L;
         consoleShipmentMappingDao.findByConsolidationIdAll(consolId);
         verify(consoleShipmentsMappingRepository, times(1)).findByConsolidationId(any());
+    }
+
+    @Test
+    void testDeletePendingStateByConsoleId() {
+        boolean isSuccess = true;
+        doNothing().when(consoleShipmentsMappingRepository).deletePendingStateByConsoleId(anyLong());
+        consoleShipmentMappingDao.deletePendingStateByConsoleId(1L);
+        assertTrue(isSuccess);
     }
 
 
