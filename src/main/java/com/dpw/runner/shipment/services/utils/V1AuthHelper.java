@@ -18,6 +18,7 @@ public class V1AuthHelper {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("Authorization", RequestAuthContext.getAuthToken());
+        headers.add("SourceServiceType", "Shipment");
         return headers;
     }
 
@@ -28,6 +29,7 @@ public class V1AuthHelper {
         headers.add("X-USER-NAME", UserContext.getUser().getUsername());
         headers.add("X-TENANT-ID", StringUtility.convertToString(UserContext.getUser().getTenantId()));
         headers.add("X-SYNC-REQUEST", "true");
+        headers.add("SourceServiceType", "Shipment");
         return headers;
     }
     
@@ -37,6 +39,7 @@ public class V1AuthHelper {
         headers.add(ApiConstants.X_API_KEY, xApiKey);
         headers.add("X-USER-NAME", userName);
         headers.add("X-TENANT-ID", StringUtility.convertToString(tenantId));
+        headers.add("SourceServiceType", "Shipment");
         headers.add("X-SYNC-REQUEST", "true");
         return headers;
     }

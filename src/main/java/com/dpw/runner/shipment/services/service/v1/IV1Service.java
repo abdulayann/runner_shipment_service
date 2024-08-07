@@ -188,4 +188,5 @@ public interface IV1Service {
     V1DataResponse fetchCreditLimit(Object request);
     OrgAddressResponse fetchOrgAddresses(Object request);
     EntityTransferAddress fetchAddress(String entityId);
+    V1DataResponse getCoLoadingStations(Object request);
 }

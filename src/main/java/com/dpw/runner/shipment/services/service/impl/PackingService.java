@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -15,9 +16,8 @@ import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
@@ -79,50 +79,10 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 public class PackingService implements IPackingService {
     @Autowired
     IPackingDao packingDao;
-
-    @Autowired
-    @Lazy
-    private IConsolidationService consolidationService;
-
     @Autowired
     IContainerDao containersDao;
     @Autowired
-    private JsonHelper jsonHelper;
-
-    @Autowired
     private IAuditLogService auditLogService;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private IShipmentDao shipmentDao;
-
-    @Autowired
-    private IConsolidationDetailsDao consolidationDao;
-
-    @Autowired
-    private IShipmentSettingsDao shipmentSettingsDao;
-
-    @Autowired
-    private IPackingSync packingSync;
-
-    @Autowired
-    private SyncConfig syncConfig;
-
-    @Autowired
-    private IContainerService containerService;
-
-    @Autowired
-    private CSVParsingUtil<Packing> parser;
-    @Autowired
-    private MasterDataUtils masterDataUtils;
-    @Autowired
-    private CommonUtils commonUtils;
-
     private List<String> columnsSequenceForExcelDownloadForCargo = List.of(
             "guid", "shipmentNumber", "packs", "packsType", "innerPackageNumber", "innerPackageType", "origin", "packingOrder",
             "length", "lengthUnit", "width", "widthUnit", "height", "heightUnit", "weight", "weightUnit", "volume", "volumeUnit",
@@ -131,88 +91,33 @@ public class PackingService implements IPackingService {
             "minTemp", "minTempUnit", "maxTemp", "maxTempUnit", "commodity", "HSCode", "customsReleaseCode", "unNumberAir", "dgClassAir",
             "dgClassAirDescription"
     );
-
-    @Transactional
-    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
-        return null;
-    }
-
-    @Override
-    public void uploadPacking(BulkUploadRequest request) throws RunnerException {
-        if (request.getConsolidationId() == null) {
-            throw new ValidationException("Please save the consolidation and then try again.");
-        }
-
-        List<Packing> packings = packingDao.findByConsolidationId(request.getConsolidationId());
-        var packingsMap = packings.stream().collect(Collectors.toMap(Packing::getGuid, Function.identity()));
-
-        Map<Long, Long> dicDGSubstanceUNDGContact = new HashMap<>();
-        Map<Long, String> dicDGSubstanceFlashPoint = new HashMap<>();
-        Map<String, Set<String>> masterDataMap = new HashMap<>();
-        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
-        List<Packing> packingList = new ArrayList<>();
-        try {
-            packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint, locCodeToLocationReferenceGuidMap);
-            packingList.stream().forEach(packing -> {
-                packing.setConsolidationId(request.getConsolidationId());
-            });
-        }
-        catch(IOException e) {
-            throw new RunnerException(e.getMessage());
-        }
-
-        applyPackingValidations(packingList, request, masterDataMap, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint);
-
-        packingList = packingDao.saveAll(packingList);
-        packingSync.sync(packingList, request.getConsolidationId(), request.getShipmentId());
-    }
-
-    private void applyPackingValidations(List<Packing> packingList, BulkUploadRequest request, Map<String, Set<String>> masterDataMap,
-                                         Map<Long, Long> dicDGSubstanceUNDGContact, Map<Long, String> dicDGSubstanceFlashPoint
-    ) throws RunnerException {
-        String transportMode = request.getTransportMode();
-        Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
-        Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
-        for (int row = 0; row < packingList.size(); row++) {
-            Packing packingRow = packingList.get(row);
-            checkCalculatedVolumeAndActualVolume(row + 1, packingRow);
-            applyChargeableValidation(transportMode, row + 1, packingRow, masterDataMap);
-            applyCommodityTypeValidation(dicCommodityType, row + 1, packingRow);
-            applyVolumetricWeightValidation(row + 1, packingRow);
-            applyHazardousValidation(hazardousClassMasterData, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint, row + 1, packingRow);
-            if (!StringUtils.isEmpty(packingRow.getFlashPoint()) && packingRow.getDGSubstanceId() == null) {
-                throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row + 1);
-            }
-        }
-    }
-
-    private void applyVolumetricWeightValidation(int i, Packing packingRow) throws RunnerException {
-        if (!StringUtils.isEmpty(packingRow.getVolumeWeightUnit())) {
-            if (packingRow.getVolumeWeight() != null) {
-                String wtunit = packingRow.getWeightUnit() != null ? packingRow.getWeightUnit() : WEIGHT_UNIT_KG;
-                var vwob = consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
-                        packingRow.getWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : packingRow.getWeightUnit(),
-                        packingRow.getVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : packingRow.getVolumeUnit(),
-                        packingRow.getWeight() == null ? BigDecimal.ZERO : packingRow.getWeight(),
-                        packingRow.getVolume() == null ? BigDecimal.ZERO : packingRow.getVolume());
-                if (vwob.getVolumeWeight() != null) {
-                    var calculatedVolumeWeight = vwob.getVolumeWeight();
-                    calculatedVolumeWeight = calculatedVolumeWeight.setScale(2, BigDecimal.ROUND_HALF_UP);
-                    var actualVolumeWeight = packingRow.getVolumeWeight();
-                    actualVolumeWeight = actualVolumeWeight.setScale(2, BigDecimal.ROUND_HALF_UP);
-                    if (!wtunit.equals(vwob.getVolumeWeightUnit())) {
-                        throw new ValidationException("Volumetric weight unit not in " + wtunit + " at row: " + i);
-                    }
-                    if (calculatedVolumeWeight.compareTo(actualVolumeWeight) != 0) { // not equal
-                        throw new ValidationException("Volumetric weight is invalid at row: " + i);
-                    }
-                }
-            }
-        } else if (packingRow.getVolumeWeight() != null) {
-            throw new ValidationException("Volumetric weight unit is empty or Volumetric weight unit not entered at row: " + i);
-        }
-    }
-
+    @Autowired
+    private CommonUtils commonUtils;
+    @Autowired
+    private IConsolidationDetailsDao consolidationDao;
+    @Autowired
+    @Lazy
+    private IConsolidationService consolidationService;
+    @Autowired
+    private IContainerService containerService;
+    @Autowired
+    private JsonHelper jsonHelper;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
+    private ModelMapper modelMapper;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private IPackingSync packingSync;
+    @Autowired
+    private CSVParsingUtil<Packing> parser;
+    @Autowired
+    private IShipmentDao shipmentDao;
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
+    @Autowired
+    private SyncConfig syncConfig;
 
     private static void applyHazardousValidation(Set<String> hazardousClassMasterData,
                                                  Map<Long, Long> dicDGSubstanceUNDGContact, Map<Long, String> dicDGSubstanceFlashPoint
@@ -270,6 +175,154 @@ public class PackingService implements IPackingService {
             if (dicCommodityType != null && dicCommodityType.contains(commodityType) == false) {
                 throw new ValidationException("Commodity Type " + commodityType + " is not valid at row " + row);
             }
+        }
+    }
+
+    private static Containers addWeightVolume(Packing request, Containers newContainer) throws RunnerException {
+        if(newContainer != null && request != null) {
+            if(IsStringNullOrEmpty(newContainer.getAchievedWeightUnit()))
+                newContainer.setAchievedWeightUnit(newContainer.getAllocatedWeightUnit());
+            if(IsStringNullOrEmpty(newContainer.getAchievedVolumeUnit()))
+                newContainer.setAchievedVolumeUnit(newContainer.getAllocatedVolumeUnit());
+            BigDecimal finalWeight = new BigDecimal(convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), newContainer.getAchievedWeightUnit()).toString());
+            BigDecimal finalVolume = new BigDecimal(convertUnit(VOLUME, request.getVolume(), request.getVolumeUnit(), newContainer.getAchievedVolumeUnit()).toString());
+            if(newContainer.getAchievedWeight() != null)
+                finalWeight = finalWeight.add(newContainer.getAchievedWeight());
+            if(newContainer.getAchievedVolume() != null)
+                finalVolume = finalVolume.add(newContainer.getAchievedVolume());
+            newContainer.setAchievedWeight(finalWeight);
+            newContainer.setAchievedVolume(finalVolume);
+        }
+        return newContainer;
+    }
+
+    private static Containers subtractWeightVolume(Packing request, Containers oldContainer) throws RunnerException {
+        if(oldContainer != null && request != null) {
+            if(IsStringNullOrEmpty(oldContainer.getAchievedWeightUnit()))
+                oldContainer.setAchievedWeightUnit(oldContainer.getAllocatedWeightUnit());
+            if(IsStringNullOrEmpty(oldContainer.getAchievedVolumeUnit()))
+                oldContainer.setAchievedVolumeUnit(oldContainer.getAllocatedVolumeUnit());
+            BigDecimal finalWeight = new BigDecimal(convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), oldContainer.getAchievedWeightUnit()).toString());
+            BigDecimal finalVolume = new BigDecimal(convertUnit(VOLUME, request.getVolume(), request.getVolumeUnit(), oldContainer.getAchievedVolumeUnit()).toString());
+            if(oldContainer.getAchievedWeight() != null) {
+                finalWeight = oldContainer.getAchievedWeight().subtract(finalWeight);
+                oldContainer.setAchievedWeight(finalWeight);
+            }
+            if(oldContainer.getAchievedVolume() != null) {
+                finalVolume = oldContainer.getAchievedVolume().subtract(finalVolume);
+                oldContainer.setAchievedVolume(finalVolume);
+            }
+        }
+        return oldContainer;
+    }
+
+    @Transactional
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
+        return null;
+    }
+
+    @Override
+    public void uploadPacking(BulkUploadRequest request) throws RunnerException {
+        if (request.getConsolidationId() == null) {
+            throw new ValidationException("Please save the consolidation and then try again.");
+        }
+
+        List<Packing> packings = packingDao.findByConsolidationId(request.getConsolidationId());
+        var packingsMap = packings.stream().collect(Collectors.toMap(Packing::getGuid, Function.identity()));
+
+        Map<Long, Long> dicDGSubstanceUNDGContact = new HashMap<>();
+        Map<Long, String> dicDGSubstanceFlashPoint = new HashMap<>();
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
+        List<Packing> packingList = new ArrayList<>();
+        try {
+            packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint, locCodeToLocationReferenceGuidMap);
+            packingList.stream().forEach(packing -> {
+                packing.setConsolidationId(request.getConsolidationId());
+            });
+            var utilizationResponse = calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest.builder()
+                .consolidationId(request.getConsolidationId())
+                .packingList(jsonHelper.convertValueToList(packingList, PackingRequest.class))
+                .build());
+
+            if(utilizationResponse != null && utilizationResponse.getConsolidationAchievedQuantities() != null) {
+                Double wtUtilization = utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization()) : 0;
+                Double volUtilization = utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization()) : 0;
+                Boolean updateConsolOpenForAttachment = false;
+                if(wtUtilization >= 100) {
+                    if(!Boolean.TRUE.equals(request.getOverride()))
+                        throw new ValidationException((String.format("Entered Pack weight %s exceeds the allocated weight %s",utilizationResponse.getAchievedWeight(), utilizationResponse.getAllocatedWeight())));
+                    else
+                        updateConsolOpenForAttachment = true;
+                }
+                else if(volUtilization >= 100) {
+                    if(!Boolean.TRUE.equals(request.getOverride()))
+                        throw new ValidationException(String.format("Entered Pack Volume %s exceeds the allocated volume %s",utilizationResponse.getAchievedVolume(), utilizationResponse.getAllocatedVolume()));
+                    else
+                        updateConsolOpenForAttachment = true;
+                }
+
+                Optional<ConsolidationDetails> optional = consolidationDao.findById(request.getConsolidationId());
+                if(Boolean.TRUE.equals(updateConsolOpenForAttachment) && optional.isPresent()) {
+                    var consol = optional.get();
+                    consol.setOpenForAttachment(false);
+                    consolidationDao.save(consol, false);
+                }
+            }
+        }
+        catch(IOException | ValidationException e) {
+            throw new RunnerException(e.getMessage());
+        }
+
+        applyPackingValidations(packingList, request, masterDataMap, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint);
+
+        packingList = packingDao.saveAll(packingList);
+        packingSync.sync(packingList, request.getConsolidationId(), request.getShipmentId());
+    }
+
+    private void applyPackingValidations(List<Packing> packingList, BulkUploadRequest request, Map<String, Set<String>> masterDataMap,
+                                         Map<Long, Long> dicDGSubstanceUNDGContact, Map<Long, String> dicDGSubstanceFlashPoint
+    ) throws RunnerException {
+        String transportMode = request.getTransportMode();
+        Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
+        Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
+        for (int row = 0; row < packingList.size(); row++) {
+            Packing packingRow = packingList.get(row);
+            checkCalculatedVolumeAndActualVolume(row + 1, packingRow);
+            applyChargeableValidation(transportMode, row + 1, packingRow, masterDataMap);
+            applyCommodityTypeValidation(dicCommodityType, row + 1, packingRow);
+            applyVolumetricWeightValidation(row + 1, packingRow);
+            applyHazardousValidation(hazardousClassMasterData, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint, row + 1, packingRow);
+            if (!StringUtils.isEmpty(packingRow.getFlashPoint()) && packingRow.getDGSubstanceId() == null) {
+                throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row + 1);
+            }
+        }
+    }
+
+    private void applyVolumetricWeightValidation(int i, Packing packingRow) throws RunnerException {
+        if (!StringUtils.isEmpty(packingRow.getVolumeWeightUnit())) {
+            if (packingRow.getVolumeWeight() != null) {
+                String wtunit = packingRow.getWeightUnit() != null ? packingRow.getWeightUnit() : WEIGHT_UNIT_KG;
+                var vwob = consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
+                        packingRow.getWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : packingRow.getWeightUnit(),
+                        packingRow.getVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : packingRow.getVolumeUnit(),
+                        packingRow.getWeight() == null ? BigDecimal.ZERO : packingRow.getWeight(),
+                        packingRow.getVolume() == null ? BigDecimal.ZERO : packingRow.getVolume());
+                if (vwob.getVolumeWeight() != null) {
+                    var calculatedVolumeWeight = vwob.getVolumeWeight();
+                    calculatedVolumeWeight = calculatedVolumeWeight.setScale(2, BigDecimal.ROUND_HALF_UP);
+                    var actualVolumeWeight = packingRow.getVolumeWeight();
+                    actualVolumeWeight = actualVolumeWeight.setScale(2, BigDecimal.ROUND_HALF_UP);
+                    if (!wtunit.equals(vwob.getVolumeWeightUnit())) {
+                        throw new ValidationException("Volumetric weight unit not in " + wtunit + " at row: " + i);
+                    }
+                    if (calculatedVolumeWeight.compareTo(actualVolumeWeight) != 0) { // not equal
+                        throw new ValidationException("Volumetric weight is invalid at row: " + i);
+                    }
+                }
+            }
+        } else if (packingRow.getVolumeWeight() != null) {
+            throw new ValidationException("Volumetric weight unit is empty or Volumetric weight unit not entered at row: " + i);
         }
     }
 
@@ -392,6 +445,7 @@ public class PackingService implements IPackingService {
             throw new RunnerException(e.getMessage());
         }
     }
+
     private void convertModelToExcel(List<PackingExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
 
         // Create header row using annotations for order
@@ -445,6 +499,7 @@ public class PackingService implements IPackingService {
             }
         }
     }
+
     private List<Field> reorderFields(Map<String, Field> fieldNameMap, List<String> columnsName) {
         List<Field> fields = new ArrayList<>();
         for(var field: columnsName){
@@ -632,6 +687,10 @@ public class PackingService implements IPackingService {
             response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(volumeWeight), v1TenantSettingsResponse), toVolumeUnit));
             response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), toWeightUnit));
 
+            // setting these fields for UI to consume; Only for Consolidation
+            response.setAchievedWeight(BigDecimal.valueOf(totalWeight));
+            response.setAchievedVolume(BigDecimal.valueOf(volumeWeight));
+
             dto.setWeight(new BigDecimal(totalWeight));
             dto.setWeightUnit(toWeightUnit);
             dto.setNetWeight(new BigDecimal(netWeight));
@@ -748,7 +807,6 @@ public class PackingService implements IPackingService {
         }
 
     }
-
 
     protected void checkVolumeUnit(String volumeUnit,
                                    String widthUnit,
@@ -969,44 +1027,6 @@ public class PackingService implements IPackingService {
         }
     }
 
-    private static Containers addWeightVolume(Packing request, Containers newContainer) throws RunnerException {
-        if(newContainer != null && request != null) {
-            if(IsStringNullOrEmpty(newContainer.getAchievedWeightUnit()))
-                newContainer.setAchievedWeightUnit(newContainer.getAllocatedWeightUnit());
-            if(IsStringNullOrEmpty(newContainer.getAchievedVolumeUnit()))
-                newContainer.setAchievedVolumeUnit(newContainer.getAllocatedVolumeUnit());
-            BigDecimal finalWeight = new BigDecimal(convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), newContainer.getAchievedWeightUnit()).toString());
-            BigDecimal finalVolume = new BigDecimal(convertUnit(VOLUME, request.getVolume(), request.getVolumeUnit(), newContainer.getAchievedVolumeUnit()).toString());
-            if(newContainer.getAchievedWeight() != null)
-                finalWeight = finalWeight.add(newContainer.getAchievedWeight());
-            if(newContainer.getAchievedVolume() != null)
-                finalVolume = finalVolume.add(newContainer.getAchievedVolume());
-            newContainer.setAchievedWeight(finalWeight);
-            newContainer.setAchievedVolume(finalVolume);
-        }
-        return newContainer;
-    }
-
-    private static Containers subtractWeightVolume(Packing request, Containers oldContainer) throws RunnerException {
-        if(oldContainer != null && request != null) {
-            if(IsStringNullOrEmpty(oldContainer.getAchievedWeightUnit()))
-                oldContainer.setAchievedWeightUnit(oldContainer.getAllocatedWeightUnit());
-            if(IsStringNullOrEmpty(oldContainer.getAchievedVolumeUnit()))
-                oldContainer.setAchievedVolumeUnit(oldContainer.getAllocatedVolumeUnit());
-            BigDecimal finalWeight = new BigDecimal(convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), oldContainer.getAchievedWeightUnit()).toString());
-            BigDecimal finalVolume = new BigDecimal(convertUnit(VOLUME, request.getVolume(), request.getVolumeUnit(), oldContainer.getAchievedVolumeUnit()).toString());
-            if(oldContainer.getAchievedWeight() != null) {
-                finalWeight = oldContainer.getAchievedWeight().subtract(finalWeight);
-                oldContainer.setAchievedWeight(finalWeight);
-            }
-            if(oldContainer.getAchievedVolume() != null) {
-                finalVolume = oldContainer.getAchievedVolume().subtract(finalVolume);
-                oldContainer.setAchievedVolume(finalVolume);
-            }
-        }
-        return oldContainer;
-    }
-
     private IRunnerResponse convertEntityToDto(Packing packing) {
         return jsonHelper.convertValue(packing, PackingResponse.class);
     }
@@ -1021,6 +1041,103 @@ public class PackingService implements IPackingService {
             responseList.add(convertEntityToDto(packing));
         });
         return responseList;
+    }
+
+
+    /**
+     * @param request
+     * @return PackSummaryResponse
+     * Api for giving out utilisation calculation of a given consolidation whenever packs are updated from the shipment
+     * This will help consumer to identify the percentage of utilisation and act accordingly
+     * This is just a calculation api , nothing's saved back into DB
+     */
+    public PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest request) throws RunnerException {
+        var consolidationId = request.getConsolidationId();
+        var shipmentRequest = request.getShipmentRequest();
+        var updatedConsolPacks = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
+        var allocated = jsonHelper.convertValue(request.getAllocationsRequest(), Allocations.class);
+        var attachingShipments = request.getShipmentIdList();
+
+        Optional<ConsolidationDetails> optionalConsol = consolidationDao.findById(consolidationId);
+        ConsolidationDetails consol = null;
+        PackSummaryResponse packSummaryResponse = null;
+        AchievedQuantities achievedQuantities = null;
+        String toWeightUnit = Optional.ofNullable(request.getAllocationsRequest()).map(AllocationsRequest::getWeightUnit).orElse(Constants.WEIGHT_UNIT_KG);
+        String toVolumeUnit = Optional.ofNullable(request.getAllocationsRequest()).map(AllocationsRequest::getVolumeUnit).orElse(Constants.VOLUME_UNIT_M3);
+
+        var packingList = new ArrayList<Packing>();
+
+        if(!optionalConsol.isPresent()) {
+            return null;
+        }
+        if(shipmentRequest != null && (shipmentRequest.getPackingList() == null || shipmentRequest.getPackingList().isEmpty()))
+            return null;
+
+        consol = optionalConsol.get();
+        consol.setAllocations(allocated);
+        achievedQuantities = consol.getAchievedQuantities();
+        achievedQuantities.setConsolidatedWeightUnit(toWeightUnit);
+        achievedQuantities.setConsolidatedVolumeUnit(toVolumeUnit);
+
+        if(shipmentRequest != null) {
+            // Filter out the old shipment-linked packs from the consol packs stream
+            packingList.addAll(consol.getPackingList().stream().filter(i -> !Objects.equals(i.getShipmentId(),shipmentRequest.getId())).toList());
+            // Add the current updated packs of the shipment
+            packingList.addAll(jsonHelper.convertValueToList(shipmentRequest.getPackingList(), Packing.class));
+        }
+        else if (attachingShipments != null && !attachingShipments.isEmpty()) {
+            packingList.addAll(consol.getPackingList());
+            packingList.addAll(getShipmentPacks(attachingShipments));
+        }
+        else {
+            // Default case of packs updated from consol
+            packingList.addAll(updatedConsolPacks);
+        }
+
+        // only process the below calculation if the consolidation is air , exp , co-loading = true, allocated != null
+        if(coLoadingConsolChecks(consol)) {
+            log.info("calculating pack summary for aggregate of {} packs", packingList.size());
+            packSummaryResponse = calculatePackSummary(packingList, TRANSPORT_MODE_AIR, null, new ShipmentMeasurementDetailsDto());
+            log.info("Received weight: {} and volume:{} from packing summary response", packSummaryResponse.getAchievedWeight(), packSummaryResponse.getAchievedVolume());
+            achievedQuantities.setConsolidatedWeight(packSummaryResponse.getAchievedWeight());
+            achievedQuantities.setConsolidatedVolume(packSummaryResponse.getAchievedVolume());
+            consol = commonUtils.calculateConsolUtilization(consol);
+            packSummaryResponse.setConsolidationAchievedQuantities(jsonHelper.convertValue(consol.getAchievedQuantities(), AchievedQuantitiesResponse.class));
+            packSummaryResponse.setAllocatedWeight(consol.getAllocations().getWeight());
+            packSummaryResponse.setAllocatedVolume(consol.getAllocations().getVolume());
+        }
+
+        return packSummaryResponse;
+    }
+
+    private boolean coLoadingConsolChecks(ConsolidationDetails consol) {
+        boolean flag = true;
+        if(!consol.getTransportMode().equalsIgnoreCase(TRANSPORT_MODE_AIR))
+            flag = false;
+        if(!consol.getShipmentType().equalsIgnoreCase(DIRECTION_EXP))
+            flag = false;
+        if(!Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()))
+            flag = false;
+        if(!(consol.getAllocations() != null && consol.getAllocations().getWeight() != null))
+            flag = false;
+
+        return flag;
+    }
+
+    /**
+     * @param shipmentIds
+     * @return packingList of shipments that are TO-BE attached
+     */
+    private List<Packing> getShipmentPacks(List<Long> shipmentIds) {
+        commonUtils.setInterBranchContextForHub();
+        ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
+        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+        Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+
+        var packingList = shipmentsPage.getContent().stream().map(ShipmentDetails::getPackingList).flatMap(i -> i.stream()).toList();
+        InterBranchContext.removeContext();
+
+        return packingList;
     }
 
 }

@@ -15,4 +15,5 @@ public class BulkUploadRequest {
     private Long shipmentId;
     private Long consolidationId;
     private String transportMode;
+    private Boolean override;
 }

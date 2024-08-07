@@ -34,7 +34,7 @@ public class ApiConstants {
     public static final String API_UPDATE_BOOKING = "/update/booking";
 
     public static final String API_LIST = "/list";
-
+    public static final String API_CONSOLE_SHIPMENT_LIST = "/console-shipment-list";
     public static final String API_DELETE = "/delete";
     public static final String API_SAVE_FROM_V1 = "/save/v1";
     public static final String API_PARTIAL_UPDATE = "/patch";
@@ -71,6 +71,7 @@ public class ApiConstants {
     public static final String GET_MASTER_DATA_MAPPING = "/get/masterDataMapping";
     public static final String CALCULATE_CONTAINER_SUMMARY = "/container/summary";
     public static final String CALCULATE_PACK_SUMMARY = "/pack/summary";
+    public static final String  GET_PACK_UTILISATION = "/get/packUtilisation";
     public static final String CALCULATE_AUTO_UPDATE_WT_VOL_SHIPMENT = "/calculate/auto";
     public static final String CALCULATE_WT_VOL_SHIPMENT_ON_CHANGES = "/calculate/changes";
     public static final String LIST_PACKS_FOR_ASSIGN_DETACH = "/list/packs";
@@ -103,6 +104,9 @@ public class ApiConstants {
 
     // Bridge service
     public static final String X_CLIENT_TYPE = "X-Client-Type";
+
+    public static final String GET_ALL_SHIPMENTS_COUNT = "/all/shipments/count";
+    public static final String UPDATE_CONSOLE_SHIPMENT_STATUS = "/status/update";
 
 
 

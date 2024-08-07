@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.filters;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -137,6 +138,7 @@ public class AuthFilter extends OncePerRequestFilter {
             TenantSettingsDetailsContext.remove();
             PermissionsContext.removePermissions();
             SecurityContextHolder.clearContext();
+            InterBranchContext.removeContext();
         }
 
     }

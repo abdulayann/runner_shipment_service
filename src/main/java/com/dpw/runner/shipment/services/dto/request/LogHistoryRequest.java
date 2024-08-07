@@ -16,4 +16,5 @@ public class LogHistoryRequest {
     private String entityType;
     private UUID entityGuid;
     private String entityPayload;
+    private Integer tenantId;
 }

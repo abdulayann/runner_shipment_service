@@ -141,6 +141,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (!fromV1Sync && consolidationDetails.getTransportMode() != null
                 && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
             consolidationMAWBCheck(consolidationDetails, oldConsole != null ? oldConsole.getMawb() : null);
+        if(!Objects.isNull(oldConsole)) {
+            consolidationDetails.setCreatedAt(oldConsole.getCreatedAt());
+            consolidationDetails.setCreatedBy(oldConsole.getCreatedBy());
+        }
         consolidationDetails = consolidationRepository.save(consolidationDetails);
         if (!fromV1Sync && StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
             setMawbStock(consolidationDetails);
