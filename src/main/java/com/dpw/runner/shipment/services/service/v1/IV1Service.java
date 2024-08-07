@@ -166,4 +166,5 @@ public interface IV1Service {
     OrgAddressResponse fetchOrgAddresses(Object request);
     EntityTransferAddress fetchAddress(String entityId);
     V1DataResponse getCoLoadingStations(Object request);
+    V1DataResponse getEmailTemplates(Object request);
 }
