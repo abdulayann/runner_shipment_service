@@ -370,8 +370,10 @@ public class CustomerBookingService implements ICustomerBookingService {
             {
                 ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
                 //Check 3
-                if(shipmentResponse != null && customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
-                    bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
+                if(shipmentResponse != null) {
+                    if(customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
+                        bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
+                    }
                     customerBooking.setShipmentId(shipmentResponse.getShipmentId());
                     customerBooking.setShipmentEntityIdV2(StringUtility.convertToString(shipmentResponse.getId()));
                     customerBooking.setShipmentGuid(StringUtility.convertToString(shipmentResponse.getGuid()));
