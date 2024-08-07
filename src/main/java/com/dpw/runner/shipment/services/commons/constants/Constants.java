@@ -439,6 +439,8 @@ public class Constants {
     public static final String Active = "Active";
     public static final String FILE_STATUS = "FileStatus";
     public static final String FLOW = "Flow";
+    public static final String Consolidation_Number = "Consolidation_Number";
+    public static final String MAWB_Number = "MAWB_Number";
 
     private Constants() {
     }

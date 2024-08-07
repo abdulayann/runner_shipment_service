@@ -36,7 +36,10 @@ import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValid
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -48,6 +51,7 @@ import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiParam;
@@ -76,6 +80,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ALL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 
 
 @SuppressWarnings(ALL)
@@ -84,6 +101,8 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class ShipmentController {
 
+    @Autowired
+    private CommonUtils commonUtils;
     @Autowired
     private IShipmentService shipmentService;
     @Autowired
@@ -672,6 +691,15 @@ public class ShipmentController {
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
+    }
+    
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = UpstreamDateUpdateResponse.class)})
+    @PostMapping(value = "email")
+    public void email() throws Exception{
+        commonUtils.sendEmailForPullRequest(ShipmentDetails.builder().shipmentId("test").build(),
+                ConsolidationDetails.builder().consolidationNumber("consoleNum").mawb("mawb").
+                        carrierDetails(CarrierDetails.builder().etd(LocalDateTime.MIN).eta(LocalDateTime.now()).build()).build(),
+                ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
     }
 
 }

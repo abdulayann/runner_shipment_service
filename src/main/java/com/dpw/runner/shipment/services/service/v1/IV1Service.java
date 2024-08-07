@@ -191,4 +191,5 @@ public interface IV1Service {
     EntityTransferAddress fetchAddress(String entityId);
     V1DataResponse getCoLoadingStations(Object request);
     TenantDetailsByListResponse getTenantDetails(Object request);
+    V1DataResponse getEmailTemplates(Object request);
 }
