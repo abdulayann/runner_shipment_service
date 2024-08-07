@@ -38,7 +38,7 @@ public class TenantAspect {
             log.error("{}", ex.getLocalizedMessage());
         }
 
-        Class clazz = joinPoint.getSignature().getDeclaringType();
+        Class<?> clazz = joinPoint.getSignature().getDeclaringType();
 
         long tenantId = TenantContext.getCurrentTenant();
 

@@ -726,16 +726,6 @@ public class ConsolidationService implements IConsolidationService {
             commonUtils.setInterBranchContextForHub();
     }
 
-    private HashSet<Long> interBranchShipmentIds(List<ShipmentDetails> shipmentDetails) {
-        HashSet<Long> shipIds = new HashSet<>();
-        shipmentDetails.forEach(ship -> {
-            if(!Objects.equals(ship.getTenantId(), UserContext.getUser().TenantId)){
-                shipIds.add(ship.getId());
-            }
-        });
-        return shipIds;
-    }
-
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
         if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
             return false;
@@ -746,6 +736,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        if(consol.isPresent() && Boolean.TRUE.equals(consol.get().getInterBranchConsole()))
+            commonUtils.setInterBranchContextForHub();
         List<Packing> packingList = null;
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
@@ -769,7 +762,6 @@ public class ConsolidationService implements IConsolidationService {
                 this.createLogHistoryForShipment(shipmentDetails);
             }
         }
-        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         if(consol.isPresent() && checkAttachDgAirShipments(consol.get())){
             consol.get().setHazardous(false);
             consolidationDetailsDao.save(consol.get(), false);
@@ -1523,8 +1515,6 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         CalculatePackUtilizationRequest request = (CalculatePackUtilizationRequest) commonRequestModel.getData();
         try {
-            var shipmentRequest = request.getShipmentRequest();
-            List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
             PackSummaryResponse packSummaryResponse = packingService.calculatePacksUtilisationForConsolidation(request);
             CalculatePackUtilizationResponse response = jsonHelper.convertValue(packSummaryResponse, CalculatePackUtilizationResponse.class);
             return ResponseHelper.buildSuccessResponse(response);

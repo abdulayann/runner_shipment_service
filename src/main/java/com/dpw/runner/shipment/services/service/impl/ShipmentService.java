@@ -281,6 +281,8 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private BillingServiceAdapter billingServiceAdapter;
 
+    public static final String CONSOLIDATION_ID = "consolidationId";
+
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
@@ -390,7 +392,7 @@ public class ShipmentService implements IShipmentService {
             Map.entry("isCmsHBLSent", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(Boolean.class).fieldName("isCmsHBLSent").build()),
             Map.entry(Constants.ORDER_MANAGEMENT_ID, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.ORDER_MANAGEMENT_ID).isContainsText(true).build()),
             Map.entry(Constants.FLIGHT_NUMBER, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.FLIGHT_NUMBER).build()),
-            Map.entry("consolidationId", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_LIST).dataType(Long.class).fieldName("id").build()),
+            Map.entry(CONSOLIDATION_ID, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_LIST).dataType(Long.class).fieldName("id").build()),
             Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("voyageOrFlightNumber").build()),
             Map.entry("shipperRef", RunnerEntityMapping.builder().tableName(Constants.PICKUP_DETAILS).dataType(String.class).fieldName("shipperRef").build()),
             Map.entry(CONTAINS_HAZARDOUS, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).build()),
@@ -2346,7 +2348,7 @@ public class ShipmentService implements IShipmentService {
                     lclAndSeaOrRoadFlag = false;
                 }
             }
-            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            ListCommonRequest listCommonRequest = constructListCommonRequest(CONSOLIDATION_ID, consolidationId, "=");
             Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             List<Containers> conts = new ArrayList<>();
@@ -4483,10 +4485,10 @@ public class ShipmentService implements IShipmentService {
                 List<Long> shipIds = consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
                 CommonUtils.andCriteria("id", shipIds, "IN", request);
             } else {
-                CommonUtils.andCriteria("consolidationId", consoleId, "=", request);
+                CommonUtils.andCriteria(CONSOLIDATION_ID, consoleId, "=", request);
             }
         } else {
-            CommonUtils.andCriteria("consolidationId", consoleId, "=", request);
+            CommonUtils.andCriteria(CONSOLIDATION_ID, consoleId, "=", request);
         }
         var response = list(CommonRequestModel.buildRequest(request));
         if (response.getBody() instanceof RunnerListResponse<?> responseList) {
@@ -4506,7 +4508,9 @@ public class ShipmentService implements IShipmentService {
     @Override
     public ResponseEntity<IRunnerResponse> getAllShipments(Long consoleId) {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
-        Long attachedShipmentCurrentBranchCount = 0L, attachedShipmentInterBranchCount = 0L, pendingAttachmentCount = 0L;
+        Long attachedShipmentCurrentBranchCount = 0L;
+        Long attachedShipmentInterBranchCount = 0L;
+        Long pendingAttachmentCount = 0L;
         AllShipmentCountResponse allShipmentCountResponse = new AllShipmentCountResponse();
         if(consolidationDetails.isPresent()) {
             if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
@@ -4540,9 +4544,7 @@ public class ShipmentService implements IShipmentService {
             if (request.isForHub() && Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
                 commonUtils.setInterBranchContextForHub();
             }
-            request.getListOfShipments().stream().forEach(shipmentId -> {
-                consoleShipmentMappingDao.updateConsoleShipments(request.getShipmentRequestedType(), request.getConsoleId(), shipmentId);
-            });
+            request.getListOfShipments().stream().forEach(shipmentId -> consoleShipmentMappingDao.updateConsoleShipments(request.getShipmentRequestedType(), request.getConsoleId(), shipmentId));
         } else {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

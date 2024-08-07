@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import lombok.Data;
 
-import java.math.BigDecimal;
 
 @Data
 public class CalculatePackUtilizationResponse implements IRunnerResponse {
