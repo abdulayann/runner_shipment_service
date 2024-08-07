@@ -3039,7 +3039,7 @@ public class ConsolidationService implements IConsolidationService {
             calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), oldEntity.getShipmentsList());
             shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
         }
-        if(!isCreate && checkConsolidationEligibleForCFSValidation(consolidationDetails)) {
+        if(!Boolean.TRUE.equals(isCreate) && checkConsolidationEligibleForCFSValidation(consolidationDetails)) {
             if(shipmentDetails == null)
                 shipmentDetails = getShipmentsList(consolidationDetails.getId());
             if(!listIsNullOrEmpty(shipmentDetails)) {
