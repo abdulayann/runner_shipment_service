@@ -346,23 +346,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
         }
         List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
-        if (bookingChargesRequest != null && !bookingChargesRequest.isEmpty()) {
-            List<BookingCharges> bookingCharges = new ArrayList<>();
-            for (BookingChargesRequest bookingChargeRequest : bookingChargesRequest) {
-                List<UUID> containerUUIDs = bookingChargeRequest.getContainersUUID();
-                BookingCharges bookingCharge = jsonHelper.convertValue(bookingChargeRequest, BookingCharges.class);
-                List<Containers> containerList = new ArrayList<>();
-                if (containerUUIDs != null && !containerUUIDs.isEmpty()) {
-                    for (UUID uuid : containerUUIDs) {
-                        Containers container = containerMap.get(uuid);
-                        containerList.add(container);
-                    }
-                }
-                bookingCharge.setContainersList(containerList);
-                bookingCharge.setBookingId(customerBooking.getId());
-                bookingCharges.add(bookingCharge);
-            }
-            bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, bookingId);
+        if (bookingChargesRequest != null) {
+            List<BookingCharges> bookingCharges = bookingChargesDao.updateEntityFromBooking(commonUtils.convertToEntityList(bookingChargesRequest, BookingCharges.class), bookingId);
             customerBooking.setBookingCharges(bookingCharges);
         }
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
