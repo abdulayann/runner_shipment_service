@@ -343,4 +343,34 @@ class ShipmentSettingsControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void listCoLoadStationTenantIds() {
+        // Mock
+        when(shipmentSettingsService.listCoLoadStationTenantIds()).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentSettingsController.listCoLoadStationTenantIds();
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCoLoadStationTenantIds2() {
+        // Mock
+        when(shipmentSettingsService.listCoLoadStationTenantIds()).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentSettingsController.listCoLoadStationTenantIds();
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCoLoadStationTenantIds3() {
+        // Mock
+        when(shipmentSettingsService.listCoLoadStationTenantIds()).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentSettingsController.listCoLoadStationTenantIds();
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }
