@@ -1081,7 +1081,7 @@ public class PackingService implements IPackingService {
 
         if(shipmentRequest != null) {
             // Filter out the old shipment-linked packs from the consol packs stream
-            packingList.addAll(consol.getPackingList().stream().filter(i -> i.getShipmentId() == shipmentRequest.getId()).toList());
+            packingList.addAll(consol.getPackingList().stream().filter(i -> !Objects.equals(i.getShipmentId(),shipmentRequest.getId())).toList());
             // Add the current updated packs of the shipment
             packingList.addAll(jsonHelper.convertValueToList(shipmentRequest.getPackingList(), Packing.class));
         }
