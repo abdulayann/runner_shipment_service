@@ -14,7 +14,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BillBaseResponse implements IRunnerResponse {
+
     private String billId;
     private UUID guId;
     private String remarks;
+
 }
