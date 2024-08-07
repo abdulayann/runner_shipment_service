@@ -64,7 +64,7 @@ public class V1MasterDataImpl implements IMasterDataService {
         boolean isList = false;
         try{
             var obj = jsonHelper.convertValue(request, CarrierListObject.class);
-            isList = (obj != null && obj.getListObject() != null) ? obj.getIsList() : false;
+            isList = (obj != null && obj.getListObject() != null) && obj.getIsList();
         }
         catch (Exception e) {
             log.error("unable to construct CarrierListObject from request");
