@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
-import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
-import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
@@ -361,10 +359,6 @@ public class V1ServiceImpl implements IV1Service {
     private V1ServiceUtil v1ServiceUtil;
     @Autowired
     private ModelMapper modelMapper;
-    @Autowired
-    private BillingServiceUrlConfig billingServiceUrlConfig;
-    @Autowired
-    private BillingServiceAdapter billingServiceAdapter;
 
     @Override
     public ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers) {
