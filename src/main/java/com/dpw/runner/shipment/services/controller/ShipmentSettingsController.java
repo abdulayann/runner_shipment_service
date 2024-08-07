@@ -218,4 +218,18 @@ public class ShipmentSettingsController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, response = MyResponseClass.class, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_SUCCESSFUL) })
+    @GetMapping(ApiConstants.API_LIST_COLOAD_STATION_ID)
+    public ResponseEntity<IRunnerResponse> listCoLoadStationTenantIds() {
+        String responseMsg;
+        try {
+            return shipmentSettingsService.listCoLoadStationTenantIds();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }

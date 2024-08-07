@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -24,6 +26,8 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -42,23 +46,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class ShipmentSettingsServiceTest {
+class ShipmentSettingsServiceTest extends CommonMocks {
 
     @Mock
     IShipmentSettingsDao shipmentSettingsDao;
-
-    @Mock
-    CommonUtils commonUtils;
 
     @Mock
     IHblTermsConditionTemplateDao hblTermsConditionTemplateDao;
@@ -74,6 +72,8 @@ class ShipmentSettingsServiceTest {
 
     @Mock
     JsonHelper jsonHelper;
+    @Mock
+    private MasterDataUtils masterDataUtils;
 
     @Mock
     private DocumentService documentService;
@@ -483,6 +483,51 @@ class ShipmentSettingsServiceTest {
         ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.retrieveById(CommonRequestModel.buildRequest(commonGetRequest));
         Assertions.assertNotNull(responseEntity);
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testlistCoLoadStationTenantIds_WithMawbColoadingEnabled() {
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsColoadingMAWBStationEnabled(true);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setColoadingBranchIds(Arrays.asList(2));
+        TenantModel tenantModel1 = new TenantModel();
+        tenantModel1.tenantId = 1L;
+        TenantModel tenantModel2 = new TenantModel();
+        tenantModel2.tenantId = 2L;
+        Map<String, TenantModel> tenantModelMap = new HashMap<>();
+        tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
+        tenantModelMap.put(StringUtility.convertToString(2), tenantModel2);
+        mockTenantSettings();
+        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1), StringUtility.convertToString(2)))).thenReturn(tenantModelMap);
+        var response = shipmentSettingsService.listCoLoadStationTenantIds();
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testlistCoLoadStationTenantIds_WithoutMawbColoadingEnabled() {
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(false);
+        TenantModel tenantModel1 = new TenantModel();
+        tenantModel1.tenantId = 1L;
+        Map<String, TenantModel> tenantModelMap = new HashMap<>();
+        tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
+        mockTenantSettings();
+        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
+        var response = shipmentSettingsService.listCoLoadStationTenantIds();
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testlistCoLoadStationTenantIds_WithMawbColoadingEnabled_WithoutStationEnables() {
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsColoadingMAWBStationEnabled(false);
+        TenantModel tenantModel1 = new TenantModel();
+        tenantModel1.tenantId = 1L;
+        Map<String, TenantModel> tenantModelMap = new HashMap<>();
+        tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
+        mockTenantSettings();
+        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
+        var response = shipmentSettingsService.listCoLoadStationTenantIds();
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
 }
