@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.billing;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,7 +15,7 @@ import lombok.Setter;
 public class BillBaseResponse implements IRunnerResponse {
 
     private String billId;
-    private UUID guId;
+    private String guId;
     private String remarks;
 
 }

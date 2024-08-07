@@ -1403,7 +1403,7 @@ public abstract class IReport {
 
             BillingResponse billingResponse = new BillingResponse();
             billingResponse.setBillId(billFromBilling.getBillId());
-            billingResponse.setGuid(billFromBilling.getGuId());
+            billingResponse.setGuid(UUID.fromString(billFromBilling.getGuId()));
             billingResponse.setRemarks(billFromBilling.getRemarks());
 
             return List.of(billingResponse);
