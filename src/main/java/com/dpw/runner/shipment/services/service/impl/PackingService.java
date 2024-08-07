@@ -1062,6 +1062,9 @@ public class PackingService implements IPackingService {
         ConsolidationDetails consol = null;
         PackSummaryResponse packSummaryResponse = null;
         AchievedQuantities achievedQuantities = null;
+        String toWeightUnit = Optional.ofNullable(request.getAllocationsRequest()).map(AllocationsRequest::getWeightUnit).orElse(Constants.WEIGHT_UNIT_KG);
+        String toVolumeUnit = Optional.ofNullable(request.getAllocationsRequest()).map(AllocationsRequest::getVolumeUnit).orElse(Constants.VOLUME_UNIT_M3);
+
         var packingList = new ArrayList<Packing>();
 
         if(!optionalConsol.isPresent()) {
@@ -1073,6 +1076,8 @@ public class PackingService implements IPackingService {
         consol = optionalConsol.get();
         consol.setAllocations(allocated);
         achievedQuantities = consol.getAchievedQuantities();
+        achievedQuantities.setConsolidatedWeightUnit(toWeightUnit);
+        achievedQuantities.setConsolidatedVolumeUnit(toVolumeUnit);
 
         if(shipmentRequest != null) {
             // Filter out the old shipment-linked packs from the consol packs stream
