@@ -111,13 +111,16 @@ public class AuthFilter extends OncePerRequestFilter {
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         List<String> grantedPermissions = new ArrayList<>();
+        Map<String, Boolean> permissions = new HashMap<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
             if(entry.getValue())
             {
                 grantedPermissions.add(entry.getKey());
+                permissions.put(entry.getKey(), true);
             }
         }
+        user.setPermissions(permissions);
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                 user, null, getAuthorities(grantedPermissions));
         usernamePasswordAuthenticationToken
