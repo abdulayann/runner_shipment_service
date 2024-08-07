@@ -13,6 +13,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Generated
 public class BillingEntityResponse extends BillingBaseResponse {
-
-    private Map<String, Object> data;
+    private transient Map<String, Object> data;
 }

@@ -1258,7 +1258,7 @@ public class MasterDataUtils{
     }
 
     private ShipmentBillingListResponse getShipmentBillingListResponse(ShipmentBillingListRequest shipmentBillingListRequest) {
-        if (billingServiceUrlConfig.getEnableBillingIntegration()) {
+        if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
             return billingServiceAdapter.fetchShipmentBillingData(shipmentBillingListRequest);
         }
         return v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
