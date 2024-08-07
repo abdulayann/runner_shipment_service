@@ -746,6 +746,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        if(consol.isPresent() && Boolean.TRUE.equals(consol.get().getInterBranchConsole()))
+            commonUtils.setInterBranchContextForHub();
         List<Packing> packingList = null;
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
@@ -769,7 +772,6 @@ public class ConsolidationService implements IConsolidationService {
                 this.createLogHistoryForShipment(shipmentDetails);
             }
         }
-        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         if(consol.isPresent() && checkAttachDgAirShipments(consol.get())){
             consol.get().setHazardous(false);
             consolidationDetailsDao.save(consol.get(), false);
