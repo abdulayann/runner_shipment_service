@@ -4796,4 +4796,45 @@ class V1ServiceImplTest {
         assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 
+    @Test
+    void testGetCoLoadingStations() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+            (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.getCoLoadingStations("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void testGetCoLoadingStationsThrowsError() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+            (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getCoLoadingStations("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void testGetCoLoadingStationsThrowsError2() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+            (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.getCoLoadingStations("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+
+
 }

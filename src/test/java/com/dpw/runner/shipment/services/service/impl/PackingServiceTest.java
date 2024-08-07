@@ -1068,6 +1068,36 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
+    void uploadPackingWeightValueOverAchievedSavePackOnOverride() throws Exception{
+        var spyService = Mockito.spy(packingService);
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setHazardous(false);
+        packingList.get(0).setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        bulkUploadRequest.setOverride(true);
+
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        AchievedQuantitiesResponse achievedResponse = new AchievedQuantitiesResponse();
+        achievedResponse.setWeightUtilization("100.0");
+        packSummaryResponse.setConsolidationAchievedQuantities(achievedResponse);
+        ConsolidationDetails consol = new ConsolidationDetails();
+
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        when(consolidationDao.findById(any())).thenReturn(Optional.of(consol));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
+        doReturn(packSummaryResponse).when(spyService).calculatePacksUtilisationForConsolidation(any());
+
+        spyService.uploadPacking(bulkUploadRequest);
+
+        verify(consolidationDao, times(1)).save(any(), anyBoolean());
+        verify(packingDao, times(1)).saveAll(any());
+        verify(packingSync, times(1)).sync(any(), any(), any());
+    }
+
+    @Test
     void uploadPackingVolumeValueOverAchieved() throws Exception{
         var spyService = Mockito.spy(packingService);
         List<Packing> packingList = List.of(testCsvPacking);
@@ -1085,6 +1115,36 @@ class PackingServiceTest extends CommonMocks {
         when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
         doReturn(packSummaryResponse).when(spyService).calculatePacksUtilisationForConsolidation(any());
         assertThrows(RunnerException.class, () -> spyService.uploadPacking(bulkUploadRequest));
+    }
+
+    @Test
+    void uploadPackingVolumeValueOverAchievedSavePackOnOverride() throws Exception{
+        var spyService = Mockito.spy(packingService);
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setHazardous(false);
+        packingList.get(0).setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        bulkUploadRequest.setOverride(true);
+
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        AchievedQuantitiesResponse achievedResponse = new AchievedQuantitiesResponse();
+        achievedResponse.setVolumeUtilization("100.0");
+        packSummaryResponse.setConsolidationAchievedQuantities(achievedResponse);
+        ConsolidationDetails consol = new ConsolidationDetails();
+
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        when(consolidationDao.findById(any())).thenReturn(Optional.of(consol));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
+        doReturn(packSummaryResponse).when(spyService).calculatePacksUtilisationForConsolidation(any());
+
+        spyService.uploadPacking(bulkUploadRequest);
+
+        verify(consolidationDao, times(1)).save(any(), anyBoolean());
+        verify(packingDao, times(1)).saveAll(any());
+        verify(packingSync, times(1)).sync(any(), any(), any());
     }
 
     @Test
