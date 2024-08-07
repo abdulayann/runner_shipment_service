@@ -4,7 +4,6 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.http.auth.AuthenticationException;
 
@@ -22,23 +21,23 @@ public class TenantEntityListener {
 
     @PrePersist
     public void prePersist(Object object) {
-        if (object instanceof MultiTenancy) {
-            Integer tenantId = ((MultiTenancy) object).getTenantId();
+        if (object instanceof MultiTenancy multiTenancy) {
+            Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
             var interBranchData = InterBranchContext.getContext();
 
             if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantCreatePermission)) && !Objects.isNull(tenantId))
-                ((MultiTenancy) object).setTenantId(tenantId);
+                multiTenancy.setTenantId(tenantId);
             else if (!Objects.isNull(interBranchData)
                     && (Boolean.TRUE.equals(interBranchData.isHub()) || Boolean.TRUE.equals(interBranchData.isCoLoadStation()))
                     && !Objects.isNull(tenantId))
-                ((MultiTenancy) object).setTenantId(tenantId);
+                multiTenancy.setTenantId(tenantId);
             else
-                ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
+                multiTenancy.setTenantId(TenantContext.getCurrentTenant());
 
             // Special case handled to retrigger sync from V1 to V2 on demand basis from admin account
             if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.isNull(UserContext.getUser().getSyncTenantId()))
-                ((MultiTenancy) object).setTenantId(UserContext.getUser().getSyncTenantId());
+                multiTenancy.setTenantId(UserContext.getUser().getSyncTenantId());
         }
     }
 
