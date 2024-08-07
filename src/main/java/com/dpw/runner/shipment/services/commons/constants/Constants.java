@@ -426,5 +426,11 @@ public class Constants {
     public static final String VIEWS = "Views";
     public static final String ENTITY = "entity";
     public static final String NAME_FILTER = "name";
+    public static final String Consolidation_Number = "Consolidation_Number";
+    public static final String MAWB_Number = "MAWB_Number";
+//    public static final String Consolidation_Number = "Consolidation_Number";
+//    public static final String Consolidation_Number = "Consolidation_Number";
+//    public static final String Consolidation_Number = "Consolidation_Number";
+//    public static final String Consolidation_Number = "Consolidation_Number";
 
 }

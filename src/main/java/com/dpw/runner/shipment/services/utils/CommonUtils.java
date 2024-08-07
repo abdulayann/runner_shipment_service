@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
@@ -11,18 +10,19 @@ import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
@@ -54,12 +54,17 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.Consolidation_Number;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MAWB_Number;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Component
 @Slf4j
 public class CommonUtils {
 
+    @Autowired
+    private EmailServiceUtility emailServiceUtility;
     @Autowired
     private ModelMapper modelMapper;
 
@@ -545,6 +550,51 @@ public class CommonUtils {
             if(weightUtilization > 100 || volumeUtilization > 100)
                 consolidationDetails.setOpenForAttachment(false);
         }
+    }
+
+    public void sendEmailForPullRequest(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, ShipmentRequestedType type) throws Exception{
+        if(type == ShipmentRequestedType.SHIPMENT_PULL_REQUESTED) {
+            EmailTemplatesRequest emailTemplatesRequest = getEmailTemplate(type);
+            if(emailTemplatesRequest == null) {
+                return;
+                // send warning message to UI
+            }
+            Map<String, Object> map = new HashMap<>();
+            map.put(Consolidation_Number, consolidationDetails.getConsolidationNumber());
+            map.put(MAWB_Number, consolidationDetails.getMawb());
+            map.put(ETD_CAPS, consolidationDetails.getCarrierDetails().getEtd());
+            map.put(ETA_CAPS, consolidationDetails.getCarrierDetails().getEta());
+            map.put("Interbranch_Shipment_Number", shipmentDetails.getShipmentId());
+            String body = emailTemplatesRequest.getBody();
+            body = replaceTagsFromData(map, body);
+            emailServiceUtility.sendEmail(body, emailTemplatesRequest.getSubject(), List.of("mayank.gupta@dpworld.com"), null, null, null);
+        }
+    }
+
+    private String replaceTagsFromData(Map<String, Object> map, String val) {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            val = val.replace(entry.getKey(), entry.getValue().toString());
+        }
+        return val;
+    }
+
+    public EmailTemplatesRequest getEmailTemplate(ShipmentRequestedType type) {
+        List<String> requests = new ArrayList<>();
+        if(type == ShipmentRequestedType.SHIPMENT_PULL_REQUESTED)
+            requests.add("Attach Shipment Request");
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        if(v1DataResponse != null)
+        {
+            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty())
+                return emailTemplatesRequests.get(0);
+        }
+        return null;
     }
 
 }
