@@ -14,11 +14,14 @@ public class V1AuthHelper {
     @Value("${v1service.dataSync.xApiKey}")
     private String xApiKey;
 
+    public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
+    public static final String SHIPMENT = "Shipment";
+
     public static HttpHeaders getHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("Authorization", RequestAuthContext.getAuthToken());
-        headers.add("SourceServiceType", "Shipment");
+        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
         return headers;
     }
 
@@ -28,7 +31,7 @@ public class V1AuthHelper {
         headers.add(ApiConstants.X_API_KEY, xApiKey);
         headers.add("X-USER-NAME", UserContext.getUser().getUsername());
         headers.add("X-TENANT-ID", StringUtility.convertToString(UserContext.getUser().getTenantId()));
-        headers.add("SourceServiceType", "Shipment");
+        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
         return headers;
     }
     
@@ -38,7 +41,7 @@ public class V1AuthHelper {
         headers.add(ApiConstants.X_API_KEY, xApiKey);
         headers.add("X-USER-NAME", userName);
         headers.add("X-TENANT-ID", StringUtility.convertToString(tenantId));
-        headers.add("SourceServiceType", "Shipment");
+        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
         return headers;
     }
 }

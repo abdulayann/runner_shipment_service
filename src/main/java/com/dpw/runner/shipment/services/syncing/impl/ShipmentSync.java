@@ -199,9 +199,7 @@ public class ShipmentSync implements IShipmentSync {
     private void mapConsolidationGuids(CustomShipmentSyncRequest response, ShipmentDetails request) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(request.getId());
         List<UUID> req = consoleShipmentMappings.stream()
-                .map(item -> {
-                    return consolidationDetailsDao.findById(item.getConsolidationId()).get().getGuid()  ;
-                })
+                .map(item -> consolidationDetailsDao.findById(item.getConsolidationId()).get().getGuid())
                 .toList();
         response.setConsolidationGuids(req);
     }
