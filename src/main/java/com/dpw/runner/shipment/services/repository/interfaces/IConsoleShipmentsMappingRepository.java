@@ -33,4 +33,8 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
     @Query(value = "UPDATE console_shipment_mapping SET request_type = ?1 WHERE consolidation_id = ?2 AND shipment_id = ?3", nativeQuery = true)
     void updateConsoleShipmentStatus(Integer requestedType, Long consoleId, Long shipmentId);
 
+    @Modifying
+    @Query(value = "DELETE FROM console_shipment_mapping csm WHERE csm.consolidation_id = ?1 and csm.is_attachment_done = false", nativeQuery = true)
+    void deletePendingStateByConsoleId(Long consoleId);
+
 }
