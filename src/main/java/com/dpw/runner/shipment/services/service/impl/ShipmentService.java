@@ -3945,6 +3945,18 @@ public class ShipmentService implements IShipmentService {
                 throw new RunnerException("EFreight status can only be EAW as Consolidation EFrieght Status is EAW");
             }
         }
+        if(linkedConsol != null && shipmentRequest != null) {
+            try {
+                CalculatePackUtilizationRequest utilizationRequest = CalculatePackUtilizationRequest.builder()
+                    .consolidationId(linkedConsol.getId())
+                    .saveConsol(true)
+                    .shipmentRequest(shipmentRequest).build();
+                var response = packingService.calculatePacksUtilisationForConsolidation(utilizationRequest);
+            }
+            catch (Exception e) {
+                log.error("Unable to save achieved quantities in consol due to : {}", e.getMessage());
+            }
+        }
         boolean makeConsoleDG = checkForDGShipmentAndAirDgFlag(shipment);
         AtomicBoolean makeConsoleNonDG = new AtomicBoolean(checkForNonDGShipmentAndAirDgFlag(shipment));
         AtomicBoolean makeConsoleSciT1 = new AtomicBoolean(shipment.getAdditionalDetails() != null && Objects.equals(shipment.getAdditionalDetails().getSci(), AwbConstants.T1));
@@ -3966,10 +3978,6 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
             consolidationDetails.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
             consolidationDetails.setShipmentType(shipment.getDirection());
-            if(shipmentRequest != null && shipmentRequest.getConsolidationAchievedQuantities() != null) {
-                consolidationDetails.setAchievedQuantities(jsonHelper.convertValue(shipmentRequest.getConsolidationAchievedQuantities(), AchievedQuantities.class));
-                commonUtils.updateConsolOpenForAttachment(consolidationDetails);
-            }
 
             if(makeConsoleDG)
                 consolidationDetails.setHazardous(true);
