@@ -8,15 +8,15 @@ import lombok.Getter;
 public enum MeasurementBasis {
 
     ContainerCount(1, "ContainerCount", "Container_Count"),
-    Weight(1, "Weight", "Weight"),
-    Volume(1, "Volume", "Volume"),
-    Chargeable(1, "Chargeable", "Chargeable"),
-    LowestBill(1, "LowestBill", "Lowest_Bill"),
-    Package(1, "Package", "Package"),
-    Shipment(1, "Shipment", "Shipment"),
-    TEU(1, "TEU", "TEU"),
-    ChargePercentage(1, "ChargePercentage", "Charge_Percentage"),
-    Custom(1, "Custom", "Custom"),
+    Weight(2, "Weight", "Weight"),
+    Volume(3, "Volume", "Volume"),
+    Chargeable(4, "Chargeable", "Chargeable"),
+    LowestBill(5, "LowestBill", "Lowest_Bill"),
+    Package(6, "Package", "Package"),
+    Shipment(7, "Shipment", "Shipment"),
+    TEU(8, "TEU", "TEU"),
+    ChargePercentage(9, "ChargePercentage", "Charge_Percentage"),
+    Custom(10, "Custom", "Custom"),
     ContainerType(11, "ContainerType", "Container_Type");
 
     private final int value;

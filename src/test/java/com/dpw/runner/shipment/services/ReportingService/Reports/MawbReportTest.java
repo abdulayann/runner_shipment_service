@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -150,6 +151,7 @@ class MawbReportTest extends CommonMocks {
 
     @Test
     void populateDictionary() {
-        Assertions.assertNotNull(mawbReport.populateDictionary(null));
+        HawbModel hawbModel = new HawbModel();
+        Assertions.assertNotNull(mawbReport.populateDictionary(hawbModel));
     }
 }

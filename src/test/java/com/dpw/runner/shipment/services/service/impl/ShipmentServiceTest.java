@@ -2165,7 +2165,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -2252,7 +2251,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         AdditionalDetails additionalDetails = new AdditionalDetails();
         additionalDetails.setShipmentId(1L);
@@ -2283,7 +2281,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -2311,7 +2308,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         List<TruckDriverDetails> truckDriverDetailsList = Arrays.asList(TruckDriverDetails.builder().build());
 
@@ -2341,7 +2337,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         Packing packing = new Packing();
         packing.setShipmentId(1L);
@@ -2372,7 +2367,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -2400,7 +2394,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         Events events = new Events();
         events.setId(1L);
@@ -2432,7 +2425,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -2459,7 +2451,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();
         referenceNumbers.setShipmentId(1L);
@@ -2489,7 +2480,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         Routings routings = new Routings();
         routings.setTenantId(1);
@@ -2523,7 +2513,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ServiceDetails serviceDetails = new ServiceDetails();
         serviceDetails.setShipmentId(1L);
@@ -2554,7 +2543,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -3064,7 +3052,6 @@ ShipmentServiceTest extends CommonMocks {
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
 
         Containers containers = new Containers();
@@ -3369,7 +3356,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -3397,7 +3383,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -3929,7 +3914,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -3966,7 +3950,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -4090,7 +4073,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         AdditionalDetails additionalDetails = new AdditionalDetails();
         additionalDetails.setShipmentId(1L);
@@ -4231,7 +4213,6 @@ ShipmentServiceTest extends CommonMocks {
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
         when(jsonHelper.convertValueToList(any(), eq(ContainerRequest.class))).thenReturn(Arrays.asList(ContainerRequest.builder().id(1L).build()));
 
@@ -5047,7 +5028,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consoleDetails));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -5359,7 +5339,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test");
         oldCarrierDetails.setDestinationPort("test");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
-        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5375,7 +5355,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test");
         oldCarrierDetails.setDestinationPort("test");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
-        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5391,7 +5371,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test1");
         oldCarrierDetails.setDestinationPort("test");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
-        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5407,7 +5387,7 @@ ShipmentServiceTest extends CommonMocks {
         oldCarrierDetails.setDestination("test");
         oldCarrierDetails.setDestinationPort("test1");
         shipmentService.updateUnLocData(carrierDetails, oldCarrierDetails);
-        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
     @Test
@@ -5430,7 +5410,7 @@ ShipmentServiceTest extends CommonMocks {
     void testUpdateUnLocData1() {
         CarrierDetails carrierDetails = new CarrierDetails();
         shipmentService.updateUnLocData(carrierDetails, null);
-        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
 }

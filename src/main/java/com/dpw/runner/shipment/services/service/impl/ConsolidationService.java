@@ -315,7 +315,8 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("voyageOrFlightNumber").build()),
             Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName("createdAt").build()),
             Map.entry("hazardous", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).build()),
-            Map.entry("shipShipmentType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("shipmentType").build())
+            Map.entry("shipShipmentType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("shipmentType").build()),
+            Map.entry("tenantId", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Integer.class).fieldName("tenantId").build())
             );
 
     @Override
@@ -655,8 +656,20 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> attachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        if(consol.isEmpty())
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        ConsolidationDetails consolidationDetails = consol.get();
+        // InterBranch context
+        ListCommonRequest shiplistCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
+        Pair<Specification<ShipmentDetails>, Pageable> shipPair = fetchData(shiplistCommonRequest, ShipmentDetails.class);
+        setInterBranchContext(consolidationDetails.getInterBranchConsole());
+        Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
+        var interBranchShipIds = shipmentDetailsList.stream()
+                .filter(c -> !Objects.equals(c.getTenantId(), UserContext.getUser().TenantId))
+                .map(ShipmentDetails::getId).collect(Collectors.toSet());
 
-        if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
+        if(consolidationId != null && shipmentIds != null && !shipmentIds.isEmpty()) {
             ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> oldConsoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
@@ -664,49 +677,41 @@ public class ConsolidationService implements IConsolidationService {
             if(oldConsoleShipmentMappings != null && !oldConsoleShipmentMappings.isEmpty()) {
                 consoleShipmentMappings = oldConsoleShipmentMappings.getContent();
                 for (ConsoleShipmentMapping consoleShipmentMapping : oldConsoleShipmentMappings.getContent()) {
-                    if(!consoleShipmentMapping.getConsolidationId().equals(consolidationId))
+                    if(!consoleShipmentMapping.getConsolidationId().equals(consolidationId) && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
                         return ResponseHelper.buildFailedResponse("Multiple consolidations are attached to the shipment, please verify.");
                 }
             }
-            List<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds, consoleShipmentMappings);
-            for(Long shipId : attachedShipmentIds) {
-                ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).get();
-                if(shipmentDetails.getContainersList() != null) {
-                    List<Containers> containersList = shipmentDetails.getContainersList();
-                    for(Containers container : containersList) {
-                        container.setConsolidationId(consolidationId);
+            HashSet<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds);
+            for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
+                if(attachedShipmentIds.contains(shipmentDetails.getId())) {
+                    if (shipmentDetails.getContainersList() != null) {
+                        List<Containers> containersList = shipmentDetails.getContainersList();
+                        for (Containers container : containersList) {
+                            container.setConsolidationId(consolidationId);
+                        }
+                        containersList = containerDao.saveAll(containersList);
+                        containerService.afterSaveList(containersList, false);
                     }
-                    containersList = containerDao.saveAll(containersList);
-                    containerService.afterSaveList(containersList, false);
-                }
-                if(shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getPackingList() != null) {
-                    List<Packing> packingList = shipmentDetails.getPackingList();
-                    for(Packing packing : packingList) {
-                        packing.setConsolidationId(consolidationId);
+                    if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getPackingList() != null) {
+                        List<Packing> packingList = shipmentDetails.getPackingList();
+                        for (Packing packing : packingList) {
+                            packing.setConsolidationId(consolidationId);
+                        }
+                        packingList = packingDao.saveAll(packingList);
                     }
-                    packingList = packingDao.saveAll(packingList);
+                    this.createLogHistoryForShipment(shipmentDetails);
                 }
-                this.createLogHistoryForShipment(shipmentDetails);
             }
             this.checkSciForAttachConsole(consolidationId);
+            updateLinkedShipmentData(consolidationDetails, null, true);
         }
-        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        ConsolidationDetails consolidationDetails = null;
-        if(consol.isPresent())
-            consolidationDetails = consol.get();
-        else
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails)) {
-            ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
-            listCommonRequest = andCriteria("containsHazardous", true, "=", listCommonRequest);
-            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
-            Page<ShipmentDetails> shipments = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            List<ShipmentDetails> shipments = shipmentDetailsList.stream().filter(x -> Boolean.TRUE.equals(x.getContainsHazardous())).toList();
             if(shipments != null && !shipments.isEmpty()) {
                 consolidationDetails.setHazardous(true);
                 consolidationDetailsDao.update(consolidationDetails, false);
             }
         }
-        updateLinkedShipmentData(consolidationDetails, null, true);
         try {
             consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
         }
@@ -714,6 +719,11 @@ public class ConsolidationService implements IConsolidationService {
             log.error("Error Syncing Consol");
         }
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private void setInterBranchContext(Boolean isInterBranchConsole) {
+        if (Boolean.TRUE.equals(isInterBranchConsole))
+            commonUtils.setInterBranchContextForHub();
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
@@ -726,6 +736,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        if(consol.isPresent() && Boolean.TRUE.equals(consol.get().getInterBranchConsole()))
+            commonUtils.setInterBranchContextForHub();
         List<Packing> packingList = null;
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
@@ -749,7 +762,6 @@ public class ConsolidationService implements IConsolidationService {
                 this.createLogHistoryForShipment(shipmentDetails);
             }
         }
-        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         if(consol.isPresent() && checkAttachDgAirShipments(consol.get())){
             consol.get().setHazardous(false);
             consolidationDetailsDao.save(consol.get(), false);
@@ -963,6 +975,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
+            setInterBranchContext(entity.getInterBranchConsole());
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             ConsolidationDetails oldConvertedConsolidation = jsonHelper.convertValue(oldEntity.get(), ConsolidationDetails.class);
 
@@ -1005,6 +1018,7 @@ public class ConsolidationService implements IConsolidationService {
     private List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         List<ShipmentDetails> shipments = null;
+        setInterBranchContext(console.getInterBranchConsole());
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
             shipments = getShipmentsList(console.getId());
             var shipmentlist = shipments.stream().filter(x-> Objects.equals(x.getAdditionalDetails().getEfreightStatus(), Constants.NON)).toList();
@@ -1362,6 +1376,10 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, List<ShipmentDetails> shipmentDetailsList) throws Exception {
+        // Not to process the achieved values in case of AIR transport mode
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
+            return;
+        }
         if (consolidationDetails.getOverride() != null && consolidationDetails.getOverride()) {
             return;
         }
@@ -1483,6 +1501,22 @@ public class ConsolidationService implements IConsolidationService {
         try {
             List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
             PackSummaryResponse response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getContainerCategory(), new ShipmentMeasurementDetailsDto());
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<IRunnerResponse> calculatePackUtilisation(CommonRequestModel commonRequestModel) throws RunnerException {
+        String responseMsg;
+        CalculatePackUtilizationRequest request = (CalculatePackUtilizationRequest) commonRequestModel.getData();
+        try {
+            PackSummaryResponse packSummaryResponse = packingService.calculatePacksUtilisationForConsolidation(request);
+            CalculatePackUtilizationResponse response = jsonHelper.convertValue(packSummaryResponse, CalculatePackUtilizationResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -2991,10 +3025,11 @@ public class ConsolidationService implements IConsolidationService {
         }
         List<ShipmentDetails> shipmentDetails = null;
         if(!isCreate){
+            // This method will only work for non air transport modes , validation check moved inside the method
             calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), oldEntity.getShipmentsList());
             shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
         }
-        if(checkConsolidationEligibleForCFSValidation(consolidationDetails)) {
+        if(!Boolean.TRUE.equals(isCreate) && checkConsolidationEligibleForCFSValidation(consolidationDetails)) {
             if(shipmentDetails == null)
                 shipmentDetails = getShipmentsList(consolidationDetails.getId());
             if(!listIsNullOrEmpty(shipmentDetails)) {
@@ -3046,15 +3081,17 @@ public class ConsolidationService implements IConsolidationService {
                 if (orgAddressResponse != null) {
                     Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
                     int countOfExpiredParties = 0;
+                    int countOfRaKCParties = 0;
                     for(var entry : addressMap.entrySet()) {
                         if (entry.getValue() != null && StringUtility.isNotEmpty(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)))) {
                             LocalDateTime agentExpiry = LocalDateTime.parse(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)));
                             // if any one of the agent is not expired will apply the validations as is
+                            countOfRaKCParties++;
                             if (LocalDateTime.now().isAfter(agentExpiry))
                                 countOfExpiredParties++;
                         }
                     }
-                    if(countOfExpiredParties == orgList.size())
+                    if(countOfExpiredParties == countOfRaKCParties && countOfExpiredParties > 0)
                         return;
                     if (sendingAgent != null && addressMap.containsKey(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode())) {
                         Map<String, Object> addressConsignorAgent = addressMap.get(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode());
@@ -3212,7 +3249,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             String entityPayload = jsonHelper.convertToJson(shipmentDetails);
             logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(shipmentDetails.getId())
-                    .entityType(Constants.SHIPMENT).entityGuid(shipmentDetails.getGuid()).entityPayload(entityPayload).build());
+                    .entityType(Constants.SHIPMENT).entityGuid(shipmentDetails.getGuid()).entityPayload(entityPayload).tenantId(shipmentDetails.getTenantId()).build());
         } catch (Exception ex) {
             log.error("Error while creating LogsHistory : " + ex.getMessage());
         }

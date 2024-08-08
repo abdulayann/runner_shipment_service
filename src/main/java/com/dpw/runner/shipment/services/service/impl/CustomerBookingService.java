@@ -239,8 +239,10 @@ public class CustomerBookingService implements ICustomerBookingService {
              * Platform service integration
              * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
              */
-            if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
-                    && !Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()) {
+            //Check 1
+            V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+            if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
+                    && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()))) {
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(customerBooking)), executorService);
             }
         } catch (Exception e) {
@@ -357,8 +359,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         contractUtilisationForUpdate(customerBooking, oldEntity.get());
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         try {
-            if (!Objects.isNull(customerBooking.getBusinessCode()) && !Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_KYC)
-                    && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform) {
+            //Check 2
+            V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+            if (!Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_KYC)
+                    && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty())) && !isCreatedInPlatform) {
                 CustomerBooking finalCustomerBooking = customerBooking;
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(finalCustomerBooking)), executorService);
             } else if (isCreatedInPlatform) {
@@ -404,31 +408,19 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
         }
         List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
-        if (bookingChargesRequest != null && !bookingChargesRequest.isEmpty()) {
-            List<BookingCharges> bookingCharges = new ArrayList<>();
-            for (BookingChargesRequest bookingChargeRequest : bookingChargesRequest) {
-                List<UUID> containerUUIDs = bookingChargeRequest.getContainersUUID();
-                BookingCharges bookingCharge = jsonHelper.convertValue(bookingChargeRequest, BookingCharges.class);
-                List<Containers> containerList = new ArrayList<>();
-                if (containerUUIDs != null && !containerUUIDs.isEmpty()) {
-                    for (UUID uuid : containerUUIDs) {
-                        Containers container = containerMap.get(uuid);
-                        containerList.add(container);
-                    }
-                }
-                bookingCharge.setContainersList(containerList);
-                bookingCharge.setBookingId(customerBooking.getId());
-                bookingCharges.add(bookingCharge);
-            }
-            bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, bookingId);
+        if (bookingChargesRequest != null) {
+            List<BookingCharges> bookingCharges = bookingChargesDao.updateEntityFromBooking(commonUtils.convertToEntityList(bookingChargesRequest, BookingCharges.class), bookingId);
             customerBooking.setBookingCharges(bookingCharges);
         }
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
             if(Boolean.TRUE.equals(tenantSettingsResponse.getShipmentServiceV2Enabled()))
             {
                 ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
+                //Check 3
                 if(shipmentResponse != null) {
-                    bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
+                    if(customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
+                        bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
+                    }
                     customerBooking.setShipmentId(shipmentResponse.getShipmentId());
                     customerBooking.setShipmentEntityIdV2(StringUtility.convertToString(shipmentResponse.getId()));
                     customerBooking.setShipmentGuid(StringUtility.convertToString(shipmentResponse.getGuid()));
