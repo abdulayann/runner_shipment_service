@@ -414,23 +414,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
         }
         List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
-        if (bookingChargesRequest != null && !bookingChargesRequest.isEmpty()) {
-            List<BookingCharges> bookingCharges = new ArrayList<>();
-            for (BookingChargesRequest bookingChargeRequest : bookingChargesRequest) {
-                List<UUID> containerUUIDs = bookingChargeRequest.getContainersUUID();
-                BookingCharges bookingCharge = jsonHelper.convertValue(bookingChargeRequest, BookingCharges.class);
-                List<Containers> containerList = new ArrayList<>();
-                if (containerUUIDs != null && !containerUUIDs.isEmpty()) {
-                    for (UUID uuid : containerUUIDs) {
-                        Containers container = containerMap.get(uuid);
-                        containerList.add(container);
-                    }
-                }
-                bookingCharge.setContainersList(containerList);
-                bookingCharge.setBookingId(customerBooking.getId());
-                bookingCharges.add(bookingCharge);
-            }
-            bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, bookingId);
+        if (bookingChargesRequest != null) {
+            List<BookingCharges> bookingCharges = bookingChargesDao.updateEntityFromBooking(commonUtils.convertToEntityList(bookingChargesRequest, BookingCharges.class), bookingId);
             customerBooking.setBookingCharges(bookingCharges);
         }
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
@@ -438,8 +423,10 @@ public class CustomerBookingService implements ICustomerBookingService {
             {
                 ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
                 //Check 3
-                if(shipmentResponse != null && customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
-                    bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
+                if(shipmentResponse != null) {
+                    if(customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
+                        bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
+                    }
                     customerBooking.setShipmentId(shipmentResponse.getShipmentId());
                     customerBooking.setShipmentEntityIdV2(StringUtility.convertToString(shipmentResponse.getId()));
                     customerBooking.setShipmentGuid(StringUtility.convertToString(shipmentResponse.getGuid()));

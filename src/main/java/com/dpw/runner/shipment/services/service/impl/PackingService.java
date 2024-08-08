@@ -227,9 +227,6 @@ public class PackingService implements IPackingService {
             throw new ValidationException("Please save the consolidation and then try again.");
         }
 
-        List<Packing> packings = packingDao.findByConsolidationId(request.getConsolidationId());
-        var packingsMap = packings.stream().collect(Collectors.toMap(Packing::getGuid, Function.identity()));
-
         Map<Long, Long> dicDGSubstanceUNDGContact = new HashMap<>();
         Map<Long, String> dicDGSubstanceFlashPoint = new HashMap<>();
         Map<String, Set<String>> masterDataMap = new HashMap<>();
@@ -237,9 +234,7 @@ public class PackingService implements IPackingService {
         List<Packing> packingList = new ArrayList<>();
         try {
             packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint, locCodeToLocationReferenceGuidMap);
-            packingList.stream().forEach(packing -> {
-                packing.setConsolidationId(request.getConsolidationId());
-            });
+            packingList.stream().forEach(packing -> packing.setConsolidationId(request.getConsolidationId()));
             var utilizationResponse = calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest.builder()
                 .consolidationId(request.getConsolidationId())
                 .packingList(jsonHelper.convertValueToList(packingList, PackingRequest.class))
@@ -310,9 +305,9 @@ public class PackingService implements IPackingService {
                         packingRow.getVolume() == null ? BigDecimal.ZERO : packingRow.getVolume());
                 if (vwob.getVolumeWeight() != null) {
                     var calculatedVolumeWeight = vwob.getVolumeWeight();
-                    calculatedVolumeWeight = calculatedVolumeWeight.setScale(2, BigDecimal.ROUND_HALF_UP);
+                    calculatedVolumeWeight = calculatedVolumeWeight.setScale(2, RoundingMode.HALF_UP);
                     var actualVolumeWeight = packingRow.getVolumeWeight();
-                    actualVolumeWeight = actualVolumeWeight.setScale(2, BigDecimal.ROUND_HALF_UP);
+                    actualVolumeWeight = actualVolumeWeight.setScale(2, RoundingMode.HALF_UP);
                     if (!wtunit.equals(vwob.getVolumeWeightUnit())) {
                         throw new ValidationException("Volumetric weight unit not in " + wtunit + " at row: " + i);
                     }
@@ -1091,7 +1086,7 @@ public class PackingService implements IPackingService {
         }
         else {
             // Default case of packs updated from consol
-            packingList.addAll(updatedConsolPacks);
+            packingList.addAll(Optional.ofNullable(updatedConsolPacks).orElse(Optional.ofNullable(consol.getPackingList()).orElse(Collections.emptyList())));
         }
 
         // only process the below calculation if the consolidation is air , exp , co-loading = true, allocated != null
@@ -1134,7 +1129,7 @@ public class PackingService implements IPackingService {
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
         Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
-        var packingList = shipmentsPage.getContent().stream().map(ShipmentDetails::getPackingList).flatMap(i -> i.stream()).toList();
+        var packingList = shipmentsPage.getContent().stream().map(ShipmentDetails::getPackingList).flatMap(Collection::stream).toList();
         InterBranchContext.removeContext();
 
         return packingList;

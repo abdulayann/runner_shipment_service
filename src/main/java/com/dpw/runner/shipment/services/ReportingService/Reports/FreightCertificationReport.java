@@ -1,5 +1,17 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHAPartyDescription;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME1;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INVOICE_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_AMOUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_AMOUNT_CURRENCY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.addTenantDetails;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getListOfStrings;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
@@ -16,10 +28,6 @@ import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,9 +35,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class FreightCertificationReport extends IReport{
@@ -160,11 +168,11 @@ public class FreightCertificationReport extends IReport{
                             lastDate = arObject.getInvoiceDate();
                     }
                 }
-                List<BillChargesResponse> billChargesList = getBillChargesData(bill.getGuid());
+                List<BillChargesResponse> billChargesList = getBillChargesData(bill);
                 boolean currencyFlag = false;
                 if(billChargesList != null && billChargesList.size() > 0) {
                     for (BillChargesResponse billCharge: billChargesList) {
-                        ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge.getChargeTypeId());
+                        ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge);
                         if(chargeTypesResponse != null && Objects.equals(chargeTypesResponse.getServices(), "Freight")) {
                             if(billCharge.getOverseasSellAmount() != null) {
                                 if (currency == null) {
@@ -183,7 +191,7 @@ public class FreightCertificationReport extends IReport{
                         totalAmount = 0;
                         currency = null;
                         for (BillChargesResponse billCharge: billChargesList) {
-                            ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge.getChargeTypeId());
+                            ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge);
                             if(chargeTypesResponse != null && chargeTypesResponse.getServices().equals("Freight")) {
                                 if(billCharge.getLocalSellAmount() != null) {
                                     if (currency == null) {

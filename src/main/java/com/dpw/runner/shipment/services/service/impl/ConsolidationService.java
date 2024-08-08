@@ -726,16 +726,6 @@ public class ConsolidationService implements IConsolidationService {
             commonUtils.setInterBranchContextForHub();
     }
 
-    private HashSet<Long> interBranchShipmentIds(List<ShipmentDetails> shipmentDetails) {
-        HashSet<Long> shipIds = new HashSet<>();
-        shipmentDetails.forEach(ship -> {
-            if(!Objects.equals(ship.getTenantId(), UserContext.getUser().TenantId)){
-                shipIds.add(ship.getId());
-            }
-        });
-        return shipIds;
-    }
-
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
         if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
             return false;
@@ -746,6 +736,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        if(consol.isPresent() && Boolean.TRUE.equals(consol.get().getInterBranchConsole()))
+            commonUtils.setInterBranchContextForHub();
         List<Packing> packingList = null;
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
@@ -769,7 +762,6 @@ public class ConsolidationService implements IConsolidationService {
                 this.createLogHistoryForShipment(shipmentDetails);
             }
         }
-        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         if(consol.isPresent() && checkAttachDgAirShipments(consol.get())){
             consol.get().setHazardous(false);
             consolidationDetailsDao.save(consol.get(), false);
@@ -1523,8 +1515,6 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         CalculatePackUtilizationRequest request = (CalculatePackUtilizationRequest) commonRequestModel.getData();
         try {
-            var shipmentRequest = request.getShipmentRequest();
-            List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
             PackSummaryResponse packSummaryResponse = packingService.calculatePacksUtilisationForConsolidation(request);
             CalculatePackUtilizationResponse response = jsonHelper.convertValue(packSummaryResponse, CalculatePackUtilizationResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
@@ -3075,12 +3065,6 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
-        /*
-        if utilisation percentage is higher than 100, we set the auto attach shipment flag as false
-        same is being done in shipment service after save.
-         */
-        commonUtils.updateConsolOpenForAttachment(consolidationDetails);
-
     }
 
     public void validateRaKcForConsol(ConsolidationDetails consolidationDetails) throws RunnerException {
@@ -3097,15 +3081,17 @@ public class ConsolidationService implements IConsolidationService {
                 if (orgAddressResponse != null) {
                     Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
                     int countOfExpiredParties = 0;
+                    int countOfRaKCParties = 0;
                     for(var entry : addressMap.entrySet()) {
                         if (entry.getValue() != null && StringUtility.isNotEmpty(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)))) {
                             LocalDateTime agentExpiry = LocalDateTime.parse(StringUtility.convertToString(entry.getValue().get(KCRA_EXPIRY)));
                             // if any one of the agent is not expired will apply the validations as is
+                            countOfRaKCParties++;
                             if (LocalDateTime.now().isAfter(agentExpiry))
                                 countOfExpiredParties++;
                         }
                     }
-                    if(countOfExpiredParties == orgList.size())
+                    if(countOfExpiredParties == countOfRaKCParties && countOfExpiredParties > 0)
                         return;
                     if (sendingAgent != null && addressMap.containsKey(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode())) {
                         Map<String, Object> addressConsignorAgent = addressMap.get(sendingAgent.getOrgCode() + "#" + sendingAgent.getAddressCode());

@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsoleShipmentsMappingRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,8 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -138,6 +138,16 @@ class ConsoleShipmentMappingDaoTest {
     }
 
     @Test
+    void assignShipmentsWithInterBranchShipments() {
+        Long shipmentId = 2L;
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
+        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
+        List<Long> shipIds = List.of(shipmentId);
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null, new HashSet<Long>(List.of(shipmentId)));
+        assertEquals(new HashSet<>(shipIds), response);
+    }
+
+    @Test
     void assignShipments_MappingsNull() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         doReturn(null).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
@@ -178,5 +188,30 @@ class ConsoleShipmentMappingDaoTest {
         List<Long> shipIds = List.of(1L);
         assertDoesNotThrow(() -> consoleShipmentMappingDao.updateShipmentsMappings(1L, shipIds));
     }
+
+    @Test
+    void testUpdateConsoleShipments() {
+        ShipmentRequestedType shipmentRequestedType = ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
+        Long consolId = 1L;
+        Long shipId = 1L;
+        consoleShipmentMappingDao.updateConsoleShipments(shipmentRequestedType, consolId, shipId);
+        verify(consoleShipmentsMappingRepository, times(1)).updateConsoleShipmentStatus(any(), any(), any());
+    }
+
+    @Test
+    void testFindByConsolidationIdAll() {
+        Long consolId = 1L;
+        consoleShipmentMappingDao.findByConsolidationIdAll(consolId);
+        verify(consoleShipmentsMappingRepository, times(1)).findByConsolidationId(any());
+    }
+
+    @Test
+    void testDeletePendingStateByConsoleId() {
+        boolean isSuccess = true;
+        doNothing().when(consoleShipmentsMappingRepository).deletePendingStateByConsoleId(anyLong());
+        consoleShipmentMappingDao.deletePendingStateByConsoleId(1L);
+        assertTrue(isSuccess);
+    }
+
 
 }

@@ -369,7 +369,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String flightStatus;
 
     @Column(name = "contains_hazardous")
-    private Boolean containsHazardous;
+    private Boolean containsHazardous = false;
 
     @Column(name = "fmc_tlc_id")
     private String fmcTlcId;

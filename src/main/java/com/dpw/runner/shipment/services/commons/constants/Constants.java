@@ -4,6 +4,7 @@ import java.util.List;
 
 public class Constants {
     public static final String TRANSPORT_INSTRUCTION_TYPES = "TransportInstructionTypes";
+    public static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private Constants(){}
     public static final int TRANSPORT_MODE_INDEX = 0;

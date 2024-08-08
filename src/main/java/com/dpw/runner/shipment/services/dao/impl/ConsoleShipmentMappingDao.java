@@ -127,4 +127,10 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
         Integer shipmentRequestedTypeValue = shipmentRequestedType.getValue();
         consoleShipmentsMappingRepository.updateConsoleShipmentStatus(shipmentRequestedTypeValue, consoleId, shipmentId);
     }
+
+    @Override
+    @Transactional
+    public void deletePendingStateByConsoleId(Long consoleId) {
+        consoleShipmentsMappingRepository.deletePendingStateByConsoleId(consoleId);
+    }
 }

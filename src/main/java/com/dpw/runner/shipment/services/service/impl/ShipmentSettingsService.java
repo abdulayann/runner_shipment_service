@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -25,6 +27,8 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -82,6 +86,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     private ISBProperties isbProperties;
     @Autowired
     private AzureServiceBusTopic azureServiceBusTopic;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
     @Autowired
     IShipmentSettingsSync shipmentSettingsSync;
     @Autowired
@@ -597,5 +603,20 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listCoLoadStationTenantIds() {
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
+        List<String> tenantIds = new ArrayList<>();
+        tenantIds.add(StringUtility.convertToString(UserContext.getUser().TenantId));
+        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
+                && Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled())
+                && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
+            tenantIds.addAll(tenantSettings.getColoadingBranchIds().stream().map(x -> x.toString()).toList());
+        }
+        Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIds);
+        List<TenantModel> listOfColoadStations = v1Data.values().stream().toList();
+        return ResponseHelper.buildSuccessResponse(listOfColoadStations);
     }
 }
