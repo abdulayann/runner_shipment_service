@@ -1143,8 +1143,7 @@ public class PackingService implements IPackingService {
             Optional<ConsolidationDetails> optional = consolidationDao.findById(calculatePackUtilizationRequest.getConsolidationId());
             if(optional.isPresent()) {
                 var consol = optional.get();
-                var response = calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
-                consol.setAchievedQuantities(jsonHelper.convertValue(response.getConsolidationAchievedQuantities(), AchievedQuantities.class));
+                calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
                 consolidationDao.save(consol, false);
             }
         }
