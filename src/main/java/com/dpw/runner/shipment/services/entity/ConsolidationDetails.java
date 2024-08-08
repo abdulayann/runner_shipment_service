@@ -10,6 +10,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+import org.hibernate.annotations.WhereJoinTable;
 
 import javax.persistence.*;
 import javax.validation.constraints.Size;
@@ -365,6 +366,7 @@ public class ConsolidationDetails extends MultiTenancy {
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     @JsonIgnoreProperties(value = "consolidationList", allowSetters = true)
     @BatchSize(size = 50)
+    @WhereJoinTable(clause = "is_attachment_done = 'True'")
     private List<ShipmentDetails> shipmentsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
@@ -399,7 +401,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String efreightStatus;
 
     @Column(name = "hazardous")
-    private Boolean hazardous;
+    private Boolean hazardous = false;
 
     @Column(name = "emergency_contact_number")
     @Size(max=31, message = "max size is 31 for emergency_contact_number")
@@ -433,4 +435,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "cfs_cut_off_date")
     private LocalDateTime cfsCutOffDate;
 
+    @Column(name = "open_for_attachment")
+    private Boolean openForAttachment;
+
+    @Column(name = "open_for_interbranch_attachment")
+    private Boolean interBranchConsole;
 }

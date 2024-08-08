@@ -63,6 +63,11 @@ public class MawbReport extends IReport{
 
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
-        return hawbReport.populateDictionary(documentModel);
+        HawbModel model = (HawbModel) documentModel;
+        var dictionary =  hawbReport.populateDictionary(documentModel);
+        if(model.getConsolidationDetails() != null) {
+            populateRaKcDataConsolidation(dictionary, model.getConsolidationDetails());
+        }
+        return dictionary;
     }
 }

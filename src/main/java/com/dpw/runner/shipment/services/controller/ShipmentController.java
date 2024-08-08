@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -551,6 +552,41 @@ public class ShipmentController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_CONSOLE_SHIPMENT_LIST)
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = true) Long consoleId, @RequestParam(required = true) boolean isAttached) {
+        log.info("Received Cosole Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        try {
+            return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId, isAttached);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+        }
+    }
+
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.ALL_SHIPMENT_COUNT, response = UpstreamDateUpdateResponse.class)})
+    @GetMapping(ApiConstants.GET_ALL_SHIPMENTS_COUNT)
+    public ResponseEntity<IRunnerResponse> getAllShipments(@RequestParam(required = true) Long consoleId) {
+        log.info("Request received for count of all shipments");
+        try {
+            return shipmentService.getAllShipments(consoleId);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_CONSOLE_SHIPMENT_STATUS, response = UpstreamDateUpdateResponse.class)})
+    @PutMapping(ApiConstants.UPDATE_CONSOLE_SHIPMENT_STATUS)
+    public ResponseEntity<IRunnerResponse> updateConsoleShipments(@RequestBody UpdateConsoleShipmentRequest request) {
+        log.info("Request received for updating the shipments");
+        try {
+            return shipmentService.updateConsoleShipments(request);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ShipmentConstants.API_RETRIEVE_MEASUREMENT_DATA)

@@ -1127,6 +1127,7 @@ public class ReportConstants {
     public static final String SI_CUT_OFF_TIME = "SICutOffTime";
     public static final String TERMINAL = "Terminal";
     public static final String IS_SECURITY = "IsSecurity";
+    public static final String IS_CONSOL_SECURITY = "IsConsolSecurity";
     public static final String AUM = "AUM";
     public static final String SPH = "SPH";
     public static final String ORG_DATA_NOT_AVAILABLE = "Org data not available";
@@ -1184,4 +1185,20 @@ public class ReportConstants {
 
     public static final String CSD_INFO = "CSDInfo";
     public static final String ORIGINAL_PRINT_DATE = "OriginalPrintDate";
+    public static final String AIRLINE_NAME = "ConsolAirline";
+    public static final String MAWB_CAPS = "MAWB";
+    public static final String HAWB_CAPS = "HAWB";
+    public static final String CONSOL_FIRST_LEG_DESTINATION = "ConsolFirstLegDestination";
+    public static final String CONSOL_SECOND_LEG_DESTIATION = "ConsolSecondLegDestination";
+    public static final String CONSOL_THIRD_LEG_DESTINATION = "ConsolThirdLegDestination";
+    public static final String TOTAL_CONSOL_PACKS = "TotalConsolPacks";
+    public static final String HAWB_NOS_PACKS = "HAWBNosPacks";
+    public static final String HANDLING_INFO = "HandlingInfo";
+    public static final String CONSOL_CHARGEABLE_WEIGHT_AND_UNIT = "ConsolChargeableWeightandUnit";
+    public static final String FIRST_LEG_DESTINATION = "FirstLegDestination";
+    public static final String SECOND_LEG_DESTINATION = "SecondLegDestination";
+    public static final String THIRD_LEG_DESTINATION = "ThirdLegDestination";
+    public static final String TOTAL_WEIGHT_AND_UNIT = "TotalWeightandUnit";
+    public static final String AIR_LABEL_REMARKS = "AirLabelRemarks";
+    public static final String IS_MAWB = "isMawb";
 }

@@ -21,6 +21,7 @@ import java.util.UUID;
 public class ConsolidationListResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
+    private Integer tenantId;
     private String consolidationNumber;
     private String consolidationType;
     private String transportMode;
@@ -123,4 +124,6 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Boolean hazardous;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cfsCutOffDate;
+    private Boolean openForAttachment;
+    private Boolean interBranchConsole;
 }

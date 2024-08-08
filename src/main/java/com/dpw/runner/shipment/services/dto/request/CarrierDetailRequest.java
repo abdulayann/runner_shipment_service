@@ -46,6 +46,7 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private String minTransitHours;
     private String maxTransitHours;
     private Boolean carrierAddedFromNpm;
+    private Boolean isCarrierChanged;
     private String originLocCode;
     private String destinationLocCode;
     private String originPortLocCode;

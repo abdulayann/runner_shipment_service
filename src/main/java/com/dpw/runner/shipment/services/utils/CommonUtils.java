@@ -2,15 +2,26 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
@@ -34,12 +45,16 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Component
 @Slf4j
@@ -58,6 +73,9 @@ public class CommonUtils {
 
     @Autowired
     private TenantSettingsService tenantSettingsService;
+
+    @Autowired
+    private IV1Service iv1Service;
 
     public static FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
@@ -436,6 +454,97 @@ public class CommonUtils {
 
     public V1TenantSettingsResponse getCurrentTenantSettings() {
         return tenantSettingsService.getV1TenantSettings(TenantContext.getCurrentTenant());
+    }
+
+    public InterBranchDto getInterBranchContext() {
+        return InterBranchContext.getContext();
+    }
+
+    public void removeInterBranchContext() {
+        InterBranchContext.removeContext();
+    }
+
+    public void setInterBranchContextForHub() {
+        /**
+         * Check current branch should be enabled both
+         * Set isHub = true && coloadStationsTenantIds (TenantSettings + Current)
+         */
+        var tenantSettings = getCurrentTenantSettings();
+        var interBranchDto = InterBranchDto.builder().build();
+
+        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
+                && Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled())
+                && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
+            interBranchDto.setColoadStationsTenantIds(tenantSettings.getColoadingBranchIds());
+            interBranchDto.setHub(true);
+        }
+
+        InterBranchContext.setContext(interBranchDto);
+    }
+
+    public void setInterBranchContextForColoadStation() {
+        /**
+         * Check current branch should be enabled both IsMAWBColoadingEnabled
+         * Set isCoLoadStation = true && hubTenantIds (TenantSettings + Current)
+         */
+        var tenantSettings = getCurrentTenantSettings();
+        var interBranchDto = InterBranchDto.builder().hubTenantIds(Arrays.asList()).build();
+
+        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
+            && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
+            interBranchDto.setHubTenantIds(fetchColoadingDetails().stream().map(CoLoadingMAWBDetailsResponse::getParentTenantId).toList());
+            interBranchDto.setCoLoadStation(true);
+        }
+
+        InterBranchContext.setContext(interBranchDto);
+    }
+
+    public List<CoLoadingMAWBDetailsResponse> fetchColoadingDetails() {
+        List<Object> criteria = new ArrayList<>(List.of(List.of("ChildTenantId"), "=", TenantContext.getCurrentTenant()));
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(100).criteriaRequests(criteria).build();
+        var v1Response = iv1Service.getCoLoadingStations(commonV1ListRequest);
+        return jsonHelper.convertValueToList(v1Response.entities, CoLoadingMAWBDetailsResponse.class);
+    }
+
+    public ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws RunnerException {
+        String responseMsg;
+        try {
+            if(consolidationDetails.getAllocations() == null)
+                consolidationDetails.setAllocations(new Allocations());
+            if(consolidationDetails.getAchievedQuantities() == null)
+                consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+            if (consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit() != null && consolidationDetails.getAllocations().getWeightUnit() != null) {
+                BigDecimal consolidatedWeight = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAchievedQuantities().getConsolidatedWeight(), consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
+                BigDecimal weight = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAllocations().getWeight(), consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
+                if(Objects.equals(weight, BigDecimal.ZERO))
+                    consolidationDetails.getAchievedQuantities().setWeightUtilization("0");
+                else
+                    consolidationDetails.getAchievedQuantities().setWeightUtilization( String.valueOf( (consolidatedWeight.divide(weight, 4, RoundingMode.HALF_UP)).multiply(new BigDecimal(100)).doubleValue() ) );
+            }
+            if (consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit() != null && consolidationDetails.getAllocations().getVolumeUnit() != null) {
+                BigDecimal consolidatedVolume = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume(), consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
+                BigDecimal volume = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAllocations().getVolume(), consolidationDetails.getAllocations().getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
+                if(Objects.equals(volume, BigDecimal.ZERO))
+                    consolidationDetails.getAchievedQuantities().setVolumeUtilization("0");
+                else
+                    consolidationDetails.getAchievedQuantities().setVolumeUtilization( String.valueOf( (consolidatedVolume.divide(volume, 4, RoundingMode.HALF_UP)).multiply(new BigDecimal(100)).doubleValue() ) );
+            }
+            return consolidationDetails;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    public void updateConsolOpenForAttachment(ConsolidationDetails consolidationDetails) {
+        if(!Objects.isNull(consolidationDetails.getAchievedQuantities())) {
+            Double weightUtilization = consolidationDetails.getAchievedQuantities().getWeightUtilization() != null ? Double.valueOf(consolidationDetails.getAchievedQuantities().getWeightUtilization()) : 0;
+            Double volumeUtilization = consolidationDetails.getAchievedQuantities().getVolumeUtilization() != null ? Double.valueOf(consolidationDetails.getAchievedQuantities().getVolumeUtilization()) : 0;
+            if(weightUtilization > 100 || volumeUtilization > 100)
+                consolidationDetails.setOpenForAttachment(false);
+        }
     }
 
 }

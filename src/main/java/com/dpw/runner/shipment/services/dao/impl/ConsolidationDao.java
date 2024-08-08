@@ -5,10 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -73,6 +70,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
@@ -141,9 +140,18 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (!fromV1Sync && consolidationDetails.getTransportMode() != null
                 && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
             consolidationMAWBCheck(consolidationDetails, oldConsole != null ? oldConsole.getMawb() : null);
+        if(!Objects.isNull(oldConsole)) {
+            consolidationDetails.setCreatedAt(oldConsole.getCreatedAt());
+            consolidationDetails.setCreatedBy(oldConsole.getCreatedBy());
+        }
         consolidationDetails = consolidationRepository.save(consolidationDetails);
         if (!fromV1Sync && StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
             setMawbStock(consolidationDetails);
+        }
+        if (!Objects.isNull(oldConsole)
+                && (!Objects.equals(consolidationDetails.getInterBranchConsole(), oldConsole.getInterBranchConsole()) || !Objects.equals(consolidationDetails.getOpenForAttachment(), oldConsole.getOpenForAttachment()))
+                && (Boolean.FALSE.equals(consolidationDetails.getInterBranchConsole()) || Boolean.FALSE.equals(consolidationDetails.getOpenForAttachment()))) {
+            consoleShipmentMappingDao.deletePendingStateByConsoleId(consolidationDetails.getId());
         }
     }
 

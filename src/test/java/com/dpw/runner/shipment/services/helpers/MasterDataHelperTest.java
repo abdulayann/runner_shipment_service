@@ -1,14 +1,32 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -16,6 +34,15 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -25,17 +52,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {MasterDataHelper.class})
 @ExtendWith(SpringExtension.class)
@@ -874,46 +890,6 @@ class MasterDataHelperTest {
         assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
         assertTrue(getResult.hasBody());
         assertTrue(getResult.getHeaders().isEmpty());
-    }
-
-    @Test
-    void testAddBillData() throws ExecutionException, InterruptedException {
-        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().BillingServiceV2Enabled(false).build());
-        ShipmentDetails shipmentDetails = new ShipmentDetails();
-        shipmentDetails.setGuid(UUID.randomUUID());
-        ShipmentBillingListResponse shipmentBillingListResponse = new ShipmentBillingListResponse();
-        Map<String, ShipmentBillingListResponse.BillingData> data = new HashMap<>();
-        ShipmentBillingListResponse.BillingData billingData = new ShipmentBillingListResponse.BillingData();
-        billingData.setBillStatus("INV");
-        data.put(shipmentDetails.getGuid().toString(), billingData);
-        shipmentBillingListResponse.setData(data);
-        when(iV1Service.fetchShipmentBillingData(any())).thenReturn(shipmentBillingListResponse);
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
-        CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(shipmentDetails, new ShipmentDetailsResponse());
-        assertEquals(shipmentBillingListResponse, response.get());
-    }
-
-    @Test
-    void testAddBillData2() throws ExecutionException, InterruptedException {
-        TenantSettingsDetailsContext.setCurrentTenantSettings(null);
-        CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(new ShipmentDetails(), new ShipmentDetailsResponse());
-        assertNull(response.get());
-    }
-
-    @Test
-    void testAddBillData3() throws ExecutionException, InterruptedException {
-        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().BillingServiceV2Enabled(false).build());
-        ShipmentDetails shipmentDetails = new ShipmentDetails();
-        shipmentDetails.setGuid(UUID.randomUUID());
-        ShipmentBillingListResponse shipmentBillingListResponse = new ShipmentBillingListResponse();
-        Map<String, ShipmentBillingListResponse.BillingData> data = new HashMap<>();
-        ShipmentBillingListResponse.BillingData billingData = new ShipmentBillingListResponse.BillingData();
-        data.put(shipmentDetails.getGuid().toString(), billingData);
-        shipmentBillingListResponse.setData(data);
-        when(iV1Service.fetchShipmentBillingData(any())).thenReturn(shipmentBillingListResponse);
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
-        CompletableFuture<ShipmentBillingListResponse> response = masterDataHelper.addBillData(shipmentDetails, new ShipmentDetailsResponse());
-        assertEquals(shipmentBillingListResponse, response.get());
     }
 
     @Test

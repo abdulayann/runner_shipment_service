@@ -3,9 +3,15 @@ package com.dpw.runner.shipment.services.commons.constants;
 import java.util.List;
 
 public class Constants {
-    public static final String TRANSPORT_INSTRUCTION_TYPES = "TransportInstructionTypes";
 
-    private Constants(){}
+    public static final String TRANSPORT_INSTRUCTION_TYPES = "TransportInstructionTypes";
+    public static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    public static final String WRK = "WRK";
+    public static final String ORGANIZATION_CODE = "OrganizationCode";
+    public static final String OrgId = "OrgId";
+    public static final String ACTIVE_CLIENT = "ActiveClient";
+    public static final String LocalReferenceNumber = "LocalReferenceNumber";
+
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
     public static final String SHIPMENT_TYPE = "shipmentType";
@@ -426,5 +432,9 @@ public class Constants {
     public static final String VIEWS = "Views";
     public static final String ENTITY = "entity";
     public static final String NAME_FILTER = "name";
+    public static final String Active = "Active";
+
+    private Constants() {
+    }
 
 }

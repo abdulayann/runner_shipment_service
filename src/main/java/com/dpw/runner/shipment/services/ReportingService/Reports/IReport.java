@@ -10,6 +10,8 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -29,9 +31,16 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
+import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
+import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.*;
+import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
@@ -67,6 +76,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
@@ -105,6 +116,9 @@ public abstract class IReport {
     private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Autowired
+    private BillingServiceUrlConfig billingServiceUrlConfig;
+
+    @Autowired
     private IHblDao hblDao;
 
     @Autowired
@@ -123,12 +137,14 @@ public abstract class IReport {
     private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
-    private  IAwbDao awbDao;
+    private IAwbDao awbDao;
     @Autowired
     private INPMServiceAdapter npmServiceAdapter;
 
     @Autowired
     MasterDataFactory masterDataFactory;
+    @Autowired
+    private IBillingServiceAdapter billingServiceAdapter;
     @Autowired
     private IV1Service v1Service;
     @Autowired
@@ -1034,6 +1050,7 @@ public abstract class IReport {
     }
 
     public ShipmentModel getShipment(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails == null) return null;
         ShipmentModel shipmentModel = modelMapper.map(shipmentDetails, ShipmentModel.class);
         shipmentModel.setVoyage(shipmentDetails.getCarrierDetails().getVoyage());
         try {
@@ -1104,21 +1121,106 @@ public abstract class IReport {
     }
 
     public List<BillingResponse> getBillingData(UUID shipmentGuid) {
-        ShipmentGuidRequest request = new ShipmentGuidRequest();
-        request.setShipmentGuid(shipmentGuid);
-        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchBillingList(request);
-        return jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class);
+        if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
+
+            BillRetrieveRequest request = new BillRetrieveRequest();
+            request.setModuleGuid(shipmentGuid.toString());
+            request.setModuleType(Constants.SHIPMENT);
+
+            BillBaseResponse billFromBilling = billingServiceAdapter.fetchBill(request);
+
+            BillingResponse billingResponse = new BillingResponse();
+            billingResponse.setBillId(billFromBilling.getBillId());
+            billingResponse.setGuid(UUID.fromString(billFromBilling.getGuId()));
+            billingResponse.setRemarks(billFromBilling.getRemarks());
+
+            return List.of(billingResponse);
+        } else {
+            ShipmentGuidRequest request = new ShipmentGuidRequest();
+            request.setShipmentGuid(shipmentGuid);
+            DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchBillingList(request);
+            return jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class);
+        }
     }
 
-    public List<BillChargesResponse> getBillChargesData(UUID billGuid) {
-        List<Object> criteria = new ArrayList<>();
-        criteria.add(Arrays.asList(List.of("BillId"), "=", billGuid));
-        criteria.add("and");
-        criteria.add(Arrays.asList(List.of("IsActive"), "=", 1));
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchBillChargesList(commonV1ListRequest);
-        return jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class);
+    public List<BillChargesResponse> getBillChargesData(BillingResponse billingResponse) {
+        if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
+
+            List<String> billIds = List.of(billingResponse.getBillId());
+
+            BillChargesFilterRequest request = new BillChargesFilterRequest();
+            request.setBillId(billIds);
+            request.setPageSize(billIds.size());
+
+            List<BillChargesBaseResponse> billChargesFromBilling = billingServiceAdapter.fetchBillCharges(request);
+            return this.convertBillingBillChargeToRunnerBillCharge(billChargesFromBilling);
+        } else {
+            List<Object> criteria = new ArrayList<>();
+            criteria.add(Arrays.asList(List.of("BillId"), "=", billingResponse.getGuid()));
+            criteria.add("and");
+            criteria.add(Arrays.asList(List.of("IsActive"), "=", 1));
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchBillChargesList(commonV1ListRequest);
+            return jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class);
+        }
     }
+
+    @NotNull
+    private List<BillChargesResponse> convertBillingBillChargeToRunnerBillCharge(List<BillChargesBaseResponse> billChargesBaseResponses) {
+        List<BillChargesResponse> v1BillCharges = new ArrayList<>();
+
+        for (BillChargesBaseResponse billingBillCharge : billChargesBaseResponses) {
+            BillChargesResponse v1BillCharge = new BillChargesResponse();
+            BillChargeRevenueDetailsResponse revenueDetails = billingBillCharge.getBillChargeRevenueDetails();
+            BillChargeCostDetailsResponse costDetails = billingBillCharge.getBillChargeCostDetails();
+            ChargeTypeBaseResponse chargeTypeDetails = billingBillCharge.getChargeTypeDetails();
+
+            v1BillCharge.setBillingChargeTypeId(billingBillCharge.getChargeTypeId());
+            v1BillCharge.setBillingChargeTypeGuid(chargeTypeDetails.getGuId().toString());
+            v1BillCharge.setOverseasSellAmount(revenueDetails.getOverseasSellAmount());
+            v1BillCharge.setOverseasSellCurrency(revenueDetails.getOverseasSellCurrency());
+            v1BillCharge.setLocalSellAmount(revenueDetails.getLocalSellAmount());
+            v1BillCharge.setLocalSellCurrency(revenueDetails.getLocalSellCurrency());
+            v1BillCharge.setOverseasTax(revenueDetails.getOverseasTax());
+            v1BillCharge.setSellExchange(
+                    revenueDetails.getCurrencyExchangeRateDetails().stream()
+                            .filter(currencyExRate -> ExchangeRateType.CUSTOMER.equals(currencyExRate.getType())).findFirst()
+                            .map(CurrencyExchangeRateDetailsResponse::getExchangeRate).orElse(null)
+            );
+            v1BillCharge.setTaxType1(
+                    revenueDetails.getTaxDetails().stream()
+                            .filter(tax -> TaxType.IGST.equals(tax.getTaxType()) || TaxType.VAT.equals(tax.getTaxType())).findFirst()
+                            .map(TaxDetailsResponse::getAmount).orElse(null)
+            );
+            v1BillCharge.setTaxType2(
+                    revenueDetails.getTaxDetails().stream()
+                            .filter(tax -> TaxType.SGST.equals(tax.getTaxType())).findFirst()
+                            .map(TaxDetailsResponse::getAmount).orElse(null)
+            );
+            v1BillCharge.setTaxType3(
+                    revenueDetails.getTaxDetails().stream()
+                            .filter(tax -> TaxType.CGST.equals(tax.getTaxType())).findFirst()
+                            .map(TaxDetailsResponse::getAmount).orElse(null)
+            );
+            v1BillCharge.setTaxType4(
+                    revenueDetails.getTaxDetails().stream()
+                            .filter(tax -> TaxType.UGST.equals(tax.getTaxType())).findFirst()
+                            .map(TaxDetailsResponse::getAmount).orElse(null)
+            );
+            v1BillCharge.setLocalTax(revenueDetails.getTaxAmount());
+            v1BillCharge.setMeasurementBasis(null); //TODO: SUBHAM check for cost/revenue MeasurementBasis
+
+            v1BillCharge.setPaymentType(billingBillCharge.getPaymentTypeCode());
+            v1BillCharge.setChargeTypeCode(chargeTypeDetails.getChargeCode());
+            v1BillCharge.setChargeTypeDescription(chargeTypeDetails.getChargeCodeDescription());
+            v1BillCharge.setLocalCostCurrency(costDetails.getLocalCostCurrency());
+
+            v1BillCharges.add(v1BillCharge);
+        }
+
+        return v1BillCharges;
+    }
+
 
     public List<ArObjectResponse> getArObjectData(UUID billGuid) {
         List<Object> criteria = new ArrayList<>();
@@ -1130,23 +1232,41 @@ public abstract class IReport {
         return jsonHelper.convertValueToList(dependentServiceResponse.getData(), ArObjectResponse.class);
     }
 
-    public ChargeTypesResponse getChargeTypesData(Long chargeTypeId) {
-        List<Object> criteria = Arrays.asList(
-                Arrays.asList("Id"),
-                "=",
-                chargeTypeId
-        );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchChargeType(commonV1ListRequest);
-        List<ChargeTypesResponse> chargeTypesResponses = jsonHelper.convertValueToList(dependentServiceResponse.getData(), ChargeTypesResponse.class);
-        if(chargeTypesResponses != null && chargeTypesResponses.size() > 0)
-            return chargeTypesResponses.get(0);
-        return null;
+    public ChargeTypesResponse getChargeTypesData(BillChargesResponse billChargesResponse) {
+        if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
+            ChargeTypesResponse v1ChargeType = new ChargeTypesResponse();
+
+            ChargeTypeFilterRequest request = new ChargeTypeFilterRequest();
+            request.setGuidList(List.of(billChargesResponse.getBillingChargeTypeGuid()));
+            request.setPageSize(1);
+
+            List<ChargeTypeBaseResponse> chargeTypesFromBilling = billingServiceAdapter.fetchChargeTypes(request);
+            ChargeTypeBaseResponse chargeTypeFromBilling = chargeTypesFromBilling.stream().findFirst().orElse(null);
+            v1ChargeType.setServices(
+                    Optional.ofNullable(chargeTypeFromBilling)
+                            .map(ChargeTypeBaseResponse::getChargeGroup).orElse(null)
+            );
+            return v1ChargeType;
+        } else {
+            List<Object> criteria = Arrays.asList(
+                    List.of("Id"),
+                    "=",
+                    billChargesResponse.getChargeTypeId()
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchChargeType(commonV1ListRequest);
+            List<ChargeTypesResponse> chargeTypesResponses = jsonHelper.convertValueToList(dependentServiceResponse.getData(), ChargeTypesResponse.class);
+            if (CollectionUtils.isNotEmpty(chargeTypesResponses)) {
+                return chargeTypesResponses.get(0);
+            }
+            return null;
+        }
     }
 
     public VesselsResponse getVesselsData(String guid) {
-        if(IsStringNullOrEmpty(guid))
+        if (IsStringNullOrEmpty(guid)) {
             return null;
+        }
         List<Object> vesselCriteria = Arrays.asList(
                 List.of(Constants.VESSEL_GUID_V1),
                 "=",
@@ -1350,6 +1470,7 @@ public abstract class IReport {
             UnlocationsResponse origin = consolidation.getCarrierDetails() != null ? unlocationsMap.get(consolidation.getCarrierDetails().getOrigin()) : null;
             UnlocationsResponse destination = consolidation.getCarrierDetails() != null ? unlocationsMap.get(consolidation.getCarrierDetails().getDestination()) : null;
             if (pol != null && pol.getPortName() != null) {
+                dictionary.put(AIRLINE_NAME, pol.getPortName().toUpperCase());
                 dictionary.put(ReportConstants.ORIGIN_PORT_NAME_INCAPS, pol.getPortName().toUpperCase());
             }
             if (pod != null && pod.getPortName() != null) {
@@ -2447,7 +2568,7 @@ public abstract class IReport {
         if(billingsList != null && billingsList.size() > 0) {
             billRow = billingsList.get(0);
             for(BillingResponse billingResponse : billingsList) {
-                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse.getGuid());
+                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse);
                 if(billChargesResponses != null) {
                     charges.addAll(billChargesResponses);
                 }
@@ -2872,6 +2993,50 @@ public abstract class IReport {
 
         if(shipmentModel.getSecurityStatus() != null ) {
             dictionary.put(CONSIGNMENT_STATUS, shipmentModel.getSecurityStatus());
+        }
+    }
+
+    public void populateRaKcDataConsolidation(Map<String, Object> dictionary, ConsolidationModel consolidationModel) {
+        Parties partiesModelSendingAgent = consolidationModel.getSendingAgent() != null ? modelMapper.map(consolidationModel.getSendingAgent(), Parties.class) : null;
+
+        List<Parties> parties = Arrays.asList(
+            partiesModelSendingAgent
+        );
+
+        OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(parties);
+        Map<String, Object> addressReceivingAgent = null;
+
+        Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+        if(partiesModelSendingAgent != null) {
+            addressReceivingAgent = addressMap.get(partiesModelSendingAgent.getOrgCode() + "#" + partiesModelSendingAgent.getAddressCode());
+        }
+
+        processAgent(addressReceivingAgent, dictionary, ONE, ORIGIN_AGENT);
+
+        if (consolidationModel.getSendingAgent() != null) {
+
+            if(consolidationModel.getExemptionCodes() != null) {
+                dictionary.put(EXEMPTION_CARGO, consolidationModel.getExemptionCodes());
+            }
+            if(consolidationModel.getScreeningStatus() != null && !consolidationModel.getScreeningStatus().isEmpty()) {
+                Set<String> screeningCodes = consolidationModel.getScreeningStatus().stream().collect(Collectors.toSet());
+                if(screeningCodes.contains(Constants.AOM)){
+                    screeningCodes.remove(Constants.AOM);
+                    String aomString = Constants.AOM;
+                    if(consolidationModel.getAomFreeText() != null) {
+                        aomString =  aomString + " (" + consolidationModel.getAomFreeText() + ")";
+                    }
+                    screeningCodes.add(aomString);
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                } else {
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                }
+
+            }
+        }
+
+        if(consolidationModel.getSecurityStatus() != null ) {
+            dictionary.put(CONSIGNMENT_STATUS, consolidationModel.getSecurityStatus());
         }
     }
 

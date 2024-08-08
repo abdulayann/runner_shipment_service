@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.filters;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -107,17 +108,20 @@ public class AuthFilter extends OncePerRequestFilter {
             return;
         }
         log.info("Auth Successful, username:-{},tenantId:-{} for request: {}", user.getUsername(), user.getTenantId(), LoggerHelper.getRequestIdFromMDC());
-        UserContext.setUser(user);
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         List<String> grantedPermissions = new ArrayList<>();
+        Map<String, Boolean> permissions = new HashMap<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
             if(entry.getValue())
             {
                 grantedPermissions.add(entry.getKey());
+                permissions.put(entry.getKey(), true);
             }
         }
+        user.setPermissions(permissions);
+        UserContext.setUser(user);
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                 user, null, getAuthorities(grantedPermissions));
         usernamePasswordAuthenticationToken
@@ -137,6 +141,7 @@ public class AuthFilter extends OncePerRequestFilter {
             TenantSettingsDetailsContext.remove();
             PermissionsContext.removePermissions();
             SecurityContextHolder.clearContext();
+            InterBranchContext.removeContext();
         }
 
     }

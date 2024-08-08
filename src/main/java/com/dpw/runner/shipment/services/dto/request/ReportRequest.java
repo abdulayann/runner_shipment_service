@@ -36,4 +36,5 @@ public class ReportRequest implements IRunnerRequest {
     boolean isShipperAndConsignee;
     boolean isSecurityData;
     String transportInstructionId;
+    String remarks;
 }
