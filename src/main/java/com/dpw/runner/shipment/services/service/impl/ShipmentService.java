@@ -4721,9 +4721,7 @@ public class ShipmentService implements IShipmentService {
                     consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentId);
                 });
             } else if (ShipmentRequestedType.REJECT.equals(updateConsoleShipmentRequest.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
-                updateConsoleShipmentRequest.getListOfShipments().stream().forEach(shipmentId -> {
-                    consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(updateConsoleShipmentRequest.getConsoleId(), shipmentId);
-                });
+                updateConsoleShipmentRequest.getListOfShipments().stream().forEach(shipmentId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(updateConsoleShipmentRequest.getConsoleId(), shipmentId));
             }
         } else {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
@@ -4739,9 +4737,7 @@ public class ShipmentService implements IShipmentService {
             consoleShipmentMappingDao.updateConsoleShipments(updateShipmentRequest.getShipmentRequestedType(), updateShipmentRequest.getConsoleIdsList().get(0), updateShipmentRequest.getShipmentId());
             consoleShipmentMappingDao.deletePendingStateByShipmentId(updateShipmentRequest.getShipmentId());
         } else if (ShipmentRequestedType.REJECT.equals(updateShipmentRequest.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(updateShipmentRequest.getShipmentRequestedType())) {
-            updateShipmentRequest.getConsoleIdsList().stream().forEach(consoleId -> {
-                consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(consoleId, updateShipmentRequest.getShipmentId());
-            });
+            updateShipmentRequest.getConsoleIdsList().stream().forEach(consoleId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(consoleId, updateShipmentRequest.getShipmentId()));
         }
     }
 
