@@ -67,7 +67,8 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         if (mappings != null && mappings.size() > 0) {
             for (ConsoleShipmentMapping consoleShipmentMapping : mappings) {
-                shipmentIds.remove(consoleShipmentMapping.getShipmentId());
+                if(Objects.equals(consoleShipmentMapping.getConsolidationId(), consolidationId))
+                    shipmentIds.remove(consoleShipmentMapping.getShipmentId());
             }
         }
         if (!shipmentIds.isEmpty()) {

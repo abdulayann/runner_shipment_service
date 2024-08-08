@@ -677,13 +677,13 @@ public class ConsolidationService implements IConsolidationService {
             if(oldConsoleShipmentMappings != null && !oldConsoleShipmentMappings.isEmpty()) {
                 consoleShipmentMappings = oldConsoleShipmentMappings.getContent();
                 for (ConsoleShipmentMapping consoleShipmentMapping : oldConsoleShipmentMappings.getContent()) {
-                    if(!consoleShipmentMapping.getConsolidationId().equals(consolidationId))
+                    if(!consoleShipmentMapping.getConsolidationId().equals(consolidationId) && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
                         return ResponseHelper.buildFailedResponse("Multiple consolidations are attached to the shipment, please verify.");
                 }
             }
             HashSet<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds);
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                if(attachedShipmentIds.contains(shipmentDetails.getId())) {
+                if(attachedShipmentIds.contains(shipmentDetails.getId()) && !interBranchShipIds.contains(shipmentDetails.getId())) {
                     if (shipmentDetails.getContainersList() != null) {
                         List<Containers> containersList = shipmentDetails.getContainersList();
                         for (Containers container : containersList) {

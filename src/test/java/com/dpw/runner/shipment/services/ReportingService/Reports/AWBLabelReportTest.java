@@ -13,10 +13,14 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
@@ -37,6 +41,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
@@ -46,8 +51,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,7 +73,13 @@ class AWBLabelReportTest extends CommonMocks {
     private MasterDataUtils masterDataUtils;
 
     @Mock
+    private IAwbDao awbDao;
+
+    @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Mock
     private JsonHelper jsonHelper;
@@ -95,9 +107,15 @@ class AWBLabelReportTest extends CommonMocks {
 
 
     private static ShipmentDetails shipmentDetails;
+    private static ConsolidationDetails consolidationDetails;
+    private static Awb hawb;
+    private static Awb mawb;
     @BeforeEach
     void setup() {
+        hawb = jsonTestUtility.getTestHawb();
+        mawb = jsonTestUtility.getTestMawb();
         shipmentDetails = jsonTestUtility.getCompleteShipment();
+        consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
     }
@@ -259,6 +277,7 @@ class AWBLabelReportTest extends CommonMocks {
         consolidationModel.setReceivingAgent(partiesModel);
         consolidationModel.setSendingAgent(partiesModel);
         consolidationModel.setCarrierDetails(carrierDetailModel);
+        consolidationModel.setPackingList(packingModels);
         ArrivalDepartureDetailsModel arrivalDepartureDetailsModel = new ArrivalDepartureDetailsModel();
         arrivalDepartureDetailsModel.setCTOId(partiesModel);
         arrivalDepartureDetailsModel.setLastForeignPort(UUID.randomUUID().toString());
@@ -276,10 +295,19 @@ class AWBLabelReportTest extends CommonMocks {
         consolidationModel.setContainersList(shipmentModel.getContainersList());
         consolidationModel.setId(123L);
         consolidationModel.setShipmentsList(Arrays.asList(shipmentModel));
+
+        if(awbLabelReport.isMawb())
+            aWbLabelModel.setAwb(mawb);
+        else
+            aWbLabelModel.setAwb(hawb);
+
+        aWbLabelModel.setShipment(shipmentModel);
+        aWbLabelModel.setConsolidation(consolidationModel);
     }
 
     @Test
-    void populateDictionary() {
+    void populateDictionary() { // when its not mawb
+        awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
@@ -301,6 +329,136 @@ class AWBLabelReportTest extends CommonMocks {
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         mockTenantSettings();
+        assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
+    }
+
+    @Test
+    void populateDictionary2() { // when its not mawb
+        awbLabelReport.setMawb(false);
+        AWbLabelModel aWbLabelModel = new AWbLabelModel();
+        aWbLabelModel.setTenantAddress(new ArrayList<>());
+        aWbLabelModel.setTenant(new TenantModel());
+        populateModel(aWbLabelModel);
+//        aWbLabelModel.getShipment().setCarrierDetails(null);
+        aWbLabelModel.getShipment().setInnerPacks(null);
+        aWbLabelModel.getShipment().setNoOfPacks(null);
+        aWbLabelModel.getShipment().getCarrierDetails().setDestination(null);
+        aWbLabelModel.getShipment().getCarrierDetails().setDestinationPort(null);
+        aWbLabelModel.getShipment().getCarrierDetails().setOrigin(null);
+        aWbLabelModel.setConsolidation(null);
+
+        List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("Kempegowda International Airport BLR");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+        unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponse.setLocationsReferenceGUID("bb69aefb-0294-4be9-baec-835a431123df");
+        unlocationsResponses.add(unlocationsResponse);
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = unlocationsResponses;
+//        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+//        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
+        mockTenantSettings();
+        assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
+    }
+
+    @Test
+    void populateDictionary3() { // when its not mawb
+        awbLabelReport.setMawb(false);
+        AWbLabelModel aWbLabelModel = new AWbLabelModel();
+        aWbLabelModel.setTenantAddress(new ArrayList<>());
+        aWbLabelModel.setTenant(new TenantModel());
+        populateModel(aWbLabelModel);
+        aWbLabelModel.getShipment().setCarrierDetails(null);
+        aWbLabelModel.getShipment().setInnerPacks(null);
+        aWbLabelModel.getShipment().setNoOfPacks(null);
+//        aWbLabelModel.getShipment().getCarrierDetails().setDestination(null);
+//        aWbLabelModel.getShipment().getCarrierDetails().setDestinationPort(null);
+//        aWbLabelModel.getShipment().getCarrierDetails().setOrigin(null);
+        aWbLabelModel.setConsolidation(null);
+
+        List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("Kempegowda International Airport BLR");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+        unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponse.setLocationsReferenceGUID("bb69aefb-0294-4be9-baec-835a431123df");
+        unlocationsResponses.add(unlocationsResponse);
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = unlocationsResponses;
+//        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+//        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
+        mockTenantSettings();
+        assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
+    }
+
+    @Test
+    void populateDictionary_whenMawb() { // when its  mawb
+        AWbLabelModel aWbLabelModel = new AWbLabelModel();
+        aWbLabelModel.setTenantAddress(new ArrayList<>());
+        aWbLabelModel.setTenant(new TenantModel());
+        awbLabelReport.setMawb(true);
+        populateModel(aWbLabelModel);
+
+        List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("Kempegowda International Airport BLR");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+        unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponse.setLocationsReferenceGUID("bb69aefb-0294-4be9-baec-835a431123df");
+        unlocationsResponses.add(unlocationsResponse);
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(Map.of("test", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build(), "bb69aefb-0294-4be9-baec-835a431123df", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build()));
+
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = unlocationsResponses;
+        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
+        mockTenantSettings();
+        assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
+    }
+
+    @Test
+    void populateDictionary_whenMawb2() { // when its  mawb
+        AWbLabelModel aWbLabelModel = new AWbLabelModel();
+        aWbLabelModel.setTenantAddress(new ArrayList<>());
+        aWbLabelModel.setTenant(new TenantModel());
+        awbLabelReport.setMawb(true);
+        populateModel(aWbLabelModel);
+        aWbLabelModel.setShipment(null);
+        aWbLabelModel.getConsolidation().setCarrierDetails(null);
+
+        List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("Kempegowda International Airport BLR");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+        unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponse.setLocationsReferenceGUID("bb69aefb-0294-4be9-baec-835a431123df");
+        unlocationsResponses.add(unlocationsResponse);
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(Map.of("test", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build(), "bb69aefb-0294-4be9-baec-835a431123df", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build()));
+
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = unlocationsResponses;
+//        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+//        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
+//        mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 
@@ -339,6 +497,7 @@ class AWBLabelReportTest extends CommonMocks {
         aWbLabelModel.setTenant(new TenantModel());
         populateModel(aWbLabelModel);
         ShipmentModel shipmentModel = aWbLabelModel.shipment;
+        ConsolidationModel consolidationModel = aWbLabelModel.getConsolidation();
         shipmentModel.setMasterBill("123456789");
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
@@ -378,4 +537,63 @@ class AWBLabelReportTest extends CommonMocks {
         mockShipmentSettings();
         assertNotNull(awbLabelReport.getDocumentModel(123L));
     }
+
+    @Test
+    void getDocumentModel_whenMAWB() throws RunnerException {
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        awbLabelReport.setMawb(true);
+
+        AWbLabelModel aWbLabelModel = new AWbLabelModel();
+        aWbLabelModel.setTenantAddress(new ArrayList<>());
+        aWbLabelModel.setTenant(new TenantModel());
+        populateModel(aWbLabelModel);
+        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(aWbLabelModel.getConsolidation());
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
+        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
+        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
+//        mockShipmentSettings();
+        assertNotNull(awbLabelReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getData(){
+        var spyReport = Mockito.spy(this.awbLabelReport);
+        AWbLabelModel aWbLabelModel = new AWbLabelModel();
+        aWbLabelModel.setTenantAddress(new ArrayList<>());
+        aWbLabelModel.setTenant(new TenantModel());
+        populateModel(aWbLabelModel);
+        doReturn(aWbLabelModel).when(spyReport).getDocumentModel(any());
+        doReturn(new HashMap<>()).when(spyReport).populateDictionary(aWbLabelModel);
+        var resp = spyReport.getData(123L);
+        assertTrue(resp.isEmpty());
+    }
+
+    @Test
+    void testInitialValues() {
+        assertFalse(awbLabelReport.isMawb());
+        assertEquals(null, awbLabelReport.getRemarks());
+    }
+
+    @Test
+    void testSetAndIsMawb() {
+        awbLabelReport.setMawb(true);
+        assertTrue(awbLabelReport.isMawb());
+
+        awbLabelReport.setMawb(false);
+        assertFalse(awbLabelReport.isMawb());
+    }
+
+    @Test
+    void testSetAndGetRemarks() {
+        String remarks = "Sample Remarks";
+        awbLabelReport.setRemarks(remarks);
+        assertEquals(remarks, awbLabelReport.getRemarks());
+
+        String newRemarks = "Updated Remarks";
+        awbLabelReport.setRemarks(newRemarks);
+        assertEquals(newRemarks, awbLabelReport.getRemarks());
+    }
+
 }

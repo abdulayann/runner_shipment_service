@@ -456,7 +456,8 @@ public class ShipmentService implements IShipmentService {
             var containerDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setContainerTeuData(lst, responseList)), executorService);
             var billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchBillDataForShipments(lst, responseList)), executorService);
             var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
-            CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture, vesselDataFuture).join();
+            var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
+            CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture, vesselDataFuture, tenantDataFuture).join();
         }
         catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
@@ -3953,6 +3954,13 @@ public class ShipmentService implements IShipmentService {
                 throw new RunnerException("EFreight status can only be EAW as Consolidation EFrieght Status is EAW");
             }
         }
+        if(linkedConsol != null && shipmentRequest != null) {
+            CalculatePackUtilizationRequest utilizationRequest = CalculatePackUtilizationRequest.builder()
+                .consolidationId(linkedConsol.getId())
+                .saveConsol(true)
+                .shipmentRequest(shipmentRequest).build();
+            packingService.savePackUtilisationCalculationInConsole(utilizationRequest);
+        }
         boolean makeConsoleDG = checkForDGShipmentAndAirDgFlag(shipment);
         AtomicBoolean makeConsoleNonDG = new AtomicBoolean(checkForNonDGShipmentAndAirDgFlag(shipment));
         AtomicBoolean makeConsoleSciT1 = new AtomicBoolean(shipment.getAdditionalDetails() != null && Objects.equals(shipment.getAdditionalDetails().getSci(), AwbConstants.T1));
@@ -3974,10 +3982,6 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
             consolidationDetails.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
             consolidationDetails.setShipmentType(shipment.getDirection());
-            if(shipmentRequest != null && shipmentRequest.getConsolidationAchievedQuantities() != null) {
-                consolidationDetails.setAchievedQuantities(jsonHelper.convertValue(shipmentRequest.getConsolidationAchievedQuantities(), AchievedQuantities.class));
-                commonUtils.updateConsolOpenForAttachment(consolidationDetails);
-            }
 
             if(makeConsoleDG)
                 consolidationDetails.setHazardous(true);

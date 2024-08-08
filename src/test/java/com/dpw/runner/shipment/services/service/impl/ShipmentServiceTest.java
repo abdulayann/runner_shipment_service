@@ -5413,4 +5413,140 @@ ShipmentServiceTest extends CommonMocks {
         verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
     }
 
+    @Test
+    void testConsoleShipmentList_Success() {
+        Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setInterBranchConsole(true);
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(2L).consolidationId(1L)
+                .isAttachmentDone(false).requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).build();
+
+        GuidsListResponse guidsListResponse = new GuidsListResponse();
+        when(v1Service.fetchWayBillNumberFilterGuids(any())).thenReturn(guidsListResponse);
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(2L);
+        shipmentDetailsList.add(shipmentDetails);
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(1L)).thenReturn(Arrays.asList(consoleShipmentMapping));
+        when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, false);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testConsoleShipmentList_Success_IsAttachedTrue() {
+        Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setInterBranchConsole(true);
+
+        GuidsListResponse guidsListResponse = new GuidsListResponse();
+        when(v1Service.fetchWayBillNumberFilterGuids(any())).thenReturn(guidsListResponse);
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(2L);
+        shipmentDetailsList.add(shipmentDetails);
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testConsoleShipmentList_Success_InterBranchFalse() {
+        Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setInterBranchConsole(false);
+
+        GuidsListResponse guidsListResponse = new GuidsListResponse();
+        when(v1Service.fetchWayBillNumberFilterGuids(any())).thenReturn(guidsListResponse);
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(2L);
+        shipmentDetailsList.add(shipmentDetails);
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testConsoleShipmentList_Failure_DataRetrieveFailureConsole() {
+        Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true));
+    }
+
+    @Test
+    void testConsoleShipmentList_Failure_NullRequest() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setInterBranchConsole(false);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        assertThrows(ValidationException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true));
+    }
+
+
+    @Test
+    void testUpdateConsolAchievedAndOpenForAttachmentFromShipmentUpdate() throws RunnerException {
+        testShipment.setId(1L);
+        ConsolidationDetails attachedConsol = new ConsolidationDetails();
+        attachedConsol.setId(1L);
+        testShipment.setConsolidationList(List.of(attachedConsol));
+        ShipmentDetails mockShipment = testShipment;
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        mockShipmentRequest.setConsolidationAchievedQuantities(new AchievedQuantitiesRequest());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        // Mock
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(shipmentDao.findById(any()))
+            .thenReturn(
+                Optional.of(
+                    testShipment
+                        .setConsolidationList(List.of(attachedConsol))
+                        .setContainersList(new ArrayList<>())));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(attachedConsol));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+        verify(packingService, times(1)).savePackUtilisationCalculationInConsole(any());
+    }
+
 }
