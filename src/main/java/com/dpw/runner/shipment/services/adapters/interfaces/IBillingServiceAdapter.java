@@ -1,7 +1,16 @@
 package com.dpw.runner.shipment.services.adapters.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
+import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public interface IBillingServiceAdapter {
 
