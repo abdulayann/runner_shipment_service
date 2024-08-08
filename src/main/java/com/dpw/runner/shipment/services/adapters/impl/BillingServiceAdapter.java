@@ -388,8 +388,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-        MeasurementBasisRecord result = new MeasurementBasisRecord(revenueMeasurementBasisV2, measurementBasisUnit);
-        return result;
+        return new MeasurementBasisRecord(revenueMeasurementBasisV2, measurementBasisUnit);
     }
 
     private void populateExternalBillChargeRequest(TenantModel tenantModel, List<ExternalBillChargeRequest> externalBillChargeRequests,
