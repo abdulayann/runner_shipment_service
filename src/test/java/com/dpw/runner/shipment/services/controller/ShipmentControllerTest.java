@@ -1024,7 +1024,7 @@ class ShipmentControllerTest {
         IRunnerResponse runnerResponse = new AllShipmentCountResponse();
         ResponseEntity<IRunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
 
-        when(shipmentService.getAllShipments(eq(consoleId))).thenReturn(responseEntity);
+        when(shipmentService.getAllShipments(consoleId)).thenReturn(responseEntity);
 
         responseEntity = shipmentController.getAllShipments(consoleId);
 
@@ -1035,7 +1035,7 @@ class ShipmentControllerTest {
     void testGetAllShipments_Exception() {
         Long consoleId = 1L;
 
-        when(shipmentService.getAllShipments(eq(consoleId))).thenThrow(new RuntimeException("Test Exception"));
+        when(shipmentService.getAllShipments(consoleId)).thenThrow(new RuntimeException("Test Exception"));
 
         var responseEntity = shipmentController.getAllShipments(consoleId);
 
