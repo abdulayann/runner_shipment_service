@@ -8,32 +8,24 @@ import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
-import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
-import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.LastPostedInvoiceDateResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.LastPostedInvoiceDateResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import java.lang.reflect.Type;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -41,14 +33,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.Objects;
 
 @Service
 @Slf4j
@@ -113,7 +101,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
             return response;
         } catch (Exception e) {
-            throw new BillingException("Error occurred while making a request to the billing service", e);
+            throw new BillingException("Error occurred while making a request to the billing service: "+ e.getMessage());
         }
     }
 
@@ -163,54 +151,19 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         return modelMapper.map(listResponse.getData(), listType);
     }
 
-    /**
-     * Fetches the last posted invoice date based on the provided invoice summary request.
-     *
-     * @param request the LastPostedInvoiceDateRequest request object
-     * @return the last posted invoice date, or null if not found
-     * @throws BillingException if there is an error during the request
-     */
     @Override
     public LocalDateTime fetchLastPostedInvoiceDate(LastPostedInvoiceDateRequest request) {
-        LocalDateTime lastPostedInvoiceDate = null;
-
-        // Construct the URL for the last posted invoice date endpoint
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getLastPostedInvoiceDate();
-        log.info("Sending last posted invoice date request to URL: {}", url);
-
-        // Create an HttpEntity object with the request payload and authentication headers
         HttpEntity<LastPostedInvoiceDateRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
-        log.debug("Request payload: {}", request);
-
-        try {
-            // Execute the POST request and get the response entity
-            log.info("Executing POST request...");
-            ResponseEntity<BillingEntityResponse> responseEntity = restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
-            BillingEntityResponse billingEntityResponse = responseEntity.getBody();
-
-            // Log the response status and body
-            log.info("Received response with status: {}", responseEntity.getStatusCode());
-            log.debug("Response body: {}", billingEntityResponse);
-
-            // Check if the response is not null and contains no errors
-            if (Objects.nonNull(billingEntityResponse)) {
-                if (ObjectUtils.isNotEmpty(billingEntityResponse.getErrors())) {
-                    String errorMsg = "Bill creation response contains errors: " + billingEntityResponse.getErrors().toString();
-                    throw new BillingException(errorMsg);
-                }
-
-                // Map the response data to LastPostedInvoiceDateResponse and get the last posted invoice date
-                LastPostedInvoiceDateResponse lastPostedInvoiceDateResponse = modelMapper.map(billingEntityResponse.getData(), LastPostedInvoiceDateResponse.class);
-                lastPostedInvoiceDate = lastPostedInvoiceDateResponse.getLastPostedInvoiceDate();
-            } else {
-                log.warn("Received null response from billing service");
-            }
-
-        } catch (Exception e) {
-            throw new BillingException("Error occurred while fetching last posted invoice date", e);
+        ParameterizedTypeReference<BillingEntityResponse> responseType = new ParameterizedTypeReference<>() {
+        };
+        BillingEntityResponse billingEntityResponse = executePostRequest(url, httpEntity, responseType);
+        if (billingEntityResponse == null || billingEntityResponse.getData() == null) {
+            throw new BillingException(NULL_RESPONSE_ERROR);
         }
 
-        return lastPostedInvoiceDate;
+        LastPostedInvoiceDateResponse response = modelMapper.map(billingEntityResponse.getData(), LastPostedInvoiceDateResponse.class);
+        return response.getLastPostedInvoiceDate();
     }
 
     private Boolean checkActiveCharges(BillingSummary billingSummary) {
