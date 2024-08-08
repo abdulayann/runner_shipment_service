@@ -134,4 +134,16 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     public void deletePendingStateByConsoleId(Long consoleId) {
         consoleShipmentsMappingRepository.deletePendingStateByConsoleId(consoleId);
     }
+
+    @Override
+    @Transactional
+    public void deletePendingStateByShipmentId(Long shipmentId) {
+        consoleShipmentsMappingRepository.deletePendingStateByShipmentId(shipmentId);
+    }
+
+    @Override
+    @Transactional
+    public void deletePendingStateByConsoleIdAndShipmentId(Long consoleId, Long shipmentId) {
+        consoleShipmentsMappingRepository.deletePendingStateByConsoleIdAndShipmentId(consoleId, shipmentId);
+    }
 }

@@ -30,4 +30,6 @@ public interface IConsoleShipmentMappingDao {
 
     void updateConsoleShipments(ShipmentRequestedType shipmentRequestedType, Long consoleId, Long shipmentId);
     void deletePendingStateByConsoleId(Long consoleId);
+    void deletePendingStateByShipmentId(Long shipmentId);
+    void deletePendingStateByConsoleIdAndShipmentId(Long consoleId, Long shipmentId);
 }
