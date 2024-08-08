@@ -1,11 +1,17 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
+import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -29,6 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
 
@@ -39,8 +46,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -981,6 +987,82 @@ class ShipmentControllerTest {
         // Test
         var responseEntity = shipmentController.getDateTimeChanges(123L);
         // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testConsoleShipmentList_Success() {
+        // Mock
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        Long consoleId = 1L;
+        boolean isAttached = true;
+        IRunnerResponse runnerResponse = new RunnerListResponse<>();
+        ResponseEntity<IRunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
+
+        when(shipmentService.consoleShipmentList(any(CommonRequestModel.class), eq(consoleId), eq(isAttached)))
+                .thenReturn(responseEntity);
+        // Test
+        responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, true);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testConsoleShipmentList_Exception() {
+        // Mock
+        when(shipmentService.consoleShipmentList(any(), anyLong(), anyBoolean())).thenThrow(new RuntimeException("Test Exception"));
+        ListCommonRequest request = mock(ListCommonRequest.class);
+        // Test
+        var responseEntity = shipmentController.consoleShipmentList(request, 1L, true);
+        // Assert
+        assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAllShipments_Success() {
+        Long consoleId = 1L;
+        IRunnerResponse runnerResponse = new AllShipmentCountResponse();
+        ResponseEntity<IRunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
+
+        when(shipmentService.getAllShipments(consoleId)).thenReturn(responseEntity);
+
+        responseEntity = shipmentController.getAllShipments(consoleId);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAllShipments_Exception() {
+        Long consoleId = 1L;
+
+        when(shipmentService.getAllShipments(consoleId)).thenThrow(new RuntimeException("Test Exception"));
+
+        var responseEntity = shipmentController.getAllShipments(consoleId);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateConsoleShipments_Success() {
+        IRunnerResponse runnerResponse = new UpstreamDateUpdateResponse();
+        UpdateConsoleShipmentRequest request = mock(UpdateConsoleShipmentRequest.class);
+        ResponseEntity<IRunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
+
+        when(shipmentService.updateConsoleShipments(any())).thenReturn(responseEntity);
+
+        responseEntity = shipmentController.updateConsoleShipments(request);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateConsoleShipments_Exception() {
+        UpdateConsoleShipmentRequest request = mock(UpdateConsoleShipmentRequest.class);
+
+        when(shipmentService.updateConsoleShipments(any())).thenThrow(new RuntimeException("Test Exception"));
+
+        var responseEntity = shipmentController.updateConsoleShipments(request);
+
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
