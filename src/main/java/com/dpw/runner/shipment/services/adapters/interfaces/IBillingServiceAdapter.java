@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
@@ -16,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListReques
 import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 
@@ -37,4 +39,6 @@ public interface IBillingServiceAdapter {
     List<BillingSummary> fetchBillingBulkSummary(BillingBulkSummaryRequest request);
 
     ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request);
+
+    LocalDateTime fetchLastPostedInvoiceDate(LastPostedInvoiceDateRequest request);
 }

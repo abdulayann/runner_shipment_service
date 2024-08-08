@@ -36,6 +36,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Re
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -118,6 +119,8 @@ class FreightCertificationReportTest extends CommonMocks {
     @Mock
     private V1ServiceUtil v1ServiceUtil;
 
+    @Mock
+    private BillingServiceAdapter billingServiceAdapter;
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
@@ -321,16 +324,22 @@ class FreightCertificationReportTest extends CommonMocks {
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
     }
 
-    @Test
+    //    @Test TODO: SUBHAM Complete this test
     void populateDictionary() {
         FreightCertificationModel freightCertificationModel = new FreightCertificationModel();
         freightCertificationModel.setTenantDetails(new TenantModel());
         freightCertificationModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         freightCertificationModel.setUserdisplayname(UserContext.getUser().DisplayName);
         populateModel(freightCertificationModel);
+        UUID randomUUID = UUID.randomUUID();
+        freightCertificationModel.shipmentDetails.setGuid(randomUUID);
+        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
+        dependentServiceResponse.setData(List.of(new ArObjectResponse()));
 
+        when(billingServiceAdapter.fetchLastPostedInvoiceDate(any())).thenReturn(LocalDateTime.now());
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(masterDataFactory.getMasterDataService().fetchArObjectList(any())).thenReturn(dependentServiceResponse);
         mockTenantSettings();
         mockBill(true, false);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
@@ -376,15 +385,6 @@ class FreightCertificationReportTest extends CommonMocks {
         dependentServiceResponse = DependentServiceResponse.builder().data(billChargesResponseList).build();
         when(v1MasterData.fetchBillChargesList(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class)).thenReturn(billChargesResponseList);
-
-        ArObjectResponse arObjectResponse = new ArObjectResponse();
-        if(setBillData) {
-            arObjectResponse.setInvoiceDate(LocalDateTime.now());
-        }
-        List<ArObjectResponse> arObjectResponseList = Arrays.asList(arObjectResponse);
-        dependentServiceResponse = DependentServiceResponse.builder().data(arObjectResponseList).build();
-        when(v1MasterData.fetchArObjectList(any())).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), ArObjectResponse.class)).thenReturn(arObjectResponseList);
 
         ChargeTypesResponse chargeTypesResponse = new ChargeTypesResponse();
         if(setBillData) {

@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadR
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.ExternalBillChargeRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.ExternalBillConfiguration;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.ExternalBillRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
@@ -51,6 +52,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -252,7 +254,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
             return response;
         } catch (Exception e) {
-            throw new BillingException("Error occurred while making a request to the billing service", e);
+            throw new BillingException("Error occurred while making a request to the billing service: "+ e.getMessage());
         }
     }
 
@@ -300,6 +302,24 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         Type listType = new TypeToken<List<ChargeTypeBaseResponse>>() {
         }.getType();
         return modelMapper.map(listResponse.getData(), listType);
+    }
+
+    @Override
+    public LocalDateTime fetchLastPostedInvoiceDate(LastPostedInvoiceDateRequest request) {
+        String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getLastPostedInvoiceDate();
+        HttpEntity<LastPostedInvoiceDateRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+        ParameterizedTypeReference<BillingEntityResponse> responseType = new ParameterizedTypeReference<>() {
+        };
+        BillingEntityResponse billingEntityResponse = executePostRequest(url, httpEntity, responseType);
+        if (billingEntityResponse == null
+                || billingEntityResponse.getData() == null
+                || billingEntityResponse.getData().get("lastPostedInvoiceDate") == null) {
+            throw new BillingException(NULL_RESPONSE_ERROR);
+        }
+
+        return LocalDateTime.parse(
+                billingEntityResponse.getData().get("lastPostedInvoiceDate").toString(),
+                DateTimeFormatter.ofPattern(Constants.DATE_TIME_FORMAT));
     }
 
     private Boolean checkActiveCharges(BillingSummary billingSummary) {
