@@ -16,4 +16,6 @@ public class BillingServiceUrlConfig {
     private String billingBulkSummary;
     private String lastPostedInvoiceDate;
     private Boolean enableBillingIntegration;
+    private String getBillByEntity;
+    private String billChargesFilter;
 }

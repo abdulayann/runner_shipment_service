@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsoleShipmentsMappingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,7 +25,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
 
     @Override
     public List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId) {
-        return consoleShipmentsMappingRepository.findByConsolidationId(consolidationId);
+        return consoleShipmentsMappingRepository.findByConsolidationIdByQuery(consolidationId);
     }
 
     private void deleteByConsolidationIdAndShipmentIdIn(Long consolidationId, List<Long> shipmentIds) {
@@ -33,7 +34,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
 
     @Override
     public List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId) {
-        return consoleShipmentsMappingRepository.findByShipmentId(shipmentId);
+        return consoleShipmentsMappingRepository.findByShipmentIdByQuery(shipmentId);
     }
 
     @Override
@@ -46,6 +47,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
         return consoleShipmentsMappingRepository.findByShipmentIdByQuery(shipmentId);
     }
 
+    @Override
+    public List<ConsoleShipmentMapping> findByConsolidationIdAll(Long consolidationId) {
+        return consoleShipmentsMappingRepository.findByConsolidationId(consolidationId);
+    }
+
     private ConsoleShipmentMapping save(ConsoleShipmentMapping consoleShipmentMapping) {
         return consoleShipmentsMappingRepository.save(consoleShipmentMapping);
     }
@@ -55,7 +61,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public List<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings) {
+    public HashSet<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchShipIds) {
         if(mappings == null)
             mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
@@ -69,10 +75,16 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 ConsoleShipmentMapping entity = new ConsoleShipmentMapping();
                 entity.setShipmentId(id);
                 entity.setConsolidationId(consolidationId);
+                if(interBranchShipIds.contains(id)) {
+                    entity.setIsAttachmentDone(false);
+                    entity.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
+                } else {
+                    entity.setIsAttachmentDone(true);
+                }
                 save(entity);
             }
         }
-        return new ArrayList<>(shipmentIds);
+        return shipmentIds;
     }
 
     @Override
@@ -107,5 +119,18 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 delete(mapping);
             }
         }
+    }
+
+    @Override
+    @Transactional
+    public void updateConsoleShipments(ShipmentRequestedType shipmentRequestedType, Long consoleId, Long shipmentId) {
+        Integer shipmentRequestedTypeValue = shipmentRequestedType.getValue();
+        consoleShipmentsMappingRepository.updateConsoleShipmentStatus(shipmentRequestedTypeValue, consoleId, shipmentId);
+    }
+
+    @Override
+    @Transactional
+    public void deletePendingStateByConsoleId(Long consoleId) {
+        consoleShipmentsMappingRepository.deletePendingStateByConsoleId(consoleId);
     }
 }

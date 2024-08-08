@@ -162,4 +162,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private DateBehaviorType dateType;
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
+
+    // Consolidation achieved values
+    private AchievedQuantitiesRequest consolidationAchievedQuantities;
 }

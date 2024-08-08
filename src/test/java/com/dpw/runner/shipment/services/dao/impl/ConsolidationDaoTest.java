@@ -36,6 +36,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -68,6 +69,9 @@ class ConsolidationDaoTest extends CommonMocks {
 
     @Mock
     private IMawbStocksLinkDao mawbStocksLinkDao;
+
+    @Mock
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Mock
     private IV1Service v1Service;
@@ -329,9 +333,11 @@ class ConsolidationDaoTest extends CommonMocks {
     @Test
     void testUpdate_Success() {
         ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails2.setInterBranchConsole(false);
         var spyService = Mockito.spy(consolidationsDao);
         doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
-        doReturn(consolidationDetails).when(consolidationRepository).save(any());
+        doReturn(consolidationDetails2).when(consolidationRepository).save(any());
         mockShipmentSettings();
         ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
         assertEquals(consolidationDetails, responseEntity);
@@ -551,5 +557,33 @@ class ConsolidationDaoTest extends CommonMocks {
         when(consolidationRepository.findConsolidationsByGuids(Set.of(testConsol.getGuid()))).thenReturn(List.of(testConsol));
         var response = consolidationsDao.findConsolidationsByGuids(Set.of(testConsol.getGuid()));
         assertEquals(List.of(testConsol), response);
+    }
+
+    @Test
+    void testUpdate_Success2() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails2.setInterBranchConsole(false);
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        doReturn(consolidationDetails2).when(consolidationRepository).save(any());
+        mockShipmentSettings();
+        ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
+        assertNotNull(responseEntity);
+    }
+
+    @Test
+    void testUpdate_Success3() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails.setOpenForAttachment(true);
+        consolidationDetails2.setOpenForAttachment(false);
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        doReturn(consolidationDetails2).when(consolidationRepository).save(any());
+        mockShipmentSettings();
+        ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
+        assertNotNull(responseEntity);
     }
 }

@@ -316,6 +316,8 @@ public class V1ServiceImpl implements IV1Service {
     private String ORG_ADDRESS_LIST;
     @Value("${v1service.url.base}${v1service.url.addressRetrieve}")
     private String ADDRESS_RETRIEVE;
+    @Value("${v1service.url.base}${v1service.url.getColoadingStations}")
+    private String GET_CO_LOAD_STATIONS;
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -2021,4 +2023,22 @@ public class V1ServiceImpl implements IV1Service {
         }
     }
 
+    @Override
+    public V1DataResponse getCoLoadingStations(Object request) {
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.GET_CO_LOAD_STATIONS, entity, V1DataResponse.class);
+            long elapsedTime = System.currentTimeMillis() - time;
+            if(log.isInfoEnabled()) {
+                log.info(String.format("Token time taken in getColoadingStations() function: %d ms", elapsedTime));
+            }
+            return masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
 }

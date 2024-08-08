@@ -152,5 +152,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String sci;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cfsCutOffDate;
+    private Boolean openForAttachment;
+    private Boolean interBranchConsole;
 
 }

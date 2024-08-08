@@ -39,6 +39,7 @@ public class LogsHistoryService implements ILogsHistoryService {
                     .entityGuid(request.getEntityGuid())
                     .entityPayload(Base64.getEncoder().encodeToString(entityPayload))
                     .build();
+            logsHistory.setTenantId(request.getTenantId());
             log.info("LogHistory Request: " + jsonHelper.convertToJson(logsHistory));
             logsHistoryDao.save(logsHistory);
             log.info("LogHistory created successfully.");

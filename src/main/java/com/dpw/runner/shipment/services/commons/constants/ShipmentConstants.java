@@ -78,6 +78,9 @@ public class ShipmentConstants {
 
     public static final String SHIPMENT_CREATION = "SHPCR";
 
+    public static final String ALL_SHIPMENT_COUNT = "All shipment count fetched successfully";
+    public static final String UPDATE_CONSOLE_SHIPMENT_STATUS = "Shipment status has been updated successfully";
+
     // Shipment Statuses
     public static final String PENDING = "PENDING";
     public static final String BOOKED = "BOOKED";

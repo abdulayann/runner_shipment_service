@@ -724,6 +724,7 @@
   },
   "CONSOLIDATION": {
     "id": 1,
+    "interBranchConsole": false,
     "guid": "1d27fe99-0874-4587-9a83-460bb5ba31f0",
     "consolidationNumber": "CONS000231188",
     "consolidationType": "AGT",
@@ -4251,14 +4252,18 @@
     "totalPacksWeight": "152,078 KG",
     "totalPacksVolume": "119,646 M3",
     "packsVolumetricWeight": "19,941,040 KG",
-    "packsChargeableWeight": "119,646 M3"
+    "packsChargeableWeight": "119,646 M3",
+    "achievedWeight": 152078.0,
+    "achievedVolume": 119646.0
   },
   "PACK_SUMMARY_RESPONSE_AIR": {
     "totalPacks": "1 BAG, 1 CNA",
     "totalPacksWeight": "152,078 KG",
     "totalPacksVolume": "119,646 M3",
     "packsVolumetricWeight": "19,941,040 KG",
-    "packsChargeableWeight": "19,941,040 KG"
+    "packsChargeableWeight": "19,941,040 KG",
+    "achievedWeight": 152078.0,
+    "achievedVolume": 119646.0
   },
   "VOL_WT_CHARGEABLE": {
     "chargeable": "166.67",
@@ -8927,6 +8932,7 @@
   },
   "CONSOLIDATION_AIR": {
     "id": 2097,
+    "interBranchConsole": false,
     "guid": "e03fa08a-b80b-46f2-909c-20970cf8c1aa",
     "consolidationNumber": "CONS000233659",
     "consolidationType": "DRT",
@@ -11358,5 +11364,14 @@
     "failedBookings": [],
     "failedBillOfLadings": [],
     "invalidInputs": []
+  },
+  "CONSOLIDATION_ALLOCATION" : {
+    "id": 2109,
+    "guid": "fe65ec4a-10af-4ab3-8109-fbb0b3614a47",
+    "chargeableUnit": "M3",
+    "weight": 100.00,
+    "weightUnit": "KG",
+    "volume": 100.00,
+    "volumeUnit": "M3"
   }
 }
