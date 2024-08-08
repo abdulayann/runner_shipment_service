@@ -107,7 +107,6 @@ public class AuthFilter extends OncePerRequestFilter {
             return;
         }
         log.info("Auth Successful, username:-{},tenantId:-{} for request: {}", user.getUsername(), user.getTenantId(), LoggerHelper.getRequestIdFromMDC());
-        UserContext.setUser(user);
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         List<String> grantedPermissions = new ArrayList<>();
@@ -121,6 +120,7 @@ public class AuthFilter extends OncePerRequestFilter {
             }
         }
         user.setPermissions(permissions);
+        UserContext.setUser(user);
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                 user, null, getAuthorities(grantedPermissions));
         usernamePasswordAuthenticationToken
