@@ -345,154 +345,160 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     private void processExternalBillChargeRequest(BookingEntity entity, TenantModel tenantModel,
             List<ExternalBillChargeRequest> externalBillChargeRequests, List<EntityTransferOrganizations> organizationList,
             List<EntityTransferAddress> addressList, Long clientId, EntityTransferAddress clientAddressDetails) {
+        for (BillCharge billCharge : entity.getBillCharges()) {
+            populateExternalBillChargeRequest(tenantModel, externalBillChargeRequests, organizationList, addressList, clientId, clientAddressDetails, billCharge);
+        }
+
+    }
+
+    private void populateExternalBillChargeRequest(TenantModel tenantModel, List<ExternalBillChargeRequest> externalBillChargeRequests,
+            List<EntityTransferOrganizations> organizationList,
+            List<EntityTransferAddress> addressList, Long clientId, EntityTransferAddress clientAddressDetails, BillCharge billCharge) {
         try {
-            for (BillCharge billCharge : entity.getBillCharges()) {
+            EntityTransferOrganizations creditorDetails = organizationList.stream().filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getCreditorCode()))
+                    .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
 
-                EntityTransferOrganizations creditorDetails = organizationList.stream().filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getCreditorCode()))
-                        .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
+            Long creditorId = Optional.ofNullable(billCharge.getCreditorCode())
+                    .filter(code -> !code.trim().isEmpty())
+                    .map(code -> Optional.ofNullable(creditorDetails)
+                            .map(EntityTransferOrganizations::getId)
+                            .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + code)))
+                    .orElseGet(() -> Optional.ofNullable(creditorDetails)
+                            .map(EntityTransferOrganizations::getId)
+                            .orElse(clientId));
 
-                Long creditorId = Optional.ofNullable(billCharge.getCreditorCode())
-                        .filter(code -> !code.trim().isEmpty())
-                        .map(code -> Optional.ofNullable(creditorDetails)
-                                .map(EntityTransferOrganizations::getId)
-                                .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + code)))
-                        .orElseGet(() -> Optional.ofNullable(creditorDetails)
-                                .map(EntityTransferOrganizations::getId)
-                                .orElse(clientId));
-
-                if (creditorDetails == null || creditorDetails.getPayables() == null || Boolean.FALSE.equals(creditorDetails.getPayables())) {
-                    creditorId = -1L;
-                }
-
-                EntityTransferOrganizations debtorDetails = organizationList.stream()
-                        .filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getDebtorCode()))
-                        .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
-
-                Long debtorId = Optional.ofNullable(billCharge.getDebtorCode()).filter(code -> !code.trim().isEmpty())
-                        .map(code -> Optional.ofNullable(debtorDetails).map(EntityTransferOrganizations::getId)
-                                .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + code)))
-                        .orElseGet(() -> Optional.ofNullable(debtorDetails).map(EntityTransferOrganizations::getId)
-                                .orElse(clientId));
-
-                final Long capturedCreditorId = creditorId;
-
-                EntityTransferAddress creditorAddressDetails = creditorId > 0 ?
-                        Optional.ofNullable(billCharge.getCreditorAddressCode()).filter(code -> !code.trim().isEmpty())
-                                .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
-                                .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(capturedCreditorId) && x.getDefaultAddress()).findFirst().orElse(null))
-                        : null;
-
-                EntityTransferAddress debtorAddressDetails = Optional.ofNullable(billCharge.getDebitorAddressCode()).filter(code -> !code.trim().isEmpty())
-                        .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
-                        .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(debtorId) && x.getDefaultAddress())
-                                .findFirst().orElse(null));
-
-                if (creditorAddressDetails == null && clientAddressDetails != null) {
-                    creditorAddressDetails = clientAddressDetails;
-                }
-
-                if (debtorAddressDetails == null && clientAddressDetails != null) {
-                    debtorAddressDetails = clientAddressDetails;
-                }
-
-                String revenueMeasurementBasisV2 = "";
-                BigDecimal measurementBasisQuantity = null;
-                String measurementBasisUnit = billCharge.getMeasurementsUnit();
-                try {
-                    MeasurementBasis revenueMeasurementBasis = MeasurementBasis.valueOf(billCharge.getPerMeasurementBasis());
-                    revenueMeasurementBasisV2 = switch (revenueMeasurementBasis) {
-                        case ContainerCount -> MeasurementBasis.ContainerCount.getBillingValue();
-                        case Weight -> MeasurementBasis.Weight.getBillingValue();
-                        case Volume -> MeasurementBasis.Volume.getBillingValue();
-                        case Chargeable -> MeasurementBasis.Chargeable.getBillingValue();
-                        case LowestBill -> MeasurementBasis.LowestBill.getBillingValue();
-                        case Package -> MeasurementBasis.Package.getBillingValue();
-                        case Shipment -> MeasurementBasis.Shipment.getBillingValue();
-                        case TEU -> MeasurementBasis.TEU.getBillingValue();
-                        case ChargePercentage -> MeasurementBasis.ChargePercentage.getBillingValue();
-                        case Custom -> MeasurementBasis.Custom.getBillingValue();
-                        case ContainerType -> MeasurementBasis.ContainerType.getBillingValue();
-                    };
-
-                    if (ObjectUtils.isEmpty(measurementBasisUnit)) {
-                        measurementBasisUnit = switch (revenueMeasurementBasis) {
-                            case ContainerCount -> "Containers";
-                            case Weight -> "KG";
-                            case Volume -> "M3";
-                            case Chargeable -> "KG";
-                            case LowestBill -> "LB";
-                            case Package -> "Packages";
-                            case Shipment -> "SHIPMENT";
-                            case TEU -> "TEU";
-                            case ChargePercentage -> "%";
-                            case Custom -> "Custom";
-                            case ContainerType -> "Containers";
-                            default -> "";
-                        };
-                    }
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                }
-
-                if (revenueMeasurementBasisV2 != null && !revenueMeasurementBasisV2.isBlank()) {
-                    measurementBasisQuantity = billCharge.getTotalUnitsCount() != null ? billCharge.getTotalUnitsCount() : BigDecimal.ONE;
-                }
-
-                ExternalBillChargeRequest externalBillChargeRequest = ExternalBillChargeRequest.builder()
-                        .postAPInvoice(false)
-                        .postARInvoice(false)
-                        .billChargeRequest(BillChargesRequest.builder()
-                                .chargeTypeCode(billCharge.getChargeTypeCode())
-                                .isFromConsolidation(false)
-                                .containerGuids(billCharge.getContainersGuid().stream().filter(ObjectUtils::isNotEmpty).map(UUID::toString).toList())
-                                .autoCalculate(new ArrayList<>())
-                                .ignoreValidations(new ArrayList<>())
-                                .payableLocation("Origin")
-                                .rateSource("PROCURED")
-                                .billChargeCostDetails(BillChargeCostDetailsRequest.builder()
-                                        .creditorId(creditorId > 0 ? creditorId.toString() : "")
-                                        .creditorAddressId(creditorId > 0 ? creditorAddressDetails.toString() : "")
-                                        .measurementBasis(revenueMeasurementBasisV2)
-                                        .measurementBasisUnit(measurementBasisUnit)
-                                        .measurementBasisQuantity(measurementBasisQuantity)
-                                        .unitRate(billCharge.getLocalCostAmount())
-                                        .unitRateCurrency(Optional.ofNullable(billCharge.getLocalCostCurrency()).filter(ObjectUtils::isNotEmpty)
-                                                .orElse(tenantModel.getCurrencyCode()))
-                                        .localCostAmount(billCharge.getLocalCostAmount())
-                                        .localCostCurrency(Optional.ofNullable(billCharge.getLocalCostCurrency()).filter(ObjectUtils::isNotEmpty)
-                                                .orElse(tenantModel.getCurrencyCode()))
-                                        .overseasCostAmount(billCharge.getOverseasCostAmount())
-                                        .overseasCostCurrency(Optional.ofNullable(billCharge.getOverseasCostCurrency()).filter(ObjectUtils::isNotEmpty)
-                                                .orElse(tenantModel.getCurrencyCode()))
-                                        .noTax(false)
-                                        .invoiceDate(LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT))
-                                        .documentRecordDate(LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT))
-                                        .isRcm(false).build())
-                                .billChargeRevenueDetails(BillChargeRevenueDetailsRequest.builder()
-                                        .debtorId(debtorId.toString())
-                                        .debtorAddressId(Optional.ofNullable(debtorAddressDetails).map(EntityTransferAddress::getId)
-                                                .map(Object::toString).orElse(null))
-                                        .measurementBasis(revenueMeasurementBasisV2)
-                                        .measurementBasisUnit(measurementBasisUnit)
-                                        .measurementBasisQuantity(measurementBasisQuantity)
-                                        .unitRate(Optional.ofNullable(billCharge.getCurrentSellRate()).filter(ObjectUtils::isNotEmpty)
-                                                .orElse(BigDecimal.ZERO))
-                                        .unitRateCurrency(Optional.ofNullable(billCharge.getLocalSellCurrency()).filter(ObjectUtils::isNotEmpty)
-                                                .orElse(tenantModel.getCurrencyCode()))
-                                        .localSellAmount(billCharge.getLocalSellAmount())
-                                        .localSellCurrency(Optional.ofNullable(billCharge.getLocalSellCurrency()).filter(ObjectUtils::isNotEmpty)
-                                                .orElse(tenantModel.getCurrencyCode()))
-                                        .overseasSellAmount(billCharge.getOverseasSellAmount())
-                                        .overseasSellCurrency(Optional.ofNullable(billCharge.getOverseasSellCurrency()).filter(ObjectUtils::isNotEmpty)
-                                                .orElse(tenantModel.getCurrencyCode()))
-                                        .noTax(false)
-                                        .isRcm(false).build())
-                                .build())
-                        .build();
-                externalBillChargeRequests.add(externalBillChargeRequest);
+            if (creditorDetails == null || creditorDetails.getPayables() == null || Boolean.FALSE.equals(creditorDetails.getPayables())) {
+                creditorId = -1L;
             }
-        } catch (Exception e) {
-            throw new BillingException(e.getMessage());
+
+            EntityTransferOrganizations debtorDetails = organizationList.stream()
+                    .filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getDebtorCode()))
+                    .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
+
+            Long debtorId = Optional.ofNullable(billCharge.getDebtorCode()).filter(code -> !code.trim().isEmpty())
+                    .map(code -> Optional.ofNullable(debtorDetails).map(EntityTransferOrganizations::getId)
+                            .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + code)))
+                    .orElseGet(() -> Optional.ofNullable(debtorDetails).map(EntityTransferOrganizations::getId)
+                            .orElse(clientId));
+
+            final Long capturedCreditorId = creditorId;
+
+            EntityTransferAddress creditorAddressDetails = creditorId > 0 ?
+                    Optional.ofNullable(billCharge.getCreditorAddressCode()).filter(code -> !code.trim().isEmpty())
+                            .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
+                            .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(capturedCreditorId) && x.getDefaultAddress()).findFirst().orElse(null))
+                    : null;
+
+            EntityTransferAddress debtorAddressDetails = Optional.ofNullable(billCharge.getDebitorAddressCode()).filter(code -> !code.trim().isEmpty())
+                    .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
+                    .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(debtorId) && x.getDefaultAddress())
+                            .findFirst().orElse(null));
+
+            if (creditorAddressDetails == null && clientAddressDetails != null) {
+                creditorAddressDetails = clientAddressDetails;
+            }
+
+            if (debtorAddressDetails == null && clientAddressDetails != null) {
+                debtorAddressDetails = clientAddressDetails;
+            }
+
+            String revenueMeasurementBasisV2 = "";
+            BigDecimal measurementBasisQuantity = null;
+            String measurementBasisUnit = billCharge.getMeasurementsUnit();
+            try {
+                MeasurementBasis revenueMeasurementBasis = MeasurementBasis.valueOf(billCharge.getPerMeasurementBasis());
+                revenueMeasurementBasisV2 = switch (revenueMeasurementBasis) {
+                    case ContainerCount -> MeasurementBasis.ContainerCount.getBillingValue();
+                    case Weight -> MeasurementBasis.Weight.getBillingValue();
+                    case Volume -> MeasurementBasis.Volume.getBillingValue();
+                    case Chargeable -> MeasurementBasis.Chargeable.getBillingValue();
+                    case LowestBill -> MeasurementBasis.LowestBill.getBillingValue();
+                    case Package -> MeasurementBasis.Package.getBillingValue();
+                    case Shipment -> MeasurementBasis.Shipment.getBillingValue();
+                    case TEU -> MeasurementBasis.TEU.getBillingValue();
+                    case ChargePercentage -> MeasurementBasis.ChargePercentage.getBillingValue();
+                    case Custom -> MeasurementBasis.Custom.getBillingValue();
+                    case ContainerType -> MeasurementBasis.ContainerType.getBillingValue();
+                };
+
+                if (ObjectUtils.isEmpty(measurementBasisUnit)) {
+                    measurementBasisUnit = switch (revenueMeasurementBasis) {
+                        case ContainerCount -> "Containers";
+                        case Weight -> "KG";
+                        case Volume -> "M3";
+                        case Chargeable -> "KG";
+                        case LowestBill -> "LB";
+                        case Package -> "Packages";
+                        case Shipment -> "SHIPMENT";
+                        case TEU -> "TEU";
+                        case ChargePercentage -> "%";
+                        case Custom -> "Custom";
+                        case ContainerType -> "Containers";
+                        default -> "";
+                    };
+                }
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
+
+            if (revenueMeasurementBasisV2 != null && !revenueMeasurementBasisV2.isBlank()) {
+                measurementBasisQuantity = billCharge.getTotalUnitsCount() != null ? billCharge.getTotalUnitsCount() : BigDecimal.ONE;
+            }
+
+            ExternalBillChargeRequest externalBillChargeRequest = ExternalBillChargeRequest.builder()
+                    .postAPInvoice(false)
+                    .postARInvoice(false)
+                    .billChargeRequest(BillChargesRequest.builder()
+                            .chargeTypeCode(billCharge.getChargeTypeCode())
+                            .isFromConsolidation(false)
+                            .containerGuids(billCharge.getContainersGuid().stream().filter(ObjectUtils::isNotEmpty).map(UUID::toString).toList())
+                            .autoCalculate(new ArrayList<>())
+                            .ignoreValidations(new ArrayList<>())
+                            .payableLocation("Origin")
+                            .rateSource("PROCURED")
+                            .billChargeCostDetails(BillChargeCostDetailsRequest.builder()
+                                    .creditorId(creditorId > 0 ? creditorId.toString() : "")
+                                    .creditorAddressId(creditorId > 0 ? creditorAddressDetails.toString() : "")
+                                    .measurementBasis(revenueMeasurementBasisV2)
+                                    .measurementBasisUnit(measurementBasisUnit)
+                                    .measurementBasisQuantity(measurementBasisQuantity)
+                                    .unitRate(billCharge.getLocalCostAmount())
+                                    .unitRateCurrency(Optional.ofNullable(billCharge.getLocalCostCurrency()).filter(ObjectUtils::isNotEmpty)
+                                            .orElse(tenantModel.getCurrencyCode()))
+                                    .localCostAmount(billCharge.getLocalCostAmount())
+                                    .localCostCurrency(Optional.ofNullable(billCharge.getLocalCostCurrency()).filter(ObjectUtils::isNotEmpty)
+                                            .orElse(tenantModel.getCurrencyCode()))
+                                    .overseasCostAmount(billCharge.getOverseasCostAmount())
+                                    .overseasCostCurrency(Optional.ofNullable(billCharge.getOverseasCostCurrency()).filter(ObjectUtils::isNotEmpty)
+                                            .orElse(tenantModel.getCurrencyCode()))
+                                    .noTax(false)
+                                    .invoiceDate(LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT))
+                                    .documentRecordDate(LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT))
+                                    .isRcm(false).build())
+                            .billChargeRevenueDetails(BillChargeRevenueDetailsRequest.builder()
+                                    .debtorId(debtorId.toString())
+                                    .debtorAddressId(Optional.ofNullable(debtorAddressDetails).map(EntityTransferAddress::getId)
+                                            .map(Object::toString).orElse(null))
+                                    .measurementBasis(revenueMeasurementBasisV2)
+                                    .measurementBasisUnit(measurementBasisUnit)
+                                    .measurementBasisQuantity(measurementBasisQuantity)
+                                    .unitRate(Optional.ofNullable(billCharge.getCurrentSellRate()).filter(ObjectUtils::isNotEmpty)
+                                            .orElse(BigDecimal.ZERO))
+                                    .unitRateCurrency(Optional.ofNullable(billCharge.getLocalSellCurrency()).filter(ObjectUtils::isNotEmpty)
+                                            .orElse(tenantModel.getCurrencyCode()))
+                                    .localSellAmount(billCharge.getLocalSellAmount())
+                                    .localSellCurrency(Optional.ofNullable(billCharge.getLocalSellCurrency()).filter(ObjectUtils::isNotEmpty)
+                                            .orElse(tenantModel.getCurrencyCode()))
+                                    .overseasSellAmount(billCharge.getOverseasSellAmount())
+                                    .overseasSellCurrency(Optional.ofNullable(billCharge.getOverseasSellCurrency()).filter(ObjectUtils::isNotEmpty)
+                                            .orElse(tenantModel.getCurrencyCode()))
+                                    .noTax(false)
+                                    .isRcm(false).build())
+                            .build())
+                    .build();
+            externalBillChargeRequests.add(externalBillChargeRequest);
+        } catch (Exception ex) {
+            throw new BillingException(ex.getMessage());
         }
     }
 
