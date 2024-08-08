@@ -1071,7 +1071,7 @@ class ShipmentControllerTest {
     void testRetrieveMeasurementBasis() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
-        when(shipmentService.retrieveById(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(shipmentService.shipmentRetrieveWithMeasurmentBasis(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = shipmentController.retrieveMeasurmentData(Optional.of(111L), Optional.of(UUID.randomUUID().toString()));
         // Assert

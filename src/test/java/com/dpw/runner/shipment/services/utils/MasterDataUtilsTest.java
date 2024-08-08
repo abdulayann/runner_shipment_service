@@ -2143,7 +2143,7 @@ class MasterDataUtilsTest {
 
         masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList());
 
-        assertTrue(isSuccess);
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
     }
 
 
@@ -2152,10 +2152,7 @@ class MasterDataUtilsTest {
         boolean isSuccess = true;
         var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
         mockShipmentListResponse.setContainersList(null);
-
-        masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList());
-
-        assertTrue(isSuccess);
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
     }
 
 }
