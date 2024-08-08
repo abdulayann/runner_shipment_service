@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -104,6 +103,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
     private static final String NULL_RESPONSE_ERROR = "Received null response from billing service or response data is null";
     private static final String NO_ORG_FOUND_FOR = "No OrganizationsRow found for ";
+    private static final String REQUEST_PAYLOAD = "Request payload: {}";
+    private static final String EXECUTING_POST_REQUEST = "Executing POST request...";
 
     @NotNull
     private static List<String> getClientCodeListForBillCreationRequest(BookingEntity entity) {
@@ -159,11 +160,11 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
         // Create an HttpEntity object with the payload and authentication headers
         HttpEntity<ExternalBillPayloadRequest> httpEntity = new HttpEntity<>(externalBillPayloadRequest, V1AuthHelper.getHeaders());
-        log.debug("Request payload: {}", externalBillPayloadRequest);
+        log.debug(REQUEST_PAYLOAD, externalBillPayloadRequest);
 
         try {
             // Send a POST request to the specified URL with the HttpEntity and expect a BillingEntityResponse
-            log.info("Executing POST request...");
+            log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<BillingEntityResponse> responseEntity = this.restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
             BillingEntityResponse billingEntityResponse = responseEntity.getBody();
 
@@ -199,11 +200,11 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
         // Create an HttpEntity object with the request payload and authentication headers
         HttpEntity<BillingBulkSummaryRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
-        log.debug("Request payload: {}", request);
+        log.debug(REQUEST_PAYLOAD, request);
 
         try {
             // Send the POST request and get the response body
-            log.info("Executing POST request...");
+            log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<BillingEntityResponse> responseEntity = restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
 
             // Check the response status and body
@@ -230,10 +231,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
     private <T, R> R executePostRequest(String url, HttpEntity<T> httpEntity, ParameterizedTypeReference<R> responseType) {
         log.info("Sending request to URL: {}", url);
-        log.debug("Request payload: {}", httpEntity.getBody());
+        log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
 
         try {
-            log.info("Executing POST request...");
+            log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<R> responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, responseType);
             R response = responseEntity.getBody();
 
