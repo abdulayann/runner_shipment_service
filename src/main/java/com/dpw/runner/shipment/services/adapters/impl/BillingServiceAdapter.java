@@ -1,36 +1,71 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.billing.ExternalBillPayloadRequest;
+import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.BookingEntity;
+import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.BookingEntity.BillCharge;
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.BillChargeCostDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.BillChargeRevenueDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.BillChargesRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.BillRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.ExternalBillChargeRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.ExternalBillConfiguration;
+import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.ExternalBillRequest;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.Objects;
 
 @Service
 @Slf4j
@@ -58,18 +93,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     @Autowired
     private CommonUtils commonUtils;
 
-    @Nullable // TODO: SUBHAM Complete this methods to support chargetype transport mode validation
-    private static ChargeTypeResponse getChargeTypeDetails(List<ChargeTypeResponse> chargeTypeList, BillCharge billCharge) {
-        ChargeTypeResponse chargeTypeDetails = null;
-
-        List<ChargeTypeResponse> matchedChargeTypeDetails =
-                chargeTypeList.stream().filter(x -> billCharge.getChargeTypeCode().equalsIgnoreCase(x.getChargeCode())).filter(ObjectUtils::isNotEmpty).toList();
-
-        if (ObjectUtils.isNotEmpty(matchedChargeTypeDetails)) {
-            List<String> chargeTypeIds = matchedChargeTypeDetails.stream().map(ChargeTypeResponse::getId).distinct().toList();
-        }
-        return chargeTypeDetails;
-    }
+    private static final String NULL_RESPONSE_ERROR = "Received null response from billing service or response data is null";
 
     @NotNull
     private static List<String> getClientCodeListForBillCreationRequest(BookingEntity entity) {
@@ -87,11 +111,6 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         }
         return clientCodeList;
     }
-
-    @Autowired
-    private BillingServiceUrlConfig billingServiceUrlConfig;
-
-    private static final String NULL_RESPONSE_ERROR = "Received null response from billing service or response data is null";
 
     @Override
     public Boolean fetchActiveInvoices(CommonGetRequest request) throws RunnerException {
@@ -245,7 +264,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     }
 
     @Override
-    public ExternalBillPayloadRequest getBillCreationRequest(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled,
+    public ResponseEntity<BillingEntityResponse> createBillV2(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled,
             ShipmentDetailsResponse shipmentDetailsResponse) {
 
         CreateBookingModuleInV1 bookingRequestForV1 = v1ServiceUtil.createBookingRequestForV1(customerBooking, isShipmentEnabled, isBillingEnabled,
@@ -256,9 +275,6 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         ExternalBillPayloadRequest externalBillPayloadRequest = new ExternalBillPayloadRequest();
         List<ExternalBillRequest> externalBillRequests = new ArrayList<>();
         List<ExternalBillChargeRequest> externalBillChargeRequests = new ArrayList<>();
-        boolean isAllBillChargesSuccess = true;
-
-        List<ChargeTypeResponse> chargeTypeList = getChargeTypeListForBillCreationRequest(entity);
 
         List<EntityTransferOrganizations> organizationList = getOrganizationsListForBillCreationRequest(entity);
 
@@ -278,15 +294,14 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 .or(() -> addressList.stream()
                         .filter(x -> x.getOrgId().equals(clientId) && x.getDefaultAddress()).findFirst()).orElse(null);
 
-        isAllBillChargesSuccess = processExternalBillChargeRequest(entity, tenantModel, externalBillChargeRequests,
-                isAllBillChargesSuccess, chargeTypeList, organizationList, addressList, clientId, clientAddressDetails);
+        processExternalBillChargeRequest(entity, tenantModel, externalBillChargeRequests,
+                organizationList, addressList, clientId, clientAddressDetails);
 
-        if (isAllBillChargesSuccess) {
-            processExternalBillRequest(shipmentDetailsResponse.getGuid(), entity, externalBillRequests, externalBillChargeRequests, clientId, clientAddressDetails);
-        }
+        processExternalBillRequest(shipmentDetailsResponse.getGuid(), entity, externalBillRequests, externalBillChargeRequests, clientId, clientAddressDetails);
+
         externalBillPayloadRequest.setExternalBillRequestList(externalBillRequests);
 
-        return externalBillPayloadRequest;
+        return sendBillCreationRequest(externalBillPayloadRequest);
     }
 
     private void processExternalBillRequest(UUID shipmentGuid, BookingEntity entity, List<ExternalBillRequest> externalBillRequests,
@@ -313,7 +328,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                                 "SequenceNumber",
                                 "OverseasExchangeRate",
                                 "RevenueVendorSection",
-                                "OverseasAmounts"))
+                                "OverseasAmounts",
+                                "DueDate"))
                         .ignoreValidations(List.of(
                                 "MeasurementBasisQuantity",
                                 "Client",
@@ -325,15 +341,15 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         externalBillRequests.add(externalBillRequest);
     }
 
-    private boolean processExternalBillChargeRequest(BookingEntity entity, TenantModel tenantModel, List<ExternalBillChargeRequest> externalBillChargeRequests,
-            boolean isAllBillChargesSuccess, List<ChargeTypeResponse> chargeTypeList, List<EntityTransferOrganizations> organizationList, List<EntityTransferAddress> addressList,
-            Long clientId, EntityTransferAddress clientAddressDetails) {
+    private void processExternalBillChargeRequest(BookingEntity entity, TenantModel tenantModel,
+            List<ExternalBillChargeRequest> externalBillChargeRequests, List<EntityTransferOrganizations> organizationList,
+            List<EntityTransferAddress> addressList, Long clientId, EntityTransferAddress clientAddressDetails) {
         try {
             for (BillCharge billCharge : entity.getBillCharges()) {
-                ChargeTypeResponse chargeTypeDetails = getChargeTypeDetails(chargeTypeList, billCharge); // TODO: SUBHAM complete this
 
                 EntityTransferOrganizations creditorDetails = organizationList.stream().filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getCreditorCode()))
                         .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
+
                 Long creditorId = Optional.ofNullable(billCharge.getCreditorCode())
                         .filter(code -> !code.trim().isEmpty())
                         .map(code -> Optional.ofNullable(creditorDetails)
@@ -350,6 +366,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 EntityTransferOrganizations debtorDetails = organizationList.stream()
                         .filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getDebtorCode()))
                         .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
+
                 Long debtorId = Optional.ofNullable(billCharge.getDebtorCode()).filter(code -> !code.trim().isEmpty())
                         .map(code -> Optional.ofNullable(debtorDetails).map(EntityTransferOrganizations::getId)
                                 .orElseThrow(() -> new BillingException("No OrganizationsRow found for " + code)))
@@ -424,8 +441,6 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                         .postAPInvoice(false)
                         .postARInvoice(false)
                         .billChargeRequest(BillChargesRequest.builder()
-                                .chargeTypeGuid(null)
-                                .details(null)
                                 .chargeTypeCode(billCharge.getChargeTypeCode())
                                 .isFromConsolidation(false)
                                 .containerGuids(billCharge.getContainersGuid().stream().filter(ObjectUtils::isNotEmpty).map(UUID::toString).toList())
@@ -470,18 +485,14 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                                         .overseasSellCurrency(Optional.ofNullable(billCharge.getOverseasSellCurrency()).filter(ObjectUtils::isNotEmpty)
                                                 .orElse(tenantModel.getCurrencyCode()))
                                         .noTax(false)
-                                        .dueDate(null)
-                                        .paymentTermsCode(null)
                                         .isRcm(false).build())
                                 .build())
                         .build();
                 externalBillChargeRequests.add(externalBillChargeRequest);
             }
         } catch (Exception e) {
-            isAllBillChargesSuccess = false;
             throw new BillingException(e.getMessage());
         }
-        return isAllBillChargesSuccess;
     }
 
     private TenantModel getTenantModel() {
@@ -493,44 +504,6 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             throw new BillingException("Failed in fetching tenant data from V1 with error : {}", e);
         }
         return tenantModel;
-    }
-
-    private List<ChargeTypeResponse> getChargeTypeListForBillCreationRequest(BookingEntity entity) {
-        List<ChargeTypeResponse> chargeTypeList = new ArrayList<>();
-        List<String> chargeTypeCodes = entity.getBillCharges().stream().filter(ObjectUtils::isNotEmpty)
-                .map(BillCharge::getChargeTypeCode).toList();
-        try {
-            if (ObjectUtils.isNotEmpty(chargeTypeCodes)) {
-
-                ChargeTypeFilterRequest chargeTypeFilterRequest = new ChargeTypeFilterRequest();
-                chargeTypeFilterRequest.setChargeCodes(chargeTypeCodes);
-                chargeTypeFilterRequest.setPageSize(chargeTypeCodes.size());
-
-                String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getChargeTypeFilter();
-                log.info("Sending bill creation request to URL: {}", url);
-
-                HttpEntity<ChargeTypeFilterRequest> httpEntity = new HttpEntity<>(chargeTypeFilterRequest, V1AuthHelper.getHeaders());
-
-                log.info("Executing POST request...");
-                ResponseEntity<BillingListEntityResponse> responseEntity = this.restTemplate.postForEntity(url, httpEntity, BillingListEntityResponse.class);
-
-                BillingListEntityResponse<ChargeTypeResponse> listEntityResponse = responseEntity.getBody();
-
-                log.info("Received response with status: {}", responseEntity.getStatusCode());
-                log.debug("Response body: {}", listEntityResponse);
-
-                if (ObjectUtils.isNotEmpty(listEntityResponse) && ObjectUtils.isNotEmpty(listEntityResponse.getErrors())) {
-                    log.error("Bill creation response contains errors: {}", listEntityResponse.getErrors());
-                    throw new BillingException(listEntityResponse.getErrors().toString());
-                }
-
-                return (List<ChargeTypeResponse>) listEntityResponse.getData();
-            }
-        } catch (Exception e) {
-            throw new BillingException(e.getMessage());
-        }
-
-        return chargeTypeList;
     }
 
     private List<EntityTransferOrganizations> getOrganizationsListForBillCreationRequest(BookingEntity entity) {

@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.commons.requests.billing;
+package com.dpw.runner.shipment.services.dto.request.billing;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
