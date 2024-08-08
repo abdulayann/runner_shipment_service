@@ -275,6 +275,7 @@ public class BookingIntegrationsUtility {
                 .mainLegCarrierCode(getCarrierSCACCodeFromItemValue(carrierDetails.map(CarrierDetails::getShippingLine).orElse(null)))
                 .minTransitHours(carrierDetails.map(CarrierDetails::getMinTransitHours).orElse(null))
                 .maxTransitHours(carrierDetails.map(CarrierDetails::getMaxTransitHours).orElse(null))
+                .charges(createCharges(customerBooking))
                 .build();
         if((!Objects.isNull(customerBooking.getContainersList()) && !customerBooking.getContainersList().isEmpty()) || (!Objects.isNull(customerBooking.getPackingList()) && !customerBooking.getPackingList().isEmpty()))
         {
@@ -283,10 +284,6 @@ public class BookingIntegrationsUtility {
         if(!Objects.isNull(customerBooking.getRoutingList()) && !customerBooking.getRoutingList().isEmpty())
         {
             platformCreateRequest.setRoute(createRoute(customerBooking));
-        }
-        if(!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty())
-        {
-            platformCreateRequest.setCharges(createCharges(customerBooking));
         }
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
@@ -449,6 +446,8 @@ public class BookingIntegrationsUtility {
     private List<ChargesRequest> createCharges(CustomerBooking customerBooking) {
         var bookingCharges = customerBooking.getBookingCharges();
         List<ChargesRequest> charges = new ArrayList<>();
+        if(Objects.isNull(bookingCharges) || bookingCharges.isEmpty())
+            return charges;
         List<String> chargeTypes = bookingCharges.stream().map(BookingCharges::getChargeType).toList();
         Map<String, EntityTransferChargeType> chargeTypeMap = masterDataUtils.getChargeTypes(chargeTypes);
         log.info("ChargeTypeMap from V1 Charge Codes: "+ jsonHelper.convertToJson(chargeTypeMap));
@@ -492,14 +491,11 @@ public class BookingIntegrationsUtility {
                 .pickup_date(null)
                 .eta(carrierDetails.map(c -> c.getEta()).orElse(null))
                 .ets(carrierDetails.map(c -> c.getEtd()).orElse(null))
+                .charges(createCharges(customerBooking))
                 .build();
         if((!Objects.isNull(customerBooking.getContainersList()) && !customerBooking.getContainersList().isEmpty()) || (!Objects.isNull(customerBooking.getPackingList()) && !customerBooking.getPackingList().isEmpty()))
         {
             platformUpdateRequest.setLoad(createLoad(customerBooking));
-        }
-        if(!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty())
-        {
-            platformUpdateRequest.setCharges(createCharges(customerBooking));
         }
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }

@@ -1045,6 +1045,7 @@ public class PackingService implements IPackingService {
      * This will help consumer to identify the percentage of utilisation and act accordingly
      * This is just a calculation api , nothing's saved back into DB
      */
+    @Transactional
     public PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest request) throws RunnerException {
         var consolidationId = request.getConsolidationId();
         var shipmentRequest = request.getShipmentRequest();
@@ -1068,7 +1069,9 @@ public class PackingService implements IPackingService {
             return null;
 
         consol = optionalConsol.get();
-        consol.setAllocations(allocated);
+        if(!Objects.isNull(allocated)) {
+            consol.setAllocations(allocated);
+        }
         achievedQuantities = Optional.ofNullable(consol.getAchievedQuantities()).orElse(new AchievedQuantities());
         achievedQuantities.setConsolidatedWeightUnit(toWeightUnit);
         achievedQuantities.setConsolidatedVolumeUnit(toVolumeUnit);
@@ -1099,6 +1102,12 @@ public class PackingService implements IPackingService {
             packSummaryResponse.setConsolidationAchievedQuantities(jsonHelper.convertValue(consol.getAchievedQuantities(), AchievedQuantitiesResponse.class));
             packSummaryResponse.setAllocatedWeight(consol.getAllocations().getWeight());
             packSummaryResponse.setAllocatedVolume(consol.getAllocations().getVolume());
+        }
+
+        if(Boolean.TRUE.equals(request.getSaveConsol())) {
+            commonUtils.updateConsolOpenForAttachment(consol);
+            consol.setPackingList(packingList);
+            consolidationDao.save(consol, false);
         }
 
         return packSummaryResponse;
