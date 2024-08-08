@@ -5541,13 +5541,12 @@ ShipmentServiceTest extends CommonMocks {
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(attachedConsol));
-        when(jsonHelper.convertValue(any(), eq(AchievedQuantities.class))).thenReturn(new AchievedQuantities());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
-        verify(packingService, times(1)).calculatePacksUtilisationForConsolidation(any());
+        verify(packingService, times(1)).savePackUtilisationCalculationInConsole(any());
     }
 
 }

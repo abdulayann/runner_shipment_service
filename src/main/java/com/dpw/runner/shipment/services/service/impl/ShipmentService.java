@@ -3955,16 +3955,11 @@ public class ShipmentService implements IShipmentService {
             }
         }
         if(linkedConsol != null && shipmentRequest != null) {
-            try {
-                CalculatePackUtilizationRequest utilizationRequest = CalculatePackUtilizationRequest.builder()
-                    .consolidationId(linkedConsol.getId())
-                    .saveConsol(true)
-                    .shipmentRequest(shipmentRequest).build();
-                packingService.calculatePacksUtilisationForConsolidation(utilizationRequest);
-            }
-            catch (Exception e) {
-                log.error("Unable to save achieved quantities in consol due to : {}", e.getMessage());
-            }
+            CalculatePackUtilizationRequest utilizationRequest = CalculatePackUtilizationRequest.builder()
+                .consolidationId(linkedConsol.getId())
+                .saveConsol(true)
+                .shipmentRequest(shipmentRequest).build();
+            packingService.savePackUtilisationCalculationInConsole(utilizationRequest);
         }
         boolean makeConsoleDG = checkForDGShipmentAndAirDgFlag(shipment);
         AtomicBoolean makeConsoleNonDG = new AtomicBoolean(checkForNonDGShipmentAndAirDgFlag(shipment));
