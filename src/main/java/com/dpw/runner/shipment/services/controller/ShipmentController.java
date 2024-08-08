@@ -613,10 +613,10 @@ public class ShipmentController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = UpstreamDateUpdateResponse.class)})
     @PostMapping(value = "email")
     public void email() throws Exception{
-        commonUtils.sendEmailForPullRequest(ShipmentDetails.builder().shipmentId("test").build(),
+        commonUtils.sendEmailForPullPushRequestStatus(ShipmentDetails.builder().shipmentId("test").build(),
                 ConsolidationDetails.builder().consolidationNumber("consoleNum").mawb("mawb").
                         carrierDetails(CarrierDetails.builder().etd(LocalDateTime.MIN).eta(LocalDateTime.now()).build()).build(),
-                ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
+                ShipmentRequestedType.SHIPMENT_PULL_REQUESTED, "reject remarks");
     }
 
 }

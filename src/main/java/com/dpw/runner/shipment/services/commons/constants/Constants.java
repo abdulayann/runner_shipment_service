@@ -433,8 +433,39 @@ public class Constants {
     public static final String ENTITY = "entity";
     public static final String NAME_FILTER = "name";
     public static final String Active = "Active";
+
+    public static final String Shipment_Create_User = "Shipment_Create_User";
+    public static final String Shipment_Assigned_User = "Shipment_Assigned_User";
+    public static final String Consol_Branch_Code = "Consol_Branch_Code";
+    public static final String Consol_Branch_Name = "Consol_Branch_Name";
     public static final String Consolidation_Number = "Consolidation_Number";
+    public static final String Source_Consolidation_Number = "Source_Consolidation_Number";
     public static final String MAWB_Number = "MAWB_Number";
+    public static final String HAWB_Number = "HAWB_Number";
+    public static final String Interbranch_Shipment_Number = "Interbranch_Shipment_Number";
+    public static final String Carrier_Code = "Carrier_Code";
+    public static final String Carrier_name = "Carrier_name";
+    public static final String Flight_Number = "Flight_Number";
+    public static final String POL_Name = "POL_Name";
+    public static final String POD_Name = "POD_Name";
+    public static final String Allocated_Weight = "Allocated_Weight";
+    public static final String Allocated_Volume = "Allocated_Volume";
+    public static final String Allocated_Weight_Unit = "Allocated_Weight_Unit";
+    public static final String Allocated_Volume_Unit = "Allocated_Volume_Unit";
+    public static final String Request_Date_Time = "Request_Date_Time";
+    public static final String User_name = "User_name";
+    public static final String Consolidation_Create_User = "Consolidation_Create_User";
+    public static final String Shipment_Branch_Code = "Shipment_Branch_Code";
+    public static final String Shipment_Branch_Name = "Shipment_Branch_Name";
+    public static final String Interbranch_Consolidation_Number = "Interbranch_Consolidation_Number";
+    public static final String Shipment_Number = "Shipment_Number";
+    public static final String Cargo_Receive_Date = "Cargo_Receive_Date";
+    public static final String Shipment_Weight = "Shipment_Weight";
+    public static final String Shipment_Weight_Unit = "Shipment_Weight_Unit";
+    public static final String Shipment_Volume = "Shipment_Volume";
+    public static final String Shipment_Volume_Unit = "Shipment_Volume_Unit";
+    public static final String Actioned_User_name = "Actioned_User_name";
+    public static final String Reject_remarks = "Reject_remarks";
 
     private Constants() {
     }
