@@ -3065,12 +3065,6 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
-        /*
-        if utilisation percentage is higher than 100, we set the auto attach shipment flag as false
-        same is being done in shipment service after save.
-         */
-        commonUtils.updateConsolOpenForAttachment(consolidationDetails);
-
     }
 
     public void validateRaKcForConsol(ConsolidationDetails consolidationDetails) throws RunnerException {
