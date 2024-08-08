@@ -1113,6 +1113,7 @@ import static org.mockito.Mockito.*;
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setConsolidationId(2L);
         consoleShipmentMapping.setShipmentId(1L);
+        consoleShipmentMapping.setIsAttachmentDone(true);
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setInterBranchConsole(false);

@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class ShipmentListResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
+    private Integer tenantId;
     private String houseBill;
     private String transportMode;
     private String direction;
@@ -123,4 +125,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String requestedType;
     private String requestedBy;
     private LocalDateTime requestedOn;
+    private Map<String, String> tenantMasterData;
 }
