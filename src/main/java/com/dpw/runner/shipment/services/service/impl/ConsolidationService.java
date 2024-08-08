@@ -683,7 +683,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             HashSet<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds);
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                if(attachedShipmentIds.contains(shipmentDetails.getId())) {
+                if(attachedShipmentIds.contains(shipmentDetails.getId()) && !interBranchShipIds.contains(shipmentDetails.getId())) {
                     if (shipmentDetails.getContainersList() != null) {
                         List<Containers> containersList = shipmentDetails.getContainersList();
                         for (Containers container : containersList) {
