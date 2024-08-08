@@ -499,7 +499,7 @@ public class CommonUtils {
         InterBranchContext.setContext(interBranchDto);
     }
 
-    private List<CoLoadingMAWBDetailsResponse> fetchColoadingDetails() {
+    public List<CoLoadingMAWBDetailsResponse> fetchColoadingDetails() {
         List<Object> criteria = new ArrayList<>(List.of(List.of("ChildTenantId"), "=", TenantContext.getCurrentTenant()));
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(100).criteriaRequests(criteria).build();
         var v1Response = iv1Service.getCoLoadingStations(commonV1ListRequest);

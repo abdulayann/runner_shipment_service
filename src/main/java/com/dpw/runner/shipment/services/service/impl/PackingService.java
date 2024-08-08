@@ -66,7 +66,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
@@ -1070,7 +1069,7 @@ public class PackingService implements IPackingService {
 
         consol = optionalConsol.get();
         consol.setAllocations(allocated);
-        achievedQuantities = consol.getAchievedQuantities();
+        achievedQuantities = Optional.ofNullable(consol.getAchievedQuantities()).orElse(new AchievedQuantities());
         achievedQuantities.setConsolidatedWeightUnit(toWeightUnit);
         achievedQuantities.setConsolidatedVolumeUnit(toVolumeUnit);
 
