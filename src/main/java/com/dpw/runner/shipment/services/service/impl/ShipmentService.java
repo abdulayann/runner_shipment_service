@@ -259,6 +259,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
 @SuppressWarnings("ALL")
@@ -1337,11 +1338,11 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
-        if(response instanceof AutoUpdateWtVolResponse) {
-            ((AutoUpdateWtVolResponse) response).setNoOfPacks(totalPacks.toString());
-            ((AutoUpdateWtVolResponse) response).setPacksUnit(packingUnit);
-        } else if(response instanceof ShipmentDetailsResponse) {
-            ((ShipmentDetailsResponse) response).setPackCount(totalPacks);
+        if(response instanceof AutoUpdateWtVolResponse autoUpdateWtVolResponse) {
+            autoUpdateWtVolResponse.setNoOfPacks(totalPacks.toString());
+            autoUpdateWtVolResponse.setPacksUnit(packingUnit);
+        } else if(response instanceof ShipmentDetailsResponse shipmentDetailsResponse) {
+            shipmentDetailsResponse.setPackCount(totalPacks);
         }
         return response;
     }
@@ -4738,7 +4739,7 @@ public class ShipmentService implements IShipmentService {
     private void calculateContainersAndTeu(ShipmentDetailsResponse response) {
         long containerCount = 0;
         Map<String, Long> containerCountMap = new HashMap<>();
-        if(response.getContainersList() != null && response.getContainersList().size() > 0) {
+        if(!CollectionUtils.isEmpty(response.getContainersList())) {
             for(ContainerResponse containerResponse : response.getContainersList()) {
                 if(containerResponse.getContainerCount() != null) {
                     containerCount = containerCount + containerResponse.getContainerCount();

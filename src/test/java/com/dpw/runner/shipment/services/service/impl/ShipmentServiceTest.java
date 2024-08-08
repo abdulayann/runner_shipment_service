@@ -5707,7 +5707,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().containersList(Arrays.asList(containerResponse)).build());
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.shipmentRetrieveWithMeasurmentBasis(commonRequestModel);
-        assertEquals(httpResponse.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
@@ -5715,7 +5715,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.shipmentRetrieveWithMeasurmentBasis(commonRequestModel);
-        assertEquals(httpResponse.getStatusCode(), HttpStatus.BAD_REQUEST);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 
 }

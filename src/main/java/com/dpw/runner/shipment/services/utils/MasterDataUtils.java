@@ -1345,7 +1345,7 @@ public class MasterDataUtils{
             if(!Objects.isNull(containerResponses))
                 containerResponses.forEach(r -> containerTypes.add(r.getContainerCode()));
 
-            Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
+            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
             pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
 
             BigDecimal teu;
@@ -1353,11 +1353,13 @@ public class MasterDataUtils{
             if (containerResponses != null) {
                 for(ContainerResponse c : containerResponses) {
                     if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
-                        var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
-                        if (!Objects.isNull(cache)) {
-                            EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
-                            if (!Objects.isNull(object.getTeu()))
-                                teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
+                        if(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA) != null) {
+                            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                            if (!Objects.isNull(cache)) {
+                                EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                                if (object != null && !Objects.isNull(object.getTeu()))
+                                    teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
+                            }
                         }
                     }
                 }
