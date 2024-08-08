@@ -3,27 +3,35 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
 import com.itextpdf.text.pdf.*;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.core.io.ByteArrayResource;
@@ -36,11 +44,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.Mockito.*;
@@ -69,6 +80,18 @@ class CommonUtilsTest {
 
     @Mock
     private TenantSettingsService tenantSettingsService;
+
+    @Mock
+    private IV1Service iv1Service;
+
+    @Mock
+    private ConsolidationDetails consolidationDetails;
+
+    @Mock
+    private AchievedQuantities achievedQuantities;
+
+    @Mock
+    private Allocations allocations;
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -488,5 +511,318 @@ class CommonUtilsTest {
     void defaultTenantSettingsWithValue() {
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         assertNotNull(commonUtils.getCurrentTenantSettings());
+    }
+
+    @Test
+    void testSetInterBranchContextForHub_withBothFlagsEnabled() {
+        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
+        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(true);
+        when(mockTenantSettingsResponse.getIsColoadingMAWBStationEnabled()).thenReturn(true);
+        when(mockTenantSettingsResponse.getColoadingBranchIds()).thenReturn(List.of(1,2));
+
+        assertNotNull(mockTenantSettingsResponse.getColoadingBranchIds());
+
+        InterBranchDto interBranchDto = new InterBranchDto();
+        interBranchDto.setColoadStationsTenantIds(tenantSettingsService.getV1TenantSettings(any()).getColoadingBranchIds());
+        interBranchDto.setHub(true);
+
+        commonUtils.setInterBranchContextForHub();
+        InterBranchDto interBranchContext = InterBranchContext.getContext();
+        assertNotNull(interBranchContext);
+        assertTrue(interBranchContext.isHub());
+        assertEquals(List.of(1,2), interBranchContext.getColoadStationsTenantIds());
+    }
+
+    @Test
+    void testSetInterBranchContextForHub_withMAWBColoadingDisabled() {
+        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
+        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(false);
+        assertTrue(mockTenantSettingsResponse.getColoadingBranchIds().isEmpty());
+
+        commonUtils.setInterBranchContextForHub();
+
+        InterBranchDto interBranchContext = InterBranchContext.getContext();
+        assertNotNull(interBranchContext);
+        assertFalse(interBranchContext.isHub());
+        assertNull(interBranchContext.getColoadStationsTenantIds());
+    }
+
+    @Test
+    void testSetInterBranchContextForHub_withColoadingMAWBStationDisabled() {
+        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
+        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(true);
+        when(mockTenantSettingsResponse.getIsColoadingMAWBStationEnabled()).thenReturn(false);
+        assertTrue(mockTenantSettingsResponse.getColoadingBranchIds().isEmpty());
+
+        commonUtils.setInterBranchContextForHub();
+
+        InterBranchDto interBranchContext = InterBranchContext.getContext();
+        assertNotNull(interBranchContext);
+        assertFalse(interBranchContext.isHub());
+        assertNull(interBranchContext.getColoadStationsTenantIds());
+    }
+
+    @Test
+    void testSetInterBranchContextForColoadStation_withColoadingEnabled() {
+        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
+        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(true);
+        when(mockTenantSettingsResponse.getColoadingBranchIds()).thenReturn(List.of(1,2));
+
+        List<CoLoadingMAWBDetailsResponse> mockDetails = Arrays.asList(
+                new CoLoadingMAWBDetailsResponse(1L, 1, 1),
+                new CoLoadingMAWBDetailsResponse(2L, 2, 2)
+        );
+
+        V1DataResponse v1DataResponse = mock(V1DataResponse.class);
+        when(iv1Service.getCoLoadingStations(any())).thenReturn(v1DataResponse);
+        when(commonUtils.fetchColoadingDetails()).thenReturn(mockDetails);
+
+        commonUtils.setInterBranchContextForColoadStation();
+        InterBranchDto context = InterBranchContext.getContext();
+        assert context != null;
+        assertNotNull(context.getHubTenantIds());
+        assertTrue(context.isCoLoadStation());
+    }
+
+    @Test
+    void testSetInterBranchContextForColoadStation_withColoadingDisabled() {
+        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
+        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(false);
+
+        commonUtils.setInterBranchContextForColoadStation();
+        assertNotNull(InterBranchContext.getContext());
+    }
+
+    @Test
+    void testSetInterBranchContextForColoadStation_withNullColoadingBranchIds() {
+        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
+        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(true);
+        when(mockTenantSettingsResponse.getColoadingBranchIds()).thenReturn(null);
+
+        commonUtils.setInterBranchContextForColoadStation();
+        assertNotNull(InterBranchContext.getContext());
+    }
+
+    @Test
+    void testUpdateConsolOpenForAttachment_withNullAchievedQuantities() {
+        when(consolidationDetails.getAchievedQuantities()).thenReturn(null);
+        commonUtils.updateConsolOpenForAttachment(consolidationDetails);
+        verify(consolidationDetails, never()).setOpenForAttachment(anyBoolean());
+    }
+
+    @Test
+    void testUpdateConsolOpenForAttachment_withWeightUtilizationAbove100() {
+        when(consolidationDetails.getAchievedQuantities()).thenReturn(achievedQuantities);
+        when(achievedQuantities.getWeightUtilization()).thenReturn("150");
+        when(achievedQuantities.getVolumeUtilization()).thenReturn("50");
+        commonUtils.updateConsolOpenForAttachment(consolidationDetails);
+        verify(consolidationDetails, times(1)).setOpenForAttachment(false);
+    }
+
+    @Test
+    void testUpdateConsolOpenForAttachment_withVolumeUtilizationAbove100() {
+        when(consolidationDetails.getAchievedQuantities()).thenReturn(achievedQuantities);
+        when(achievedQuantities.getWeightUtilization()).thenReturn("50");
+        when(achievedQuantities.getVolumeUtilization()).thenReturn("150");
+        commonUtils.updateConsolOpenForAttachment(consolidationDetails);
+        verify(consolidationDetails, times(1)).setOpenForAttachment(false);
+    }
+
+    @Test
+    void testUpdateConsolOpenForAttachment_AchievedQuantitiesIsNull() {
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setAchievedQuantities(null);
+
+        commonUtils.updateConsolOpenForAttachment(details);
+
+        assertNull(details.getOpenForAttachment());
+    }
+
+    @Test
+    void testUpdateConsolOpenForAttachment_WeightUtilizationAndVolumeUtilizationNull() {
+        achievedQuantities = new AchievedQuantities();
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setAchievedQuantities(achievedQuantities);
+
+        commonUtils.updateConsolOpenForAttachment(details);
+
+        assertNull(details.getOpenForAttachment());
+    }
+
+    @Test
+    void testCalculateConsolUtilization_NullAllocations() throws RunnerException {
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setAllocations(null);
+        details.setAchievedQuantities(new AchievedQuantities());
+
+        ConsolidationDetails result = commonUtils.calculateConsolUtilization(details);
+
+        assertThat(result.getAllocations()).isNotNull();
+    }
+
+    @Test
+    void testCalculateConsolUtilization_NullAchievedQuantities() throws RunnerException {
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setAllocations(new Allocations());
+        details.setAchievedQuantities(null);
+
+        ConsolidationDetails result = commonUtils.calculateConsolUtilization(details);
+
+        assertThat(result.getAchievedQuantities()).isNotNull();
+    }
+
+
+    @Test
+    void testCalculateConsolUtilization_WeightAndVolumeUtilization() throws RunnerException {
+        ConsolidationDetails details = getConsolidationDetails();
+
+        try (MockedStatic<UnitConversionUtility> mockedStatic = Mockito.mockStatic(UnitConversionUtility.class)) {
+            mockedStatic.when(() -> UnitConversionUtility.convertUnit(
+                            eq(Constants.MASS), any(BigDecimal.class), eq("KG"), eq(Constants.WEIGHT_UNIT_KG)))
+                    .thenReturn(new BigDecimal("100"));
+
+            mockedStatic.when(() -> UnitConversionUtility.convertUnit(
+                            eq(Constants.VOLUME), any(BigDecimal.class), eq("M3"), eq(Constants.VOLUME_UNIT_M3)))
+                    .thenReturn(new BigDecimal("50"));
+
+            ConsolidationDetails result = commonUtils.calculateConsolUtilization(details);
+
+            assertThat(result.getAchievedQuantities().getConsolidatedWeightUnit())
+                    .isNotNull()
+                    .isEqualTo("KG");
+
+            assertThat(result.getAllocations().getWeightUnit())
+                    .isNotNull()
+                    .isEqualTo("KG");
+
+            assertThat(result.getAchievedQuantities().getWeightUtilization()).isEqualTo("100.0");
+            assertThat(result.getAchievedQuantities().getVolumeUtilization()).isEqualTo("100.0");
+        }
+    }
+
+    private static @NotNull ConsolidationDetails getConsolidationDetails() {
+        ConsolidationDetails details = new ConsolidationDetails();
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        Allocations allocations = new Allocations();
+
+        achievedQuantities.setConsolidatedWeightUnit("KG");
+        achievedQuantities.setConsolidatedWeight(new BigDecimal("100"));
+        achievedQuantities.setConsolidatedVolumeUnit("M3");
+        achievedQuantities.setConsolidatedVolume(new BigDecimal("50"));
+
+        allocations.setWeightUnit("KG");
+        allocations.setWeight(new BigDecimal("200"));
+        allocations.setVolumeUnit("M3");
+        allocations.setVolume(new BigDecimal("100"));
+
+        details.setAchievedQuantities(achievedQuantities);
+        details.setAllocations(allocations);
+        return details;
+    }
+
+    @Test
+    void testCalculateConsolUtilization_ExceptionHandling() {
+        ConsolidationDetails details = getDetails();
+
+        try (MockedStatic<UnitConversionUtility> mockedStatic = Mockito.mockStatic(UnitConversionUtility.class)) {
+            mockedStatic.when(() -> UnitConversionUtility.convertUnit(
+                            anyString(), any(BigDecimal.class), anyString(), anyString()))
+                    .thenThrow(new RunnerException("Conversion error"));
+
+            assertThatThrownBy(() -> commonUtils.calculateConsolUtilization(details))
+                    .isInstanceOf(RunnerException.class)
+                    .hasMessageContaining("Conversion error");
+        }
+    }
+
+    @Test
+    void testCalculateConsolUtilization_ExceptionWithNullMessage() {
+        ConsolidationDetails details = new ConsolidationDetails();
+        achievedQuantities = new AchievedQuantities();
+        allocations = new Allocations();
+
+        details.setAchievedQuantities(achievedQuantities);
+        details.setAllocations(allocations);
+
+        try (MockedStatic<UnitConversionUtility> mockedStatic = mockStatic(UnitConversionUtility.class)) {
+            mockedStatic.when(() -> UnitConversionUtility.convertUnit(anyString(), any(BigDecimal.class), anyString(), anyString()))
+                    .thenThrow(new RuntimeException());
+
+            try {
+                commonUtils.calculateConsolUtilization(details);
+            } catch (RunnerException e) {
+                assertThat(e.getMessage()).isEqualTo(DaoConstants.DAO_CALCULATION_ERROR);
+            }
+        }
+    }
+
+    private static @NotNull ConsolidationDetails getDetails() {
+        ConsolidationDetails details = new ConsolidationDetails();
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        Allocations allocations = new Allocations();
+
+        achievedQuantities.setConsolidatedWeightUnit("KG");
+        achievedQuantities.setConsolidatedWeight(new BigDecimal("100"));
+
+        allocations.setWeightUnit("KG");
+        allocations.setWeight(new BigDecimal("200"));
+
+        details.setAchievedQuantities(achievedQuantities);
+        details.setAllocations(allocations);
+        return details;
+    }
+
+    @Test
+    void testCalculateConsolUtilization_WeightUtilizationZero() throws RunnerException {
+        ConsolidationDetails details = new ConsolidationDetails();
+        achievedQuantities = new AchievedQuantities();
+        allocations = new Allocations();
+
+        achievedQuantities.setConsolidatedWeightUnit("KG");
+        achievedQuantities.setConsolidatedWeight(new BigDecimal("100"));
+        allocations.setWeightUnit("KG");
+        allocations.setWeight(BigDecimal.ZERO);
+
+        details.setAchievedQuantities(achievedQuantities);
+        details.setAllocations(allocations);
+
+        try (MockedStatic<UnitConversionUtility> mockedStatic = mockStatic(UnitConversionUtility.class)) {
+            mockedStatic.when(() -> UnitConversionUtility.convertUnit(anyString(), any(BigDecimal.class), anyString(), anyString()))
+                    .thenReturn(new BigDecimal("0"));
+
+            ConsolidationDetails result = commonUtils.calculateConsolUtilization(details);
+
+            assertThat(result.getAchievedQuantities().getWeightUtilization()).isEqualTo("0");
+        }
+    }
+
+    @Test
+    void testCalculateConsolUtilization_VolumeUtilizationZero() throws RunnerException {
+        ConsolidationDetails details = new ConsolidationDetails();
+        achievedQuantities = new AchievedQuantities();
+        allocations = new Allocations();
+
+        achievedQuantities.setConsolidatedVolumeUnit("M3");
+        achievedQuantities.setConsolidatedVolume(new BigDecimal("0"));
+        allocations.setVolumeUnit("M3");
+        allocations.setVolume(BigDecimal.ZERO);
+
+        details.setAchievedQuantities(achievedQuantities);
+        details.setAllocations(allocations);
+
+        try (MockedStatic<UnitConversionUtility> mockedStatic = mockStatic(UnitConversionUtility.class)) {
+            mockedStatic.when(() -> UnitConversionUtility.convertUnit(anyString(), any(BigDecimal.class), anyString(), anyString()))
+                    .thenReturn(new BigDecimal("0"));
+
+            ConsolidationDetails result = commonUtils.calculateConsolUtilization(details);
+
+            assertThat(result.getAchievedQuantities().getVolumeUtilization()).isEqualTo("0");
+        }
     }
 }
