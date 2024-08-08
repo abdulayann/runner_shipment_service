@@ -214,9 +214,6 @@ public class ShipmentService implements IShipmentService {
     private MasterDataUtils masterDataUtils;
 
     @Autowired
-    private ICarrierDetailsDao carrierDetailsDao;
-
-    @Autowired
     private IAwbDao awbDao;
     @Autowired
     private IHblDao hblDao;
@@ -671,7 +668,7 @@ public class ShipmentService implements IShipmentService {
 
             this.createLogHistoryForShipment(shipmentDetails);
             ShipmentDetails finalShipmentDetails = shipmentDetails;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.updateUnLocData(finalShipmentDetails.getCarrierDetails(), null)));
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(finalShipmentDetails.getCarrierDetails(), null)));
 
         } catch (Exception e) {
             log.error("Error occurred due to: " + e.getStackTrace());
@@ -1266,7 +1263,7 @@ public class ShipmentService implements IShipmentService {
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached);
             this.createLogHistoryForShipment(entity);
             ShipmentDetails finalEntity = entity;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.updateUnLocData(finalEntity.getCarrierDetails(), oldConvertedShipment.getCarrierDetails())));
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(finalEntity.getCarrierDetails(), oldConvertedShipment.getCarrierDetails())));
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -1275,38 +1272,6 @@ public class ShipmentService implements IShipmentService {
             log.error("Error occurred due to: " + e.getStackTrace());
             log.error(responseMsg, e);
             throw new ValidationException(e.getMessage());
-        }
-    }
-
-    public void updateUnLocData(CarrierDetails carrierDetails, CarrierDetails oldCarrierDetails) {
-        try {
-            if( !Objects.isNull(carrierDetails) && ( Objects.isNull(oldCarrierDetails) || !Objects.equals(carrierDetails.getOrigin(), oldCarrierDetails.getOrigin())
-                    || !Objects.equals(carrierDetails.getOriginPort(), oldCarrierDetails.getOriginPort())
-                    || !Objects.equals(carrierDetails.getDestination(), oldCarrierDetails.getDestination())
-                    || !Objects.equals(carrierDetails.getDestinationPort(), oldCarrierDetails.getDestinationPort()) )) {
-                List<String> unlocoRequests = new ArrayList<>();
-                if(!IsStringNullOrEmpty(carrierDetails.getOrigin()))
-                    unlocoRequests.add(carrierDetails.getOrigin());
-                if(!IsStringNullOrEmpty(carrierDetails.getOriginPort()))
-                    unlocoRequests.add(carrierDetails.getOriginPort());
-                if(!IsStringNullOrEmpty(carrierDetails.getDestination()))
-                    unlocoRequests.add(carrierDetails.getDestination());
-                if(!IsStringNullOrEmpty(carrierDetails.getDestinationPort()))
-                    unlocoRequests.add(carrierDetails.getDestinationPort());
-                Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
-                UnlocationsResponse pol = unlocationsMap.get(carrierDetails.getOriginPort());
-                UnlocationsResponse pod = unlocationsMap.get(carrierDetails.getDestinationPort());
-                UnlocationsResponse origin = unlocationsMap.get(carrierDetails.getOrigin());
-                UnlocationsResponse destination = unlocationsMap.get(carrierDetails.getDestination());
-                carrierDetails.setOriginLocCode(origin.getLocCode());
-                carrierDetails.setDestinationLocCode(destination.getLocCode());
-                carrierDetails.setOriginPortLocCode(pol.getLocCode());
-                carrierDetails.setDestinationPortLocCode(pod.getLocCode());
-                carrierDetailsDao.saveUnLocCodes(carrierDetails);
-            }
-        }
-        catch (Exception e) {
-            log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierDetails.getId(), e.getMessage());
         }
     }
 
