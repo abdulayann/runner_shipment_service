@@ -1,29 +1,49 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
+import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
+import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse.BillingData;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.Objects;
 
 @Service
 @Slf4j
