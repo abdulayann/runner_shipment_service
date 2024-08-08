@@ -537,14 +537,14 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             List<Object> finalCriteria = new ArrayList<>();
             CommonV1ListRequest addressRequest = new CommonV1ListRequest();
 
-            List<Object> orgIdField = new ArrayList<>(List.of(Constants.ORG_ID));
+            List<Object> orgIdField = new ArrayList<>(List.of(Constants.OrgId));
             List<Long> orgIdList = organizations.stream().filter(ObjectUtils::isNotEmpty).map(EntityTransferOrganizations::getId).toList();
             List<Object> orgIdCriteria = new ArrayList<>(List.of(orgIdField, Constants.IN, List.of(orgIdList)));
             finalCriteria.add(orgIdCriteria);
 
             finalCriteria.add("and");
 
-            List<Object> activeClient = new ArrayList<>(List.of(Constants.ACTIVE_CLIENT));
+            List<Object> activeClient = new ArrayList<>(List.of(Constants.Active));
             List<Object> activeClientCriteria = new ArrayList<>(List.of(activeClient, Constants.EQ, 1));
             finalCriteria.add(activeClientCriteria);
 
