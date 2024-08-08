@@ -1045,7 +1045,6 @@ public class PackingService implements IPackingService {
      * This will help consumer to identify the percentage of utilisation and act accordingly
      * This is just a calculation api , nothing's saved back into DB
      */
-    @Transactional
     public PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest request) throws RunnerException {
         var consolidationId = request.getConsolidationId();
         var shipmentRequest = request.getShipmentRequest();
@@ -1104,12 +1103,6 @@ public class PackingService implements IPackingService {
             packSummaryResponse.setAllocatedVolume(consol.getAllocations().getVolume());
         }
 
-        if(Boolean.TRUE.equals(request.getSaveConsol())) {
-            commonUtils.updateConsolOpenForAttachment(consol);
-            consol.setPackingList(packingList);
-            consolidationDao.save(consol, false);
-        }
-
         return packSummaryResponse;
     }
 
@@ -1141,6 +1134,24 @@ public class PackingService implements IPackingService {
         InterBranchContext.removeContext();
 
         return packingList;
+    }
+
+    @Override
+    @Transactional
+    public void savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest calculatePackUtilizationRequest) {
+        try {
+            Optional<ConsolidationDetails> optional = consolidationDao.findById(calculatePackUtilizationRequest.getConsolidationId());
+            if(optional.isPresent()) {
+                var consol = optional.get();
+                var response = calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
+                consol.setAchievedQuantities(jsonHelper.convertValue(response.getConsolidationAchievedQuantities(), AchievedQuantities.class));
+                consolidationDao.save(consol, false);
+            }
+        }
+        catch (Exception e) {
+            log.error("Error saving pack utilisation in console : {}", e.getMessage());
+        }
+
     }
 
 }
