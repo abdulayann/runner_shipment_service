@@ -3951,7 +3951,7 @@ public class ShipmentService implements IShipmentService {
                     .consolidationId(linkedConsol.getId())
                     .saveConsol(true)
                     .shipmentRequest(shipmentRequest).build();
-                var response = packingService.calculatePacksUtilisationForConsolidation(utilizationRequest);
+                packingService.calculatePacksUtilisationForConsolidation(utilizationRequest);
             }
             catch (Exception e) {
                 log.error("Unable to save achieved quantities in consol due to : {}", e.getMessage());
