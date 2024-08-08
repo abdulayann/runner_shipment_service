@@ -1800,6 +1800,51 @@ class PackingServiceTest extends CommonMocks {
         }
     }
 
+    @Test
+    void testCalculatePacksUtilisationSavesConsolidation() throws RunnerException {
+        var packingList = jsonTestUtility.getTestPackingList();
+        Long consolidationId = 1L;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setPackingList(packingList);
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
+        shipmentRequest.setPackingList(jsonTestUtility.convertValueToList(packingList, PackingRequest.class));
+        Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
+        consolidationDetails.setAllocations(allocations);
+        setFeatureFlagForInterBranch();
+
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setSaveConsol(true);
+        request.setShipmentRequest(shipmentRequest);
+        request.setConsolidationId(consolidationId);
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        BigDecimal consolidatedWeight = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getWeight().doubleValue()).sum());
+        BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
+        achievedQuantities.setConsolidatedWeight(consolidatedWeight);
+        achievedQuantities.setConsolidatedVolume(consolidatedVolume);
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+
+        AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
+
+        // Mocking
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(packingList);
+        when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(allocations);
+        when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.calculateConsolUtilization(consolidationDetails)).thenReturn(consolidationDetails.setAchievedQuantities(achievedQuantities));
+        when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(achievedQuantitiesResponse);
+
+        try{
+            var response = packingService.calculatePacksUtilisationForConsolidation(request);
+            assertNotNull(response);
+            verify(consolidationDao, times(1)).save(any(), anyBoolean());
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
 
 
     void setFeatureFlagForInterBranch() {

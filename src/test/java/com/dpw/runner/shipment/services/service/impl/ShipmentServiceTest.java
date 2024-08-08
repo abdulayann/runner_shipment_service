@@ -5533,4 +5533,41 @@ ShipmentServiceTest extends CommonMocks {
     }
 
 
+    @Test
+    void testUpdateConsolAchievedAndOpenForAttachmentFromShipmentUpdate() throws RunnerException {
+        testShipment.setId(1L);
+        ConsolidationDetails attachedConsol = new ConsolidationDetails();
+        attachedConsol.setId(1L);
+        testShipment.setConsolidationList(List.of(attachedConsol));
+        ShipmentDetails mockShipment = testShipment;
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        mockShipmentRequest.setConsolidationAchievedQuantities(new AchievedQuantitiesRequest());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        // Mock
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(shipmentDao.findById(any()))
+            .thenReturn(
+                Optional.of(
+                    testShipment
+                        .setConsolidationList(List.of(attachedConsol))
+                        .setContainersList(new ArrayList<>())));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(attachedConsol));
+        when(jsonHelper.convertValue(any(), eq(AchievedQuantities.class))).thenReturn(new AchievedQuantities());
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+        verify(packingService, times(1)).calculatePacksUtilisationForConsolidation(any());
+    }
+
 }
