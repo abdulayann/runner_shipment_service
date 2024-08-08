@@ -560,7 +560,7 @@ public class ShipmentController {
         try {
             return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId, isAttached);
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }
     }
 
