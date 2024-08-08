@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
@@ -28,6 +29,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
@@ -980,6 +982,29 @@ class ShipmentControllerTest {
         when(shipmentService.getDateTimeChangeUpdates(anyLong())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = shipmentController.getDateTimeChanges(123L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+
+    @Test
+    void consoleShipmentList() throws RunnerException {
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
+        // Mock
+        when(shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), 1L, false)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, false);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void consoleShipmentListFails() throws RunnerException {
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
+        // Mock
+        when(shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), 1L, false)).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, false);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
