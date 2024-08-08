@@ -17,12 +17,12 @@ import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.LastPostedInvoiceDateResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -158,12 +158,15 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         ParameterizedTypeReference<BillingEntityResponse> responseType = new ParameterizedTypeReference<>() {
         };
         BillingEntityResponse billingEntityResponse = executePostRequest(url, httpEntity, responseType);
-        if (billingEntityResponse == null || billingEntityResponse.getData() == null) {
+        if (billingEntityResponse == null
+                || billingEntityResponse.getData() == null
+                || billingEntityResponse.getData().get("lastPostedInvoiceDate") == null) {
             throw new BillingException(NULL_RESPONSE_ERROR);
         }
 
-        LastPostedInvoiceDateResponse response = modelMapper.map(billingEntityResponse.getData(), LastPostedInvoiceDateResponse.class);
-        return response.getLastPostedInvoiceDate();
+        return LocalDateTime.parse(
+                billingEntityResponse.getData().get("lastPostedInvoiceDate").toString(),
+                DateTimeFormatter.ofPattern(Constants.DATE_TIME_FORMAT));
     }
 
     private Boolean checkActiveCharges(BillingSummary billingSummary) {
