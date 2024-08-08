@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.Book
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.BillChargeCostDetailsRequest;
@@ -30,6 +31,9 @@ import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse.BillingData;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
@@ -50,10 +54,13 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -84,6 +91,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
     @Value("${billing.getInvoiceData}")
     private String getInvoiceData;
+
     @Autowired
     private BillingServiceUrlConfig billingServiceUrlConfig;
     @Autowired
@@ -97,6 +105,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
     private static final String NULL_RESPONSE_ERROR = "Received null response from billing service or response data is null";
     private static final String NO_ORG_FOUND_FOR = "No OrganizationsRow found for ";
+    private static final String REQUEST_PAYLOAD = "Request payload: {}";
+    private static final String EXECUTING_POST_REQUEST = "Executing POST request...";
 
     @NotNull
     private static List<String> getClientCodeListForBillCreationRequest(BookingEntity entity) {
@@ -152,11 +162,11 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
         // Create an HttpEntity object with the payload and authentication headers
         HttpEntity<ExternalBillPayloadRequest> httpEntity = new HttpEntity<>(externalBillPayloadRequest, V1AuthHelper.getHeaders());
-        log.debug("Request payload: {}", externalBillPayloadRequest);
+        log.debug(REQUEST_PAYLOAD, externalBillPayloadRequest);
 
         try {
             // Send a POST request to the specified URL with the HttpEntity and expect a BillingEntityResponse
-            log.info("Executing POST request...");
+            log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<BillingEntityResponse> responseEntity = this.restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
             BillingEntityResponse billingEntityResponse = responseEntity.getBody();
 
@@ -175,12 +185,58 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         }
     }
 
-    private <T, R> R executePostRequest(String url, HttpEntity<T> httpEntity, ParameterizedTypeReference<R> responseType) {
-        log.info("Sending request to URL: {}", url);
-        log.debug("Request payload: {}", httpEntity.getBody());
+    /**
+     * Fetches the billing summary for a bulk set of modules.
+     * <p>
+     * This method takes an BillingBulkSummaryRequest object, sends a POST request to the billing service to retrieve the summary, and maps the response to a BillingSummary object
+     * if the response is not null.
+     *
+     * @param request the BillingBulkSummaryRequest containing module GUIDs and module type for which the billing summary is requested.
+     * @return a BillingSummary object containing the billing summary information.
+     */
+    @Override
+    public List<BillingSummary> fetchBillingBulkSummary(BillingBulkSummaryRequest request) {
+        // Construct the URL for the billing bulk summary endpoint
+        String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingBulkSummary();
+        log.info("Sending billing bulk summary request to URL: {}", url);
+
+        // Create an HttpEntity object with the request payload and authentication headers
+        HttpEntity<BillingBulkSummaryRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+        log.debug(REQUEST_PAYLOAD, request);
 
         try {
-            log.info("Executing POST request...");
+            // Send the POST request and get the response body
+            log.info(EXECUTING_POST_REQUEST);
+            ResponseEntity<BillingEntityResponse> responseEntity = restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
+
+            // Check the response status and body
+            BillingEntityResponse billingEntityResponse = responseEntity.getBody();
+            if (responseEntity.getStatusCode().is2xxSuccessful() && billingEntityResponse != null) {
+                log.info("Received billingEntityResponse from billing service");
+                Map<String, Object> data = billingEntityResponse.getData();
+                log.debug("Response data: {}", data);
+
+                // Convert the billingSummary object to a List<Map<String, Object>>
+                List<Map<String, Object>> billingSummaryListMap = (List<Map<String, Object>>) data.get("billingSummary");
+
+                // Map the list of maps to a list of BillingSummary objects
+                return modelMapper.map(billingSummaryListMap, new TypeToken<List<BillingSummary>>() {}.getType());
+            } else {
+                log.warn("Received non-successful response from billing service: {}", responseEntity.getStatusCode());
+                return List.of();
+            }
+        } catch (Exception e) {
+            log.error("Error occurred while fetching billing bulk summary", e);
+            throw new BillingException("Error occurred while fetching billing bulk summary", e);
+        }
+    }
+
+    private <T, R> R executePostRequest(String url, HttpEntity<T> httpEntity, ParameterizedTypeReference<R> responseType) {
+        log.info("Sending request to URL: {}", url);
+        log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
+
+        try {
+            log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<R> responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, responseType);
             R response = responseEntity.getBody();
 
@@ -595,4 +651,40 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     }
 
 
+
+    @Override
+    public ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request) {
+            ShipmentBillingListResponse shipmentBillingListResponse = new ShipmentBillingListResponse();
+
+            List<BillingSummary> billingSummaries = fetchBillingBulkSummary(BillingBulkSummaryRequest.builder()
+                    .moduleGuids(request.getGuidsList().stream().map(UUID::toString).toList())
+                    .moduleType(Constants.SHIPMENT).build());
+
+            Map<String, BillingSummary> billingSummaryMap = billingSummaries.stream()
+                    .collect(Collectors.toMap(BillingSummary::getModuleGuid, summary -> summary));
+
+            billingSummaryMap.forEach((shipmentGuid, v2BillingData) -> {
+                BillingData v1BillingData = new BillingData();
+                v1BillingData.setTotalEstimatedCost(v2BillingData.getTotalEstimatedCost());
+                v1BillingData.setTotalEstimatedRevenue(v2BillingData.getTotalEstimatedRevenue());
+                v1BillingData.setTotalEstimatedProfit(v2BillingData.getTotalEstimatedProfit());
+                v1BillingData.setTotalEstimatedProfitPercent(v2BillingData.getTotalEstimatedProfitPercent());
+                v1BillingData.setTotalCost(BigDecimal.valueOf(v2BillingData.getTotalCost()));
+                v1BillingData.setTotalRevenue(BigDecimal.valueOf(v2BillingData.getTotalRevenue()));
+                v1BillingData.setTotalProfit(v2BillingData.getTotalProfit());
+                v1BillingData.setTotalProfitPercent(v2BillingData.getTotalProfitPercent());
+                v1BillingData.setTotalPostedCost(v2BillingData.getTotalPostedCost());
+                v1BillingData.setTotalPostedRevenue(v2BillingData.getTotalPostedRevenue());
+                v1BillingData.setTotalPostedProfit(v2BillingData.getTotalPostedProfit());
+                v1BillingData.setTotalPostedProfitPercent(v2BillingData.getTotalPostedProfitPercent());
+                v1BillingData.setId(null); // TODO: SUBHAM fetch id of Shipment
+
+                Map<String, BillingData> data = Optional.ofNullable(shipmentBillingListResponse.getData()).orElseGet(HashMap::new);
+                data.put(shipmentGuid, v1BillingData);
+                shipmentBillingListResponse.setData(data);
+            });
+            return shipmentBillingListResponse;
+
+
+    }
 }

@@ -6,6 +6,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrE
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Dto.OrderManageDto;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
@@ -189,6 +191,10 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IAuditLogService auditLogService;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private BillingServiceUrlConfig billingServiceUrlConfig;
+    @Autowired
+    private BillingServiceAdapter billingServiceAdapter;
     @Autowired
     private MasterDataFactory masterDataFactory;
     @Autowired
@@ -1252,6 +1258,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", customerBooking.getBookingNumber(), ex.getMessage());
         }
     }
+
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
