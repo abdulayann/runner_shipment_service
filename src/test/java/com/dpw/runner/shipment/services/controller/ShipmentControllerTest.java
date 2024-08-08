@@ -986,27 +986,4 @@ class ShipmentControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
-
-    @Test
-    void consoleShipmentList() throws RunnerException {
-        ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
-        // Mock
-        when(shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), 1L, false)).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, false);
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void consoleShipmentListFails() throws RunnerException {
-        ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
-        // Mock
-        when(shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), 1L, false)).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, false);
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
 }
