@@ -37,4 +37,5 @@ public interface IPackingService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel commonRequestModel) throws RunnerException;
     PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest calculatePackUtilizationRequest) throws RunnerException;
+    void savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest calculatePackUtilizationRequest);
 }
