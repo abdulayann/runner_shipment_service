@@ -11,10 +11,9 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateConsoleShipmentRequest extends CommonRequest implements IRunnerRequest{
+public class UpdateShipmentRequest extends CommonRequest implements IRunnerRequest{
 
-    private Boolean isForHub;
-    private Long consoleId;
-    private List<Long> listOfShipments;
+    private List<Long> consoleIdsList;
+    private Long shipmentId;
     private ShipmentRequestedType shipmentRequestedType;
 }

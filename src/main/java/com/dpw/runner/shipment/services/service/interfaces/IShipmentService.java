@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
@@ -93,5 +92,5 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> getAllShipments(Long consoleId);
 
-    ResponseEntity<IRunnerResponse> updateConsoleShipments(UpdateConsoleShipmentRequest request);
+    ResponseEntity<IRunnerResponse> updateShipments(CommonRequestModel request);
 }

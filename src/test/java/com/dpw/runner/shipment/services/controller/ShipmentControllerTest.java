@@ -1048,9 +1048,9 @@ class ShipmentControllerTest {
         UpdateConsoleShipmentRequest request = mock(UpdateConsoleShipmentRequest.class);
         ResponseEntity<IRunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
 
-        when(shipmentService.updateConsoleShipments(any())).thenReturn(responseEntity);
+        when(shipmentService.updateShipments(any())).thenReturn(responseEntity);
 
-        responseEntity = shipmentController.updateConsoleShipments(request);
+        responseEntity = shipmentController.updateShipments(CommonRequestModel.buildRequest(request));
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1059,9 +1059,9 @@ class ShipmentControllerTest {
     void updateConsoleShipments_Exception() {
         UpdateConsoleShipmentRequest request = mock(UpdateConsoleShipmentRequest.class);
 
-        when(shipmentService.updateConsoleShipments(any())).thenThrow(new RuntimeException("Test Exception"));
+        when(shipmentService.updateShipments(any())).thenThrow(new RuntimeException("Test Exception"));
 
-        var responseEntity = shipmentController.updateConsoleShipments(request);
+        var responseEntity = shipmentController.updateShipments(CommonRequestModel.buildRequest(request));
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

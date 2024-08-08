@@ -72,6 +72,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -4539,18 +4540,54 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
-    public ResponseEntity<IRunnerResponse> updateConsoleShipments(UpdateConsoleShipmentRequest request) {
-        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
-        if(consolidationDetails.isPresent()) {
-            if (request.isForHub() && Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
+    public ResponseEntity<IRunnerResponse> updateShipments(CommonRequestModel request) {
+        if (isForHubRequest(request)) {
+            processHubRequest((UpdateConsoleShipmentRequest) request.getData());
+        } else {
+            processShipmentRequest((UpdateShipmentRequest) request.getData());
+        }
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    private boolean isForHubRequest(CommonRequestModel request) {
+        UpdateConsoleShipmentRequest updateConsoleShipmentRequest = (UpdateConsoleShipmentRequest) request.getData();
+        return updateConsoleShipmentRequest.getIsForHub() != null;
+    }
+
+    private void processHubRequest(UpdateConsoleShipmentRequest updateConsoleShipmentRequest) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(updateConsoleShipmentRequest.getConsoleId());
+        if (consolidationDetails.isPresent()) {
+            if (updateConsoleShipmentRequest.getIsForHub().booleanValue() && Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
                 commonUtils.setInterBranchContextForHub();
             }
-            request.getListOfShipments().stream().forEach(shipmentId -> consoleShipmentMappingDao.updateConsoleShipments(request.getShipmentRequestedType(), request.getConsoleId(), shipmentId));
+            if (ShipmentRequestedType.APPROVE.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
+                updateConsoleShipmentRequest.getListOfShipments().stream().forEach(shipmentId -> {
+                    consoleShipmentMappingDao.updateConsoleShipments(updateConsoleShipmentRequest.getShipmentRequestedType(), updateConsoleShipmentRequest.getConsoleId(), shipmentId);
+                    consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentId);
+                });
+            } else if (ShipmentRequestedType.REJECT.equals(updateConsoleShipmentRequest.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
+                updateConsoleShipmentRequest.getListOfShipments().stream().forEach(shipmentId -> {
+                    consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(updateConsoleShipmentRequest.getConsoleId(), shipmentId);
+                });
+            }
         } else {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        return ResponseHelper.buildSuccessResponse();
+    }
+
+    private void processShipmentRequest(UpdateShipmentRequest updateShipmentRequest) {
+        if(updateShipmentRequest.getConsoleIdsList() == null) {
+            throw new InvalidDataAccessApiUsageException("Console Ids list should not be empty!!!");
+        }
+        if (ShipmentRequestedType.APPROVE.equals(updateShipmentRequest.getShipmentRequestedType())) {
+            consoleShipmentMappingDao.updateConsoleShipments(updateShipmentRequest.getShipmentRequestedType(), updateShipmentRequest.getConsoleIdsList().get(0), updateShipmentRequest.getShipmentId());
+            consoleShipmentMappingDao.deletePendingStateByShipmentId(updateShipmentRequest.getShipmentId());
+        } else if (ShipmentRequestedType.REJECT.equals(updateShipmentRequest.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(updateShipmentRequest.getShipmentRequestedType())) {
+            updateShipmentRequest.getConsoleIdsList().stream().forEach(consoleId -> {
+                consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(consoleId, updateShipmentRequest.getShipmentId());
+            });
+        }
     }
 
 }
