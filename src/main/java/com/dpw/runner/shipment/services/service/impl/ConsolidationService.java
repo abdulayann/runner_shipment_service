@@ -449,6 +449,7 @@ public class ConsolidationService implements IConsolidationService {
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false);
             this.createLogHistoryForConsole(consolidationDetails);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(consolidationDetails.getCarrierDetails(), null)));
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -1002,6 +1003,8 @@ public class ConsolidationService implements IConsolidationService {
 
             afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false);
             this.createLogHistoryForConsole(entity);
+            ConsolidationDetails finalEntity = entity;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(finalEntity.getCarrierDetails(), oldConvertedConsolidation.getCarrierDetails())));
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
