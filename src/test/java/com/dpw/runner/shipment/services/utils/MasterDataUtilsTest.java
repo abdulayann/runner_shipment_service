@@ -2002,6 +2002,26 @@ class MasterDataUtilsTest {
     }
 
     @Test
+    void fetchTenantIdForList1() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchTenantIdForList(List.of(ShipmentListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList2() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(TenantModel::new);
+
+        masterDataUtils.fetchTenantIdForList(List.of(ShipmentListResponse.builder().tenantId(1).build()));
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
     void setContainerTeuData() {
         boolean isSuccess = true;
         var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);

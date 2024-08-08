@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -162,6 +163,32 @@ public class MasterDataUtils{
             }
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchVesselForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
+        }
+    }
+
+    public void fetchTenantIdForList(List<IRunnerResponse> responseList) {
+        try {
+            Set<String> tenantIdList = new HashSet<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            for (IRunnerResponse response : responseList) {
+                if (response instanceof ShipmentListResponse shipmentListResponse) {
+                    if (shipmentListResponse.getTenantId() != null) {
+                        tenantIdList.addAll(createInBulkTenantsRequest(shipmentListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()));
+                    }
+                }
+            }
+
+            Map<String, TenantModel> v1Data = fetchInTenantsList(tenantIdList.stream().toList());
+            pushToCache(v1Data, CacheConstants.TENANTS);
+
+            for (IRunnerResponse response : responseList) {
+                if (response instanceof ShipmentListResponse shipmentListResponse) {
+                    if (shipmentListResponse.getTenantId() != null)
+                        shipmentListResponse.setTenantMasterData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS));
+                }
+            }
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: fetchTenantIdForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
     }
 
