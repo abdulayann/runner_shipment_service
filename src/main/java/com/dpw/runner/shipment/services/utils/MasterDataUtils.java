@@ -1352,14 +1352,12 @@ public class MasterDataUtils{
             teu = BigDecimal.ZERO;
             if (containerResponses != null) {
                 for(ContainerResponse c : containerResponses) {
-                    if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
-                        if(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA) != null) {
-                            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
-                            if (!Objects.isNull(cache)) {
-                                EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
-                                if (object != null && !Objects.isNull(object.getTeu()))
-                                    teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
-                            }
+                    if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount()) && cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA) != null) {
+                        var cache = Objects.requireNonNull(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA)).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                        if (!Objects.isNull(cache)) {
+                            EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                            if (object != null && !Objects.isNull(object.getTeu()))
+                                teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
                         }
                     }
                 }
