@@ -1273,4 +1273,35 @@ public class MasterDataUtils{
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
         return jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
     }
+
+    public BigDecimal setContainerTeuDataWithContainers(List<ContainerResponse> containerResponses) {
+        try {
+            Set<String> containerTypes = new HashSet<>();
+
+            if(!Objects.isNull(containerResponses))
+                containerResponses.forEach(r -> containerTypes.add(r.getContainerCode()));
+
+            Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+
+            BigDecimal teu;
+            teu = BigDecimal.ZERO;
+            if (containerResponses != null) {
+                for(ContainerResponse c : containerResponses) {
+                    if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
+                        var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                        if (!Objects.isNull(cache)) {
+                            EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                            if (!Objects.isNull(object.getTeu()))
+                                teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
+                        }
+                    }
+                }
+            }
+            return teu;
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: setContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
+        }
+        return BigDecimal.ZERO;
+    }
 }

@@ -5433,4 +5433,31 @@ ShipmentServiceTest extends CommonMocks {
         verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
 
+    @Test
+    void retrieveByMeasurmentBasisTest() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Arrays.asList(Notes.builder().entityId(1L).build()));
+
+        when(jsonHelper.convertValueToList(anyList(), eq(NotesResponse.class))).thenReturn(Arrays.asList(NotesResponse.builder().build()));
+        ContainerResponse containerResponse = new ContainerResponse();
+        containerResponse.setContainerCount(1L);
+        containerResponse.setContainerCode("20GP");
+        when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().containersList(Arrays.asList(containerResponse)).build());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.shipmentRetrieveWithMeasurmentBasis(commonRequestModel);
+        assertEquals(httpResponse.getStatusCode(), HttpStatus.OK);
+    }
+
+    @Test
+    void retrieveByMeasurmentBasisTestWithIdNull() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.shipmentRetrieveWithMeasurmentBasis(commonRequestModel);
+        assertEquals(httpResponse.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
+
 }
