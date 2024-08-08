@@ -1086,7 +1086,7 @@ public class PackingService implements IPackingService {
         }
         else {
             // Default case of packs updated from consol
-            packingList.addAll(updatedConsolPacks);
+            packingList.addAll(Optional.ofNullable(updatedConsolPacks).orElse(Optional.ofNullable(consol.getPackingList()).orElse(Collections.emptyList())));
         }
 
         // only process the below calculation if the consolidation is air , exp , co-loading = true, allocated != null
