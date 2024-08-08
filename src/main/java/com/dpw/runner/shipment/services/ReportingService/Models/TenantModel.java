@@ -34,8 +34,6 @@ public class TenantModel implements Serializable {
     public Long DefaultOrgId;
     public String AgentIATANumber;
 
-    public Boolean EnablePaymentBillchargeAndChargeMaster;
-
     public Boolean RoundoffLocalCurrencyAmount;
     public Boolean IsGroupingOverseas;
     public DigitGrouping CurrencyDigitGrouping;

@@ -17,7 +17,9 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferAddress implements IEntityTranferBaseEntity {
-    public long Id;
+
+    @JsonProperty("Id")
+    private long id;
     public Long OrgId;
     public String AddressShortCode;
     public String CompanyName;

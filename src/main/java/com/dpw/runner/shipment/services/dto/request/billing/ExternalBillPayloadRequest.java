@@ -161,7 +161,7 @@ public class ExternalBillPayloadRequest implements IRunnerRequest {
     public static class DocumentSelectionRequest implements IRunnerRequest {
 
         @NotBlank
-        private List<MultipartFile> files;
+        private transient List<MultipartFile> files;
         private String docType;
         private String entity;
         private String entityId;

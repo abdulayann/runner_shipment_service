@@ -18,5 +18,5 @@ public class BillingListEntityResponse<T> extends BillingBaseResponse {
     private long totalPages;
     private long currentPage;
     private long pageSize;
-    private List<? extends T> data;
+    private transient List<? extends T> data;
 }

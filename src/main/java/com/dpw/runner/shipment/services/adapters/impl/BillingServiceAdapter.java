@@ -94,6 +94,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     private CommonUtils commonUtils;
 
     private static final String NULL_RESPONSE_ERROR = "Received null response from billing service or response data is null";
+    private static final String NO_ORG_FOUND_FOR = "No OrganizationsRow found for ";
 
     @NotNull
     private static List<String> getClientCodeListForBillCreationRequest(BookingEntity entity) {
@@ -162,7 +163,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             log.debug("Response body: {}", billingEntityResponse);
 
             // Check if the response is not null and contains errors
-            if (ObjectUtils.isNotEmpty(billingEntityResponse) && ObjectUtils.isNotEmpty(billingEntityResponse.getErrors())) {
+            if (billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getErrors())) {
                 log.error("Bill creation response contains errors: {}", billingEntityResponse.getErrors());
                 throw new BillingException(billingEntityResponse.getErrors().toString());
             }
@@ -286,7 +287,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
         Long clientId = Optional.ofNullable(clientDetails)
                 .map(EntityTransferOrganizations::getId)
-                .orElseThrow(() -> new BillingException("No OrganizationsRow found for " + entity.getClientCode()));
+                .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + entity.getClientCode()));
 
         EntityTransferAddress clientAddressDetails = Optional.ofNullable(entity.getClientAddressShortCode())
                 .filter(code -> !code.trim().isEmpty()).flatMap(code -> addressList.stream()
@@ -354,7 +355,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                         .filter(code -> !code.trim().isEmpty())
                         .map(code -> Optional.ofNullable(creditorDetails)
                                 .map(EntityTransferOrganizations::getId)
-                                .orElseThrow(() -> new BillingException("No OrganizationsRow found for " + code)))
+                                .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + code)))
                         .orElseGet(() -> Optional.ofNullable(creditorDetails)
                                 .map(EntityTransferOrganizations::getId)
                                 .orElse(clientId));
@@ -369,7 +370,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
                 Long debtorId = Optional.ofNullable(billCharge.getDebtorCode()).filter(code -> !code.trim().isEmpty())
                         .map(code -> Optional.ofNullable(debtorDetails).map(EntityTransferOrganizations::getId)
-                                .orElseThrow(() -> new BillingException("No OrganizationsRow found for " + code)))
+                                .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + code)))
                         .orElseGet(() -> Optional.ofNullable(debtorDetails).map(EntityTransferOrganizations::getId)
                                 .orElse(clientId));
 

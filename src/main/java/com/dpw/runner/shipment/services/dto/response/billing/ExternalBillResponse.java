@@ -16,6 +16,6 @@ import lombok.Setter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ExternalBillResponse implements Serializable {
 
-    private Map<String, Object> externalBillResponse;
-    private List<Map<String, Object>> externalBillChargeResponse;
+    private transient Map<String, Object> externalBillResponse;
+    private transient List<Map<String, Object>> externalBillChargeResponse;
 }
