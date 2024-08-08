@@ -351,6 +351,47 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
     }
 
+    @NotNull
+    private static MeasurementBasisRecord getMeasurementBasisRecord(BillCharge billCharge, String revenueMeasurementBasisV2, String measurementBasisUnit) {
+        try {
+            MeasurementBasis revenueMeasurementBasis = MeasurementBasis.valueOf(billCharge.getPerMeasurementBasis());
+            revenueMeasurementBasisV2 = switch (revenueMeasurementBasis) {
+                case ContainerCount -> MeasurementBasis.ContainerCount.getBillingValue();
+                case Weight -> MeasurementBasis.Weight.getBillingValue();
+                case Volume -> MeasurementBasis.Volume.getBillingValue();
+                case Chargeable -> MeasurementBasis.Chargeable.getBillingValue();
+                case LowestBill -> MeasurementBasis.LowestBill.getBillingValue();
+                case Package -> MeasurementBasis.Package.getBillingValue();
+                case Shipment -> MeasurementBasis.Shipment.getBillingValue();
+                case TEU -> MeasurementBasis.TEU.getBillingValue();
+                case ChargePercentage -> MeasurementBasis.ChargePercentage.getBillingValue();
+                case Custom -> MeasurementBasis.Custom.getBillingValue();
+                case ContainerType -> MeasurementBasis.ContainerType.getBillingValue();
+            };
+
+            if (ObjectUtils.isEmpty(measurementBasisUnit)) {
+                measurementBasisUnit = switch (revenueMeasurementBasis) {
+                    case ContainerCount -> "Containers";
+                    case Weight -> "KG";
+                    case Volume -> "M3";
+                    case Chargeable -> "KG";
+                    case LowestBill -> "LB";
+                    case Package -> "Packages";
+                    case Shipment -> "SHIPMENT";
+                    case TEU -> "TEU";
+                    case ChargePercentage -> "%";
+                    case Custom -> "Custom";
+                    case ContainerType -> "Containers";
+                    default -> "";
+                };
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+        MeasurementBasisRecord result = new MeasurementBasisRecord(revenueMeasurementBasisV2, measurementBasisUnit);
+        return result;
+    }
+
     private void populateExternalBillChargeRequest(TenantModel tenantModel, List<ExternalBillChargeRequest> externalBillChargeRequests,
             List<EntityTransferOrganizations> organizationList,
             List<EntityTransferAddress> addressList, Long clientId, EntityTransferAddress clientAddressDetails, BillCharge billCharge) {
@@ -405,43 +446,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             String revenueMeasurementBasisV2 = "";
             BigDecimal measurementBasisQuantity = null;
             String measurementBasisUnit = billCharge.getMeasurementsUnit();
-            try {
-                MeasurementBasis revenueMeasurementBasis = MeasurementBasis.valueOf(billCharge.getPerMeasurementBasis());
-                revenueMeasurementBasisV2 = switch (revenueMeasurementBasis) {
-                    case ContainerCount -> MeasurementBasis.ContainerCount.getBillingValue();
-                    case Weight -> MeasurementBasis.Weight.getBillingValue();
-                    case Volume -> MeasurementBasis.Volume.getBillingValue();
-                    case Chargeable -> MeasurementBasis.Chargeable.getBillingValue();
-                    case LowestBill -> MeasurementBasis.LowestBill.getBillingValue();
-                    case Package -> MeasurementBasis.Package.getBillingValue();
-                    case Shipment -> MeasurementBasis.Shipment.getBillingValue();
-                    case TEU -> MeasurementBasis.TEU.getBillingValue();
-                    case ChargePercentage -> MeasurementBasis.ChargePercentage.getBillingValue();
-                    case Custom -> MeasurementBasis.Custom.getBillingValue();
-                    case ContainerType -> MeasurementBasis.ContainerType.getBillingValue();
-                };
+            MeasurementBasisRecord measurementBasisRecord = getMeasurementBasisRecord(billCharge, revenueMeasurementBasisV2,
+                    measurementBasisUnit);
 
-                if (ObjectUtils.isEmpty(measurementBasisUnit)) {
-                    measurementBasisUnit = switch (revenueMeasurementBasis) {
-                        case ContainerCount -> "Containers";
-                        case Weight -> "KG";
-                        case Volume -> "M3";
-                        case Chargeable -> "KG";
-                        case LowestBill -> "LB";
-                        case Package -> "Packages";
-                        case Shipment -> "SHIPMENT";
-                        case TEU -> "TEU";
-                        case ChargePercentage -> "%";
-                        case Custom -> "Custom";
-                        case ContainerType -> "Containers";
-                        default -> "";
-                    };
-                }
-            } catch (Exception e) {
-                log.error(e.getMessage());
-            }
-
-            if (revenueMeasurementBasisV2 != null && !revenueMeasurementBasisV2.isBlank()) {
+            if (measurementBasisRecord.revenueMeasurementBasisV2() != null && !measurementBasisRecord.revenueMeasurementBasisV2().isBlank()) {
                 measurementBasisQuantity = billCharge.getTotalUnitsCount() != null ? billCharge.getTotalUnitsCount() : BigDecimal.ONE;
             }
 
@@ -459,8 +467,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                             .billChargeCostDetails(BillChargeCostDetailsRequest.builder()
                                     .creditorId(creditorId > 0 ? creditorId.toString() : "")
                                     .creditorAddressId(creditorId > 0 ? creditorAddressDetails.toString() : "")
-                                    .measurementBasis(revenueMeasurementBasisV2)
-                                    .measurementBasisUnit(measurementBasisUnit)
+                                    .measurementBasis(measurementBasisRecord.revenueMeasurementBasisV2())
+                                    .measurementBasisUnit(measurementBasisRecord.measurementBasisUnit())
                                     .measurementBasisQuantity(measurementBasisQuantity)
                                     .unitRate(billCharge.getLocalCostAmount())
                                     .unitRateCurrency(Optional.ofNullable(billCharge.getLocalCostCurrency()).filter(ObjectUtils::isNotEmpty)
@@ -479,8 +487,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                                     .debtorId(debtorId.toString())
                                     .debtorAddressId(Optional.ofNullable(debtorAddressDetails).map(EntityTransferAddress::getId)
                                             .map(Object::toString).orElse(null))
-                                    .measurementBasis(revenueMeasurementBasisV2)
-                                    .measurementBasisUnit(measurementBasisUnit)
+                                    .measurementBasis(measurementBasisRecord.revenueMeasurementBasisV2())
+                                    .measurementBasisUnit(measurementBasisRecord.measurementBasisUnit())
                                     .measurementBasisQuantity(measurementBasisQuantity)
                                     .unitRate(Optional.ofNullable(billCharge.getCurrentSellRate()).filter(ObjectUtils::isNotEmpty)
                                             .orElse(BigDecimal.ZERO))
@@ -500,6 +508,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         } catch (Exception ex) {
             throw new BillingException(ex.getMessage());
         }
+    }
+
+    private record MeasurementBasisRecord(String revenueMeasurementBasisV2, String measurementBasisUnit) {
+
     }
 
     private TenantModel getTenantModel() {
