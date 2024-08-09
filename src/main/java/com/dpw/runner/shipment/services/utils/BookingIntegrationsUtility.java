@@ -165,14 +165,14 @@ public class BookingIntegrationsUtility {
     }
 
     public void updateBookingInPlatform(ShipmentDetails shipmentDetails) {
-        if (Objects.equals(shipmentDetails.getBookingType(), CustomerBookingConstants.ONLINE)) {
+        if (Objects.equals(shipmentDetails.getBookingType(), CustomerBookingConstants.ONLINE) && !Objects.isNull(shipmentDetails.getBookingReference())) {
             var request = createPlatformUpdateRequestFromShipment(shipmentDetails);
             try {
                 platformServiceAdapter.updateAtPlaform(request);
             } catch (Exception e) {
                 this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
                 log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
-                sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingNumber(), shipmentDetails.getShipmentId());
+                sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
             }
         }
     }

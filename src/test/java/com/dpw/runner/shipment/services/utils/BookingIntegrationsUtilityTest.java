@@ -218,6 +218,7 @@ class BookingIntegrationsUtilityTest {
         doThrow(new RuntimeException()).when(platformServiceAdapter).updateAtPlaform(any(CommonRequestModel.class));
         var shipment = jsonTestUtility.getTestShipment();
         shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setBookingReference("12345");
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
         verify(platformServiceAdapter, times((1))).updateAtPlaform(any());
     }
@@ -227,6 +228,7 @@ class BookingIntegrationsUtilityTest {
         var shipment = jsonTestUtility.getTestShipment();
         shipment.setBookingType(CustomerBookingConstants.ONLINE);
         shipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipment.setBookingReference("1234");
         shipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
         verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
@@ -246,18 +248,21 @@ class BookingIntegrationsUtilityTest {
         var bookedShipment = jsonTestUtility.getTestShipment();
         bookedShipment.setBookingType(CustomerBookingConstants.ONLINE);
         bookedShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        bookedShipment.setBookingReference("1234");
         bookedShipment.setStatus(1);
         bookedShipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
 
         var cancelledShipment = jsonTestUtility.getTestShipment();
         cancelledShipment.setBookingType(CustomerBookingConstants.ONLINE);
         cancelledShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        cancelledShipment.setBookingReference("1234");
         cancelledShipment.setStatus(2);
         cancelledShipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
 
         var confirmedShipment = jsonTestUtility.getTestShipment();
         confirmedShipment.setBookingType(CustomerBookingConstants.ONLINE);
         confirmedShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        confirmedShipment.setBookingReference("1234");
         confirmedShipment.setStatus(3);
         confirmedShipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
 
@@ -273,6 +278,7 @@ class BookingIntegrationsUtilityTest {
         var shipment = jsonTestUtility.getTestShipment();
         shipment.setBookingType(CustomerBookingConstants.ONLINE);
         shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipment.setBookingReference("1234");
         shipment.setContainersList(List.of(jsonTestUtility.getTestContainer()));
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
         verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
