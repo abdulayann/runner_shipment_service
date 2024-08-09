@@ -61,7 +61,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public HashSet<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchShipIds) {
+    public HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchShipIds) {
         if(mappings == null)
             mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
@@ -81,6 +81,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                     entity.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
                 } else {
                     entity.setIsAttachmentDone(true);
+                    entity.setRequestedType(shipmentRequestedType);
                 }
                 save(entity);
             }

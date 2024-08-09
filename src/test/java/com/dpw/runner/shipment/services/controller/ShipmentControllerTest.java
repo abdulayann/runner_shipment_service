@@ -1047,7 +1047,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void updateConsoleShipments_Success() {
+    void updateConsoleShipments_Success() throws RunnerException {
         IRunnerResponse runnerResponse = new UpstreamDateUpdateResponse();
         UpdateConsoleShipmentRequest request = mock(UpdateConsoleShipmentRequest.class);
         ResponseEntity<IRunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
@@ -1060,7 +1060,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void updateConsoleShipments_Exception() {
+    void updateConsoleShipments_Exception() throws RunnerException {
         UpdateConsoleShipmentRequest request = mock(UpdateConsoleShipmentRequest.class);
 
         when(shipmentService.updateShipments(any())).thenThrow(new RuntimeException("Test Exception"));

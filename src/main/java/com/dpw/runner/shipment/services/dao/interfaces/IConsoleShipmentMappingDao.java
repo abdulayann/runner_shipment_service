@@ -15,7 +15,7 @@ public interface IConsoleShipmentMappingDao {
 
     List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);
 
-    HashSet<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> consoleShipmentMappings, Set<Long> interBranchShipIds);
+    HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> consoleShipmentMappings, Set<Long> interBranchShipIds);
 
     List<Long> detachShipments(Long consolidationId, List<Long> shipIds);
 
