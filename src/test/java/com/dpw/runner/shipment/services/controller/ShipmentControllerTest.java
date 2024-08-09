@@ -1054,7 +1054,7 @@ class ShipmentControllerTest {
 
         when(shipmentService.updateShipments(any())).thenReturn(responseEntity);
 
-        responseEntity = shipmentController.updateShipments(CommonRequestModel.buildRequest(request));
+        responseEntity = shipmentController.updateShipments(request);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1065,7 +1065,7 @@ class ShipmentControllerTest {
 
         when(shipmentService.updateShipments(any())).thenThrow(new RuntimeException("Test Exception"));
 
-        var responseEntity = shipmentController.updateShipments(CommonRequestModel.buildRequest(request));
+        var responseEntity = shipmentController.updateShipments(request);
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
