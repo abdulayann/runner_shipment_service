@@ -129,10 +129,10 @@ public class AWBLabelReport extends IReport{
         }
         if(awbLabelModel.getConsolidation() != null){
             if(awbLabelModel.getConsolidation().getCarrierDetails() != null && awbLabelModel.getConsolidation().getCarrierDetails().getDestination() != null)
-                unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestination());
+                unlocations.add(awbLabelModel.getConsolidation().getCarrierDetails().getDestination());
 
             if(awbLabelModel.getConsolidation().getCarrierDetails() != null && awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort() != null)
-                unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestinationPort());
+                unlocations.add(awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort());
         }
 
         if (!unlocations.isEmpty()) {
@@ -146,11 +146,18 @@ public class AWBLabelReport extends IReport{
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
             if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
                 for (var unloc : unlocationsResponse) {
-                    if (Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestination())) {
+                    if (awbLabelModel.getShipment() != null && Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestination())) {
                         dictionary.put(ReportConstants.HDEST, unloc.getName());
                         dictionary.put(ReportConstants.AIRLINE_NAME, unloc.getIataCode());
                     }
-                    if (Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestinationPort())) {
+                    if (awbLabelModel.getShipment() != null && Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestinationPort())) {
+                        dictionary.put(ReportConstants.DESTINATION, unloc.getLocCode());
+                    }
+                    if (awbLabelModel.getConsolidation() != null && Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.getConsolidation().getCarrierDetails().getDestination())) {
+                        dictionary.put(ReportConstants.HDEST, unloc.getName());
+                        dictionary.put(ReportConstants.AIRLINE_NAME, unloc.getIataCode());
+                    }
+                    if (awbLabelModel.getConsolidation() != null && Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort())) {
                         dictionary.put(ReportConstants.DESTINATION, unloc.getLocCode());
                     }
                 }
@@ -190,14 +197,14 @@ public class AWBLabelReport extends IReport{
             if (pod != null) {
                 if(pod.getIataCode() != null)
                     dictionary.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, pod.getIataCode().toUpperCase());
-                if(pod.getPortName() != null)
-                    dictionary.put(ReportConstants.DESTINATION_PORT, pod.getPortName().toUpperCase());
+                if(pod.getAirPortName() != null)
+                    dictionary.put(ReportConstants.DESTINATION_PORT, pod.getAirPortName().toUpperCase());
             }
-            if (pol != null && pol.getIataCode() != null) {
+            if (pol != null) {
                 if(pol.getIataCode() != null)
                     dictionary.put(ReportConstants.POL_AIRPORT_CODE_IN_CAPS, pol.getIataCode().toUpperCase());
-                if(pol.getPortName() != null)
-                    dictionary.put(ReportConstants.ORIGIN_PORT, pol.getPortName().toUpperCase());
+                if(pol.getAirPortName() != null)
+                    dictionary.put(ReportConstants.ORIGIN_PORT, pol.getAirPortName().toUpperCase());
             }
         }
 
