@@ -103,7 +103,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     @Autowired
     private CommonUtils commonUtils;
 
-    private static final String NULL_RESPONSE_ERROR = "Received null response from billing service or response data is null";
+    private static final String NULL_RESPONSE_ERROR = "Received null/empty response from billing service or response data is null/empty";
     private static final String NO_ORG_FOUND_FOR = "No OrganizationsRow found for ";
     private static final String REQUEST_PAYLOAD = "Request payload: {}";
     private static final String EXECUTING_POST_REQUEST = "Executing POST request...";
@@ -295,7 +295,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         ParameterizedTypeReference<BillingListResponse<ChargeTypeBaseResponse>> responseType = new ParameterizedTypeReference<>() {
         };
         BillingListResponse<ChargeTypeBaseResponse> listResponse = executePostRequest(url, httpEntity, responseType);
-        if (listResponse == null || listResponse.getData() == null) {
+        if (listResponse == null || ObjectUtils.isEmpty(listResponse.getData())) {
             throw new BillingException(NULL_RESPONSE_ERROR);
         }
 
