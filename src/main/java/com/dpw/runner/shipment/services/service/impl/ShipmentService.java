@@ -4713,13 +4713,16 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            double start = System.currentTimeMillis();
             if(request.getGuid() == null) {
                 log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
             UUID guid = UUID.fromString(request.getGuid());
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(guid);
+            if (!shipmentDetails.isPresent()) {
+                log.debug("Shipment Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
             MeasurementBasisResponse response = modelMapper.map(shipmentDetails.get(), MeasurementBasisResponse.class);
             calculatePacksAndPacksUnit(shipmentDetails.get().getPackingList(), response);
             calculateContainersAndTeu(response, shipmentDetails.get().getContainersList());

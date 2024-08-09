@@ -3913,7 +3913,6 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            double start = System.currentTimeMillis();
             if(request.getGuid() == null) {
                 log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new RunnerException("Id and GUID can't be null. Please provide any one !");
@@ -3958,20 +3957,10 @@ public class ConsolidationService implements IConsolidationService {
     private <T> T calculatePacksAndPacksUnit(List<Packing> packings, T response) {
         Integer totalPacks = 0;
         String tempPackingUnit = null;
-        String packingUnit = null;
-        if(packings != null && packings.size() > 0) {
+        if(!CollectionUtils.isEmpty(packings)) {
             for (Packing packing : packings) {
                 if(!IsStringNullOrEmpty(packing.getPacks()))
                     totalPacks = totalPacks + Integer.parseInt(packing.getPacks());
-                if (tempPackingUnit == null) {
-                    tempPackingUnit = packing.getPacksType();
-                    packingUnit = packing.getPacksType();
-                }
-                else {
-                    if(!IsStringNullOrEmpty(packing.getPacksType()) && tempPackingUnit.equals(packing.getPacksType())) {
-                        packingUnit = Constants.MPK;
-                    }
-                }
             }
         }
         if(response instanceof MeasurementBasisResponse measurementBasisResponse) {
