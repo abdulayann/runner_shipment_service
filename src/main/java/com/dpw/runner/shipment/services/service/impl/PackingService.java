@@ -1144,6 +1144,7 @@ public class PackingService implements IPackingService {
             if(optional.isPresent()) {
                 var consol = optional.get();
                 calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
+                commonUtils.updateConsolOpenForAttachment(consol);
                 consolidationDao.save(consol, false);
             }
         }
