@@ -136,19 +136,12 @@ public class AWBLabelReport extends IReport{
         }
 
         if (!unlocations.isEmpty()) {
-            List<Object> criteria = Arrays.asList(
-                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                    "In",
-                    Arrays.asList(unlocations)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            List<UnlocationsResponse> unlocationsResponse = getUnlocationsResponses(unlocations);
             if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
                 for (var unloc : unlocationsResponse) {
                     if (awbLabelModel.getShipment() != null && Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestination())) {
                         dictionary.put(ReportConstants.HDEST, unloc.getName());
-                        dictionary.put(ReportConstants.AIRLINE_NAME, unloc.getIataCode());
+                        dictionary.put(ReportConstants.CARRIER, unloc.getIataCode());
                     }
                     if (awbLabelModel.getShipment() != null && Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestinationPort())) {
                         dictionary.put(ReportConstants.DESTINATION, unloc.getLocCode());
@@ -174,18 +167,20 @@ public class AWBLabelReport extends IReport{
             dictionary.put(ReportConstants.HANDLING_INFO, awbLabelModel.getAwb().getAwbCargoInfo().getHandlingInfo());
         }
 
-        List<String> airLegs;
+        List<UnlocationsResponse> airLegs;
         if(awbLabelModel.getConsolidation() != null){
-            airLegs = awbLabelModel.getConsolidation().getRoutingsList() == null ? Collections.emptyList() : awbLabelModel.getConsolidation().getRoutingsList().stream().filter(c -> c.getMode().equals(AIR)).map(RoutingsModel::getPod).distinct().toList();
-            if(!airLegs.isEmpty()) dictionary.put(ReportConstants.CONSOL_FIRST_LEG_DESTINATION, airLegs.get(0));
-            if(airLegs.size() >= 2) dictionary.put(ReportConstants.CONSOL_SECOND_LEG_DESTIATION, airLegs.get(1));
-            if(airLegs.size() >= 3) dictionary.put(ReportConstants.CONSOL_THIRD_LEG_DESTINATION, airLegs.get(2));
+            unlocations = awbLabelModel.getConsolidation().getRoutingsList() == null ? Collections.emptyList() : awbLabelModel.getConsolidation().getRoutingsList().stream().filter(c -> c.getMode().equals(AIR)).map(RoutingsModel::getPod).distinct().toList();
+            airLegs = getUnlocationsResponses(unlocations);
+            if(!airLegs.isEmpty()) dictionary.put(ReportConstants.CONSOL_FIRST_LEG_DESTINATION, airLegs.get(0).getNameWoDiacritics());
+            if(airLegs.size() >= 2) dictionary.put(ReportConstants.CONSOL_SECOND_LEG_DESTIATION, airLegs.get(1).getNameWoDiacritics());
+            if(airLegs.size() >= 3) dictionary.put(ReportConstants.CONSOL_THIRD_LEG_DESTINATION, airLegs.get(2).getNameWoDiacritics());
         }
         if(awbLabelModel.getShipment() != null){
-            airLegs = awbLabelModel.shipment.getRoutingsList() == null ? Collections.emptyList() : awbLabelModel.shipment.getRoutingsList().stream().filter(c -> c.getMode().equals(AIR)).map(RoutingsModel::getPod).distinct().toList();
-            if(!airLegs.isEmpty()) dictionary.put(ReportConstants.FIRST_LEG_DESTINATION, airLegs.get(0));
-            if(airLegs.size() >= 2) dictionary.put(ReportConstants.SECOND_LEG_DESTINATION, airLegs.get(1));
-            if(airLegs.size() >= 3) dictionary.put(ReportConstants.THIRD_LEG_DESTINATION, airLegs.get(2));
+            unlocations = awbLabelModel.shipment.getRoutingsList() == null ? Collections.emptyList() : awbLabelModel.shipment.getRoutingsList().stream().filter(c -> c.getMode().equals(AIR)).map(RoutingsModel::getPod).distinct().toList();
+            airLegs = getUnlocationsResponses(unlocations);
+            if(!airLegs.isEmpty()) dictionary.put(ReportConstants.FIRST_LEG_DESTINATION, airLegs.get(0).getNameWoDiacritics());
+            if(airLegs.size() >= 2) dictionary.put(ReportConstants.SECOND_LEG_DESTINATION, airLegs.get(1).getNameWoDiacritics());
+            if(airLegs.size() >= 3) dictionary.put(ReportConstants.THIRD_LEG_DESTINATION, airLegs.get(2).getNameWoDiacritics());
         }
 
         if(awbLabelModel.getShipment() != null) {
@@ -235,7 +230,6 @@ public class AWBLabelReport extends IReport{
             dictionary.put(ReportConstants.HAWB_CAPS, awbLabelModel.getAwb().getAwbNumber());
             dictionary.put(ReportConstants.MAWB_CAPS, awbLabelModel.getAwb().getAwbNumber());
         }
-        dictionary.put(ReportConstants.CARRIER, (awbLabelModel.getShipment() != null && awbLabelModel.getShipment().getCarrierDetails() != null) ? awbLabelModel.getShipment().getCarrierDetails().getShippingLine() : null);
 
         if(awbLabelModel.getConsolidation() != null && awbLabelModel.getConsolidation().getAllocations() != null)
             dictionary.put(ReportConstants.CONSOL_CHARGEABLE_WEIGHT_AND_UNIT, awbLabelModel.getConsolidation().getAllocations().getChargable() + " " + awbLabelModel.getConsolidation().getAllocations().getChargeableUnit());
@@ -261,5 +255,16 @@ public class AWBLabelReport extends IReport{
         dictionary.put(ReportConstants.IS_MAWB, this.isMawb);
 
         return dictionary;
+    }
+
+    private List<UnlocationsResponse> getUnlocationsResponses(List<String> unlocations) {
+        List<Object> criteria = Arrays.asList(
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
+                "In",
+                Arrays.asList(unlocations)
+        );
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+        return jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
     }
 }
