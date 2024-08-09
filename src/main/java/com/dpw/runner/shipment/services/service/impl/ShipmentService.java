@@ -259,6 +259,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
 @SuppressWarnings("ALL")
@@ -1318,7 +1319,7 @@ public class ShipmentService implements IShipmentService {
         return charge;
     }
 
-    private AutoUpdateWtVolResponse calculatePacksAndPacksUnit(List<Packing> packings, AutoUpdateWtVolResponse response) {
+    private <T> T calculatePacksAndPacksUnit(List<Packing> packings, T response) {
         Integer totalPacks = 0;
         String tempPackingUnit = null;
         String packingUnit = null;
@@ -1337,8 +1338,12 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
-        response.setNoOfPacks(totalPacks.toString());
-        response.setPacksUnit(packingUnit);
+        if(response instanceof AutoUpdateWtVolResponse autoUpdateWtVolResponse) {
+            autoUpdateWtVolResponse.setNoOfPacks(totalPacks.toString());
+            autoUpdateWtVolResponse.setPacksUnit(packingUnit);
+        } else if(response instanceof ShipmentDetailsResponse shipmentDetailsResponse) {
+            shipmentDetailsResponse.setPackCount(totalPacks);
+        }
         return response;
     }
 
@@ -2738,38 +2743,46 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            double start = System.currentTimeMillis();
-            if(request.getId() == null && request.getGuid() == null) {
-                log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
-            }
-            Long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = Optional.ofNullable(null);
-            if(id != null ){
-                shipmentDetails = shipmentDao.findById(id);
-            } else {
-                UUID guid = UUID.fromString(request.getGuid());
-                shipmentDetails = shipmentDao.findByGuid(guid);
-            }
-            if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
-            double current = System.currentTimeMillis();
-            log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
-            ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
-            log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
-            response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
-            createShipmentPayload(shipmentDetails.get(), response);
-            return ResponseHelper.buildSuccessResponse(response);
+            return ResponseHelper.buildSuccessResponse(retireveShipmentData(commonRequestModel, false));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private ShipmentDetailsResponse retireveShipmentData(CommonRequestModel commonRequestModel, boolean measurmentBasis) throws RunnerException {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        double start = System.currentTimeMillis();
+        if(request.getId() == null && request.getGuid() == null) {
+            log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("Id and GUID can't be null. Please provide any one !");
+        }
+        Long id = request.getId();
+        Optional<ShipmentDetails> shipmentDetails = Optional.ofNullable(null);
+        if(id != null ){
+            shipmentDetails = shipmentDao.findById(id);
+        } else {
+            UUID guid = UUID.fromString(request.getGuid());
+            shipmentDetails = shipmentDao.findByGuid(guid);
+        }
+        if (!shipmentDetails.isPresent()) {
+            log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
+        double current = System.currentTimeMillis();
+        log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
+        ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+        log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
+        response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
+        if(measurmentBasis) {
+            calculatePacksAndPacksUnit(shipmentDetails.get().getPackingList(), response);
+        } else {
+            createShipmentPayload(shipmentDetails.get(), response);
+        }
+        return response;
     }
 
     @Async
@@ -4706,6 +4719,40 @@ public class ShipmentService implements IShipmentService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         return ResponseHelper.buildSuccessResponse();
+    }
+
+
+    public ResponseEntity<IRunnerResponse> shipmentRetrieveWithMeasurmentBasis(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ShipmentDetailsResponse response = retireveShipmentData(commonRequestModel, true);
+            calculateContainersAndTeu(response);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void calculateContainersAndTeu(ShipmentDetailsResponse response) {
+        long containerCount = 0;
+        Map<String, Long> containerCountMap = new HashMap<>();
+        if(!CollectionUtils.isEmpty(response.getContainersList())) {
+            for(ContainerResponse containerResponse : response.getContainersList()) {
+                if(containerResponse.getContainerCount() != null) {
+                    containerCount = containerCount + containerResponse.getContainerCount();
+                    if(StringUtility.isNotEmpty(containerResponse.getContainerCode())) {
+                        containerCountMap.put(containerResponse.getContainerCode(), containerCountMap.getOrDefault(containerResponse.getContainerCode(), 0L) + containerResponse.getContainerCount());
+                    }
+                }
+            }
+
+            response.setTeuCount(masterDataUtils.setContainerTeuDataWithContainers(response.getContainersList()));
+            response.setContainerData(containerCountMap);
+            response.setContainerCount(containerCount);
+        }
     }
 
 }

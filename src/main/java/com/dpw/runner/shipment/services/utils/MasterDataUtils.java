@@ -15,12 +15,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
@@ -1341,5 +1336,36 @@ public class MasterDataUtils{
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
         return jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+    }
+
+    public BigDecimal setContainerTeuDataWithContainers(List<ContainerResponse> containerResponses) {
+        try {
+            Set<String> containerTypes = new HashSet<>();
+
+            if(!Objects.isNull(containerResponses))
+                containerResponses.forEach(r -> containerTypes.add(r.getContainerCode()));
+
+            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+
+            BigDecimal teu;
+            teu = BigDecimal.ZERO;
+            if (containerResponses != null) {
+                for(ContainerResponse c : containerResponses) {
+                    if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount()) && cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA) != null) {
+                        var cache = Objects.requireNonNull(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA)).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                        if (!Objects.isNull(cache)) {
+                            EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                            if (object != null && !Objects.isNull(object.getTeu()))
+                                teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
+                        }
+                    }
+                }
+            }
+            return teu;
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: setContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
+        }
+        return BigDecimal.ZERO;
     }
 }

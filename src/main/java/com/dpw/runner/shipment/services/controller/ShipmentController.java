@@ -587,4 +587,14 @@ public class ShipmentController {
         }
     }
 
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.API_RETRIEVE_MEASUREMENT_DATA)
+    public ResponseEntity<IRunnerResponse> retrieveMeasurmentData(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
+        log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return shipmentService.shipmentRetrieveWithMeasurmentBasis(CommonRequestModel.buildRequest(request));
+    }
 }

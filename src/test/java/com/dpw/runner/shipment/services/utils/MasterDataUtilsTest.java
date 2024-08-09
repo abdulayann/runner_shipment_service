@@ -2129,4 +2129,62 @@ class MasterDataUtilsTest {
         assertFalse(response.isEmpty());
     }
 
+    @Test
+    void setContainerTeuDataWithContainerList() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> EntityTransferContainerType.builder().Teu(11.1).build());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferContainerType.class))).thenReturn(List.of(EntityTransferContainerType.builder().Code("20GP").ContainerType("ContainerType").build()));
+        when(v1Service.fetchContainerTypeData(any())).thenReturn(V1DataResponse.builder().build());
+
+        masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList());
+
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
+    }
+
+
+    @Test
+    void setContainerTeuData2WithContainerList() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+        mockShipmentListResponse.setContainersList(null);
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
+    }
+
+    @Test
+    void setContainerTeuData3WithContainerList() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+        mockShipmentListResponse.getContainersList().get(0).setContainerCode(null);
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
+    }
+
+    @Test
+    void setContainerTeuData4WithContainerList() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+        mockShipmentListResponse.getContainersList().get(0).setContainerCount(null);
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
+    }
+
+    @Test
+    void setContainerTeuData5WithContainerList() {
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(() -> null);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferContainerType.class))).thenReturn(List.of(EntityTransferContainerType.builder().Code("20GP").ContainerType("ContainerType").build()));
+        when(v1Service.fetchContainerTypeData(any())).thenReturn(V1DataResponse.builder().build());
+
+        masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList());
+
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
+    }
+
 }
