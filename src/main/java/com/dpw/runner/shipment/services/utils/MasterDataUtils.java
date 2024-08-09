@@ -1338,7 +1338,7 @@ public class MasterDataUtils{
         return jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
     }
 
-    public BigDecimal setContainerTeuDataWithContainers(List<ContainerResponse> containerResponses) {
+    public BigDecimal setContainerTeuDataWithContainers(List<Containers> containerResponses) {
         try {
             Set<String> containerTypes = new HashSet<>();
 
@@ -1351,7 +1351,7 @@ public class MasterDataUtils{
             BigDecimal teu;
             teu = BigDecimal.ZERO;
             if (containerResponses != null) {
-                for(ContainerResponse c : containerResponses) {
+                for(Containers c : containerResponses) {
                     if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount()) && cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA) != null) {
                         var cache = Objects.requireNonNull(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA)).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
                         if (!Objects.isNull(cache)) {

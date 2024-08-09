@@ -52,7 +52,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ALL;
-
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 
 
 @SuppressWarnings(ALL)
@@ -590,11 +590,16 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ShipmentConstants.API_RETRIEVE_MEASUREMENT_DATA)
-    public ResponseEntity<IRunnerResponse> retrieveMeasurmentData(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) {
+    public ResponseEntity<IRunnerResponse> retrieveMeasurmentData(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @ApiParam(value = ShipmentConstants.MODULE_ID) @RequestParam Optional<String> module) {
         CommonGetRequest request = CommonGetRequest.builder().build();
-        id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
-        log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return shipmentService.shipmentRetrieveWithMeasurmentBasis(CommonRequestModel.buildRequest(request));
+        if(module.get().equalsIgnoreCase(SHIPMENT)) {
+            log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            return shipmentService.shipmentRetrieveWithMeasurmentBasis(CommonRequestModel.buildRequest(request));
+        } else {
+            log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            return consolidationService.consolidationRetrieveWithMeasurmentBasis(CommonRequestModel.buildRequest(request));
+        }
+
     }
 }

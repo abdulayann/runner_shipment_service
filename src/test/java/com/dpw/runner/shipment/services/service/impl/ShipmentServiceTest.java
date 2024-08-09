@@ -103,19 +103,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -5693,18 +5681,16 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void retrieveByMeasurmentBasisTest() {
-        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        Containers containers = new Containers();
+        containers.setContainerCode("20GP");
+        containers.setContainerCount(1L);
+        shipmentDetails.setContainersList(Arrays.asList(containers));
 
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Arrays.asList(Notes.builder().entityId(1L).build()));
-
-        when(jsonHelper.convertValueToList(anyList(), eq(NotesResponse.class))).thenReturn(Arrays.asList(NotesResponse.builder().build()));
-        ContainerResponse containerResponse = new ContainerResponse();
-        containerResponse.setContainerCount(1L);
-        containerResponse.setContainerCode("20GP");
-        when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().containersList(Arrays.asList(containerResponse)).build());
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), any())).thenReturn(MeasurementBasisResponse.builder().build());
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.shipmentRetrieveWithMeasurmentBasis(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -5720,15 +5706,12 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void retrieveByMeasurmentBasisTest3() {
-        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
 
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Arrays.asList(Notes.builder().entityId(1L).build()));
-
-        when(jsonHelper.convertValueToList(anyList(), eq(NotesResponse.class))).thenReturn(Arrays.asList(NotesResponse.builder().build()));
-        when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().build());
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), any())).thenReturn(MeasurementBasisResponse.builder().build());
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.shipmentRetrieveWithMeasurmentBasis(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
