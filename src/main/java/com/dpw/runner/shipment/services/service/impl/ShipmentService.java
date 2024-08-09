@@ -108,20 +108,7 @@ import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -1341,8 +1328,8 @@ public class ShipmentService implements IShipmentService {
         if(response instanceof AutoUpdateWtVolResponse autoUpdateWtVolResponse) {
             autoUpdateWtVolResponse.setNoOfPacks(totalPacks.toString());
             autoUpdateWtVolResponse.setPacksUnit(packingUnit);
-        } else if(response instanceof ShipmentDetailsResponse shipmentDetailsResponse) {
-            shipmentDetailsResponse.setPackCount(totalPacks);
+        } else if(response instanceof MeasurementBasisResponse measurementBasisResponseas) {
+            measurementBasisResponseas.setPackCount(totalPacks);
         }
         return response;
     }
@@ -4725,8 +4712,17 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> shipmentRetrieveWithMeasurmentBasis(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            ShipmentDetailsResponse response = retireveShipmentData(commonRequestModel, true);
-            calculateContainersAndTeu(response);
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            double start = System.currentTimeMillis();
+            if(request.getGuid() == null) {
+                log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
+            }
+            UUID guid = UUID.fromString(request.getGuid());
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(guid);
+            MeasurementBasisResponse response = modelMapper.map(shipmentDetails.get(), MeasurementBasisResponse.class);
+            calculatePacksAndPacksUnit(shipmentDetails.get().getPackingList(), response);
+            calculateContainersAndTeu(response, shipmentDetails.get().getContainersList());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -4736,20 +4732,20 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void calculateContainersAndTeu(ShipmentDetailsResponse response) {
+    private void calculateContainersAndTeu(MeasurementBasisResponse response, List<Containers> containersList) {
         long containerCount = 0;
         Map<String, Long> containerCountMap = new HashMap<>();
-        if(!CollectionUtils.isEmpty(response.getContainersList())) {
-            for(ContainerResponse containerResponse : response.getContainersList()) {
-                if(containerResponse.getContainerCount() != null) {
-                    containerCount = containerCount + containerResponse.getContainerCount();
-                    if(StringUtility.isNotEmpty(containerResponse.getContainerCode())) {
-                        containerCountMap.put(containerResponse.getContainerCode(), containerCountMap.getOrDefault(containerResponse.getContainerCode(), 0L) + containerResponse.getContainerCount());
+        if(!CollectionUtils.isEmpty(containersList)) {
+            for(Containers containers : containersList) {
+                if(containers.getContainerCount() != null) {
+                    containerCount = containerCount + containers.getContainerCount();
+                    if(StringUtility.isNotEmpty(containers.getContainerCode())) {
+                        containerCountMap.put(containers.getContainerCode(), containerCountMap.getOrDefault(containers.getContainerCode(), 0L) + containers.getContainerCount());
                     }
                 }
             }
 
-            response.setTeuCount(masterDataUtils.setContainerTeuDataWithContainers(response.getContainersList()));
+            response.setTeuCount(masterDataUtils.setContainerTeuDataWithContainers(containersList));
             response.setContainerData(containerCountMap);
             response.setContainerCount(containerCount);
         }

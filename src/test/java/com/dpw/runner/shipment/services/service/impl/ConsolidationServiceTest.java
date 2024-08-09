@@ -3465,4 +3465,46 @@ import static org.mockito.Mockito.*;
     void checkIfShipmentDateGreaterThanConsole_null() {
         assertFalse(consolidationService.checkIfShipmentDateGreaterThanConsole(LocalDateTime.now(), null));
     }
+
+    @Test
+    void retrieveByMeasurmentBasisTest() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        Containers containers = new Containers();
+        containers.setContainerCode("20GP");
+        containers.setContainerCount(1L);
+        Packing packing = new Packing();
+        packing.setPacks("1");
+        packing.setPacksType("MPK");
+        consolidationDetails.setPackingList(Arrays.asList(packing));
+        consolidationDetails.setContainersList(Arrays.asList(containers));
+
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
+        when(modelMapper.map(any(), any())).thenReturn(MeasurementBasisResponse.builder().build());
+
+        ResponseEntity<IRunnerResponse> httpResponse = consolidationService.consolidationRetrieveWithMeasurmentBasis(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void retrieveByMeasurmentBasisTestWithIdNull() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ResponseEntity<IRunnerResponse> httpResponse = consolidationService.consolidationRetrieveWithMeasurmentBasis(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void retrieveByMeasurmentBasisTest3() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
+        when(modelMapper.map(any(), any())).thenReturn(MeasurementBasisResponse.builder().build());
+
+        ResponseEntity<IRunnerResponse> httpResponse = consolidationService.consolidationRetrieveWithMeasurmentBasis(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
 }

@@ -47,6 +47,11 @@ public class ShipmentConstants {
     public static final String SHIPMENT_GUID = "Shipment Guid";
     public static final String CONSOLIDATION_ID = "Consolidation Id";
 
+    public static final String MODULE_ID = "Module Id";
+    public static final String CONSOLIDATION = "CONSOLIDATION";
+    public static final String SHIPMENT = "SHIPMENT";
+
+
     public static final String RESPONSE_CONTAINER_LIST = "List";
 
     public static final String LOCK_TOGGLE_SUCCESSFUL = "Successfully toggled lock";
