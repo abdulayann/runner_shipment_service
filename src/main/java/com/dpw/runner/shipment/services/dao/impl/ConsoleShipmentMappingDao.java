@@ -81,9 +81,12 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                     entity.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
                 } else {
                     entity.setIsAttachmentDone(true);
-                    entity.setRequestedType(shipmentRequestedType);
                 }
-                save(entity);
+                if(shipmentRequestedType != null) {
+                    consoleShipmentsMappingRepository.updateConsoleShipmentStatus(shipmentRequestedType.getValue(), consolidationId, id);
+                } else {
+                    save(entity);
+                }
             }
         }
         return shipmentIds;
