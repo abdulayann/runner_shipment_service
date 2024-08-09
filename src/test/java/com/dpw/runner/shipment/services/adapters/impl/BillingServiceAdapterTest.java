@@ -2,12 +2,15 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
@@ -20,6 +23,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingExce
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,12 +63,112 @@ class BillingServiceAdapterTest {
 
     private LastPostedInvoiceDateRequest lastPostedInvoiceDateRequest;
     private ChargeTypeFilterRequest chargeTypeFilterRequest;
+    private BillingBulkSummaryRequest billingBulkSummaryRequest;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.initMocks(this);
         lastPostedInvoiceDateRequest = new LastPostedInvoiceDateRequest();
         chargeTypeFilterRequest = new ChargeTypeFilterRequest();
+        billingBulkSummaryRequest = new BillingBulkSummaryRequest();
+    }
+
+    @Test
+    void fetchBillingBulkSummary_Success() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        BillingSummary billingSummary = new BillingSummary();
+        billingEntityResponse.setData(Map.of("billingSummary", List.of(Map.of("totalCount", 1, "totalRevenue", 100.0))));
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenReturn(responseEntity);
+
+        List<BillingSummary> billingSummaries = List.of(billingSummary);
+        when(modelMapper.map(anyList(), any(Type.class)))
+                .thenReturn(billingSummaries);
+
+        List<BillingSummary> result = billingServiceAdapter.fetchBillingBulkSummary(billingBulkSummaryRequest);
+        assertEquals(billingSummaries, result);
+    }
+
+    @Test
+    void fetchBillingBulkSummary_NullResponse() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(null);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenReturn(responseEntity);
+
+        List<BillingSummary> result = billingServiceAdapter.fetchBillingBulkSummary(billingBulkSummaryRequest);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void fetchBillingBulkSummary_NullData() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        billingEntityResponse.setData(null);
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenReturn(responseEntity);
+
+        List<BillingSummary> result = billingServiceAdapter.fetchBillingBulkSummary(billingBulkSummaryRequest);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void fetchBillingBulkSummary_EmptyData() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        billingEntityResponse.setData(Map.of("billingSummary", Collections.emptyList()));
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenReturn(responseEntity);
+
+        List<BillingSummary> result = billingServiceAdapter.fetchBillingBulkSummary(billingBulkSummaryRequest);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void fetchBillingBulkSummary_ResponseContainsErrors() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        billingEntityResponse.setErrors(List.of("Some error"));
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenReturn(responseEntity);
+
+        assertThrows(BillingException.class, () -> billingServiceAdapter.fetchBillingBulkSummary(billingBulkSummaryRequest));
+    }
+
+    @Test
+    void fetchBillingBulkSummary_ExceptionThrown() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
+
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenThrow(new RuntimeException("Runtime exception"));
+
+        assertThrows(BillingException.class, () -> billingServiceAdapter.fetchBillingBulkSummary(billingBulkSummaryRequest));
     }
 
     @Test
