@@ -1,9 +1,25 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -11,14 +27,14 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -27,11 +43,105 @@ class BillingServiceAdapterTest {
     @Mock
     private RestTemplate restTemplate;
 
+    @Mock
+    private BillingServiceUrlConfig billingServiceUrlConfig;
+
     @InjectMocks
     private BillingServiceAdapter billingServiceAdapter;
 
     @Mock
     private ModelMapper modelMapper;
+
+    private LastPostedInvoiceDateRequest request;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.initMocks(this);
+        request = new LastPostedInvoiceDateRequest();
+    }
+
+    @Test
+    void fetchLastPostedInvoiceDate_Success() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getLastPostedInvoiceDate()).thenReturn("/last-posted-invoice-date");
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("lastPostedInvoiceDate", "2024-07-26 15:40:45");
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        billingEntityResponse.setData(data);
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.exchange(any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenReturn(responseEntity);
+
+        LocalDateTime result = billingServiceAdapter.fetchLastPostedInvoiceDate(request);
+        assertEquals(LocalDateTime.parse("2024-07-26 15:40:45", DateTimeFormatter.ofPattern(Constants.DATE_TIME_FORMAT)), result);
+    }
+
+    @Test
+    void fetchLastPostedInvoiceDate_NullResponse() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getLastPostedInvoiceDate()).thenReturn("/last-posted-invoice-date");
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(null);
+        when(restTemplate.exchange(any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenReturn(responseEntity);
+
+        assertThrows(BillingException.class, () -> billingServiceAdapter.fetchLastPostedInvoiceDate(request));
+    }
+
+    @Test
+    void fetchLastPostedInvoiceDate_NullData() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getLastPostedInvoiceDate()).thenReturn("/last-posted-invoice-date");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        billingEntityResponse.setData(null);
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.exchange(any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenReturn(responseEntity);
+
+        assertThrows(BillingException.class, () -> billingServiceAdapter.fetchLastPostedInvoiceDate(request));
+    }
+
+    @Test
+    void fetchLastPostedInvoiceDate_NullLastPostedInvoiceDate() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getLastPostedInvoiceDate()).thenReturn("/last-posted-invoice-date");
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("lastPostedInvoiceDate", null);
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        billingEntityResponse.setData(data);
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.exchange(any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenReturn(responseEntity);
+
+        assertThrows(BillingException.class, () -> billingServiceAdapter.fetchLastPostedInvoiceDate(request));
+    }
+
+    @Test
+    void fetchLastPostedInvoiceDate_ResponseContainsErrors() {
+        String url = "http://example.com";
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getLastPostedInvoiceDate()).thenReturn("/last-posted-invoice-date");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        billingEntityResponse.setErrors(List.of("Some error"));
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.exchange(any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenReturn(responseEntity);
+
+        assertThrows(BillingException.class, () -> billingServiceAdapter.fetchLastPostedInvoiceDate(request));
+    }
+
 
     @Test
     void fetchActiveInvoicesTestDouble() throws RunnerException {
