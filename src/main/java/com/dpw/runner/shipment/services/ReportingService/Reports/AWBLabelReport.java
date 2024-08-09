@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelpe
 import com.dpw.runner.shipment.services.ReportingService.Models.AWbLabelModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -13,12 +14,12 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
@@ -128,6 +129,7 @@ public class AWBLabelReport extends IReport{
                 unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestinationPort());
         }
         if(awbLabelModel.getConsolidation() != null){
+            dictionary.put(AIRLINE_NAME, awbLabelModel.getConsolidation().getCarrierDetails() != null ? awbLabelModel.getConsolidation().getCarrierDetails().getShippingLine() : null);
             if(awbLabelModel.getConsolidation().getCarrierDetails() != null && awbLabelModel.getConsolidation().getCarrierDetails().getDestination() != null)
                 unlocations.add(awbLabelModel.getConsolidation().getCarrierDetails().getDestination());
 
@@ -141,14 +143,12 @@ public class AWBLabelReport extends IReport{
                 for (var unloc : unlocationsResponse) {
                     if (awbLabelModel.getShipment() != null && Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestination())) {
                         dictionary.put(ReportConstants.HDEST, unloc.getName());
-                        dictionary.put(ReportConstants.CARRIER, unloc.getIataCode());
                     }
                     if (awbLabelModel.getShipment() != null && Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.shipment.getCarrierDetails().getDestinationPort())) {
                         dictionary.put(ReportConstants.DESTINATION, unloc.getLocCode());
                     }
                     if (awbLabelModel.getConsolidation() != null && Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.getConsolidation().getCarrierDetails().getDestination())) {
                         dictionary.put(ReportConstants.HDEST, unloc.getName());
-                        dictionary.put(ReportConstants.AIRLINE_NAME, unloc.getIataCode());
                     }
                     if (awbLabelModel.getConsolidation() != null && Objects.equals(unloc.getLocationsReferenceGUID(), awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort())) {
                         dictionary.put(ReportConstants.DESTINATION, unloc.getLocCode());
@@ -159,6 +159,7 @@ public class AWBLabelReport extends IReport{
         dictionary.put(ReportConstants.AIR_LABEL_REMARKS, awbLabelModel.getRemarks());
         dictionary.put(ReportConstants.TENANT_NAME, awbLabelModel.getTenant() != null ? awbLabelModel.getTenant().getTenantName() : null);
         if(awbLabelModel.shipment != null) {
+            dictionary.put(CARRIER, awbLabelModel.getShipment().getCarrierDetails() != null ? awbLabelModel.getShipment().getCarrierDetails().getShippingLine() : null);
             dictionary.put(ReportConstants.TOTAL_WEIGHT_AND_UNIT, awbLabelModel.getShipment().getChargable() + " " + awbLabelModel.getShipment().getChargeableUnit());
             dictionary.put(PACKS_UNIT, Constants.MPK.equals(awbLabelModel.shipment.getPacksUnit()) ? Constants.PACKAGES : awbLabelModel.shipment.getPacksUnit());
         }
@@ -171,16 +172,16 @@ public class AWBLabelReport extends IReport{
         if(awbLabelModel.getConsolidation() != null){
             unlocations = awbLabelModel.getConsolidation().getRoutingsList() == null ? Collections.emptyList() : awbLabelModel.getConsolidation().getRoutingsList().stream().filter(c -> c.getMode().equals(AIR)).map(RoutingsModel::getPod).distinct().toList();
             airLegs = getUnlocationsResponses(unlocations);
-            if(!airLegs.isEmpty()) dictionary.put(ReportConstants.CONSOL_FIRST_LEG_DESTINATION, airLegs.get(0).getNameWoDiacritics());
-            if(airLegs.size() >= 2) dictionary.put(ReportConstants.CONSOL_SECOND_LEG_DESTIATION, airLegs.get(1).getNameWoDiacritics());
-            if(airLegs.size() >= 3) dictionary.put(ReportConstants.CONSOL_THIRD_LEG_DESTINATION, airLegs.get(2).getNameWoDiacritics());
+            if(!airLegs.isEmpty()) dictionary.put(ReportConstants.CONSOL_FIRST_LEG_DESTINATION, airLegs.get(0).getIataCode());
+            if(airLegs.size() >= 2) dictionary.put(ReportConstants.CONSOL_SECOND_LEG_DESTIATION, airLegs.get(1).getIataCode());
+            if(airLegs.size() >= 3) dictionary.put(ReportConstants.CONSOL_THIRD_LEG_DESTINATION, airLegs.get(2).getIataCode());
         }
         if(awbLabelModel.getShipment() != null){
             unlocations = awbLabelModel.shipment.getRoutingsList() == null ? Collections.emptyList() : awbLabelModel.shipment.getRoutingsList().stream().filter(c -> c.getMode().equals(AIR)).map(RoutingsModel::getPod).distinct().toList();
             airLegs = getUnlocationsResponses(unlocations);
-            if(!airLegs.isEmpty()) dictionary.put(ReportConstants.FIRST_LEG_DESTINATION, airLegs.get(0).getNameWoDiacritics());
-            if(airLegs.size() >= 2) dictionary.put(ReportConstants.SECOND_LEG_DESTINATION, airLegs.get(1).getNameWoDiacritics());
-            if(airLegs.size() >= 3) dictionary.put(ReportConstants.THIRD_LEG_DESTINATION, airLegs.get(2).getNameWoDiacritics());
+            if(!airLegs.isEmpty()) dictionary.put(ReportConstants.FIRST_LEG_DESTINATION, airLegs.get(0).getIataCode());
+            if(airLegs.size() >= 2) dictionary.put(ReportConstants.SECOND_LEG_DESTINATION, airLegs.get(1).getIataCode());
+            if(airLegs.size() >= 3) dictionary.put(ReportConstants.THIRD_LEG_DESTINATION, airLegs.get(2).getIataCode());
         }
 
         if(awbLabelModel.getShipment() != null) {
@@ -204,20 +205,23 @@ public class AWBLabelReport extends IReport{
         }
 
         if(awbLabelModel.getConsolidation() != null){
+            StringBuilder sb = new StringBuilder();
+            awbLabelModel.getConsolidation().getShipmentsList().forEach(shipment -> sb.append(shipment.getHouseBill()).append(" ").append(shipment.getNoOfPacks()).append('\n'));
+            dictionary.put(HAWB_NOS_PACKS, sb.toString());
             List<String> unlocoRequests = createUnLocoRequestFromConsolidation(awbLabelModel.getConsolidation());
             Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
 
             UnlocationsResponse pol = awbLabelModel.getConsolidation().getCarrierDetails() != null ? unlocationsMap.get(awbLabelModel.getConsolidation().getCarrierDetails().getOriginPort()) : null;
             UnlocationsResponse pod = awbLabelModel.getConsolidation().getCarrierDetails() != null ? unlocationsMap.get(awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort()) : null;
 
-            if (pod != null && !CommonUtils.IsStringNullOrEmpty(pod.getIataCode())) {
+            if (pod != null && pod.getIataCode() != null) {
                 dictionary.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE, pod.getIataCode());
                 dictionary.put(CONSOL_DESTINATION_AIRPORT_CODE_CAPS, pod.getIataCode().toUpperCase());
             }
             if (pod != null && pod.getAirPortName() != null) {
                 dictionary.put(ReportConstants.DESTINATION_PORT_NAME_INCAPS_AIR, pod.getAirPortName().toUpperCase());
             }
-            if (pol != null && !CommonUtils.IsStringNullOrEmpty(pol.getIataCode())) {
+            if (pol != null && pol.getIataCode() != null) {
                 dictionary.put(ReportConstants.CONSOL_ORIGIN_AIRPORT_CODE, pol.getIataCode());
                 dictionary.put(CONSOL_ORIGIN_AIRPORT_CODE_CAPS, pol.getIataCode().toUpperCase());
             }
@@ -227,7 +231,10 @@ public class AWBLabelReport extends IReport{
         }
 
         if(awbLabelModel.getAwb() != null) {
-            dictionary.put(ReportConstants.HAWB_CAPS, awbLabelModel.getAwb().getAwbNumber());
+            if(awbLabelModel.getConsolidation() == null)
+                dictionary.put(ReportConstants.HAWB_CAPS, awbLabelModel.getAwb().getAwbNumber());
+            else
+                dictionary.put(HAWB_CAPS, awbLabelModel.getConsolidation().getShipmentsList().stream().map(ShipmentModel::getHouseBill).collect(Collectors.joining(", ")));
             dictionary.put(ReportConstants.MAWB_CAPS, awbLabelModel.getAwb().getAwbNumber());
         }
 
@@ -242,6 +249,8 @@ public class AWBLabelReport extends IReport{
                     totalPacks += Integer.parseInt(awbLabelModel.getConsolidation().getPackingList().get(i).getPacks());
             }
             dictionary.put(ReportConstants.TOTAL_CONSOL_PACKS, totalPacks);
+            var packingModelList = awbLabelModel.getConsolidation().getPackingList().stream().filter(c -> c.getWeight() != null && c.getWeightUnit() != null).toList();
+            dictionary.put(CONSOL_TOTAL_WEIGHT_AND_UNIT, packingModelList.stream().mapToDouble(c -> c.getWeight().doubleValue()).sum() + " " + (!packingModelList.isEmpty() ? packingModelList.get(0).getWeightUnit() : null));
         }
         if (awbLabelModel.shipment != null && awbLabelModel.shipment.getPackingList() != null) {
             var totalPacks = 0;
@@ -253,7 +262,7 @@ public class AWBLabelReport extends IReport{
             dictionary.put(ReportConstants.TOTAL_PACKS, totalPacks);
         }
         dictionary.put(ReportConstants.IS_MAWB, this.isMawb);
-
+        dictionary.put(ReportConstants.IS_HAWB, !this.isMawb);
         return dictionary;
     }
 
