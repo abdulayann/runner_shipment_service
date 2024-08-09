@@ -4540,7 +4540,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
-    public ResponseEntity<IRunnerResponse> updateShipments(UpdateConsoleShipmentRequest request) {
+    public ResponseEntity<IRunnerResponse> updateShipments(UpdateConsoleShipmentRequest request) throws RunnerException {
         if (isForHubRequest(request)) {
             processHubRequest(request);
         } else {
@@ -4561,7 +4561,12 @@ public class ShipmentService implements IShipmentService {
             }
             if (ShipmentRequestedType.APPROVE.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
                 updateConsoleShipmentRequest.getListOfShipments().stream().forEach(shipmentId -> {
-                    consoleShipmentMappingDao.updateConsoleShipments(updateConsoleShipmentRequest.getShipmentRequestedType(), updateConsoleShipmentRequest.getConsoleId(), shipmentId);
+                    try {
+                        consolidationService.attachShipments(updateConsoleShipmentRequest.getShipmentRequestedType(), updateConsoleShipmentRequest.getConsoleId(), List.of(shipmentId));
+                    } catch (RunnerException e) {
+                        throw new RuntimeException(e);
+                    }
+                   // consoleShipmentMappingDao.updateConsoleShipments(updateConsoleShipmentRequest.getShipmentRequestedType(), updateConsoleShipmentRequest.getConsoleId(), shipmentId);
                     consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentId);
                 });
             } else if (ShipmentRequestedType.REJECT.equals(updateConsoleShipmentRequest.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
@@ -4573,12 +4578,13 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void processShipmentRequest(UpdateConsoleShipmentRequest request) {
+    private void processShipmentRequest(UpdateConsoleShipmentRequest request) throws RunnerException {
         if(request.getConsoleIdsList() == null || request.getConsoleIdsList().isEmpty()) {
             throw new InvalidDataAccessApiUsageException("Console Ids list should not be empty!!!");
         }
         if (ShipmentRequestedType.APPROVE.equals(request.getShipmentRequestedType())) {
-            consoleShipmentMappingDao.updateConsoleShipments(request.getShipmentRequestedType(), request.getConsoleIdsList().get(0), request.getShipmentId());
+            consolidationService.attachShipments(request.getShipmentRequestedType(), request.getConsoleIdsList().get(0), List.of(request.getShipmentId()));
+          //  consoleShipmentMappingDao.updateConsoleShipments(request.getShipmentRequestedType(), request.getConsoleIdsList().get(0), request.getShipmentId());
             consoleShipmentMappingDao.deletePendingStateByShipmentId(request.getShipmentId());
         } else if (ShipmentRequestedType.REJECT.equals(request.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(request.getShipmentRequestedType())) {
             request.getConsoleIdsList().stream().forEach(consoleId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(consoleId, request.getShipmentId()));
