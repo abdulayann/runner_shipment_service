@@ -910,7 +910,7 @@ public abstract class IReport {
                     dict.put(SCI, cargoInfoRows.getSci());
                     dict.put(CSD_INFO, cargoInfoRows.getCsdInfo());
                     if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
-                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat()));
+                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true));
                 }
             }
             dict.put(WITH_CONSIGNOR, isShipperAndConsignee);

@@ -272,7 +272,7 @@ public class HawbReport extends IReport{
 
                 dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
                 if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
-                    dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat()));
+                    dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true));
 
             }
             List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo = hawbModel.awb.getAwbGoodsDescriptionInfo();
