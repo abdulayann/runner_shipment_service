@@ -467,6 +467,7 @@ public class ReportConstants {
     public static final String TOTAL_WEIGHT_UNIT = "TotalPacksWeightUnit";
     public static final String TOTAL_VOLUME_UNIT = "TotalPacksVolumeUnit";
     public static final String AS_AGREED = "asAgreed";
+    public static final String AS_AGREED_DISPLAY = "AS AGREED";
     public static final String COPY_AS_AGREED = "copyAsAgreed";
     public static final String HAS_CHARGES = "hasCharges";
     public static final String CHARGES = "Charges";
