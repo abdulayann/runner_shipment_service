@@ -2,10 +2,9 @@ package com.dpw.runner.shipment.services.ReportingService.Models;
 
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
-import lombok.Getter;
-
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import lombok.Getter;
 
 @Getter
 public class TenantModel implements Serializable {

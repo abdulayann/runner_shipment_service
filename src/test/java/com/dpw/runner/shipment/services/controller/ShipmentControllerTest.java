@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
@@ -30,10 +31,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -1064,6 +1068,23 @@ class ShipmentControllerTest {
         var responseEntity = shipmentController.updateShipments(request);
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {Constants.SHIPMENT, Constants.CONSOLIDATION})
+    void testRetrieveMeasurementBasis(String module) {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+
+        if(module.equalsIgnoreCase(Constants.SHIPMENT)) {
+            when(shipmentService.shipmentRetrieveWithMeasurmentBasis(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        } else {
+            when(consolidationService.consolidationRetrieveWithMeasurmentBasis(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        }
+        // Test
+        var responseEntity = shipmentController.retrieveMeasurmentData(Optional.of(UUID.randomUUID().toString()), Optional.of(module));
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
 }

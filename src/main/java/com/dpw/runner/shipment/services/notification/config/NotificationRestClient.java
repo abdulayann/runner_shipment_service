@@ -41,7 +41,7 @@ public class NotificationRestClient {
 
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("templateName", params.getTemplateName());
+        body.add("templateName", "EmailInvoice_Runner");
         body.add("organizationId", params.getOrganizationId());
         body.add("applicationId", params.getApplicationId());
         body.add("recipientEmails", params.getRecipientEmails());

@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -13,9 +17,27 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -27,6 +49,19 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
@@ -35,20 +70,16 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-
 @Slf4j
 @Component
 public class MasterDataUtils{
 
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private BillingServiceUrlConfig billingServiceUrlConfig;
+    @Autowired
+    private BillingServiceAdapter billingServiceAdapter;
     @Autowired
     private JsonHelper jsonHelper;
 
@@ -1212,7 +1243,7 @@ public class MasterDataUtils{
                 if (!guidsList.isEmpty()) {
                     ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
                             .guidsList(guidsList).build();
-                    ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+                    ShipmentBillingListResponse shipmentBillingListResponse = getShipmentBillingListResponse(shipmentBillingListRequest);
                     pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING);
                 }
 
@@ -1238,7 +1269,6 @@ public class MasterDataUtils{
                             shipmentListResponse.setTotalPostedRevenue(billingData.getTotalPostedRevenue());
                             shipmentListResponse.setTotalPostedProfit(billingData.getTotalPostedProfit());
                             shipmentListResponse.setTotalPostedProfitPercent(billingData.getTotalPostedProfitPercent());
-                            shipmentListResponse.setWayBillNumber(billingData.getWayBillNumber());
                         }
 
                     }
@@ -1247,6 +1277,13 @@ public class MasterDataUtils{
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchBillDataForShipments in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
+    }
+
+    private ShipmentBillingListResponse getShipmentBillingListResponse(ShipmentBillingListRequest shipmentBillingListRequest) {
+        if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
+            return billingServiceAdapter.fetchShipmentBillingData(shipmentBillingListRequest);
+        }
+        return v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
     }
 
     private List<UUID> createBillRequest(List<ShipmentDetails> shipmentDetails) {
@@ -1299,5 +1336,36 @@ public class MasterDataUtils{
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
         return jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+    }
+
+    public BigDecimal setContainerTeuDataWithContainers(List<Containers> containerResponses) {
+        try {
+            Set<String> containerTypes = new HashSet<>();
+
+            if(!Objects.isNull(containerResponses))
+                containerResponses.forEach(r -> containerTypes.add(r.getContainerCode()));
+
+            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+
+            BigDecimal teu;
+            teu = BigDecimal.ZERO;
+            if (containerResponses != null) {
+                for(Containers c : containerResponses) {
+                    if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount()) && cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA) != null) {
+                        var cache = Objects.requireNonNull(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA)).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                        if (!Objects.isNull(cache)) {
+                            EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                            if (object != null && !Objects.isNull(object.getTeu()))
+                                teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
+                        }
+                    }
+                }
+            }
+            return teu;
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: setContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
+        }
+        return BigDecimal.ZERO;
     }
 }

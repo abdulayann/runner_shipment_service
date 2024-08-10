@@ -85,6 +85,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.util.CollectionUtils;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -686,7 +687,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             HashSet<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds);
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                if(attachedShipmentIds.contains(shipmentDetails.getId())) {
+                if(attachedShipmentIds.contains(shipmentDetails.getId()) && !interBranchShipIds.contains(shipmentDetails.getId())) {
                     if (shipmentDetails.getContainersList() != null) {
                         List<Containers> containersList = shipmentDetails.getContainersList();
                         for (Containers container : containersList) {
@@ -3909,5 +3910,65 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         return new ResponseEntity<>(null, HttpStatus.OK);
+    }
+
+    public ResponseEntity<IRunnerResponse> consolidationRetrieveWithMeasurmentBasis(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request.getGuid() == null) {
+                log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
+            }
+            UUID guid = UUID.fromString(request.getGuid());
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(guid);
+            if (!consolidationDetails.isPresent()) {
+                log.debug("Consolidation Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            MeasurementBasisResponse response = modelMapper.map(consolidationDetails.get().getAllocations(), MeasurementBasisResponse.class);
+            calculatePacksAndPacksUnit(consolidationDetails.get().getPackingList(), response);
+            calculateContainersAndTeu(response, consolidationDetails.get().getContainersList());
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void calculateContainersAndTeu(MeasurementBasisResponse response, List<Containers> containersList) {
+        long containerCount = 0;
+        Map<String, Long> containerCountMap = new HashMap<>();
+        if(!CollectionUtils.isEmpty(containersList)) {
+            for(Containers containers : containersList) {
+                if(containers.getContainerCount() != null) {
+                    containerCount = containerCount + containers.getContainerCount();
+                    if(StringUtility.isNotEmpty(containers.getContainerCode())) {
+                        containerCountMap.put(containers.getContainerCode(), containerCountMap.getOrDefault(containers.getContainerCode(), 0L) + containers.getContainerCount());
+                    }
+                }
+            }
+
+            response.setTeuCount(masterDataUtils.setContainerTeuDataWithContainers(containersList));
+            response.setContainerData(containerCountMap);
+            response.setContainerCount(containerCount);
+        }
+    }
+
+    private <T> T calculatePacksAndPacksUnit(List<Packing> packings, T response) {
+        Integer totalPacks = 0;
+        String tempPackingUnit = null;
+        if(!CollectionUtils.isEmpty(packings)) {
+            for (Packing packing : packings) {
+                if(!IsStringNullOrEmpty(packing.getPacks()))
+                    totalPacks = totalPacks + Integer.parseInt(packing.getPacks());
+            }
+        }
+        if(response instanceof MeasurementBasisResponse measurementBasisResponse) {
+            measurementBasisResponse.setPackCount(totalPacks);
+        }
+        return response;
     }
 }

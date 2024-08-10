@@ -945,6 +945,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setId(2L);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
+        shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -957,6 +958,7 @@ import static org.mockito.Mockito.*;
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setId(1L);
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
+        shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
 
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
@@ -989,6 +991,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setShipmentGateInDate(LocalDateTime.now());
+        shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setInterBranchConsole(false);
@@ -1004,6 +1007,7 @@ import static org.mockito.Mockito.*;
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setId(1L);
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
+        shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
 
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
@@ -1034,6 +1038,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setId(2L);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
+        shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -1046,6 +1051,7 @@ import static org.mockito.Mockito.*;
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setId(1L);
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
+        shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
 
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
@@ -1078,6 +1084,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setContainsHazardous(true);
+        shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -1092,6 +1099,7 @@ import static org.mockito.Mockito.*;
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setId(1L);
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
+        shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
 
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
@@ -3457,5 +3465,47 @@ import static org.mockito.Mockito.*;
     @Test
     void checkIfShipmentDateGreaterThanConsole_null() {
         assertFalse(consolidationService.checkIfShipmentDateGreaterThanConsole(LocalDateTime.now(), null));
+    }
+
+    @Test
+    void retrieveByMeasurmentBasisTest() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        Containers containers = new Containers();
+        containers.setContainerCode("20GP");
+        containers.setContainerCount(1L);
+        Packing packing = new Packing();
+        packing.setPacks("1");
+        packing.setPacksType("MPK");
+        consolidationDetails.setPackingList(Arrays.asList(packing));
+        consolidationDetails.setContainersList(Arrays.asList(containers));
+
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
+        when(modelMapper.map(any(), any())).thenReturn(MeasurementBasisResponse.builder().build());
+
+        ResponseEntity<IRunnerResponse> httpResponse = consolidationService.consolidationRetrieveWithMeasurmentBasis(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void retrieveByMeasurmentBasisTestWithIdNull() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ResponseEntity<IRunnerResponse> httpResponse = consolidationService.consolidationRetrieveWithMeasurmentBasis(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void retrieveByMeasurmentBasisTest3() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
+        when(modelMapper.map(any(), any())).thenReturn(MeasurementBasisResponse.builder().build());
+
+        ResponseEntity<IRunnerResponse> httpResponse = consolidationService.consolidationRetrieveWithMeasurmentBasis(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 }

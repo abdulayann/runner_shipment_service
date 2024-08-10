@@ -1068,7 +1068,9 @@ public class PackingService implements IPackingService {
             return null;
 
         consol = optionalConsol.get();
-        consol.setAllocations(allocated);
+        if(!Objects.isNull(allocated)) {
+            consol.setAllocations(allocated);
+        }
         achievedQuantities = Optional.ofNullable(consol.getAchievedQuantities()).orElse(new AchievedQuantities());
         achievedQuantities.setConsolidatedWeightUnit(toWeightUnit);
         achievedQuantities.setConsolidatedVolumeUnit(toVolumeUnit);
@@ -1132,6 +1134,24 @@ public class PackingService implements IPackingService {
         InterBranchContext.removeContext();
 
         return packingList;
+    }
+
+    @Override
+    @Transactional
+    public void savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest calculatePackUtilizationRequest) {
+        try {
+            Optional<ConsolidationDetails> optional = consolidationDao.findById(calculatePackUtilizationRequest.getConsolidationId());
+            if(optional.isPresent()) {
+                var consol = optional.get();
+                calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
+                commonUtils.updateConsolOpenForAttachment(consol);
+                consolidationDao.save(consol, false);
+            }
+        }
+        catch (Exception e) {
+            log.error("Error saving pack utilisation in console : {}", e.getMessage());
+        }
+
     }
 
 }

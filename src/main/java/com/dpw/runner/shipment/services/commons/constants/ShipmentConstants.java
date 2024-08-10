@@ -47,6 +47,11 @@ public class ShipmentConstants {
     public static final String SHIPMENT_GUID = "Shipment Guid";
     public static final String CONSOLIDATION_ID = "Consolidation Id";
 
+    public static final String MODULE_ID = "Module Id";
+    public static final String CONSOLIDATION = "CONSOLIDATION";
+    public static final String SHIPMENT = "SHIPMENT";
+
+
     public static final String RESPONSE_CONTAINER_LIST = "List";
 
     public static final String LOCK_TOGGLE_SUCCESSFUL = "Successfully toggled lock";
@@ -75,6 +80,8 @@ public class ShipmentConstants {
     public static final String FETCH_CREDIT_LIMIT = "/creditLimit";
     public static final String FETCH_EMAILS = "/email";
     public static final String GET_DATETIME_CHANGES = "/get/dateTimeChanges";
+    public static final String API_RETRIEVE_MEASUREMENT_DATA = "/retrieve/measurement/data";
+
 
     public static final String SHIPMENT_CREATION = "SHPCR";
 

@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.request.billing;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.AllArgsConstructor;
@@ -14,7 +14,7 @@ import lombok.ToString;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class InvoiceSummaryRequest implements IRunnerRequest {
+public class LastPostedInvoiceDateRequest implements IRunnerRequest {
     private String moduleType;
     private String moduleGuid;
 }

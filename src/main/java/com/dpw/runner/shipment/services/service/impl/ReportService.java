@@ -54,7 +54,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
@@ -239,6 +238,10 @@ public class ReportService implements IReportService {
             } else {
                 ((MawbReport)report).isDMawb = false;
             }
+        }
+        if(report instanceof AWBLabelReport awbLabelReport) {
+            awbLabelReport.setMawb(reportRequest.isFromConsolidation());
+            awbLabelReport.setRemarks(reportRequest.getRemarks());
         }
         // user story 135668
         if(report instanceof ArrivalNoticeReport) {
