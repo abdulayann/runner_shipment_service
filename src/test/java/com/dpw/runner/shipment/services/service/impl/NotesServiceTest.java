@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,7 +9,9 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -19,6 +22,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -30,6 +35,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,6 +59,12 @@ class NotesServiceTest {
     @InjectMocks
     private NotesService notesService;
 
+    @Mock
+    private ShipmentService shipmentService;
+
+    @Mock
+    private ConsolidationService consolidationService;
+
     @BeforeEach
     void setUp() {
         UserContext.setUser(UsersDto.builder().Username("user").build()); // Set up a mock user for testing
@@ -62,6 +74,7 @@ class NotesServiceTest {
     void testCreate() {
            
         NotesRequest request = new NotesRequest(); // Provide necessary data for request
+        request.setEntityId(123L);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         Notes notes = new Notes(); // Provide necessary data for notes
@@ -77,9 +90,64 @@ class NotesServiceTest {
     }
 
     @Test
-    void testCreateException() {
+    void testCreateEntityIdNull() {
 
         NotesRequest request = new NotesRequest(); // Provide necessary data for request
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        Notes notes = new Notes(); // Provide necessary data for notes
+        NotesResponse notesResponse = new NotesResponse();
+
+        ResponseEntity<IRunnerResponse> responseEntity = notesService.create(commonRequestModel);
+
+        assertNotNull(responseEntity.getBody());
+
+    }
+
+    @Test
+    void testCreateEntityGuid() {
+
+        NotesRequest request = new NotesRequest(); // Provide necessary data for request
+        request.setEntityGuid(UUID.randomUUID().toString());
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        Notes notes = new Notes(); // Provide necessary data for notes
+        NotesResponse notesResponse = new NotesResponse();
+
+        ResponseEntity<IRunnerResponse> responseEntity = notesService.create(commonRequestModel);
+
+        assertNotNull(responseEntity.getBody());
+
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {Constants.SHIPMENT, Constants.CONSOLIDATION})
+    void testCreateEntityGuidAndEntityType(String entityType) {
+
+        NotesRequest request = new NotesRequest(); // Provide necessary data for request
+        request.setEntityGuid(UUID.randomUUID().toString());
+        request.setEntityType(entityType);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        commonRequestModel.setData(request);
+        Notes notes = new Notes(); // Provide necessary data for notes
+        NotesResponse notesResponse = new NotesResponse();
+        if(entityType.equalsIgnoreCase(Constants.SHIPMENT)) {
+            when(shipmentService.getIdFromGuid(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().build()));
+        } else {
+            when(consolidationService.getIdFromGuid(any())).thenReturn(ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().build()));
+        }
+
+        ResponseEntity<IRunnerResponse> responseEntity = notesService.create(commonRequestModel);
+
+        assertNotNull(responseEntity.getBody());
+
+    }
+
+    @Test
+    void testCreateException() {
+
+        NotesRequest request = new NotesRequest();// Provide necessary data for request
+        request.setEntityId(123L);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         Notes notes = new Notes(); // Provide necessary data for notes
