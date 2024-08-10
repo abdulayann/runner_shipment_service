@@ -539,7 +539,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
     void getDocumentModel() throws RunnerException {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setContainersList(Arrays.asList(new ContainerModel()));
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
@@ -556,7 +556,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
     void getDocumentModelWithConsolNull() throws RunnerException {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(null);
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -639,7 +639,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setContainersList(Arrays.asList(new ContainerModel()));
         consolidationModel.setShipmentsList(Arrays.asList(shipmentModel));
@@ -722,7 +722,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setContainersList(Arrays.asList(new ContainerModel()));
         consolidationModel.setShipmentsList(Arrays.asList(shipmentModel));

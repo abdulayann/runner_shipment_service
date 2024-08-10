@@ -558,6 +558,12 @@ class ConsolidationDaoTest extends CommonMocks {
         var response = consolidationsDao.findConsolidationsByGuids(Set.of(testConsol.getGuid()));
         assertEquals(List.of(testConsol), response);
     }
+    @Test
+    void testFindConsolidationsById() {
+        when(consolidationRepository.getConsolidationFromId(testConsol.getId())).thenReturn(testConsol);
+        var response = consolidationsDao.findConsolidationsById(testConsol.getId());
+        assertEquals(testConsol, response);
+    }
 
     @Test
     void testUpdate_Success2() {

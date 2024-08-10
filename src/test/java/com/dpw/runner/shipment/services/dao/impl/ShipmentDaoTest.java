@@ -856,6 +856,13 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
+    void findShipmentsByIds() {
+        Set<Long> request = Set.of(1L);
+        shipmentDao.findShipmentsByIds(request);
+        verify(shipmentRepository, times(1)).findShipmentsByIds(request);
+    }
+
+    @Test
     void delete() {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDao.delete(shipmentDetails);

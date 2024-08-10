@@ -436,7 +436,7 @@ class ManifestConsolReportTest extends CommonMocks {
         consolidationModel.setCarrierDetails(new CarrierDetailModel());
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
 
         ShipmentModel shipmentModel = new ShipmentModel();

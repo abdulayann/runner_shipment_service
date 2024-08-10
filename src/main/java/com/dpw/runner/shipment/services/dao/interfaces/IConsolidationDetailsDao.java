@@ -29,4 +29,5 @@ public interface IConsolidationDetailsDao {
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
     String getConsolidationNumberFromId(Long id);
     List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids);
+    ConsolidationDetails findConsolidationsById(Long id);
 }
