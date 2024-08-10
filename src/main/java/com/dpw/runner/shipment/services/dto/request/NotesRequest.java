@@ -25,4 +25,5 @@ public class NotesRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isActive;
     private String label;
     private String assignedTo;
+    private String entityGuid;
 }
