@@ -4721,7 +4721,6 @@ public class ShipmentService implements IShipmentService {
                     } catch (RunnerException e) {
                         throw new RuntimeException(e);
                     }
-                   // consoleShipmentMappingDao.updateConsoleShipments(updateConsoleShipmentRequest.getShipmentRequestedType(), updateConsoleShipmentRequest.getConsoleId(), shipmentId);
                     consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentId);
                 });
             } else if (ShipmentRequestedType.REJECT.equals(updateConsoleShipmentRequest.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
@@ -4739,7 +4738,6 @@ public class ShipmentService implements IShipmentService {
         }
         if (ShipmentRequestedType.APPROVE.equals(request.getShipmentRequestedType())) {
             consolidationService.attachShipments(request.getShipmentRequestedType(), request.getConsoleIdsList().get(0), List.of(request.getShipmentId()));
-          //  consoleShipmentMappingDao.updateConsoleShipments(request.getShipmentRequestedType(), request.getConsoleIdsList().get(0), request.getShipmentId());
             consoleShipmentMappingDao.deletePendingStateByShipmentId(request.getShipmentId());
         } else if (ShipmentRequestedType.REJECT.equals(request.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(request.getShipmentRequestedType())) {
             request.getConsoleIdsList().stream().forEach(consoleId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(consoleId, request.getShipmentId()));
