@@ -541,4 +541,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findConsolidationsByGuids(guids);
     }
 
+    @Override
+    public ConsolidationDetails findConsolidationsById(Long id) {
+        return consolidationRepository.getConsolidationFromId(id);
+    }
+
 }

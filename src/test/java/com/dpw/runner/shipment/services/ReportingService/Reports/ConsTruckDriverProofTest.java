@@ -342,7 +342,7 @@ class ConsTruckDriverProofTest extends CommonMocks {
         consolidationModel.setTruckDriverDetails(Arrays.asList(new TruckDriverDetailsModel()));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         consolidationModel.setContainersList(Arrays.asList(new ContainerModel()));
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
 

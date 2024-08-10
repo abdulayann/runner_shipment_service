@@ -110,7 +110,7 @@ class MawbReportTest extends CommonMocks {
         when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationModel.setHazardous(true);
@@ -126,7 +126,7 @@ class MawbReportTest extends CommonMocks {
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationModel.setHazardous(true);

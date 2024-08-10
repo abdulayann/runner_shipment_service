@@ -629,4 +629,10 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findShipmentsBySourceGuids(sourceGuid);
     }
 
+    @Override
+    @Transactional
+    public List<ShipmentDetails> findShipmentsByIds(Set<Long> ids) {
+        return shipmentRepository.findShipmentsByIds(ids);
+    }
+
 }

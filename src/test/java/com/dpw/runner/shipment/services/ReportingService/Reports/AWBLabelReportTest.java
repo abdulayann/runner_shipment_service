@@ -634,7 +634,7 @@ class AWBLabelReportTest extends CommonMocks {
 
     @Test
     void getDocumentModel_whenMAWB() throws RunnerException {
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         awbLabelReport.setMawb(true);
 
         AWbLabelModel aWbLabelModel = new AWbLabelModel();

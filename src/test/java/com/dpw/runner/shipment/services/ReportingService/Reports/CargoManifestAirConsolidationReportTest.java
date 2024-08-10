@@ -545,9 +545,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         shipmentDetails.setCarrierDetails(carrierDetails);
         shipmentDetails1.add(shipmentDetails);
 
-        Page<ShipmentDetails> shipmentListPage = new PageImpl<ShipmentDetails>(shipmentDetails1);
-
-        when(shipmentDao.findAll(any(), any())).thenReturn(shipmentListPage);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetails1);
 
         Awb awb = new Awb();
         awb.setShipmentId(1L);
@@ -556,12 +554,11 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         AwbSpecialHandlingCodesMappingInfo awbSpecialHandlingCodesMappingInfo = new AwbSpecialHandlingCodesMappingInfo();
         awbSpecialHandlingCodesMappingInfo.setShcId("123");
         awb.setAwbSpecialHandlingCodesMappings(Arrays.asList(awbSpecialHandlingCodesMappingInfo));
-        Page<Awb> awbListPage = new PageImpl<Awb>(Arrays.asList(awb));
-        when(awbDao.findAll(any(), any())).thenReturn(awbListPage);
+        when(awbDao.findByShipmentIdList(any())).thenReturn(Arrays.asList(awb));
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         consolidationModel.setContainersList(Arrays.asList(new ContainerModel()));
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
 
@@ -594,12 +591,11 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         AwbSpecialHandlingCodesMappingInfo awbSpecialHandlingCodesMappingInfo = new AwbSpecialHandlingCodesMappingInfo();
         awbSpecialHandlingCodesMappingInfo.setShcId("123");
         awb.setAwbSpecialHandlingCodesMappings(Arrays.asList(awbSpecialHandlingCodesMappingInfo));
-        Page<Awb> awbListPage = new PageImpl<Awb>(Arrays.asList(awb));
-        when(awbDao.findAll(any(), any())).thenReturn(awbListPage);
+        when(awbDao.findByShipmentIdList(any())).thenReturn(Arrays.asList(awb));
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         consolidationModel.setContainersList(Arrays.asList(new ContainerModel()));
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
 
