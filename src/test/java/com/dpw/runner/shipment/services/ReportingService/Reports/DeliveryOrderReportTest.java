@@ -55,6 +55,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Re
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.impl.NPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -142,6 +143,8 @@ class DeliveryOrderReportTest extends CommonMocks {
 
     @Mock
     private BillingServiceUrlConfig billingServiceUrlConfig;
+    @Mock
+    private BillingServiceAdapter billingServiceAdapter;
 
     @Mock
     private V1MasterDataImpl v1MasterData;
@@ -424,7 +427,7 @@ class DeliveryOrderReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary() throws RunnerException {
+    void populateDictionary_BillingIntegrationDisabled() throws RunnerException {
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.setUsersDto(UserContext.getUser());
         deliveryOrderModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
@@ -447,7 +450,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         masterDataMock();
         mockCarrier();
         mockRakc(deliveryOrderModel.shipmentDetails);
-        mockBill();
+        mockBill(false);
         mockUnloc();
         mockUnlocation();
         mockShipmentSettings();
@@ -456,7 +459,39 @@ class DeliveryOrderReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionaryWithouConsolidation() throws RunnerException {
+    void populateDictionary_BillingIntegrationEnabled() throws RunnerException {
+        DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
+        deliveryOrderModel.setUsersDto(UserContext.getUser());
+        deliveryOrderModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        populateModel(deliveryOrderModel);
+        deliveryOrderModel.setTenantModel(new TenantModel());
+        deliveryOrderModel.setHbl(populateHbl());
+        mockVessel();
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TareWeight, BigDecimal.TEN);
+        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
+
+        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        masterDataMock();
+        mockCarrier();
+        mockRakc(deliveryOrderModel.shipmentDetails);
+        mockBill(true);
+        mockUnloc();
+        mockUnlocation();
+        mockShipmentSettings();
+        mockTenantSettings();
+        assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
+    }
+
+    @Test
+    void populateDictionaryWithouConsolidation_BillingIntegrationDisabled() throws RunnerException {
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.setUsersDto(UserContext.getUser());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().disableBlPartiesName(false).decimalPlaces(2).build());
@@ -483,7 +518,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         masterDataMock();
         mockCarrier();
         mockRakc(deliveryOrderModel.shipmentDetails);
-        mockBill();
+        mockBill(false);
         mockUnloc();
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
         mockShipmentSettings();
@@ -491,11 +526,49 @@ class DeliveryOrderReportTest extends CommonMocks {
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
     }
 
-    private void mockBill() throws RunnerException {
+    @Test
+    void populateDictionaryWithoutConsolidation_BillingIntegrationEnabled() throws RunnerException {
+        DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
+        deliveryOrderModel.setUsersDto(UserContext.getUser());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().disableBlPartiesName(false).decimalPlaces(2).build());
+        deliveryOrderModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        populateModel(deliveryOrderModel);
+        ShipmentModel shipmentModel = deliveryOrderModel.shipmentDetails;
+        shipmentModel.getPackingList().get(0).setHazardous(true);
+        shipmentModel.getPackingList().get(0).setIsTemperatureControlled(true);
+        deliveryOrderModel.setHbl(populateHbl());
+        deliveryOrderModel.setTenantModel(new TenantModel());
+        mockVessel();
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TareWeight, BigDecimal.TEN);
+        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
+
+        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        masterDataMock();
+        mockCarrier();
+        mockRakc(deliveryOrderModel.shipmentDetails);
+        mockBill(true);
+        mockUnloc();
+        when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
+        mockShipmentSettings();
+        mockTenantSettings();
+        assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
+    }
+
+    private void mockBill(boolean isBillingIntegrationEnabled) throws RunnerException {
         List<BillingResponse> billingResponseList = Arrays.asList(new BillingResponse());
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(billingResponseList).build();
-        when(v1MasterData.fetchBillingList(any())).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class)).thenReturn(billingResponseList);
+        if(!isBillingIntegrationEnabled) {
+            when(v1MasterData.fetchBillingList(any())).thenReturn(dependentServiceResponse);
+            when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class)).thenReturn(billingResponseList);
+        }
 
         List<BillChargesResponse> billChargesResponseList = new ArrayList<>();
         BillChargesResponse billChargesResponse = new BillChargesResponse();
@@ -553,17 +626,23 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponseList.add(billChargesResponse);
 
         dependentServiceResponse = DependentServiceResponse.builder().data(billChargesResponseList).build();
-        when(v1MasterData.fetchBillChargesList(any())).thenReturn(dependentServiceResponse);
+        if(!isBillingIntegrationEnabled) {
+            when(v1MasterData.fetchBillChargesList(any())).thenReturn(dependentServiceResponse);
+        }
 
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put(CHARGE_TYPE_CODE, "AGENT CHARGE");
-        doReturn(dataMap).when(jsonHelper).convertValue(any(BillChargesResponse.class), any(TypeReference.class));
+        if(!isBillingIntegrationEnabled) {
+            doReturn(dataMap).when(jsonHelper).convertValue(any(BillChargesResponse.class), any(TypeReference.class));
+        }
 
         NPMFetchLangChargeCodeResponse npmFetchLangChargeCodeResponse = new NPMFetchLangChargeCodeResponse();
         npmFetchLangChargeCodeResponse.setTranslation("AGENT CHARGE");
-        when(npmServiceAdapter.fetchMultiLangChargeCode(any())).thenReturn(npmFetchLangChargeCodeResponse);
 
-        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class)).thenReturn(billChargesResponseList);
+        if(!isBillingIntegrationEnabled) {
+            when(npmServiceAdapter.fetchMultiLangChargeCode(any())).thenReturn(npmFetchLangChargeCodeResponse);
+            when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class)).thenReturn(billChargesResponseList);
+        }
     }
 
     private void masterDataMock() {

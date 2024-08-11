@@ -366,7 +366,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary() {
+    void populateDictionary_BillingIntegrationDisabled() {
         ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
         arrivalNoticeModel.setUsersDto(UserContext.getUser());
         populateModel(arrivalNoticeModel);
@@ -399,7 +399,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         masterDataMock();
         mockCarrier();
         mockRakc(arrivalNoticeModel.shipmentDetails);
-        mockBill();
+        mockBill(false);
         mockCommodity();
         mockShipmentSettings();
         mockTenantSettings();
@@ -407,7 +407,48 @@ class ArrivalNoticeReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionaryWithouConsolidation() {
+    void populateDictionary_BillingIntegrationEnabled() {
+        ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
+        arrivalNoticeModel.setUsersDto(UserContext.getUser());
+        populateModel(arrivalNoticeModel);
+        arrivalNoticeModel.setHbl(populateHbl());
+        arrivalNoticeModel.setArrivalNoticeBillCharges(Arrays.asList(new ArrivalNoticeModel.ArrivalNoticeBillCharges()));
+        mockVessel();
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TareWeight, BigDecimal.TEN);
+        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+
+        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+
+        Map<String, EntityTransferMasterLists> dataMap = new HashMap<>();
+        EntityTransferMasterLists entityTransferMasterLists = new EntityTransferMasterLists();
+        entityTransferMasterLists.setValuenDesc("Test");
+        dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
+        dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
+        when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+
+        masterDataMock();
+        mockCarrier();
+        mockRakc(arrivalNoticeModel.shipmentDetails);
+        mockBill(true);
+        mockCommodity();
+        mockShipmentSettings();
+        mockTenantSettings();
+        assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
+    }
+
+    @Test
+    void populateDictionaryWithoutConsolidation_BillingIntegrationDisabled() {
         ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
         arrivalNoticeModel.setUsersDto(UserContext.getUser());
         populateModel(arrivalNoticeModel);
@@ -442,18 +483,63 @@ class ArrivalNoticeReportTest extends CommonMocks {
         masterDataMock();
         mockCarrier();
         mockRakc(arrivalNoticeModel.shipmentDetails);
-        mockBill();
+        mockBill(false);
         mockCommodity();
         mockShipmentSettings();
         mockTenantSettings();
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 
-    private void mockBill() {
+    @Test
+    void populateDictionaryWithoutConsolidation_BillingIntegrationEnabled() {
+        ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
+        arrivalNoticeModel.setUsersDto(UserContext.getUser());
+        populateModel(arrivalNoticeModel);
+        arrivalNoticeModel.setHbl(populateHbl());
+        arrivalNoticeModel.setArrivalNoticeBillCharges(Arrays.asList(new ArrivalNoticeModel.ArrivalNoticeBillCharges()));
+        arrivalNoticeModel.consolidationDetails = null;
+        mockVessel();
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TareWeight, BigDecimal.TEN);
+        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+
+        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
+        when(cacheManager.getCache(any())).thenReturn(cache);
+
+        Map<String, EntityTransferMasterLists> dataMap = new HashMap<>();
+        EntityTransferMasterLists entityTransferMasterLists = new EntityTransferMasterLists();
+        entityTransferMasterLists.setValuenDesc("Test");
+        dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
+        dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
+        when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+        when(cache.get(any())).thenReturn(valueWrapper);
+        when(valueWrapper.get()).thenReturn(entityTransferMasterLists);
+
+        masterDataMock();
+        mockCarrier();
+        mockRakc(arrivalNoticeModel.shipmentDetails);
+        mockBill(true);
+        mockCommodity();
+        mockShipmentSettings();
+        mockTenantSettings();
+        assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
+    }
+
+    private void mockBill(boolean isBillingIntegrationEnabled) {
         List<BillingResponse> billingResponseList = Arrays.asList(new BillingResponse());
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(billingResponseList).build();
-        when(v1MasterData.fetchBillingList(any())).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class)).thenReturn(billingResponseList);
+        if(!isBillingIntegrationEnabled) {
+            when(v1MasterData.fetchBillingList(any())).thenReturn(dependentServiceResponse);
+            when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class)).thenReturn(billingResponseList);
+        }
         BillChargesResponse billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
@@ -462,8 +548,10 @@ class ArrivalNoticeReportTest extends CommonMocks {
 
         List<BillChargesResponse> billChargesResponseList = Arrays.asList(billChargesResponse);
         dependentServiceResponse = DependentServiceResponse.builder().data(billChargesResponseList).build();
-        when(v1MasterData.fetchBillChargesList(any())).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class)).thenReturn(billChargesResponseList);
+        if (!isBillingIntegrationEnabled) {
+            when(v1MasterData.fetchBillChargesList(any())).thenReturn(dependentServiceResponse);
+            when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class)).thenReturn(billChargesResponseList);
+        }
     }
 
     private void masterDataMock() {
