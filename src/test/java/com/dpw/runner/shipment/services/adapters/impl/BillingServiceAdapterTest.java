@@ -17,10 +17,12 @@ import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
+import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
@@ -82,6 +84,8 @@ class BillingServiceAdapterTest {
     private String createOrUpdateEndpoint;
     private BillChargesFilterRequest billChargesFilterRequest;
     private BillingListResponse<BillChargesBaseResponse> billChargesBaseResponseBillingListResponse;
+    private BillRetrieveRequest billRetrieveRequest;
+    private BillBaseResponse billBaseResponse;
 
     @BeforeEach
     void setUp() {
@@ -95,6 +99,85 @@ class BillingServiceAdapterTest {
         billChargesFilterRequest = new BillChargesFilterRequest();
         billChargesBaseResponseBillingListResponse = new BillingListResponse<>();
     }
+
+    @Test
+    void fetchBill_Success() {
+        try (MockedStatic<V1AuthHelper> v1AuthHelperMockedStatic = mockStatic(V1AuthHelper.class)) {
+            v1AuthHelperMockedStatic.when(V1AuthHelper::getHeaders).thenReturn(new HttpHeaders());
+
+            BillRetrieveRequest request = new BillRetrieveRequest();
+            BillingEntityResponse mockResponse = new BillingEntityResponse();
+            Map<String, Object> mockData = new HashMap<>();
+            mockResponse.setData(mockData);
+            ResponseEntity<BillingEntityResponse> mockResponseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
+            ParameterizedTypeReference<BillingEntityResponse> responseType = new ParameterizedTypeReference<>() {
+            };
+
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(responseType)))
+                    .thenReturn(mockResponseEntity);
+
+            BillBaseResponse expectedResponse = new BillBaseResponse();
+            when(modelMapper.map(mockData, BillBaseResponse.class)).thenReturn(expectedResponse);
+
+            BillBaseResponse response = billingServiceAdapter.fetchBill(request);
+
+            assertNotNull(response);
+            assertEquals(expectedResponse, response);
+        }
+    }
+
+    @Test
+    void fetchBill_NullResponse() {
+        try (MockedStatic<V1AuthHelper> v1AuthHelperMockedStatic = mockStatic(V1AuthHelper.class)) {
+            v1AuthHelperMockedStatic.when(V1AuthHelper::getHeaders).thenReturn(new HttpHeaders());
+
+            BillRetrieveRequest request = new BillRetrieveRequest();
+            ResponseEntity<BillingEntityResponse> mockResponseEntity = new ResponseEntity<>(null, HttpStatus.OK);
+            ParameterizedTypeReference<BillingEntityResponse> responseType = new ParameterizedTypeReference<>() {
+            };
+
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(responseType)))
+                    .thenReturn(mockResponseEntity);
+
+            assertThrows(BillingException.class, () -> billingServiceAdapter.fetchBill(request));
+        }
+    }
+
+    @Test
+    void fetchBill_NullData() {
+        try (MockedStatic<V1AuthHelper> v1AuthHelperMockedStatic = mockStatic(V1AuthHelper.class)) {
+            v1AuthHelperMockedStatic.when(V1AuthHelper::getHeaders).thenReturn(new HttpHeaders());
+
+            BillRetrieveRequest request = new BillRetrieveRequest();
+            BillingEntityResponse mockResponse = new BillingEntityResponse();
+            mockResponse.setData(null);
+            ResponseEntity<BillingEntityResponse> mockResponseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
+            ParameterizedTypeReference<BillingEntityResponse> responseType = new ParameterizedTypeReference<>() {
+            };
+
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(responseType)))
+                    .thenReturn(mockResponseEntity);
+
+            assertThrows(BillingException.class, () -> billingServiceAdapter.fetchBill(request));
+        }
+    }
+
+    @Test
+    void fetchBill_ExceptionThrown() {
+        try (MockedStatic<V1AuthHelper> v1AuthHelperMockedStatic = mockStatic(V1AuthHelper.class)) {
+            v1AuthHelperMockedStatic.when(V1AuthHelper::getHeaders).thenReturn(new HttpHeaders());
+
+            BillRetrieveRequest request = new BillRetrieveRequest();
+            ParameterizedTypeReference<BillingEntityResponse> responseType = new ParameterizedTypeReference<>() {
+            };
+
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(responseType)))
+                    .thenThrow(new RuntimeException("Runtime exception"));
+
+            assertThrows(BillingException.class, () -> billingServiceAdapter.fetchBill(request));
+        }
+    }
+
 
     @Test
     void fetchBillCharges_Success() {
