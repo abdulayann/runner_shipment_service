@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
@@ -325,7 +326,7 @@ class FreightCertificationReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary() {
+    void populateDictionary_BillingIntegrationDisabled() {
         FreightCertificationModel freightCertificationModel = new FreightCertificationModel();
         freightCertificationModel.setTenantDetails(new TenantModel());
         freightCertificationModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
@@ -337,24 +338,58 @@ class FreightCertificationReportTest extends CommonMocks {
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         mockTenantSettings();
-        mockBill(true, false);
+        mockBill(true, false, false);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
-        mockBill(false, false);
+        mockBill(false, false, false);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
-        mockBill(true, true);
+        mockBill(true, true, false);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
     }
 
-    private void mockBill(boolean setBillData, boolean sameCurrency) {
+    @Test
+    void populateDictionary_BillingIntegrationEnabled() {
+        FreightCertificationModel freightCertificationModel = new FreightCertificationModel();
+        freightCertificationModel.setTenantDetails(new TenantModel());
+        freightCertificationModel.setShipmentSettingsDetails(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        freightCertificationModel.setUserdisplayname(UserContext.getUser().DisplayName);
+        populateModel(freightCertificationModel);
+        UUID randomUUID = UUID.randomUUID();
+        freightCertificationModel.shipmentDetails.setGuid(randomUUID);
+        BillBaseResponse billFromBilling = new BillBaseResponse();
+        billFromBilling.setGuId(randomUUID.toString());
+        billFromBilling.setBillId("BIL123");
+        billFromBilling.setRemarks("");
+
+        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
+        when(billingServiceAdapter.fetchBill(any())).thenReturn(billFromBilling);
+        when(billingServiceAdapter.fetchLastPostedInvoiceDate(any())).thenReturn(LocalDateTime.now());
+        mockTenantSettings();
+        mockBill(true, false, true);
+        assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
+        mockBill(false, false, true);
+        assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
+        mockBill(true, true, true);
+        assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
+    }
+
+    private void mockBill(boolean setBillData, boolean sameCurrency, boolean billingIntegrationEnabled) {
         List<BillingResponse> billingResponseList = Arrays.asList(new BillingResponse());
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(billingResponseList).build();
-        when(v1MasterData.fetchBillingList(any())).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class)).thenReturn(billingResponseList);
+        if(!billingIntegrationEnabled) {
+            when(v1MasterData.fetchBillingList(any())).thenReturn(dependentServiceResponse);
+            when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class)).thenReturn(billingResponseList);
+        }
 
-        List<ArObjectResponse> arObjectResponses = new ArrayList<>();
-        dependentServiceResponse = DependentServiceResponse.builder().data(arObjectResponses).build();
-        when(v1MasterData.fetchArObjectList(any())).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), ArObjectResponse.class)).thenReturn(arObjectResponses);
+        ArObjectResponse arObjectResponse = new ArObjectResponse();
+        if(setBillData) {
+            arObjectResponse.setInvoiceDate(LocalDateTime.now());
+        }
+        List<ArObjectResponse> arObjectResponseList = Arrays.asList(arObjectResponse);
+        dependentServiceResponse = DependentServiceResponse.builder().data(arObjectResponseList).build();
+        if(!billingIntegrationEnabled) {
+            when(v1MasterData.fetchArObjectList(any())).thenReturn(dependentServiceResponse);
+            when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), ArObjectResponse.class)).thenReturn(arObjectResponseList);
+        }
 
         List<BillChargesResponse> billChargesResponseList = new ArrayList<>();
         BillChargesResponse billChargesResponse = new BillChargesResponse();
@@ -384,8 +419,10 @@ class FreightCertificationReportTest extends CommonMocks {
         billChargesResponseList.add(billChargesResponse);
 
         dependentServiceResponse = DependentServiceResponse.builder().data(billChargesResponseList).build();
-        when(v1MasterData.fetchBillChargesList(any())).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class)).thenReturn(billChargesResponseList);
+        if(!billingIntegrationEnabled) {
+            when(v1MasterData.fetchBillChargesList(any())).thenReturn(dependentServiceResponse);
+            when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class)).thenReturn(billChargesResponseList);
+        }
 
         ChargeTypesResponse chargeTypesResponse = new ChargeTypesResponse();
         if(setBillData) {
@@ -393,8 +430,10 @@ class FreightCertificationReportTest extends CommonMocks {
         }
         List<ChargeTypesResponse> chargeTypesResponseList = Arrays.asList(chargeTypesResponse);
         dependentServiceResponse = DependentServiceResponse.builder().data(chargeTypesResponseList).build();
-        when(v1MasterData.fetchChargeType(any())).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), ChargeTypesResponse.class)).thenReturn(chargeTypesResponseList);
+        if (!billingIntegrationEnabled) {
+            when(v1MasterData.fetchChargeType(any())).thenReturn(dependentServiceResponse);
+            when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), ChargeTypesResponse.class)).thenReturn(chargeTypesResponseList);
+        }
     }
 
     @Test
