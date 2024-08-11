@@ -126,4 +126,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
     private Boolean interBranchConsole;
+    private Integer pendingActionCount;
 }

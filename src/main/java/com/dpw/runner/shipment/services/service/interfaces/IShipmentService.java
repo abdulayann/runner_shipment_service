@@ -100,4 +100,7 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> getContainerListFromTrackingService(Long shipmentId, Long consolidationId) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> validateInvoicePosting(InvoicePostingValidationRequest request);
+    ResponseEntity<IRunnerResponse> updateConsoleShipments(UpdateConsoleShipmentRequest request);
+
+    ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel);
 }

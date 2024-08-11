@@ -129,6 +129,12 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.notification.IPendingActionsResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -607,12 +613,15 @@ public class ShipmentService implements IShipmentService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
+        List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
+        var map = getNotificationMap(PendingNotificationRequest.builder().shipmentIdList(shipmentIdList).build());
         lst.forEach(shipmentDetail -> {
             ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
             containerCountUpdate(shipmentDetail, response);
             setEventData(shipmentDetail, response);
             if (shipmentDetail.getStatus() != null && shipmentDetail.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[shipmentDetail.getStatus()].toString());
+            response.setPendingActionCount(Optional.ofNullable(map.get(shipmentDetail.getId())).map(List::size).orElse(null));
             responseList.add(response);
         });
         try {
@@ -4966,6 +4975,77 @@ public class ShipmentService implements IShipmentService {
             response.setContainerData(containerCountMap);
             response.setContainerCount(containerCount);
         }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel) {
+        PendingNotificationRequest request = (PendingNotificationRequest) commonRequestModel.getData();
+        PendingNotificationResponse response = new PendingNotificationResponse();
+        if(request.getShipmentIdList() == null || request.getShipmentIdList().isEmpty()) {
+            log.info("Received empty request for pending notification in shipments", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        var notificationMap = getNotificationMap(request);
+        response.setNotificationMap(notificationMap);
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private Map<Long, List<PendingShipmentActionsResponse>> getNotificationMap(PendingNotificationRequest request) {
+        // Get data of all consolidation pulling this shipment that are not yet attached
+        var pullRequestedEnum = ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
+        Map<Long, List<PendingShipmentActionsResponse>> notificationResultMap = new HashMap<>();
+
+        if(commonUtils.getCurrentTenantSettings() == null || !Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled())) {
+            return notificationResultMap;
+        }
+
+        ListCommonRequest listRequest = commonUtils.constructListCommonRequest("shipmentId", request.getShipmentIdList(), "IN");
+        listRequest = commonUtils.andCriteria("requestedType", pullRequestedEnum.name(), "=", listRequest);
+        listRequest = commonUtils.andCriteria("isAttachmentDone", false, "=", listRequest);
+        Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
+        Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
+
+        List<Long> consolidationIds = mappingPage.getContent().stream().map(ConsoleShipmentMapping::getConsolidationId).toList();
+        final var consoleShipmentsMap = mappingPage.getContent().stream().collect(Collectors.toMap(
+            ConsoleShipmentMapping::getConsolidationId, Function.identity(), (oldVal, newVal) -> oldVal)
+        );
+
+        commonUtils.setInterBranchContextForHub();
+
+        listRequest = commonUtils.constructListCommonRequest("id", consolidationIds, "IN");
+        Pair<Specification<ConsolidationDetails>, Pageable> pair = fetchData(listRequest, ConsolidationDetails.class);
+        Page<ConsolidationDetails> consolPage = consolidationDetailsDao.findAll(pair.getLeft(), pair.getRight());
+
+        var pullingConsolMap = consolPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap)).collect(
+            Collectors.toMap(PendingShipmentActionsResponse::getConsolId, Function.identity()));
+
+        // generate mapping for shipment id vs list of pulling consol(s)
+        for(var mapping : mappingPage.getContent()) {
+            if(!notificationResultMap.containsKey(mapping.getShipmentId())) {
+                notificationResultMap.put(mapping.getShipmentId(), new ArrayList<>());
+            }
+            notificationResultMap.get(mapping.getShipmentId()).add(pullingConsolMap.get(mapping.getConsolidationId()));
+        }
+
+        commonUtils.removeInterBranchContext();
+
+        return notificationResultMap;
+    }
+
+    private PendingShipmentActionsResponse mapToNotification(ConsolidationDetails consol, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap) {
+        var carrierDetails = Optional.ofNullable(consol.getCarrierDetails()).orElse(new CarrierDetails());
+        return PendingShipmentActionsResponse.builder()
+            .consolId(consol.getId())
+            .ata(carrierDetails.getAta())
+            .atd(carrierDetails.getAtd())
+            .eta(carrierDetails.getEta())
+            .etd(carrierDetails.getEtd())
+            .lat(null)
+            .branch(StringUtility.convertToString(consol.getTenantId())) // TODO revisit Should display the branch name as per below format - Branch Code - Branch Name
+            .hazardous(consol.getHazardous())
+            .requestedBy(consoleShipmentsMap.get(consol.getId()).getCreatedBy())
+            .requestedOn(consoleShipmentsMap.get(consol.getId()).getCreatedAt())
+            .build();
     }
 
 }
