@@ -1,10 +1,15 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
@@ -12,6 +17,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
@@ -42,6 +48,7 @@ import org.modelmapper.TypeToken;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -64,6 +71,10 @@ class BillingServiceAdapterTest {
     private LastPostedInvoiceDateRequest lastPostedInvoiceDateRequest;
     private ChargeTypeFilterRequest chargeTypeFilterRequest;
     private BillingBulkSummaryRequest billingBulkSummaryRequest;
+    private ExternalBillPayloadRequest externalBillPayloadRequest;
+    private BillingEntityResponse billingEntityResponse;
+    private String baseUrl;
+    private String createOrUpdateEndpoint;
 
     @BeforeEach
     void setUp() {
@@ -71,12 +82,67 @@ class BillingServiceAdapterTest {
         lastPostedInvoiceDateRequest = new LastPostedInvoiceDateRequest();
         chargeTypeFilterRequest = new ChargeTypeFilterRequest();
         billingBulkSummaryRequest = new BillingBulkSummaryRequest();
+        externalBillPayloadRequest = new ExternalBillPayloadRequest();
+        billingEntityResponse = new BillingEntityResponse();
+        baseUrl = "http://mockurl.com";
     }
 
     @Test
+    void sendBillCreationRequest_Success() {
+
+        createOrUpdateEndpoint = "/createOrUpdate";
+
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
+        when(billingServiceUrlConfig.getExternalCreateOrUpdate()).thenReturn(createOrUpdateEndpoint);
+        ResponseEntity<BillingEntityResponse> mockResponse = new ResponseEntity<>(billingEntityResponse, HttpStatus.OK);
+
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class)))
+                .thenReturn(mockResponse);
+
+        ResponseEntity<BillingEntityResponse> response = billingServiceAdapter.sendBillCreationRequest(externalBillPayloadRequest);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(billingEntityResponse, response.getBody());
+        verify(restTemplate, times(1)).postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class));
+    }
+
+    @Test
+    void sendBillCreationRequest_ResponseWithErrors() {
+        createOrUpdateEndpoint = "/createOrUpdate";
+
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
+        when(billingServiceUrlConfig.getExternalCreateOrUpdate()).thenReturn(createOrUpdateEndpoint);
+
+        billingEntityResponse.setErrors(List.of("Error 1", "Error 2"));
+        ResponseEntity<BillingEntityResponse> mockResponseEntity = new ResponseEntity<>(billingEntityResponse, HttpStatus.OK);
+        when(restTemplate.postForEntity(eq(baseUrl + "/createOrUpdate"), any(HttpEntity.class), eq(BillingEntityResponse.class)))
+                .thenReturn(mockResponseEntity);
+
+        assertThrows(BillingException.class, () -> billingServiceAdapter.sendBillCreationRequest(externalBillPayloadRequest));
+    }
+
+    @Test
+    void sendBillCreationRequest_Exception() {
+        createOrUpdateEndpoint = "/createOrUpdate";
+
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
+        when(billingServiceUrlConfig.getExternalCreateOrUpdate()).thenReturn(createOrUpdateEndpoint);
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class)))
+                .thenThrow(new RuntimeException("Error occurred"));
+
+        BillingException exception = assertThrows(BillingException.class, () -> {
+            billingServiceAdapter.sendBillCreationRequest(externalBillPayloadRequest);
+        });
+
+        assertEquals("Error occurred", exception.getMessage());
+        verify(restTemplate, times(1)).postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class));
+    }
+
+
+    @Test
     void fetchBillingBulkSummary_Success() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
 
         BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
@@ -97,8 +163,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchBillingBulkSummary_NullResponse() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
 
         ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(null);
@@ -111,8 +176,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchBillingBulkSummary_NullData() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
 
         BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
@@ -128,8 +192,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchBillingBulkSummary_EmptyData() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
 
         BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
@@ -161,8 +224,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchBillingBulkSummary_ExceptionThrown() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
 
         when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
@@ -173,8 +235,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchChargeTypes_Success() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getChargeTypeFilter()).thenReturn("/charge-type-filter");
 
         BillingListResponse<ChargeTypeBaseResponse> billingListResponse = new BillingListResponse<>();
@@ -196,8 +257,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchChargeTypes_NullResponse() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getChargeTypeFilter()).thenReturn("/charge-type-filter");
 
         ResponseEntity<BillingListResponse<ChargeTypeBaseResponse>> responseEntity = ResponseEntity.ok(null);
@@ -209,8 +269,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchChargeTypes_NullData() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getChargeTypeFilter()).thenReturn("/charge-type-filter");
 
         BillingListResponse<ChargeTypeBaseResponse> billingListResponse = new BillingListResponse<>();
@@ -225,8 +284,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchChargeTypes_EmptyData() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getChargeTypeFilter()).thenReturn("/charge-type-filter");
 
         BillingListResponse<ChargeTypeBaseResponse> billingListResponse = new BillingListResponse<>();
@@ -241,8 +299,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchChargeTypes_ResponseContainsErrors() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getChargeTypeFilter()).thenReturn("/charge-type-filter");
 
         BillingListResponse<ChargeTypeBaseResponse> billingListResponse = new BillingListResponse<>();
@@ -257,8 +314,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchLastPostedInvoiceDate_Success() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getLastPostedInvoiceDate()).thenReturn("/last-posted-invoice-date");
 
         Map<String, Object> data = new HashMap<>();
@@ -276,8 +332,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchLastPostedInvoiceDate_NullResponse() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getLastPostedInvoiceDate()).thenReturn("/last-posted-invoice-date");
 
         ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(null);
@@ -289,8 +344,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchLastPostedInvoiceDate_NullData() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getLastPostedInvoiceDate()).thenReturn("/last-posted-invoice-date");
 
         BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
@@ -305,8 +359,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchLastPostedInvoiceDate_NullLastPostedInvoiceDate() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getLastPostedInvoiceDate()).thenReturn("/last-posted-invoice-date");
 
         Map<String, Object> data = new HashMap<>();
@@ -323,8 +376,7 @@ class BillingServiceAdapterTest {
 
     @Test
     void fetchLastPostedInvoiceDate_ResponseContainsErrors() {
-        String url = "http://example.com";
-        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(url);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getLastPostedInvoiceDate()).thenReturn("/last-posted-invoice-date");
 
         BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
