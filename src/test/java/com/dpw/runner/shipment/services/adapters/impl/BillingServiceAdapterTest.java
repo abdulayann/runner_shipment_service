@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,10 +16,12 @@ import static org.mockito.Mockito.when;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
@@ -26,6 +29,7 @@ import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryRespo
 import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,6 +44,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -47,6 +52,7 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -58,15 +64,14 @@ class BillingServiceAdapterTest {
 
     @Mock
     private RestTemplate restTemplate;
-
     @Mock
     private BillingServiceUrlConfig billingServiceUrlConfig;
-
     @InjectMocks
     private BillingServiceAdapter billingServiceAdapter;
-
     @Mock
     private ModelMapper modelMapper;
+    @Mock
+    private V1AuthHelper v1AuthHelper;
 
     private LastPostedInvoiceDateRequest lastPostedInvoiceDateRequest;
     private ChargeTypeFilterRequest chargeTypeFilterRequest;
@@ -75,6 +80,8 @@ class BillingServiceAdapterTest {
     private BillingEntityResponse billingEntityResponse;
     private String baseUrl;
     private String createOrUpdateEndpoint;
+    private BillChargesFilterRequest billChargesFilterRequest;
+    private BillingListResponse<BillChargesBaseResponse> billChargesBaseResponseBillingListResponse;
 
     @BeforeEach
     void setUp() {
@@ -85,6 +92,82 @@ class BillingServiceAdapterTest {
         externalBillPayloadRequest = new ExternalBillPayloadRequest();
         billingEntityResponse = new BillingEntityResponse();
         baseUrl = "http://mockurl.com";
+        billChargesFilterRequest = new BillChargesFilterRequest();
+        billChargesBaseResponseBillingListResponse = new BillingListResponse<>();
+    }
+
+    @Test
+    void fetchBillCharges_Success() {
+        try (MockedStatic<V1AuthHelper> v1AuthHelperMockedStatic = mockStatic(V1AuthHelper.class)) {
+            v1AuthHelperMockedStatic.when(V1AuthHelper::getHeaders).thenReturn(new HttpHeaders());
+
+            List<BillChargesBaseResponse> mockData = List.of(new BillChargesBaseResponse());
+            billChargesBaseResponseBillingListResponse.setData(mockData);
+            ResponseEntity<BillingListResponse<BillChargesBaseResponse>> mockResponseEntity = new ResponseEntity<>(billChargesBaseResponseBillingListResponse, HttpStatus.OK);
+            ParameterizedTypeReference<BillingListResponse<BillChargesBaseResponse>> responseType = new ParameterizedTypeReference<>() {
+            };
+
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(responseType)))
+                    .thenReturn(mockResponseEntity);
+
+            when(modelMapper.map(billChargesBaseResponseBillingListResponse.getData(), new TypeToken<List<BillChargesBaseResponse>>() {
+            }.getType()))
+                    .thenReturn(mockData);
+
+            List<BillChargesBaseResponse> response = billingServiceAdapter.fetchBillCharges(billChargesFilterRequest);
+
+            assertNotNull(response);
+            assertEquals(1, response.size());
+            assertEquals(mockData.get(0), response.get(0));
+        }
+    }
+
+    @Test
+    void fetchBillCharges_NullResponse() {
+        try (MockedStatic<V1AuthHelper> v1AuthHelperMockedStatic = mockStatic(V1AuthHelper.class)) {
+            v1AuthHelperMockedStatic.when(V1AuthHelper::getHeaders).thenReturn(new HttpHeaders());
+
+            ResponseEntity<BillingListResponse<BillChargesBaseResponse>> mockResponseEntity = new ResponseEntity<>(null, HttpStatus.OK);
+            ParameterizedTypeReference<BillingListResponse<BillChargesBaseResponse>> responseType = new ParameterizedTypeReference<>() {
+            };
+
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(responseType)))
+                    .thenReturn(mockResponseEntity);
+
+            assertThrows(BillingException.class, () -> billingServiceAdapter.fetchBillCharges(billChargesFilterRequest));
+        }
+    }
+
+    @Test
+    void fetchBillCharges_NullData() {
+        try (MockedStatic<V1AuthHelper> v1AuthHelperMockedStatic = mockStatic(V1AuthHelper.class)) {
+            v1AuthHelperMockedStatic.when(V1AuthHelper::getHeaders).thenReturn(new HttpHeaders());
+
+            billChargesBaseResponseBillingListResponse.setData(null);
+            ResponseEntity<BillingListResponse<BillChargesBaseResponse>> mockResponseEntity = new ResponseEntity<>(billChargesBaseResponseBillingListResponse, HttpStatus.OK);
+            ParameterizedTypeReference<BillingListResponse<BillChargesBaseResponse>> responseType = new ParameterizedTypeReference<>() {
+            };
+
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(responseType)))
+                    .thenReturn(mockResponseEntity);
+
+            assertThrows(BillingException.class, () -> billingServiceAdapter.fetchBillCharges(billChargesFilterRequest));
+        }
+    }
+
+    @Test
+    void fetchBillCharges_ExceptionThrown() {
+        try (MockedStatic<V1AuthHelper> v1AuthHelperMockedStatic = mockStatic(V1AuthHelper.class)) {
+            v1AuthHelperMockedStatic.when(V1AuthHelper::getHeaders).thenReturn(new HttpHeaders());
+
+            ParameterizedTypeReference<BillingListResponse<BillChargesBaseResponse>> responseType = new ParameterizedTypeReference<>() {
+            };
+
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(responseType)))
+                    .thenThrow(new RuntimeException("Runtime exception"));
+
+            assertThrows(BillingException.class, () -> billingServiceAdapter.fetchBillCharges(billChargesFilterRequest));
+        }
     }
 
     @Test
