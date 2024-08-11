@@ -14,8 +14,10 @@ import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -587,7 +589,6 @@ public class ShipmentController {
         }
     }
 
-
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ShipmentConstants.API_RETRIEVE_MEASUREMENT_DATA)
     public ResponseEntity<IRunnerResponse> retrieveMeasurmentData(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @ApiParam(value = ShipmentConstants.MODULE_ID) @RequestParam Optional<String> module) {
@@ -601,5 +602,16 @@ public class ShipmentController {
             return consolidationService.consolidationRetrieveWithMeasurmentBasis(CommonRequestModel.buildRequest(request));
         }
 
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.NOTIFICATION_FETCHED_SUCCESSFULLY, response = PendingNotificationResponse.class)})
+    @PostMapping(ApiConstants.GET_PENDING_NOTIFICATIONS)
+    public ResponseEntity<IRunnerResponse> getPendingNotifications(@RequestBody PendingNotificationRequest request) {
+        log.info("Request received for pending notifications for shipments");
+        try {
+            return shipmentService.getPendingNotifications(CommonRequestModel.builder().data(request).build());
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
     }
 }
