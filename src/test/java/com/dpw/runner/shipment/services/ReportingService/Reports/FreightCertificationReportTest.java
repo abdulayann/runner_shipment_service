@@ -324,7 +324,7 @@ class FreightCertificationReportTest extends CommonMocks {
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
     }
 
-    //    @Test TODO: SUBHAM Complete this test
+    @Test
     void populateDictionary() {
         FreightCertificationModel freightCertificationModel = new FreightCertificationModel();
         freightCertificationModel.setTenantDetails(new TenantModel());
@@ -333,13 +333,9 @@ class FreightCertificationReportTest extends CommonMocks {
         populateModel(freightCertificationModel);
         UUID randomUUID = UUID.randomUUID();
         freightCertificationModel.shipmentDetails.setGuid(randomUUID);
-        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
-        dependentServiceResponse.setData(List.of(new ArObjectResponse()));
 
-        when(billingServiceAdapter.fetchLastPostedInvoiceDate(any())).thenReturn(LocalDateTime.now());
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        when(masterDataFactory.getMasterDataService().fetchArObjectList(any())).thenReturn(dependentServiceResponse);
         mockTenantSettings();
         mockBill(true, false);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
@@ -354,6 +350,11 @@ class FreightCertificationReportTest extends CommonMocks {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(billingResponseList).build();
         when(v1MasterData.fetchBillingList(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class)).thenReturn(billingResponseList);
+
+        List<ArObjectResponse> arObjectResponses = new ArrayList<>();
+        dependentServiceResponse = DependentServiceResponse.builder().data(arObjectResponses).build();
+        when(v1MasterData.fetchArObjectList(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), ArObjectResponse.class)).thenReturn(arObjectResponses);
 
         List<BillChargesResponse> billChargesResponseList = new ArrayList<>();
         BillChargesResponse billChargesResponse = new BillChargesResponse();
