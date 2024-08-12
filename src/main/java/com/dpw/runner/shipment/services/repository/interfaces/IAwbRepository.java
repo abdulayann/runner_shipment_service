@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.utils.Generated;
+import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-@Repository @Generated
+@Repository @Generated @InterBranchEntity
 public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     Page<Awb> findAll(Specification<Awb> spec, Pageable pageable);
     List<Awb> findByShipmentId(Long shipmentId);
@@ -97,5 +98,8 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
         "WHERE (:shipmentId IS NULL OR a.shipmentId = :shipmentId) " +
         "AND (:consolidationId IS NULL OR a.consolidationId = :consolidationId)")
     int setAirMessagingResubmittedFalse(Long shipmentId, Long consolidationId);
+
+    @Query(value = "SELECT * FROM awb WHERE id in ?1", nativeQuery = true)
+    List<Awb> findAwbByIds(List<Long> id);
 
 }

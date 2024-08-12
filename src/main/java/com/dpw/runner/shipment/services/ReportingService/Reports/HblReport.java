@@ -67,7 +67,7 @@ public class HblReport extends IReport{
     @Override
     public IDocumentModel getDocumentModel(Long id) {
         HblModel hblModel = new HblModel();
-        hblModel.shipment = getShipment(id);
+        hblModel.shipment = getShipmentByQuery(id);
         hblModel.shipmentSettingsDetails = getShipmentSettings();
         hblModel.tenantSettingsResponse = getCurrentTenantSettings();
         hblModel.user = UserContext.getUser();

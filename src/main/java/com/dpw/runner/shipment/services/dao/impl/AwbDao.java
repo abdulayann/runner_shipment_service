@@ -123,7 +123,7 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public Optional<Awb> findById(Long id) {
-        return awbRepository.findById(id);
+        return awbRepository.findAwbByIds(Arrays.asList(id)).stream().findFirst();
     }
 
     @Override
@@ -138,7 +138,7 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public List<Awb> findByConsolidationId(Long consolidationId) {
-        return awbRepository.findByConsolidationId(consolidationId);
+        return awbRepository.findByConsolidationIdByQuery(consolidationId);
     }
 
     @Override
@@ -527,4 +527,8 @@ public class AwbDao implements IAwbDao {
         return linkedHawb;
     }
 
+    @Override
+    public List<Awb> findByIds(List<Long> id) {
+        return awbRepository.findAwbByIds(id);
+    }
 }
