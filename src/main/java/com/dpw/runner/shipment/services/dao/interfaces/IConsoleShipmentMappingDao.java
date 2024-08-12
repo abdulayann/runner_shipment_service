@@ -12,6 +12,7 @@ import java.util.Set;
 
 public interface IConsoleShipmentMappingDao {
     List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId);
+    ConsoleShipmentMapping save(ConsoleShipmentMapping consoleShipmentMapping);
 
     List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);
 

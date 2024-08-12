@@ -383,6 +383,8 @@ public class Constants {
     public static final String SCO = "SCO";
     public static final String SPX = "SPX";
     public static final String SHR = "SHR";
+    public static final String OPEN_FOR_ATTACHMENT = "openForAttachment";
+    public static final String INTER_BRANCH_CONSOLE = "interBranchConsole";
 
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
