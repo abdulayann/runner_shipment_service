@@ -492,8 +492,10 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         TenantSettingsDetailsContext.getCurrentTenantSettings().setColoadingBranchIds(Arrays.asList(2));
         TenantModel tenantModel1 = new TenantModel();
         tenantModel1.tenantId = 1L;
+        tenantModel1.tenantName = "ABC";
         TenantModel tenantModel2 = new TenantModel();
         tenantModel2.tenantId = 2L;
+        tenantModel2.tenantName = "XYZ";
         Map<String, TenantModel> tenantModelMap = new HashMap<>();
         tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
         tenantModelMap.put(StringUtility.convertToString(2), tenantModel2);
