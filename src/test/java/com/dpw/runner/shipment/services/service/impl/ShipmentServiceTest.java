@@ -128,6 +128,11 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.notification.IPendingActionsResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -198,6 +203,8 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -6364,5 +6371,80 @@ ShipmentServiceTest extends CommonMocks {
         // Assert
         verify(commonUtils, never()).setInterBranchContextForHub();
     }
+
+    @Test
+    void testGetPendingNotificationsSuccess() {
+        PendingNotificationRequest request = new PendingNotificationRequest();
+        request.setShipmentIdList(List.of(1L,2L));
+
+        ConsolidationDetails mockConsol1 = jsonTestUtility.getTestConsolidation();
+        mockConsol1.setId(1L);
+        var mockConsol2 = objectMapper.convertValue(mockConsol1, ConsolidationDetails.class);
+        mockConsol2.setId(2L);
+        var mockConsol3 = objectMapper.convertValue(mockConsol1, ConsolidationDetails.class);
+        mockConsol3.setId(3L);
+
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setIsMAWBColoadingEnabled(true);
+        tenantSettingsResponse.setIsColoadingMAWBStationEnabled(true);
+
+        List<ConsoleShipmentMapping> mappings = new ArrayList<>();
+        mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(1L).consolidationId(1L).requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).isAttachmentDone(false).build());
+        mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(1L).consolidationId(2L).requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).isAttachmentDone(false).build());
+        mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(2L).consolidationId(1L).requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).isAttachmentDone(false).build());
+        mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(2L).consolidationId(3L).requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).isAttachmentDone(false).build());
+
+        List<ConsolidationDetails> consolidationDetailsList = List.of(mockConsol1, mockConsol2, mockConsol3);
+
+        // mocking
+        TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsResponse);
+        mockTenantSettings();
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(mappings));
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(consolidationDetailsList));
+        // Test
+        var httpResponse = shipmentService.getPendingNotifications(CommonRequestModel.buildRequest(request));
+        // Assert
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        var runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        JavaType javaType = objectMapper.getTypeFactory().constructParametricType(PendingNotificationResponse.class, PendingShipmentActionsResponse.class);
+        PendingNotificationResponse<PendingShipmentActionsResponse> responseBody = objectMapper.convertValue(runnerResponse.getData(), javaType);
+        assertEquals(2, responseBody.getNotificationMap().size()); // number of shipments with pending notifications
+        assertEquals(2, responseBody.getNotificationMap().get(1L).size()); // notification count of shipment with id 1L
+    }
+
+    @Test
+    void testGetPendingNotificationsReturnsEmptyResponseIfTenantSettingsNotEnabled() {
+        PendingNotificationRequest request = new PendingNotificationRequest();
+        request.setShipmentIdList(List.of(1L,2L));
+
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsResponse);
+
+        // Mock
+        mockTenantSettings();
+        // Test
+        var httpResponse = shipmentService.getPendingNotifications(CommonRequestModel.buildRequest(request));
+        // Assert
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        var responseBody = objectMapper.convertValue(httpResponse.getBody(), PendingNotificationResponse.class);
+        assertNull(responseBody.getNotificationMap());
+    }
+
+    @Test
+    void testGetPendingNotificationsReturnsEmptyResponseForEmptyList() {
+        PendingNotificationRequest request = new PendingNotificationRequest();
+        request.setShipmentIdList(null);
+
+        var httpResponse = shipmentService.getPendingNotifications(CommonRequestModel.buildRequest(request));
+
+        PendingNotificationResponse mockResponse  = new PendingNotificationResponse();
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
+    }
+
 
 }

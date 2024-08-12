@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -859,6 +860,24 @@ class ConsolidationControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void getPendingNotifications() throws RunnerException {
+        // Mock
+        when(consolidationService.getPendingNotifications(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = consolidationController.getPendingNotifications(new PendingNotificationRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
+    @Test
+    void getPendingNotificationsFails() throws RunnerException {
+        // Mock
+        when(consolidationService.getPendingNotifications(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = consolidationController.getPendingNotifications(new PendingNotificationRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
 }
