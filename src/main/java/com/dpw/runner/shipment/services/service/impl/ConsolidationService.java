@@ -23,22 +23,11 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -450,7 +439,9 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName("createdAt").build()),
             Map.entry("hazardous", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).build()),
             Map.entry("shipShipmentType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("shipmentType").build()),
-            Map.entry("tenantId", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Integer.class).fieldName("tenantId").build())
+            Map.entry("tenantId", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Integer.class).fieldName("tenantId").build()),
+            Map.entry(Constants.INTER_BRANCH_CONSOLE, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.INTER_BRANCH_CONSOLE).build()),
+            Map.entry(Constants.OPEN_FOR_ATTACHMENT, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.OPEN_FOR_ATTACHMENT).build())
             );
 
     @Override
@@ -3570,6 +3561,12 @@ public class ConsolidationService implements IConsolidationService {
         AutoAttachConsolidationRequest request = (AutoAttachConsolidationRequest) commonRequestModel.getData();
         AutoAttachConsolidationResponse response = new AutoAttachConsolidationResponse();
 
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
+        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            commonUtils.setInterBranchContextForColoadStation();
+        }
+
         List<Integer> itemTypeList = new ArrayList<>();
         itemTypeList.add(MasterDataType.CONSOLIDATION_CHECK_ORDER.getId());
         itemTypeList.add(MasterDataType.CONSOL_CHECK_ETD_ETD_THRESHOLD.getId());
@@ -3595,9 +3592,33 @@ public class ConsolidationService implements IConsolidationService {
         ListCommonRequest consolListRequest = null;
 
         if(!Strings.isNullOrEmpty(request.getTransportMode()) && applicableTransportModesList != null &&
-                applicableTransportModesList.contains(request.getTransportMode().toUpperCase())){
+                applicableTransportModesList.contains(request.getTransportMode().toUpperCase())) {
 
             consolListRequest = CommonUtils.andCriteria("transportMode", request.getTransportMode(), "=", consolListRequest);
+            consolListRequest = CommonUtils.andCriteria(Constants.OPEN_FOR_ATTACHMENT, true, "=", consolListRequest);
+            if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+                    && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled()) && InterBranchContext.getContext().getHubTenantIds() != null
+                    && !InterBranchContext.getContext().getHubTenantIds().isEmpty()) {
+                List<FilterCriteria> criterias = consolListRequest.getFilterCriteria();
+                List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
+                Criteria criteria = Criteria.builder().fieldName(Constants.INTER_BRANCH_CONSOLE).operator("=").value(true).build();
+                FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+                List<FilterCriteria> innerFilers1 = new ArrayList<>();
+                innerFilers1.add(filterCriteria);
+                criteria = Criteria.builder().fieldName(Constants.TENANT_ID).operator("IN").value(InterBranchContext.getContext().getHubTenantIds()).build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("and").build();
+                innerFilers1.add(filterCriteria);
+                FilterCriteria filterCriteria1 = FilterCriteria.builder().innerFilter(innerFilers1).build();
+                List<FilterCriteria> innerFilers2 = new ArrayList<>();
+                innerFilers2.add(filterCriteria1);
+
+                criteria = Criteria.builder().fieldName(Constants.TENANT_ID).operator("=").value(UserContext.getUser().TenantId).build();
+                filterCriteria1 = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+                innerFilers2.add(filterCriteria1);
+
+                FilterCriteria filterCriteria2 = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers2).build();
+                innerFilters.add(filterCriteria2);
+            }
             if(!Strings.isNullOrEmpty(request.getMasterBill())){
                 consolListRequest = CommonUtils.andCriteria("bol", request.getMasterBill(), "=", consolListRequest);
                 isConditionSatisfied = true;
@@ -3692,7 +3713,8 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetailsResponseList.forEach(responseList::add);
                 try {
                     var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
-                    CompletableFuture.allOf(vesselDataFuture).join();
+                    var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
+                    CompletableFuture.allOf(vesselDataFuture, tenantDataFuture).join();
                 }
                 catch (Exception ex) {
                     log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
