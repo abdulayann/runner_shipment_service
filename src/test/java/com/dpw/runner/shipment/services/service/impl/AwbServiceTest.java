@@ -529,7 +529,7 @@ class AwbServiceTest extends CommonMocks {
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
 
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
-
+        when(awbDao.findByIds(anyList())).thenReturn(List.of(Awb.builder().awbPackingInfo(Arrays.asList()).build()));
         var awbResponse = awbService.getMawnLinkPacks(testMawb);
 
         assertEquals(testMawb, awbResponse);
@@ -763,8 +763,7 @@ class AwbServiceTest extends CommonMocks {
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
         when(awbDao.findByConsolidationId(id)).thenReturn(List.of(testMawb));
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
-
-        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(mockShipmentSettingDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
         when(awbDao.save(testMawb)).thenReturn(testMawb);
 
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
@@ -784,15 +783,35 @@ class AwbServiceTest extends CommonMocks {
 
         AwbResponse mockAwbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
         ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
         Page<Awb> resultPage = new PageImpl<Awb>(List.of(testHawb));
         when(awbDao.findByConsolidationId(id)).thenReturn(List.of(testMawb));
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
 //        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
 
-        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(mockShipmentSettingDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
         when(awbDao.save(testMawb)).thenReturn(testMawb);
+
+        when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+
+        var httpResponse = awbService.updateGoodsAndPacksForMawb(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
+    }
+
+    @Test
+    void testUpdateGoodsAndPacksForMawb3() throws RunnerException {
+        Long id = 1L;
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CreateAwbRequest.builder().ShipmentId(id).ConsolidationId(id).build());
+
+        AwbResponse mockAwbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        mockShipmentSettingDetails.setConsolidationLite(true);
+        MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
+        when(awbDao.findByConsolidationId(id)).thenReturn(List.of(testMawb));
+        when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
 
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
@@ -2080,6 +2099,23 @@ class AwbServiceTest extends CommonMocks {
 
         // Assert
         assertEquals(ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse), httpResponse);
+    }
+
+    @Test
+    void testFnmStatusMessageForHawbFailure1() {
+        Long shipmentId = 1L;
+
+        AirMessagingLogs statusLog = new AirMessagingLogs();
+        statusLog.setStatus(AirMessagingStatus.FAILED.name());
+
+        // Mock
+        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of());
+
+        // Test
+        var httpResponse = awbService.getFnmStatusMessage(Optional.of(shipmentId), Optional.empty());
+
+        // Assert
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
