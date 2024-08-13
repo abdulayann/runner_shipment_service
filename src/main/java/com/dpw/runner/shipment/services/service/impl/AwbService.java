@@ -566,13 +566,9 @@ public class AwbService implements IAwbService {
         }
 
         // Get tenant settings
-        var tenantSettingsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
-        ShipmentSettingsDetails tenantSettings = null;
-        if (tenantSettingsList != null && tenantSettingsList.size() >= 1) {
-            tenantSettings = tenantSettingsList.get(0);
-        }
+        ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
 
-        if(allHawbPacks.isEmpty() && tenantSettings != null && !Boolean.TRUE.equals(tenantSettings.getConsolidationLite())) {
+        if(allHawbPacks.isEmpty() && !Boolean.TRUE.equals(tenantSettings.getConsolidationLite())) {
             updateGoodsDescForMawb(mawb);
         } else if (allHawbPacks.size() > 0) {
             calculateAndUpdateGoodsPacksMawb(allHawbPacks, mawb,tenantSettings);
