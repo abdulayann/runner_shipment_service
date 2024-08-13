@@ -316,7 +316,7 @@ public class ReportService implements IReportService {
                 else dataRetrived.put(ReportConstants.COUNT, null);
                 byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
                 if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
-                var mawbNumber = dataRetrived.containsKey(ReportConstants.MAWB_CAPS) ? String.valueOf(dataRetrived.get(ReportConstants.MAWB_CAPS)) : "";
+                var mawbNumber = dataRetrived.containsKey(ReportConstants.MAWB_CAPS) ? String.valueOf(dataRetrived.get(ReportConstants.MAWB_CAPS))+copyCount : copyCount;
                 var hawbNumber = dataRetrived.containsKey(ReportConstants.HAWB_CAPS) ? String.valueOf(dataRetrived.get(ReportConstants.HAWB_CAPS)) : "";
                 byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, mawbNumber, hawbNumber);
                 pdf_Bytes.add(docBytes);
