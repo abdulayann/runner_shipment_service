@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +36,9 @@ import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse.BillingData;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -48,6 +52,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -121,6 +126,89 @@ class BillingServiceAdapterTest {
         baseUrl = "http://mockurl.com";
         billChargesFilterRequest = new BillChargesFilterRequest();
         billChargesBaseResponseBillingListResponse = new BillingListResponse<>();
+    }
+
+    @Test
+    void fetchShipmentBillingData_Success() {
+
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
+        when(billingServiceUrlConfig.getBillingBulkSummary()).thenReturn("/billing-bulk-summary");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        BillingSummary billingSummary = BillingSummary.builder()
+                .moduleGuid("123e4567-e89b-12d3-a456-426614174000")
+                .totalEstimatedCost(BigDecimal.valueOf(100))
+                .totalEstimatedRevenue(BigDecimal.valueOf(200))
+                .totalEstimatedProfit(BigDecimal.valueOf(100))
+                .totalEstimatedProfitPercent(BigDecimal.valueOf(50))
+                .totalCost(90D)
+                .totalRevenue(180D)
+                .totalProfit(BigDecimal.valueOf(90))
+                .totalProfitPercent(BigDecimal.valueOf(50))
+                .totalPostedCost(BigDecimal.valueOf(85))
+                .totalPostedRevenue(BigDecimal.valueOf(170))
+                .totalPostedProfit(BigDecimal.valueOf(85))
+                .totalPostedProfitPercent(BigDecimal.valueOf(50))
+                .build();
+        billingEntityResponse.setData(Map.of("billingSummary", List.of(Map.of("totalCount", 1, "totalRevenue", 100.0))));
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenReturn(responseEntity);
+
+        List<BillingSummary> billingSummaries = List.of(billingSummary);
+        when(modelMapper.map(anyList(), any(Type.class)))
+                .thenReturn(billingSummaries);
+
+
+        BillingBulkSummaryRequest bulkSummaryRequest = BillingBulkSummaryRequest.builder()
+                .moduleGuids(List.of("123e4567-e89b-12d3-a456-426614174000"))
+                .moduleType(Constants.SHIPMENT).build();
+
+        // Arrange
+        when(billingServiceAdapter.fetchBillingBulkSummary(bulkSummaryRequest))
+                .thenReturn(List.of(
+                        BillingSummary.builder()
+                                .moduleGuid("123e4567-e89b-12d3-a456-426614174000")
+                                .totalEstimatedCost(BigDecimal.valueOf(100))
+                                .totalEstimatedRevenue(BigDecimal.valueOf(200))
+                                .totalEstimatedProfit(BigDecimal.valueOf(100))
+                                .totalEstimatedProfitPercent(BigDecimal.valueOf(50))
+                                .totalCost(90D)
+                                .totalRevenue(180D)
+                                .totalProfit(BigDecimal.valueOf(90))
+                                .totalProfitPercent(BigDecimal.valueOf(50))
+                                .totalPostedCost(BigDecimal.valueOf(85))
+                                .totalPostedRevenue(BigDecimal.valueOf(170))
+                                .totalPostedProfit(BigDecimal.valueOf(85))
+                                .totalPostedProfitPercent(BigDecimal.valueOf(50))
+                                .build()
+                ));
+
+        ShipmentBillingListRequest request = ShipmentBillingListRequest.builder()
+                .guidsList(List.of(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))).build();
+
+        // Act
+        ShipmentBillingListResponse response = billingServiceAdapter.fetchShipmentBillingData(request);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(1, response.getData().size());
+        BillingData billingData = response.getData().get("123e4567-e89b-12d3-a456-426614174000");
+        assertNotNull(billingData);
+        assertEquals(BigDecimal.valueOf(100), billingData.getTotalEstimatedCost());
+        assertEquals(BigDecimal.valueOf(200), billingData.getTotalEstimatedRevenue());
+        assertEquals(BigDecimal.valueOf(100), billingData.getTotalEstimatedProfit());
+        assertEquals(BigDecimal.valueOf(50), billingData.getTotalEstimatedProfitPercent());
+        assertEquals(BigDecimal.valueOf(90.0), billingData.getTotalCost());
+        assertEquals(BigDecimal.valueOf(180.0), billingData.getTotalRevenue());
+        assertEquals(BigDecimal.valueOf(90), billingData.getTotalProfit());
+        assertEquals(BigDecimal.valueOf(50), billingData.getTotalProfitPercent());
+        assertEquals(BigDecimal.valueOf(85), billingData.getTotalPostedCost());
+        assertEquals(BigDecimal.valueOf(170), billingData.getTotalPostedRevenue());
+        assertEquals(BigDecimal.valueOf(85), billingData.getTotalPostedProfit());
+        assertEquals(BigDecimal.valueOf(50), billingData.getTotalPostedProfitPercent());
+        assertNull(billingData.getId());
     }
 
     @Test
