@@ -26,4 +26,5 @@ public class EntityTransferMasterLists implements IEntityTranferBaseEntity, Seri
     public Boolean IsUnionTerritory;
     public String TypeOfPayLoad;
     public String DPAManifestMaster;
+    public Integer TenantId;
 }
