@@ -15,10 +15,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest;
-import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
+import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -813,6 +810,32 @@ class AwbServiceTest extends CommonMocks {
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
 
+        when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+
+        var httpResponse = awbService.updateGoodsAndPacksForMawb(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
+    }
+
+    @Test
+    void testUpdateGoodsAndPacksForMawb4() {
+        Long id = 1L;
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CreateAwbRequest.builder().ShipmentId(id).ConsolidationId(id).build());
+
+        AwbResponse mockAwbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        mockShipmentSettingDetails.setConsolidationLite(true);
+        MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
+        when(awbDao.findByConsolidationId(id)).thenReturn(List.of(testMawb));
+        when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
+        when(awbDao.findByIds(anyList())).thenReturn(
+                Arrays.asList(
+                        Awb.builder()
+                                .awbPackingInfo(Arrays.asList(AwbPackingInfo.builder().build()))
+                                .build()
+                ));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
+        when(awbDao.findAwbByAwbNumbers(anyList())).thenReturn(Arrays.asList(Awb.builder().awbNumber("SHP0001").build()));
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
         var httpResponse = awbService.updateGoodsAndPacksForMawb(commonRequestModel);

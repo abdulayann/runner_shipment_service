@@ -102,4 +102,7 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     @Query(value = "SELECT * FROM awb WHERE id in ?1", nativeQuery = true)
     List<Awb> findAwbByIds(List<Long> id);
 
+    @Query(value = "SELECT * FROM awb WHERE awb_number in ?1", nativeQuery = true)
+    List<Awb> findAwbByAwbNumbers(List<String> awbNumber);
+
 }

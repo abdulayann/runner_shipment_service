@@ -531,4 +531,9 @@ public class AwbDao implements IAwbDao {
     public List<Awb> findByIds(List<Long> id) {
         return awbRepository.findAwbByIds(id);
     }
+
+    @Override
+    public List<Awb> findAwbByAwbNumbers(List<String> awbNumbers) {
+        return awbRepository.findAwbByAwbNumbers(awbNumbers);
+    }
 }

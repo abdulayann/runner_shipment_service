@@ -680,15 +680,13 @@ public class AwbService implements IAwbService {
         List<String> awbNumbers = hawbPacksMap.keySet().stream().toList();
         ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("awbNumber", awbNumbers, "IN");
         Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
-        Page<Awb> page = awbDao.findAll(pair.getLeft(), pair.getRight());
 
-        if(!page.isEmpty()) {
-            List<Awb> hawbList = page.getContent();
-            for(var hawb : hawbList) {
-                hawb.setAwbPackingInfo(hawbPacksMap.get(hawb.getAwbNumber()));
-            }
-            awbDao.saveAll(hawbList);
+        commonUtils.setInterBranchContextForHub();
+        List<Awb> hawbList = awbDao.findAwbByAwbNumbers(awbNumbers);
+        for(var hawb : hawbList) {
+            hawb.setAwbPackingInfo(hawbPacksMap.get(hawb.getAwbNumber()));
         }
+        awbDao.saveAll(hawbList);
     }
 
     private static BigDecimal roundOffAirShipment(BigDecimal charge) {
