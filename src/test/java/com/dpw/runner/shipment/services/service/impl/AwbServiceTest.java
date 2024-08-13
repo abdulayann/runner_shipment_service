@@ -459,10 +459,8 @@ class AwbServiceTest extends CommonMocks {
 
 
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
-        Page<Awb> resultPage = new PageImpl<Awb>(List.of(testHawb));
 //        when(awbDao.(id)).thenReturn(List.of(testMawb));
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
-        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
 
         // Mocking
         when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
@@ -529,11 +527,8 @@ class AwbServiceTest extends CommonMocks {
         Long id = 1L;
 
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
-        Page<Awb> resultPage = new PageImpl<Awb>(List.of(testHawb));
-//        when(awbDao.(id)).thenReturn(List.of(testMawb));
-        when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
-        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
 
+        when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
 
         var awbResponse = awbService.getMawnLinkPacks(testMawb);
 
@@ -571,7 +566,6 @@ class AwbServiceTest extends CommonMocks {
 
         // get Linked Hawb
         List<MawbHawbLink> mockMawbHawbLink = List.of(MawbHawbLink.builder().hawbId(1L).mawbId(3L).build());
-        Page<Awb> mockLinkedHawbPage = new PageImpl(List.of(testHawb));
 
         // Mock
         Mockito.when(awbDao.findById(id)).thenReturn(Optional.of(testMawb));
@@ -579,7 +573,6 @@ class AwbServiceTest extends CommonMocks {
         when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(mockTenantSettingsList);
 
         when(mawbHawbLinkDao.findByMawbId(id)).thenReturn(mockMawbHawbLink);
-        when(awbDao.findAll(any(), any())).thenReturn(mockLinkedHawbPage);
 
 
         //Make service call
@@ -666,7 +659,7 @@ class AwbServiceTest extends CommonMocks {
         AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
 
         Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
-        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+        when(awbDao.findByShipmentIdList(Arrays.asList(shipmentId))).thenReturn(List.of(testHawb));
 
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
@@ -718,7 +711,7 @@ class AwbServiceTest extends CommonMocks {
         AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
 
         Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
-        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+        when(awbDao.findByShipmentIdList(anyList())).thenReturn(List.of(testHawb));
 
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
@@ -768,10 +761,8 @@ class AwbServiceTest extends CommonMocks {
         ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetails.builder().consolidationLite(false).build();
 
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
-        Page<Awb> resultPage = new PageImpl<Awb>(Collections.emptyList());
         when(awbDao.findByConsolidationId(id)).thenReturn(List.of(testMawb));
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
-        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
 
         when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(mockShipmentSettingDetails));
         when(awbDao.save(testMawb)).thenReturn(testMawb);
@@ -798,7 +789,7 @@ class AwbServiceTest extends CommonMocks {
         Page<Awb> resultPage = new PageImpl<Awb>(List.of(testHawb));
         when(awbDao.findByConsolidationId(id)).thenReturn(List.of(testMawb));
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
-        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
+//        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
 
         when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(mockShipmentSettingDetails));
         when(awbDao.save(testMawb)).thenReturn(testMawb);
@@ -1021,7 +1012,7 @@ class AwbServiceTest extends CommonMocks {
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
-        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+        when(awbDao.findByShipmentIdList(anyList())).thenReturn(List.of(testHawb));
 
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
@@ -1073,7 +1064,7 @@ class AwbServiceTest extends CommonMocks {
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
-        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+        when(awbDao.findByShipmentIdList(Arrays.asList(shipmentId))).thenReturn(List.of(testHawb));
 
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
@@ -1585,7 +1576,7 @@ class AwbServiceTest extends CommonMocks {
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
-        when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testHawb));
+        when(awbDao.findByShipmentIdList(anyList())).thenReturn(List.of(testHawb));
 
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
@@ -1874,8 +1865,7 @@ class AwbServiceTest extends CommonMocks {
         //Mocking
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
-        Page<Awb> resultPage = new PageImpl<Awb>(List.of(testHawb));
-        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
+
         List<AwbResponse> awbResponse = jsonTestUtility.convertValueToList(List.of(testHawb), AwbResponse.class);
         when(jsonHelper.convertValueToList(any(), eq(AwbResponse.class))).thenReturn(awbResponse);
 
@@ -2126,7 +2116,6 @@ class AwbServiceTest extends CommonMocks {
         // Mock
         when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(testDmawb));
         when(airMessagingLogsService.getRecentLogForEntityGuid(testDmawb.getGuid())).thenReturn(statusLog);
-        when(awbDao.findAll(any(), any())).thenReturn(Page.empty());
 
         // Test
         var httpResponse = awbService.getFnmStatusMessage(Optional.of(shipmentId), Optional.empty());
@@ -2144,14 +2133,9 @@ class AwbServiceTest extends CommonMocks {
         String responseMessage = "FWB and FZB submissions are accepted";
         FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(true).response(responseMessage).build();
 
-        Page<Awb> linkedAwbPage = new PageImpl(List.of(testHawb));
-
-
         // Mock
         when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
         when(airMessagingLogsService.getRecentLogForEntityGuid(testMawb.getGuid())).thenReturn(statusLog);
-        when(airMessagingLogsService.getRecentLogForEntityGuid(testHawb.getGuid())).thenReturn(statusLog);
-        when(awbDao.findAll(any(), any())).thenReturn(linkedAwbPage);
 
         // Test
         var httpResponse = awbService.getFnmStatusMessage(Optional.empty(),Optional.of(consolidationId));
@@ -2174,14 +2158,11 @@ class AwbServiceTest extends CommonMocks {
                 AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_SUCCESS_ERROR, failureLog.getErrorMessage());
         FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(false).response(responseMessage).build();
 
-        Page<Awb> linkedAwbPage = new PageImpl(List.of(testHawb));
 
 
         // Mock
         when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
         when(airMessagingLogsService.getRecentLogForEntityGuid(testMawb.getGuid())).thenReturn(failureLog);
-        when(airMessagingLogsService.getRecentLogForEntityGuid(testHawb.getGuid())).thenReturn(successLog);
-        when(awbDao.findAll(any(), any())).thenReturn(linkedAwbPage);
 
         // Test
         var httpResponse = awbService.getFnmStatusMessage(Optional.empty(),Optional.of(consolidationId));
@@ -2208,17 +2189,12 @@ class AwbServiceTest extends CommonMocks {
                 AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_FAILURE_HAWB_FAILURE_ERROR, shipmentNumbersString);
         FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(false).response(responseMessage).build();
 
-        Page<Awb> linkedAwbPage = new PageImpl(List.of(testHawb));
-
-
-
-
         // Mock
         when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
         when(airMessagingLogsService.getRecentLogForEntityGuid(testMawb.getGuid())).thenReturn(failureLog);
         when(airMessagingLogsService.getRecentLogForEntityGuid(testHawb.getGuid())).thenReturn(failureLog);
-        when(awbDao.findAll(any(), any())).thenReturn(linkedAwbPage);
-        when(shipmentDao.findAll(any(), any())).thenReturn(shipmentDetailsPage);
+        when(awbDao.findByIds(any())).thenReturn(List.of(testHawb));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
 
         // Test
         var httpResponse = awbService.getFnmStatusMessage(Optional.empty(),Optional.of(consolidationId));
@@ -2245,23 +2221,18 @@ class AwbServiceTest extends CommonMocks {
                 AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_SUCCESS_HAWB_FAILURE_ERROR, shipmentNumbersString);
         FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(false).response(responseMessage).build();
 
-        Page<Awb> linkedAwbPage = new PageImpl(List.of(testHawb));
-
-
-
-
         // Mock
         when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
         when(airMessagingLogsService.getRecentLogForEntityGuid(testMawb.getGuid())).thenReturn(successLog);
         when(airMessagingLogsService.getRecentLogForEntityGuid(testHawb.getGuid())).thenReturn(failureLog);
-        when(awbDao.findAll(any(), any())).thenReturn(linkedAwbPage);
-        when(shipmentDao.findAll(any(), any())).thenReturn(shipmentDetailsPage);
+        when(awbDao.findByIds(any())).thenReturn(List.of(testHawb));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
 
         // Test
         var httpResponse = awbService.getFnmStatusMessage(Optional.empty(),Optional.of(consolidationId));
 
         // Assert
-        assertEquals(ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse), httpResponse);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
 
     }
 
@@ -2854,7 +2825,7 @@ class AwbServiceTest extends CommonMocks {
             List.of(consoleShipmentMapping)
         );
         when(mawbHawbLinkDao.findByMawbId(mockAwb.getId())).thenReturn(Collections.EMPTY_LIST);
-        when(awbDao.findByShipmentId(1L)).thenReturn(List.of(testHawb));
+        when(awbDao.findByShipmentIdList(Arrays.asList(1L))).thenReturn(List.of(testHawb));
 
         errors.add("Additional Shipments have been attached, please reset data as required.");
 

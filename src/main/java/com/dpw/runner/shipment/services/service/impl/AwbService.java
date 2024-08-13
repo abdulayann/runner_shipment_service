@@ -572,7 +572,7 @@ public class AwbService implements IAwbService {
             tenantSettings = tenantSettingsList.get(0);
         }
 
-        if(allHawbPacks.size() == 0 && tenantSettings != null && tenantSettings.getConsolidationLite() != true) {
+        if(allHawbPacks.size() == 0 && tenantSettings != null && !Boolean.TRUE.equals(tenantSettings.getConsolidationLite())) {
             updateGoodsDescForMawb(mawb);
         } else if (allHawbPacks.size() > 0) {
             calculateAndUpdateGoodsPacksMawb(allHawbPacks, mawb,tenantSettings);
@@ -3484,12 +3484,10 @@ public class AwbService implements IAwbService {
         if(failedHawb) {
             fnmStatus = false;
             // if failedShipmentHawb size > 0 fetch ShipmentID for those shipments
-            ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", failedShipmentHawbs, "IN");
-            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
-            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            var shipmentDetailsPage = shipmentDao.findShipmentsByIds(failedShipmentHawbs.stream().collect(Collectors.toSet()));
             String shipmentNumbersString = "";
-            if(shipmentDetailsPage.hasContent()) {
-                List<String> shipmentNumbers = shipmentDetailsPage.getContent().stream().map(ShipmentDetails::getShipmentId).toList();
+            if(!shipmentDetailsPage.isEmpty()) {
+                List<String> shipmentNumbers = shipmentDetailsPage.stream().map(ShipmentDetails::getShipmentId).toList();
                 shipmentNumbersString = String.join(" ", shipmentNumbers);
             }
 
