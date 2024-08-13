@@ -572,7 +572,7 @@ public class AwbService implements IAwbService {
             tenantSettings = tenantSettingsList.get(0);
         }
 
-        if(allHawbPacks.size() == 0 && tenantSettings != null && !Boolean.TRUE.equals(tenantSettings.getConsolidationLite())) {
+        if(allHawbPacks.isEmpty() && tenantSettings != null && !Boolean.TRUE.equals(tenantSettings.getConsolidationLite())) {
             updateGoodsDescForMawb(mawb);
         } else if (allHawbPacks.size() > 0) {
             calculateAndUpdateGoodsPacksMawb(allHawbPacks, mawb,tenantSettings);
@@ -1596,7 +1596,7 @@ public class AwbService implements IAwbService {
         List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
 
         // Fetch all the awb records with the mapped hawbId
-        return awbDao.findByIds(mawbHawbLinks.stream().map(i -> i.getHawbId()).toList());
+        return awbDao.findByIds(mawbHawbLinks.stream().map(MawbHawbLink::getHawbId).toList());
     }
 
 
