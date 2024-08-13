@@ -801,6 +801,7 @@ public class ConsolidationService implements IConsolidationService {
         if(consol.isEmpty())
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         ConsolidationDetails consolidationDetails = consol.get();
+        HashSet<Long> attachedShipmentIds = new HashSet<>();
         // InterBranch context
         ListCommonRequest shiplistCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
         Pair<Specification<ShipmentDetails>, Pageable> shipPair = fetchData(shiplistCommonRequest, ShipmentDetails.class);
@@ -825,7 +826,7 @@ public class ConsolidationService implements IConsolidationService {
                         return ResponseHelper.buildFailedResponse("Multiple consolidations are attached to the shipment, please verify.");
                 }
             }
-            HashSet<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds);
+            attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds);
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
                 if(attachedShipmentIds.contains(shipmentDetails.getId()) && !interBranchShipIds.contains(shipmentDetails.getId())) {
                     if (shipmentDetails.getContainersList() != null) {
@@ -864,6 +865,10 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetailsDao.update(consolidationDetails, false);
             }
         }
+        Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
+        interBranchShipIds.retainAll(attachedShipmentIds);
+        if(!interBranchShipIds.isEmpty())
+            commonUtils.sendEmailForPullRequested(consolidationDetails, interBranchShipIds.stream().toList(), shipmentRequestedTypes);
         try {
             consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
         }

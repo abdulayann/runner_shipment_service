@@ -4724,12 +4724,17 @@ public class ShipmentService implements IShipmentService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> updateShipments(UpdateConsoleShipmentRequest request) throws RunnerException {
+        Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         if (isForHubRequest(request)) {
-            processHubRequest(request);
+            processHubRequest(request, shipmentRequestedTypes);
         } else {
-            processShipmentRequest(request);
+            processShipmentRequest(request, shipmentRequestedTypes);
         }
-        return ResponseHelper.buildSuccessResponse();
+        String warning = null;
+        if(!shipmentRequestedTypes.isEmpty()) {
+            warning = "Template not found, please inform the region users manually";
+        }
+        return ResponseHelper.buildSuccessResponse(warning);
     }
 
     @Override
@@ -4817,13 +4822,13 @@ public class ShipmentService implements IShipmentService {
         return request.isForHub();
     }
 
-    private void processHubRequest(UpdateConsoleShipmentRequest updateConsoleShipmentRequest) {
+    private void processHubRequest(UpdateConsoleShipmentRequest updateConsoleShipmentRequest, Set<ShipmentRequestedType> shipmentRequestedTypes) {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(updateConsoleShipmentRequest.getConsoleId());
         if (consolidationDetails.isPresent()) {
             if (Boolean.TRUE.equals(updateConsoleShipmentRequest.isForHub()) && Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
                 commonUtils.setInterBranchContextForHub();
             }
-            if (ShipmentRequestedType.APPROVE.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
+            if (ShipmentRequestedType.APPROVE.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) { // one console multiple shipments
                 updateConsoleShipmentRequest.getListOfShipments().stream().forEach(shipmentId -> {
                     try {
                         consolidationService.attachShipments(updateConsoleShipmentRequest.getShipmentRequestedType(), updateConsoleShipmentRequest.getConsoleId(), List.of(shipmentId));
@@ -4833,8 +4838,15 @@ public class ShipmentService implements IShipmentService {
                     }
                     consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentId);
                 });
+                // one console and list of approved shipments for shipment push accepted from console
+                // for each shipment pending multiple consolidation auto rejections (shipment push and shipment pull both got rejected)
+                commonUtils.sendEmailsForPushRequestAccept(consolidationDetails.get(), updateConsoleShipmentRequest.getListOfShipments(), shipmentRequestedTypes);
             } else if (ShipmentRequestedType.REJECT.equals(updateConsoleShipmentRequest.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
                 updateConsoleShipmentRequest.getListOfShipments().stream().forEach(shipmentId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(updateConsoleShipmentRequest.getConsoleId(), shipmentId));
+                // one console and multiple shipments (shipment push rejected)
+                if(ShipmentRequestedType.REJECT.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
+                    commonUtils.sendEmailForPushRequestReject(consolidationDetails.get(), updateConsoleShipmentRequest.getListOfShipments(), shipmentRequestedTypes, updateConsoleShipmentRequest.getRejectRemarks());
+                }
             }
         } else {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
@@ -4842,7 +4854,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void processShipmentRequest(UpdateConsoleShipmentRequest request) throws RunnerException {
+    private void processShipmentRequest(UpdateConsoleShipmentRequest request, Set<ShipmentRequestedType> shipmentRequestedTypes) throws RunnerException { // one shipment and one/multiple console
         if(Boolean.FALSE.equals(request.isForHub())) {
             commonUtils.setInterBranchContextForColoadStation();
         }
@@ -4852,8 +4864,15 @@ public class ShipmentService implements IShipmentService {
         if (ShipmentRequestedType.APPROVE.equals(request.getShipmentRequestedType())) {
             consolidationService.attachShipments(request.getShipmentRequestedType(), request.getConsoleIdsList().get(0), List.of(request.getShipmentId()));
             consoleShipmentMappingDao.deletePendingStateByShipmentId(request.getShipmentId());
+            // one shipment and one console, shipment pull accepted
+            // one shipment and multiple console, shipment pull and push rejected
+            commonUtils.sendEmailsForPullRequestAccept(request.getShipmentId(), request.getConsoleIdsList().get(0), shipmentRequestedTypes);
         } else if (ShipmentRequestedType.REJECT.equals(request.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(request.getShipmentRequestedType())) {
             request.getConsoleIdsList().stream().forEach(consoleId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(consoleId, request.getShipmentId()));
+            // one shipment and multiple console, shipment pull rejected
+            if(ShipmentRequestedType.REJECT.equals(request.getShipmentRequestedType())) {
+                commonUtils.sendEmailForPullRequestReject(request.getShipmentId(), request.getConsoleIdsList(), shipmentRequestedTypes, request.getRejectRemarks());
+            }
         }
     }
 
