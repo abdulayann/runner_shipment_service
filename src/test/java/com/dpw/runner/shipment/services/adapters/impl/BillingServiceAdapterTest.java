@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,15 +14,19 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.BookingEntity;
 import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
@@ -29,8 +34,12 @@ import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
@@ -39,6 +48,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,6 +81,10 @@ class BillingServiceAdapterTest {
     @InjectMocks
     private BillingServiceAdapter billingServiceAdapter;
     @Mock
+    private IV1Service v1Service;
+    @Mock
+    private V1ServiceUtil v1ServiceUtil;
+    @Mock
     private ModelMapper modelMapper;
     @Mock
     private V1AuthHelper v1AuthHelper;
@@ -99,6 +113,82 @@ class BillingServiceAdapterTest {
         billChargesFilterRequest = new BillChargesFilterRequest();
         billChargesBaseResponseBillingListResponse = new BillingListResponse<>();
     }
+
+    @Test
+    void createBillV2_failedTenantModel() {
+        ShipmentDetailsResponse shipmentDetailsResponse =  new ShipmentDetailsResponse();
+        shipmentDetailsResponse.setGuid(UUID.randomUUID());
+
+        CustomerBooking customerBooking = new CustomerBooking();
+
+        CreateBookingModuleInV1 createBookingModuleInV1 = new CreateBookingModuleInV1();
+
+        V1RetrieveResponse v1RetrieveResponse = new V1RetrieveResponse();
+
+        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
+        when(v1Service.retrieveTenant().getEntity()).thenThrow(new BillingException());
+
+        when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
+                eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
+
+        assertThrows(BillingException.class, () -> billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse));
+    }
+
+    @Test
+    void createBillV2_emptyClientCode() {
+        ShipmentDetailsResponse shipmentDetailsResponse =  new ShipmentDetailsResponse();
+        shipmentDetailsResponse.setGuid(UUID.randomUUID());
+
+        CustomerBooking customerBooking = new CustomerBooking();
+        TenantModel tenantModel = new TenantModel();
+        BookingEntity bookingEntity = new BookingEntity();
+        CreateBookingModuleInV1 createBookingModuleInV1 = new CreateBookingModuleInV1();
+        createBookingModuleInV1.setEntity(bookingEntity);
+        V1RetrieveResponse v1RetrieveResponse = new V1RetrieveResponse();
+        v1RetrieveResponse.setEntity(tenantModel);
+
+        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
+
+        when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
+                eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
+        assertThrows(BillingException.class, () -> billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse));
+
+    }
+
+//    @Test
+    void createBillV2() {
+        ShipmentDetailsResponse shipmentDetailsResponse =  new ShipmentDetailsResponse();
+        shipmentDetailsResponse.setGuid(UUID.randomUUID());
+
+        CustomerBooking customerBooking = new CustomerBooking();
+        TenantModel tenantModel = new TenantModel();
+        BookingEntity bookingEntity = new BookingEntity();
+        CreateBookingModuleInV1 createBookingModuleInV1 = new CreateBookingModuleInV1();
+        createBookingModuleInV1.setEntity(bookingEntity);
+        V1RetrieveResponse v1RetrieveResponse = new V1RetrieveResponse();
+        v1RetrieveResponse.setEntity(tenantModel);
+
+        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
+
+        when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
+                eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
+        ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse);
+
+    }
+
+
+//    @Test
+//    void testCreateBookingRequestForV12() {
+//        var note = new Notes();
+//        note.setText("TEXT");
+//        note.setCreatedAt(LocalDateTime.now());
+//        // Arrange
+//        when(iNotesDao.findByEntityIdAndEntityType(anyLong(), anyString())).thenReturn(List.of(note));
+//
+//        // Act and Assert
+//        var response = v1ServiceUtil.createBookingRequestForV1(completeCustomerBooking, true, true, UUID.randomUUID());
+//        Assertions.assertNotNull(response);
+//    }
 
     @Test
     void fetchBill_Success() {
