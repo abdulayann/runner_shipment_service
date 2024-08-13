@@ -213,6 +213,8 @@ class BillingServiceAdapterTest {
 
         ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse);
 
+        assertNotNull(billV2);
+
     }
 
     @Test
@@ -279,6 +281,8 @@ class BillingServiceAdapterTest {
 
 
         ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse);
+
+        assertNotNull(billV2);
 
     }
 
