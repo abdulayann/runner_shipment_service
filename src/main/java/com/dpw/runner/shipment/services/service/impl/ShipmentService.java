@@ -1940,11 +1940,6 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setTruckDriverDetails(updatedTruckDriverDetails);
         }
 
-        if (packingRequestList != null) {
-            packingRequestList = setPackingDetails(packingRequestList, shipmentDetails.getTransportMode(), consolidationId);
-            updatedPackings = packingDao.updateEntityFromShipment(commonUtils.convertToEntityList(packingRequestList, Packing.class, isCreate), id, deleteContainerIds);
-            shipmentDetails.setPackingList(updatedPackings);
-        }
         if (elDetailsRequestList != null) {
             List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(commonUtils.convertToEntityList(elDetailsRequestList, ELDetails.class, isCreate), id);
             shipmentDetails.setElDetailsList(updatedELDetails);
@@ -1984,6 +1979,12 @@ public class ShipmentService implements IShipmentService {
 
         // Create events on basis of shipment status Confirmed/Created
         autoGenerateEvents(shipmentDetails, previousStatus);
+
+        if (packingRequestList != null) {
+            packingRequestList = setPackingDetails(packingRequestList, shipmentDetails.getTransportMode(), consolidationId);
+            updatedPackings = packingDao.updateEntityFromShipment(commonUtils.convertToEntityList(packingRequestList, Packing.class, isCreate), id, deleteContainerIds);
+            shipmentDetails.setPackingList(updatedPackings);
+        }
 
         if (referenceNumbersRequestList != null) {
             List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isCreate), id);
