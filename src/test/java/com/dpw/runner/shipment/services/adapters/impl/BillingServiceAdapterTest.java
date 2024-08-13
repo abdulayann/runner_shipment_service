@@ -215,21 +215,26 @@ class BillingServiceAdapterTest {
 
     }
 
-//    @Test
-    void createBillV2() {
+    @Test
+    void createBillV2_tenantCurrencyCodeNull() {
         ShipmentDetailsResponse shipmentDetailsResponse =  new ShipmentDetailsResponse();
         shipmentDetailsResponse.setGuid(UUID.randomUUID());
 
         CustomerBooking customerBooking = new CustomerBooking();
+
         TenantModel tenantModel = new TenantModel();
+        tenantModel.setCurrencyCode(null);
 
         BillCharge billCharge = new BillCharge();
+        billCharge.setCreditorCode("OrganizationCode");
+        billCharge.setContainersGuid(List.of(UUID.randomUUID()));
 
         List<BillCharge> billCharges = List.of(billCharge);
 
         EntityTransferOrganizations entityTransferOrganization = new EntityTransferOrganizations();
         entityTransferOrganization.setId(1L);
         entityTransferOrganization.setOrganizationCode("OrganizationCode");
+        entityTransferOrganization.setPayables(Boolean.TRUE);
 
         List<EntityTransferOrganizations> entityTransferOrganizations = List.of(entityTransferOrganization);
 
@@ -239,6 +244,8 @@ class BillingServiceAdapterTest {
         EntityTransferAddress entityTransferAddress = new EntityTransferAddress();
         entityTransferAddress.setId(1L);
         entityTransferAddress.setAddressShortCode("AddressShortCode");
+        entityTransferAddress.setOrgId(1L);
+        entityTransferAddress.setDefaultAddress(Boolean.TRUE);
 
         List<EntityTransferAddress> entityTransferAddresses = List.of(entityTransferAddress);
 
@@ -255,14 +262,86 @@ class BillingServiceAdapterTest {
         V1RetrieveResponse v1RetrieveResponse = new V1RetrieveResponse();
         v1RetrieveResponse.setEntity(tenantModel);
 
+        ResponseEntity<BillingEntityResponse> mockResponse = new ResponseEntity<>(billingEntityResponse, HttpStatus.OK);
+
+        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(v1Service.fetchOrganization(any())).thenReturn(orgResponse);
+        when(jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class)).thenReturn(entityTransferOrganizations);
+        when(v1Service.addressList(any())).thenReturn(addressResponse);
+        when(jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class)).thenReturn(entityTransferAddresses);
+        when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
+                eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
+        when(billingServiceUrlConfig.getExternalCreateOrUpdate()).thenReturn(createOrUpdateEndpoint);
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class))).thenReturn(mockResponse);
+
+
+
+        ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse);
+
+    }
+
+//    @Test
+    void createBillV2() {
+        ShipmentDetailsResponse shipmentDetailsResponse =  new ShipmentDetailsResponse();
+        shipmentDetailsResponse.setGuid(UUID.randomUUID());
+
+        CustomerBooking customerBooking = new CustomerBooking();
+
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCurrencyCode(null);
+
+        BillCharge billCharge = new BillCharge();
+        billCharge.setCreditorCode("OrganizationCode");
+        billCharge.setContainersGuid(List.of(UUID.randomUUID()));
+
+        List<BillCharge> billCharges = List.of(billCharge);
+
+        EntityTransferOrganizations entityTransferOrganization = new EntityTransferOrganizations();
+        entityTransferOrganization.setId(1L);
+        entityTransferOrganization.setOrganizationCode("OrganizationCode");
+        entityTransferOrganization.setPayables(Boolean.TRUE);
+
+        List<EntityTransferOrganizations> entityTransferOrganizations = List.of(entityTransferOrganization);
+
+        V1DataResponse orgResponse = new V1DataResponse();
+        orgResponse.setEntities(entityTransferOrganizations);
+
+        EntityTransferAddress entityTransferAddress = new EntityTransferAddress();
+        entityTransferAddress.setId(1L);
+        entityTransferAddress.setAddressShortCode("AddressShortCode");
+        entityTransferAddress.setOrgId(1L);
+        entityTransferAddress.setDefaultAddress(Boolean.TRUE);
+
+        List<EntityTransferAddress> entityTransferAddresses = List.of(entityTransferAddress);
+
+        V1DataResponse addressResponse = new V1DataResponse();
+        addressResponse.setEntities(entityTransferAddresses);
+
+        BookingEntity entity = new BookingEntity();
+        entity.setClientCode("OrganizationCode");
+        entity.setClientAddressShortCode("AddressShortCode");
+        entity.setBillCharges(billCharges);
+
+        CreateBookingModuleInV1 createBookingModuleInV1 = new CreateBookingModuleInV1();
+        createBookingModuleInV1.setEntity(entity);
+        V1RetrieveResponse v1RetrieveResponse = new V1RetrieveResponse();
+        v1RetrieveResponse.setEntity(tenantModel);
+
+        ResponseEntity<BillingEntityResponse> mockResponse = new ResponseEntity<>(billingEntityResponse, HttpStatus.OK);
+
         when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
         when(v1Service.fetchOrganization(any())).thenReturn(orgResponse);
         when(jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class)).thenReturn(entityTransferOrganizations);
         when(v1Service.addressList(any())).thenReturn(addressResponse);
         when(jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class)).thenReturn(entityTransferAddresses);
-
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
+        when(billingServiceUrlConfig.getExternalCreateOrUpdate()).thenReturn(createOrUpdateEndpoint);
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class))).thenReturn(mockResponse);
+
         ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse);
 
     }
