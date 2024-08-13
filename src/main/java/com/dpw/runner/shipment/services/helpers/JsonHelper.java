@@ -165,7 +165,4 @@ public class JsonHelper {
         return createMapper.convertValue(object, clazz);
     }
 
-    public <T> T updateValue(T valueToUpdate, Object overrides) throws Exception {
-        return mapper.updateValue(valueToUpdate, overrides);
-    }
 }
