@@ -62,10 +62,10 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleIdDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse;
-import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse.Container;
-import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceLiteContainerResponse;
-import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
@@ -387,7 +387,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testGetContainerListFromTrackingService_Success() throws RunnerException {
+    void testGetContainerListFromTrackingService_Success() throws RunnerException {
         Long shipmentId = 1L;
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setShipmentId("shipment-1");

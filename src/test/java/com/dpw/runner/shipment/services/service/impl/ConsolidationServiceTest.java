@@ -19,7 +19,7 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;

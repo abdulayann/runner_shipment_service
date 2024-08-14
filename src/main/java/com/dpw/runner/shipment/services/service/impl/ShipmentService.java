@@ -80,11 +80,11 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleId
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse;
-import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse.Container;
-import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceLiteContainerResponse;
-import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceLiteContainerResponse.LiteContainer;
-import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
