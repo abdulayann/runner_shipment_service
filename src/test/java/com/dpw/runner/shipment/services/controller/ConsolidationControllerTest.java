@@ -209,7 +209,7 @@ class ConsolidationControllerTest {
     @Test
     void attachShipments() throws RunnerException {
         // Mock
-        when(consolidationService.attachShipments(any(), any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(consolidationService.attachShipments(any(), any(), any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = consolidationController.attachShipments( new ShipmentAttachDetachRequest());
         // Assert
