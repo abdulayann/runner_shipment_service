@@ -207,10 +207,8 @@ public class MasterDataUtils{
                         tenantIdList.addAll(createInBulkTenantsRequest(shipmentListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()));
                     }
                 }
-                if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse) {
-                    if (consolidationDetailsResponse.getTenantId() != null) {
-                        tenantIdList.addAll(createInBulkTenantsRequest(consolidationDetailsResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()));
-                    }
+                if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
+                    tenantIdList.addAll(createInBulkTenantsRequest(consolidationDetailsResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()));
                 }
             }
 
@@ -222,9 +220,8 @@ public class MasterDataUtils{
                     if (shipmentListResponse.getTenantId() != null)
                         shipmentListResponse.setTenantMasterData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS));
                 }
-                if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse) {
-                    if (consolidationDetailsResponse.getTenantId() != null)
-                        consolidationDetailsResponse.setTenantIdsData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()), CacheConstants.TENANTS));
+                if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
+                    consolidationDetailsResponse.setTenantIdsData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()), CacheConstants.TENANTS));
                 }
             }
         } catch (Exception ex) {
