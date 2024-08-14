@@ -77,4 +77,5 @@ public class AwbPackingInfo implements Serializable {
     private String unNumberAir;
     private String dgClassAir;
     private String dgClassAirDescription;
+    private Integer tenantId;
 }

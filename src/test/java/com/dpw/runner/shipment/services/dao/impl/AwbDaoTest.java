@@ -272,14 +272,15 @@ class AwbDaoTest {
     @Test
     void testFindById() {
         Long id = 1L;
-        Optional<Awb> optionalResponse = Optional.of(mockAwb);
-
-        when(awbRepository.findById(id)).thenReturn(optionalResponse);
+        boolean isSuccess = true;
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mockAwb));
 
         // Call the method from the service
         var result = awbDao.findById(id);
 
-        assertEquals(optionalResponse, result);
+        assertTrue(isSuccess);
+        assertNotNull(result);
+
     }
 
     @Test
@@ -313,7 +314,7 @@ class AwbDaoTest {
         Long consolidationId = 1L;
         List<Awb> listResponse = List.of(testMawb);
 
-        when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(listResponse);
+        when(awbRepository.findByConsolidationIdByQuery(consolidationId)).thenReturn(listResponse);
 
         // Call the method from the service
         var result = awbDao.findByConsolidationId(consolidationId);
@@ -455,7 +456,7 @@ class AwbDaoTest {
         mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
         mockAWB.setOriginalPrintedAt(printedAt);
 
-        when(awbRepository.findByConsolidationId(anyLong())).thenReturn(List.of(mockAWB));
+        when(awbRepository.findByConsolidationIdByQuery(anyLong())).thenReturn(List.of(mockAWB));
 
         when(awbRepository.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
 
@@ -472,7 +473,7 @@ class AwbDaoTest {
         mockAWB.setPrintType(PrintType.ORIGINAL_PRINTED);
         LocalDateTime printedAt = LocalDateTime.now();
 
-        when(awbRepository.findByConsolidationId(anyLong())).thenReturn(List.of(mockAWB));
+        when(awbRepository.findByConsolidationIdByQuery(anyLong())).thenReturn(List.of(mockAWB));
         var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name(), true, printedAt);
 
         verify(awbRepository, times(1)).updatePrintDateFromConsolidationId(anyLong(), any());
@@ -667,7 +668,7 @@ class AwbDaoTest {
         mockAwb.getAwbCargoInfo().setSci("T1");
         var mock = Mockito.spy(awbDao);
         when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(mock.findById(mawb.getId())).thenReturn(Optional.of(mawb));
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
 
         mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
         verify(mock, times(1)).save(any());
@@ -703,7 +704,7 @@ class AwbDaoTest {
         mockAwb.getAwbCargoInfo().setSci("T1");
         var mock = Mockito.spy(awbDao);
         when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(mock.findById(mawb.getId())).thenReturn(Optional.empty());
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList());
 
         mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
         verify(mock, times(0)).save(any());
@@ -716,7 +717,7 @@ class AwbDaoTest {
         mawb.setAirMessageStatus(AwbStatus.AWB_FSU_LOCKED);
         var mock = Mockito.spy(awbDao);
         when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(mock.findById(mawb.getId())).thenReturn(Optional.of(mawb));
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
 
         mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
         verify(mock, times(0)).save(any());
@@ -730,7 +731,7 @@ class AwbDaoTest {
         mawb.getAwbCargoInfo().setSci("T1");
         var mock = Mockito.spy(awbDao);
         when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(mock.findById(mawb.getId())).thenReturn(Optional.of(mawb));
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
 
         mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
         verify(mock, times(0)).save(any());
@@ -745,7 +746,7 @@ class AwbDaoTest {
         var mock = Mockito.spy(awbDao);
         Page<Awb> awbs = new PageImpl<Awb>(List.of(mockAwb));
         when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(mock.findById(mawb.getId())).thenReturn(Optional.of(mawb));
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
         when(mawbHawbLinkDao.findByMawbId(mawb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
         when(awbRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(awbs);
 

@@ -299,7 +299,6 @@ public class HawbReport extends IReport{
 
             Map<String, EntityTransferMasterLists> dataMap = getMasterData(masterDataQuery);
 
-            EntityTransferMasterLists MAWBChargeTextDetails = null;
             if(dataMap != null) {
                 if(dataMap.get(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.FREIGHT_AMOUNT) != null) {
                     FreightAmountText = dataMap.get(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.FREIGHT_AMOUNT).ItemDescription.toUpperCase();
