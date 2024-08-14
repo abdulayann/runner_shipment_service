@@ -156,6 +156,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
@@ -4719,7 +4720,8 @@ public class ShipmentService implements IShipmentService {
                     try {
                         consolidationService.attachShipments(updateConsoleShipmentRequest.getShipmentRequestedType(), updateConsoleShipmentRequest.getConsoleId(), List.of(shipmentId));
                     } catch (RunnerException e) {
-                        throw new RuntimeException(e);
+                        log.error("Error while attaching shipments: {}", e.getMessage(), e);
+                        throw new BillingException(e);
                     }
                     consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentId);
                 });
