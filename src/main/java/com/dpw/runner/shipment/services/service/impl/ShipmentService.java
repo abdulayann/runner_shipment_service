@@ -81,6 +81,9 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainer
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse.Container;
+import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceLiteContainerResponse;
+import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
@@ -108,7 +111,21 @@ import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
+import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
+import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
+import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -4540,6 +4557,88 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> getContainerListFromTrackingService(Long shipmentId, Long consolidationId) throws RunnerException {
+        try {
+
+            if (shipmentId == null && consolidationId == null) {
+                throw new RunnerException("Empty request: please provide either ShipmentId or ConsolidationId");
+            }
+
+            Long effectiveShipmentId = getEffectiveShipmentId(shipmentId, consolidationId);
+
+            ShipmentDetails shipmentDetails = shipmentDao.findById(effectiveShipmentId)
+                    .orElseThrow(() -> new RunnerException("No shipment present for provided id " + shipmentId));
+
+            TrackingServiceApiResponse trackingResponse = fetchTrackingDataByShipmentId(shipmentDetails.getShipmentId());
+            TrackingServiceLiteContainerResponse response = convertToLiteContainerResponse(trackingResponse.getContainers());
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            log.error("Unexpected error occurred: ", e);
+            return ResponseHelper.buildFailedResponse("An unexpected error occurred while processing the request. " + e.getMessage());
+        }
+    }
+
+    private TrackingServiceLiteContainerResponse convertToLiteContainerResponse(List<Container> containers) {
+
+        TrackingServiceLiteContainerResponse response = new TrackingServiceLiteContainerResponse();
+        List<LiteContainer> liteContainers = new ArrayList<>();
+
+        containers.forEach(container -> {
+
+            TrackingServiceLiteContainerResponse.LiteContainer liteContainer = new TrackingServiceLiteContainerResponse.LiteContainer();
+
+            liteContainer.setContainerNumber(container.getContainerNumber());
+            liteContainer.setIdentifierType(container.getIdentifierType());
+            liteContainer.setIdentifierValue(container.getIdentifierValue());
+            if (container.getContainer() != null) {
+                liteContainer.setType(container.getContainer().getType());
+                liteContainer.setSize(container.getContainer().getSize());
+                liteContainer.setTypeIsoCode(container.getContainer().getTypeIsoCode());
+                liteContainer.setBolNumber(container.getContainer().getBolNumber());
+                liteContainer.setBookingNumber(container.getContainer().getBookingNumber());
+                liteContainer.setSealNumber(container.getContainer().getSealNumber());
+                liteContainer.setMarks(container.getContainer().getMarks());
+                liteContainer.setIncoterm(container.getContainer().getIncoterm());
+                liteContainer.setShipper(container.getContainer().getShipper());
+                liteContainer.setConsignee(container.getContainer().getConsignee());
+                liteContainer.setWeight(container.getContainer().getWeight());
+                liteContainer.setWeightUom(container.getContainer().getWeightUom());
+                liteContainer.setNumberOfPackages(container.getContainer().getNumberOfPackages());
+                liteContainer.setPackageType(container.getContainer().getPackageType());
+                liteContainer.setReeferTemperature(container.getContainer().getReeferTemperature());
+                liteContainer.setCommodity(container.getContainer().getCommodity());
+                liteContainer.setLatitude(container.getContainer().getLatitude());
+                liteContainer.setLongitude(container.getContainer().getLongitude());
+                liteContainer.setLocation(container.getContainer().getLocation());
+                liteContainer.setLocationUpdateTime(container.getContainer().getLocationUpdateTime());
+            }
+            liteContainers.add(liteContainer);
+        });
+        response.setContainers(liteContainers);
+        return response;
+    }
+
+    private Long getEffectiveShipmentId(Long shipmentId, Long consolidationId) throws RunnerException {
+        if (shipmentId != null) {
+            return shipmentId;
+        }
+
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
+        return consoleShipmentMappingList.stream()
+                .findFirst()
+                .map(ConsoleShipmentMapping::getShipmentId)
+                .orElseThrow(() -> new RunnerException("No shipment present for provided consolidation id " + consolidationId));
+    }
+
+    private TrackingServiceApiResponse fetchTrackingDataByShipmentId(String shipmentId) throws RunnerException {
+        try {
+            return trackingServiceAdapter.fetchTrackingData(
+                    TrackingRequest.builder().referenceNumber(shipmentId).build());
+        } catch (Exception e) {
+            throw new RunnerException("Error getting response from tracking api for shipment id: " + shipmentId + ", Details :" + e.getMessage());
+        }
+    }
 
     @Override
     public ResponseEntity<IRunnerResponse> getDateTimeChangeUpdates(Long shipmentId) throws RunnerException {
