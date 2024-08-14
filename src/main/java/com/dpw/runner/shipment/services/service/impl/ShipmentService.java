@@ -768,6 +768,7 @@ public class ShipmentService implements IShipmentService {
         if (request == null) {
             log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+        this.setColoadingStation(request);
 
         ShipmentDetails shipmentDetails = jsonHelper.convertCreateValue(request, ShipmentDetails.class);
         if(request.getConsolidationList() != null)
@@ -1371,6 +1372,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
+        this.setColoadingStation(shipmentRequest);
 
         // TODO- implement Validation logic
 
@@ -1425,6 +1427,14 @@ public class ShipmentService implements IShipmentService {
             log.error("Error occurred due to: " + e.getStackTrace());
             log.error(responseMsg, e);
             throw new ValidationException(e.getMessage());
+        }
+    }
+
+    private void setColoadingStation(ShipmentRequest request) {
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
+        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            commonUtils.setInterBranchContextForColoadStation();
         }
     }
 
@@ -1623,6 +1633,16 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.getCarrierDetails().setShippingLine(consolidationDetails1.getCarrierDetails().getShippingLine());
                 shipmentDetails.getCarrierDetails().setAircraftType(consolidationDetails1.getCarrierDetails().getAircraftType());
                 shipmentDetails.getCarrierDetails().setCfs(consolidationDetails1.getCarrierDetails().getCfs());
+
+                if(Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                    shipmentDetails.getCarrierDetails().setFlightNumber(consolidationDetails1.getCarrierDetails().getFlightNumber());
+                    shipmentDetails.getCarrierDetails().setOriginPort(consolidationDetails1.getCarrierDetails().getOriginPort());
+                    shipmentDetails.getCarrierDetails().setDestinationPort(consolidationDetails1.getCarrierDetails().getDestinationPort());
+                    shipmentDetails.getCarrierDetails().setEtd(consolidationDetails1.getCarrierDetails().getEtd());
+                    shipmentDetails.getCarrierDetails().setEta(consolidationDetails1.getCarrierDetails().getEta());
+                    shipmentDetails.getCarrierDetails().setAtd(consolidationDetails1.getCarrierDetails().getAtd());
+                    shipmentDetails.getCarrierDetails().setAta(consolidationDetails1.getCarrierDetails().getAta());
+                }
             }
             var console = shipmentDetails.getConsolidationList().get(0);
             List<Awb> awb = awbDao.findByConsolidationId(console.getId());
@@ -4790,6 +4810,24 @@ public class ShipmentService implements IShipmentService {
             response.setContainerData(containerCountMap);
             response.setContainerCount(containerCount);
         }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> requestInterBranchConsole(Long shipId, Long consoleId) {
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+        for (var consoleShip: consoleShipmentMappings) {
+            if (Objects.equals(consoleShip.getShipmentId(), shipId)) {
+                return ResponseHelper.buildSuccessResponse();
+            }
+        }
+        ConsoleShipmentMapping entity = ConsoleShipmentMapping.builder()
+                .shipmentId(shipId)
+                .consolidationId(consoleId)
+                .isAttachmentDone(false)
+                .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
+                .build();
+        consoleShipmentMappingDao.save(entity);
+        return ResponseHelper.buildSuccessResponse();
     }
 
 }
