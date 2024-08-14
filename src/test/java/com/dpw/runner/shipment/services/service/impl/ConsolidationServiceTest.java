@@ -1187,6 +1187,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
         consoleShipmentMapping1.setShipmentId(2L);

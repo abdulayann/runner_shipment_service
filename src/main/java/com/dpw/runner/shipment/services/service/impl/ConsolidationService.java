@@ -1182,6 +1182,15 @@ public class ConsolidationService implements IConsolidationService {
                         i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
                         i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
                     }
+                    if(Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getShipmentType(), Constants.DIRECTION_EXP)) {
+                        i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
+                        i.getCarrierDetails().setOriginPort(console.getCarrierDetails().getOriginPort());
+                        i.getCarrierDetails().setDestinationPort(console.getCarrierDetails().getDestinationPort());
+                        i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
+                        i.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
+                        i.getCarrierDetails().setAtd(console.getCarrierDetails().getAtd());
+                        i.getCarrierDetails().setAta(console.getCarrierDetails().getAta());
+                    }
                 }
                 if(checkConsolidationEligibleForCFSValidation(console) &&
                         checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), console.getCfsCutOffDate()))

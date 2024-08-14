@@ -653,4 +653,15 @@ public class ShipmentController {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.REQUEST_INTER_BRANCH_CONSOLE)
+    public ResponseEntity<IRunnerResponse> requestInterBranchConsole(@RequestParam(required = true) Long shipId, @RequestParam(required = true) Long consoleId) {
+        log.info("Request received for interBrnach console request");
+        try {
+            return shipmentService.requestInterBranchConsole(shipId, consoleId);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
 }
