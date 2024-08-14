@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.trackingservice;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -28,7 +29,8 @@ public class TrackingServiceApiResponse {
         private String containerNumber;
         private String identifierType;
         private String identifierValue;
-        private ContainerBase container;
+        @JsonProperty("container")
+        private ContainerBase containerBase;
         private Journey journey;
         private List<Place> places;
         private List<Transport> transports;

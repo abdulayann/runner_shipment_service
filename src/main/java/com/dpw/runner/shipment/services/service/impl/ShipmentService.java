@@ -4593,27 +4593,27 @@ public class ShipmentService implements IShipmentService {
             liteContainer.setContainerNumber(container.getContainerNumber());
             liteContainer.setIdentifierType(container.getIdentifierType());
             liteContainer.setIdentifierValue(container.getIdentifierValue());
-            if (container.getContainer() != null) {
-                liteContainer.setType(container.getContainer().getType());
-                liteContainer.setSize(container.getContainer().getSize());
-                liteContainer.setTypeIsoCode(container.getContainer().getTypeIsoCode());
-                liteContainer.setBolNumber(container.getContainer().getBolNumber());
-                liteContainer.setBookingNumber(container.getContainer().getBookingNumber());
-                liteContainer.setSealNumber(container.getContainer().getSealNumber());
-                liteContainer.setMarks(container.getContainer().getMarks());
-                liteContainer.setIncoterm(container.getContainer().getIncoterm());
-                liteContainer.setShipper(container.getContainer().getShipper());
-                liteContainer.setConsignee(container.getContainer().getConsignee());
-                liteContainer.setWeight(container.getContainer().getWeight());
-                liteContainer.setWeightUom(container.getContainer().getWeightUom());
-                liteContainer.setNumberOfPackages(container.getContainer().getNumberOfPackages());
-                liteContainer.setPackageType(container.getContainer().getPackageType());
-                liteContainer.setReeferTemperature(container.getContainer().getReeferTemperature());
-                liteContainer.setCommodity(container.getContainer().getCommodity());
-                liteContainer.setLatitude(container.getContainer().getLatitude());
-                liteContainer.setLongitude(container.getContainer().getLongitude());
-                liteContainer.setLocation(container.getContainer().getLocation());
-                liteContainer.setLocationUpdateTime(container.getContainer().getLocationUpdateTime());
+            if (container.getContainerBase() != null) {
+                liteContainer.setType(container.getContainerBase().getType());
+                liteContainer.setSize(container.getContainerBase().getSize());
+                liteContainer.setTypeIsoCode(container.getContainerBase().getTypeIsoCode());
+                liteContainer.setBolNumber(container.getContainerBase().getBolNumber());
+                liteContainer.setBookingNumber(container.getContainerBase().getBookingNumber());
+                liteContainer.setSealNumber(container.getContainerBase().getSealNumber());
+                liteContainer.setMarks(container.getContainerBase().getMarks());
+                liteContainer.setIncoterm(container.getContainerBase().getIncoterm());
+                liteContainer.setShipper(container.getContainerBase().getShipper());
+                liteContainer.setConsignee(container.getContainerBase().getConsignee());
+                liteContainer.setWeight(container.getContainerBase().getWeight());
+                liteContainer.setWeightUom(container.getContainerBase().getWeightUom());
+                liteContainer.setNumberOfPackages(container.getContainerBase().getNumberOfPackages());
+                liteContainer.setPackageType(container.getContainerBase().getPackageType());
+                liteContainer.setReeferTemperature(container.getContainerBase().getReeferTemperature());
+                liteContainer.setCommodity(container.getContainerBase().getCommodity());
+                liteContainer.setLatitude(container.getContainerBase().getLatitude());
+                liteContainer.setLongitude(container.getContainerBase().getLongitude());
+                liteContainer.setLocation(container.getContainerBase().getLocation());
+                liteContainer.setLocationUpdateTime(container.getContainerBase().getLocationUpdateTime());
             }
             liteContainers.add(liteContainer);
         });
