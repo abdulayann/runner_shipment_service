@@ -316,9 +316,7 @@ public class ReportService implements IReportService {
                 else dataRetrived.put(ReportConstants.COUNT, null);
                 byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
                 if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
-                var mawbNumber = dataRetrived.containsKey(ReportConstants.MAWB_CAPS) ? String.valueOf(dataRetrived.get(ReportConstants.MAWB_CAPS)) : "";
-                var hawbNumber = dataRetrived.containsKey(ReportConstants.HAWB_CAPS) ? String.valueOf(dataRetrived.get(ReportConstants.HAWB_CAPS)) : "";
-                byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, mawbNumber, hawbNumber);
+                byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER)+copyCount : copyCount, dataRetrived.get(ReportConstants.HAWB_NUMBER)+"");
                 pdf_Bytes.add(docBytes);
             }
             return CommonUtils.concatAndAddContent(pdf_Bytes);
@@ -1113,7 +1111,7 @@ public class ReportService implements IReportService {
     private byte[] addBarCodeInAWBLableReport(byte[] bytes, String mawbNumber, String hawbNumber)
     {
         if(StringUtility.isNotEmpty(mawbNumber) && mawbNumber.length() > 5)
-            bytes = this.addBarCodeInReport(bytes, mawbNumber,140,-180, ReportConstants.MAWB);
+            bytes = this.addBarCodeInReport(bytes, mawbNumber,140,-190, ReportConstants.MAWB);
         else if(StringUtility.isNotEmpty(hawbNumber))
             bytes = this.addBarCodeInReport(bytes, hawbNumber, 140, -210, ReportConstants.HAWB);
         return bytes;
