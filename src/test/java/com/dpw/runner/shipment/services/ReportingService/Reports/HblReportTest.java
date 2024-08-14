@@ -121,7 +121,7 @@ class HblReportTest extends CommonMocks {
 
     @Test
     void getDocumentModelWithoutBlObject() {
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
@@ -137,7 +137,7 @@ class HblReportTest extends CommonMocks {
 
     @Test
     void getDocumentModelWithBlObject() {
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
@@ -446,10 +446,10 @@ class HblReportTest extends CommonMocks {
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setShipmentId(1L);
         consoleShipmentMapping.setConsolidationId(1L);
-        when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
+        when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("id", "123");
         Map<String, Object> dictionary = new HashMap<>();
@@ -600,10 +600,10 @@ class HblReportTest extends CommonMocks {
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setShipmentId(1L);
         consoleShipmentMapping.setConsolidationId(1L);
-        when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
+        when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("id", "123");
         Map<String, Object> dictionary = new HashMap<>();
@@ -746,11 +746,11 @@ class HblReportTest extends CommonMocks {
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setShipmentId(1L);
         consoleShipmentMapping.setConsolidationId(1L);
-        when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
+        when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
         consolidationDetails.setHazardous(true);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("id", "123");
         Map<String, Object> dictionary = new HashMap<>();

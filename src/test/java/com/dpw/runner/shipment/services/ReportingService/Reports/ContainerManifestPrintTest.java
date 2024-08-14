@@ -425,7 +425,7 @@ class ContainerManifestPrintTest extends CommonMocks {
         consolidationModel.setPlaceOfIssue("Test");
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         assertNotNull(containerManifestPrint.getDocumentModel(123L));
     }

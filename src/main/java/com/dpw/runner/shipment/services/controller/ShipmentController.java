@@ -576,12 +576,12 @@ public class ShipmentController {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_CONSOLE_SHIPMENT_STATUS, response = UpstreamDateUpdateResponse.class)})
-    @PutMapping(ApiConstants.UPDATE_CONSOLE_SHIPMENT_STATUS)
-    public ResponseEntity<IRunnerResponse> updateConsoleShipments(@RequestBody UpdateConsoleShipmentRequest request) {
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SHIPMENT_STATUS, response = UpstreamDateUpdateResponse.class)})
+    @PutMapping(ApiConstants.UPDATE_SHIPMENT_STATUS)
+    public ResponseEntity<IRunnerResponse> updateShipments(@RequestBody UpdateConsoleShipmentRequest request) {
         log.info("Request received for updating the shipments");
         try {
-            return shipmentService.updateConsoleShipments(request);
+            return shipmentService.updateShipments(request);
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }

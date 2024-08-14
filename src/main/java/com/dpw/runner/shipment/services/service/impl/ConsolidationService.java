@@ -659,7 +659,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> attachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> attachShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipmentIds) throws RunnerException {
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         if(consol.isEmpty())
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -669,9 +669,12 @@ public class ConsolidationService implements IConsolidationService {
         Pair<Specification<ShipmentDetails>, Pageable> shipPair = fetchData(shiplistCommonRequest, ShipmentDetails.class);
         setInterBranchContext(consolidationDetails.getInterBranchConsole());
         Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
-        var interBranchShipIds = shipmentDetailsList.stream()
-                .filter(c -> !Objects.equals(c.getTenantId(), UserContext.getUser().TenantId))
-                .map(ShipmentDetails::getId).collect(Collectors.toSet());
+        Set<Long> interBranchShipIds = new HashSet<>();
+        if(shipmentRequestedType == null) {
+            interBranchShipIds = shipmentDetailsList.stream()
+                    .filter(c -> !Objects.equals(c.getTenantId(), UserContext.getUser().TenantId))
+                    .map(ShipmentDetails::getId).collect(Collectors.toSet());
+        }
 
         if(consolidationId != null && shipmentIds != null && !shipmentIds.isEmpty()) {
             ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
@@ -685,7 +688,7 @@ public class ConsolidationService implements IConsolidationService {
                         return ResponseHelper.buildFailedResponse("Multiple consolidations are attached to the shipment, please verify.");
                 }
             }
-            HashSet<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds);
+            HashSet<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds);
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
                 if(attachedShipmentIds.contains(shipmentDetails.getId()) && !interBranchShipIds.contains(shipmentDetails.getId())) {
                     if (shipmentDetails.getContainersList() != null) {

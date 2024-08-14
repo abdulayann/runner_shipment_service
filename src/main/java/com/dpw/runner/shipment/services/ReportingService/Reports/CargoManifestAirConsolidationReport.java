@@ -74,12 +74,10 @@ public class CargoManifestAirConsolidationReport extends IReport{
                 cargoManifestAirConsolidationModel.getConsolidationModel().getContainerCategory(), new ShipmentMeasurementDetailsDto()));
         if(shipIds != null && !shipIds.isEmpty()) {
             Map<Long, ShipmentModel> shipmentModelMap = getShipments(shipIds);
-            ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipIds, "IN");
-            Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
-            Page<Awb> awbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
+            List<Awb> awbListPage = awbDao.findByShipmentIdList(shipIds);
             Map<Long, List<Awb>> awbMap = new HashMap<>();
             if(awbListPage != null && !awbListPage.isEmpty()) {
-                awbMap = awbListPage.getContent().stream().collect(Collectors.groupingBy(Awb::getShipmentId));
+                awbMap = awbListPage.stream().collect(Collectors.groupingBy(Awb::getShipmentId));
             }
             for(Map.Entry<Long, ShipmentModel> entry: shipmentModelMap.entrySet()) {
                 cargoManifestAirConsolidationModel.getShipmentModelList().add(shipmentModelMap.get(entry.getKey()));

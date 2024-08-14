@@ -910,7 +910,7 @@ public abstract class IReport {
                     dict.put(SCI, cargoInfoRows.getSci());
                     dict.put(CSD_INFO, cargoInfoRows.getCsdInfo());
                     if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
-                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat()));
+                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true));
                 }
             }
             dict.put(WITH_CONSIGNOR, isShipperAndConsignee);
@@ -1049,6 +1049,11 @@ public abstract class IReport {
         return getShipment(shipmentDetails);
     }
 
+    public ShipmentModel getShipmentByQuery(Long id) {
+        var optional = shipmentDao.findShipmentsByIds(Set.of(id)).stream().findFirst();
+        return getShipment(optional.orElse(null));
+    }
+
     public ShipmentModel getShipment(ShipmentDetails shipmentDetails) {
         if(shipmentDetails == null) return null;
         ShipmentModel shipmentModel = modelMapper.map(shipmentDetails, ShipmentModel.class);
@@ -1075,12 +1080,10 @@ public abstract class IReport {
     }
 
     public Map<Long, ShipmentModel> getShipments(List<Long> shipIds) {
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipIds, "IN");
-        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
-        Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+        List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(new HashSet<>(shipIds));
         if(shipmentDetails != null && !shipmentDetails.isEmpty()) {
             Map<Long, ShipmentModel> response = new HashMap<>();
-            for (ShipmentDetails shipmentDetails1 : shipmentDetails.getContent()) {
+            for (ShipmentDetails shipmentDetails1 : shipmentDetails) {
                 ShipmentModel shipmentModel = getShipment(shipmentDetails1);
                 response.put(shipmentDetails1.getId(), shipmentModel);
             }
@@ -1091,7 +1094,7 @@ public abstract class IReport {
 
     public ConsolidationModel getFirstConsolidationFromShipmentId(Long shipmentId)
     {
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentId);
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentIdByQuery(shipmentId);
         if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0) {
             Long id = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getConsolidationId).max(Comparator.naturalOrder()).get();
             return getConsolidation(id);
@@ -1116,7 +1119,7 @@ public abstract class IReport {
 
     public ConsolidationModel getConsolidation(Long Id)
     {
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Id).get();
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findConsolidationsById(Id);
         return modelMapper.map(consolidationDetails, ConsolidationModel.class);
     }
 
@@ -2319,8 +2322,7 @@ public abstract class IReport {
     public Boolean getIsHbl(ShipmentModel shipmentModel) {
         if(shipmentModel.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
             if(shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
-                Long entityId = shipmentModel.getId();
-                List<Awb> awbList = awbDao.findByShipmentId(entityId);
+                List<Awb> awbList = awbDao.findByShipmentIdByQuery(shipmentModel.getId());
                 String entityType = (Objects.equals(shipmentModel.getJobType(), Constants.SHIPMENT_TYPE_DRT)) ? Constants.DMAWB : Constants.HAWB;
                 if (awbList != null && !awbList.isEmpty()) {
                     if(awbList.get(0).getAwbShipmentInfo().getEntityType().equalsIgnoreCase(entityType))
