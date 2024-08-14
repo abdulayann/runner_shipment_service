@@ -108,7 +108,23 @@ import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
+import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
+import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
+import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -225,6 +241,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -4703,6 +4720,90 @@ public class ShipmentService implements IShipmentService {
             processShipmentRequest(request);
         }
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    private static Boolean validateMblDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
+        if (ObjectUtils.isEmpty(shipment.getMasterBill())) {
+            verdict = Boolean.FALSE;
+            failureReasons.add("MBL Details missing");
+        }
+        return verdict;
+    }
+
+    private static Boolean validateCarrierDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
+        if (ObjectUtils.isEmpty(shipment.getCarrierDetails())) {
+            verdict = Boolean.FALSE;
+            failureReasons.add("Carrier Details missing");
+        } else if (ObjectUtils.isEmpty(shipment.getCarrierDetails().getEta())) {
+            verdict = Boolean.FALSE;
+            failureReasons.add("Carrier ETA Details missing");
+        }
+        return verdict;
+
+
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> validateInvoicePosting(InvoicePostingValidationRequest request) {
+        Set<UUID> shipmentGuids = request.getShipmentGuids().stream().filter(ObjectUtils::isNotEmpty)
+                .map(UUID::fromString).collect(Collectors.toSet());
+
+        List<ShipmentDetails> shipments = shipmentDao.findShipmentsByGuids(shipmentGuids);
+        List<InvoicePostingValidationResponse> responses = new ArrayList<>();
+
+        shipments.forEach(shipment -> {
+            Boolean verdict = Boolean.TRUE;
+            List<String> failureReasons = new ArrayList<>();
+
+            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())) {
+                if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())) {
+                    if (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType()) || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType())) {
+                        if (Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
+
+                            verdict = validateCarrierDetails(shipment, verdict, failureReasons);
+                            verdict = validateContainerDetails(shipment, verdict, failureReasons);
+                            verdict = validateMblDetails(shipment, verdict, failureReasons);
+
+                        } else if (ObjectUtils.isNotEmpty(shipment.getJobType())) {
+
+                            verdict = validateMblDetails(shipment, verdict, failureReasons);
+
+                        }
+                    }
+                }
+            } else if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipment.getTransportMode())) {
+                if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())) {
+                    if (Constants.SHIPMENT_TYPE_LSE.equalsIgnoreCase(shipment.getShipmentType())) {
+                        if (ObjectUtils.isNotEmpty(shipment.getJobType()) && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
+
+                            verdict = validateCarrierDetails(shipment, verdict, failureReasons);
+                            verdict = validateMblDetails(shipment, verdict, failureReasons);
+
+                        }
+                    }
+                }
+            }
+
+            responses.add(InvoicePostingValidationResponse.builder()
+                    .shipmentGuid(shipment.getGuid().toString())
+                    .failureReasons(failureReasons)
+                    .isEligibleForInvoicing(verdict).build());
+        });
+
+        return ResponseHelper.buildSuccessResponse(responses);
+
+    }
+
+    private Boolean validateContainerDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
+        if (ObjectUtils.isEmpty(shipment.getContainersList()) || !isContainerNumberPresent(shipment.getContainersList())) {
+            verdict = Boolean.FALSE;
+            failureReasons.add("Container Details missing");
+        }
+        return verdict;
+    }
+
+    private boolean isContainerNumberPresent(List<Containers> containersList) {
+        return containersList.stream().allMatch(container -> container.getContainerNumber() != null);
     }
 
     private boolean isForHubRequest(UpdateConsoleShipmentRequest request) {

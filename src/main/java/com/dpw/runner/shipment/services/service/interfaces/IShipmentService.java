@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRe
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -95,4 +96,6 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> getAllShipments(Long consoleId);
 
     ResponseEntity<IRunnerResponse> updateShipments(UpdateConsoleShipmentRequest request) throws RunnerException;
+
+    ResponseEntity<IRunnerResponse> validateInvoicePosting(InvoicePostingValidationRequest request);
 }
