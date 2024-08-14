@@ -272,6 +272,10 @@ public class ReportService implements IReportService {
             cargoManifestAirShipmentReport.setSecurityData(reportRequest.isSecurityData());
         }
 
+        if(report instanceof CSDReport csdReport) {
+            csdReport.setIsConsolidation(reportRequest.isFromConsolidation());
+        }
+
 //        if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {
 //            try {
 //                //dataRetrived = new ReportRepository().getReportDataNewFlow(ReportInfo, ReportId);
@@ -1053,6 +1057,9 @@ public class ReportService implements IReportService {
                     return setDocPages(null,
                         row.getBookingOrder() == null ? adminRow.getBookingOrder() : row.getBookingOrder(), null, row.getBookingOrder() != null, null, null, null);
                 }
+            case ReportConstants.CSD_REPORT:
+                return setDocPages(null,
+                        row.getCsd() == null ? adminRow.getCsd() : row.getCsd(), null, row.getCsd() != null, null, null, null);
             default:
         }
 
