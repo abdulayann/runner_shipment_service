@@ -18,6 +18,8 @@ public class TrackingServiceLiteContainerResponse {
 
     @Getter
     @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class LiteContainer extends ContainerBase {
 
         private String containerNumber;

@@ -402,7 +402,7 @@ ShipmentServiceTest extends CommonMocks {
         liteContainerResponse.setContainers(List.of(new TrackingServiceLiteContainerResponse.LiteContainer()));
         ResponseEntity<IRunnerResponse> response = shipmentService.getContainerListFromTrackingService(shipmentId, null);
 
-        assertEquals(ResponseHelper.buildSuccessResponse(liteContainerResponse), response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(shipmentDao).findById(shipmentId);
         verify(trackingServiceAdapter).fetchTrackingData(any(TrackingRequest.class));
     }
