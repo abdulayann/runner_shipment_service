@@ -1049,6 +1049,11 @@ public abstract class IReport {
         return getShipment(shipmentDetails);
     }
 
+    public ShipmentModel getShipmentByQuery(Long id) {
+        var optional = shipmentDao.findShipmentsByIds(Set.of(id)).stream().findFirst();
+        return getShipment(optional.orElse(null));
+    }
+
     public ShipmentModel getShipment(ShipmentDetails shipmentDetails) {
         if(shipmentDetails == null) return null;
         ShipmentModel shipmentModel = modelMapper.map(shipmentDetails, ShipmentModel.class);
@@ -2317,8 +2322,7 @@ public abstract class IReport {
     public Boolean getIsHbl(ShipmentModel shipmentModel) {
         if(shipmentModel.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
             if(shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
-                Long entityId = shipmentModel.getId();
-                List<Awb> awbList = awbDao.findByShipmentId(entityId);
+                List<Awb> awbList = awbDao.findByShipmentIdByQuery(shipmentModel.getId());
                 String entityType = (Objects.equals(shipmentModel.getJobType(), Constants.SHIPMENT_TYPE_DRT)) ? Constants.DMAWB : Constants.HAWB;
                 if (awbList != null && !awbList.isEmpty()) {
                     if(awbList.get(0).getAwbShipmentInfo().getEntityType().equalsIgnoreCase(entityType))

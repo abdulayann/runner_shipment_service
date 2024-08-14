@@ -121,7 +121,7 @@ class HblReportTest extends CommonMocks {
 
     @Test
     void getDocumentModelWithoutBlObject() {
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
@@ -137,7 +137,7 @@ class HblReportTest extends CommonMocks {
 
     @Test
     void getDocumentModelWithBlObject() {
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));

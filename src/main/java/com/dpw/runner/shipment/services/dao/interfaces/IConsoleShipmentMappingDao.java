@@ -15,7 +15,7 @@ public interface IConsoleShipmentMappingDao {
 
     List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);
 
-    HashSet<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> consoleShipmentMappings, Set<Long> interBranchShipIds);
+    HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> consoleShipmentMappings, Set<Long> interBranchShipIds);
 
     List<Long> detachShipments(Long consolidationId, List<Long> shipIds);
 
@@ -30,4 +30,6 @@ public interface IConsoleShipmentMappingDao {
 
     void updateConsoleShipments(ShipmentRequestedType shipmentRequestedType, Long consoleId, Long shipmentId);
     void deletePendingStateByConsoleId(Long consoleId);
+    void deletePendingStateByShipmentId(Long shipmentId);
+    void deletePendingStateByConsoleIdAndShipmentId(Long consoleId, Long shipmentId);
 }

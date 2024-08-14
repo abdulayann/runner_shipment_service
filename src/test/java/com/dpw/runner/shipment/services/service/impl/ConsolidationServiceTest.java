@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -960,7 +961,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
 
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -970,7 +971,7 @@ import static org.mockito.Mockito.*;
         doNothing().when(containerService).afterSaveList(anyList(),anyBoolean());
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1009,7 +1010,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
 
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1019,7 +1020,7 @@ import static org.mockito.Mockito.*;
         mockShipmentSettings();
         mockTenantSettings();
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableLclConsolidation(true);
-        assertThrows(RunnerException.class, () -> consolidationService.attachShipments(1L, shipmentIds));
+        assertThrows(RunnerException.class, () -> consolidationService.attachShipments(ShipmentRequestedType.REJECT, 1L, shipmentIds));
     }
 
     @Test
@@ -1053,7 +1054,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
 
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1062,7 +1063,7 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1101,7 +1102,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
 
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1110,7 +1111,7 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1129,7 +1130,7 @@ import static org.mockito.Mockito.*;
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.EMPTY_LIST));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.REJECT, 1L, shipmentIds);
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

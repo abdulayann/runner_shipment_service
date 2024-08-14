@@ -8,18 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
@@ -36,11 +25,7 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SpringContext;
@@ -233,6 +218,7 @@ import org.modelmapper.ModelMapper;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -363,11 +349,15 @@ ShipmentServiceTest extends CommonMocks {
     @Mock
     private ApplicationContext applicationContext;
 
+    @Mock
+    private ConsolidationDetails consolidationDetails;
+
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
     private static ShipmentDetails testShipment;
     private static ConsolidationDetails testConsol;
+    private UpdateConsoleShipmentRequest request;
 
     @BeforeAll
     static void init() throws IOException {
@@ -393,6 +383,7 @@ ShipmentServiceTest extends CommonMocks {
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         shipmentService.executorService = Executors.newFixedThreadPool(2);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
+        request = new UpdateConsoleShipmentRequest();
     }
 
     @Test
@@ -5752,6 +5743,374 @@ ShipmentServiceTest extends CommonMocks {
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.shipmentRetrieveWithMeasurmentBasis(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testGetAllShipments_Success_CurrentBranch() {
+        // Setup
+        Long consoleId = 1L;
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setInterBranchConsole(false);
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setRequestedType(null);
+        consoleShipmentMappingList.add(consoleShipmentMapping);
+
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+
+        // Execute
+        ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
+
+        // Verify
+        verify(commonUtils, never()).setInterBranchContextForHub();
+        verify(consolidationDetailsDao).findById(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testGetAllShipments_Success_InterBranch_Push() {
+        // Setup
+        Long consoleId = 1L;
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setInterBranchConsole(false);
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setRequestedType(ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED);
+        consoleShipmentMappingList.add(consoleShipmentMapping);
+
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+
+        // Execute
+        ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
+
+        // Verify
+        verify(commonUtils, never()).setInterBranchContextForHub();
+        verify(consolidationDetailsDao).findById(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testGetAllShipments_Success_InterBranch_Pull() {
+        // Setup
+        Long consoleId = 1L;
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setInterBranchConsole(false);
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED);
+        consoleShipmentMappingList.add(consoleShipmentMapping);
+
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+
+        // Execute
+        ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
+
+        // Verify
+        verify(commonUtils, never()).setInterBranchContextForHub();
+        verify(consolidationDetailsDao).findById(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testGetAllShipments_Success_PendingAttachment_Push() {
+        // Setup
+        Long consoleId = 1L;
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setInterBranchConsole(false);
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setRequestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED);
+        consoleShipmentMappingList.add(consoleShipmentMapping);
+
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+
+        // Execute
+        ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
+
+        // Verify
+        verify(commonUtils, never()).setInterBranchContextForHub();
+        verify(consolidationDetailsDao).findById(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testGetAllShipments_Success_PendingAttachment_Pull() {
+        // Setup
+        Long consoleId = 1L;
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setInterBranchConsole(false);
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
+        consoleShipmentMappingList.add(consoleShipmentMapping);
+
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+
+        // Execute
+        ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
+
+        // Verify
+        verify(commonUtils, never()).setInterBranchContextForHub();
+        verify(consolidationDetailsDao).findById(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+
+    @Test
+    void testGetAllShipments_DataNotFound() {
+        // Setup
+        Long consoleId = 1L;
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.empty());
+
+        // Execute & Assert
+        DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentService.getAllShipments(consoleId);
+        });
+
+        // Verify
+        verify(consolidationDetailsDao).findById(consoleId);
+        verify(consoleShipmentMappingDao, never()).findByConsolidationId(consoleId);
+        verify(commonUtils, never()).setInterBranchContextForHub();
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+    }
+
+    @Test
+    void testUpdateShipments_HubRequest_Approve() throws RunnerException {
+        request.setIsForHub(true);
+        request.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
+        request.setConsoleId(1L);
+        request.setListOfShipments(List.of(1L));
+
+        consolidationDetails.setInterBranchConsole(true);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(testConsol));
+
+        ResponseEntity<IRunnerResponse> response = shipmentService.updateShipments(request);
+
+        verify(consolidationService).attachShipments(ShipmentRequestedType.APPROVE, 1L, List.of(1L));
+        verify(consoleShipmentMappingDao).deletePendingStateByShipmentId(1L);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUpdateShipments_HubRequest_Reject() throws RunnerException {
+        request.setIsForHub(true);
+        request.setShipmentRequestedType(ShipmentRequestedType.REJECT);
+        request.setConsoleId(1L);
+        request.setListOfShipments(List.of(1L));
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        ResponseEntity<IRunnerResponse> response = shipmentService.updateShipments(request);
+
+        verify(consoleShipmentMappingDao).deletePendingStateByConsoleIdAndShipmentId(1L, 1L);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUpdateShipments_HubRequest_Withdraw() throws RunnerException {
+        request.setIsForHub(true);
+        request.setShipmentRequestedType(ShipmentRequestedType.WITHDRAW);
+        request.setConsoleId(1L);
+        request.setListOfShipments(List.of(1L));
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        ResponseEntity<IRunnerResponse> response = shipmentService.updateShipments(request);
+
+        verify(consoleShipmentMappingDao).deletePendingStateByConsoleIdAndShipmentId(1L, 1L);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUpdateShipments_HubRequest_DataRetrievalFailure() {
+        request.setIsForHub(true);
+        request.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+
+        DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentService.updateShipments(request);
+        });
+
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+    }
+
+    @Test
+    void testUpdateShipments_NonHubRequest_Approve() throws RunnerException {
+        request.setIsForHub(null); // Non-hub request
+        request.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
+        request.setConsoleIdsList(List.of(1L));
+        request.setShipmentId(1L);
+
+        ResponseEntity<IRunnerResponse> response = shipmentService.updateShipments(request);
+
+        verify(consolidationService).attachShipments(ShipmentRequestedType.APPROVE, 1L, List.of(1L));
+        verify(consoleShipmentMappingDao).deletePendingStateByShipmentId(1L);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUpdateShipments_NonHubRequest_Reject() throws RunnerException {
+        request.setIsForHub(null);
+        request.setShipmentRequestedType(ShipmentRequestedType.REJECT);
+        request.setConsoleIdsList(List.of(1L));
+        request.setShipmentId(1L);
+
+        ResponseEntity<IRunnerResponse> response = shipmentService.updateShipments(request);
+
+        verify(consoleShipmentMappingDao).deletePendingStateByConsoleIdAndShipmentId(1L, 1L);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUpdateShipments_NonHubRequest_Withdraw() throws RunnerException {
+        request.setIsForHub(null);
+        request.setShipmentRequestedType(ShipmentRequestedType.WITHDRAW);
+        request.setConsoleIdsList(List.of(1L));
+        request.setShipmentId(1L);
+
+        ResponseEntity<IRunnerResponse> response = shipmentService.updateShipments(request);
+
+        verify(consoleShipmentMappingDao).deletePendingStateByConsoleIdAndShipmentId(1L, 1L);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUpdateShipments_NonHubRequest_InvalidDataException() {
+        request.setIsForHub(null);
+        request.setConsoleIdsList(null); // Invalid data
+        request.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
+        request.setShipmentId(1L);
+
+        InvalidDataAccessApiUsageException exception = assertThrows(InvalidDataAccessApiUsageException.class, () -> {
+            shipmentService.updateShipments(request);
+        });
+
+        assertEquals("Console Ids list should not be empty!!!", exception.getMessage());
+    }
+
+    @Test
+    void testUpdateShipments_NonHubRequest_InvalidDataException2() {
+        request.setIsForHub(null);
+        request.setConsoleIdsList(List.of()); // Invalid data
+        request.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
+        request.setShipmentId(1L);
+
+        InvalidDataAccessApiUsageException exception = assertThrows(InvalidDataAccessApiUsageException.class, () -> {
+            shipmentService.updateShipments(request);
+        });
+
+        assertEquals("Console Ids list should not be empty!!!", exception.getMessage());
+    }
+
+    @Test
+    void testUpdateShipments_HubRequest_AttachShipmentsThrowsRunnerException() throws RunnerException {
+        request.setIsForHub(true);
+        request.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
+        request.setConsoleId(1L);
+        request.setListOfShipments(List.of(1L));
+
+        consolidationDetails.setInterBranchConsole(true);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        doThrow(new RunnerException("Mocked RunnerException")).when(consolidationService).attachShipments(any(), anyLong(), anyList());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            shipmentService.updateShipments(request);
+        });
+
+        assertNotNull(exception.getCause());
+        assertTrue(exception.getCause() instanceof RunnerException);
+        assertEquals("Mocked RunnerException", exception.getCause().getMessage());
+
+        verify(consoleShipmentMappingDao, never()).deletePendingStateByShipmentId(anyLong());
+    }
+
+    @Test
+    void testGetAllShipments_HubRequest_SetInterBranchContextForHub_True() {
+        // Arrange
+        Long consoleId = 1L;
+
+        when(consolidationDetails.getInterBranchConsole()).thenReturn(true);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        // Act
+        shipmentService.getAllShipments(consoleId);
+
+        // Assert
+        verify(commonUtils).setInterBranchContextForHub();
+    }
+
+    @Test
+    void testGetAllShipments_HubRequest_SetInterBranchContextForHub_False() {
+        // Arrange
+        Long consoleId = 1L;
+
+        when(consolidationDetails.getInterBranchConsole()).thenReturn(false);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        // Act
+        shipmentService.getAllShipments(consoleId);
+
+        // Assert
+        verify(commonUtils, never()).setInterBranchContextForHub();
+    }
+
+    @Test
+    void testUpdateShipments_HubRequest_SetInterBranchContextForHub_True() throws RunnerException {
+        // Arrange
+        request.setIsForHub(true);
+        request.setConsoleId(1L);
+
+        when(consolidationDetails.getInterBranchConsole()).thenReturn(true);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        // Act
+        shipmentService.updateShipments(request);
+
+        // Assert
+        verify(commonUtils).setInterBranchContextForHub();
+    }
+
+    @Test
+    void testUpdateShipments_HubRequest_SetInterBranchContextForHub_False() throws RunnerException {
+        // Arrange
+        request.setIsForHub(true);
+        request.setConsoleId(1L);
+
+        when(consolidationDetails.getInterBranchConsole()).thenReturn(false);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        // Act
+        shipmentService.updateShipments(request);
+
+        // Assert
+        verify(commonUtils, never()).setInterBranchContextForHub();
     }
 
 }

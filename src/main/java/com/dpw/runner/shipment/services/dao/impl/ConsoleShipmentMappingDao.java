@@ -61,7 +61,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public HashSet<Long> assignShipments(Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchShipIds) {
+    public HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchShipIds) {
         if(mappings == null)
             mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
@@ -82,7 +82,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 } else {
                     entity.setIsAttachmentDone(true);
                 }
-                save(entity);
+                if(shipmentRequestedType != null) {
+                    consoleShipmentsMappingRepository.updateConsoleShipmentStatus(shipmentRequestedType.getValue(), consolidationId, id);
+                } else {
+                    save(entity);
+                }
             }
         }
         return shipmentIds;
@@ -133,5 +137,17 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     @Transactional
     public void deletePendingStateByConsoleId(Long consoleId) {
         consoleShipmentsMappingRepository.deletePendingStateByConsoleId(consoleId);
+    }
+
+    @Override
+    @Transactional
+    public void deletePendingStateByShipmentId(Long shipmentId) {
+        consoleShipmentsMappingRepository.deletePendingStateByShipmentId(shipmentId);
+    }
+
+    @Override
+    @Transactional
+    public void deletePendingStateByConsoleIdAndShipmentId(Long consoleId, Long shipmentId) {
+        consoleShipmentsMappingRepository.deletePendingStateByConsoleIdAndShipmentId(consoleId, shipmentId);
     }
 }

@@ -13,8 +13,10 @@ import java.util.List;
 @NoArgsConstructor
 public class UpdateConsoleShipmentRequest implements IRunnerRequest{
 
-    private boolean isForHub;
+    private Boolean isForHub;
     private Long consoleId;
+    private List<Long> consoleIdsList;
+    private Long shipmentId;
     private List<Long> listOfShipments;
     private ShipmentRequestedType shipmentRequestedType;
 }

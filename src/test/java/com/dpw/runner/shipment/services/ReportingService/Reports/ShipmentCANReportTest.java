@@ -520,7 +520,7 @@ class ShipmentCANReportTest extends CommonMocks {
 
     @Test
     void getDocumentModel() throws RunnerException {
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(SEA);
         shipmentModel.setDirection(EXP);
@@ -538,7 +538,7 @@ class ShipmentCANReportTest extends CommonMocks {
 
     @Test
     void getDocumentModelAir() throws RunnerException {
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(AIR);
         shipmentModel.setDirection(EXP);
@@ -553,7 +553,7 @@ class ShipmentCANReportTest extends CommonMocks {
 
         Awb awb = new Awb();
         awb.setAwbShipmentInfo(AwbShipmentInfo.builder().entityType(HAWB).build());
-        when(awbDao.findByShipmentId(any())).thenReturn(Arrays.asList(awb));
+//        when(awbDao.findByShipmentIdList(any())).thenReturn(Arrays.asList(awb));
         mockTenantSettings();
         assertNotNull(shipmentCANReport.getDocumentModel(123L));
         assert (true);
