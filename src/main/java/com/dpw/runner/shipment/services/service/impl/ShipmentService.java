@@ -3935,12 +3935,15 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationIdAll(request.getConsolidationId());
+        List<Long> excludeShipments = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
 
         if(request.getFilterCriteria() != null && request.getFilterCriteria().isEmpty()){
             request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
         }
         ListCommonRequest defaultRequest;
         defaultRequest = CommonUtils.andCriteria(Constants.TRANSPORT_MODE, consolidationDetails.getTransportMode(), "=", request);
+        defaultRequest = CommonUtils.andCriteria("id", excludeShipments, "NOTIN", defaultRequest);
         if(!Objects.isNull(consolidationDetails.getCarrierDetails().getOriginPort()))
             CommonUtils.andCriteria(Constants.ORIGIN_PORT, consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
         else
