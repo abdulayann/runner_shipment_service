@@ -4722,7 +4722,7 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    private static Boolean validateMblDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
+    public Boolean validateMblDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
         if (ObjectUtils.isEmpty(shipment.getMasterBill())) {
             verdict = Boolean.FALSE;
             failureReasons.add("MBL Details missing");
@@ -4730,7 +4730,7 @@ public class ShipmentService implements IShipmentService {
         return verdict;
     }
 
-    private static Boolean validateCarrierDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
+    public Boolean validateCarrierDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
         if (ObjectUtils.isEmpty(shipment.getCarrierDetails())) {
             verdict = Boolean.FALSE;
             failureReasons.add("Carrier Details missing");
@@ -4739,8 +4739,6 @@ public class ShipmentService implements IShipmentService {
             failureReasons.add("Carrier ETA Details missing");
         }
         return verdict;
-
-
     }
 
     @Override
@@ -4774,7 +4772,7 @@ public class ShipmentService implements IShipmentService {
             } else if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipment.getTransportMode())) {
                 if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())) {
                     if (Constants.SHIPMENT_TYPE_LSE.equalsIgnoreCase(shipment.getShipmentType())) {
-                        if (ObjectUtils.isNotEmpty(shipment.getJobType()) && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
+                        if (ObjectUtils.isNotEmpty(shipment.getJobType())) {
 
                             verdict = validateCarrierDetails(shipment, verdict, failureReasons);
                             verdict = validateMblDetails(shipment, verdict, failureReasons);
@@ -4794,7 +4792,7 @@ public class ShipmentService implements IShipmentService {
 
     }
 
-    private Boolean validateContainerDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
+    public Boolean validateContainerDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
         if (ObjectUtils.isEmpty(shipment.getContainersList()) || !isContainerNumberPresent(shipment.getContainersList())) {
             verdict = Boolean.FALSE;
             failureReasons.add("Container Details missing");
