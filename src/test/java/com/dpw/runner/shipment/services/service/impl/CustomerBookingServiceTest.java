@@ -1205,7 +1205,8 @@ class CustomerBookingServiceTest extends CommonMocks {
 //        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
         mockTenantSettings();
         // Test
-        assertThrows(ValidationException.class, () -> customerBookingService.update(CommonRequestModel.builder().data(request).build()));
+        var req = CommonRequestModel.builder().data(request).build();
+        assertThrows(ValidationException.class, () -> customerBookingService.update(req));
     }
 
     @Test
@@ -1234,7 +1235,8 @@ class CustomerBookingServiceTest extends CommonMocks {
 //        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
         mockTenantSettings();
         // Test
-        assertThrows(ValidationException.class, () -> customerBookingService.update(CommonRequestModel.builder().data(request).build()));
+        var req = CommonRequestModel.builder().data(request).build();
+        assertThrows(ValidationException.class, () -> customerBookingService.update(req));
     }
 
     @Test
@@ -1263,7 +1265,8 @@ class CustomerBookingServiceTest extends CommonMocks {
 //        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
         mockTenantSettings();
         // Test
-        assertThrows(ValidationException.class, () -> customerBookingService.update(CommonRequestModel.builder().data(request).build()));
+        var req = CommonRequestModel.builder().data(request).build();
+        assertThrows(ValidationException.class, () -> customerBookingService.update(req));
     }
 
     @Test
