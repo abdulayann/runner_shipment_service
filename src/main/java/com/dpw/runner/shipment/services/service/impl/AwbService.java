@@ -521,7 +521,7 @@ public class AwbService implements IAwbService {
             }
 
             // map mawb and hawb affter suuccessful save
-            LinkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
+            linkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
             log.info("MAWB created successfully for Id {} with Request Id {}", awb.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1092,7 +1092,7 @@ public class AwbService implements IAwbService {
         return awbOtherInfo;
     }
 
-    private void LinkHawbMawb(Awb mawb, List<Awb> awbList, Boolean isInterBranchConsole) throws RunnerException {
+    private void linkHawbMawb(Awb mawb, List<Awb> awbList, Boolean isInterBranchConsole) throws RunnerException {
         if (Boolean.TRUE.equals(isInterBranchConsole))
             commonUtils.setInterBranchContextForHub();
         for (var awb : awbList) {
@@ -1687,7 +1687,7 @@ public class AwbService implements IAwbService {
                     awb.setAwbPaymentInfo(resetAwb.getAwbPaymentInfo());
                     awb.setAwbSpecialHandlingCodesMappings(resetAwb.getAwbSpecialHandlingCodesMappings());
                     // Link
-                    LinkHawbMawb(awb, awbList, consolidationDetails.get().getInterBranchConsole());
+                    linkHawbMawb(awb, awbList, consolidationDetails.get().getInterBranchConsole());
                     awb.setPrintType(printType);
                     if(awbList != null && !awbList.isEmpty())
                         updateSciFieldFromMawb(awb, awbList);
