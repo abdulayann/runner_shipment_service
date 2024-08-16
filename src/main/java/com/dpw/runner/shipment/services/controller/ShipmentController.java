@@ -580,6 +580,18 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = RunnerResponse.class)})
+    @GetMapping(value = ShipmentConstants.GET_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> getContainerListFromTrackingService(
+            @RequestParam(required = false) Long shipmentId,
+            @RequestParam(required = false) Long consolidationId) {
+        try {
+            return shipmentService.getContainerListFromTrackingService(shipmentId, consolidationId);
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_CONSOLE_SHIPMENT_LIST)
     public ResponseEntity<IRunnerResponse> consoleShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = true) Long consoleId, @RequestParam(required = true) boolean isAttached) {

@@ -1,12 +1,12 @@
-package com.dpw.runner.shipment.services.dto.TrackingService;
+package com.dpw.runner.shipment.services.dto.trackingservice;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Builder
@@ -29,39 +29,12 @@ public class TrackingServiceApiResponse {
         private String containerNumber;
         private String identifierType;
         private String identifierValue;
-        private Container2 container;
+        @JsonProperty("container")
+        private ContainerBase containerBase;
         private Journey journey;
         private List<Place> places;
         private List<Transport> transports;
         private List<Event> events;
-    }
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Container2
-    {
-        private String type;
-        private String size;
-        private String typeIsoCode;
-        private Object bolNumber;
-        private Object bookingNumber;
-        private Object sealNumber;
-        private Object marks;
-        private Object incoterm;
-        private Object shipper;
-        private Object consignee;
-        private String weight;
-        private String weightUom;
-        private String numberOfPackages;
-        private String packageType;
-        private Object reeferTemperature;
-        private Object commodity;
-        private Object latitude;
-        private Object longitude;
-        private Object location;
-        private Object locationUpdateTime;
     }
 
     @Data

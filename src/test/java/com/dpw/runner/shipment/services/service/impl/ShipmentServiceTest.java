@@ -8,7 +8,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
@@ -25,7 +38,12 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.Criteria;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SpringContext;
@@ -62,8 +80,6 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleIdDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.TrackingService.TrackingServiceApiResponse;
-import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
@@ -85,10 +101,29 @@ import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
+import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
+import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.ContainerBase;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -368,6 +403,96 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.executorService = Executors.newFixedThreadPool(2);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
         request = new UpdateConsoleShipmentRequest();
+    }
+
+    @Test
+    void testGetContainerListFromTrackingService_Success() throws RunnerException {
+        Long shipmentId = 1L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentId("shipment-1");
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        Container container = new Container();
+        container.setContainerBase(new ContainerBase());
+        List<Container> containers = List.of(container);
+        TrackingServiceApiResponse trackingResponse = new TrackingServiceApiResponse();
+        trackingResponse.setContainers(containers);
+        when(trackingServiceAdapter.fetchTrackingData(any(TrackingRequest.class))).thenReturn(trackingResponse);
+
+        TrackingServiceLiteContainerResponse liteContainerResponse = new TrackingServiceLiteContainerResponse();
+        liteContainerResponse.setContainers(List.of(new TrackingServiceLiteContainerResponse.LiteContainer()));
+        ResponseEntity<IRunnerResponse> response = shipmentService.getContainerListFromTrackingService(shipmentId, null);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(shipmentDao).findById(shipmentId);
+        verify(trackingServiceAdapter).fetchTrackingData(any(TrackingRequest.class));
+    }
+
+    @Test
+    void testGetContainerListFromTrackingService_EmptyRequest() {
+        assertThrows(RunnerException.class, () -> {
+            shipmentService.getContainerListFromTrackingService(null, null);
+        });
+    }
+
+    @Test
+    void testGetContainerListFromTrackingService_ShipmentNotFound() {
+        Long shipmentId = 1L;
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+
+        assertThrows(RunnerException.class, () -> shipmentService.getContainerListFromTrackingService(shipmentId, null));
+    }
+
+    @Test
+    void testGetContainerListFromTrackingService_ConsolidationNotFound() {
+        Long consolidationId = 1L;
+        when(consoleShipmentMappingDao.findByConsolidationId(consolidationId)).thenReturn(List.of());
+
+        assertThrows(RunnerException.class, () -> {
+            shipmentService.getContainerListFromTrackingService(null, consolidationId);
+        });
+    }
+
+    @Test
+    void testGetContainerListFromTrackingService_SuccessWithConsolidationId() throws RunnerException {
+        Long consolidationId = 1L;
+        Long shipmentId = 2L;
+        ConsoleShipmentMapping mapping = new ConsoleShipmentMapping();
+        mapping.setShipmentId(shipmentId);
+        when(consoleShipmentMappingDao.findByConsolidationId(consolidationId)).thenReturn(List.of(mapping));
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentId("shipment-2");
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        List<Container> containers = List.of(new Container());
+        TrackingServiceApiResponse trackingResponse = new TrackingServiceApiResponse();
+        trackingResponse.setContainers(containers);
+        when(trackingServiceAdapter.fetchTrackingData(any(TrackingRequest.class))).thenReturn(trackingResponse);
+
+        ResponseEntity<IRunnerResponse> response = shipmentService.getContainerListFromTrackingService(null, consolidationId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(consoleShipmentMappingDao).findByConsolidationId(consolidationId);
+        verify(shipmentDao).findById(shipmentId);
+        verify(trackingServiceAdapter).fetchTrackingData(any(TrackingRequest.class));
+    }
+
+    @Test
+    void testGetContainerListFromTrackingService_FailedTrackingService() throws RunnerException {
+        Long shipmentId = 1L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentId("shipment-1");
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        when(trackingServiceAdapter.fetchTrackingData(any(TrackingRequest.class))).thenThrow(new RuntimeException("Tracking service failed"));
+
+        assertThrows(RunnerException.class, () -> {
+            shipmentService.getContainerListFromTrackingService(shipmentId, null);
+        });
+
+        verify(shipmentDao).findById(shipmentId);
+        verify(trackingServiceAdapter).fetchTrackingData(any(TrackingRequest.class));
     }
 
     @Test

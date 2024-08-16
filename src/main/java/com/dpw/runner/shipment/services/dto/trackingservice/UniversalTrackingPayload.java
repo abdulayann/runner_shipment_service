@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.TrackingService;
+package com.dpw.runner.shipment.services.dto.trackingservice;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

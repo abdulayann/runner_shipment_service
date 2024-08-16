@@ -366,6 +366,28 @@ public class DbAccessHelper {
                 }
                 return criteriaBuilder.in(path.get(fieldName))
                         .value(input.getValue());
+            case "NOTIN":
+                if (dataType.isAssignableFrom(UUID.class) && input.getValue() != null && input.getValue() instanceof List) {
+                    List<UUID> querySet = ((List<?>) input.getValue()).stream()
+                            .map(i -> {
+                                if (i instanceof String string)
+                                    return UUID.fromString(string);
+                                return (UUID) i;
+                            }).toList();
+                    return criteriaBuilder.in(path.get(fieldName)).value(querySet).not();
+                }
+                if (dataType.isAssignableFrom(Long.class) && input.getValue() != null && input.getValue() instanceof List) {
+                    List<Long> querySet = ((List<?>) input.getValue()).stream()
+                            .map(i -> Long.valueOf(String.valueOf(i))).toList();
+                    return criteriaBuilder.in(path.get(fieldName)).value(querySet).not();
+                }
+                if (dataType.isEnum()) {
+                    List<Enum> querySet = ((List<?>) input.getValue()).stream()
+                            .map(i -> getEnum(dataType.getName(), String.valueOf(i))).collect(Collectors.toList());
+                    return criteriaBuilder.in(path.get(fieldName)).value(querySet).not();
+                }
+                return criteriaBuilder.in(path.get(fieldName))
+                        .value(input.getValue()).not();
             case "CONTAINS":
                 if (dataType.isAssignableFrom(List.class))
                     return criteriaBuilder.isMember(input.getValue(), path.get(fieldName));

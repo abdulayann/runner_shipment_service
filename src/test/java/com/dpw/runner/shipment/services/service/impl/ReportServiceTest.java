@@ -147,6 +147,9 @@ class ReportServiceTest {
     @Mock
     private TransportOrderReport transportOrderReport;
 
+    @Mock
+    private CSDReport csdReport;
+
     private final String path = "src/test/java/com/dpw/runner/shipment/services/files/";
 
     @BeforeAll
@@ -2727,5 +2730,33 @@ class ReportServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
+    }
+
+    @Test
+    void test_CSDReport_shipment_throwsException() throws DocumentException, RunnerException, IOException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setDeliveryOrder("122456789");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setDeliveryOrder("12345622789");
+        shipmentSettingsDetails2.setTransportInstructionPickupOrder("12312113");
+        shipmentSettingsDetails2.setTransportInstructionDeliveryOrder("12323123");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportInfo(ReportConstants.CSD_REPORT);
+        reportRequest.setReportId("12");
+        reportRequest.setFromConsolidation(false);
+
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(csdReport);
+//        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+//        when(jsonHelper.convertToJson(any())).thenReturn("");
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        assertThrows(ValidationException.class , () -> reportService.getDocumentData(commonRequestModel));
     }
 }
