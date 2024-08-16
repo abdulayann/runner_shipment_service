@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -702,7 +703,7 @@ import static org.mockito.Mockito.*;
         mockShipmentSettings();
         mockTenantSettings();
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableLclConsolidation(true);
-        assertThrows(NoTransactionException.class, () -> spyService.completeUpdate(commonRequestModel));
+        assertThrows(RunnerException.class, () -> spyService.completeUpdate(commonRequestModel));
     }
 
     @Test
@@ -740,7 +741,7 @@ import static org.mockito.Mockito.*;
         mockShipmentSettings();
         mockTenantSettings();
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableLclConsolidation(true);
-        assertThrows(NoTransactionException.class, () -> spyService.completeUpdate(commonRequestModel));
+        assertThrows(RunnerException.class, () -> spyService.completeUpdate(commonRequestModel));
     }
 
     @Test
@@ -1435,9 +1436,10 @@ import static org.mockito.Mockito.*;
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsRequest.class);
         copy.setEfreightStatus("newEfreightStatus");
         commonRequestModel.setData(copy);
-
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.CONSOLIDATIONS_AIR_INTER_BRANCH, true));
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
         consolidationDetails.setEfreightStatus("newEfreightStatus");
+        consolidationDetails.setInterBranchConsole(true);
         ConsolidationDetailsResponse expectedResponse = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsResponse.class);
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         oldEntity.getCarrierDetails().setShippingLine("ABC Airline");
@@ -1481,6 +1483,47 @@ import static org.mockito.Mockito.*;
 
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
+    }
+
+    @Test
+    void testCompleteUpdate_Failure_Air_WithInterBrnachPermission() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsRequest.class);
+        copy.setEfreightStatus("newEfreightStatus");
+        commonRequestModel.setData(copy);
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.CONSOLIDATIONS_AIR_INTER_BRANCH, false));
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setEfreightStatus("newEfreightStatus");
+        consolidationDetails.setInterBranchConsole(true);
+        ConsolidationDetailsResponse expectedResponse = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsResponse.class);
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        oldEntity.getCarrierDetails().setShippingLine("ABC Airline");
+
+        Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
+        EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
+        keyMasterDataMap.put("20GP", containerTypeMasterData);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setIataTactFlag(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
+                .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        Mockito.doReturn(Optional.of(oldEntity)).when(spyService).retrieveByIdOrGuid(any());
+        when(jsonHelper.convertValue(oldEntity, ConsolidationDetails.class)).thenReturn(oldEntity);
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(jsonHelper.convertToJson(oldEntity)).thenReturn("");
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(awb));
+        mockShipmentSettings();
+        mockTenantSettings();
+        assertThrows(RunnerException.class, () -> spyService.completeUpdate(commonRequestModel));
     }
 
     @Test
