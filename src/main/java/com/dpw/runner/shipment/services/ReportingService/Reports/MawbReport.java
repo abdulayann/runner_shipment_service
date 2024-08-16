@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
@@ -13,6 +15,8 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +37,7 @@ public class MawbReport extends IReport {
     private ConsolidationService consolidationService;
 
     public boolean isDMawb;
-
+    private V1TenantSettingsResponse tenantSettings;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -43,40 +47,48 @@ public class MawbReport extends IReport {
     }
 
     public void validatePrinting(Long id) {
-        Boolean validPrinting = Boolean.TRUE;
-        List<String> failureReasons = new ArrayList<>();
-        if (!isDMawb) {
-            ConsolidationDetails consolidation = getConsolidationsById(id);
-            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidation.getTransportMode())
-                    && Constants.DIRECTION_EXP.equalsIgnoreCase(consolidation.getShipmentType())
-                    && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(consolidation.getContainerCategory())
-                        || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(consolidation.getShipmentType()))
-                    && ObjectUtils.isNotEmpty(consolidation.getConsolidationType())
-                    && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(consolidation.getConsolidationType())) {
 
-                            validPrinting = consolidationService.validateCarrierDetails(consolidation, validPrinting, failureReasons);
-                            validPrinting = consolidationService.validateContainerDetails(consolidation, validPrinting, failureReasons);
-
-                        }
-
-
-        } else {
-            ShipmentDetails shipment = getShipmentDetails(id);
-            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                    && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
-                    && ((Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
-                        || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType())))
-                    && ObjectUtils.isNotEmpty(shipment.getJobType())
-                    && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
-
-                            validPrinting = shipmentService.validateCarrierDetails(shipment, validPrinting, failureReasons);
-                            validPrinting = shipmentService.validateContainerDetails(shipment, validPrinting, failureReasons);
-
-            }
+        if (tenantSettings == null) {
+            tenantSettings = getCurrentTenantSettings();
         }
 
-        if (validPrinting.equals(Boolean.FALSE)) {
-            throw new ReportException(String.join(" -", failureReasons));
+        if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
+
+            List<ModuleValidationFieldType> missingFields = new ArrayList<>();
+            if (!isDMawb) {
+                ConsolidationDetails consolidation = getConsolidationsById(id);
+                Optional.ofNullable(consolidation).orElseThrow(() -> new ReportException("No consolidation found with id: " + id));
+
+                if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidation.getTransportMode())
+                        && Constants.DIRECTION_EXP.equalsIgnoreCase(consolidation.getShipmentType())
+                        && Constants.CARGO_TYPE_LSE.equalsIgnoreCase(consolidation.getContainerCategory())
+                        && Constants.CONSOLIDATION_TYPE_DRT.equalsIgnoreCase(consolidation.getConsolidationType())) {
+
+                    consolidationService.validateCarrierDetails(consolidation, missingFields);
+                    consolidationService.validateContainerDetails(consolidation, missingFields);
+
+                }
+            } else {
+                ShipmentDetails shipment = getShipmentDetails(id);
+                Optional.ofNullable(shipment).orElseThrow(() -> new ReportException("No shipment found with id: " + id));
+
+                if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipment.getTransportMode())
+                        && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                        && Constants.CARGO_TYPE_LSE.equalsIgnoreCase(shipment.getShipmentType())
+                        && Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
+
+                    shipmentService.validateCarrierDetails(shipment, missingFields);
+                    shipmentService.validateContainerDetails(shipment, missingFields);
+
+                }
+            }
+
+            if (ObjectUtils.isNotEmpty(missingFields)) {
+                String missingFieldsDescription = missingFields.stream()
+                        .map(ModuleValidationFieldType::getDescription)
+                        .collect(Collectors.joining(" | "));
+                throw new ReportException(missingFieldsDescription);
+            }
         }
     }
 

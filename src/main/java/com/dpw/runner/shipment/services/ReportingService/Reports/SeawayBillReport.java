@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelpe
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
@@ -33,11 +34,15 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@NoArgsConstructor
 public class SeawayBillReport extends IReport {
 
     public static final String GROSS_VOLUME_ALIAS = "GrossVolume";
@@ -59,6 +64,8 @@ public class SeawayBillReport extends IReport {
     @Autowired
     private ShipmentService shipmentService;
 
+    private V1TenantSettingsResponse tenantSettings;
+
     @Override
     public Map<String, Object> getData(Long id) {
         validatePrinting(id);
@@ -67,23 +74,34 @@ public class SeawayBillReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId) {
-        Boolean validPrinting = Boolean.TRUE;
-        List<String> failureReasons = new ArrayList<>();
-        ShipmentDetails shipment = getShipmentDetails(shipmentId);
-        if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
-                && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+
+        if (tenantSettings == null) {
+            tenantSettings = getCurrentTenantSettings();
+        }
+
+        if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
+            List<ModuleValidationFieldType> missingFields = new ArrayList<>();
+            ShipmentDetails shipment = getShipmentDetails(shipmentId);
+            Optional.ofNullable(shipment).orElseThrow(() -> new ReportException("No shipment found with id: " + shipmentId));
+
+            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+                    && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                    && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
                     || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))
-                && ObjectUtils.isNotEmpty(shipment.getJobType())
-                && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
+                    && ObjectUtils.isNotEmpty(shipment.getJobType())
+                    && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
 
-                        validPrinting = shipmentService.validateCarrierDetails(shipment, validPrinting, failureReasons);
-                        validPrinting = shipmentService.validateContainerDetails(shipment, validPrinting, failureReasons);
+                shipmentService.validateCarrierDetails(shipment, missingFields);
+                shipmentService.validateContainerDetails(shipment, missingFields);
 
-                    }
+            }
 
-        if (validPrinting.equals(Boolean.FALSE)) {
-            throw new ReportException(String.join(" -", failureReasons));
+            if (ObjectUtils.isNotEmpty(missingFields)) {
+                String missingFieldsDescription = missingFields.stream()
+                        .map(ModuleValidationFieldType::getDescription)
+                        .collect(Collectors.joining(" | "));
+                throw new ReportException(missingFieldsDescription);
+            }
         }
     }
 
@@ -137,21 +155,30 @@ public class SeawayBillReport extends IReport {
 
 
         if (model.shipment.getShipmentContainersList() != null) {
-            V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-            List<Map<String, Object>> values = jsonHelper.convertValue(model.shipment.getShipmentContainersList(), new TypeReference<>() {});
+            if (tenantSettings == null) {
+                tenantSettings = getCurrentTenantSettings();
+            }
+            List<Map<String, Object>> values = jsonHelper.convertValue(model.shipment.getShipmentContainersList(), new TypeReference<>() {
+            });
             values.forEach(v -> {
-                if (v.get(GROSS_WEIGHT) != null && v.get(GROSS_WEIGHT).toString() != null)
-                    v.put(GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(GROSS_WEIGHT), v1TenantSettingsResponse));
-                if (v.get(NET_WEIGHT) != null && v.get(NET_WEIGHT).toString() != null)
-                    v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
-                if (v.get(NOOF_PACKAGES) != null && v.get(NOOF_PACKAGES).toString() != null)
-                    v.put(NOOF_PACKAGES, GetDPWWeightVolumeFormat((BigDecimal) v.get(NOOF_PACKAGES), 0, v1TenantSettingsResponse));
-                if (v.get(GROSS_VOLUME_ALIAS) != null && v.get(GROSS_VOLUME_ALIAS).toString() != null)
+                if (v.get(GROSS_WEIGHT) != null && v.get(GROSS_WEIGHT).toString() != null) {
+                    v.put(GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(GROSS_WEIGHT), tenantSettings));
+                }
+                if (v.get(NET_WEIGHT) != null && v.get(NET_WEIGHT).toString() != null) {
+                    v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), tenantSettings));
+                }
+                if (v.get(NOOF_PACKAGES) != null && v.get(NOOF_PACKAGES).toString() != null) {
+                    v.put(NOOF_PACKAGES, GetDPWWeightVolumeFormat((BigDecimal) v.get(NOOF_PACKAGES), 0, tenantSettings));
+                }
+                if (v.get(GROSS_VOLUME_ALIAS) != null && v.get(GROSS_VOLUME_ALIAS).toString() != null) {
                     v.put(GROSS_VOLUME_ALIAS, addCommas(v.get(GROSS_VOLUME_ALIAS).toString()));
-                if (v.get(BL_GROSS_VOLUME_ALIAS) != null && v.get(BL_GROSS_VOLUME_ALIAS).toString() != null)
+                }
+                if (v.get(BL_GROSS_VOLUME_ALIAS) != null && v.get(BL_GROSS_VOLUME_ALIAS).toString() != null) {
                     v.put(BL_GROSS_VOLUME_ALIAS, addCommas(v.get(BL_GROSS_VOLUME_ALIAS).toString()));
-                if (v.get(BL_GROSS_WEIGHT_ALIAS) != null && v.get(BL_GROSS_WEIGHT_ALIAS).toString() != null)
-                    v.put(BL_GROSS_WEIGHT_ALIAS, ConvertToWeightNumberFormat(v.get(BL_GROSS_WEIGHT_ALIAS), v1TenantSettingsResponse));
+                }
+                if (v.get(BL_GROSS_WEIGHT_ALIAS) != null && v.get(BL_GROSS_WEIGHT_ALIAS).toString() != null) {
+                    v.put(BL_GROSS_WEIGHT_ALIAS, ConvertToWeightNumberFormat(v.get(BL_GROSS_WEIGHT_ALIAS), tenantSettings));
+                }
             });
             dict.put("ShipmentContainers", values);
         }

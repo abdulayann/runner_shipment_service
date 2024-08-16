@@ -136,6 +136,7 @@ public class Constants {
     public static final String SHIPMENT_TYPE_LSE = "LSE";
     public static final String SHIPMENT_TYPE_BLK = "BLK";
     public static final String CARGO_TYPE_FCL = "FCL";
+    public static final String CARGO_TYPE_LSE = "LSE";
     public static final String DIRECTION_EXP = "EXP";
     public static final String JOB_TYPE_CLB = "CLB";
     public static final String DIRECTION_IMP = "IMP";
@@ -231,6 +232,7 @@ public class Constants {
 
     public static final String IMP = "IMP";
     public static final String SHIPMENT_TYPE_DRT = "DRT";
+    public static final String CONSOLIDATION_TYPE_DRT = "DRT";
 
     public static final String METRIC_TON = "MT";
     public static final String METRE = "M";

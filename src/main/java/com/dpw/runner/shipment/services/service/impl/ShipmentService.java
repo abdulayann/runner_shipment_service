@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -4810,23 +4811,18 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    public Boolean validateMblDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
+    public void validateMblDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
         if (ObjectUtils.isEmpty(shipment.getMasterBill())) {
-            verdict = Boolean.FALSE;
-            failureReasons.add("MBL Details missing");
+            missingFields.add(ModuleValidationFieldType.MAWB_DETAILS);
         }
-        return verdict;
     }
 
-    public Boolean validateCarrierDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
+    public void validateCarrierDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
         if (ObjectUtils.isEmpty(shipment.getCarrierDetails())) {
-            verdict = Boolean.FALSE;
-            failureReasons.add("Carrier Details missing");
+            missingFields.add(ModuleValidationFieldType.CARRIER);
         } else if (ObjectUtils.isEmpty(shipment.getCarrierDetails().getEta())) {
-            verdict = Boolean.FALSE;
-            failureReasons.add("Carrier ETA Details missing");
+            missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
         }
-        return verdict;
     }
 
     @Override
@@ -4838,54 +4834,47 @@ public class ShipmentService implements IShipmentService {
         List<InvoicePostingValidationResponse> responses = new ArrayList<>();
 
         shipments.forEach(shipment -> {
-            Boolean verdict = Boolean.TRUE;
-            List<String> failureReasons = new ArrayList<>();
+            List<ModuleValidationFieldType> missingFields = new ArrayList<>();
 
             if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())) {
-                if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())) {
-                    if (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType()) || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType())) {
-                        if (Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
+                if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                        && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+                        || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))) {
+                    if (Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
 
-                            verdict = validateCarrierDetails(shipment, verdict, failureReasons);
-                            verdict = validateContainerDetails(shipment, verdict, failureReasons);
-                            verdict = validateMblDetails(shipment, verdict, failureReasons);
+                        validateCarrierDetails(shipment, missingFields);
+                        validateContainerDetails(shipment, missingFields);
+                        validateMblDetails(shipment, missingFields);
 
-                        } else if (ObjectUtils.isNotEmpty(shipment.getJobType())) {
+                    } else if (ObjectUtils.isNotEmpty(shipment.getJobType())) {
 
-                            verdict = validateMblDetails(shipment, verdict, failureReasons);
+                        validateMblDetails(shipment, missingFields);
 
-                        }
                     }
                 }
-            } else if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipment.getTransportMode())) {
-                if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())) {
-                    if (Constants.SHIPMENT_TYPE_LSE.equalsIgnoreCase(shipment.getShipmentType())) {
-                        if (ObjectUtils.isNotEmpty(shipment.getJobType())) {
+            } else if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipment.getTransportMode())
+                    && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                    && Constants.SHIPMENT_TYPE_LSE.equalsIgnoreCase(shipment.getShipmentType())
+                    && ObjectUtils.isNotEmpty(shipment.getJobType())) {
 
-                            verdict = validateCarrierDetails(shipment, verdict, failureReasons);
-                            verdict = validateMblDetails(shipment, verdict, failureReasons);
+                validateCarrierDetails(shipment, missingFields);
+                validateMblDetails(shipment, missingFields);
 
-                        }
-                    }
-                }
             }
 
             responses.add(InvoicePostingValidationResponse.builder()
                     .shipmentGuid(shipment.getGuid().toString())
-                    .failureReasons(failureReasons)
-                    .isEligibleForInvoicing(verdict).build());
+                    .missingFields(missingFields).build());
         });
 
         return ResponseHelper.buildSuccessResponse(responses);
 
     }
 
-    public Boolean validateContainerDetails(ShipmentDetails shipment, Boolean verdict, List<String> failureReasons) {
+    public void validateContainerDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
         if (ObjectUtils.isEmpty(shipment.getContainersList()) || !isContainerNumberPresent(shipment.getContainersList())) {
-            verdict = Boolean.FALSE;
-            failureReasons.add("Container Details missing");
+            missingFields.add(ModuleValidationFieldType.CONTAINER_DETAILS);
         }
-        return verdict;
     }
 
     private boolean isContainerNumberPresent(List<Containers> containersList) {
