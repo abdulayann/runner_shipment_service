@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -111,6 +112,8 @@ class MasterDataUtilsTest {
     private CommonUtils commonUtils;
     @Mock
     private BillingServiceUrlConfig billingServiceUrlConfig;
+    @Mock
+    private BillingServiceAdapter billingServiceAdapter;
     @InjectMocks
     private MasterDataUtils masterDataUtils;
 
@@ -1444,7 +1447,7 @@ class MasterDataUtilsTest {
     }
 
     @Test
-    void fetchBillDataForShipments2() {
+    void fetchBillDataForShipments2_BillingIntegrationDisabled() {
         boolean isSuccess = true;
         var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);
         var mockV1Response = new ShipmentBillingListResponse();
@@ -1458,6 +1461,27 @@ class MasterDataUtilsTest {
 
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
         when(v1Service.fetchShipmentBillingData(any())).thenReturn(mockV1Response);
+        masterDataUtils.fetchBillDataForShipments(List.of(completeShipment), List.of(mockShipmentListResponse));
+
+        assertTrue(isSuccess);
+
+    }
+
+    @Test
+    void fetchBillDataForShipments2_BillingIntegrationEnabled() {
+        boolean isSuccess = true;
+        var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);
+        var mockV1Response = new ShipmentBillingListResponse();
+        var mockMapData = new HashMap<String, ShipmentBillingListResponse.BillingData>();
+        mockMapData.put(StringUtility.convertToString(mockShipmentListResponse.getGuid()), new ShipmentBillingListResponse.BillingData());
+        mockV1Response.setData(mockMapData);
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+
+        when(cache.get(any())).thenReturn(null);
+
+        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
+        when(billingServiceAdapter.fetchShipmentBillingData(any())).thenReturn(mockV1Response);
         masterDataUtils.fetchBillDataForShipments(List.of(completeShipment), List.of(mockShipmentListResponse));
 
         assertTrue(isSuccess);
