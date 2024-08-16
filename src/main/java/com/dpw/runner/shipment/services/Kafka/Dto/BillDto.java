@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.Kafka.Dto;
 
+import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import lombok.*;
 
 @Data @Builder
@@ -15,6 +16,7 @@ public class BillDto {
         private String moduleId;
         private String moduleTypeCode;
         private String jobStatus;
+        private FileStatus fileStatus;
     }
 }
 
