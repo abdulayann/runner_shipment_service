@@ -80,11 +80,6 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleId
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
-import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
@@ -126,6 +121,11 @@ import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -4576,8 +4576,7 @@ public class ShipmentService implements IShipmentService {
             TrackingServiceLiteContainerResponse response = convertToLiteContainerResponse(trackingResponse.getContainers());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
-            log.error("Unexpected error occurred: ", e);
-            return ResponseHelper.buildFailedResponse("An unexpected error occurred while processing the request. " + e.getMessage());
+            throw new RunnerException("Unexpected error occurred: ", e);
         }
     }
 
