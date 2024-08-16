@@ -1092,7 +1092,7 @@ public class AwbService implements IAwbService {
         return awbOtherInfo;
     }
 
-    private void LinkHawbMawb(Awb mawb, List<Awb> awbList, boolean isInterBranchConsole) throws RunnerException {
+    private void LinkHawbMawb(Awb mawb, List<Awb> awbList, Boolean isInterBranchConsole) throws RunnerException {
         if (Boolean.TRUE.equals(isInterBranchConsole))
             commonUtils.setInterBranchContextForHub();
         for (var awb : awbList) {
