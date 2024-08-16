@@ -119,6 +119,7 @@ import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.ContainerBase;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
@@ -411,7 +412,9 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setShipmentId("shipment-1");
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
 
-        List<Container> containers = List.of(new Container());
+        Container container = new Container();
+        container.setContainerBase(new ContainerBase());
+        List<Container> containers = List.of(container);
         TrackingServiceApiResponse trackingResponse = new TrackingServiceApiResponse();
         trackingResponse.setContainers(containers);
         when(trackingServiceAdapter.fetchTrackingData(any(TrackingRequest.class))).thenReturn(trackingResponse);
