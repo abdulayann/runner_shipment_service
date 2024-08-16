@@ -458,7 +458,7 @@ class AwbServiceTest extends CommonMocks {
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
 //        when(awbDao.(id)).thenReturn(List.of(testMawb));
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().intraBranch(true).build()));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().interBranchConsole(true).build()));
         // Mocking
         when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
         when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
@@ -677,6 +677,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setId(shipmentId);
         testConsol.setShipmentsList(List.of(testShipment));
         testConsol.setSecurityStatus(Constants.SCO);
+        testConsol.setInterBranchConsole(true);
 
         AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
 
