@@ -1204,4 +1204,7 @@ public class ReportConstants {
     public static final String IS_MAWB = "IsMAWB";
     public static final String IS_HAWB = "IsHAWB";
     public static final String CONSOL_TOTAL_WEIGHT_AND_UNIT = "ConsolTotalWeightandUnit";
+    public static final String CSD_REPORT = "CSD";
+    public static final String DATE_OF_PRINT = "DateOfPrint";
+    public static final String TIME_OF_PRINT = "TimeOfPrint";
 }
