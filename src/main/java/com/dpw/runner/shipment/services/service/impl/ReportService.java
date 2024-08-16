@@ -1119,9 +1119,9 @@ public class ReportService implements IReportService {
     private byte[] addBarCodeInAWBLableReport(byte[] bytes, String mawbNumber, String hawbNumber)
     {
         if(StringUtility.isNotEmpty(mawbNumber) && mawbNumber.length() > 5)
-            bytes = this.addBarCodeInReport(bytes, mawbNumber,140,-170, ReportConstants.MAWB);
-        if(StringUtility.isNotEmpty(hawbNumber))
-            bytes = this.addBarCodeInReport(bytes, hawbNumber, 140, -490, ReportConstants.HAWB);
+            bytes = this.addBarCodeInReport(bytes, mawbNumber,140,-190, ReportConstants.MAWB);
+        else if(StringUtility.isNotEmpty(hawbNumber))
+            bytes = this.addBarCodeInReport(bytes, hawbNumber, 140, -210, ReportConstants.HAWB);
         return bytes;
     }
 

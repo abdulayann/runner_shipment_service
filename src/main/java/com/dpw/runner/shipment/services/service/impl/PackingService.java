@@ -353,7 +353,7 @@ public class PackingService implements IPackingService {
             int packs = Integer.parseInt(packingRow.getPacks());
             return length.multiply(width).multiply(height).multiply(BigDecimal.valueOf(packs));
         }
-        return null;
+        return BigDecimal.ZERO;
     }
 
     private void applyChargeableValidation(String transportMode, int row, Packing packingRow, Map<String, Set<String>> masterDataMap) throws RunnerException {

@@ -1942,11 +1942,6 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setTruckDriverDetails(updatedTruckDriverDetails);
         }
 
-        if (packingRequestList != null) {
-            packingRequestList = setPackingDetails(packingRequestList, shipmentDetails.getTransportMode(), consolidationId);
-            updatedPackings = packingDao.updateEntityFromShipment(commonUtils.convertToEntityList(packingRequestList, Packing.class, isCreate), id, deleteContainerIds);
-            shipmentDetails.setPackingList(updatedPackings);
-        }
         if (elDetailsRequestList != null) {
             List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(commonUtils.convertToEntityList(elDetailsRequestList, ELDetails.class, isCreate), id);
             shipmentDetails.setElDetailsList(updatedELDetails);
@@ -1986,6 +1981,12 @@ public class ShipmentService implements IShipmentService {
 
         // Create events on basis of shipment status Confirmed/Created
         autoGenerateEvents(shipmentDetails, previousStatus);
+
+        if (packingRequestList != null) {
+            packingRequestList = setPackingDetails(packingRequestList, shipmentDetails.getTransportMode(), consolidationId);
+            updatedPackings = packingDao.updateEntityFromShipment(commonUtils.convertToEntityList(packingRequestList, Packing.class, isCreate), id, deleteContainerIds);
+            shipmentDetails.setPackingList(updatedPackings);
+        }
 
         if (referenceNumbersRequestList != null) {
             List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isCreate), id);
@@ -3936,12 +3937,15 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationIdAll(request.getConsolidationId());
+        List<Long> excludeShipments = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
 
         if(request.getFilterCriteria() != null && request.getFilterCriteria().isEmpty()){
             request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
         }
         ListCommonRequest defaultRequest;
         defaultRequest = CommonUtils.andCriteria(Constants.TRANSPORT_MODE, consolidationDetails.getTransportMode(), "=", request);
+        defaultRequest = CommonUtils.andCriteria("id", excludeShipments, "NOTIN", defaultRequest);
         if(!Objects.isNull(consolidationDetails.getCarrierDetails().getOriginPort()))
             CommonUtils.andCriteria(Constants.ORIGIN_PORT, consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
         else

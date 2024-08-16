@@ -1009,7 +1009,6 @@ public class ConsolidationService implements IConsolidationService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RunnerException(e.getMessage());
         }
     }
@@ -3069,6 +3068,17 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
+        this.checkInterBranchPermission(consolidationDetails, oldEntity);
+
+    }
+
+    private void checkInterBranchPermission(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
+        if(((Objects.isNull(oldEntity) && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) || (!Objects.isNull(oldEntity)
+                && !Objects.equals(consolidationDetails.getInterBranchConsole(), oldEntity.getInterBranchConsole())))
+                && (!UserContext.getUser().getPermissions().containsKey(PermissionConstants.CONSOLIDATIONS_AIR_INTER_BRANCH)
+                || Boolean.FALSE.equals(UserContext.getUser().getPermissions().get(PermissionConstants.CONSOLIDATIONS_AIR_INTER_BRANCH)))) {
+                throw new ValidationException("User don't have InterBranch Consolidation Permission to change InterBranch Flag");
+        }
     }
 
     public void validateRaKcForConsol(ConsolidationDetails consolidationDetails) throws RunnerException {
