@@ -1035,7 +1035,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
 
-        when(shipmentDao.findByGuid(eq(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06")))).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.findByGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"))).thenReturn(Optional.of(shipmentDetails));
         ShipmentDetailsResponse mockShipmentResponse = ShipmentDetailsResponse.builder().id(
                 shipmentDetails.getId()
         ).build();
@@ -1067,7 +1067,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         //Mock
         when(orderManagementAdapter.getOrder(mockOrder)).thenReturn(shipmentDetails);
-        when(jsonHelper.convertValue(eq(shipmentDetails), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipResponse);
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipResponse);
         when(masterDataHelper.addAllMasterDataInSingleCall(any(), any())).thenReturn(null);
         when(masterDataHelper.addAllUnlocationDataInSingleCall(any(), any())).thenReturn(null);
 
