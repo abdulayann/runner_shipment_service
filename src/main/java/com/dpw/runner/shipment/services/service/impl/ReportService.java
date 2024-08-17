@@ -330,11 +330,11 @@ public class ReportService implements IReportService {
             dataRetrived = deliveryOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
         } else if (report instanceof TransportOrderReport transportOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
             dataRetrived = transportOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
-        } else if (report instanceof HblReport hblReport) {
+        } else if (report instanceof HblReport vHblReport) {
             if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
                 ((HblReport) report).printType = ReportConstants.ORIGINAL;
             }
-            dataRetrived = hblReport.getData(Long.parseLong(reportRequest.getReportId()));
+            dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()));
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }

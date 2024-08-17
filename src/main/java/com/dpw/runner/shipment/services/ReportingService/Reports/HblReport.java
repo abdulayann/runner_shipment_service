@@ -274,6 +274,7 @@ public class HblReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId) {
+
         if (tenantSettings == null) {
             tenantSettings = getCurrentTenantSettings();
         }
@@ -281,7 +282,9 @@ public class HblReport extends IReport {
         if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
             List<ModuleValidationFieldType> missingFields = new ArrayList<>();
             ShipmentDetails shipment = getShipmentDetails(shipmentId);
-            Optional.ofNullable(shipment).orElseThrow(() -> new ReportException("No shipment found with id: " + shipmentId));
+            if (shipment == null) {
+                throw new ReportException("No shipment found with id: " + shipmentId);
+            }
 
             if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)
                     && Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())

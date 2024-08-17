@@ -34,7 +34,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
@@ -52,19 +51,20 @@ public class SeawayBillReport extends IReport {
     public static final String NET_WEIGHT = "NetWeight";
     public static final String NOOF_PACKAGES = "NoofPackages";
 
-    @Autowired
     private HblReport hblReport;
-
-    @Autowired
     private JsonHelper jsonHelper;
-
-    @Autowired
     private CommonUtils commonUtils;
-
-    @Autowired
     private ShipmentService shipmentService;
 
     private V1TenantSettingsResponse tenantSettings;
+
+    @Autowired
+    public SeawayBillReport(HblReport hblReport, JsonHelper jsonHelper, CommonUtils commonUtils, ShipmentService shipmentService) {
+        this.hblReport = hblReport;
+        this.jsonHelper = jsonHelper;
+        this.commonUtils = commonUtils;
+        this.shipmentService = shipmentService;
+    }
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -82,7 +82,9 @@ public class SeawayBillReport extends IReport {
         if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
             List<ModuleValidationFieldType> missingFields = new ArrayList<>();
             ShipmentDetails shipment = getShipmentDetails(shipmentId);
-            Optional.ofNullable(shipment).orElseThrow(() -> new ReportException("No shipment found with id: " + shipmentId));
+            if(shipment==null){
+                throw new ReportException("No shipment found with id: " + shipmentId);
+            }
 
             if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
                     && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
