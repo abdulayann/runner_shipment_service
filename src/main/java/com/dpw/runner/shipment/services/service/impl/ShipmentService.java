@@ -4811,20 +4811,6 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    public void validateMblDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
-        if (ObjectUtils.isEmpty(shipment.getMasterBill())) {
-            missingFields.add(ModuleValidationFieldType.MAWB_DETAILS);
-        }
-    }
-
-    public void validateCarrierDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
-        if (ObjectUtils.isEmpty(shipment.getCarrierDetails())) {
-            missingFields.add(ModuleValidationFieldType.CARRIER);
-        } else if (ObjectUtils.isEmpty(shipment.getCarrierDetails().getEta())) {
-            missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
-        }
-    }
-
     @Override
     public ResponseEntity<IRunnerResponse> validateInvoicePosting(InvoicePostingValidationRequest request) {
         Set<UUID> shipmentGuids = request.getShipmentGuids().stream().filter(ObjectUtils::isNotEmpty)
@@ -4874,6 +4860,20 @@ public class ShipmentService implements IShipmentService {
     public void validateContainerDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
         if (ObjectUtils.isEmpty(shipment.getContainersList()) || !isContainerNumberPresent(shipment.getContainersList())) {
             missingFields.add(ModuleValidationFieldType.CONTAINER_DETAILS);
+        }
+    }
+
+    public void validateCarrierDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
+        if (ObjectUtils.isEmpty(shipment.getCarrierDetails())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER);
+        } else if (ObjectUtils.isEmpty(shipment.getCarrierDetails().getEta())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
+        }
+    }
+
+    public void validateMblDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
+        if (ObjectUtils.isEmpty(shipment.getMasterBill())) {
+            missingFields.add(ModuleValidationFieldType.MAWB_DETAILS);
         }
     }
 
