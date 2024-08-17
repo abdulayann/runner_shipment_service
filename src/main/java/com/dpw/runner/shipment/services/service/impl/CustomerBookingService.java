@@ -1181,11 +1181,12 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
 
+    //todo:
     private String generateBookingNumber(String cargoType) {
         String prefix = "DBAR";
-        if (Objects.equals(cargoType, "FCL"))
+        if (Objects.equals(cargoType, "FCL") || Objects.equals(cargoType, "FTL"))
             prefix = "DBFC";
-        else if (Objects.equals(cargoType, "LCL"))
+        else if (Objects.equals(cargoType, "BBK") || Objects.equals(cargoType, "ROR") || Objects.equals(cargoType, "LCL") || Objects.equals(cargoType, "LTL"))
             prefix = "DBLC";
         return prefix + "-" + getRandomNumberString(7) + "-" + getRandomNumberString(6);
     }
