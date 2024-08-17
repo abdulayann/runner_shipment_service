@@ -261,19 +261,23 @@ public class HblReport extends IReport {
     private JsonHelper jsonHelper;
     @Autowired
     private IV1Service v1Service;
-    public String printType;
     @Autowired
     private ShipmentService shipmentService;
     private V1TenantSettingsResponse tenantSettings;
 
     @Override
     public Map<String, Object> getData(Long id) {
-        validatePrinting(id);
         HblModel hblModel = (HblModel) getDocumentModel(id);
         return populateDictionary(hblModel);
     }
 
-    public void validatePrinting(Long shipmentId) {
+    public Map<String, Object> getData(Long id, String printType) {
+        validatePrinting(id, printType);
+        HblModel hblModel = (HblModel) getDocumentModel(id);
+        return populateDictionary(hblModel);
+    }
+
+    public void validatePrinting(Long shipmentId, String printType) {
 
         if (tenantSettings == null) {
             tenantSettings = getCurrentTenantSettings();

@@ -131,61 +131,97 @@ public class SeawayBillReport extends IReport {
 
         dict.put(SHIPPER, dict.get(CONSIGNER));
         if(model.shipment.getConsigner() != null) {
-            Map<String, Object> consignerAddress = model.shipment.getConsigner().getAddressData();
-            var consignerWc = ReportHelper.getOrgAddressWithPhoneEmail(null, getValueFromMap(consignerAddress, ADDRESS1),
-                    getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
-                    getValueFromMap(consignerAddress, EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
-                    getValueFromMap(consignerAddress, "Zip_PostCode"));
-            dict.put(SHIPPER_WC, consignerWc);
+            processConsigner(model, dict);
         }
 
         if(model.blObject != null && model.blObject.getHblData() != null){
-            dict.put(CONSIGNER_ADDRESS, model.blObject.getHblData().getConsignorAddress());
-            List<String> consignerWithNameAndAddress;
-            List<String> consigneeWithNameAndAddress;
-            if(Boolean.TRUE.equals(model.shipmentSettingsDetails.getDisableBlPartiesName())) {
-                consignerWithNameAndAddress = getOrgAddressWithPhoneEmail(null, model.blObject.getHblData().getConsignorAddress(), null, null, null, null, null);
-                consigneeWithNameAndAddress = getOrgAddressWithPhoneEmail(null, model.blObject.getHblData().getConsigneeAddress(), null, null, null, null, null);
-            } else {
-                consignerWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsignorName(), model.blObject.getHblData().getConsignorAddress(), null, null, null, null, null);
-                consigneeWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsigneeName(), model.blObject.getHblData().getConsigneeAddress(), null, null, null, null, null);
-            }
-            dict.put("BLCustomConsigner", consignerWithNameAndAddress);
-            dict.put("BLCustomConsignee", consigneeWithNameAndAddress);
-            dict.put("PortOfLoad", model.blObject.getHblData().getPortOfLoad());
+            processHblData(model, dict);
         }
-
 
         if (model.shipment.getShipmentContainersList() != null) {
-            if (tenantSettings == null) {
-                tenantSettings = getCurrentTenantSettings();
-            }
-            List<Map<String, Object>> values = jsonHelper.convertValue(model.shipment.getShipmentContainersList(), new TypeReference<>() {
-            });
-            values.forEach(v -> {
-                if (v.get(GROSS_WEIGHT) != null && v.get(GROSS_WEIGHT).toString() != null) {
-                    v.put(GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(GROSS_WEIGHT), tenantSettings));
-                }
-                if (v.get(NET_WEIGHT) != null && v.get(NET_WEIGHT).toString() != null) {
-                    v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), tenantSettings));
-                }
-                if (v.get(NOOF_PACKAGES) != null && v.get(NOOF_PACKAGES).toString() != null) {
-                    v.put(NOOF_PACKAGES, GetDPWWeightVolumeFormat((BigDecimal) v.get(NOOF_PACKAGES), 0, tenantSettings));
-                }
-                if (v.get(GROSS_VOLUME_ALIAS) != null && v.get(GROSS_VOLUME_ALIAS).toString() != null) {
-                    v.put(GROSS_VOLUME_ALIAS, addCommas(v.get(GROSS_VOLUME_ALIAS).toString()));
-                }
-                if (v.get(BL_GROSS_VOLUME_ALIAS) != null && v.get(BL_GROSS_VOLUME_ALIAS).toString() != null) {
-                    v.put(BL_GROSS_VOLUME_ALIAS, addCommas(v.get(BL_GROSS_VOLUME_ALIAS).toString()));
-                }
-                if (v.get(BL_GROSS_WEIGHT_ALIAS) != null && v.get(BL_GROSS_WEIGHT_ALIAS).toString() != null) {
-                    v.put(BL_GROSS_WEIGHT_ALIAS, ConvertToWeightNumberFormat(v.get(BL_GROSS_WEIGHT_ALIAS), tenantSettings));
-                }
-            });
-            dict.put("ShipmentContainers", values);
+            processShipmentContainerList(model, dict);
         }
 
-
         return dict;
+    }
+
+    private void processShipmentContainerList(SeawayBillModel model, Map<String, Object> dict) {
+        if (tenantSettings == null) {
+            tenantSettings = getCurrentTenantSettings();
+        }
+        List<Map<String, Object>> values = jsonHelper.convertValue(model.shipment.getShipmentContainersList(), new TypeReference<>() {
+        });
+        values.forEach(v -> {
+            processGrossWeight(v);
+            processNetWeight(v);
+            processNoofPackages(v);
+            processGrossVolumeAlias(v);
+            processBlGrossVolumeAlias(v);
+            processBlGrossWeightAlias(v);
+        });
+        dict.put("ShipmentContainers", values);
+    }
+
+    private void processBlGrossWeightAlias(Map<String, Object> v) {
+        if (v.get(BL_GROSS_WEIGHT_ALIAS) != null && v.get(BL_GROSS_WEIGHT_ALIAS).toString() != null) {
+            v.put(BL_GROSS_WEIGHT_ALIAS, ConvertToWeightNumberFormat(v.get(BL_GROSS_WEIGHT_ALIAS), tenantSettings));
+        }
+    }
+
+    private void processBlGrossVolumeAlias(Map<String, Object> v) {
+        if (v.get(BL_GROSS_VOLUME_ALIAS) != null && v.get(BL_GROSS_VOLUME_ALIAS).toString() != null) {
+            v.put(BL_GROSS_VOLUME_ALIAS, addCommas(v.get(BL_GROSS_VOLUME_ALIAS).toString()));
+        }
+    }
+
+    private void processGrossVolumeAlias(Map<String, Object> v) {
+        if (v.get(GROSS_VOLUME_ALIAS) != null && v.get(GROSS_VOLUME_ALIAS).toString() != null) {
+            v.put(GROSS_VOLUME_ALIAS, addCommas(v.get(GROSS_VOLUME_ALIAS).toString()));
+        }
+    }
+
+    private void processNoofPackages(Map<String, Object> v) {
+        if (v.get(NOOF_PACKAGES) != null && v.get(NOOF_PACKAGES).toString() != null) {
+            v.put(NOOF_PACKAGES, GetDPWWeightVolumeFormat((BigDecimal) v.get(NOOF_PACKAGES), 0, tenantSettings));
+        }
+    }
+
+    private void processNetWeight(Map<String, Object> v) {
+        if (v.get(NET_WEIGHT) != null && v.get(NET_WEIGHT).toString() != null) {
+            v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), tenantSettings));
+        }
+    }
+
+    private void processGrossWeight(Map<String, Object> v) {
+        if (v.get(GROSS_WEIGHT) != null && v.get(GROSS_WEIGHT).toString() != null) {
+            v.put(GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(GROSS_WEIGHT), tenantSettings));
+        }
+    }
+
+    private void processHblData(SeawayBillModel model, Map<String, Object> dict) {
+        dict.put(CONSIGNER_ADDRESS, model.blObject.getHblData().getConsignorAddress());
+        List<String> consignerWithNameAndAddress;
+        List<String> consigneeWithNameAndAddress;
+        if (Boolean.TRUE.equals(model.shipmentSettingsDetails.getDisableBlPartiesName())) {
+            consignerWithNameAndAddress = getOrgAddressWithPhoneEmail(null, model.blObject.getHblData().getConsignorAddress(), null, null, null, null, null);
+            consigneeWithNameAndAddress = getOrgAddressWithPhoneEmail(null, model.blObject.getHblData().getConsigneeAddress(), null, null, null, null, null);
+        } else {
+            consignerWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsignorName(), model.blObject.getHblData().getConsignorAddress(), null, null,
+                    null, null, null);
+            consigneeWithNameAndAddress = getOrgAddressWithPhoneEmail(model.blObject.getHblData().getConsigneeName(), model.blObject.getHblData().getConsigneeAddress(), null, null,
+                    null, null, null);
+        }
+        dict.put("BLCustomConsigner", consignerWithNameAndAddress);
+        dict.put("BLCustomConsignee", consigneeWithNameAndAddress);
+        dict.put("PortOfLoad", model.blObject.getHblData().getPortOfLoad());
+    }
+
+    private void processConsigner(SeawayBillModel model, Map<String, Object> dict) {
+        Map<String, Object> consignerAddress = model.shipment.getConsigner().getAddressData();
+        var consignerWc = ReportHelper.getOrgAddressWithPhoneEmail(null, getValueFromMap(consignerAddress, ADDRESS1),
+                getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
+                getValueFromMap(consignerAddress, EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
+                getValueFromMap(consignerAddress, "Zip_PostCode"));
+        dict.put(SHIPPER_WC, consignerWc);
     }
 }

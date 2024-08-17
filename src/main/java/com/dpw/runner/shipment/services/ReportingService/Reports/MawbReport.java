@@ -60,35 +60,9 @@ public class MawbReport extends IReport {
 
             List<ModuleValidationFieldType> missingFields = new ArrayList<>();
             if (!isDMawb) {
-                ConsolidationDetails consolidation = getConsolidationsById(id);
-                if(consolidation==null) {
-                    throw new ReportException("No consolidation found with id: " + id);
-                }
-
-                if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidation.getTransportMode())
-                        && Constants.DIRECTION_EXP.equalsIgnoreCase(consolidation.getShipmentType())
-                        && Constants.CARGO_TYPE_LSE.equalsIgnoreCase(consolidation.getContainerCategory())
-                        && Constants.CONSOLIDATION_TYPE_DRT.equalsIgnoreCase(consolidation.getConsolidationType())) {
-
-                    consolidationService.validateCarrierDetails(consolidation, missingFields);
-                    consolidationService.validateContainerDetails(consolidation, missingFields);
-
-                }
+                checkConsolidation(id, missingFields);
             } else {
-                ShipmentDetails shipment = getShipmentDetails(id);
-                if(shipment==null){
-                    throw new ReportException("No shipment found with id: " + id);
-                }
-
-                if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipment.getTransportMode())
-                        && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
-                        && Constants.CARGO_TYPE_LSE.equalsIgnoreCase(shipment.getShipmentType())
-                        && Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
-
-                    shipmentService.validateCarrierDetails(shipment, missingFields);
-                    shipmentService.validateContainerDetails(shipment, missingFields);
-
-                }
+                checkShipment(id, missingFields);
             }
 
             if (ObjectUtils.isNotEmpty(missingFields)) {
@@ -97,6 +71,40 @@ public class MawbReport extends IReport {
                         .collect(Collectors.joining(" | "));
                 throw new ReportException(missingFieldsDescription);
             }
+        }
+    }
+
+    private void checkShipment(Long id, List<ModuleValidationFieldType> missingFields) {
+        ShipmentDetails shipment = getShipmentDetails(id);
+        if (shipment == null) {
+            throw new ReportException("No shipment found with id: " + id);
+        }
+
+        if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipment.getTransportMode())
+                && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                && Constants.CARGO_TYPE_LSE.equalsIgnoreCase(shipment.getShipmentType())
+                && Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
+
+            shipmentService.validateCarrierDetails(shipment, missingFields);
+            shipmentService.validateContainerDetails(shipment, missingFields);
+
+        }
+    }
+
+    private void checkConsolidation(Long id, List<ModuleValidationFieldType> missingFields) {
+        ConsolidationDetails consolidation = getConsolidationsById(id);
+        if (consolidation == null) {
+            throw new ReportException("No consolidation found with id: " + id);
+        }
+
+        if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidation.getTransportMode())
+                && Constants.DIRECTION_EXP.equalsIgnoreCase(consolidation.getShipmentType())
+                && Constants.CARGO_TYPE_LSE.equalsIgnoreCase(consolidation.getContainerCategory())
+                && Constants.CONSOLIDATION_TYPE_DRT.equalsIgnoreCase(consolidation.getConsolidationType())) {
+
+            consolidationService.validateCarrierDetails(consolidation, missingFields);
+            consolidationService.validateContainerDetails(consolidation, missingFields);
+
         }
     }
 
