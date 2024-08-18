@@ -336,6 +336,24 @@ class SeawayBillReportTest extends CommonMocks {
     }
 
     @Test
+    void testValidatePrinting_ShipmentValidationWithSeaTransportAndMissingFields2() {
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_STD);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doAnswer(invocation -> {
+            List<ModuleValidationFieldType> missingFields = invocation.getArgument(1);
+            missingFields.add(ModuleValidationFieldType.CARRIER);
+            return null;
+        }).when(shipmentService).validateCarrierDetails(any(), anyList());
+
+        assertThrows(ReportException.class, () -> seawayBillReport.validatePrinting(123L));
+    }
+
+    @Test
     void testValidatePrinting_ShipmentValidationWithSeaTransportAndNoMissingFields() {
         when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);

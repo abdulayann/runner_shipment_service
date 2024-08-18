@@ -442,6 +442,39 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void testValidateInvoicePosting_ValidSeaShipmentWithDrtJobType2() {
+        UUID guid = UUID.randomUUID();
+        request.setShipmentGuids(Collections.singletonList(guid.toString()));
+        Containers container = new Containers();
+        container.setContainerNumber("123");
+
+        shipmentDetails.setGuid(guid);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setCarrierDetails(null);
+        shipmentDetails.setContainersList(List.of(container));
+
+        when(shipmentDao.findShipmentsByGuids(anySet())).thenReturn(Collections.singletonList(shipmentDetails));
+
+        ResponseEntity<IRunnerResponse> response = shipmentService.validateInvoicePosting(request);
+
+        IRunnerResponse runnerResponse = response.getBody();
+        assertNotNull(runnerResponse);
+        assertTrue(runnerResponse instanceof RunnerResponse);
+
+        List<InvoicePostingValidationResponse> responses = (List<InvoicePostingValidationResponse>) ((RunnerResponse) runnerResponse).getData();
+        assertNotNull(responses);
+        assertEquals(1, responses.size());
+
+        InvoicePostingValidationResponse validationResponse = responses.get(0);
+        assertEquals(guid.toString(), validationResponse.getShipmentGuid());
+        assertTrue(validationResponse.getMissingFields().contains(ModuleValidationFieldType.CARRIER));
+        assertTrue(validationResponse.getMissingFields().contains(ModuleValidationFieldType.MAWB_DETAILS));
+    }
+
+    @Test
     void testValidateInvoicePosting_ValidSeaShipmentWithNonDrtJobType() {
         UUID guid = UUID.randomUUID();
         request.setShipmentGuids(Collections.singletonList(guid.toString()));
