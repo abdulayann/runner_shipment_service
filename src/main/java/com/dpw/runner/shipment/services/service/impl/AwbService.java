@@ -244,6 +244,9 @@ public class AwbService implements IAwbService {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
             if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
+                var optionalConsole = consolidationDetailsDao.findById(awb.getConsolidationId());
+                if (optionalConsole.isPresent() && Boolean.TRUE.equals(optionalConsole.get().getInterBranchConsole()))
+                    commonUtils.setInterBranchContextForHub();
                 List<AwbPackingInfo> awbPackingInfoList = awb.getAwbPackingInfo();
                 awb.setAwbPackingInfo(null);
                 updateAwbPacking(awb.getId(), awbPackingInfoList);
@@ -317,7 +320,6 @@ public class AwbService implements IAwbService {
 
         List<Awb> awbList = getLinkedAwbFromMawb(mawbId);
         if(awbList != null) {
-            commonUtils.setInterBranchContextForHub();
             for(Awb awb : awbList) {
                 awb.setAwbPackingInfo(dataMap.get(awb.getAwbNumber()));
                 awbDao.save(awb);
@@ -519,7 +521,7 @@ public class AwbService implements IAwbService {
             }
 
             // map mawb and hawb affter suuccessful save
-            LinkHawbMawb(awb, awbList);
+            linkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
             log.info("MAWB created successfully for Id {} with Request Id {}", awb.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1090,7 +1092,9 @@ public class AwbService implements IAwbService {
         return awbOtherInfo;
     }
 
-    private void LinkHawbMawb(Awb mawb, List<Awb> awbList) throws RunnerException {
+    private void linkHawbMawb(Awb mawb, List<Awb> awbList, Boolean isInterBranchConsole) throws RunnerException {
+        if (Boolean.TRUE.equals(isInterBranchConsole))
+            commonUtils.setInterBranchContextForHub();
         for (var awb : awbList) {
             if(awb.getAwbPackingInfo() != null) {
                 for(AwbPackingInfo awbPackingInfo : awb.getAwbPackingInfo()) {
@@ -1683,7 +1687,7 @@ public class AwbService implements IAwbService {
                     awb.setAwbPaymentInfo(resetAwb.getAwbPaymentInfo());
                     awb.setAwbSpecialHandlingCodesMappings(resetAwb.getAwbSpecialHandlingCodesMappings());
                     // Link
-                    LinkHawbMawb(awb, awbList);
+                    linkHawbMawb(awb, awbList, consolidationDetails.get().getInterBranchConsole());
                     awb.setPrintType(printType);
                     if(awbList != null && !awbList.isEmpty())
                         updateSciFieldFromMawb(awb, awbList);

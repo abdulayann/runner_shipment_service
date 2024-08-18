@@ -250,4 +250,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "order_management_number")
     private String orderManagementNumber;
+
+    @Column(name = "is_dg")
+    private Boolean isDg;
 }
