@@ -1,16 +1,32 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsoleCalculationsRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsolePacksListRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerShipmentADInConsoleRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
-import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
+import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.MblCheckResponse;
+import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -25,19 +41,26 @@ import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.Valid;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_API_HANDLE)
@@ -53,7 +76,7 @@ public class ConsolidationController {
 
     private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
     private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
-
+    private static class MblCheckResponseClass extends RunnerResponse<MblCheckResponse> {}
     @Autowired
     public ConsolidationController(IConsolidationService consolidationService,
                                    IConsolidationSync consolidationSync,
@@ -374,6 +397,16 @@ public class ConsolidationController {
     public ResponseEntity<IRunnerResponse> getShipmentFromConsol(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id, @RequestParam(required = false) String bookingNumber) {
         try {
             return shipmentService.getShipmentFromConsol(id, bookingNumber);
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MblCheckResponseClass.class, message = ConsolidationConstants.MBL_NUMBER_CHECK_SUCCESSFUL)})
+    @GetMapping("/mbl-check")
+    public ResponseEntity<IRunnerResponse> mblCheck(@ApiParam(value = ConsolidationConstants.MBL_NUMBER, required = true) @RequestParam String mblNumber) {
+        try {
+            return consolidationService.mblCheck(mblNumber);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

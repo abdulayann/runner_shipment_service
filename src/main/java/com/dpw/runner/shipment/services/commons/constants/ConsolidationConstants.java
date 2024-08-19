@@ -16,6 +16,7 @@ public class ConsolidationConstants {
     );
 
     public static final String CONSOLIDATION_API_HANDLE = "/api/v2/consolidation";
+    public static final String MBL_NUMBER = "MBL Number";
 
     public static final String CREATE_SUCCESSFUL = "Successful Consolidation Data Creation";
 
@@ -40,6 +41,7 @@ public class ConsolidationConstants {
     public static final String CONSOLIDATION_V1_CREATE = "/createV1Consolidation";
     public static final String IMPORT_SHIPMENT = "/import-shipment";
     public static final String IMPORT_SUCCESSFUL = "Import Consolidation Successful";
+    public static final String MBL_NUMBER_CHECK_SUCCESSFUL = "MBL Number check successful";
     public static final String ASSIGN_SUCCESSFUL = "Assign Shipments Successful";
     public static final String DETACH_SUCCESSFUL = "Detach Shipments Successful";
     public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";

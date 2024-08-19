@@ -103,6 +103,7 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
+import com.dpw.runner.shipment.services.dto.response.MblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
@@ -158,6 +159,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -212,6 +214,7 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
@@ -4070,6 +4073,23 @@ public class ConsolidationService implements IConsolidationService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> mblCheck(String mblNumber) {
+        List<ConsolidationDetailsProjection> consolidationDetails = consolidationDetailsDao.findMblNumberInDifferentTenant(mblNumber);
+
+        if (ObjectUtils.isNotEmpty(consolidationDetails)) {
+            String message = "The MBL provided already exists for " +
+                    consolidationDetails.stream()
+                            .map(cd -> "Consolidation No. " + cd.getConsolidationNumber() + " in branch " + cd.getTenantId())
+                            .collect(Collectors.joining(", ")) +
+                    ". Request to either consolidation transfer or attachment to the existing consolidation";
+
+            return ResponseHelper.buildSuccessResponse(MblCheckResponse.builder().message(message).build());
+        }
+
+        return ResponseHelper.buildSuccessResponse(MblCheckResponse.builder().build());
     }
 
     private void calculateContainersAndTeu(MeasurementBasisResponse response, List<Containers> containersList) {

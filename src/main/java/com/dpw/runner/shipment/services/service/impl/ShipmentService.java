@@ -149,6 +149,7 @@ import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.MblDuplicatedLog;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
@@ -181,6 +182,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -242,6 +244,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -1904,6 +1907,30 @@ public class ShipmentService implements IShipmentService {
         List<PartiesRequest> shipmentAddressList = shipmentRequest.getShipmentAddresses();
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
         List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequests = shipmentRequest.getPickupDeliveryDetailsInstructions();
+
+        if (StringUtils.isNotBlank(shipmentDetails.getMasterBill())) {
+            List<ConsolidationDetailsProjection> consolidations = consolidationDetailsDao.findMblNumberInDifferentTenant(shipmentDetails.getMasterBill());
+
+            consolidations.forEach(consolidation -> {
+                try {
+                    auditLogService.addAuditLog(
+                            AuditLogMetaData.builder()
+                                    .newData(MblDuplicatedLog.builder()
+                                            .tenantId(consolidation.getTenantId())
+                                            .consolidationNo(consolidation.getConsolidationNumber())
+                                            .mblNumber(shipmentDetails.getMasterBill())
+                                            .shipmentId(shipmentDetails.getShipmentId()).build())
+                                    .prevData(null)
+                                    .parent(ShipmentDetails.class.getSimpleName())
+                                    .parentId(shipmentDetails.getId())
+                                    .operation(DBOperationType.LOG.name()).build()
+                    );
+                } catch (Exception e) {
+                    log.error("Unable to store mbl check audit for shipment id: " + shipmentDetails.getId());
+                }
+
+            });
+        }
 
         Long id = shipmentDetails.getId();
         Long consolidationId = null;
