@@ -14,6 +14,6 @@ import java.util.UUID;
 public interface IGenericQueryRepository extends JpaRepository<SyncQueue, Long> {
 
     @Modifying @Transactional
-    @Query(value = "Update shipment_details set job_status = ?2 Where guid = ?1", nativeQuery = true)
-    void saveJobStatusByGuid(UUID guid, String jobStatus);
+    @Query(value = "Update shipment_details set job_status = ?2 , file_status = ?3 Where guid = ?1", nativeQuery = true)
+    void saveJobStatusByGuid(UUID guid, String jobStatus, String fileStatus);
 }

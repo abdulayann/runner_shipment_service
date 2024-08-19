@@ -91,4 +91,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private UUID sourceGuid;
     private String orderManagementId;
     private String orderManagementNumber;
+    private Boolean isDg;
 }
