@@ -212,6 +212,7 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
@@ -2117,6 +2118,8 @@ public class ConsolidationService implements IConsolidationService {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(consolidationDetails -> {
             ConsolidationDetailsResponse response = modelMapper.map(consolidationDetails, ConsolidationDetailsResponse.class);
+            response.setShipmentIds(consolidationDetails.getShipmentsList().stream()
+                    .filter(ObjectUtils::isNotEmpty).map(ShipmentDetails::getShipmentId).toList());
             responseList.add(response);
         });
         return responseList;
