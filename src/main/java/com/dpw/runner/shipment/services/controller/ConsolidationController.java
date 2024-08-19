@@ -405,11 +405,7 @@ public class ConsolidationController {
     @ApiResponses(value = {@ApiResponse(code = 200, response = MblCheckResponseClass.class, message = ConsolidationConstants.MBL_NUMBER_CHECK_SUCCESSFUL)})
     @GetMapping("/mbl-check")
     public ResponseEntity<IRunnerResponse> mblCheck(@ApiParam(value = ConsolidationConstants.MBL_NUMBER, required = true) @RequestParam String mblNumber) {
-        try {
             return consolidationService.mblCheck(mblNumber);
-        } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
-        }
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
