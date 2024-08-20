@@ -1134,6 +1134,26 @@ class ShipmentControllerTest {
     }
 
     @Test
+    void testRequestInterBranchConsole() throws RunnerException {
+        // Mock
+        when(shipmentService.requestInterBranchConsole(1L, 2L)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_Failure() throws RunnerException {
+        // Mock
+        when(shipmentService.requestInterBranchConsole(1L, 2L)).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void getPendingNotifications() throws RunnerException {
         // Mock
         when(shipmentService.getPendingNotifications(any())).thenReturn(ResponseHelper.buildSuccessResponse());

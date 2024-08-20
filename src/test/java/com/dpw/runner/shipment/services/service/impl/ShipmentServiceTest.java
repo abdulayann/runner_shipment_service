@@ -3254,18 +3254,21 @@ ShipmentServiceTest extends CommonMocks {
     void completeUpdateConsolidationListNotEmpty_success_Air_() throws RunnerException {
         ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
         consolidationDetails1.setId(1L);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
 
         ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
         consolidationDetails2.setId(2L);
 
         shipmentDetails.setId(1L);
         ShipmentDetails mockShipment = shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setDirection(Constants.DIRECTION_EXP)
                 .setJobType(Constants.SHIPMENT_TYPE_DRT)
                 .setSourceTenantId(1L)
                 .setConsolidationList(Arrays.asList(consolidationDetails2))
                 .setContainersList(new ArrayList<>())
                 .setContainsHazardous(true);
         ShipmentDetails oldEntity = jsonTestUtility.getTestShipment()
+                .setDirection(Constants.DIRECTION_EXP)
                 .setTransportMode(Constants.TRANSPORT_MODE_AIR)
                 .setSourceTenantId(1L)
                 .setConsolidationList(Arrays.asList(consolidationDetails2))
@@ -3291,6 +3294,64 @@ ShipmentServiceTest extends CommonMocks {
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
 
         when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
+        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+
+    @Test
+    void completeUpdateConsolidationListNotEmpty_success_Air_NewConsoleAdded() throws RunnerException {
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(1L);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails2.setId(2L);
+        consolidationDetails2.setCarrierDetails(new CarrierDetails());
+        consolidationDetails2.setTransportMode(Constants.TRANSPORT_MODE_AIR).setShipmentType(Constants.DIRECTION_EXP);
+
+        shipmentDetails.setId(1L);
+        ShipmentDetails mockShipment = shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setDirection(Constants.DIRECTION_EXP)
+                .setJobType(Constants.SHIPMENT_TYPE_DRT)
+                .setSourceTenantId(1L)
+                .setConsolidationList(Arrays.asList(consolidationDetails2))
+                .setContainersList(new ArrayList<>())
+                .setContainsHazardous(true);
+        ShipmentDetails oldEntity = jsonTestUtility.getTestShipment()
+                .setDirection(Constants.DIRECTION_EXP)
+                .setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setConsolidationList(List.of())
+                .setSourceTenantId(1L)
+                .setContainersList(new ArrayList<>())
+                .setContainsHazardous(true);
+        oldEntity.getCarrierDetails().setShippingLine("ABC AirLine");
+        oldEntity.setId(1L);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).iataTactFlag(true).airDGFlag(true).build());
+        UserContext.getUser().getPermissions().put(PermissionConstants.airDG, true);
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldEntity);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
+
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
+
+//        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
         when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -6366,6 +6427,22 @@ ShipmentServiceTest extends CommonMocks {
 
         // Assert
         verify(commonUtils, never()).setInterBranchContextForHub();
+    }
+
+    @Test
+    void testRequestInterBranchConsole_Success(){
+        when(consoleShipmentMappingDao.findByConsolidationId(2L)).thenReturn(List.of(ConsoleShipmentMapping.builder()
+                .shipmentId(3L).consolidationId(2L).build()));
+        var response = shipmentService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_ExistingMapping(){
+        when(consoleShipmentMappingDao.findByConsolidationId(2L)).thenReturn(List.of(ConsoleShipmentMapping.builder()
+                .shipmentId(1L).consolidationId(2L).build()));
+        var response = shipmentService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test

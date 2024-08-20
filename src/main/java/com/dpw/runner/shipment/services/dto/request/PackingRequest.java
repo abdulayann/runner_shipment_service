@@ -81,4 +81,5 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private String dgClassAirDescription;
     private DateBehaviorType dateType;
     private LocalDateTime cargoGateInDate;
+    private Integer tenantId;
 }
