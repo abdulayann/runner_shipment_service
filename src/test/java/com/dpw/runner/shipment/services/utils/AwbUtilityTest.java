@@ -1144,5 +1144,38 @@ class AwbUtilityTest extends CommonMocks {
         verify(emailServiceUtility, times(1)).sendEmail(any(), any(), any(), any(), any(), any());
     }
 
+    @Test
+    void testOverrideInfoForCoLoadShipment() {
+
+        var awbResponse = AwbAirMessagingResponse.builder()
+                .meta(AwbAirMessagingResponse.Meta.builder()
+                        .tenantInfo(AwbAirMessagingResponse.TenantInfo.builder().pimaAddress("1234").build())
+                        .build())
+                .build();
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.setPIMAAddress("98765");
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        awbUtility.overrideInfoForCoLoadShipment(awbResponse, true);
+
+        assertEquals(mockTenantModel.getPIMAAddress(), awbResponse.getMeta().getTenantInfo().getPimaAddress());
+    }
+
+    @Test
+    void testOverrideInfoForCoLoadShipment2() {
+
+        var awbResponse = AwbAirMessagingResponse.builder()
+                .meta(AwbAirMessagingResponse.Meta.builder()
+                        .tenantInfo(AwbAirMessagingResponse.TenantInfo.builder().pimaAddress("1234").build())
+                        .build())
+                .build();
+
+
+        awbUtility.overrideInfoForCoLoadShipment(awbResponse, false);
+
+        assertEquals("1234", awbResponse.getMeta().getTenantInfo().getPimaAddress());
+    }
+
 
 }

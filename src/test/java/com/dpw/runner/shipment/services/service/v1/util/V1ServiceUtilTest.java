@@ -20,11 +20,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import java.util.UUID;
+import java.util.*;
 
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -459,6 +455,39 @@ class V1ServiceUtilTest {
 
         assertNotNull(responseEntity.getBody());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetTenantDetails1() {
+        var mockResponse = new TenantDetailsByListResponse();
+        var tenant1 = new TenantDetailsByListResponse.TenantDetails();
+        tenant1.setTenantId(1);
+        tenant1.setTenant(new HashMap<>());
+
+        var tenant2 = new TenantDetailsByListResponse.TenantDetails();
+        tenant2.setTenantId(2);
+        tenant2.setTenant(new HashMap<>());
+        mockResponse.setEntities(Arrays.asList(tenant1, tenant2));
+
+        when(iV1Service.getTenantDetails(any())).thenReturn(mockResponse);
+
+        var response = v1ServiceUtil.getTenantDetails(Arrays.asList(11));
+        assertFalse(response.isEmpty());
+    }
+
+    @Test
+    void testGetTenantDetails2() {
+        var response = v1ServiceUtil.getTenantDetails(Arrays.asList());
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void testGetTenantDetails3() {
+
+        when(iV1Service.getTenantDetails(any())).thenThrow(new RuntimeException());
+
+        var response = v1ServiceUtil.getTenantDetails(Arrays.asList(11));
+        assertTrue(response.isEmpty());
     }
 }
 
