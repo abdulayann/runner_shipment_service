@@ -168,8 +168,8 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     // Consolidation achieved values
     private AchievedQuantitiesRequest consolidationAchievedQuantities;
 
-    private Date cargoReadyDate;
+    private LocalDateTime cargoReadyDate;
 
     @ValidCargoDeliveryDate
-    private Date cargoDeliveryDate;
+    private LocalDateTime cargoDeliveryDate;
 }

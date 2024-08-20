@@ -71,8 +71,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String packsUnit;
     private Integer innerPacks;
     private String innerPackUnit;
-    private Date cargoReadyDate;
-    private Date cargoDeliveryDate;
+    private LocalDateTime cargoReadyDate;
+    private LocalDateTime cargoDeliveryDate;
     private BigDecimal freightLocal;
     private String freightLocalCurrency;
     private BigDecimal freightOverseas;

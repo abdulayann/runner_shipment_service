@@ -4692,6 +4692,36 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(allShipmentCountResponse);
     }
 
+    public ResponseEntity<IRunnerResponse> getLatestCargoDeliveryDate(Long consoleId) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        LatestCargoDeliveryInfo latestCargoDeliveryInfo = new LatestCargoDeliveryInfo();
+        LocalDateTime latestCargoDeliveryDate = null;
+        if(consolidationDetails.isPresent()) {
+            List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+            List<ShipmentDetails> listOfShipmentsAttachedToConsole = new ArrayList<>();
+            for(ConsoleShipmentMapping consoleShipmentMapping: consoleShipmentMappingList) {
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(consoleShipmentMapping.getShipmentId());
+                if(shipmentDetails.isPresent()) {
+                    listOfShipmentsAttachedToConsole.add(shipmentDetails.get());
+                }
+            }
+            latestCargoDeliveryDate = getLatestCargoDeliveryDateHelper(listOfShipmentsAttachedToConsole);
+            latestCargoDeliveryInfo.setLatestCargoDeliveryDate(latestCargoDeliveryDate);
+        } else {
+            log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        return ResponseHelper.buildSuccessResponse(latestCargoDeliveryInfo);
+    }
+
+    private LocalDateTime getLatestCargoDeliveryDateHelper(List<ShipmentDetails> listOfShipmentsAttachedToConsole) {
+        return listOfShipmentsAttachedToConsole.stream()
+                .map(ShipmentDetails::getCargoDeliveryDate)
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+    }
+
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> updateConsoleShipments(UpdateConsoleShipmentRequest request) {

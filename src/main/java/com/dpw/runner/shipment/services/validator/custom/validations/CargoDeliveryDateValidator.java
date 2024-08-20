@@ -5,16 +5,17 @@ import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDelivery
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 public class CargoDeliveryDateValidator implements ConstraintValidator<ValidCargoDeliveryDate, ShipmentRequest> {
 
     @Override
     public boolean isValid(ShipmentRequest shipment, ConstraintValidatorContext context) {
-        Date cargoReadyDate = shipment.getCargoReadyDate();
-        Date cargoDeliveryDate = shipment.getCargoDeliveryDate();
+        LocalDateTime cargoReadyDate = shipment.getCargoReadyDate();
+        LocalDateTime cargoDeliveryDate = shipment.getCargoDeliveryDate();
 
-        if (cargoDeliveryDate != null && cargoReadyDate != null && cargoDeliveryDate.before(cargoReadyDate)) {
+        if (cargoDeliveryDate != null && cargoReadyDate != null && cargoDeliveryDate.isBefore(cargoReadyDate)) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate(
                     "Cargo Delivery Date should not be lesser than Cargo Ready Date."
