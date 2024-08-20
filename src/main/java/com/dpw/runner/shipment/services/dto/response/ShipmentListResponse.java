@@ -130,4 +130,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private LocalDateTime requestedOn;
     private Map<String, String> tenantMasterData;
     private LocalDateTime shipmentCreatedOn;
+    private Integer pendingActionCount;
 }

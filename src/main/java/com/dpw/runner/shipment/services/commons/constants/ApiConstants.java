@@ -109,6 +109,7 @@ public class ApiConstants {
     public static final String GET_ALL_SHIPMENTS_COUNT = "/all/shipments/count";
     public static final String UPDATE_SHIPMENT_STATUS = "/status/update";
 
-
+    // Notifications
+    public static final String GET_PENDING_NOTIFICATIONS = "/get/pendingNotifications";
 
 }
