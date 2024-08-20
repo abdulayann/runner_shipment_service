@@ -4254,7 +4254,8 @@
     "packsVolumetricWeight": "19,941,040 KG",
     "packsChargeableWeight": "119,646 M3",
     "achievedWeight": 152078.0,
-    "achievedVolume": 119646.0
+    "achievedVolume": 119646.0,
+    "totalPacksWithUnit": "2 MPK"
   },
   "PACK_SUMMARY_RESPONSE_AIR": {
     "totalPacks": "1 BAG, 1 CNA",
@@ -4263,7 +4264,8 @@
     "packsVolumetricWeight": "19,941,040 KG",
     "packsChargeableWeight": "19,941,040 KG",
     "achievedWeight": 152078.0,
-    "achievedVolume": 119646.0
+    "achievedVolume": 119646.0,
+    "totalPacksWithUnit": "2 MPK"
   },
   "VOL_WT_CHARGEABLE": {
     "chargeable": "166.67",
