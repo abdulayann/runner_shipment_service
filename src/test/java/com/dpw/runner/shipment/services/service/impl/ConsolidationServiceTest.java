@@ -3479,6 +3479,7 @@ import static org.mockito.Mockito.*;
         packing.setPacksType("MPK");
         consolidationDetails.setPackingList(Arrays.asList(packing));
         consolidationDetails.setContainersList(Arrays.asList(containers));
+        consolidationDetails.setAllocations(new Allocations());
 
         when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
         when(modelMapper.map(any(), any())).thenReturn(MeasurementBasisResponse.builder().build());
@@ -3502,8 +3503,6 @@ import static org.mockito.Mockito.*;
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
 
         when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
-        when(modelMapper.map(any(), any())).thenReturn(MeasurementBasisResponse.builder().build());
-
         ResponseEntity<IRunnerResponse> httpResponse = consolidationService.consolidationRetrieveWithMeasurmentBasis(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
