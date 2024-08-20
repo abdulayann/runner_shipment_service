@@ -174,6 +174,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
@@ -548,6 +549,49 @@ ShipmentServiceTest extends CommonMocks {
 //        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         mockShipmentSettings();
         mockTenantSettings();
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeUpdate_success_validMasterBill() throws RunnerException {
+        testShipment.setId(1L);
+        ShipmentDetails mockShipment = testShipment;
+        testShipment.setMasterBill("sampleMasterBill");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        ConsolidationDetailsProjection consolidationDetailsProjection = new ConsolidationDetailsProjection() {
+            @Override
+            public Integer getTenantId() { return 3; }
+            @Override
+            public String getConsolidationNumber() { return "CON456"; }
+            @Override
+            public String getMawb() { return "MAWB456"; }
+            @Override
+            public String getBol() { return "BOL456"; }
+        };
+
+        // Mock
+        when(shipmentDao.findById(any()))
+                .thenReturn(
+                        Optional.of(
+                                testShipment
+                                        .setConsolidationList(new ArrayList<>())
+                                        .setContainersList(new ArrayList<>())));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(consolidationDetailsDao.findMblNumberInDifferentTenant(testShipment.getMasterBill())).thenReturn(List.of(consolidationDetailsProjection));
+
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
