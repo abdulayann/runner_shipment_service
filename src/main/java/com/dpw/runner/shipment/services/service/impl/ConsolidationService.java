@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -4125,4 +4126,23 @@ public class ConsolidationService implements IConsolidationService {
         }
         return response;
     }
+
+    public void validateCarrierDetails(ConsolidationDetails consolidation, List<ModuleValidationFieldType> missingFields) {
+        if (ObjectUtils.isEmpty(consolidation.getCarrierDetails())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER);
+        } else if (ObjectUtils.isEmpty(consolidation.getCarrierDetails().getEta())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
+        }
+    }
+
+    public void validateContainerDetails(ConsolidationDetails consolidation, List<ModuleValidationFieldType> missingFields) {
+        if (ObjectUtils.isEmpty(consolidation.getContainersList()) || !isContainerNumberPresent(consolidation.getContainersList())) {
+            missingFields.add(ModuleValidationFieldType.CONTAINER_DETAILS);
+        }
+    }
+
+    private boolean isContainerNumberPresent(List<Containers> containersList) {
+        return containersList.stream().allMatch(container -> container.getContainerNumber() != null);
+    }
+
 }

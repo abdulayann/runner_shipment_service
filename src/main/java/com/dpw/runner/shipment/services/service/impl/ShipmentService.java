@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -106,6 +107,7 @@ import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
@@ -121,6 +123,7 @@ import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
@@ -245,6 +248,7 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -4832,6 +4836,76 @@ public class ShipmentService implements IShipmentService {
             processShipmentRequest(request);
         }
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> validateInvoicePosting(InvoicePostingValidationRequest request) {
+        Set<UUID> shipmentGuids = request.getShipmentGuids().stream().filter(ObjectUtils::isNotEmpty)
+                .map(UUID::fromString).collect(Collectors.toSet());
+
+        List<ShipmentDetails> shipments = shipmentDao.findShipmentsByGuids(shipmentGuids);
+        List<InvoicePostingValidationResponse> responses = new ArrayList<>();
+
+        shipments.forEach(shipment -> {
+            List<ModuleValidationFieldType> missingFields = new ArrayList<>();
+
+            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())) {
+                if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                        && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+                        || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))) {
+                    if (Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
+
+                        validateCarrierDetails(shipment, missingFields);
+                        validateContainerDetails(shipment, missingFields);
+                        validateMblDetails(shipment, missingFields);
+
+                    } else if (ObjectUtils.isNotEmpty(shipment.getJobType())) {
+
+                        validateMblDetails(shipment, missingFields);
+
+                    }
+                }
+            } else if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipment.getTransportMode())
+                    && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                    && Constants.SHIPMENT_TYPE_LSE.equalsIgnoreCase(shipment.getShipmentType())
+                    && ObjectUtils.isNotEmpty(shipment.getJobType())) {
+
+                validateCarrierDetails(shipment, missingFields);
+                validateMblDetails(shipment, missingFields);
+
+            }
+
+            responses.add(InvoicePostingValidationResponse.builder()
+                    .shipmentGuid(shipment.getGuid().toString())
+                    .missingFields(missingFields).build());
+        });
+
+        return ResponseHelper.buildSuccessResponse(responses);
+
+    }
+
+    public void validateContainerDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
+        if (ObjectUtils.isEmpty(shipment.getContainersList()) || !isContainerNumberPresent(shipment.getContainersList())) {
+            missingFields.add(ModuleValidationFieldType.CONTAINER_DETAILS);
+        }
+    }
+
+    public void validateCarrierDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
+        if (ObjectUtils.isEmpty(shipment.getCarrierDetails())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER);
+        } else if (ObjectUtils.isEmpty(shipment.getCarrierDetails().getEta())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
+        }
+    }
+
+    public void validateMblDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
+        if (ObjectUtils.isEmpty(shipment.getMasterBill())) {
+            missingFields.add(ModuleValidationFieldType.MAWB_DETAILS);
+        }
+    }
+
+    private boolean isContainerNumberPresent(List<Containers> containersList) {
+        return containersList.stream().allMatch(container -> container.getContainerNumber() != null);
     }
 
     private boolean isForHubRequest(UpdateConsoleShipmentRequest request) {

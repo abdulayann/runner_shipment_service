@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainer
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
@@ -985,6 +986,17 @@ class ShipmentControllerTest {
         var responseEntity = shipmentController.fetchEmails(123L, 2121L);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void validateInvoicePosting_success() {
+        InvoicePostingValidationRequest request = new InvoicePostingValidationRequest();
+        when(shipmentService.validateInvoicePosting(request)).thenReturn(ResponseHelper.buildSuccessResponse());
+
+        var responseEntity = shipmentController.validateInvoicePosting(request);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
     }
 
     @Test

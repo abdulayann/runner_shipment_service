@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -87,6 +88,38 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.MblCheckResponse;
+import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -325,6 +358,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     private static ConsolidationDetailsRequest testConsolRequest;
 
     private static ModelMapper modelMapperTest = new ModelMapper();
+    private ConsolidationDetails consolidationDetails;
+    private List<ModuleValidationFieldType> missingFields;
 
     @BeforeAll
     static void init() throws IOException {
@@ -345,6 +380,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         testConsolRequest = modelMapperTest.map(testConsol , ConsolidationDetailsRequest.class);
         consolidationService.executorService = Executors.newFixedThreadPool(2);
         shipmentDetails = jsonTestUtility.getCompleteShipment();
+        consolidationDetails = new ConsolidationDetails();
+        missingFields = new ArrayList<>();
     }
 
     @AfterEach
@@ -504,6 +541,73 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         verify(consolidationDetailsDao).findMblNumberInDifferentTenant(mblNumber);
     }
 
+
+    @Test
+    void testValidateCarrierDetails_EmptyCarrierDetails() {
+        consolidationDetails.setCarrierDetails(null);
+
+        consolidationService.validateCarrierDetails(consolidationDetails, missingFields);
+
+        assertTrue(missingFields.contains(ModuleValidationFieldType.CARRIER));
+    }
+
+    @Test
+    void testValidateCarrierDetails_EmptyCarrierETA() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEta(null);
+        consolidationDetails.setCarrierDetails(carrierDetails);
+
+        consolidationService.validateCarrierDetails(consolidationDetails, missingFields);
+
+        assertTrue(missingFields.contains(ModuleValidationFieldType.CARRIER_ETA));
+    }
+
+    @Test
+    void testValidateCarrierDetails_ValidCarrierDetailsAndETA() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEta(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(carrierDetails);
+
+        consolidationService.validateCarrierDetails(consolidationDetails, missingFields);
+
+        assertFalse(missingFields.contains(ModuleValidationFieldType.CARRIER));
+        assertFalse(missingFields.contains(ModuleValidationFieldType.CARRIER_ETA));
+    }
+
+    @Test
+    void testValidateContainerDetails_EmptyContainersList() {
+        consolidationDetails.setContainersList(null);
+
+        consolidationService.validateContainerDetails(consolidationDetails, missingFields);
+
+        assertTrue(missingFields.contains(ModuleValidationFieldType.CONTAINER_DETAILS));
+    }
+
+    @Test
+    void testValidateContainerDetails_ContainerMissingNumber() {
+        List<Containers> containersList = new ArrayList<>();
+        Containers container1 = new Containers();
+        container1.setContainerNumber(null);
+        containersList.add(container1);
+        consolidationDetails.setContainersList(containersList);
+
+        consolidationService.validateContainerDetails(consolidationDetails, missingFields);
+
+        assertTrue(missingFields.contains(ModuleValidationFieldType.CONTAINER_DETAILS));
+    }
+
+    @Test
+    void testValidateContainerDetails_ValidContainersList() {
+        List<Containers> containersList = new ArrayList<>();
+        Containers container1 = new Containers();
+        container1.setContainerNumber("C12345");
+        containersList.add(container1);
+        consolidationDetails.setContainersList(containersList);
+
+        consolidationService.validateContainerDetails(consolidationDetails, missingFields);
+
+        assertFalse(missingFields.contains(ModuleValidationFieldType.CONTAINER_DETAILS));
+    }
 
     @Test
     public void testRetrieveByIdAsync_NullId_Failure() {
