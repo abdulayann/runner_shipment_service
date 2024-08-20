@@ -3944,6 +3944,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private ListCommonRequest setCrieteriaForAttachShipment(AttachListShipmentRequest request, ConsolidationDetails consolidationDetails) {
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
         boolean setShipmentTypefilter = false;
         boolean isFcl = true;
         boolean isLcl = true;
@@ -3967,14 +3968,7 @@ public class ShipmentService implements IShipmentService {
         ListCommonRequest defaultRequest;
         defaultRequest = CommonUtils.andCriteria(Constants.TRANSPORT_MODE, consolidationDetails.getTransportMode(), "=", request);
         defaultRequest = CommonUtils.andCriteria("id", excludeShipments, "NOTIN", defaultRequest);
-        if(!Objects.isNull(consolidationDetails.getCarrierDetails().getOriginPort()))
-            CommonUtils.andCriteria(Constants.ORIGIN_PORT, consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
-        else
-            CommonUtils.andCriteria(Constants.ORIGIN_PORT, "", Constants.IS_NULL, defaultRequest);
-        if(!Objects.isNull(consolidationDetails.getCarrierDetails().getDestinationPort()))
-            CommonUtils.andCriteria(Constants.DESTINATION_PORT, consolidationDetails.getCarrierDetails().getDestinationPort(), "=", defaultRequest);
-        else
-            CommonUtils.andCriteria(Constants.DESTINATION_PORT, "", Constants.IS_NULL, defaultRequest);
+
         if(!Objects.isNull(consolidationDetails.getShipmentType()))
             CommonUtils.andCriteria(Constants.DIRECTION, consolidationDetails.getShipmentType(), "=", defaultRequest);
         else
@@ -4004,33 +3998,71 @@ public class ShipmentService implements IShipmentService {
         filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
         innerFilters.add(filterCriteria);
 
-        if(Boolean.TRUE.equals(request.getEtaMatch())){
-            innerFilers1 = new ArrayList<>();
-            if(!Objects.isNull(consolidationDetails.getCarrierDetails().getEta()))
-                criteria = Criteria.builder().fieldName("eta").operator("=").value(consolidationDetails.getCarrierDetails().getEta()).build();
+        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) || !Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP)
+                || Boolean.FALSE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            if (!Objects.isNull(consolidationDetails.getCarrierDetails().getOriginPort()))
+                CommonUtils.andCriteria(Constants.ORIGIN_PORT, consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
             else
+                CommonUtils.andCriteria(Constants.ORIGIN_PORT, "", Constants.IS_NULL, defaultRequest);
+            if (!Objects.isNull(consolidationDetails.getCarrierDetails().getDestinationPort()))
+                CommonUtils.andCriteria(Constants.DESTINATION_PORT, consolidationDetails.getCarrierDetails().getDestinationPort(), "=", defaultRequest);
+            else
+                CommonUtils.andCriteria(Constants.DESTINATION_PORT, "", Constants.IS_NULL, defaultRequest);
+        }
+
+        if(Boolean.TRUE.equals(request.getEtaMatch())){
+            if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP)
+                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+                if (!Objects.isNull(consolidationDetails.getCarrierDetails().getEta())) {
+                    LocalDateTime eta = consolidationDetails.getCarrierDetails().getEta();
+                    var thresholdETAFrom = eta.plusDays(-1);
+                    var thresholdETATo = eta.plusDays(1);
+
+                    defaultRequest = CommonUtils.andCriteria("eta", thresholdETAFrom, ">=", defaultRequest);
+                    defaultRequest = CommonUtils.andCriteria("eta", thresholdETATo, "<=", defaultRequest);
+                }
+            }
+            else {
+                innerFilers1 = new ArrayList<>();
+                if (!Objects.isNull(consolidationDetails.getCarrierDetails().getEta()))
+                    criteria = Criteria.builder().fieldName("eta").operator("=").value(consolidationDetails.getCarrierDetails().getEta()).build();
+                else
+                    criteria = Criteria.builder().fieldName("eta").operator(Constants.IS_NULL).build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+                innerFilers1.add(filterCriteria);
                 criteria = Criteria.builder().fieldName("eta").operator(Constants.IS_NULL).build();
-            filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-            innerFilers1.add(filterCriteria);
-            criteria = Criteria.builder().fieldName("eta").operator(Constants.IS_NULL).build();
-            filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-            innerFilers1.add(filterCriteria);
-            filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-            innerFilters.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+                innerFilers1.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+                innerFilters.add(filterCriteria);
+            }
         }
         if(Boolean.TRUE.equals(request.getEtdMatch())){
-            innerFilers1 = new ArrayList<>();
-            if(!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd()))
-                criteria = Criteria.builder().fieldName("etd").operator("=").value(consolidationDetails.getCarrierDetails().getEtd()).build();
-            else
+
+            if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP)
+                    && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+                if (!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd())) {
+                    LocalDateTime etd = consolidationDetails.getCarrierDetails().getEtd();
+                    var thresholdETDFrom = etd.plusDays(-1);
+                    var thresholdETDTo = etd.plusDays(1);
+                    defaultRequest = CommonUtils.andCriteria("etd", thresholdETDFrom, ">=", defaultRequest);
+                    defaultRequest = CommonUtils.andCriteria("etd", thresholdETDTo, "<=", defaultRequest);
+                }
+            }
+            else {
+                innerFilers1 = new ArrayList<>();
+                if (!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd()))
+                    criteria = Criteria.builder().fieldName("etd").operator("=").value(consolidationDetails.getCarrierDetails().getEtd()).build();
+                else
+                    criteria = Criteria.builder().fieldName("etd").operator(Constants.IS_NULL).build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+                innerFilers1.add(filterCriteria);
                 criteria = Criteria.builder().fieldName("etd").operator(Constants.IS_NULL).build();
-            filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-            innerFilers1.add(filterCriteria);
-            criteria = Criteria.builder().fieldName("etd").operator(Constants.IS_NULL).build();
-            filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-            innerFilers1.add(filterCriteria);
-            filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-            innerFilters.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+                innerFilers1.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+                innerFilters.add(filterCriteria);
+            }
         }
         if(Boolean.TRUE.equals(request.getScheduleMatch())){
             if(Objects.equals(consolidationDetails.getTransportMode(),Constants.TRANSPORT_MODE_AIR)){

@@ -26,6 +26,7 @@ public class CalculatePackUtilizationRequest implements IRunnerRequest {
     private ShipmentRequest shipmentRequest;
     private Long consolidationId;
     private AllocationsRequest allocationsRequest;
+    private Boolean ignoreConsolidationPacks;
 
     private Boolean saveConsol;
 }
